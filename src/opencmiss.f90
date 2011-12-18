@@ -12916,12 +12916,12 @@ CONTAINS
   !
 
   !>Starts the creation of CellML models field for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellML_ModelsFieldCreateStartNumber(CellMLModelsFieldUserNumber,regionUserNumber,CellMLUserNumber,err)
+  SUBROUTINE CMISSCellML_ModelsFieldCreateStartNumber(regionUserNumber,CellMLUserNumber,CellMLModelsFieldUserNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the CellML enviroment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -12964,11 +12964,11 @@ CONTAINS
   !
 
   !>Start the creation of CellML models field for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellML_ModelsFieldCreateStartObj(CellMLModelsFieldUserNumber,CellML,field,err)
+  SUBROUTINE CMISSCellML_ModelsFieldCreateStartObj(CellML,CellMLModelsFieldUserNumber,field,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of models field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !<On return, the created CellML models field.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -13136,12 +13136,12 @@ CONTAINS
   !
 
   !>Starts the creation of CellML state field for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellML_StateFieldCreateStartNumber(CellMLStateFieldUserNumber,regionUserNumber,CellMLUserNumber,err)
+  SUBROUTINE CMISSCellML_StateFieldCreateStartNumber(regionUserNumber,CellMLUserNumber,CellMLStateFieldUserNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the state field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -13184,11 +13184,11 @@ CONTAINS
   !
 
   !>Start the creation of CellML state field for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellML_StateFieldCreateStartObj(CellMLStateFieldUserNumber,CellML,field,err)
+  SUBROUTINE CMISSCellML_StateFieldCreateStartObj(CellML,CellMLStateFieldUserNumber,field,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of state field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !<On return, the created CellML state field.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -13735,12 +13735,12 @@ CONTAINS
   !
 
   !>Starts the creation of CellML parameters field for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellML_ParametersFieldCreateStartNumber(CellMLParametersFieldUserNumber,regionUserNumber,CellMLUserNumber,err)
+  SUBROUTINE CMISSCellML_ParametersFieldCreateStartNumber(regionUserNumber,CellMLUserNumber,CellMLParametersFieldUserNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the parameters field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -13783,11 +13783,11 @@ CONTAINS
   !
 
   !>Start the creation of CellML parameters field for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellML_ParametersFieldCreateStartObj(CellMLParametersFieldUserNumber,CellML,field,err)
+  SUBROUTINE CMISSCellML_ParametersFieldCreateStartObj(CellML,CellMLParametersFieldUserNumber,field,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of parameters field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !<On return, the created CellML parameters field.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -31478,13 +31478,13 @@ CONTAINS
   !
 
   !>Calculates and sets the geometric field parameters for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMesh_GeometricParametersCalculateNumber(regionUserNumber,fieldUserNumber, &
-      & generatedMeshUserNumber,err)
+  SUBROUTINE CMISSGeneratedMesh_GeometricParametersCalculateNumber(regionUserNumber,generatedMeshUserNumber, &
+      & fieldUserNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to calculate the geometric parameters for.
-    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to calculate the geometric parameters for.
     INTEGER(INTG), INTENT(IN) :: generatedMeshUserNumber !<The user number of the generated mesh to calculate the geometric parameters for.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to calculate the geometric parameters for.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -31534,11 +31534,11 @@ CONTAINS
   !
 
   !>Calculates and sets the geometric field parameters for a generated mesh identified by an object.
-  SUBROUTINE CMISSGeneratedMesh_GeometricParametersCalculateObj(field,generatedMesh,err)
+  SUBROUTINE CMISSGeneratedMesh_GeometricParametersCalculateObj(generatedMesh,field,err)
 
     !Argument variables
-    TYPE(CMISSFieldType), INTENT(INOUT) :: field !<The field to calculate the geometric parameters for
     TYPE(CMISSGeneratedMeshType), INTENT(IN) :: generatedMesh !<The generated mesh to calculate the geometric parameters for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field !<The field to calculate the geometric parameters for
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -46896,10 +46896,10 @@ CONTAINS
   !
 
   !> Initialise the given FieldML context using the given FieldML XML file.
-  SUBROUTINE CMISSFieldML_InputCreateFromFileVS( fieldml, filename, err )
+  SUBROUTINE CMISSFieldML_InputCreateFromFileVS( filename, fieldml, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise.
     TYPE(VARYING_STRING), INTENT(IN) :: filename !< The FieldML XML file to parse.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputCreateFromFileVS",err,error,*999)
@@ -46927,10 +46927,10 @@ CONTAINS
   !
 
   !> Initialise the given FieldML context using the given FieldML XML file.
-  SUBROUTINE CMISSFieldML_InputCreateFromFileC( fieldml, filename, err )
+  SUBROUTINE CMISSFieldML_InputCreateFromFileC( filename, fieldml, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise.
     CHARACTER(LEN=*), INTENT(IN) :: filename !< The FieldML XML file to parse.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputCreateFromFileC",err,error,*999)
