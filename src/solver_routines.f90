@@ -10870,59 +10870,55 @@ CONTAINS
                                   IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                     NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
                                     IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-                                      DO equations_matrix_idx=1,NONLINEAR_MATRICES%NUMBER_OF_JACOBIANS
-                                        RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(equations_matrix_idx)%VARIABLE
-                                        RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
-                                        RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
-                                        !Loop over the rows in the equations set
-                                        DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                          IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                            & NUMBER_OF_SOLVER_ROWS>0) THEN
-                                            !Get the equations residual contribution
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
-                                              & RESIDUAL_VALUE,ERR,ERROR,*999)
-                                            IF(STABILITY_TEST) THEN
-                                              RESIDUAL_VALUE=RESIDUAL_VALUE
-                                            ELSE
-                                              RESIDUAL_VALUE=RESIDUAL_VALUE*DYNAMIC_SOLVER%THETA(1)
-                                            ENDIF
-                                            !Get the linear matrices contribution to the RHS values if there are any
-                                            IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                              LINEAR_VALUE_SUM=0.0_DP
-                                              DO equations_matrix_idx2=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                                LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx2)%PTR
-                                                LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
-                                                CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
-                                                  & LINEAR_VALUE,ERR,ERROR,*999)
-                                                LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
-                                              ENDDO !equations_matrix_idx2
-                                              RESIDUAL_VALUE=RESIDUAL_VALUE+LINEAR_VALUE_SUM
-                                            ENDIF
-                                            IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                                              !Get the dynamic contribution to the residual values
-                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
-                                                & DYNAMIC_VALUE,ERR,ERROR,*999)
-                                                 RESIDUAL_VALUE=RESIDUAL_VALUE+DYNAMIC_VALUE
-                                            ENDIF
-                                            !Loop over the solver rows associated with this equations set residual row
-                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                & solver_row_idx)
-                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=RESIDUAL_VALUE*row_coupling_coefficient
-  !                                             VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
-                                              !Add in nonlinear residual values                                    
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
-                                                & ERR,ERROR,*999)
-                                            ENDDO !solver_row_idx
+                                      RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
+                                      !Loop over the rows in the equations set
+                                      DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                                        IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                          & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                          & NUMBER_OF_SOLVER_ROWS>0) THEN
+                                          !Get the equations residual contribution
+                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
+                                            & RESIDUAL_VALUE,ERR,ERROR,*999)
+                                          IF(STABILITY_TEST) THEN
+                                            RESIDUAL_VALUE=RESIDUAL_VALUE
+                                          ELSE
+                                            RESIDUAL_VALUE=RESIDUAL_VALUE*DYNAMIC_SOLVER%THETA(1)
                                           ENDIF
-                                        ENDDO !equations_row_number
-                                      ENDDO !equations_matrix_idx
+                                          !Get the linear matrices contribution to the RHS values if there are any
+                                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                            LINEAR_VALUE_SUM=0.0_DP
+                                            DO equations_matrix_idx2=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                              LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx2)%PTR
+                                              LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
+                                                & LINEAR_VALUE,ERR,ERROR,*999)
+                                              LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
+                                            ENDDO !equations_matrix_idx2
+                                            RESIDUAL_VALUE=RESIDUAL_VALUE+LINEAR_VALUE_SUM
+                                          ENDIF
+                                          IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                                            !Get the dynamic contribution to the residual values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
+                                              & DYNAMIC_VALUE,ERR,ERROR,*999)
+                                               RESIDUAL_VALUE=RESIDUAL_VALUE+DYNAMIC_VALUE
+                                          ENDIF
+                                          !Loop over the solver rows associated with this equations set residual row
+                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                              & solver_row_idx)
+                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                              & COUPLING_COEFFICIENTS(solver_row_idx)
+                                            VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+!                                             VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
+                                            !Add in nonlinear residual values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDDO !solver_row_idx
+                                        ENDIF
+                                      ENDDO !equations_row_number
                                     ELSE
                                       CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
@@ -11322,47 +11318,43 @@ CONTAINS
                               IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                 NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
                                 IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-                                  DO equations_matrix_idx=1,NONLINEAR_MATRICES%NUMBER_OF_JACOBIANS
-                                    RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(equations_matrix_idx)%VARIABLE
-                                    RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
-                                    RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
-                                    !Loop over the rows in the equations set
-                                    DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                      IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                        & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                        & NUMBER_OF_SOLVER_ROWS>0) THEN
-                                        !Get the equations residual contribution
-                                        CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
-                                          & RESIDUAL_VALUE,ERR,ERROR,*999)
-                                        !Get the linear matrices contribution to the RHS values if there are any
-                                        IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                          LINEAR_VALUE_SUM=0.0_DP
-                                          DO equations_matrix_idx2=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                            LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx2)%PTR
-                                            LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
-                                              & LINEAR_VALUE,ERR,ERROR,*999)
-                                            LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
-                                          ENDDO !equations_matrix_idx2
-                                          RESIDUAL_VALUE=RESIDUAL_VALUE+LINEAR_VALUE_SUM
-                                        ENDIF
-                                        !Loop over the solver rows associated with this equations set residual row
-                                        DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                          & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                          solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                            & solver_row_idx)
-                                          row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                            & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                            & COUPLING_COEFFICIENTS(solver_row_idx)
-                                          VALUE=RESIDUAL_VALUE*row_coupling_coefficient
-                                          !Add in nonlinear residual values
-                                          CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
-                                            & ERR,ERROR,*999)
-                                        ENDDO !solver_row_idx
+                                  RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
+                                  !Loop over the rows in the equations set
+                                  DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                                    IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                      & NUMBER_OF_SOLVER_ROWS>0) THEN
+                                      !Get the equations residual contribution
+                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
+                                        & RESIDUAL_VALUE,ERR,ERROR,*999)
+                                      !Get the linear matrices contribution to the RHS values if there are any
+                                      IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                        LINEAR_VALUE_SUM=0.0_DP
+                                        DO equations_matrix_idx2=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                          LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx2)%PTR
+                                          LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
+                                            & LINEAR_VALUE,ERR,ERROR,*999)
+                                          LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
+                                        ENDDO !equations_matrix_idx2
+                                        RESIDUAL_VALUE=RESIDUAL_VALUE+LINEAR_VALUE_SUM
                                       ENDIF
-                                    ENDDO !equations_row_number
-                                  ENDDO !equations_matrix_idx
+                                      !Loop over the solver rows associated with this equations set residual row
+                                      DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                        & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                        solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                          & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                          & solver_row_idx)
+                                        row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                          & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                          & COUPLING_COEFFICIENTS(solver_row_idx)
+                                        VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                        !Add in nonlinear residual values
+                                        CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+                                          & ERR,ERROR,*999)
+                                      ENDDO !solver_row_idx
+                                    ENDIF
+                                  ENDDO !equations_row_number
                                 ELSE
                                   CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
