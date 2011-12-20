@@ -62,8 +62,13 @@ class HtmlOutput(Plugin):
         historyPath=""
         if str(test).find('test_build_library')!=-1 :
           (compiler_version, arch, system) = list(test.test.arg)[:3]
-          logPath = "%slogs_%s-%s/nose_library_build_%s%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
-          historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
+          if len(test.test.arg) > 3 :
+            language = list(test.test.arg)[3]
+            logPath = "%slogs_%s-%s/nose_library_build_%s_%s_%s" %(self.buildbotUrl, arch, system, language, compiler_version, str(date.today())) 
+            historyPath = "%slogs_%s-%s/nose_library_build_%s_history_%s" %(self.buildbotUrl, arch, system, language, compiler_version)
+          else :
+            logPath = "%slogs_%s-%s/nose_library_build_%s%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
+            historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
         elif str(test).find('test_example')!=-1 :
           (status,example) = list(test.test.arg)[:2]
           arch = example.arch
@@ -82,6 +87,11 @@ class HtmlOutput(Plugin):
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
     def addSuccess(self, test):
+        if str(test).find('test_example')!=-1 :
+          example = list(test.test.arg)[1]
+          if example.language != None :
+            self.current=self.current.parent
+            return
         self.html.append('<a class="success">PASS</a>')
         self.insertLog(test)
         self.current=self.current.parent
@@ -154,7 +164,11 @@ class HtmlOutput(Plugin):
         description = ''
         ### OpenCMISS library build ###
         if str(test).find('test_build_library')!=-1 :
-          description='Building the library'
+          if len(test.test.arg) > 3 :
+            language = list(test.test.arg)[3]
+            description='Building the %s library' %(language)
+          else :
+            description='Building the library'
           self.current = ResultTree(self.current)
         ### OpenCMISS example build, execute and check ###
         if str(test).find('test_example')!=-1 :
@@ -192,7 +206,8 @@ class HtmlOutput(Plugin):
                 self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsOuter[i],'<ul>'])
                 self.current = ResultTree(self.current)
                 self.testLevelsOuter=self.testLevelsOuter[0:i+1]
-            description='Building the test'
+            description='Building the test' if example.language == None else None
+           
           ## Execute the example ##
           elif status=='run' :
             testPoint = list(test.test.arg)[2]
@@ -224,17 +239,21 @@ class HtmlOutput(Plugin):
             testPoint = list(test.test.arg)[2] 
             description='Checking the test output #%d' %(testPoint.id)
         self.current = ResultTree(self.current)
-        self.html.extend([ '<li class="liBullet">&nbsp;',description,':&nbsp;'])
+        if description != None :
+          self.html.extend([ '<li class="liBullet">&nbsp;',description,':&nbsp;'])
         
         
     def stopTest(self, test):
-        self.html.append('</li>')
         if str(test).find('test_build_library')!=-1 :
+          self.html.append('</li>')
           self.current=self.current.parent
         if str(test).find('test_example')!=-1 :
+          example = list(test.test.arg)[1]
+          if example.language == None :
+            self.html.append('</li>')
           status = list(test.test.arg)[0]
           if status=="run" or status=='check':
-            (example,testPoint) = list(test.test.arg)[1:3]
+            testPoint = list(test.test.arg)[2]
             if (not hasattr(testPoint,'expectedPath')) or status=='check' :
               if testPoint.path != example.path or testPoint.id == len(example.tests) :
                 self.html.append('</ul>')
