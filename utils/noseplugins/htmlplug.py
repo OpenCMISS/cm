@@ -58,22 +58,24 @@ class HtmlOutput(Plugin):
         self.html=['</div>','<ul id="tree1" class="mktree">']
 
     def insertLog(self, test):
-        compiler = os.environ['COMPILER']
+        logPath=""
+        historyPath=""
         if str(test).find('test_build_library')!=-1 :
-          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + compiler + str(date.today()) 
-          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + compiler
+          (compiler_version, arch, system) = list(test.test.arg)[:3]
+          logPath = "%slogs_%s-%s/nose_library_build_%s%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
+          historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
         elif str(test).find('test_example')!=-1 :
-          path = list(test.test.arg)[1]
-          path = path[path.find("/examples/")+10:]
-          if list(test.test.arg)[0]=='build' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + compiler
-          elif list(test.test.arg)[0]=='run' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + compiler
-          elif list(test.test.arg)[0]=='check' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + compiler
+          (status,example) = list(test.test.arg)[:2]
+          if (status == "build") : 
+            path = example.path[example.path.rfind("/examples/")+1:]
+          else :
+            testPoint =  list(test.test.arg)[2]
+            path = testPoint.path[testPoint.path.rfind("/examples/")+1:]
+          arch = example.arch
+          system = example.system
+          compiler_version = example.compilerVersion
+          logPath = "%slogs_%s-%s/%s/nose_%s_%s%s" %(self.buildbotUrl, arch, system, path, status, compiler_version, str(date.today())) 
+          historyPath = "%slogs_%s-%s/%s/nose_%s_history_%s" %(self.buildbotUrl, arch, system, path, status, compiler_version)
         self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
@@ -148,11 +150,15 @@ class HtmlOutput(Plugin):
     
     def startTest(self, test):
         description = ''
+        ### OpenCMISS library build ###
         if str(test).find('test_build_library')!=-1 :
           description='Building the library'
           self.current = ResultTree(self.current)
+        ### OpenCMISS example build, execute and check ###
         if str(test).find('test_example')!=-1 :
-          if list(test.test.arg)[0]=='build' :
+          (status, example) = list(test.test.arg)[:2]
+          ## Build the example ##
+          if status =='build' :
             for k in range(0,len(self.testLevelsInner)) :
               self.html.append('</ul>')
               if self.current.isPass():
@@ -162,9 +168,8 @@ class HtmlOutput(Plugin):
               self.current=self.current.parent
               self.html.append('</li>')
             self.testLevelsInner = []
-            path = list(test.test.arg)[1]
-            path = path[path.find("/examples/")+10:]
-            levels = path.split('/')
+            path = example.path
+            levels = path[path.rfind("/examples/")+1:].split('/')
             for i in range(0,len(levels)):
               if (len(self.testLevelsOuter)-1<i) :
                 self.testLevelsOuter.append(levels[i])
@@ -186,10 +191,12 @@ class HtmlOutput(Plugin):
                 self.current = ResultTree(self.current)
                 self.testLevelsOuter=self.testLevelsOuter[0:i+1]
             description='Building the test'
-          elif list(test.test.arg)[0]=='run' :
-            path = list(test.test.arg)[7]
-            if path!='.' :
-              levels = path.split('/')
+          ## Execute the example ##
+          elif status=='run' :
+            testPoint = list(test.test.arg)[2]
+            path = testPoint.path
+            if path!=example.path :
+              levels = path[path.rfind(example.globalTestDir)+1:].split('/')
               for i in range(0,len(levels)):
                 if (len(self.testLevelsInner)-1<i) :
                   self.testLevelsInner.append(levels[i])
@@ -210,7 +217,8 @@ class HtmlOutput(Plugin):
                   self.current =  ResultTree(self.current)
                   self.testLevelsInner=self.testLevelsInner[0:i+1]
             description='Running the test'
-          elif list(test.test.arg)[0]=='check' :  
+          ## Check the output ##
+          elif status=='check' :  
             description='Checking the output'
         self.current = ResultTree(self.current)
         self.html.extend([ '<li class="liBullet">&nbsp;',description,':&nbsp;'])
@@ -221,14 +229,17 @@ class HtmlOutput(Plugin):
         if str(test).find('test_build_library')!=-1 :
           self.current=self.current.parent
         if str(test).find('test_example')!=-1 :
-          if len(list(test.test.arg))==9 or list(test.test.arg)[0]=='check' :
-            self.html.append('</ul>')
-            if self.current.isPass():
-              self.html.append('<a class="success">PASS</a>')                             
-            else:
-              self.html.append('<a class="fail">FAIL</a>')
-            self.current=self.current.parent
-            self.html.append('</li>')
+          status = list(test.test.arg)[0]
+          if status=="run" or status=='check':
+            testPoint = list(test.test.arg)[2]
+            if (not hasattr(testPoint,'expectedPath')) or status=='check' :
+              self.html.append('</ul>')
+              if self.current.isPass():
+                self.html.append('<a class="success">PASS</a>')                             
+              else:
+                self.html.append('<a class="fail">FAIL</a>')
+              self.current=self.current.parent
+              self.html.append('</li>')
          
 import nose
 
