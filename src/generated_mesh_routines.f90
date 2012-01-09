@@ -3409,39 +3409,53 @@ CONTAINS
                       DERIVATIVE_VALUES(GLOBAL_DERIV_S1)= &
                         & REGULAR_MESH%BASE_VECTORS(component_idx,1)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1)
                     END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
-                    END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)
-                    END IF
+                    IF(REGULAR_MESH%MESH_DIMENSION>1) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
+                          & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
+                      END IF
+                    ENDIF
+                    IF(REGULAR_MESH%MESH_DIMENSION>2) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
+                          & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)
+                      END IF
+                    ENDIF
                   CASE DEFAULT
                     !Arc length or arithmetic mean scaling
                     DERIVATIVE_VALUES=0.0_DP
                     IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S1)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,1)/REGULAR_MESH%MAXIMUM_EXTENT(1)
+                      DERIVATIVE_VALUES(GLOBAL_DERIV_S1)=REGULAR_MESH%BASE_VECTORS(component_idx,1)/ &
+                        & L2NORM(REGULAR_MESH%BASE_VECTORS(:,1))
                     END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%MAXIMUM_EXTENT(2)
-                    END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%MAXIMUM_EXTENT(3)
-                    END IF
+                    IF(REGULAR_MESH%MESH_DIMENSION>1) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S2)=REGULAR_MESH%BASE_VECTORS(component_idx,2)/ &
+                          & L2NORM(REGULAR_MESH%BASE_VECTORS(:,2))
+                      END IF
+                    ENDIF
+                    IF(REGULAR_MESH%MESH_DIMENSION>2) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S3)=REGULAR_MESH%BASE_VECTORS(component_idx,3)/ &
+                          & L2NORM(REGULAR_MESH%BASE_VECTORS(:,3))
+                      END IF
+                    ENDIF
                   END SELECT
                   !Update geometric parameters in this computational domain only
                   DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
                   DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                   DO component_node=1,TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(3)
-                    CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                      & component_node,NODE_USER_NUMBER,ERR,ERROR,*999)
+                    !Regular meshes with Lagrange/Hermite elements use different node numberings to other mesh types
+                    IF(REGULAR_MESH%BASES(MESH_COMPONENT)%PTR%TYPE==BASIS_LAGRANGE_HERMITE_TP_TYPE) THEN
+                      CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
+                        & component_node,NODE_USER_NUMBER,ERR,ERROR,*999)
+                    ELSE
+                      NODE_USER_NUMBER=COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
+                        & component_node,ERR,ERROR)
+                    END IF
                     CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(FIELD_VARIABLE_COMPONENT%DOMAIN%TOPOLOGY, &
                       & NODE_USER_NUMBER,NODE_EXISTS,node_idx,GHOST_NODE,ERR,ERROR,*999)
-                    IF(NODE_EXISTS) THEN
+                    IF(NODE_EXISTS.AND..NOT.GHOST_NODE) THEN
                       node_position_idx(3)=(component_node-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
                       node_position_idx(2)=MOD(component_node-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
                         & TOTAL_NUMBER_OF_NODES_XI(1)+1
@@ -4843,8 +4857,14 @@ CONTAINS
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
       CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-        CALL FLAG_ERROR("Regular meshes must use the "// &
-          & "GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER routine.",ERR,ERROR,*999)
+        IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
+          NUM_BASES=SIZE(GENERATED_MESH%REGULAR_MESH%BASES)
+          NUM_DIMS=GENERATED_MESH%REGULAR_MESH%MESH_DIMENSION
+          BASES=>GENERATED_MESH%REGULAR_MESH%BASES
+          NUMBER_OF_ELEMENTS_XI=>GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+        ELSE
+          CALL FLAG_ERROR("The regular mesh for this generated mesh is not associated.",ERR,ERROR,*999)
+        ENDIF
       CASE(GENERATED_MESH_POLAR_MESH_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
@@ -4856,7 +4876,7 @@ CONTAINS
           BASES=>GENERATED_MESH%CYLINDER_MESH%BASES
           NUMBER_OF_ELEMENTS_XI=>GENERATED_MESH%CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
         ELSE
-        CALL FLAG_ERROR("The cylinder mesh for this generated mesh is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The cylinder mesh for this generated mesh is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
         IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN

@@ -48,14 +48,14 @@ def routine_swig_lines(routine):
 
     if routine.name.endswith('TypeInitialise'):
         type = routine.name[0:-len('Initialise')]
-        name = type[0:-len('Type')]
+        name = routine.parameters[0].name
         start_lines.append(
             '%%apply CMISSDummyInitialiseType *CMISSDummy{%s *%s};' %
             (type, name))
         end_lines.append('%%clear %s *%s;' % (type, name))
     elif routine.name.endswith('TypeFinalise'):
         type = routine.name[0:-len('Finalise')]
-        name = type[0:-len('Type')]
+        name = routine.parameters[0].name
         start_lines.append(
             '%%apply CMISSDummyFinaliseType *CMISSDummy{%s *%s};'
             % (type, name))
