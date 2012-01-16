@@ -598,6 +598,10 @@ CONTAINS
       CALL FLAG_ERROR( "Nodes argument name "//NODES_ARGUMENT_NAME//" is invalid.", ERR, ERROR, *999 )
     END IF
     
+    IF( Fieldml_GetObjectType( FIELDML_INFO%FML_HANDLE, NODES_ARGUMENT_HANDLE ) /= FHT_ARGUMENT_EVALUATOR ) THEN
+      CALL FLAG_ERROR( "Nodes argument "//NODES_ARGUMENT_NAME//" type is not an argument evaluator.", ERR, ERROR, *999 )
+    ENDIF
+    
     NODES_HANDLE = Fieldml_GetValueType( FIELDML_INFO%FML_HANDLE, NODES_ARGUMENT_HANDLE )
     IF( NODES_HANDLE == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Nodes argument "//NODES_ARGUMENT_NAME//" type is invalid.", ERR, ERROR, *999 )
