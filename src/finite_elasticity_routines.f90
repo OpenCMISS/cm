@@ -2322,17 +2322,20 @@ CONTAINS
       ! See Holmes MH, Mow VC. The nonlinear characteristics of soft gels and hydrated connective tissues in ultrafiltration.
       ! Journal of Biomechanics. 1990;23(11):1145-1156. DOI: 10.1016/0021-9290(90)90007-P
       ! The form of constitutive relation is:
-      ! sigma^s = -phi^s p I + rho sigma^s_E
+      ! sigma = sigma^s + sigma^f
+      ! sigma^f = -phi^f p I
+      ! sigma^s = -phi^s p I + rho_0^s sigma^s_E
       ! sigma^s_E is the effective Cauchy stress obtained by differentiating
       ! the free energy function to get the second Piola-Kirchoff stress tensor:
-      ! rho W^s = c0 exp(c1(I1 - 3) + c2(I2 - 3)) / (I_3^(c1 + 2c2))
+      ! rho_0^s W^s = c0 exp(c1(I1 - 3) + c2(I2 - 3)) / (I_3^(c1 + 2c2))
       ! Rather than add the "phi^s p I" term to the Cauchy stress, we add it here as "phi^s p J C^-1"
+      ! We also set rho_0^s = the solid density * initial solidity, and move the solidity
+      ! inside the strain energy density function
       !
       ! c0 = C(1)
       ! c1 = C(2)
       ! c2 = C(3)
       ! phi^s_0 = C(4)
-
 
       IDENTITY=0.0_DP
       DO i=1,3
@@ -2345,9 +2348,9 @@ CONTAINS
       I2=0.5_DP*(I1**2.0_DP-TEMP(1,1)-TEMP(2,2)-TEMP(3,3))
       !I3 already defined
 
-      TEMPTERM=C(1)*EXP(C(2)*(I1 - 3.0_DP) + C(3)*(I2 - 3.0_DP)) / (I3**(C(2)+2.0_DP*C(3)))
+      TEMPTERM=2.0_DP*C(4)*C(1)*EXP(C(2)*(I1 - 3.0_DP) + C(3)*(I2 - 3.0_DP)) / (I3**(C(2)+2.0_DP*C(3)))
       PIOLA_TENSOR=C(2)*TEMPTERM*IDENTITY + C(3)*TEMPTERM*(I1*IDENTITY-AZLT) - (C(2)+2.0_DP*C(3))*TEMPTERM*AZUT
-      PIOLA_TENSOR=PIOLA_TENSOR - (C(4)/Jznu)*DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)*Jznu*AZU
+      PIOLA_TENSOR=PIOLA_TENSOR - DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)*Jznu*AZU
 
     CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE) 
       !Form of constitutive model is:
@@ -6182,6 +6185,7 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD
     REAL(DP) :: INCREMENT
+    LOGICAL :: PARAMETER_SET_CREATED
 
     CALL ENTERS("FINITE_ELASTICITY_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
 
@@ -6193,7 +6197,11 @@ CONTAINS
           IF(MAXIMUM_NUMBER_OF_ITERATIONS>1) THEN
             IF(ITERATION_NUMBER==1) THEN
               !Setup initial values parameter set
-              CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_CREATED(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE, &
+                & PARAMETER_SET_CREATED,ERR,ERROR,*999)
+              IF(.NOT.PARAMETER_SET_CREATED) THEN
+                CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+              END IF
               CALL FIELD_PARAMETER_SETS_COPY(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & FIELD_INITIAL_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
             ENDIF
