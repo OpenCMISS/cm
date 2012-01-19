@@ -608,6 +608,8 @@ MODULE FIELD_ROUTINES
   
   PUBLIC FIELD_PARAMETER_SET_CREATE
 
+  PUBLIC FIELD_PARAMETER_SET_CREATED
+
   PUBLIC FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE
 
   PUBLIC FIELD_PARAMETER_SET_GET_CONSTANT,FIELD_PARAMETER_SET_GET_ELEMENT,FIELD_PARAMETER_SET_GET_LOCAL_DOF, &
@@ -14968,6 +14970,66 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_CREATE")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_CREATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks whether a field parameter set has been created
+  SUBROUTINE FIELD_PARAMETER_SET_CREATED(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,PARAMETER_SET_CREATED,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    INTEGER(INTG),  INTENT(IN) :: VARIABLE_TYPE !<The field variable type to check the parameter set creation for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    LOGICAL, INTENT(OUT) :: PARAMETER_SET_CREATED
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_PARAMETER_SET_CREATED",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(VARIABLE_TYPE>0.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+        FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+        IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+          !Check the set type input
+          IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+            !Check if this set type has been created
+            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR)) THEN
+              PARAMETER_SET_CREATED=.TRUE.
+            ELSE
+              PARAMETER_SET_CREATED=.FALSE.
+            END IF
+          ELSE
+            LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+              & " is invalid. The field parameter set type must be between 1 and "// &
+              & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+          & " is invalid. The variable type must be between 1 and "// &
+          & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_PARAMETER_SET_CREATED")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_CREATED",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_CREATED")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_CREATED
 
   !
   !================================================================================================================================
