@@ -29,11 +29,11 @@ def _logical_type():
 
 
 C_DEFINES = ('\n/*\n * Defines\n */\n\n'
-        'const int CMISSNoError = 0;\n'
-        'const int CMISSPointerIsNULL = -1;\n'
-        'const int CMISSPointerNotNULL = -2;\n'
-        'const int CMISSCouldNotAllocatePointer = -3;\n'
-        'const int CMISSErrorConvertingPointer = -4;\n\n'
+        'const int CMISS_NO_ERROR = 0;\n'
+        'const int CMISS_POINTER_IS_NULL = -1;\n'
+        'const int CMISS_POINTER_NOT_NULL = -2;\n'
+        'const int CMISS_COULD_NOT_ALLOCATE_POINTER = -3;\n'
+        'const int CMISS_ERROR_CONVERTING_POINTER = -4;\n\n'
         'typedef %s CMISSBool;\n'
         'const CMISSBool CMISSTrue = 1;\n'
         'const CMISSBool CMISSFalse = 0;\n\n'
@@ -89,11 +89,11 @@ def write_c_f90(library, output):
         '  PRIVATE\n\n'
         '  INTEGER(C_INT), PARAMETER :: CMISSTrue = 1\n'
         '  INTEGER(C_INT), PARAMETER :: CMISSFalse = 0\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSNoError = 0\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSPointerIsNULL = -1\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSPointerNotNULL = -2\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSCouldNotAllocatePointer = -3\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSErrorConvertingPointer = -4\n\n')
+        '  INTEGER(C_INT), PARAMETER :: CMISS_NO_ERROR = 0\n'
+        '  INTEGER(C_INT), PARAMETER :: CMISS_POINTER_IS_NULL = -1\n'
+        '  INTEGER(C_INT), PARAMETER :: CMISS_POINTER_NOT_NULL = -2\n'
+        '  INTEGER(C_INT), PARAMETER :: CMISS_COULD_NOT_ALLOCATE_POINTER = -3\n'
+        '  INTEGER(C_INT), PARAMETER :: CMISS_ERROR_CONVERTING_POINTER = -4\n\n')
 
     output.write('\n'.join(('  PUBLIC %s' % subroutine_c_names(subroutine)[1]
             for subroutine in library.public_subroutines)))
@@ -214,7 +214,7 @@ def subroutine_to_c_f90(subroutine):
     content = []
     content.extend(local_variables)
     content.append('')
-    content.append('%s = CMISSNoError' % c_f90_name)
+    content.append('%s = CMISS_NO_ERROR' % c_f90_name)
     content.extend(pre_lines)
     content.append('CALL %s(%s)' % (function_call,
             ','.join([parameter_call_name(p) for p in subroutine.parameters] +
@@ -261,20 +261,20 @@ def parameter_conversion(parameter):
         # before returning them.  For all other routines the pointer to the
         # buffer object doesn't change so we ignore the intent and always check
         # for association before calling the Fortran routine.
-        if parameter.routine.name.endswith('TypeInitialise'):
+        if parameter.routine.name.endswith('_Initialise'):
             local_variables.append('INTEGER(C_INT) :: Err')
             pre_call.extend(('IF(C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
-                '%s = CMISSPointerNotNULL' % routine_c_f90_name,
+                '%s = CMISS_POINTER_NOT_NULL' % routine_c_f90_name,
                 'ELSE',
                 'NULLIFY(%s)' % parameter.name,
                 'ALLOCATE(%s, STAT = Err)' % parameter.name,
                 'IF(Err /= 0) THEN',
-                '%s = CMISSCouldNotAllocatePointer' % routine_c_f90_name,
+                '%s = CMISS_COULD_NOT_ALLOCATE_POINTER' % routine_c_f90_name,
                 'ELSE'))
 
             post_call.extend(('%sPtr=C_LOC(%s)' % (parameter.name,
                     parameter.name), 'ENDIF', 'ENDIF'))
-        elif parameter.routine.name.endswith('TypeFinalise'):
+        elif parameter.routine.name.endswith('_Finalise'):
             pre_call.extend(('IF(C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
                 'CALL C_F_POINTER(%(name)sPtr,%(name)s)' % parameter.__dict__,
                 'IF(ASSOCIATED(%s)) THEN' % parameter.name))
@@ -282,10 +282,10 @@ def parameter_conversion(parameter):
             post_call.extend(('DEALLOCATE(%s)' % parameter.name,
                 '%sPtr = C_NULL_PTR' % parameter.name,
                 'ELSE',
-                '%s = CMISSErrorConvertingPointer' % routine_c_f90_name,
+                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF',
                 'ELSE',
-                '%s = CMISSPointerIsNULL' % routine_c_f90_name,
+                '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
                 'ENDIF'))
         else:
             if parameter.array_dims > 0:
@@ -311,7 +311,7 @@ def parameter_conversion(parameter):
                         '%sCPtrs(%sIndex) = C_LOC(%s(%sIndex))' %
                         ((parameter.name,) * 4), 'ENDDO'))
                 post_call.extend(('ELSE',
-                    '%s = CMISSPointerIsNULL' % routine_c_f90_name,
+                    '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
                     'ENDIF'))
             else:
                 pre_call.extend(('IF(C_ASSOCIATED(%s)) THEN' % c_f90_name,
@@ -319,10 +319,10 @@ def parameter_conversion(parameter):
                     parameter.__dict__,
                     'IF(ASSOCIATED(%s)) THEN' % parameter.name))
                 post_call.extend(('ELSE',
-                    '%s = CMISSErrorConvertingPointer' % routine_c_f90_name,
+                    '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                     'ENDIF',
                     'ELSE',
-                    '%s = CMISSPointerIsNULL' % routine_c_f90_name,
+                    '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
                     'ENDIF'))
 
     # Character arrays
@@ -374,7 +374,7 @@ def parameter_conversion(parameter):
                 parameter.name),
                 '%sSize = SIZE(%s,1)' % (parameter.name, parameter.name),
                 'IF(.NOT.C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
-                '%s = CMISSErrorConvertingPointer' % routine_c_f90_name,
+                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF'))
         else:
             # pointer is pointing to allocated memory that is being set
@@ -383,10 +383,10 @@ def parameter_conversion(parameter):
                 ','.join(size_list)),
                 'IF(ASSOCIATED(%s)) THEN' % parameter.name))
             post_call.extend(('ELSE',
-                '%s = CMISSErrorConvertingPointer' % routine_c_f90_name,
+                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF',
                 'ELSE',
-                '%s = CMISSPointerIsNULL' % routine_c_f90_name,
+                '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
                 'ENDIF'))
 
     return (local_variables, pre_call, post_call)
