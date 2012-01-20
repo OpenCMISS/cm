@@ -105,7 +105,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX, FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX, &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX, FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX
 
-  PUBLIC FINITE_ELASTICITY_ANALYTIC_CALCULATE, FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE, &
+  PUBLIC FINITE_ELASTICITY_ANALYTIC_CALCULATE, &
     & FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SETUP,FINITE_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SETUP, &
@@ -595,122 +595,6 @@ CONTAINS
   
     RETURN
   END FUNCTION FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Evaluates the Jacobian matrix entries using finite differencing for a finite elasticity finite element equations set.
-  SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set 
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
-    INTEGER(INTG), INTENT(OUT) :: ERR           !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR  !<The error string
-    !Local Variables
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD 
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: PARAMETERS
-    REAL(DP),POINTER :: DATA(:) ! parameter_set vector
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR1
-    INTEGER(INTG) :: component_idx,local_ny,version,derivative_idx,derivative,node_idx,node,column
-    INTEGER(INTG) :: DEPENDENT_NUMBER_OF_COMPONENTS
-    INTEGER(INTG) :: DEPENDENT_COMPONENT_INTERPOLATION_TYPE
-    REAL(DP) :: DELTA, ORIG_DEP_VAR ,xnorm
-
-    CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-        FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLES(1) ! 'U' variable
-        DEPENDENT_NUMBER_OF_COMPONENTS=DEPENDENT_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
-        EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-        NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-        PARAMETERS=>DEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS  ! vector of dependent variables, basically
-        IF(NONLINEAR_MATRICES%NUMBER_OF_JACOBIANS==1) THEN
-          ! make a temporary copy of the unperturbed residuals
-          CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999) ! can't we reuse old results?
-          ELEMENT_VECTOR1=NONLINEAR_MATRICES%ELEMENT_RESIDUAL
-
-          ! determine step size
-          !\todo: will this be robust enough? Try a fraction of the smallest (largest?) entry
-  !         DELTA=1e-6_DP
-          CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
-          !xnorm=sqrt(sum(DATA**2))/size(DATA)
-          !DELTA=(DELTA+xnorm)*DELTA
-          DELTA=MAX(MAXVAL(ABS(DATA))*1E-6_DP,1E-9)
-          CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
-
-          ! the actual finite differencing algorithm is about 4 lines but since the parameters are all 
-          ! distributed out, have to use proper field accessing routines.. 
-          ! so let's just loop over component, node/el, derivative
-          column=0  ! element jacobian matrix column number
-          DO component_idx=1,DEPENDENT_NUMBER_OF_COMPONENTS
-            ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-            DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
-            SELECT CASE (DEPENDENT_COMPONENT_INTERPOLATION_TYPE)
-            CASE (FIELD_NODE_BASED_INTERPOLATION)  !node based
-              BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
-              DO node_idx=1,BASIS%NUMBER_OF_NODES
-                node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
-                DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                  derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                  version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
-                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
-                    & DERIVATIVES(derivative)%VERSIONS(version)
-                  ! one-sided finite difference
-                  CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-                  CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
-                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
-                  CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-                  CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-                  column=column+1
-                  NONLINEAR_MATRICES%JACOBIANS(1)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                      & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
-                ENDDO !derivative_idx
-              ENDDO !node_idx
-            CASE (FIELD_ELEMENT_BASED_INTERPOLATION) ! element based
-              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ELEMENT_NUMBER)
-              ! one-sided finite difference
-              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
-              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
-              CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-              column=column+1
-              NONLINEAR_MATRICES%JACOBIANS(1)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                  & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
-            CASE DEFAULT
-              CALL FLAG_ERROR("Unsupported type of interpolation.",ERR,ERROR,*999)
-            END SELECT
-          ENDDO
-
-          ! put the original residual back in
-          NONLINEAR_MATRICES%ELEMENT_RESIDUAL=ELEMENT_VECTOR1
-        ELSE
-          CALL FLAG_ERROR("Jacobian evaluation is not implemented for multiple Jacobians.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN
-999 CALL ERRORS("FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN 1
-  END SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
   !
   !================================================================================================================================
@@ -2328,17 +2212,20 @@ CONTAINS
       ! See Holmes MH, Mow VC. The nonlinear characteristics of soft gels and hydrated connective tissues in ultrafiltration.
       ! Journal of Biomechanics. 1990;23(11):1145-1156. DOI: 10.1016/0021-9290(90)90007-P
       ! The form of constitutive relation is:
-      ! sigma^s = -phi^s p I + rho sigma^s_E
+      ! sigma = sigma^s + sigma^f
+      ! sigma^f = -phi^f p I
+      ! sigma^s = -phi^s p I + rho_0^s sigma^s_E
       ! sigma^s_E is the effective Cauchy stress obtained by differentiating
       ! the free energy function to get the second Piola-Kirchoff stress tensor:
-      ! rho W^s = c0 exp(c1(I1 - 3) + c2(I2 - 3)) / (I_3^(c1 + 2c2))
+      ! rho_0^s W^s = c0 exp(c1(I1 - 3) + c2(I2 - 3)) / (I_3^(c1 + 2c2))
       ! Rather than add the "phi^s p I" term to the Cauchy stress, we add it here as "phi^s p J C^-1"
+      ! We also set rho_0^s = the solid density * initial solidity, and move the solidity
+      ! inside the strain energy density function
       !
       ! c0 = C(1)
       ! c1 = C(2)
       ! c2 = C(3)
       ! phi^s_0 = C(4)
-
 
       IDENTITY=0.0_DP
       DO i=1,3
@@ -2351,9 +2238,9 @@ CONTAINS
       I2=0.5_DP*(I1**2.0_DP-TEMP(1,1)-TEMP(2,2)-TEMP(3,3))
       !I3 already defined
 
-      TEMPTERM=C(1)*EXP(C(2)*(I1 - 3.0_DP) + C(3)*(I2 - 3.0_DP)) / (I3**(C(2)+2.0_DP*C(3)))
+      TEMPTERM=2.0_DP*C(4)*C(1)*EXP(C(2)*(I1 - 3.0_DP) + C(3)*(I2 - 3.0_DP)) / (I3**(C(2)+2.0_DP*C(3)))
       PIOLA_TENSOR=C(2)*TEMPTERM*IDENTITY + C(3)*TEMPTERM*(I1*IDENTITY-AZLT) - (C(2)+2.0_DP*C(3))*TEMPTERM*AZUT
-      PIOLA_TENSOR=PIOLA_TENSOR - (C(4)/Jznu)*DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)*Jznu*AZU
+      PIOLA_TENSOR=PIOLA_TENSOR - DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)*Jznu*AZU
 
     CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE) 
       !Form of constitutive model is:
@@ -6457,6 +6344,7 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD
     REAL(DP) :: INCREMENT
+    LOGICAL :: PARAMETER_SET_CREATED
 
     CALL ENTERS("FINITE_ELASTICITY_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
 
@@ -6468,7 +6356,11 @@ CONTAINS
           IF(MAXIMUM_NUMBER_OF_ITERATIONS>1) THEN
             IF(ITERATION_NUMBER==1) THEN
               !Setup initial values parameter set
-              CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_CREATED(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE, &
+                & PARAMETER_SET_CREATED,ERR,ERROR,*999)
+              IF(.NOT.PARAMETER_SET_CREATED) THEN
+                CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+              END IF
               CALL FIELD_PARAMETER_SETS_COPY(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & FIELD_INITIAL_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
             ENDIF
