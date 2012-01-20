@@ -994,8 +994,6 @@ static int FieldExport_File_DerivativeIndices( FileSession *session, const int c
 
     FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
 
-    FieldExport_FPrintf( session, "\n" );
-
     return session->error;
 }
 
@@ -1016,8 +1014,6 @@ static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, c
     }
 
     FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
-
-    FieldExport_FPrintf( session, "\n" );
 
     return session->error;
 }
@@ -1430,4 +1426,46 @@ int FieldExport_DerivativeIndices( const int handle, const int componentNumber, 
     }
 
     return FIELD_EXPORT_NO_ERROR;
+}
+
+int FieldExport_VersionInfo( const int handle, const int numberOfVersions )
+{
+    SessionListEntry *session = FieldExport_GetSession( handle );
+
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        if (numberOfVersions > 1) {
+            return FieldExport_FPrintf( &session->fileSession, ", #Versions=%d", numberOfVersions );
+        }
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
+
+    return FIELD_EXPORT_NO_ERROR;
+}
+
+int FieldExport_EndComponent( const int handle )
+{
+    SessionListEntry *session = FieldExport_GetSession( handle );
+
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+          return FieldExport_FPrintf( &session->fileSession, "\n" );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
+
+    return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
 }
