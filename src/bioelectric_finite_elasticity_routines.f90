@@ -107,7 +107,7 @@ CONTAINS
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
-      CASE(EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE)
+      CASE(EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE,EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
@@ -238,6 +238,10 @@ CONTAINS
         PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
         PROBLEM%TYPE=PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
         PROBLEM%SUBTYPE=PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE
+      CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)        
+        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
+        PROBLEM%TYPE=PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
+        PROBLEM%SUBTYPE=PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric finite elasticity problem type of a multi physics problem class."
@@ -293,7 +297,7 @@ CONTAINS
       !--------------------------------------------------------------------
       !   Transient Gudunov monodomain, simple finite elasticity  
       !--------------------------------------------------------------------
-      CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
+      CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -528,7 +532,7 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-          CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
+          CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
             SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
             CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
               CALL BIODOMAIN_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
@@ -583,7 +587,7 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-          CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
+          CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
             SELECT CASE(SOLVER%SOLVE_TYPE)
             CASE(SOLVER_DAE_TYPE)
               CALL BIOELECTRIC_POST_SOLVE(SOLVER,ERR,ERROR,*999)
@@ -643,7 +647,7 @@ CONTAINS
           CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
             SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
             CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
-              CALL BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(CONTROL_LOOP,ERR,ERROR,*999)
+              !do nothing ???
             CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
               CALL FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
             CASE DEFAULT
@@ -696,7 +700,7 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: FILENAME,LOCAL_ERROR,METHOD
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: ELASTICITY_SUB_LOOP
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: ELASTICITY_SUB_LOOP,BIOELECTRIC_SUB_LOOP
 
     CALL ENTERS("BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
 
@@ -715,6 +719,8 @@ CONTAINS
                 & " is not valid for a multi physics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
+          CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+            CALL BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(CONTROL_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
             !do nothing
           END SELECT
@@ -749,7 +755,7 @@ CONTAINS
                       NULLIFY(DEPENDENT_REGION)
                       CALL FIELD_REGION_GET(DEPENDENT_FIELD,DEPENDENT_REGION,ERR,ERROR,*999)
                       FILENAME="MainTime_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                        & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                        & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%GLOBAL_ITERATION_NUMBER,"*",ERR,ERROR))
                       METHOD="FORTRAN"
                       CALL FIELD_IO_NODES_EXPORT(DEPENDENT_REGION%FIELDS,FILENAME,METHOD,ERR,ERROR,*999)
                     ELSE
@@ -765,6 +771,47 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("Solver solver equations are not associated.",ERR,ERROR,*999)
               ENDIF
+              IF(PROBLEM%SUBTYPE==PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE) THEN
+                NULLIFY(SOLVERS)
+                NULLIFY(SOLVER)
+                NULLIFY(SOLVER_EQUATIONS)
+                NULLIFY(BIOELECTRIC_SUB_LOOP)
+                !Get the solver. The second solver of the first sub loop will contain the bioelectrics equation set
+                CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,BIOELECTRIC_SUB_LOOP,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_SOLVERS_GET(BIOELECTRIC_SUB_LOOP,SOLVERS,ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+                CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
+                !Loop over the equations sets associated with the solver
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                      EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                        NULLIFY(DEPENDENT_REGION)
+                        CALL FIELD_REGION_GET(DEPENDENT_FIELD,DEPENDENT_REGION,ERR,ERROR,*999)
+                        FILENAME="MainTime_M_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                          & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%GLOBAL_ITERATION_NUMBER,"*",ERR,ERROR))
+                        METHOD="FORTRAN"
+                        CALL FIELD_IO_NODES_EXPORT(DEPENDENT_REGION%FIELDS,FILENAME,METHOD,ERR,ERROR,*999)
+                        
+                        WRITE(*,*) TIME_LOOP%ITERATION_NUMBER
+                        
+                      ELSE
+                        LOCAL_ERROR="Equations set is not associated for equations set index "// &
+                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
+                          & " in the solver mapping."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !equations_set_idx
+                  ELSE
+                    CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver solver equations are not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDIF !PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE
             ELSE
               CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -800,12 +847,24 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_ELASTICITY,GEOMETRIC_FIELD_MONODOMAIN,GEOMETRIC_FIELD_ELASTICITY
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_MONODOMAIN,DEPENDENT_FIELD_ELASTICITY
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: component_idx,DEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    INTEGER(INTG) :: component_idx,element_idx,ne
+    INTEGER(INTG) :: DEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
+    INTEGER(INTG) :: node_idx,node_idx_2,NODE_LEFT,NODE_RIGHT,NUMBER_OF_NODES
+    INTEGER(INTG) :: nodes_in_Xi_1,nodes_in_Xi_2,nodes_in_Xi_3,n3,n2,n1
+    REAL(DP) :: XVALUE_M,XVALUE_FE,DIST_LEFT,DIST_RIGHT,VALUE,VALUE_LEFT,VALUE_RIGHT
+    REAL(DP) :: XI(3),PREVIOUS_NODE(3)
+    LOGICAL :: OUTSIDE_NODE
+    logical :: new_way
 
     CALL ENTERS("BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD",ERR,ERROR,*999)
 
@@ -816,11 +875,18 @@ CONTAINS
     NULLIFY(PROBLEM)
     NULLIFY(SOLVERS)
     NULLIFY(SOLVER)
-    NULLIFY(DEPENDENT_FIELD)
-    NULLIFY(GEOMETRIC_FIELD)
+    NULLIFY(INDEPENDENT_FIELD_ELASTICITY)
+    NULLIFY(DEPENDENT_FIELD_MONODOMAIN)
+    NULLIFY(DEPENDENT_FIELD_ELASTICITY)
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
     NULLIFY(EQUATIONS_SET)
+    NULLIFY(GEOMETRIC_FIELD_MONODOMAIN)
+    NULLIFY(GEOMETRIC_FIELD_ELASTICITY)
+    NULLIFY(ELEMENTS_MAPPING)
+    NULLIFY(INTERPOLATED_POINT)
+    NULLIFY(INTERPOLATION_PARAMETERS)
+    NULLIFY(FIELD_VARIABLE)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
@@ -829,10 +895,12 @@ CONTAINS
           SELECT CASE(PROBLEM%TYPE)
           CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
             SELECT CASE(PROBLEM%SUBTYPE)
+
             CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
+
               CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
               CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP_PARENT,ERR,ERROR,*999)
-              !get the monodomain sub loop, solvers, solver, and finally geometric field
+              !get the monodomain sub loop, solvers, solver, and finally geometric and field
               CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,1,CONTROL_LOOP_MONODOMAIN,ERR,ERROR,*999)
               CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_MONODOMAIN,SOLVERS,ERR,ERROR,*999)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
@@ -842,8 +910,8 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
                   IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                    GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                    IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                    GEOMETRIC_FIELD_MONODOMAIN=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                    IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD_MONODOMAIN)) THEN
                       CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -870,8 +938,8 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
                   IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                    DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                    IF(.NOT.ASSOCIATED(DEPENDENT_FIELD)) THEN
+                    DEPENDENT_FIELD_ELASTICITY=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                    IF(.NOT.ASSOCIATED(DEPENDENT_FIELD_ELASTICITY)) THEN
                       CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -883,23 +951,166 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
-              DO component_idx=1,GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
+              DO component_idx=1,GEOMETRIC_FIELD_MONODOMAIN%VARIABLES(1)%NUMBER_OF_COMPONENTS
                 !check for identical interpolation of the fields
-                GEOMETRIC_FIELD_INTERPOLATION=GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
-                DEPENDENT_FIELD_INTERPOLATION=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+                GEOMETRIC_FIELD_INTERPOLATION=GEOMETRIC_FIELD_MONODOMAIN%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+                DEPENDENT_FIELD_INTERPOLATION=DEPENDENT_FIELD_ELASTICITY%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
                 IF(GEOMETRIC_FIELD_INTERPOLATION==DEPENDENT_FIELD_INTERPOLATION) THEN
                   !copy the dependent field components to the geometric field
-                  CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,component_idx,GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,component_idx,GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                     & component_idx,ERR,ERROR,*999)
                 ELSE
-                  LOCAL_ERROR="The interpolation type of component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//&
-                    & " of field number "//TRIM(NUMBER_TO_VSTRING(GEOMETRIC_FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not coincide with the interpolation type of field number " &
-                    & //TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                  LOCAL_ERROR="The interpolation type of component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR, &
+                    & ERROR))//" of field number "//TRIM(NUMBER_TO_VSTRING(GEOMETRIC_FIELD_MONODOMAIN%USER_NUMBER,"*",ERR, &
+                    & ERROR))//" does not coincide with the interpolation type of field number " &
+                    & //TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD_ELASTICITY%USER_NUMBER,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO
+
+            CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
+
+              CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+              CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP_PARENT,ERR,ERROR,*999)
+              !get the monodomain sub loop, solvers, solver, and finally geometric field and dependent field
+              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,1,CONTROL_LOOP_MONODOMAIN,ERR,ERROR,*999)
+              CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_MONODOMAIN,SOLVERS,ERR,ERROR,*999)
+              CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    GEOMETRIC_FIELD_MONODOMAIN=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                    IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD_MONODOMAIN)) THEN
+                      CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                    ! the Field_V_Variable_Type contains the 3D nodal positions
+                    DEPENDENT_FIELD_MONODOMAIN=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                    IF(.NOT.ASSOCIATED(DEPENDENT_FIELD_MONODOMAIN)) THEN
+                      CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+              NULLIFY(SOLVERS)
+              NULLIFY(SOLVER)
+              NULLIFY(SOLVER_MAPPING)
+              NULLIFY(EQUATIONS_SET)
+              NULLIFY(SOLVER_EQUATIONS)
+              !get the finite elasticity sub loop, solvers, solver, and finally the dependent and independent fields
+              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,2,CONTROL_LOOP_ELASTICITY,ERR,ERROR,*999)
+              CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_ELASTICITY,SOLVERS,ERR,ERROR,*999)
+              CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    INDEPENDENT_FIELD_ELASTICITY=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                    IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD_ELASTICITY)) THEN
+                      CALL FLAG_ERROR("Independent field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                    GEOMETRIC_FIELD_ELASTICITY=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                    IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD_ELASTICITY)) THEN
+                      CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+
+              node_idx=0
+              CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+
+              !loop through the elements of the finite elasticity mesh
+              ELEMENTS_MAPPING=>GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION% &
+                & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
+              DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+                ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+
+                !get the finite elasticity dependent field interpolation parameters of this element
+                INTERPOLATION_PARAMETERS=>EQUATIONS_SET%EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS &
+                  & (FIELD_U_VARIABLE_TYPE)%PTR
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+                INTERPOLATED_POINT=>EQUATIONS_SET%EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+
+                !the Field_V_Variable_Type of the FE independent field contains the number of nodes in each Xi-direction of the bioelectrics grid
+                CALL FIELD_PARAMETER_SET_GET_ELEMENT(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,ne,1,nodes_in_Xi_1,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_GET_ELEMENT(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,ne,2,nodes_in_Xi_2,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_GET_ELEMENT(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,ne,3,nodes_in_Xi_3,ERR,ERROR,*999)
+
+                !if there is no bioelectrics grid in this finite elasticity element, jump to the next finite elasticity element
+                IF((nodes_in_Xi_1==0).OR.(nodes_in_Xi_2==0).OR.(nodes_in_Xi_3==0)) CYCLE
+
+                !assume Xi(1) to be normal to the seed surface, i.e. the seed points have Xi(1)=0
+                XI=[0.0_DP,1.0_DP/(REAL(2*nodes_in_Xi_2)),1.0_DP/(REAL(2*nodes_in_Xi_3))]
+                
+                !assume that the bioelectrics node numbers are increased in order Xi(1), Xi(2), Xi(3) 
+                DO n3=1,nodes_in_Xi_3
+                  DO n2=1,nodes_in_Xi_2
+                    DO n1=1,nodes_in_Xi_1
+                      node_idx=node_idx+1
+                      !find the interpolated position of the bioelectric grid node from the FE dependent field
+                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+                      !update the bioelectrics dependent field Field_V_Variable_Type
+                      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                        !the Field_V_Variable_Type of the monodomain dependent field contains the nodal positions in 3D
+                        CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,component_idx,INTERPOLATED_POINT%VALUES(component_idx,1),ERR, &
+                          & ERROR,*999)
+                      ENDDO
+                      IF(n1==1) THEN
+                        !a new line of bioelectrics grid nodes begins
+                        CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,0.0_DP,ERR,ERROR,*999)
+                      ELSE
+                        !get the position in 3D of the previous node
+                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                          CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,component_idx,PREVIOUS_NODE(component_idx),ERR,ERROR,*999)
+                        ENDDO
+                        !compute the distance between the previous node and the actual node
+                        VALUE=SQRT( &
+                          & (INTERPOLATED_POINT%VALUES(1,1)-PREVIOUS_NODE(1))*(INTERPOLATED_POINT%VALUES(1,1)-PREVIOUS_NODE(1))+ &
+                          & (INTERPOLATED_POINT%VALUES(2,1)-PREVIOUS_NODE(2))*(INTERPOLATED_POINT%VALUES(2,1)-PREVIOUS_NODE(2))+ &
+                          & (INTERPOLATED_POINT%VALUES(3,1)-PREVIOUS_NODE(3))*(INTERPOLATED_POINT%VALUES(3,1)-PREVIOUS_NODE(3)))
+                        !get the position in 1D of the previous node
+                        CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,1,VALUE_LEFT,ERR,ERROR,*999)
+                        !update the current 1D node position
+                        CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE_LEFT+VALUE,ERR,ERROR,*999)
+                      ENDIF
+                      XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1-1))
+                    ENDDO !n1
+                    XI(1)=0.0_DP
+                    XI(2)=XI(2)+1.0_DP/(REAL(nodes_in_Xi_2))
+                  ENDDO !n2
+                  XI(1)=0.0_DP
+                  XI(2)=1.0_DP/(REAL(2*nodes_in_Xi_2))
+                  XI(3)=Xi(3)+1.0_DP/(REAL(nodes_in_Xi_3))
+                ENDDO !n3
+
+              ENDDO !element_idx
+
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a bioelectrics finite elasticity problem type of a multi physics problem class."

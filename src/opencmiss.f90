@@ -54,6 +54,7 @@ MODULE OPENCMISS
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
+  USE BIOELECTRIC_FINITE_ELASTICITY_ROUTINES
   USE CMISS
   USE CMISS_CELLML
   USE COMP_ENVIRONMENT
@@ -2249,6 +2250,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardMonodomainElasticitySubtype =  &
     & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE !<Standard Monodomain Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSet1D3DMonodomainElasticitySubtype =  &
+    & EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE !<Coupled 1D Monodomain 3D Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -2520,7 +2523,8 @@ MODULE OPENCMISS
     & CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype, &
     & CMISSEquationsSetBurgersSubtype,CMISSEquationsSetGeneralisedBurgersSubtype,CMISSEquationsSetStaticBurgersSubtype, &
-    & CMISSEquationsSetInviscidBurgersSubtype,CMISSEquationsSetStandardMonodomainElasticitySubtype
+    & CMISSEquationsSetInviscidBurgersSubtype,CMISSEquationsSetStandardMonodomainElasticitySubtype, &
+    & CMISSEquationsSet1D3DMonodomainElasticitySubtype
 
 
   PUBLIC CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype, CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype, &
@@ -4586,6 +4590,8 @@ MODULE OPENCMISS
     & PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE !<Standard elasticity fluid pressure problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGudunovMonodomainSimpleElasticitySubtype = & 
     & PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemGudunovMonodomain1D3DElasticitySubtype = & 
+    & PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityCellMLSubtype = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4707,7 +4713,7 @@ MODULE OPENCMISS
    & CMISSProblemQuasistaticElasticityTransientDarcySubtype,CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype, &
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
    & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype, &
-   & CMISSProblemGudunovMonodomainSimpleElasticitySubtype
+   & CMISSProblemGudunovMonodomainSimpleElasticitySubtype,CMISSProblemGudunovMonodomain1D3DElasticitySubtype
 
   PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype,CMISSProblemFiniteElasticityCellMLSubtype
 !!==================================================================================================================================
@@ -5725,6 +5731,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverEquationsBoundaryConditionsCreateFinish,CMISSSolverEquationsBoundaryConditionsCreateStart
 
   PUBLIC CMISSSolverEquationsBoundaryConditionsGet
+  
+  PUBLIC CMISSBioelectricsFiniteElasticityUpdateGeometricField
 
 !!==================================================================================================================================
 !!
@@ -46794,6 +46802,30 @@ CONTAINS
     userNumber = Basis%BASIS%USER_NUMBER
 
   END SUBROUTINE CMISSUserNumberGetBasis
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the bioelectrics geometric field by interpolating the finite elasticity geometric field
+  SUBROUTINE CMISSBioelectricsFiniteElasticityUpdateGeometricField(ControlLoop,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<The control loop that contains the geometric fields
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    CALL ENTERS("CMISSBioelectricsFiniteElasticityUpdateGeometricField",Err,ERROR,*999)
+
+    CALL BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(ControlLoop%CONTROL_LOOP,Err,ERROR,*999)
+
+    CALL EXITS("CMISSBioelectricsFiniteElasticityUpdateGeometricField")
+    RETURN
+999 CALL ERRORS("CMISSBioelectricsFiniteElasticityUpdateGeometricField",Err,ERROR)
+    CALL EXITS("CMISSBioelectricsFiniteElasticityUpdateGeometricField")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSBioelectricsFiniteElasticityUpdateGeometricField
 
   !  
   !================================================================================================================================
