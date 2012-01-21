@@ -3583,7 +3583,7 @@ CONTAINS
     INTEGER(INTG) :: global_number1, local_number1, global_number2, local_number2
     INTEGER(INTG) :: component_idx, nn1, nn2 ! nn, tmp2, tmp1!temporary variable
     TYPE(FIELD_IO_COMPONENT_INFO_SET), POINTER :: tmpInfoSet
-    LOGICAL :: SWITCH
+    LOGICAL :: SAME_ELEMENT_INFO
 
     !from now on, global numbering are used
     CALL ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_SORT",ERR,ERROR,*999)
@@ -3612,7 +3612,7 @@ CONTAINS
         global_number2=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
         IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS==&
          &ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
-          SWITCH=.TRUE.
+          SAME_ELEMENT_INFO=.TRUE.
           !we will check the component (type of component, partial derivative).
           DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
             !not safe, but it is fast
@@ -3622,7 +3622,7 @@ CONTAINS
             !are they in the same memory address?
             IF(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR, &
               &TARGET=ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR))  THEN
-              SWITCH=.FALSE.
+              SAME_ELEMENT_INFO=.FALSE.
               EXIT
             ENDIF !ASSCOCIATED
 
@@ -3633,19 +3633,19 @@ CONTAINS
             !!are they in the same field?
             !IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER/= &
             !&ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER) THEN
-            !  SWITCH=.FALSE.
+            !  SAME_ELEMENT_INFO=.FALSE.
             !  EXIT
             !ELSE  !GLOBAL_NUBMER
             !  !are they the same variable?
             !  IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER/= &
             !  & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER) THEN
-            !     SWITCH=.FALSE.
+            !     SAME_ELEMENT_INFO=.FALSE.
             !     EXIT
             !   ELSE !VARIABLE_NUBMER
             !    !are they the same component?
             !    IF(LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER/=&
             !      &LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER) THEN
-            !       SWITCH=.FALSE.
+            !       SAME_ELEMENT_INFO=.FALSE.
             !       EXIT
             !     ENDIF !COMPONENT_NUMBER
             !  ENDIF ! VARIABLE_NUBMER
@@ -3653,7 +3653,7 @@ CONTAINS
           ENDDO !component_idx
 
           !check whether correspoding two components have the same partial derivatives
-          IF(SWITCH) THEN
+          IF(SAME_ELEMENT_INFO) THEN
             DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
               !finding the local numbering for the NODAL_INFO_SET(nn1)
               DOMAIN_MAPPING_ELEMENTS=>&
@@ -3682,15 +3682,15 @@ CONTAINS
               !checking whether they have the same basis
               IF(DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%GLOBAL_NUMBER/=&
                 &DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%BASIS%GLOBAL_NUMBER) THEN
-                SWITCH=.FALSE.
+                SAME_ELEMENT_INFO=.FALSE.
                 EXIT
               ENDIF  !DOMAIN_ELEMENTS1
             ENDDO !component_idx
-          ENDIF !SWITCH==.TRUE.
+          ENDIF !SAME_ELEMENT_INFO==.TRUE.
         ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS==LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn+1)%PTR%NUMBER_OF_COMPONENTS
 
         !find two elements which have the same output, and then they should put together
-        IF(SWITCH) THEN
+        IF(SAME_ELEMENT_INFO) THEN
           tmpInfoSet => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
           ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
           ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
@@ -3704,7 +3704,7 @@ CONTAINS
 
           !increase nn1 to skip the nodes which have the same output
           nn1=nn1+1
-        ENDIF !(SWITCH=.TRUE.)
+        ENDIF !(SAME_ELEMENT_INFO=.TRUE.)
       ENDDO !nn2
       !increase the nn1 to check next node
       nn1=nn1+1
@@ -3733,7 +3733,7 @@ CONTAINS
     !        !nk and nu are used here temporarily
     !        DO tmp1=1,component_idx
     !           print "(A, I)", "tmp1=", tmp1
-    !           SWITCH=.FALSE.
+    !           SAME_ELEMENT_INFO=.FALSE.
     !           DO tmp2=1,(component_idx-tmp1)
     !              IF(LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2)%PTR%COMPONENT_NUMBER>&
     !              &LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2+1)%PTR%COMPONENT_NUMBER) THEN
@@ -3742,10 +3742,10 @@ CONTAINS
     !                 LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2)%PTR
     !
     !                 LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2)%PTR=>tmp_ptr
-    !                 SWITCH=.TRUE.
+    !                 SAME_ELEMENT_INFO=.TRUE.
     !              ENDIF
     !           ENDDO
-    !           IF(SWITCH) THEN
+    !           IF(SAME_ELEMENT_INFO) THEN
     !              EXIT
     !           ENDIF
     !        ENDDO
@@ -4161,7 +4161,7 @@ CONTAINS
     TYPE(FIELD_IO_COMPONENT_INFO_SET), POINTER :: tmpInfoSet
     INTEGER(INTG) :: global_number1, global_number2
     INTEGER(INTG) :: nn1, nn2
-    LOGICAL :: SWITCH
+    LOGICAL :: SAME_NODAL_INFO
 
     !from now on, global numbering are used
     CALL ENTERS("FIELD_IO_NODAL_INFO_SET_SORT",ERR,ERROR,*999)
@@ -4182,19 +4182,18 @@ CONTAINS
       DO nn2=nn1+1,NODAL_INFO_SET%NUMBER_OF_ENTRIES
         global_number2=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
 
-        SWITCH = FIELD_IO_COMPARE_INFO_SET_COMPONENTS( NODAL_INFO_SET%COMPONENT_INFO_SET( nn1 )%PTR, &
+        SAME_NODAL_INFO = FIELD_IO_COMPARE_INFO_SET_COMPONENTS( NODAL_INFO_SET%COMPONENT_INFO_SET( nn1 )%PTR, &
           & NODAL_INFO_SET%COMPONENT_INFO_SET( nn2 )%PTR )
 
         !check whether correspoding two components have the same partial derivatives
-        !switch is true when the components match
-        IF( SWITCH ) THEN
+        IF( SAME_NODAL_INFO ) THEN
           CALL FIELD_IO_COMPARE_INFO_SET_DERIVATIVES( NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR, &
               & NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR, my_computational_node_number, global_number1, global_number2, &
-              & SWITCH, ERR, ERROR, *999 )
-        ENDIF !SWITCH==.TRUE.
+              & SAME_NODAL_INFO, ERR, ERROR, *999 )
+        ENDIF !SAME_NODAL_INFO==.TRUE.
 
         !find two nodes which have the same output, and then they should put together
-        IF(SWITCH) THEN
+        IF(SAME_NODAL_INFO) THEN
           tmpInfoSet => NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
           NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
           NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
@@ -4208,7 +4207,7 @@ CONTAINS
 
           !increase nn1 to skip the nodes which have the same output
           nn1=nn1+1
-        ENDIF !(SWITCH=.TRUE.)
+        ENDIF !(SAME_NODAL_INFO=.TRUE.)
 
       ENDDO !nn2
       !increase the nn1 to check next node
@@ -4238,7 +4237,7 @@ CONTAINS
     !        !nk and nu are used here temporarily
     !        DO tmp1=1,component_idx
     !           print "(A, I)", "tmp1=", tmp1
-    !           SWITCH=.FALSE.
+    !           SAME_NODAL_INFO=.FALSE.
     !           DO tmp2=1,(component_idx-tmp1)
     !              IF(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2)%PTR%COMPONENT_NUMBER>&
     !              &NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2+1)%PTR%COMPONENT_NUMBER) THEN
@@ -4247,10 +4246,10 @@ CONTAINS
     !                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2)%PTR
     !
     !                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2)%PTR=>tmp_ptr
-    !                 SWITCH=.TRUE.
+    !                 SAME_NODAL_INFO=.TRUE.
     !              ENDIF
     !           ENDDO
-    !           IF(SWITCH) THEN
+    !           IF(SAME_NODAL_INFO) THEN
     !              EXIT
     !           ENDIF
     !        ENDDO
