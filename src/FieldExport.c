@@ -1460,12 +1460,13 @@ int FieldExport_EndComponent( const int handle )
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-          return FieldExport_FPrintf( &session->fileSession, "\n" );
+        return FieldExport_FPrintf( &session->fileSession, "\n" );
     }
     else
     {
         return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
     }
 
+    /* Shouldn't get to here */
     return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
 }

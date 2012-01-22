@@ -974,15 +974,19 @@ CONTAINS
   !
 
   !> Use the element version information to calcualte the derivative index of a given nodal derivative for an element
-  FUNCTION FIELD_IO_ELEMENT_DERIVATIVE_INDEX(ELEMENT, DERIVATIVE_NUMBER, NODE_NUMBER)
+  FUNCTION FIELD_IO_ELEMENT_DERIVATIVE_INDEX(ELEMENT, DERIVATIVE_NUMBER, NODE_NUMBER, ERR, ERROR)
     !Argument variables
     TYPE(DOMAIN_ELEMENT_TYPE), INTENT(IN) :: ELEMENT !<The element to calculate the derivative index for
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The number of the derivative to calcualte
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The local element node number
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Return variable
-    INTEGER(INTG) :: FIELD_IO_ELEMENT_DERIVATIVE_INDEX !<On return, the calculated deritave index
+    INTEGER(INTG) :: FIELD_IO_ELEMENT_DERIVATIVE_INDEX !<On return, the calculated derative index
     !Local Variables
     INTEGER(INTG) :: VERSION_NUMBER,NUMBER_OF_DERIVATIVES
+
+    CALL ENTERS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX", ERR, ERROR, *999)
 
     VERSION_NUMBER=ELEMENT%ELEMENT_DERIVATIVES(2, DERIVATIVE_NUMBER, NODE_NUMBER)
     NUMBER_OF_DERIVATIVES=ELEMENT%BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
@@ -991,6 +995,8 @@ CONTAINS
 
     CALL EXITS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX")
     RETURN
+999 CALL ERRORS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX",ERR,ERROR)
+    CALL EXITS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX")
   END FUNCTION FIELD_IO_ELEMENT_DERIVATIVE_INDEX
 
   !
@@ -2840,7 +2846,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2865,7 +2871,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2890,7 +2896,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2915,7 +2921,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2942,7 +2948,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2967,7 +2973,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2992,7 +2998,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3017,7 +3023,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3044,7 +3050,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3069,7 +3075,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3094,7 +3100,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3119,7 +3125,7 @@ CONTAINS
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                       ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER)
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3134,7 +3140,7 @@ CONTAINS
             NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
             DO mm=1,NUMBER_OF_DERIVATIVES(nn)
               ELEMENT_DERIVATIVES(derivativeIndex) = FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,nn)
+                & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,nn,ERR,ERROR)
               derivativeIndex = derivativeIndex + 1
             ENDDO !mm
           ENDDO !nn
