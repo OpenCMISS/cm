@@ -19,7 +19,7 @@ INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
 WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
 # Don't output errors, we'll include trace in exception
-ErrorHandlingModeSet(ErrorHandlingModes.ReturnErrorCode)
+ErrorHandlingModeSet(ErrorHandlingModes.RETURN_ERROR_CODE)
 
 # Ignore SIGPIPE generated when closing the help pager when it isn't fully
 # buffered, otherwise it gets caught by OpenCMISS and crashes the interpreter
@@ -187,39 +187,18 @@ def method_name(type, routine):
 def py_method(type, routine):
     """Write subroutine as method of Python class"""
 
-    if type.name == 'CMISSFieldMLIOType':
-        type_name = 'CMISSFieldMLType'
-    else:
-        type_name = type.name
-
     name = method_name(type, routine)
     c_name = subroutine_c_names(routine)[0]
-    create_start_name = type_name[:-len('Type')] + 'Create'
 
-    if c_name.startswith('CMISSFieldMLOutputCreate'):
-        # Have to account for this specifically as it doesn't
-        # match other create start routines
-        is_create_start = True
-        self_parameter = routine.parameters[-1]
-        all_parameters = routine.parameters[0:-1]
-    elif (c_name.startswith(create_start_name) and
-            routine.parameters[-1].var_type == Parameter.CUSTOM_TYPE and
-            routine.parameters[-1].type_name  == type.name):
-        is_create_start = True
-        # Last parameter is self parameter
-        self_parameter = routine.parameters[-1]
-        all_parameters = routine.parameters[0:-1]
-    else:
-        is_create_start = False
-        self_parameter = routine.parameters[0]
-        all_parameters = routine.parameters[1:]
+    self_parameter = routine.parameters[routine.self_idx]
+    all_parameters = (routine.parameters[0:routine.self_idx] +
+            routine.parameters[routine.self_idx + 1:])
 
     (pre_code, py_args, swig_args) = process_parameters(all_parameters)
 
-    if is_create_start:
-        swig_args = swig_args + [self_parameter.name]
-    else:
-        swig_args = [self_parameter.name] + swig_args
+    # Add in self parameter to pass to swig
+    swig_args.insert(routine.self_idx, self_parameter.name)
+
     py_args = (['self'] + py_args)
 
     docstring = [remove_doxygen_commands(
@@ -425,14 +404,14 @@ def remove_prefix_and_suffix(names):
     suffix_length = 0
     if len(names) == 1:
         # Special cases we have to specify
-        if names[0] == 'CMISSControlLoopNode':
-            prefix_length = len('CMISSControlLoop')
-        elif names[0] == 'CMISSEquationsSetHelmholtzEquationTwoDim1':
-            prefix_length = len('CMISSEquationsSetHelmholtzEquation')
-        elif names[0] == 'CMISSEquationsSetPoiseuilleTwoDim1':
-            prefix_length = len('CMISSEquationsSetPoiseuille')
-        elif names[0] == 'CMISSEquationsSetFiniteElasticityCylinder':
-            prefix_length = len('CMISSEquationsSetFiniteElasticity')
+        if names[0] == 'CMISS_CONTROL_LOOP_NODE':
+            prefix_length = len('CMISS_CONTROL_LOOP_')
+        elif names[0] == 'CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_')
+        elif names[0] == 'CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_')
+        elif names[0] == 'CMISS_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER':
+            prefix_length = len('CMISS_EQUATIONS_SET_FINITE_ELASTICITY_')
         else:
             sys.stderr.write("Warning: Found an unknown enum "
                     "group with only one name: %s.\n" % names[0])
@@ -453,28 +432,15 @@ def remove_prefix_and_suffix(names):
             else:
                 break
 
-        # Make sure the suffix starts with uppercase.  So we get eg.
-        # EquationsLumpingTypes.Unlumped and Lumped rather than Unl and L
-        # Do the same for the prefix so that TwoDim and ThreeDim don't become
-        # woDim and hreeDim.  This breaks with a CMISS or CMISSCellML prefix
-        # for example though.
-        #
-        # Constants will change to capitals with underscores soon so this
-        # won't be an issue then, we can just check the prefix ends with an
-        # underscore
+        # Make sure the suffix starts with an underscore.  So we get eg.
+        # EquationsLumpingTypes.UNLUMPED and LUMPED rather than UNL and L
+        # Do the same for the prefix so that TWO_DIM and THREE_DIM don't become
+        # WO_DIM and HREE_DIM.
         if prefix_length > 0:
-            prefix = names[0][0:prefix_length]
-            if prefix == PREFIX:
-                pass
-            elif prefix == PREFIX + 'CellML':
-                pass
-            elif prefix == PREFIX + 'FieldML':
-                pass
-            else:
-                while names[0][prefix_length - 1].isupper():
-                    prefix_length -= 1
+            while names[0][prefix_length - 1] != '_' and prefix_length > 0:
+                prefix_length -= 1
         if suffix_length > 0:
-            while names[0][-suffix_length].islower():
+            while names[0][-suffix_length] != '_' and suffix_length > 0:
                 suffix_length -= 1
 
     if suffix_length == 0:
@@ -483,16 +449,13 @@ def remove_prefix_and_suffix(names):
         new_names = [name[prefix_length:-suffix_length] for name in names]
     for (i, name) in enumerate(new_names):
         # Eg. NoOutputType should become None, not No
-        if name == 'No':
-            new_names[i] = 'NONE'
-        elif name == 'None':
-            # Can't assign to None
+        if name == 'NO':
             new_names[i] = 'NONE'
         elif name[0].isdigit():
             new_names[i] = digit_to_word(name[0]) + name[1:]
-        elif name.endswith('VariableType'):
+        elif name.endswith('_VARIABLE_TYPE'):
             # The NumberOfVariableSubtypes in this enum stuffs everything up
-            new_names[i] = name[:-len('VariableType')]
+            new_names[i] = name[:-len('_VARIABLE_TYPE')]
 
     return new_names
 
