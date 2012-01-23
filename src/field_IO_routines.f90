@@ -5043,7 +5043,7 @@ CONTAINS
                 & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
           ENDIF
 
-          ERR = FieldExport_VersionInfo( sessionHandle, fieldInfoSet%COMPONENT_VERSIONS(comp_idx) )
+          ERR = FieldExport_VersionInfo( sessionHandle, fieldInfoSet%COMPONENT_VERSIONS(comp_idx1) )
           IF(ERR/=0) THEN
             CALL FLAG_ERROR( "Error exporting version information.", ERR, ERROR,*999 )
           ENDIF
