@@ -5522,7 +5522,7 @@ CONTAINS
               !loop throught the finite elasticity Gauss points
               DO gauss_idx=1,NUMBER_OF_GAUSS_POINTS
                 !make sure we don't divide by zero
-                IF(NUMBER_OF_NODES(gauss_idx)<0) THEN
+                IF(NUMBER_OF_NODES(gauss_idx)<=0) THEN
                   VALUE=0.0_DP
                 ELSE
                   VALUE=ACTIVE_STRESS_VALUES(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
