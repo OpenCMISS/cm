@@ -314,6 +314,8 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   
   PUBLIC DISTRIBUTED_VECTOR_VALUES_ADD
 
+  PUBLIC DistributedVector_L2Norm
+
   PUBLIC DISTRIBUTED_VECTOR_VALUES_GET,DISTRIBUTED_VECTOR_VALUES_SET
 
 CONTAINS  
@@ -7791,6 +7793,72 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_VECTOR_UPDATE_START")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_VECTOR_UPDATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the L2 norm of a distributed vector values on this computational node
+  SUBROUTINE DistributedVector_L2Norm(distributedVector,norm,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), INTENT(IN), POINTER :: distributedVector !<A pointer to the distributed vector
+    REAL(DP), INTENT(OUT) :: norm !<The L2 norm of values from this computational node
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: i
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("DistributedVector_L2Norm",err,error,*999)
+
+    IF(ASSOCIATED(distributedVector)) THEN
+      IF(distributedVector%VECTOR_FINISHED) THEN
+        SELECT CASE(distributedVector%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          SELECT CASE(distributedVector%DATA_TYPE)
+          CASE(MATRIX_VECTOR_DP_TYPE)
+              IF(ASSOCIATED(distributedVector%CMISS)) THEN
+                norm=0.0_DP
+                DO i=1,distributedVector%CMISS%DATA_SIZE
+                  norm=norm+(distributedVector%CMISS%DATA_DP(i)**2)
+                ENDDO !i
+                norm=SQRT(norm)
+              ELSE
+                CALL FLAG_ERROR("Distributed vector CMISS is not associated.",err,error,*999)
+              ENDIF
+          CASE(MATRIX_VECTOR_SP_TYPE)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE(MATRIX_VECTOR_INTG_TYPE)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE(MATRIX_VECTOR_L_TYPE)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE DEFAULT
+            localError="The distributed data type of "// &
+              & TRIM(NUMBER_TO_VSTRING(distributedVector%DATA_TYPE,"*",err,error))// &
+              & " is invalid."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END SELECT
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          CALL FLAG_ERROR("Cannot calculate norm for a PETSc distributed vector.",err,error,*999)
+        CASE DEFAULT
+          localError="The distributed vector library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(distributedVector%LIBRARY_TYPE,"*",err,error))//" is invalid."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("The distributed vector has not been finished.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed vector is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("DistributedVector_L2Norm")
+    RETURN
+999 CALL ERRORS("DistributedVector_L2Norm",err,error)
+    CALL EXITS("DistributedVector_L2Norm")
+    RETURN 1
+  END SUBROUTINE DistributedVector_L2Norm
 
   !
   !================================================================================================================================

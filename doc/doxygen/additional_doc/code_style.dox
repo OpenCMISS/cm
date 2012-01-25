@@ -18,19 +18,21 @@
 - Free source form must be used.
 - A double space should be used for an indent. Tabs must not be used anywhere in the code.
 - Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines. Continuation lines should be indented by 2 spaces with respect to the first line.
-- All arguments to a SUBROUTINE/FUNCTION must be declared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
-- When commenting array variables in doxygen, include in the doxygen comment information about the array indicies e.g. INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DERIVATIVES(:) !<NUMBER_OF_DERIVATIVES(local_node_idx). The number of derivatives at the local_node_idx'th local node in the basis.
-- When commenting variables that are associated with a list of parameters a reference should be map in the doxygen comment to the doxygen description of those parameters e.g. INTEGER(INTG) :: TYPE !<The type of the field. \see FIELD_ROUTINES_FieldTypes
+- All arguments to a SUBROUTINE/FUNCTION must be declared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<On return, the number of nodes in the basis.
+- When commenting array variables in doxygen, include in the doxygen comment information about the array indicies e.g. INTEGER(INTG), ALLOCATABLE :: numberOfDerivatives(:) !<numberOfDerivatives(localNodeIdx). The number of derivatives at the localNodeIdx'th local node in the basis.
+- When commenting variables that are associated with a list of parameters a reference should be map in the doxygen comment to the doxygen description of those parameters e.g. INTEGER(INTG) :: type !<The type of the field. \see FIELD_ROUTINES_FieldTypes
 - In general, code routines, local variable lists etc. should be alphabetical.
 - CASE keyword in a SELECT CASE statement should have the same indentation as the SELECT statement. The contents of the CASE statement should be indented by 2 spaces.
 - Add whitespace where appropriate to improve readability.
 - Use a !================... marker between subroutines and functions.
 
-\subsubsection for_discussion1 For discussion
+\subsubsection case_style Case Style
 
-- What case should be used? Upper, lower, CamelCase?
-- Pros:
-- Cons:
+- Constants should be in all capitals with underscores between words, eg. "SOME_CONSTANT_VALUE".
+- Routine parameters and variables should be in lower camel case, eg. "lowerCamelCase".
+- Types, routines and class methods should be in upper camel case, eg. "UpperCamelCase".
+- Where a routine is to be a method of a class in bindings to an object oriented language, or could be thought of as a method of a type in internal code, the method name and type name should be separated by an underscore, eg. "CMISSBasis_NumberOfXiGet".
+- Fortran key words should be in upper case.
 
 \section fortran_code Fortran code
 
@@ -103,14 +105,14 @@
 \section code_conventions Code conventions
 
 - Use fully spelt out variable names unless abbreviations are required to avoid maximum identifier length problems.
-- Use standard loop variable names e.g., local_node_idx, component_idx, when looping rather than temporary variable names.
-- The first arguement to routines should be the object the routine is operating on.
-- All TYPES shall have _INITIALISE and _FINALISE routines for construction and destruction. 
+- Use standard loop variable names e.g., localNodeIdx, componentIdx, when looping rather than temporary variable names.
+- The first arguement to routines should be the object the routine is operating on, except for CreateStart routines, where the created object must be the last parameter.
+- All TYPES shall have _Initialise and _Finalise routines for construction and destruction.
 - Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
 - Use lower case for loop variables.
 - Use dof/node hierarchy consistently in subroutine calls. i.e., version_number,derivative_number,node_number,component_number,variable_number instead of reverse order.
 - For subroutine arguments the input variables should be first, then the output variables and then the error variables. Variables should, in general, be arranged alphabetically unless another coding convention dictates otherwise (.e.g, dof/nod hierarchy).
-- If varaibles are out of range then any error messages should try to provide information on what variables are out of range and what the values are. 
+- If variables are out of range then any error messages should try to provide information on what variables are out of range and what the values are.
 - Do not use temporary write statements for debugging or other purposes. Use diagnostics. If the values of the variables are of importance to you for working out how the routine works then they will be of importance to others at a later time and thus time should be taken to provide detailed diagnostic output. 
 - For routines that return information (i.e., get routines) use SUBROUTINEs instead of FUNCTIONs. The result should be returned in memory supplied by the calling routine. The size of the supplied memory should be checked to ensure that it is large enough to hold the result. 
 - When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented.", ... statement for the cases that are not yet implemented.
@@ -195,9 +197,9 @@ and a reference to the paper it is described in.
 !>
 
 !> This module handles all problem routines.
-MODULE SAMPLE
+MODULE Sample
 
-  USE xxx
+  USE Xxx
 
   IMPLICIT NONE
 
@@ -218,58 +220,58 @@ MODULE SAMPLE
   !
 
   !>Subroutine description.
-  SUBROUTINE DO_SOMETHING(INPUT,OUTPUT,ERR,ERROR,*)
+  SUBROUTINE DoSomething(input,output,err,error,*)
 
     !Argument variables		
-    INTEGER(INTG), INTENT(IN) :: INPUT !<Input variable description.
-    INTEGER(INTG), INTENT(OUT) :: OUTPUT !<On return, the output variable description.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(IN) :: input !<Input variable description.
+    INTEGER(INTG), INTENT(OUT) :: output !<On return, the output variable description.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("DO_SOMETHING",ERR,ERROR,*999)
+    CALL Enters("DoSomething",err,error,*999)
 
 
-    CALL EXITS("DO_SOMETHING")
+    CALL Exits("DoSomething")
     RETURN
-999 CALL ERRORS("DO_SOMETHING",ERR,ERROR)    
-    CALL EXITS("DO_SOMETHING")
+999 CALL Errors("DoSomething",err,error)
+    CALL Exits("DoSomething")
     RETURN 1
    
-  END SUBROUTINE DO_SOMETHING
+  END SUBROUTINE DoSomething
   
   !	      
   !==================================================================================================================================
   !
 
   !>Function description.
-  FUNCTION DO_SOMETHING_ELSE(INPUT,OUTPUT,ERR,ERROR)
+  FUNCTION DoSomethingElse(input,output,err,error)
 
     !Argument variables		
-    INTEGER(INTG), INTENT(IN) :: INPUT !<Input variable description.
-    INTEGER(INTG), INTENT(OUT) :: OUTPUT !<On return, the output variable description. Should rarely be used - use the function variable instead in possible.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(IN) :: input !<Input variable description.
+    INTEGER(INTG), INTENT(OUT) :: output !<On return, the output variable description. Should rarely be used - use the function variable instead in possible.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Function variable
-    INTEGER(INTG) :: DO_SOMETHING_ELSE
+    INTEGER(INTG) :: DoSomethingElse
     !Local Variables
 
-    CALL ENTERS("DO_SOMETHING_ELSE",ERR,ERROR,*999)
+    CALL Enters("DoSomethingElse",err,error,*999)
 
 
-    CALL EXITS("DO_SOMETHING_ELSE")
+    CALL Exits("DoSomethingElse")
     RETURN
-999 CALL ERRORS("DO_SOMETHING_ELSE",ERR,ERROR)    
-    CALL EXITS("DO_SOMETHING_ELSE")
+999 CALL Errors("DoSomethingElse",err,error)
+    CALL Exits("DoSomethingElse")
     RETURN
    
-  END FUNCTION DO_SOMETHING_ELSE
+  END FUNCTION DoSomethingElse
         
   !
   !==================================================================================================================================
   !
 
-END MODULE SAMPLE
+END MODULE Sample
 
 \endverbatim
 

@@ -93,7 +93,7 @@ MODULE EQUATIONS_MATRICES_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_ALL=1 !<Select all the equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_DYNAMIC_ONLY=2 !<Select only the dynamic equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
-   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_LINEAR_ONLY=3 !<Select only the linear equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_LINEAR_ONLY=3 !<Select only the linear equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_NONLINEAR_ONLY=4 !<Select only the nonlinear equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_JACOBIAN_ONLY=5 !<Select only the Jacobian equations matrix \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RESIDUAL_ONLY=6 !<Select only the residual equations vector \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
@@ -103,6 +103,14 @@ MODULE EQUATIONS_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RHS_SOURCE_ONLY=10 !<Assemble only the RHS and source equations vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RESIDUAL_SOURCE_ONLY=11 !<Assemble only the residual and source equations vectors\see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES 
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_VECTORS_ONLY=12 !<Assemble only the equations vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  !>@}
+
+  !> \addtogroup EQUATIONS_MATRICES_ROUTINES_JacobianCalculationTypes EQUATIONS_MATRICES_ROUTINES:JacobianCalculationTypes
+  !> \brief Jacobian calculation types
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED=1 !<Use finite differencing to calculate the Jacobian
+  INTEGER(INTG), PARAMETER :: EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED=2 !<Use an analytic Jacobian evaluation
+  !>@}
   !>@}
 
   !Module types
@@ -127,6 +135,8 @@ MODULE EQUATIONS_MATRICES_ROUTINES
 
   PUBLIC EQUATIONS_MATRICES_SPARSE_MATRICES,EQUATIONS_MATRICES_FULL_MATRICES
 
+  PUBLIC EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED,EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED
+
   PUBLIC EQUATIONS_MATRICES_CREATE_FINISH,EQUATIONS_MATRICES_CREATE_START,EQUATIONS_MATRICES_DESTROY
 
   !!TODO check if the elements should be create/destroy rather than initialise/finalise
@@ -135,6 +145,8 @@ MODULE EQUATIONS_MATRICES_ROUTINES
 
   PUBLIC EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE,EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE, &
     & EQUATIONS_MATRICES_ELEMENT_MATRIX_INITIALISE,EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP
+
+  PUBLIC EquationsMatrices_JacobianTypesSet
 
   PUBLIC EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE,EQUATIONS_MATRICES_ELEMENT_VECTOR_FINALISE, &
     & EQUATIONS_MATRICES_ELEMENT_VECTOR_INITIALISE,EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP
@@ -228,6 +240,8 @@ CONTAINS
                 NULLIFY(NONLINEAR_MATRICES%JACOBIANS(MATRIX_NUMBER)%PTR%JACOBIAN)
                 CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_INITIALISE(NONLINEAR_MATRICES%JACOBIANS(MATRIX_NUMBER)%PTR% &
                     & ELEMENT_JACOBIAN,ERR,ERROR,*999)
+                NONLINEAR_MATRICES%JACOBIANS(MATRIX_NUMBER)%PTR%JACOBIAN_CALCULATION_TYPE= &
+                  & EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations matrices nonlinear matrieces Jacobian is not allocated.",ERR,ERROR,*999)
@@ -1296,6 +1310,7 @@ CONTAINS
             ENDIF
             CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE(NONLINEAR_MATRICES%ELEMENT_RESIDUAL,NONLINEAR_MATRICES% &
               & UPDATE_RESIDUAL,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
+            NONLINEAR_MATRICES%ELEMENT_RESIDUAL_CALCULATED=0
           ELSE
             CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1547,6 +1562,7 @@ CONTAINS
               FIELD_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(1)%VARIABLE
             ENDIF
             CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP(NONLINEAR_MATRICES%ELEMENT_RESIDUAL,FIELD_VARIABLE,ERR,ERROR,*999)
+            NONLINEAR_MATRICES%ELEMENT_RESIDUAL_CALCULATED=0
           ELSE
             CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1902,7 +1918,7 @@ CONTAINS
               !Add in Jacobian element matrices
               CALL DISTRIBUTED_MATRIX_VALUES_ADD(JACOBIAN_MATRIX%JACOBIAN,JACOBIAN_MATRIX%ELEMENT_JACOBIAN%ROW_DOFS(1: &
                 & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS),JACOBIAN_MATRIX%ELEMENT_JACOBIAN%COLUMN_DOFS(1: &
-                & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS),JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1: &
+                & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS),JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1: &
                 & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS,1:JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS), &
                 & ERR,ERROR,*999)
             ENDIF
@@ -1980,6 +1996,66 @@ CONTAINS
     RETURN 1
   END SUBROUTINE EQUATIONS_MATRICES_JACOBIAN_OUTPUT
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the Jacobian calculation types of the residual variables
+  SUBROUTINE EquationsMatrices_JacobianTypesSet(equationsMatrices,jacobianTypes,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices !<A pointer to the equations matrices to set the Jacobian type for.
+    INTEGER(INTG), INTENT(IN) :: jacobianTypes(:) !<jacobianTypes(matrix_idx). The Jacobian calculation type for the matrix_idx'th Jacobian matrix.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    INTEGER(INTG) :: matrixIdx,numberOfjacobians,jacobianType
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("EquationsMatrices_JacobianTypesSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsMatrices)) THEN
+      IF(equationsMatrices%EQUATIONS_MATRICES_FINISHED) THEN
+        CALL FLAG_ERROR("Equations matrices have been finished.",err,error,*999)
+      ELSE
+        nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+        IF(ASSOCIATED(nonlinearMatrices)) THEN
+          numberOfJacobians=SIZE(jacobianTypes,1)
+          IF(numberOfJacobians==nonlinearMatrices%NUMBER_OF_JACOBIANS) THEN
+            DO matrixIdx=1,numberOfJacobians
+              jacobianType=jacobianTypes(matrixIdx)
+              SELECT CASE(jacobianType)
+              CASE(EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED, &
+                  & EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED)
+                nonlinearMatrices%JACOBIANS(matrixIdx)%PTR%JACOBIAN_CALCULATION_TYPE=jacobianType
+              CASE DEFAULT
+                localError="Invalid Jacobian calculation type of " &
+                  & //TRIM(NUMBER_TO_VSTRING(jacobianType,"*",err,error))//"."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              END SELECT
+            END DO
+          ELSE
+            localError="Invalid number of Jacobian calculation types. The number of types " &
+              & //TRIM(NUMBER_TO_VSTRING(numberOfJacobians,"*",err,error)) &
+              & //" should be "//TRIM(NUMBER_TO_VSTRING(nonlinearMatrices%NUMBER_OF_JACOBIANS,"*",err,error))
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations matrices nonlinear matrices are not associated",err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations matrices are not associated",err,error,*999)
+    ENDIF
+
+    CALL EXITS("EquationsMatrices_JacobianTypesSet")
+    RETURN
+999 CALL ERRORS("EquationsMatrices_JacobianTypesSet",err,error)
+    CALL EXITS("EquationsMatrices_JacobianTypesSet")
+    RETURN 1
+  END SUBROUTINE EquationsMatrices_JacobianTypesSet
+
   !
   !================================================================================================================================
   !

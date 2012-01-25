@@ -1740,7 +1740,7 @@ python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO) python_cp
 # Always copy this, as we might want to run "make python DEBUG=false" after
 # "make python", which would otherwise say everything is up to date
 .PHONY: python_cp
-python_cp:
+python_cp: $(PYTHON_MODULE_SO)
 	cp $(PYTHON_MODULE_SO) $(PYTHON_MODULE_SO_INSTALL)
 
 $(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
