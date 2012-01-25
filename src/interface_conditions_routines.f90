@@ -1281,7 +1281,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,GEOMETRIC_SCALING_TYPE
+    INTEGER(INTG) :: component_idx,interpolation_type,GEOMETRIC_SCALING_TYPE,dependent_variable_number
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
@@ -1373,25 +1373,32 @@ CONTAINS
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
-                !Default the number of component to the first variable of the interface dependent fields number of components
-                INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS=INTERFACE_DEPENDENT%FIELD_VARIABLES(1)%PTR%NUMBER_OF_COMPONENTS
+                !Note that only components present in both the coupled meshes interface dependent fields can be coupled
+                !Default the number of component to be the minimum number of components across all the coupled dependent variables
+                !\todo Check ordering of variable components which are coupled and uncoupled are handled correctly to ensure that
+                !coupled variable components don't have to always come before the uncoupled variable components
+                INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS=0
+                DO dependent_variable_number=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                  IF (INTERFACE_DEPENDENT%FIELD_VARIABLES(dependent_variable_number)%PTR%NUMBER_OF_COMPONENTS< &
+                    & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS) THEN
+                    INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS= &
+                      & INTERFACE_DEPENDENT%FIELD_VARIABLES(dependent_variable_number)%PTR%NUMBER_OF_COMPONENTS
+                  ELSEIF (INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS==0) THEN
+                    INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS= &
+                      & INTERFACE_DEPENDENT%FIELD_VARIABLES(dependent_variable_number)%PTR%NUMBER_OF_COMPONENTS
+                  ENDIF
+                ENDDO
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 DO component_idx=1,INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS
-                  !/todo Temporary for removing hydrostatic pressure lagrange multiplyer from finite elasticity equation sets to simplify coupling implementation. Will be updated before code merges with trunk.
-                  IF (component_idx==4) THEN
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-                      & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  ELSE
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-                      & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  ENDIF
+                  CALL FIELD_COMPONENT_INTERPOLATION_GET(INTERFACE_DEPENDENT%FIELD_VARIABLES(1)%PTR%FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & component_idx,interpolation_type,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,component_idx,interpolation_type,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                    & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,interpolation_type,ERR,ERROR,*999)
                 ENDDO !component_idx
                 CALL FIELD_SCALING_TYPE_GET(INTERFACE_CONDITION%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
                   & ERR,ERROR,*999)
