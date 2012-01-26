@@ -74,6 +74,7 @@ class HtmlOutput(Plugin):
           arch = example.arch
           system = example.system
           compiler_version = example.compilerVersion
+          language = example.language
           if (status == "build") : 
             path = example.path[example.path.rfind("/examples/")+1:]
             logPath = "%slogs_%s-%s/%s/nose_%s_%s_%s" %(self.buildbotUrl, arch, system, path, status, compiler_version, str(date.today())) 
@@ -88,8 +89,8 @@ class HtmlOutput(Plugin):
     
     def addSuccess(self, test):
         if str(test).find('test_example')!=-1 :
-          example = list(test.test.arg)[1]
-          if example.language != None :
+          (status,example) = list(test.test.arg)[:2]
+          if status == "build" and example.language != None :
             self.current=self.current.parent
             return
         self.html.append('<a class="success">PASS</a>')

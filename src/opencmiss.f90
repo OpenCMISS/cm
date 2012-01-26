@@ -13524,12 +13524,12 @@ CONTAINS
   !
 
   !>Starts the creation of CellML intermediate field for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellML_IntermediateFieldCreateStartNumber(CellMLIntermediateFieldUserNumber,regionUserNumber,CellMLUserNumber,err)
+  SUBROUTINE CMISSCellML_IntermediateFieldCreateStartNumber(regionUserNumber,CellMLUserNumber,CellMLIntermediateFieldUserNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the intermediate field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -13572,11 +13572,11 @@ CONTAINS
   !
 
   !>Start the creation of CellML intermediate field for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellML_IntermediateFieldCreateStartObj(CellMLIntermediateFieldUserNumber,CellML,field,err)
+  SUBROUTINE CMISSCellML_IntermediateFieldCreateStartObj(CellML,CellMLIntermediateFieldUserNumber,field,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of intermediate field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !<On return, the created CellML intermediate field.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
