@@ -1710,7 +1710,7 @@ MODULE OPENCMISS
   !> \see OPENCMISS::DataProjection,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE!<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE!<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE = DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE !<The element projection type for data projection, projects to all elements in mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
 
   !Module types
@@ -5820,7 +5820,7 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverEquations_BoundaryConditionsGet
 
   PUBLIC CMISSBioelectricsFiniteElasticity_UpdateGeometricField
-
+  
 !!==================================================================================================================================
 !!
 !! FieldML routines
@@ -46905,15 +46905,16 @@ CONTAINS
   !
 
   !>Update the bioelectrics geometric field by interpolating the finite elasticity geometric field
-  SUBROUTINE CMISSBioelectricsFiniteElasticity_UpdateGeometricField(ControlLoop,err)
+  SUBROUTINE CMISSBioelectricsFiniteElasticity_UpdateGeometricField(controlLoop,calcClosestGaussPoint,err)
   
     !Argument variables
-    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop that contains the geometric fields
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The bioelectrics control loop
+    LOGICAL, INTENT(IN) :: calcClosestGaussPoint
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
     CALL ENTERS("CMISSBioelectricsFiniteElasticity_UpdateGeometricField",err,error,*999)
 
-    CALL BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(controlLoop%CONTROL_LOOP,err,error,*999)
+    CALL BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(controlLoop%CONTROL_LOOP,calcClosestGaussPoint,err,error,*999)
 
     CALL EXITS("CMISSBioelectricsFiniteElasticity_UpdateGeometricField")
     RETURN

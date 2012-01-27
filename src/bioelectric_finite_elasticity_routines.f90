@@ -84,7 +84,7 @@ MODULE BIOELECTRIC_FINITE_ELASTICITY_ROUTINES
   PUBLIC BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_PRE_LOOP
   PUBLIC BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_POST_LOOP
   
-  PUBLIC BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD
+  PUBLIC BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD
 
 CONTAINS
 
@@ -720,7 +720,7 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
-            CALL BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(CONTROL_LOOP,ERR,ERROR,*999)
+            CALL BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(CONTROL_LOOP,.FALSE.,ERR,ERROR,*999)
           CASE DEFAULT
             !do nothing
           END SELECT
@@ -836,10 +836,11 @@ CONTAINS
   !
 
   !>Update the the bioelectric equation geometric field from the finite elasticity dependent field (deformed geometry)
-  SUBROUTINE BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(CONTROL_LOOP,ERR,ERROR,*)
+  SUBROUTINE BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(CONTROL_LOOP,CALC_CLOSEST_GAUSS_POINT,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    LOGICAL, INTENT(IN) :: CALC_CLOSEST_GAUSS_POINT !<If true then the closest finite elasticity Gauss point for each bioelectrics node is calculated
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -848,7 +849,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_ELASTICITY,GEOMETRIC_FIELD_MONODOMAIN,GEOMETRIC_FIELD_ELASTICITY
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_MONODOMAIN,DEPENDENT_FIELD_ELASTICITY
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_MONODOMAIN,INDEPENDENT_FIELD_MONODOMAIN,DEPENDENT_FIELD_ELASTICITY
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -857,16 +858,17 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+!    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     INTEGER(INTG) :: component_idx,element_idx,ne
     INTEGER(INTG) :: DEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
-    INTEGER(INTG) :: node_idx,node_idx_2,NODE_LEFT,NODE_RIGHT,NUMBER_OF_NODES
+    INTEGER(INTG) :: node_idx,node_idx_2,NODE_LEFT,NODE_RIGHT,NUMBER_OF_NODES,GAUSS_POINT,gauss_idx,fibre_idx
     INTEGER(INTG) :: nodes_in_Xi_1,nodes_in_Xi_2,nodes_in_Xi_3,n3,n2,n1
-    REAL(DP) :: XVALUE_M,XVALUE_FE,DIST_LEFT,DIST_RIGHT,VALUE,VALUE_LEFT,VALUE_RIGHT
+    REAL(DP) :: XVALUE_M,XVALUE_FE,DIST_LEFT,DIST_RIGHT,VALUE,VALUE_LEFT,VALUE_RIGHT,DISTANCE
     REAL(DP) :: XI(3),PREVIOUS_NODE(3)
     LOGICAL :: OUTSIDE_NODE
-    logical :: new_way
+    REAL(DP), POINTER :: GAUSS_POSITIONS(:,:)
 
-    CALL ENTERS("BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD",ERR,ERROR,*999)
+    CALL ENTERS("BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP_ROOT)
     NULLIFY(CONTROL_LOOP_PARENT)
@@ -877,6 +879,7 @@ CONTAINS
     NULLIFY(SOLVER)
     NULLIFY(INDEPENDENT_FIELD_ELASTICITY)
     NULLIFY(DEPENDENT_FIELD_MONODOMAIN)
+    NULLIFY(INDEPENDENT_FIELD_MONODOMAIN)
     NULLIFY(DEPENDENT_FIELD_ELASTICITY)
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
@@ -887,7 +890,8 @@ CONTAINS
     NULLIFY(INTERPOLATED_POINT)
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(FIELD_VARIABLE)
-
+    NULLIFY(GAUSS_POSITIONS)
+    
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
         PROBLEM=>CONTROL_LOOP%PROBLEM
@@ -992,6 +996,10 @@ CONTAINS
                     IF(.NOT.ASSOCIATED(DEPENDENT_FIELD_MONODOMAIN)) THEN
                       CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
                     ENDIF
+                    INDEPENDENT_FIELD_MONODOMAIN=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                    IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD_MONODOMAIN)) THEN
+                      CALL FLAG_ERROR("Independent field is not associated.",ERR,ERROR,*999)
+                    ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -1035,6 +1043,7 @@ CONTAINS
               ENDIF
 
               node_idx=0
+              fibre_idx=0
               CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
 
               !loop through the elements of the finite elasticity mesh
@@ -1059,15 +1068,26 @@ CONTAINS
 
                 !if there is no bioelectrics grid in this finite elasticity element, jump to the next finite elasticity element
                 IF((nodes_in_Xi_1==0).OR.(nodes_in_Xi_2==0).OR.(nodes_in_Xi_3==0)) CYCLE
-
+                
+                !get the positions of the Gauss points of the Finite Elasticity element, GAUSS_POSITIONS(components,number_of_Gauss_points)
+                GAUSS_POSITIONS=>GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION% &
+                  & MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP( &
+                  & BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%GAUSS_POSITIONS
+                
                 !assume Xi(1) to be normal to the seed surface, i.e. the seed points have Xi(1)=0
                 XI=[0.0_DP,1.0_DP/(REAL(2*nodes_in_Xi_2)),1.0_DP/(REAL(2*nodes_in_Xi_3))]
                 
                 !assume that the bioelectrics node numbers are increased in order Xi(1), Xi(2), Xi(3) 
                 DO n3=1,nodes_in_Xi_3
                   DO n2=1,nodes_in_Xi_2
+                    fibre_idx=fibre_idx+1
                     DO n1=1,nodes_in_Xi_1
                       node_idx=node_idx+1
+                      
+                      !store the fibre number this bioelectrics node belongs to.
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx,3,fibre_idx,ERR,ERROR,*999)
+
                       !find the interpolated position of the bioelectric grid node from the FE dependent field
                       CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
                       !update the bioelectrics dependent field Field_V_Variable_Type
@@ -1099,6 +1119,30 @@ CONTAINS
                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE_LEFT+VALUE,ERR,ERROR,*999)
                       ENDIF
+                        
+                      IF(CALC_CLOSEST_GAUSS_POINT) THEN
+                        !calculate the closest finite elasticity Gauss point of each bioelectrics node
+                        DISTANCE=1000000.0_DP
+                        GAUSS_POINT=0
+                        DO gauss_idx=1,SIZE(GAUSS_POSITIONS,2)
+                          !compute the distance between the bioelectrics node and the Gauss point
+                          VALUE=SQRT( &
+                            & (Xi(1)-GAUSS_POSITIONS(1,gauss_idx))*(Xi(1)-GAUSS_POSITIONS(1,gauss_idx))+ &
+                            & (Xi(2)-GAUSS_POSITIONS(2,gauss_idx))*(Xi(2)-GAUSS_POSITIONS(2,gauss_idx))+ &
+                            & (Xi(3)-GAUSS_POSITIONS(3,gauss_idx))*(Xi(3)-GAUSS_POSITIONS(3,gauss_idx)))
+                          IF(VALUE<DISTANCE) THEN
+                            DISTANCE=VALUE
+                            GAUSS_POINT=gauss_idx
+                          ENDIF
+                        ENDDO !gauss_idx
+                        IF(GAUSS_POINT==0) CALL FLAG_WARNING("Closest Gauss Point not found",ERR,ERROR,*999)
+                        !store the nearest Gauss Point info and the inElement info
+                        CALL FIELD_PARAMETER_SET_UPDATE_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,4,GAUSS_POINT,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_UPDATE_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,5,ne,ERR,ERROR,*999)
+                      ENDIF !CALC_CLOSEST_GAUSS_POINT
+                      
                       XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1-1))
                     ENDDO !n1
                     XI(1)=0.0_DP
@@ -1131,12 +1175,12 @@ CONTAINS
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD")
+    CALL EXITS("BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD")
     RETURN
-999 CALL ERRORS("BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD",ERR,ERROR)
-    CALL EXITS("BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD")
+999 CALL ERRORS("BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD",ERR,ERROR)
+    CALL EXITS("BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD")
     RETURN 1
-  END SUBROUTINE BIOELECTRICS_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD
+  END SUBROUTINE BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD
 
   !
   !================================================================================================================================
