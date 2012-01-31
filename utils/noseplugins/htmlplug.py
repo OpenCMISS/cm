@@ -74,7 +74,6 @@ class HtmlOutput(Plugin):
           arch = example.arch
           system = example.system
           compiler_version = example.compilerVersion
-          language = example.language
           if (status == "build") : 
             path = example.path[example.path.rfind("/examples/")+1:]
             logPath = "%slogs_%s-%s/%s/nose_%s_%s_%s" %(self.buildbotUrl, arch, system, path, status, compiler_version, str(date.today())) 
@@ -253,17 +252,22 @@ class HtmlOutput(Plugin):
           if example.language == None :
             self.html.append('</li>')
           status = list(test.test.arg)[0]
+          isEnd = False
+          if status=="build" and len(example.tests)==0 :
+            isEnd = True
           if status=="run" or status=='check':
             testPoint = list(test.test.arg)[2]
             if (not hasattr(testPoint,'expectedPath')) or status=='check' :
               if testPoint.path != example.path or testPoint.id == len(example.tests) :
-                self.html.append('</ul>')
-                if self.current.isPass():
-                  self.html.append('<a class="success">PASS</a>')                             
-                else:
-                  self.html.append('<a class="fail">FAIL</a>')
-                self.current=self.current.parent
-                self.html.append('</li>')
+                isEnd = True
+          if isEnd :
+            self.html.append('</ul>')
+            if self.current.isPass():
+              self.html.append('<a class="success">PASS</a>')                             
+            else:
+              self.html.append('<a class="fail">FAIL</a>')
+            self.current=self.current.parent
+            self.html.append('</li>')
          
 import nose
 
