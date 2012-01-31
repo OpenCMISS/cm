@@ -2243,11 +2243,13 @@ CONTAINS
                 RWG=INTERFACE_INTERPOLATION%GEOMETRIC_INTERPOLATION(1)%INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
                   & JACOBIAN*INTERFACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
                 IF(INTERFACE_CONDITION%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
-                  & interface_matrix_idx==INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
+                    & interface_matrix_idx==INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
                   CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,INTERFACE_INTERPOLATION% &
                     & PENALTY_INTERPOLATION(1)%INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                   mhs=0
-                  DO mh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
+                  ! Loop over number of Lagrange variable components, as not all components in the dependent variable
+                  ! may be coupled
+                  DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                     !Loop over interface element rows (related to coupled mesh dependent field element parameters)
                     DO ms=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       mhs=mhs+1
@@ -2276,7 +2278,9 @@ CONTAINS
                   XI(1:dir)=INTERFACE_TRANSFORM_GPT(INTERFACE_CONDITION%INTERFACE%MESH_CONNECTIVITY,ELEMENT_NUMBER, &
                     & interface_matrix_idx,ng,ERR,ERROR)
                   mhs=0
-                  DO mh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
+                  ! Loop over number of Lagrange variable components, as not all components in the dependent variable
+                  ! may be coupled
+                  DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                     mhc=INTERFACE_MATRIX_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                     INTERFACE_MATRIX_ELEMENT_BASIS=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% & 
                       & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2291,7 +2295,7 @@ CONTAINS
                         PGMSI=BASIS_EVALUATE_XI(INTERFACE_MATRIX_ELEMENT_BASIS,ms,NO_PART_DERIV,XI,ERR,ERROR)
                       ENDIF
                       !Loop over interface element columns(related to interface lagrange field element parameters)
-                      nh=mh!LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
+                      nh=mh !LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                       DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=ns+INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*nh- &
                           & INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
