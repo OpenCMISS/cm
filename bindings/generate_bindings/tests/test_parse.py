@@ -10,7 +10,7 @@ class ParseTestClass(unittest.TestCase):
         self.routines = dict(
             (r.name, r) for r in self.library.public_subroutines)
         self.test_routine = (
-            self.routines["CMISSExampleSomeInterfaceObj"])
+            self.routines["CMISSExample_SomeInterfaceObj"])
 
     def test_string_routines(self):
         """Only routines that use C strings should be included
@@ -95,7 +95,7 @@ class ParseTestClass(unittest.TestCase):
         self.assertEqual(enum.comment, "Example of an enum")
         self.assertEqual(enum.name, "ExampleEnum")
         self.assertEqual(enum.constants[0].value, 1)
-        self.assertFalse("NonPublicConstant" in ungrouped_constants)
+        self.assertFalse("NON_PUBLIC_CONSTANT" in ungrouped_constants)
 
     def test_method(self):
         """Test that correct routines are set as methods of type"""
