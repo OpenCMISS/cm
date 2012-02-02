@@ -592,16 +592,16 @@ CONTAINS
     CALL ENTERS( "FIELDML_INPUT_NODES_CREATE_START", ERR, ERROR, *999 )
     
     CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
-    
+
     NODES_ARGUMENT_HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(NODES_ARGUMENT_NAME) )
     IF( NODES_ARGUMENT_HANDLE == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Nodes argument name "//NODES_ARGUMENT_NAME//" is invalid.", ERR, ERROR, *999 )
     END IF
-    
+
     IF( Fieldml_GetObjectType( FIELDML_INFO%FML_HANDLE, NODES_ARGUMENT_HANDLE ) /= FHT_ARGUMENT_EVALUATOR ) THEN
       CALL FLAG_ERROR( "Nodes argument "//NODES_ARGUMENT_NAME//" type is not an argument evaluator.", ERR, ERROR, *999 )
     ENDIF
-    
+
     NODES_HANDLE = Fieldml_GetValueType( FIELDML_INFO%FML_HANDLE, NODES_ARGUMENT_HANDLE )
     IF( NODES_HANDLE == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Nodes argument "//NODES_ARGUMENT_NAME//" type is invalid.", ERR, ERROR, *999 )
@@ -831,13 +831,13 @@ CONTAINS
     OFFSETS(:) = 0
     SIZES(1) = COUNT
 
-    FML_ERR = Fieldml_ReadIntSlab( FIELDML_INFO%FML_HANDLE, READER_HANDLE, C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(ORDER) )
+    FML_ERR = Fieldml_ReadIntSlab( READER_HANDLE, C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(ORDER) )
     IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
       CALL FLAG_ERROR( "Error reading order data"//"("// TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", &
         & ERR, ERROR, *999 )
     ENDIF
 
-    FML_ERR = Fieldml_CloseReader( FIELDML_INFO%FML_HANDLE, READER_HANDLE )
+    FML_ERR = Fieldml_CloseReader( READER_HANDLE )
     
     CALL EXITS( "FIELDML_INPUT_READ_ORDER" )
     RETURN
@@ -1006,7 +1006,7 @@ CONTAINS
         !BUGFIX Intel compiler will explode if we don't use a temporary variable
         TEMP_POINTER = CONNECTIVITY_READERS(KNOWN_BASIS_NUMBER)
         SIZES(2) = BASIS_NODES_COUNT
-        FML_ERR = Fieldml_ReadIntSlab( FIELDML_INFO%FML_HANDLE, TEMP_POINTER, &
+        FML_ERR = Fieldml_ReadIntSlab( TEMP_POINTER, &
           & C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(RAW_BUFFER) )
         IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
           CALL FLAG_ERROR( "Error reading connectivity for "//EVALUATOR_NAME//"("// &
@@ -1028,7 +1028,7 @@ CONTAINS
     DO KNOWN_BASIS_NUMBER = 1, KNOWN_BASIS_COUNT
       !BUGFIX Intel compiler will explode if we don't use a temporary variable
       TEMP_POINTER = CONNECTIVITY_READERS(KNOWN_BASIS_NUMBER)
-      FML_ERR = Fieldml_CloseReader( FIELDML_INFO%FML_HANDLE, TEMP_POINTER )
+      FML_ERR = Fieldml_CloseReader( TEMP_POINTER )
       IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
         CALL FLAG_ERROR( "Error closing connectivity reader for "//EVALUATOR_NAME//"("// &
           & TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", ERR, ERROR, *999 )
@@ -1265,7 +1265,7 @@ CONTAINS
     SIZES(2) = FIELD_DIMENSIONS
     
     DO NODE_NUMBER = 1, MESH_NODE_COUNT
-      FML_ERR = Fieldml_ReadDoubleSlab( FIELDML_INFO%FML_HANDLE, READER, C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(BUFFER) )
+      FML_ERR = Fieldml_ReadDoubleSlab( READER, C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(BUFFER) )
       OFFSETS(1) = OFFSETS(1) + 1
       IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
         CALL FLAG_ERROR( "Cannot read nodal dofs from "//EVALUATOR_NAME//"("&
@@ -1282,7 +1282,7 @@ CONTAINS
     
     DEALLOCATE( BUFFER )
   
-    FML_ERR = Fieldml_CloseReader( FIELDML_INFO%FML_HANDLE, READER )
+    FML_ERR = Fieldml_CloseReader( READER )
     IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
       CALL FLAG_ERROR( "Error closing nodal dofs reader for "//EVALUATOR_NAME//"("&
         & // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", ERR, ERROR, *999 )
