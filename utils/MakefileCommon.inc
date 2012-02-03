@@ -77,6 +77,9 @@ endif
 ifndef GLOBAL_UTILS_ROOT
   GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
 endif
+ifndef GLOBAL_MPI_ROOT
+  GLOBAL_MPI_ROOT := ${OPENCMISSEXTRAS_ROOT}/mpi
+endif
 
 include $(GLOBAL_UTILS_ROOT)/Makefile.inc
 
@@ -144,6 +147,9 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
     EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
@@ -153,6 +159,9 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   else
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
     endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
@@ -166,12 +175,18 @@ else
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
     endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   else# windows
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
@@ -274,10 +289,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
-    C_FLGS += -pipe -m$(ABI)
-    # Position independent code is actually only required for objects
-    # in shared libraries but debug version may be built as shared libraries.
-    DBGC_FLGS += -fPIC
+    # Position independent code is required for the Python bindings
+    C_FLGS += -pipe -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
@@ -353,14 +366,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(FC),gfortran)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input
+    F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input -fPIC
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
-    # Position independent code is actually only required for objects
-    # in shared libraries but debug version may be built as shared libraries.
-    DBGF_FLGS += -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         F_FLGS += -march=nocona
@@ -387,8 +397,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ELFLAGS += -m$(ABI)
   endif
   ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003
-    DBGF_FLGS += -fPIC
+    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003 -fPIC
     DBGF_FLGS += -O0 -fbounds-check
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
     ELFLAGS += -m$(ABI)
@@ -849,7 +858,7 @@ FIELDML_LIBRARIES =#
 FIELDML_LIB_PATH =#
 ifeq ($(USEFIELDML),true)
   MOD_FIELDML_TARGET = MOD_FIELDML
-  FIELDML_LIBRARIES += -lfieldml -lxml2 -lz
+  FIELDML_LIBRARIES += -lfieldml_api -lfieldml_io_api -lxml2 -lz
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifdef COMPILER_VERSION
       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
@@ -890,14 +899,14 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifeq ($(MPIPROF),true)
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
-    MPL_LIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libmpl* )
+    MPL_LIB = $(call searchdirs, $(MPI_DIR)/lib/, libmpl* )
     MPI_LIBRARIES += -lmpich
     ifneq (,$(MPL_LIB))
       MPI_LIBRARIES += -lmpl
     endif
     MPI_LIBRARIES += -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+    MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
   else
     ifeq ($(MPI),intel)
       ifeq ($(MPIPROF),true)
@@ -914,20 +923,19 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
       ifeq ($(MPI),openmpi)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
         MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil
-        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
       else
         ifeq ($(MPI),mvapich2)
-          MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
           MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
-          MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
         else
-          MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
           MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-          MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
         endif
       endif
     endif
@@ -936,11 +944,11 @@ else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MPI_LIBRARIES = -lmpi
     MPI_LIB_PATH += $(addprefix -L, /usr/lpp/ppe.poe/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
   else# windows
     MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
   endif
 endif
 

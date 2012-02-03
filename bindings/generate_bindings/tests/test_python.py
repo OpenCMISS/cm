@@ -88,11 +88,11 @@ class PythonTestClass(unittest.TestCase):
     def test_enum(self):
         """Test how an enum is written in Python"""
 
-        names = ["One", "Two", "Three"]
+        names = ["ONE", "TWO", "THREE"]
         values = [1, 2, 3]
         constants = [
                 m.Mock(
-                    name="TestEnum%sValue" % n,
+                    name="TEST_ENUM_%s_VALUE" % n,
                     value=v,
                     comment="Value comment")
                 for (n, v) in zip(names, values)]
@@ -106,9 +106,9 @@ class PythonTestClass(unittest.TestCase):
             '    """Enum description\n'
             '    """\n'
             '\n'
-            '    One = 1  # Value comment\n'
-            '    Two = 2  # Value comment\n'
-            '    Three = 3  # Value comment')
+            '    ONE = 1  # Value comment\n'
+            '    TWO = 2  # Value comment\n'
+            '    THREE = 3  # Value comment')
         self.assertEqual(result, expected)
 
 
