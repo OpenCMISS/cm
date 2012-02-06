@@ -67,7 +67,7 @@ class HtmlOutput(Plugin):
             logPath = "%slogs_%s-%s/nose_library_build_%s_%s_%s" %(self.buildbotUrl, arch, system, language, compiler_version, str(date.today())) 
             historyPath = "%slogs_%s-%s/nose_library_build_%s_history_%s" %(self.buildbotUrl, arch, system, language, compiler_version)
           else :
-            logPath = "%slogs_%s-%s/nose_library_build_%s%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
+            logPath = "%slogs_%s-%s/nose_library_build_%s_%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
             historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
         elif str(test).find('test_example')!=-1 :
           (status,example) = list(test.test.arg)[:2]
