@@ -144,7 +144,8 @@ MODULE EQUATIONS_MATRICES_ROUTINES
     & EQUATIONS_MATRICES_ELEMENT_INITIALISE,EQUATIONS_MATRICES_ELEMENT_FINALISE,EQUATIONS_MATRICES_VALUES_INITIALISE
 
   PUBLIC EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE,EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE, &
-    & EQUATIONS_MATRICES_ELEMENT_MATRIX_INITIALISE,EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP
+    & EQUATIONS_MATRICES_ELEMENT_MATRIX_INITIALISE,EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP, &
+    & VERSION_MATRIX_EXTENSION
 
   PUBLIC EquationsMatrices_JacobianTypesSet
 
@@ -569,7 +570,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,global_ny,local_ny,node,node_idx,version
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,global_ny,local_ny,node,node_idx,version,version_idx
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -607,15 +608,18 @@ CONTAINS
                   DO node_idx=1,BASIS%NUMBER_OF_NODES
                     node=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                     DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                      derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                      version=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
-                      local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
-                        & DERIVATIVES(derivative)%VERSIONS(version)
-                      global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
-                      ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
-                      ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
-                      ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
-                      ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
+                      DO version_idx=1,ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node)% &
+                        & DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
+                        version=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                        local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
+                          & DERIVATIVES(derivative)%VERSIONS(version_idx)
+                        global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                        ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
+                        ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
+                        ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
+                        ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
+                      ENDDO
                     ENDDO !derivative_idx
                   ENDDO !node_idx
                 CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -822,6 +826,52 @@ CONTAINS
   !================================================================================================================================
   !
 
+  SUBROUTINE VERSION_MATRIX_EXTENSION_INITIALISE(ELEMENT_MATRIX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !The element matrix to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("VERSION_MATRIX_EXTENSION_INITIALISE",ERR,ERROR,*999)
+
+    ELEMENT_MATRIX%VERSION_MATRIX_EXTENSION=.FALSE.
+       
+    CALL EXITS("VERSION_MATRIX_EXTENSION_INITIALISE")
+    RETURN
+999 CALL ERRORS("VERSION_MATRIX_EXTENSION_INITIALISE",ERR,ERROR)
+    CALL EXITS("VERSION_MATRIX_EXTENSION_INITIALISE")
+    RETURN 1
+  END SUBROUTINE VERSION_MATRIX_EXTENSION_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE VERSION_MATRIX_EXTENSION(ELEMENT_MATRIX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !The element matrix to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("VERSION_MATRIX_EXTENSION",ERR,ERROR,*999)
+
+    ELEMENT_MATRIX%VERSION_MATRIX_EXTENSION=.TRUE.
+       
+    CALL EXITS("VERSION_MATRIX_EXTENSION")
+    RETURN
+999 CALL ERRORS("VERSION_MATRIX_EXTENSION",ERR,ERROR)
+    CALL EXITS("VERSION_MATRIX_EXTENSION")
+    RETURN 1
+  END SUBROUTINE VERSION_MATRIX_EXTENSION
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets up the element matrix for the row and column field variables.
   SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(ELEMENT_MATRIX,ROWS_FIELD_VARIABLE,COLS_FIELD_VARIABLE,ERR,ERROR,*)
 
@@ -839,9 +889,9 @@ CONTAINS
 
     IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
       IF(ASSOCIATED(COLS_FIELD_VARIABLE)) THEN
-        ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+        ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS_VERSION* &
           & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-        ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=COLS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+        ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=COLS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS_VERSION* &
           & COLS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
         IF(ALLOCATED(ELEMENT_MATRIX%ROW_DOFS)) THEN
           CALL FLAG_ERROR("Element matrix row dofs already allocated.",ERR,ERROR,*999)
@@ -886,13 +936,14 @@ CONTAINS
 
     !Argument variables
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element vector to calculate.
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element vector to calculate.
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the element vector is to be updated, .FALSE. if not.
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROWS_FIELD_VARIABLE !<A pointer to the field variable associated with the rows
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version,version_idx
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -921,12 +972,15 @@ CONTAINS
               DO node_idx=1,BASIS%NUMBER_OF_NODES
                 node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                 DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                  derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                  version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
-                  local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
-                    & DERIVATIVES(derivative)%VERSIONS(version)
-                  ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
-                  ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                  DO version_idx=1,ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node)% &
+                    & DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                    derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
+                    version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                    local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
+                      & DERIVATIVES(derivative)%VERSIONS(version_idx)
+                    ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                    ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                  ENDDO
                 ENDDO !derivative_idx
               ENDDO !node_idx
             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -1035,7 +1089,7 @@ CONTAINS
     CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP",ERR,ERROR,*998)
 
     IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
-      ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+      ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS_VERSION* &
         & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
       IF(ALLOCATED(ELEMENT_VECTOR%ROW_DOFS)) THEN
         CALL FLAG_ERROR("Element vector row dofs is already allocated.",ERR,ERROR,*999)        

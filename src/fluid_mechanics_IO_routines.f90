@@ -226,9 +226,10 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeLabelValue
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeRHOValue  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeA0Value
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeA1Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeA2Value   
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeH0Value
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeEValue
-  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSIGMAValue  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeKappaValue  
 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeUValue_analytic
@@ -330,9 +331,10 @@ CONTAINS
     IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
     IF (ALLOCATED(NodeA0Value)) DEALLOCATE(NodeA0Value)
+    IF (ALLOCATED(NodeA1Value)) DEALLOCATE(NodeA1Value)
+    IF (ALLOCATED(NodeA2Value)) DEALLOCATE(NodeA2Value)
     IF (ALLOCATED(NodeH0Value)) DEALLOCATE(NodeH0Value)
     IF (ALLOCATED(NodeEValue)) DEALLOCATE(NodeEValue)
-    IF (ALLOCATED(NodeSIGMAValue)) DEALLOCATE(NodeSIGMAValue)
     IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
@@ -481,9 +483,10 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeA0Value)) ALLOCATE(NodeA0Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeA1Value)) ALLOCATE(NodeA1Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeA2Value)) ALLOCATE(NodeA2Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeH0Value)) ALLOCATE(NodeH0Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeEValue)) ALLOCATE(NodeEValue(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(NodeSIGMAValue)) ALLOCATE(NodeSIGMAValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
 !     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,MaxNodesPerElement))
@@ -815,8 +818,10 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(6)
           NodeA0Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(9)
-          NodeSIGMAValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(12)
+          NodeA1Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(12)!39
+          NodeA2Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(15)!51
           END IF
 
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
@@ -956,9 +961,10 @@ CONTAINS
     IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
     IF (ALLOCATED(NodeA0Value)) DEALLOCATE(NodeA0Value)
+    IF (ALLOCATED(NodeA1Value)) DEALLOCATE(NodeA1Value)
+    IF (ALLOCATED(NodeA2Value)) DEALLOCATE(NodeA2Value)
     IF (ALLOCATED(NodeH0Value)) DEALLOCATE(NodeH0Value)
     IF (ALLOCATED(NodeEValue)) DEALLOCATE(NodeEValue)
-    IF (ALLOCATED(NodeSIGMAValue)) DEALLOCATE(NodeSIGMAValue)
     IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
@@ -1093,9 +1099,10 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeA0Value)) ALLOCATE(NodeA0Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeA1Value)) ALLOCATE(NodeA1Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeA2Value)) ALLOCATE(NodeA2Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeH0Value)) ALLOCATE(NodeH0Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeEValue)) ALLOCATE(NodeEValue(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(NodeSIGMAValue)) ALLOCATE(NodeSIGMAValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
 !     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,MaxNodesPerElement))
@@ -2297,7 +2304,8 @@ CONTAINS
         WRITE(14,'("    ", es25.16 )')NodeEValue(I)
         WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
         WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
-        WRITE(14,'("    ", es25.16 )')NodeSIGMAValue(I)
+        WRITE(14,'("    ", es25.16 )')NodeA1Value(I)
+        WRITE(14,'("    ", es25.16 )')NodeA2Value(I)
       END IF
 
       IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
@@ -2397,10 +2405,10 @@ CONTAINS
         OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
         WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1)
         DO I=1,NodesPerMeshComponent(1) 
-          WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+          WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I)
         ENDDO
         DO I=1,NodesPerMeshComponent(1) 
-          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeUValue(I),NodeVValue(I)
         ENDDO
         CLOSE(14)
       ENDIF
