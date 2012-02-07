@@ -2,7 +2,7 @@
 
 \subsubsection{Governing equations:}
 
-The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, transient) can be written using 'primitive variables' (i.e. u-velocity, p-pressure) as:
+The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. The equations are named for the 19th century contributions of Claude-Louis Navier and George Gabriel Stokes. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, transient) can be written using 'primitive variables' (i.e. u-velocity, p-pressure) as:
 \begin{equation}
   \label{eqn:NSE}
     \rho\delby{\vect{u}}{t}+\rho(\vect{u}\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
@@ -14,9 +14,9 @@ accompanied by the conservation of mass (incompressibility)
 \end{equation}
 where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively.The first term represents unsteady accelerative inertial contributions, the second represents the nonlinear convective acceleration terms, the $\grad{p}$ term the pressure contributions, and the last term represents viscous stresses in the system.
 % incompressibility and the LBB condition
-As with Stokes flow, the incompressibility condition $\diverg{\vect{u}}=0$ also creates restrictions on the formulation known as the Ladyzhenkaya, Babuska, and Brezzi(LBB) or inf-sup consistency condition. Several methods have been devised to define a pressure function that is consistent with the velocity space using primitive variables. These include mixed element methods, penalty methods, generalized petrov-galerkin methods using pressure poisson correction, operator splitting, and semi-implicit pressure correction (Chung).
+As with Stokes flow, the incompressibility condition $\diverg{\vect{u}}=0$ also creates restrictions on the formulation of the velocity and pressure spaces using finite elements known as the Ladyzhenkaya, Babuska, and Brezzi (LBB) or inf-sup consistency condition. Several methods have been devised to define a pressure function that is consistent with the velocity space using primitive variables. These include mixed element methods, penalty methods, generalized petrov-galerkin methods using pressure poisson correction, operator splitting, and semi-implicit pressure correction (Chung).
 
-Using a classic Galerkin formulation, mixed methods are perhaps conceptually the most straightforward method of satisfying LBB, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure), allowing incompressibility to be satisfied. It should be noted that our use of a mixed formulation to satisfy LBB will also be reflected in the shape functions that our weak formulation depends on. For example, using 2D elements with biquadratic velocity and linear pressure, we will have 9 weight functions for each velocity component and 4 for the pressure. 
+Using a classic Galerkin formulation, mixed methods are perhaps conceptually the most straightforward method of satisfying LBB, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure), allowing incompressibility to be satisfied. It should be noted that our use of a mixed formulation to satisfy LBB will also be reflected in the shape functions that our weak formulation depends on. For example, using a 2D element with biquadratic velocity and linear pressure, we will have 9 weight functions for each velocity component and 4 for the pressure. 
 % meaning of pressure in NSE.
 
 \subsubsection{Weak Formulation}
@@ -337,7 +337,7 @@ The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and fo
 
 For convection dominated flows, it is often useful to modify the Galerkin formulation account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
 
-For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes much more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces (Heinrich). These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative, though perhaps somewhat less rigorous, route is to apply SUPG weights to the convective operator in elements as a function of each element's Reynolds number (referred to subsequently as the cell Reynolds number). This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
+For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces (Heinrich). These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative route is to apply SUPG weights to the convective operator in elements as a function of each element's Reynolds number (referred to subsequently as the cell Reynolds number). This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
 
  Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \eqref{eq:NSEFEM2} can be written:
 
@@ -408,43 +408,11 @@ Equation \eqref{NSEPGFEM1} then becomes after integration and simplification:
 
 Notice the integration by parts is done only to the standard Galerkin weights- this is because the artificial diffusion added by the Petrov-Galerkin terms should only contribute within the elements
 
-The use of the Petrov-Galerkin formulation in this way allows for the stabilization of moderately convective problems. However, it also results in nonsymmetric mass matrices with the additional term, making classical mass-lumping much more difficult. As a result, the use of explicit methods also becomes more difficult for time-dependent problems. 
-
-%ALE
+The use of the Petrov-Galerkin formulation in this way allows for the stabilization of moderately convective problems. However, it also results in nonsymmetric mass matrices with the additional term, making classical mass-lumping more difficult. As a result, the use of explicit methods also becomes more difficult for time-dependent problems. 
 
 
 
 
-
-
-
-
-
-
-
-
-
-Here $N_{u}$ represents the total $u$ velocity nodes for a given dimension and $N_p$ the
-total number of $p$ pressure nodes. Our finite element formulation for
-the mixed formulation becomes:
-
-\begin{multline}
- \label{FEMNSE}
-  \dsum_{i=1}^{N_u}\gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
- +\dsum_{i=1}^{E}\gint{\Omega}{}{{\rho}G^{jk}{u_j}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{h}u_h}{w_{i}}}{\Omega}
- +\dsum_{i=1}^{E}\gint{\Omega}{}{G^{jk}{p_{i}}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}\\
- -\dsum_{i=1}^{E}\gint{\Omega}{}{{\mu}G^{jk}\pbrac{\partialderiv{u_{i}}{j}-\christoffel{i}{j}{h}u_h}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}
- -\dsum_{f=1}^{F}\gint{\Gamma_N}{}{{q_{i}}{w_i}}{\Gamma_N}=\vect{0}
-\end{multline}
-
-
-
-% convective Petrov-Galerkin formulation
-For convective flows, we augment the convective term of \eqref{GalerkinNSE} with a Petrov-Galerkin test function of the form $\vect{\Phi}=\vect{w}+\vect{\Psi}$, where $\vect{w}$ represent standard Galerkin weights as used in \eqref{GalerkinNSE} and $\vect{\Psi}$ takes the form:
-\begin{equation}
- \label{PetrovGalerkinTest}
-  \vect{\Psi}=\frac{\alpha{L}}{2}
-\end{equation}
 
 
 %ALE form
