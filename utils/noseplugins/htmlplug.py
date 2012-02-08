@@ -67,7 +67,7 @@ class HtmlOutput(Plugin):
             logPath = "%slogs_%s-%s/nose_library_build_%s_%s_%s" %(self.buildbotUrl, arch, system, language, compiler_version, str(date.today())) 
             historyPath = "%slogs_%s-%s/nose_library_build_%s_history_%s" %(self.buildbotUrl, arch, system, language, compiler_version)
           else :
-            logPath = "%slogs_%s-%s/nose_library_build_%s%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
+            logPath = "%slogs_%s-%s/nose_library_build_%s_%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
             historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
         elif str(test).find('test_example')!=-1 :
           (status,example) = list(test.test.arg)[:2]
@@ -88,8 +88,8 @@ class HtmlOutput(Plugin):
     
     def addSuccess(self, test):
         if str(test).find('test_example')!=-1 :
-          example = list(test.test.arg)[1]
-          if example.language != None :
+          (status,example) = list(test.test.arg)[:2]
+          if status == "build" and example.language != None :
             self.current=self.current.parent
             return
         self.html.append('<a class="success">PASS</a>')
@@ -252,17 +252,22 @@ class HtmlOutput(Plugin):
           if example.language == None :
             self.html.append('</li>')
           status = list(test.test.arg)[0]
+          isEnd = False
+          if status=="build" and len(example.tests)==0 :
+            isEnd = True
           if status=="run" or status=='check':
             testPoint = list(test.test.arg)[2]
             if (not hasattr(testPoint,'expectedPath')) or status=='check' :
               if testPoint.path != example.path or testPoint.id == len(example.tests) :
-                self.html.append('</ul>')
-                if self.current.isPass():
-                  self.html.append('<a class="success">PASS</a>')                             
-                else:
-                  self.html.append('<a class="fail">FAIL</a>')
-                self.current=self.current.parent
-                self.html.append('</li>')
+                isEnd = True
+          if isEnd :
+            self.html.append('</ul>')
+            if self.current.isPass():
+              self.html.append('<a class="success">PASS</a>')                             
+            else:
+              self.html.append('<a class="fail">FAIL</a>')
+            self.current=self.current.parent
+            self.html.append('</li>')
          
 import nose
 
