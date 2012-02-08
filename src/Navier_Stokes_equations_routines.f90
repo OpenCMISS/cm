@@ -1337,8 +1337,6 @@ CONTAINS
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-!     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1362,105 +1360,103 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                   ! TODO: Set up for multiple equations sets
-                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
-                   IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                     EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
-                     IF(ASSOCIATED(EQUATIONS_ANALYTIC)) THEN
-                       !Update boundary conditions and any analytic values
-                       CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                     ENDIF
-                   ELSE
-                     CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+          CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
+             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+               SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                 ! TODO: Set up for multiple equations sets
+                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                 IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                   EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
+                   IF(ASSOCIATED(EQUATIONS_ANALYTIC)) THEN
+                     !Update boundary conditions and any analytic values
+                     CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                    ENDIF
                  ELSE
-                   CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                 ENDIF 
+                   CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                 ENDIF
                ELSE
-                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-               ENDIF
-            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-                !Update transient boundary conditions and any analytic values
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-                !Update transient boundary conditions
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-!                ALLOCATE(EQUATIONS_SET%EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-! & SUPG_H(1:EQUATIONS_SET%REGION%meshes%meshes(1)%ptr%number_of_elements))
-            CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-                !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
-                SOLVER_NUMBER_NAVIER_STOKES=1
-                !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                    IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-                      DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-                        SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
-                        IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                          SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
-                        ELSE
-                          CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO
-                    ELSE
-                      CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
-                    ENDIF
+                 CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+               ENDIF 
+             ELSE
+               CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+             ENDIF
+          CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+              !Update transient boundary conditions and any analytic values
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+          CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+              !Update transient boundary conditions
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+          CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+              !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
+              SOLVER_NUMBER_NAVIER_STOKES=1
+              !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                  IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                    DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                      SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                      IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                        SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                      ELSE
+                        CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-              ! do nothing ???
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
-              ! do nothing ???
-              !First update mesh and calculates boundary velocity values
-              CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !Then apply both normal and moving mesh boundary conditions
+              ELSE
+                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
               CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
-              !Pre solve for the linear solver
-              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement pre solve... ",ERR,ERROR,*999)
-                !Update boundary conditions for mesh-movement
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
-                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
-                  SOLVER2%DYNAMIC_SOLVER%ALE=.FALSE.
-                ELSE  
-                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
-                END IF
-                !Update material properties for Laplace mesh movement
-                CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !Pre solve for the linear solver
-              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes pre solve... ",ERR,ERROR,*999)
-                IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
-                  !First update mesh and calculates boundary velocity values
-                  CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                  !Then apply both normal and moving mesh boundary conditions
-                  CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                ELSE  
-                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
-                END IF
+          CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
+            ! do nothing ???
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+          CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
+            ! do nothing ???
+            !First update mesh and calculates boundary velocity values
+            CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            !Then apply both normal and moving mesh boundary conditions
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+          CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
+            !Pre solve for the linear solver
+            IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement pre solve... ",ERR,ERROR,*999)
+              !Update boundary conditions for mesh-movement
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
+              IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
+                SOLVER2%DYNAMIC_SOLVER%ALE=.FALSE.
               ELSE  
-                CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
               END IF
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              !Update material properties for Laplace mesh movement
+              CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            !Pre solve for the linear solver
+            ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes pre solve... ",ERR,ERROR,*999)
+              IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
+                !First update mesh and calculates boundary velocity values
+                CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                !Then apply both normal and moving mesh boundary conditions
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              ELSE  
+                CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+              END IF
+            ELSE  
+              CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
+            END IF
+          CASE DEFAULT
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
           CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
@@ -2178,7 +2174,6 @@ CONTAINS
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mi,ms,mh,mhs,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
     REAL(DP) :: W_SUPG, TAU_SUPG,U_SUPG(3)
-!    REAL(DP), ALLOCATABLE, DIMENSION(:,:) :: W_SUPG
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -2215,7 +2210,7 @@ CONTAINS
 !    J2_MATRIX=0.0_DP
 !    J_MATRIX=0.0_DP
 
-  !DEBUG stack memory allocation error
+  !Stack memory allocation error fix
   DXI_DX=0.0_DP
 
 !\todo: Check whether or not update flags work properly and how much time is spent in each section
@@ -2291,10 +2286,8 @@ CONTAINS
                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
                 LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                 IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-                !Initialize velocity metrics for recalculation
-!                NULLIFY (EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD%VARIABLES(1)% &
-!                  & PARAMETER_SETS%PARAMETER_SETS(2)%PTR%PARAMETERS)
                 TAU_SUPG=0.0_DP
+                !Calculate SUPG element metrics
                 CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
                 INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
@@ -2419,7 +2412,6 @@ CONTAINS
                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     nhs=0
-!                    W_SUPG=0.0_DP
                     IF(UPDATE_JACOBIAN_MATRIX) THEN
                       !Loop over element columns
                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
@@ -2758,11 +2750,11 @@ CONTAINS
               END IF
         ENDDO !ng
 
-            !Assemble matrices and vectors 
-            mhs_min=mhs
-            mhs_max=nhs
-            nhs_min=mhs
-            nhs_max=nhs
+            ! !Assemble matrices and vectors 
+            ! mhs_min=mhs
+            ! mhs_max=nhs
+            ! nhs_min=mhs
+            ! nhs_max=nhs
  !            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
 !               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
 !               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
@@ -2875,7 +2867,6 @@ CONTAINS
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM, &
               & DPHIMS_DXI(3),DPHINS_DXI(3),X(3)
-!    REAL(DP), ALLOCATABLE :: W_SUPG(:,:)
     REAL(DP) :: TAU_SUPG, W_SUPG,U_SUPG(3)
     INTEGER(INTG) :: NODES_PER_ELEMENT,component_idx,nl,node_idx,element_node_idx,NUM_COMPONENTS,NODES_PER_COMPONENT
     REAL(DP), POINTER :: BIF_VALUES(:)
@@ -2891,8 +2882,6 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
-!    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS
-!    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX, DAMPING_MATRIX
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -2900,10 +2889,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: xv,out
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX
-!    LOGICAL :: GRADIENT_TRANSPOSE
-!    REAL(DP) :: test(89,89),test2(89,89),scaling,square
 
 !\todo: Check whether or not too much time is spent with the different matrix types
+
+! Individual matrix allocation: may be useful for debug purposes but very inefficient
 
 !    REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
 !    REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
@@ -2918,8 +2907,6 @@ CONTAINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
     REAL(DP) :: X1(3),X2(3) 
     REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
-    
-
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
     out=0
@@ -2977,10 +2964,8 @@ CONTAINS
               STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
               LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
               NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-              !                 FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
               FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
               FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-              !                 SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
               STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
               IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
@@ -3035,10 +3020,8 @@ CONTAINS
               IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
               IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
               IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-                !Initialize velocity metrics for recalculation
-!                NULLIFY(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD%VARIABLES(1)% &
-!                  & PARAMETER_SETS%PARAMETER_SETS(2)%PTR)
                 TAU_SUPG=0.0_DP
+                !Calculate SUPG element metrics
                 CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
               END IF
             CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
@@ -3135,7 +3118,6 @@ CONTAINS
                       DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
                         !Calculate some general values
-!\todo: Use direct reference instead and check the time spent in here
                         DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
                           DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                             DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
@@ -3423,7 +3405,6 @@ CONTAINS
                     DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                       & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
                     QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-!                    U_SUPG=0.0_DP
                     DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                       PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                       U_SUPG(mh)=U_SUPG(mh)+U_VALUE(mh)*PHIMS
@@ -3831,13 +3812,13 @@ CONTAINS
           !   END IF
           ! END IF
 
-          IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+          ! IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
             !Assemble RHS vector
             ! IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
             !   IF(UPDATE_RHS_VECTOR) THEN
@@ -3848,7 +3829,7 @@ CONTAINS
             ! IF(UPDATE_NONLINEAR_RESIDUAL) THEN
             !    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs_max)=NL_VECTOR(1:mhs_max)
             ! END IF
-          END IF
+          ! END IF
 
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
             IF(STIFFNESS_MATRIX%FIRST_ASSEMBLY) THEN
@@ -3959,8 +3940,6 @@ CONTAINS
                  & (-4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5)*(A_BI_VALUE(3)**0.25))
               ENDIF
               !--NONLINEAR VECTOR BIFURCATION SECTION--!
-
-
 !              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs+6)=NL_VECTOR(1:mhs+6)
             END IF
           END IF
@@ -6890,7 +6869,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Update SUPG paramaters for Navier-Stokes equation
+  !>Update SUPG parameters for Navier-Stokes equation
   SUBROUTINE NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*)
 
     !Argument variables                               
@@ -6945,6 +6924,7 @@ CONTAINS
               IF(.NOT.ASSOCIATED(EQUATIONS_SET_FIELD_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS) .OR. &
                 H_PARAMETER==0.0_DP) THEN
                 !Calculate element length scale H
+                !TODO: calculate this length scale in field_routines instead
                 H_SUPG=0.0_DP
                 X1(1:3)=0.0_DP
                 X2(1:3)=0.0_DP
