@@ -2247,27 +2247,14 @@ CONTAINS
                   CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,INTERFACE_INTERPOLATION% &
                     & PENALTY_INTERPOLATION(1)%INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                   mhs=0
-                  ! Loop over number of Lagrange variable components, as not all components in the dependent variable
-                  ! may be coupled
                   DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
-                    !Loop over interface element rows (related to coupled mesh dependent field element parameters)
+                    !Loop over the Lagrange variable matrix rows
                     DO ms=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                      PGNSI=INTERFACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                       mhs=mhs+1
-                      nhs=0
-                      !Loop over interface element columns(related to interface lagrange field element parameters)
-                      DO nh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
-                        DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                          nhs=nhs+1
-                          PGNSI=INTERFACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                          IF (mhs==nhs) THEN
-                            INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)- & 
-                              & (1.0_DP/INTERFACE_INTERPOLATION%PENALTY_INTERPOLATION(1)% &
-                              & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1))*PGNSI**2.0_DP*RWG
-                          ELSE
-                            INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=0.0_DP
-                          ENDIF
-                        ENDDO !ns
-                      ENDDO !nh
+                      INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,mhs)- &
+                        & (1.0_DP/INTERFACE_INTERPOLATION%PENALTY_INTERPOLATION(1)% &
+                        & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1))*PGNSI**2.0_DP*RWG
                     ENDDO !ms
                   ENDDO !mh
                 ELSE
@@ -2278,28 +2265,30 @@ CONTAINS
                   XI(1:dir)=INTERFACE_TRANSFORM_GPT(INTERFACE_CONDITION%INTERFACE%MESH_CONNECTIVITY,ELEMENT_NUMBER, &
                     & interface_matrix_idx,ng,ERR,ERROR)
                   mhs=0
-                  ! Loop over number of Lagrange variable components, as not all components in the dependent variable
-                  ! may be coupled
+                  ! Loop over number of Lagrange variable components as not all components in the dependent field variable may be coupled
+                  !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
                   DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                     mhc=INTERFACE_MATRIX_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                     INTERFACE_MATRIX_ELEMENT_BASIS=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% & 
                       & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                    !Loop over interface element rows (related to coupled mesh dependent field element parameters)
+                    !Loop over interface matrix rows (related to coupled mesh dependent field parameters)
                     DO ms=1,INTERFACE_MATRIX_ELEMENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       mhs=ms+INTERFACE_MATRIX_ELEMENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*mh-INTERFACE_MATRIX_ELEMENT_BASIS% & 
                         & NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=0
+                      !\todo generalize, the 4th component of the dependent field is assumed to have element constant interpolation here
                       IF (mh==4) THEN
                         PGMSI=1.0_DP
                       ELSE
                         PGMSI=BASIS_EVALUATE_XI(INTERFACE_MATRIX_ELEMENT_BASIS,ms,NO_PART_DERIV,XI,ERR,ERROR)
                       ENDIF
-                      !Loop over interface element columns(related to interface lagrange field element parameters)
+                      !Loop over interface matrix columns (related to interface lagrange field parameters)
                       nh=mh !LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                       DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=ns+INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*nh- &
                           & INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                         PGNSI=INTERFACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                        !\todo Use matrix coefficients to remove below if statement when assembling solver matrices
                         IF(interface_matrix_idx==1) THEN
                           INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)-PGNSI*PGMSI*RWG
                         ELSEIF(interface_matrix_idx==2) THEN
@@ -2310,57 +2299,84 @@ CONTAINS
                   ENDDO !mh
                 ENDIF
               ENDDO !ng
-!              !Scale factor adjustment for the Column Variable
-!              IF(INTERFACE_DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-!                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,INTERFACE_EQUATIONS%INTERPOLATION% &
-!                  & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR, &
-!                  & ERR,ERROR,*999)
-!                mhs=0
-!                DO mh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
-!                  !Loop over element rows
-!                  DO ms=1,INTERFACE_MATRIX_ELEMENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-!                    mhs=mhs+1
-!                    nhs=0
-!                    !Loop over element columns
-!                    DO nh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
-!                      DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-!                        nhs=nhs+1
-!    !                     INTERFACE_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) * &
-!    !                     & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)% &
-!    !                     & INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR%SCALE_FACTORS(ms,mh) * INTERFACE_EQUATIONS%INTERPOLATION% &
-!    !                     & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR% &
-!    !                     & SCALE_FACTORS(ns,nh)
-!                      ENDDO !ns
-!                    ENDDO !nh
-!                  ENDDO !ms
-!                ENDDO !mh
-!              ENDIF
-!              !Scale factor adjustment for the Column Variable
-!              IF(INTERFACE_MATRIX_DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-!                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,INTERFACE_EQUATIONS%INTERPOLATION% &
-!                  & VARIABLE_INTERPOLATION(interface_matrix_idx)%DEPENDENT_INTERPOLATION(1)% & 
-!                  & INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-!                mhs=0
-!                DO mh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
-!                  !Loop over element rows
-!                  DO ms=1,INTERFACE_MATRIX_ELEMENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-!                    mhs=mhs+1
-!                    nhs=0
-!                    !Loop over element columns
-!                    DO nh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
-!                      DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-!                        nhs=nhs+1
-!    !                     INTERFACE_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-!    !                     & INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(interface_matrix_idx)%DEPENDENT_INTERPOLATION(1)% & 
-!    !                     & INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR%SCALE_FACTORS(ms,mh) * INTERFACE_EQUATIONS%INTERPOLATION% &
-!    !                     & VARIABLE_INTERPOLATION(interface_matrix_idx)%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR% &
-!    !                     & SCALE_FACTORS(ns,nh)
-!                      ENDDO !ns
-!                    ENDDO !nh
-!                  ENDDO !ms
-!                ENDDO !mh
-!              ENDIF
-            ENDIF ! UPDATE MATRIX
+              !Scale factor adjustment
+              !\todo check if scale factor adjustments are already made elsewhere eg when calculating the interface matrix contribution to the residual for non-linear problems
+              !\todo update looping of variables/components for non-zero matrix elements as done above 
+              IF(INTERFACE_CONDITION%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
+                & interface_matrix_idx==INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
+                !Scale factor adjustment for the Lagrange Variable (columns)
+                IF(INTERFACE_DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER, &
+                    & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR, &
+                    & ERR,ERROR,*999)
+                  mhs=0
+                  !Use Lagrange variable number of components here since we are only dealing with Lagrange variable scale factors 
+                  !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
+                  DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
+                    !Loop over element Lagrange variable rows
+                    DO ms=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                      mhs=mhs+1
+                      INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs) * &
+                        & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)% &
+                        & INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR%SCALE_FACTORS(ms,mh)**2
+                    ENDDO !ms
+                  ENDDO !mh
+                ENDIF
+              ELSE
+                !Scale factor adjustment for the Lagrange Variable (columns)
+                IF(INTERFACE_DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER, &
+                    & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR, &
+                    & ERR,ERROR,*999)
+                  mhs=0
+                  !Use Lagrange variable number of components here since we are only dealing with Lagrange variable scale factors 
+                  !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
+                  DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
+                    mhc=INTERFACE_MATRIX_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                    INTERFACE_MATRIX_ELEMENT_BASIS=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% & 
+                      & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    !Loop over element rows
+                    DO ms=1,INTERFACE_MATRIX_ELEMENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                      mhs=mhs+1
+                      nhs=0
+                      !Loop over element columns
+                      DO nh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
+                        DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+                          INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs) * &
+                          & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)% &
+                          & INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDDO !ms
+                  ENDDO !mh
+                ENDIF
+                !Scale factor adjustment for the row dependent variable
+                IF(INTERFACE_MATRIX_DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,INTERFACE_EQUATIONS%INTERPOLATION% &
+                    & VARIABLE_INTERPOLATION(interface_matrix_idx)%DEPENDENT_INTERPOLATION(1)% & 
+                    & INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  mhs=0
+                  DO mh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
+                    !Loop over element rows
+                    DO ms=1,INTERFACE_MATRIX_ELEMENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                      mhs=mhs+1
+                      nhs=0
+                      !Loop over element columns
+                      DO nh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
+                        DO ns=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+                          INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                          & INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(interface_matrix_idx)% &
+                          & DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR% &
+                          & SCALE_FACTORS(ms,mh)
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDDO !ms
+                  ENDDO !mh
+                ENDIF
+              ENDIF
+            ENDIF
           ENDDO ! interface_matrix_idx
         CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
