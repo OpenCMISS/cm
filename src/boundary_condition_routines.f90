@@ -476,102 +476,103 @@ CONTAINS
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !equations_set_idx
-                          !Loop over interface conditions. Note that only linear interface matrices implemented so far.
-                          DO interface_condition_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
-                            INTERFACE_CONDITION=>SOLVER_EQUATIONS%SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
-                            IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
-                              INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
-                              IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
-                                INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
-                                IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
-                                  !Iterate through equations matrices
-                                  DO interface_matrix_idx=1,INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
-                                    INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR
-                                    IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
-                                      CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(INTERFACE_MATRIX%MATRIX,STORAGE_TYPE,ERR,ERROR,*999)
-                                      SELECT CASE(STORAGE_TYPE)
-                                      CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                                        !Do nothing
-                                      CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                                        !Do nothing
-                                      CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                        CALL FLAG_ERROR("Not implemented for column major storage.",ERR,ERROR,*999)
-                                      CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                        CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
-                                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                        !Get Sparsity pattern, number of non zeros, number of rows
-                                        CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(INTERFACE_MATRIX%MATRIX,ROW_INDICES, &
-                                          & COLUMN_INDICES,ERR,ERROR,*999)
-                                        CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(INTERFACE_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
-                                          & ERR,ERROR,*999)
-                                        !Get the matrix stored as a linked list
-                                        CALL DISTRIBUTED_MATRIX_LINKLIST_GET(INTERFACE_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
-                                        NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
-                                        !Initialise sparsity indices arrays
-                                        CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
-                                          & LINEAR_SPARSITY_INDICES(interface_condition_idx,interface_matrix_idx)%PTR, &
-                                          & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
-                                        !Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
-                                        NULLIFY(SPARSITY_INDICES)
-                                        SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES( &
-                                            & interface_condition_idx,interface_matrix_idx)%PTR
-                                        IF(ASSOCIATED(SPARSITY_INDICES)) THEN
-                                          !Setup list for storing dirichlet non zero indices
-                                          NULLIFY(SPARSE_INDICES)
-                                          CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
-                                          CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
-                                          CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
-                                            & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
-                                          CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
-                                          COUNT=0
-                                          SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
-                                          LAST=1
-                                          DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
-                                            DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                            CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
-                                              DO row_idx=1,size(column_array)
-                                                CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
-                                                COUNT=COUNT+1
-                                                LAST=row_idx+1
-                                              ENDDO
-                                            SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
-                                          ENDDO
-                                          CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
-                                            & ERR,ERROR,*999)
-                                          DO col_idx =1,NUMBER_OF_ROWS
-                                            CALL LINKEDLIST_DESTROY(list(col_idx))
-                                          ENDDO
-                                        ELSE
-                                          LOCAL_ERROR="Sparsity indices arrays are not associated for this interface matrix."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                        ENDIF
-                                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                        CALL FLAG_ERROR("Not implemented for compressed column storage.",ERR,ERROR,*999)
-                                      CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                        CALL FLAG_ERROR("Not implemented for row column storage.",ERR,ERROR,*999)
-                                      CASE DEFAULT
-                                        LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR)) &
-                                          //" is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    ELSE
-                                      CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDDO
-                                ELSE
-                                  LOCAL_ERROR="Interface matrices is not associated for these interface equations."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                LOCAL_ERROR="Interface equations is not associated for this interface condition."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              LOCAL_ERROR="Interface condition is not associated for boundary conditions variable "// &
-                                & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            ENDIF
-                          ENDDO !interface_condition_idx
+                          !\todo Update interface sparsity structure calculate first then update code below.
+!                          !Loop over interface conditions. Note that only linear interface matrices implemented so far.
+!                          DO interface_condition_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+!                            INTERFACE_CONDITION=>SOLVER_EQUATIONS%SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+!                            IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+!                              INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+!                              IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+!                                INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
+!                                IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
+!                                  !Iterate through equations matrices
+!                                  DO interface_matrix_idx=1,INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
+!                                    INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR
+!                                    IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
+!                                      CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(INTERFACE_MATRIX%MATRIX,STORAGE_TYPE,ERR,ERROR,*999)
+!                                      SELECT CASE(STORAGE_TYPE)
+!                                      CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+!                                        !Do nothing
+!                                      CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+!                                        !Do nothing
+!                                      CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for column major storage.",ERR,ERROR,*999)
+!                                      CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
+!                                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+!                                        !Get Sparsity pattern, number of non zeros, number of rows
+!                                        CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(INTERFACE_MATRIX%MATRIX,ROW_INDICES, &
+!                                          & COLUMN_INDICES,ERR,ERROR,*999)
+!                                        CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(INTERFACE_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
+!                                          & ERR,ERROR,*999)
+!                                        !Get the matrix stored as a linked list
+!                                        CALL DISTRIBUTED_MATRIX_LINKLIST_GET(INTERFACE_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
+!                                        NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
+!                                        !Initialise sparsity indices arrays
+!                                        CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
+!                                          & LINEAR_SPARSITY_INDICES(interface_condition_idx,interface_matrix_idx)%PTR, &
+!                                          & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
+!                                        !Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+!                                        NULLIFY(SPARSITY_INDICES)
+!                                        SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES( &
+!                                            & interface_condition_idx,interface_matrix_idx)%PTR
+!                                        IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+!                                          !Setup list for storing dirichlet non zero indices
+!                                          NULLIFY(SPARSE_INDICES)
+!                                          CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
+!                                          CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
+!                                          CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
+!                                            & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
+!                                          CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
+!                                          COUNT=0
+!                                          SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
+!                                          LAST=1
+!                                          DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+!                                            DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
+!                                            CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+!                                              DO row_idx=1,size(column_array)
+!                                                CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
+!                                                COUNT=COUNT+1
+!                                                LAST=row_idx+1
+!                                              ENDDO
+!                                            SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
+!                                          ENDDO
+!                                          CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
+!                                            & ERR,ERROR,*999)
+!                                          DO col_idx =1,NUMBER_OF_ROWS
+!                                            CALL LINKEDLIST_DESTROY(list(col_idx))
+!                                          ENDDO
+!                                        ELSE
+!                                          LOCAL_ERROR="Sparsity indices arrays are not associated for this interface matrix."
+!                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                        ENDIF
+!                                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for compressed column storage.",ERR,ERROR,*999)
+!                                      CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for row column storage.",ERR,ERROR,*999)
+!                                      CASE DEFAULT
+!                                        LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR)) &
+!                                          //" is invalid."
+!                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                      END SELECT
+!                                    ELSE
+!                                      CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
+!                                    ENDIF
+!                                  ENDDO
+!                                ELSE
+!                                  LOCAL_ERROR="Interface matrices is not associated for these interface equations."
+!                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                ENDIF
+!                              ELSE
+!                                LOCAL_ERROR="Interface equations is not associated for this interface condition."
+!                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                              ENDIF
+!                            ELSE
+!                              LOCAL_ERROR="Interface condition is not associated for boundary conditions variable "// &
+!                                & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
+!                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                            ENDIF
+!                          ENDDO !interface_condition_idx
                         ELSE
                           LOCAL_ERROR="Solver equations solver mapping is not associated."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)

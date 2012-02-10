@@ -2049,9 +2049,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH
     TYPE(BASIS_TYPE), POINTER :: BASIS
     LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: NUMBER_INT_ELEM !<Is the number of elements within the interface mesh
-    INTEGER(INTG) :: NUMBER_INT_DOM !<Is the number of domains coupled via the interface
-    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENTS_CONNECTIVITY(:,:) !<ELEMENTS_CONNECTIVITY(element_idx,coupled_mesh_idx)
+    INTEGER(INTG) :: NUMBER_OF_INTERFACE_ELEMENTS !<The number of elements in the interface
+    INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENT_CONNECTIVITY(:,:) !<ELEMENT_CONNECTIVITY(element_idx,coupled_mesh_idx)
   END TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
  
   !>Contains information for the interface data.
@@ -2065,7 +2065,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
     TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY !<A pointer to the meshes connectivity the interface.
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<A pointer to the data points defined in an interface.          
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<A pointer to the data points defined in an interface.
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
     TYPE(GENERATED_MESHES_TYPE), POINTER :: GENERATED_MESHES !<A pointer to the generated meshes in an interface.

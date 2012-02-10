@@ -32667,16 +32667,16 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Links an element in a coupled mesh to an element in the interface mesh
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetNumber(regionUserNumber,interfaceUserNumber, &
-     &  interfaceElementNumber,coupledMeshIndexNumber,numberOfElement,err)
+     &  interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface meshe connectivity.
     INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number in the interface mesh.
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh in the interface.
-    INTEGER(INTG), INTENT(IN) :: numberOfElement !<The number of the element in the coupled mesh.
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to be connected to the interface
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
@@ -32692,7 +32692,7 @@ CONTAINS
       CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(INTERFACE%MESH_CONNECTIVITY,interfaceElementNumber, &
-         & coupledMeshIndexNumber,numberOfElement,err,error,*999)
+         & coupledMeshIndexNumber,coupledMeshElementNumber,err,error,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -32717,20 +32717,49 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj(interfaceMeshConnectivity,interfaceElementNumber, &
+     &  coupledMeshIndexNumber,coupledMeshElementNumber,err)
 
-  !>Sets the mapping from an xi position in an element of a coupled mesh to a node in the interface mesh
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber  !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error,*999)
+
+    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY, &
+      & interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err,error,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the mapping from an xi position of a coupled mesh element to a node of an interface mesh element
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementXiSetNumber(regionUserNumber,interfaceUserNumber,interfaceElementNumber, &
-     &  coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err)
+     &  coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi,err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
     INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number to the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The number of the element in the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: localNodeNumber !<The local node number in the interface mesh
-    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the interface mesh
-    REAL(DP), INTENT(IN) :: xi(:) !<The xi positions within the coupled mesh element
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to define the element xi connectivity from
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshLocalNodeNumber !<The interface mesh node to assign the coupled mesh element xi to
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshComponentNodeNumber !<The interface mesh node's component to assign the coupled mesh element xi to
+    REAL(DP), INTENT(IN) :: xi(:) !<The xi value for the xi_idx'th xi direction in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
     !Local variables
@@ -32747,7 +32776,8 @@ CONTAINS
       CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(INTERFACE%MESH_CONNECTIVITY,interfaceElementNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err,error,*999)
+         & coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi, &
+         & err,error,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -32772,25 +32802,26 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the mapping from an xi position in an element of a coupled mesh to a node in the interface mesh
+  !>Sets the mapping from an xi position of a coupled mesh element to a node of an interface mesh element
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementXiSetObj(interfaceMeshConnectivity,interfaceElementNumber, &
-     &  coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err)
+     &  coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi,err)
 
     !Argument variables
     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number to the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The number of the element in the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: localNodeNumber !<The local node number in the interface mesh
-    INTEGER(INTG), INTENT(IN) :: componentNumber !<The mesh component of the interface mesh
-    REAL(DP), INTENT(IN) :: xi(:) !<The xi positions within the coupled mesh element
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to define the element xi connectivity from
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshLocalNodeNumber !<The interface mesh node to assign the coupled mesh element xi to
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshComponentNodeNumber !<The interface mesh node's component to assign the coupled mesh element xi to
+    REAL(DP), INTENT(IN) :: xi(:) !<The xi value for the xi_idx'th xi direction in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementXiSetObj",err,error,*999)
 
     CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceElementNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err,error,*999)
+      & coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi, &
+      & err,error,*999)
 
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementXiSetObj")
     RETURN
@@ -32800,36 +32831,6 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementXiSetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Links an element in a coupled mesh to an element in the interface mesh
-  SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj(interfaceMeshConnectivity,interfaceElementNumber, &
-     &  coupledMeshIndexNumber,numberOfElement,err)
-
-    !Argument variables
-    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh in the interface
-    INTEGER(INTG), INTENT(IN) :: numberOfElement !<The number of the element in the coupled mesh
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error,*999)
-
-    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY, &
-         & interfaceElementNumber,coupledMeshIndexNumber,numberOfElement,err,error,*999)
-
-    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
-    RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
 
   !
   !================================================================================================================================
@@ -32846,8 +32847,8 @@ CONTAINS
 
     CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetObj",err,error,*999)
 
-    CALL INTERFACE_MESH_CONNECTIVITY_SET_BASIS(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceMappingBasis%BASIS,err, &
-      & error,*999)
+    CALL INTERFACE_MESH_CONNECTIVITY_SET_BASIS(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceMappingBasis%BASIS, &
+      & err,error,*999)
 
     CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetObj")
     RETURN
