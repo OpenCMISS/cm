@@ -858,7 +858,7 @@ FIELDML_LIBRARIES =#
 FIELDML_LIB_PATH =#
 ifeq ($(USEFIELDML),true)
   MOD_FIELDML_TARGET = MOD_FIELDML
-  FIELDML_LIBRARIES += -lfieldml -lxml2 -lz
+  FIELDML_LIBRARIES += -lfieldml_api -lfieldml_io_api -lxml2 -lz
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifdef COMPILER_VERSION
       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
