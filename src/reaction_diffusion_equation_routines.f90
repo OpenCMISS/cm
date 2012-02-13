@@ -1436,8 +1436,8 @@ CONTAINS
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
 
-    CHARACTER(14) :: FILE
-    CHARACTER(14) :: OUTPUT_FILE
+    CHARACTER(21) :: FILE,FNAME
+    CHARACTER(21) :: OUTPUT_FILE
 
     CALL ENTERS("REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
@@ -1462,16 +1462,33 @@ CONTAINS
 
                     IF(OUTPUT_ITERATION_NUMBER/=0) THEN
                       IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
-                        END IF
-                        FILE=OUTPUT_FILE
+                        IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS.EQ.1) THEN
+
+                          IF(CURRENT_LOOP_ITERATION<10) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+                          END IF
+                        ELSE
+                          IF(CURRENT_LOOP_ITERATION<10) THEN
+                            WRITE(FNAME, '(A15,I0,A4)') "TIME_STEP_SPEC_",equations_set_idx,"_000"
+                            WRITE(OUTPUT_FILE,'(A20,I0)') FNAME,CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                            WRITE(FNAME, '(A15,I0,A3)') "TIME_STEP_SPEC_",equations_set_idx,"_00"
+                            WRITE(OUTPUT_FILE,'(A19,I0)') FNAME,CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                            WRITE(FNAME, '(A15,I0,A2)') "TIME_STEP_SPEC_",equations_set_idx,"_0"
+                            WRITE(OUTPUT_FILE,'(A18,I0)') FNAME,CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                            WRITE(FNAME, '(A15,I0,A1)') "TIME_STEP_SPEC_",equations_set_idx,"_"
+                            WRITE(OUTPUT_FILE,'(A17,I0)') FNAME,CURRENT_LOOP_ITERATION
+                          END IF
+                        ENDIF
+                          FILE=TRIM(OUTPUT_FILE)
 !                        FILE="TRANSIENT_OUTPUT"
 !                         METHOD="FORTRAN"
 !                         EXPORT_FIELD=.TRUE.

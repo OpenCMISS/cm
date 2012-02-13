@@ -1251,41 +1251,43 @@ CONTAINS
               !Mulitple models
               DO dof_idx=1,N
                 model_idx=MODELS_DATA(dof_idx)
-                MODEL=>CELLML%MODELS(model_idx)%PTR
-                IF(ASSOCIATED(MODEL)) THEN
-                  NUMBER_STATES=MODEL%NUMBER_OF_STATE
-                  NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                  NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                IF(model_idx.GT.0) THEN
+                  MODEL=>CELLML%MODELS(model_idx)%PTR
+                  IF(ASSOCIATED(MODEL)) THEN
+                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
                     
-                  !Copy CellML data to temporary arrays
-                  DO state_idx=1,NUMBER_STATES
-                    STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
-                  ENDDO !state_idx
-                  DO parameter_idx=1,NUMBER_PARAMETERS
-                    PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
-                  ENDDO !parameter_idx
+                    !Copy CellML data to temporary arrays
+                    DO state_idx=1,NUMBER_STATES
+                      STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                    ENDDO !state_idx
+                    DO parameter_idx=1,NUMBER_PARAMETERS
+                      PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                    ENDDO !parameter_idx
                   
 #ifdef USECELLML                    
-                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
-                    & PARAMETERS)
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
+                      & PARAMETERS)
 #else
-                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
 
-                  !Copy temporary data back to CellML arrays
-                  DO intermediate_idx=1,NUMBER_INTERMEDIATES
-                    INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
-                  ENDDO !intermediate_idx
-                  DO state_idx=1,NUMBER_STATES
-                    STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)
-                  ENDDO !state_idx
+                    !Copy temporary data back to CellML arrays
+                    DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                      INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                    ENDDO !intermediate_idx
+                    DO state_idx=1,NUMBER_STATES
+                      STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)
+                    ENDDO !state_idx
                     
-                ELSE
-                  LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                    & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                    & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF                  
+                  ELSE
+                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDIF !model_idx                  
               ENDDO !dof_idx
             ELSE
               !One one model is used.          
@@ -1295,30 +1297,32 @@ CONTAINS
                 NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
                 NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
                 DO dof_idx=1,N
+                  model_idx=MODELS_DATA(dof_idx)
+                  IF(model_idx.GT.0) THEN
 
-                  !Copy CellML data to temporary arrays
-                  DO state_idx=1,NUMBER_STATES
-                    STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
-                  ENDDO !state_idx
-                  DO parameter_idx=1,NUMBER_PARAMETERS
-                    PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
-                  ENDDO !parameter_idx
+                    !Copy CellML data to temporary arrays
+                    DO state_idx=1,NUMBER_STATES
+                      STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                    ENDDO !state_idx
+                    DO parameter_idx=1,NUMBER_PARAMETERS
+                      PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                    ENDDO !parameter_idx
 
 #ifdef USECELLML                    
-                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
-                    & PARAMETERS)
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
+                      & PARAMETERS)
 #else
-                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
-                  !Copy temporary data back to CellML arrays
-                  DO intermediate_idx=1,NUMBER_INTERMEDIATES
-                    INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
-                  ENDDO !intermediate_idx
-                  DO state_idx=1,NUMBER_STATES
-                    STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)
-                  ENDDO !state_idx
-
+                    !Copy temporary data back to CellML arrays
+                    DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                      INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                    ENDDO !intermediate_idx
+                    DO state_idx=1,NUMBER_STATES
+                      STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)
+                    ENDDO !state_idx
+                  ENDIF !model_idx
                 ENDDO !dof_idx
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
@@ -1332,32 +1336,34 @@ CONTAINS
               !Mulitple models
               DO dof_idx=1,N
                 model_idx=MODELS_DATA(dof_idx)
-                MODEL=>CELLML%MODELS(model_idx)%PTR
-                IF(ASSOCIATED(MODEL)) THEN
-                  NUMBER_STATES=MODEL%NUMBER_OF_STATE
-                  NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                  NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                  STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                  STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                  INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                  INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                  PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                  PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                IF(model_idx.GT.0) THEN
+                  MODEL=>CELLML%MODELS(model_idx)%PTR
+                  IF(ASSOCIATED(MODEL)) THEN
+                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
                     
 #ifdef USECELLML                    
-                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                    & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                    & PARAMETER_END_DOF))
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                      & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                      & PARAMETER_END_DOF))
 #else
-                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
-                ELSE
-                  LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                    & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                    & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF                  
+                  ELSE
+                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDIF  !model_idx                
               ENDDO !dof_idx
 
             ELSE
@@ -1368,21 +1374,24 @@ CONTAINS
                 NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
                 NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
                 DO dof_idx=1,N
-                  STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                  STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                  INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                  INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                  PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                  PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                  model_idx=MODELS_DATA(dof_idx)
+                  IF(model_idx.GT.0) THEN
+
+                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
                     
 #ifdef USECELLML                    
-                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                    & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                    & PARAMETER_END_DOF))
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                      & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                      & PARAMETER_END_DOF))
 #else
-                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
-                    
+                  ENDIF !model_idx    
                 ENDDO !dof_idx
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
@@ -1822,41 +1831,43 @@ CONTAINS
               DO WHILE(TIME<=END_TIME)
                 DO dof_idx=1,N
                   model_idx=MODELS_DATA(dof_idx)
-                  MODEL=>CELLML%MODELS(model_idx)%PTR
-                  IF(ASSOCIATED(MODEL)) THEN
-                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
-                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                  IF(model_idx.GT.0) THEN
+                    MODEL=>CELLML%MODELS(model_idx)%PTR
+                    IF(ASSOCIATED(MODEL)) THEN
+                      NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                      NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                      NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
                     
-                    !Copy CellML data to temporary arrays
-                    DO state_idx=1,NUMBER_STATES
-                      STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
-                    ENDDO !state_idx
-                    DO parameter_idx=1,NUMBER_PARAMETERS
-                      PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
-                    ENDDO !parameter_idx
+                      !Copy CellML data to temporary arrays
+                      DO state_idx=1,NUMBER_STATES
+                        STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                      ENDDO !state_idx
+                      DO parameter_idx=1,NUMBER_PARAMETERS
+                        PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                      ENDDO !parameter_idx
                     
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
-                      & PARAMETERS)
+                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
+                        & PARAMETERS)
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
 
-                    !Copy temporary data back to CellML arrays
-                    DO intermediate_idx=1,NUMBER_INTERMEDIATES
-                      INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
-                    ENDDO !intermediate_idx
-                    DO state_idx=1,NUMBER_STATES
-                      STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)+TIME_INCREMENT*RATES(state_idx)
-                    ENDDO !state_idx
-                    
-                  ELSE
-                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF                  
+                      !Copy temporary data back to CellML arrays
+                      DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                        INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                      ENDDO !intermediate_idx
+                      DO state_idx=1,NUMBER_STATES
+                        STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)+TIME_INCREMENT*RATES(state_idx)
+                      ENDDO !state_idx
+                   
+                    ELSE
+                      LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                        & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                        & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDIF !model_idx                  
                 ENDDO !dof_idx
                 TIME=TIME+TIME_INCREMENT
               ENDDO !time              
@@ -1871,29 +1882,31 @@ CONTAINS
                 DO WHILE(TIME<=END_TIME)
                   DO dof_idx=1,N
 
-                    !Copy CellML data to temporary arrays
-                     DO state_idx=1,NUMBER_STATES
-                      STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
-                    ENDDO !state_idx
-                    DO parameter_idx=1,NUMBER_PARAMETERS
-                      PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
-                    ENDDO !parameter_idx
+                    model_idx=MODELS_DATA(dof_idx)
+                    IF(model_idx.GT.0) THEN
+                      !Copy CellML data to temporary arrays
+                       DO state_idx=1,NUMBER_STATES
+                        STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                      ENDDO !state_idx
+                      DO parameter_idx=1,NUMBER_PARAMETERS
+                        PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                      ENDDO !parameter_idx
 
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
-                      & PARAMETERS)
+                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
+                        & PARAMETERS)
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
-                    !Copy temporary data back to CellML arrays
-                    DO intermediate_idx=1,NUMBER_INTERMEDIATES
-                      INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
-                    ENDDO !intermediate_idx
-                    DO state_idx=1,NUMBER_STATES
-                      STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)+TIME_INCREMENT*RATES(state_idx)
-                    ENDDO !state_idx
-
+                      !Copy temporary data back to CellML arrays
+                      DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                        INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                      ENDDO !intermediate_idx
+                      DO state_idx=1,NUMBER_STATES
+                        STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)+TIME_INCREMENT*RATES(state_idx)
+                      ENDDO !state_idx
+                    ENDIF !model_idx
                   ENDDO !dof_idx
                   TIME=TIME+TIME_INCREMENT
                 ENDDO !time
@@ -1911,33 +1924,36 @@ CONTAINS
               DO WHILE(TIME<=END_TIME)
                 DO dof_idx=1,N
                   model_idx=MODELS_DATA(dof_idx)
-                  MODEL=>CELLML%MODELS(model_idx)%PTR
-                  IF(ASSOCIATED(MODEL)) THEN
-                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
-                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                  IF(model_idx.GT.0) THEN
+                    MODEL=>CELLML%MODELS(model_idx)%PTR
+                    IF(ASSOCIATED(MODEL)) THEN
+                      NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                      NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                      NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                      STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                      STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                      INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                      INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                      PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                      PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
                     
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
-                      & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      & PARAMETER_END_DOF))
+                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, &
+                        & STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
+                        & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                        & PARAMETER_END_DOF))
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
-                    STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
-                      & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                      STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                        & TIME_INCREMENT*RATES(1:NUMBER_STATES)
                     
-                  ELSE
-                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                        & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                        & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDIF                  
                 ENDDO !dof_idx
                 TIME=TIME+TIME_INCREMENT
@@ -1952,24 +1968,28 @@ CONTAINS
                 TIME=START_TIME
                 DO WHILE(TIME<=END_TIME)
                   DO dof_idx=1,N
-                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    model_idx=MODELS_DATA(dof_idx)
+                    IF(model_idx.GT.0) THEN
+
+                      STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                      STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                      INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                      INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                      PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                      PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
                     
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
-                      & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      & PARAMETER_END_DOF))
+                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
+                        & STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
+                        & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                        & PARAMETER_END_DOF))
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
-                    STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
-                      & TIME_INCREMENT*RATES(1:NUMBER_STATES)
-                    
+                      STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                        & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                    ENDIF !model_idx>0  
                   ENDDO !dof_idx
                   TIME=TIME+TIME_INCREMENT
                 ENDDO !time

@@ -268,7 +268,7 @@ CONTAINS
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
-    CHARACTER(14) :: NAME !<the prefix name of file.
+    CHARACTER(21) :: NAME !<the prefix name of file.
     INTEGER(INTG) :: ERR !<The error code
     INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
@@ -756,7 +756,7 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(21), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -766,13 +766,14 @@ CONTAINS
     LOGICAL:: ANALYTIC
 
     ANALYTIC=.FALSE.
-
+    WRITE(*,*) NAME
     FILENAME="./output/"//NAME//".exnode"
+    WRITE(*,*) CHAR(FILENAME)
     OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
 
 ! WRITING HEADER INFORMATION
 
-    WRITE(14,*) 'Group name: 09ryrNtatsCell'
+    WRITE(14,*) 'Group name: Cell'
 
     IF( ANALYTIC ) THEN
       WRITE(14,*) '#Fields=',TRIM(NMs(NumberOfFields + 2))
@@ -910,7 +911,7 @@ CONTAINS
   SUBROUTINE REACTION_DIFFUSION_IO_WRITE_ELEMENTS_CMGUI(NAME)
 
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(21), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
     ! CHARACTER*60 ELEM_TYPE
@@ -921,7 +922,7 @@ CONTAINS
 
     FILENAME="./output/"//NAME//".exelem"
     OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(5,*) 'Group name: 09ryrNtatsCell'
+    WRITE(5,*) 'Group name: Cell'
 
 
   DO KK = 1,NumberOfElements
@@ -1175,11 +1176,11 @@ CONTAINS
 
         IF(NumberOfDimensions==2)THEN
           SimplexOutputHelp(1)=ElementNodes(K,1)
-          SimplexOutputHelp(2)=ElementNodes(K,4)
-          SimplexOutputHelp(3)=ElementNodes(K,2)
-          SimplexOutputHelp(4)=ElementNodes(K,6)
-          SimplexOutputHelp(5)=ElementNodes(K,5)
-          SimplexOutputHelp(6)=ElementNodes(K,3)
+!          SimplexOutputHelp(2)=ElementNodes(K,4)
+          SimplexOutputHelp(2)=ElementNodes(K,2)
+!          SimplexOutputHelp(4)=ElementNodes(K,6)
+!          SimplexOutputHelp(5)=ElementNodes(K,5)
+          SimplexOutputHelp(3)=ElementNodes(K,3)
         ELSE IF(NumberOfDimensions==3) THEN
           SimplexOutputHelp(1)=ElementNodes(K,1)
           SimplexOutputHelp(2)=ElementNodes(K,4)
