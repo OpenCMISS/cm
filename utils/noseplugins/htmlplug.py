@@ -58,26 +58,40 @@ class HtmlOutput(Plugin):
         self.html=['</div>','<ul id="tree1" class="mktree">']
 
     def insertLog(self, test):
-        compiler = os.environ['COMPILER']
+        logPath=""
+        historyPath=""
         if str(test).find('test_build_library')!=-1 :
-          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + compiler + str(date.today()) 
-          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + compiler
+          (compiler_version, arch, system) = list(test.test.arg)[:3]
+          if len(test.test.arg) > 3 :
+            language = list(test.test.arg)[3]
+            logPath = "%slogs_%s-%s/nose_library_build_%s_%s_%s" %(self.buildbotUrl, arch, system, language, compiler_version, str(date.today())) 
+            historyPath = "%slogs_%s-%s/nose_library_build_%s_history_%s" %(self.buildbotUrl, arch, system, language, compiler_version)
+          else :
+            logPath = "%slogs_%s-%s/nose_library_build_%s_%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
+            historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
         elif str(test).find('test_example')!=-1 :
-          path = list(test.test.arg)[1]
-          path = path[path.find("/examples/")+10:]
-          if list(test.test.arg)[0]=='build' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + compiler
-          elif list(test.test.arg)[0]=='run' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + compiler
-          elif list(test.test.arg)[0]=='check' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + compiler
+          (status,example) = list(test.test.arg)[:2]
+          arch = example.arch
+          system = example.system
+          compiler_version = example.compilerVersion
+          if (status == "build") : 
+            path = example.path[example.path.rfind("/examples/")+1:]
+            logPath = "%slogs_%s-%s/%s/nose_%s_%s_%s" %(self.buildbotUrl, arch, system, path, status, compiler_version, str(date.today())) 
+            historyPath = "%slogs_%s-%s/%s/nose_%s_history_%s" %(self.buildbotUrl, arch, system, path, status, compiler_version)
+          else :
+            testPoint =  list(test.test.arg)[2]
+            path = testPoint.path[testPoint.path.rfind("/examples/")+1:]
+            logPath = "%slogs_%s-%s/%s/nose_%s_%s_%s_%d" %(self.buildbotUrl, arch, system, path, status, compiler_version, str(date.today()), testPoint.id) 
+            historyPath = "%slogs_%s-%s/%s/nose_%s_history_%s_%d" %(self.buildbotUrl, arch, system, path, status, compiler_version, testPoint.id)
         self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
     def addSuccess(self, test):
+        if str(test).find('test_example')!=-1 :
+          (status,example) = list(test.test.arg)[:2]
+          if status == "build" and example.language != None :
+            self.current=self.current.parent
+            return
         self.html.append('<a class="success">PASS</a>')
         self.insertLog(test)
         self.current=self.current.parent
@@ -148,11 +162,19 @@ class HtmlOutput(Plugin):
     
     def startTest(self, test):
         description = ''
+        ### OpenCMISS library build ###
         if str(test).find('test_build_library')!=-1 :
-          description='Building the library'
+          if len(test.test.arg) > 3 :
+            language = list(test.test.arg)[3]
+            description='Building the %s library' %(language)
+          else :
+            description='Building the library'
           self.current = ResultTree(self.current)
+        ### OpenCMISS example build, execute and check ###
         if str(test).find('test_example')!=-1 :
-          if list(test.test.arg)[0]=='build' :
+          (status, example) = list(test.test.arg)[:2]
+          ## Build the example ##
+          if status =='build' :
             for k in range(0,len(self.testLevelsInner)) :
               self.html.append('</ul>')
               if self.current.isPass():
@@ -162,9 +184,8 @@ class HtmlOutput(Plugin):
               self.current=self.current.parent
               self.html.append('</li>')
             self.testLevelsInner = []
-            path = list(test.test.arg)[1]
-            path = path[path.find("/examples/")+10:]
-            levels = path.split('/')
+            path = example.path
+            levels = path[path.rfind("/examples/")+1:].split('/')
             for i in range(0,len(levels)):
               if (len(self.testLevelsOuter)-1<i) :
                 self.testLevelsOuter.append(levels[i])
@@ -185,11 +206,14 @@ class HtmlOutput(Plugin):
                 self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsOuter[i],'<ul>'])
                 self.current = ResultTree(self.current)
                 self.testLevelsOuter=self.testLevelsOuter[0:i+1]
-            description='Building the test'
-          elif list(test.test.arg)[0]=='run' :
-            path = list(test.test.arg)[7]
-            if path!='.' :
-              levels = path.split('/')
+            description='Building the test' if example.language == None else None
+           
+          ## Execute the example ##
+          elif status=='run' :
+            testPoint = list(test.test.arg)[2]
+            path = testPoint.path
+            if path!=example.path :
+              levels = path[path.rfind(example.globalTestDir)+1:].split('/')
               for i in range(0,len(levels)):
                 if (len(self.testLevelsInner)-1<i) :
                   self.testLevelsInner.append(levels[i])
@@ -209,19 +233,34 @@ class HtmlOutput(Plugin):
                   self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsInner[i],'<ul>'])
                   self.current =  ResultTree(self.current)
                   self.testLevelsInner=self.testLevelsInner[0:i+1]
-            description='Running the test'
-          elif list(test.test.arg)[0]=='check' :  
-            description='Checking the output'
+            description='Running the test #%d' %(testPoint.id)
+          ## Check the output ##
+          elif status=='check' : 
+            testPoint = list(test.test.arg)[2] 
+            description='Checking the test output #%d' %(testPoint.id)
         self.current = ResultTree(self.current)
-        self.html.extend([ '<li class="liBullet">&nbsp;',description,':&nbsp;'])
+        if description != None :
+          self.html.extend([ '<li class="liBullet">&nbsp;',description,':&nbsp;'])
         
         
     def stopTest(self, test):
-        self.html.append('</li>')
         if str(test).find('test_build_library')!=-1 :
+          self.html.append('</li>')
           self.current=self.current.parent
         if str(test).find('test_example')!=-1 :
-          if len(list(test.test.arg))==9 or list(test.test.arg)[0]=='check' :
+          example = list(test.test.arg)[1]
+          if example.language == None :
+            self.html.append('</li>')
+          status = list(test.test.arg)[0]
+          isEnd = False
+          if status=="build" and len(example.tests)==0 :
+            isEnd = True
+          if status=="run" or status=='check':
+            testPoint = list(test.test.arg)[2]
+            if (not hasattr(testPoint,'expectedPath')) or status=='check' :
+              if testPoint.path != example.path or testPoint.id == len(example.tests) :
+                isEnd = True
+          if isEnd :
             self.html.append('</ul>')
             if self.current.isPass():
               self.html.append('<a class="success">PASS</a>')                             

@@ -10,12 +10,13 @@ Within the opencmissextras directory there are cm and cellml directories.
 If you wish to make changes to OpenCMISS it is recommended that you fork the repositories on GitHub so that
 your changes can be pulled into the central repository from your GitHub account.
 The process of forking the OpenCMISS repositories and the workflow to use with Git is described in
-a page on the OpenCMISS wiki (https://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Proposed_Workflow).
+a page on the OpenCMISS wiki (https://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Proposed_Workflow). It is recommended 
+to make a directory called "opencmiss" and this will be your opencmiss root directory.  
 The OpenCMISS cm repository is at https://github.com/OpenCMISS/cm and the OpenCMISS examples
 repository is at https://github.com/OpenCMISS/examples/.
 The OpenCMISS cellml repository is at https://github.com/OpenCMISS/cellml/.
 Once you have forked the OpenCMISS cm, examples and cellml repositories on GitHub, you can clone them
-to your local machine by issuing the following commands in the opencmiss directory,
+to your local machine by issuing the following commands in the "opencmiss" directory,
 where <username> should be replaced with your GitHub username:
 \code git clone https://github.com/<username>/cm.git cm
  git clone https://github.com/<username>/examples.git examples
@@ -167,27 +168,33 @@ The opencmiss_programmers script will let you customise the setup by setting env
 - INTEL_TRACE_COLLECTOR_VERSION : the version of the intel trace collector to use e.g., 8.0.1.009
 - INTEL_MPI_VERSION : the version of the intel MPI to use e.g., 4.0.1.007
 
-If you are using totalview you will also need to add
+If you are using totalview, after installation you will also need to add
 \code export LM_LICENSE_FILES=<path-to-the-flex-directory> \endcode respectively, 
 \code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
 
+Details of totalview installation can be found <a href="http://www.roguewave.com/documents.aspx?entryid=1142&command=core_download">here</a>.  
+
+-For ABI users, you may use totalview installed in hpc3. It is installed in /usr/toolwork. Please make sure that you have set LM_LICENSE_FILES
+\code export LM_LICENSE_FILES=/usr/toolworks/flexlm-10.8.0-3/ \endcode respectively, 
+\code setenv LM_LICENSE_FILES /usr/toolworks/flexlm-10.8.0-3/ \endcode
+
 \subsubsection project_setup_linux_compile Compile
 
-To build an example project issue the following command into the ".../opencmiss/cm/examples/<example>/<sub-example>" directory:
+To build an example project issue the following command into the ".../opencmiss/examples/<example>/<sub-example>" directory:
 \code make \endcode
 
 Note, the default is the intel compiler. To explicitly use the gnu compiler use
 \code make COMPILER=gnu \endcode
 or set the COMPILER environment variable to be gnu. If the following error is received: 
 \code /usr/bin/ld: cannot find -lMrm \endcode
-Then you will need to ensure that you have the latest lesstif-devel library installed on your machine. Also ensure that you have the latest openmotif-devel library installed. If a further error message is received:
+Then you will need to ensure that you have the latest lesstif2-devel library installed on your machine. Also ensure that you have the latest openmotif-devel library installed. If a further error message is received:
 \code /usr/bin/ld: cannot find -lXmu \endcode
 Then install the libXmu-devel library. Finally if a further error message is received:
 \code /usr/bin/ld: cannot find -lstdc++ \endcode
 Then install the libstdc++-devel library.
 
 
-To run the example project issue the following command into the directory where the executable is found (e.g. ".../opencmiss/cm/examples/ClassicalField/NewLaplace/bin/x86_64-linux/mpich2/intel", depending on your example, sub-example, architecture, MPI library, and compiler):
+To run the example project issue the following command into the directory where the executable is found (e.g. ".../opencmiss/examples/ClassicalField/NewLaplace/bin/x86_64-linux/mpich2/intel", depending on your example, sub-example, architecture, MPI library, and compiler):
 \code mpd & mpirun -n 2 ./<executable> \endcode
 to run the executable on two processors. To debug the project using TotalView:
 \code mpd & mpirun -tv 2 ./<executable> \endcode
@@ -274,7 +281,7 @@ setenv PETSC_ARCH aix5.3.0.0 \endcode
 \section makefile_structure Makefile Structure
 The top level makefile (located in "<path to your root OpenCMISS directory>/opencmiss/cm/") will build the OpenCMISS library. Issue the following commands in the ".../opencmiss/cm/" directory:
 \code make \endcode or, if you want to use the GNU compiler (Version 4.4 or greater) \code make COMPILER=gnu \endcode
-In the examples directory there are separate compilable "applications" with individual makefiles, e.g. in ".../opencmiss/cm/examples/ClassicalField/NewLaplace". How to compile the examples will be explained further below.
+In the examples directory there are separate compilable "applications" with individual makefiles, e.g. in ".../opencmiss/examples/ClassicalField/NewLaplace". How to compile the examples will be explained further below.
 
 \section programmer_documentation Programmer documentation
 This programmer documentation is written using doxygen with the source located in the ".../opencmiss/cm/doc/doxygen/additional_doc/" folder. The source XML code can be transformed into documents in HTML format. Issue the following command into the ".../opencmiss/cm/doc/doxygen/" directory:
