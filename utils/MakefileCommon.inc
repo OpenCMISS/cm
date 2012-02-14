@@ -570,7 +570,7 @@ TAO_INCLUDE_PATH =#
 TAO_LIBRARIES =#
 TAO_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+  TAO_LIBRARIES = -ltao
   TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
