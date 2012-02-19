@@ -850,12 +850,13 @@ CONTAINS
             CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,NUMBER_OF_DIMENSIONS, &
               & NUMBER_OF_XI,DFDZ,ERR,ERROR,*999)
 
-            !For membrane theory in 3D space, the final equation is multiplied by thickness.
-            IF (EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE .AND. NUMBER_OF_DIMENSIONS == 3) THEN
-              THICKNESS = MATERIALS_INTERPOLATED_POINT%VALUES(MATERIALS_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS% &
-                &         FIELD_VARIABLE%NUMBER_OF_COMPONENTS, 1)
-            ELSE
-              THICKNESS = 1.0_DP
+            !For membrane theory in 3D space, the final equation is multiplied by thickness. Default to unit thickness if equation set subtype is not membrane
+            THICKNESS = 1.0_DP
+            IF(EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
+              IF(NUMBER_OF_DIMENSIONS == 3) THEN
+                THICKNESS = MATERIALS_INTERPOLATED_POINT%VALUES(MATERIALS_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS% &
+                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,1)
+              ENDIF
             ENDIF
 
             !Now add up the residual terms
@@ -1014,12 +1015,13 @@ CONTAINS
             CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,NUMBER_OF_DIMENSIONS, &
               & NUMBER_OF_XI,DFDZ,ERR,ERROR,*999)
 
-            !For membrane theory in 3D space, the final equation is multiplied by thickness.
-            IF (EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE .AND. NUMBER_OF_DIMENSIONS == 3) THEN
-              THICKNESS = MATERIALS_INTERPOLATED_POINT%VALUES(MATERIALS_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS% &
-                &         FIELD_VARIABLE%NUMBER_OF_COMPONENTS, 1)
-            ELSE
-              THICKNESS = 1.0_DP
+            !For membrane theory in 3D space, the final equation is multiplied by thickness. Default to unit thickness if equation set subtype is not membrane
+            THICKNESS = 1.0_DP
+            IF(EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
+              IF(NUMBER_OF_DIMENSIONS == 3) THEN
+                THICKNESS = MATERIALS_INTERPOLATED_POINT%VALUES(MATERIALS_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS% &
+                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,1)
+              ENDIF
             ENDIF
 
             !Now add up the residual terms
@@ -1156,12 +1158,13 @@ CONTAINS
             CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,NUMBER_OF_DIMENSIONS, &
               & NUMBER_OF_XI,DFDZ,ERR,ERROR,*999)
 
-            !For membrane theory in 3D space, the final equation is multiplied by thickness.
-            IF (EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE .AND. NUMBER_OF_DIMENSIONS == 3) THEN
-              THICKNESS = MATERIALS_INTERPOLATED_POINT%VALUES(MATERIALS_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS% &
-                &         FIELD_VARIABLE%NUMBER_OF_COMPONENTS, 1)
-            ELSE
-              THICKNESS = 1.0_DP
+            !For membrane theory in 3D space, the final equation is multiplied by thickness. Default to unit thickness if equation set subtype is not membrane
+            THICKNESS = 1.0_DP
+            IF(EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
+              IF(NUMBER_OF_DIMENSIONS == 3) THEN
+                THICKNESS = MATERIALS_INTERPOLATED_POINT%VALUES(MATERIALS_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS% &
+                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,1)
+              ENDIF
             ENDIF
 
             !Now add up the residual terms
@@ -1352,9 +1355,8 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    !-----------------------------------------------------------------------------------------------------------------------------------
-    ! CHECK ELEMENT RESIDUAL VECTOR
     IF(DIAGNOSTICS5) THEN
+      !Output element residual vector for first element
       IF(ELEMENT_NUMBER == 1) THEN
         NDOFS = 0
         FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLES(var1) ! 'U' variable
@@ -1374,7 +1376,6 @@ CONTAINS
           & '("",4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
       ENDIF
     ENDIF
-    !-----------------------------------------------------------------------------------------------------------------------------------
 
     CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE")
     RETURN
@@ -1970,7 +1971,8 @@ CONTAINS
               DO face_node_idx=1,FACE_BASIS%NUMBER_OF_NODES !nnf
                 element_node_idx=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx,element_face_idx) !nn
                 DO face_node_derivative_idx=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx) !nkf
-                  node_derivative_idx=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx,element_face_idx)
+                  !\todo DERIVATIVE_NUMBERS_IN_LOCAL_FACE has been indexed incorrectly here. Assumes 2nd' dimension is face_node_derivative_idx when it is in fact face_node_idx. Will be corrected once DERIVATIVE_NUMBERS_IN_LOCAL_FACE type structure is updated.
+                  node_derivative_idx=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,face_node_derivative_idx,element_face_idx)
                   parameter_idx=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx,element_node_idx)
                   face_parameter_idx=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx,face_node_idx)
                   element_dof_idx=element_base_dof_idx+parameter_idx

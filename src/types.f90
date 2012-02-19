@@ -219,14 +219,15 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: LOCAL_LINE_XI_DIRECTION(:) !<LOCAL_LINE_XI_DIRECTION(nae). The Xi direction of the nae'th local line for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_LINE(:) !<NUMBER_OF_NODES_IN_LOCAL_LINE(nae). The the number of nodes in the nae'th local line for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_LINE(:,:) !<NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The local node numbers (nn) for the nnl'th line node in the nae'th local line for the basis. Old CMISS name NNL(1..,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
     !Face information
     INTEGER(INTG) :: NUMBER_OF_LOCAL_FACES !<The number of local faces in the basis.
     INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
-    !\todo: what is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local element node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
+    !\todo Remove local face node derivative below since all nodes of the face would have the same number of derivatives (unless a node is collapsed?)
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnk,nnl,nae). The element derivative numbers (nk) for the nnk'th face derivative's nnl'th face node in the nae'th local face for the basis.
+    !\todo What is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
     INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
@@ -429,14 +430,14 @@ MODULE TYPES
 
   !>Embedded mesh types
   TYPE EMBEDDING_XI_TYPE
-    INTEGER(INTG) :: NUMBER_OF_NODES                  !<Number of nodes embedded in this element
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:)     !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
-    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)           !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
+    INTEGER(INTG) :: NUMBER_OF_NODES !<Number of nodes embedded in this element
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:) !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
+    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:) !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
   END TYPE EMBEDDING_XI_TYPE
 
   TYPE EMBEDDING_GAUSSPOINT_TYPE
-    INTEGER(INTG) :: ELEMENT_NUMBER             !<Element number in child mesh
-    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:)  !<Xi coord in this element
+    INTEGER(INTG) :: ELEMENT_NUMBER !<Element number in child mesh
+    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:) !<Xi coord in this element
     REAL(DP), ALLOCATABLE :: PARENT_XI_COORD(:) !<Xi coordinates in parent element, not really needed but can be useful
   END TYPE EMBEDDING_GAUSSPOINT_TYPE
 
@@ -2037,21 +2038,23 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(INTERFACE_CONDITION_PTR_TYPE), POINTER :: INTERFACE_CONDITIONS(:) !<INTERFACE_CONDITIONS(interface_condition_idx). A pointer to the interface_condition_idx'th interface condition.
   END TYPE INTERFACE_CONDITIONS_TYPE
   
-  !>Contains information on a mesh connectivity point
+  !>Contains information on the mesh connectivity for a given coupled mesh element
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx) !\todo Comment
-    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) !\todo Comment
+    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<The number of the coupled meshes element
+    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) \TODO FIX !<The xi_idx'th xi connectivity of a given coupled mesh element to an interface mesh's xi_idx'th xi, interface_mesh_component_idx'th' and element_idx'th interface element
+    INTEGER(INTG) :: CONNECTED_FACE !<The coupled mesh element face number to be connected to the interface mesh
+    INTEGER(INTG) :: CONNECTED_LINE !<The coupled mesh element line number to be connected to the interface mesh
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 
   !>Contains information on the coupling between meshes in an interface
   TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
-    TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH
-    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH !<A pointer to the inteface mesh
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the inteface mesh basis
     LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_INTERFACE_ELEMENTS !<The number of elements in the interface
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface
-    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENT_CONNECTIVITY(:,:) !<ELEMENT_CONNECTIVITY(element_idx,coupled_mesh_idx)
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENT_CONNECTIVITY(:,:) !<ELEMENT_CONNECTIVITY(element_idx,coupled_mesh_idx) !<The mesh connectivity for a given interface mesh element
   END TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
  
   !>Contains information for the interface data.

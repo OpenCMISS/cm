@@ -620,6 +620,8 @@ CONTAINS
        IF(INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
          CALL FLAG_ERROR("Interface meshes connectivity has already been finished.",ERR,ERROR,*999)
        ELSE
+         !Calculate line or face numbers for coupled mesh elements that are connected to the interface mesh
+         CALL INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*999)
          INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED=.TRUE.
        ENDIF
      ELSE
@@ -836,7 +838,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: NumberOfInterfaceElementNodes,NumberOfInterfaceMeshXiDirections
+    INTEGER(INTG) :: NumberOfInterfaceElementNodes,NumberOfCoupledMeshXiDirections
     TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -853,7 +855,8 @@ CONTAINS
               ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY% &
                 & ELEMENT_CONNECTIVITY(INTERFACE_MESH_ELEMENT_NUMBER,COUPLED_MESH_INDEX)
               ELEMENT_CONNECTIVITY%COUPLED_MESH_ELEMENT_NUMBER=COUPLED_MESH_ELEMENT_NUMBER
-              NumberOfInterfaceMeshXiDirections=INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_DIMENSIONS+1
+              !\todo NumberOfCoupledMeshXiDirections currently set to the number of interface mesh xi directions + 1. Restructure ELEMENT_CONNECTIVITY type see below
+              NumberOfCoupledMeshXiDirections=INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_DIMENSIONS+1
               NumberOfInterfaceElementNodes=INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_NODES
               IF(ALLOCATED(ELEMENT_CONNECTIVITY%XI)) THEN
                 LOCAL_ERROR="Interface mesh element connectivity already allocated for coupled mesh element " &
@@ -861,11 +864,14 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 !\todo Update mesh component index to look at the number of mesh components in each element. 
-                !\todo Currently this defaults to the first mesh component ie %XI(NumberOfInterfaceMeshXiDirections,1,NumberOfInterfaceElementNodes)). 
+                !\todo Currently this defaults to the first mesh component ie %XI(NumberOfInterfaceMeshXi,1,NumberOfInterfaceElementNodes)). 
                 !\todo The interface mesh types will also need to be restructured.
-                ALLOCATE(ELEMENT_CONNECTIVITY%XI(NumberOfInterfaceMeshXiDirections,1,NumberOfInterfaceElementNodes),STAT=ERR)
+                !eg. ELEMENT_CONNECTIVITY%COUPLED_MESH(CoupledMeshIdx)%MESH_COMPONENT(MeshComponentIdx)%XI(NumberOfCoupledMeshXiDirections,NumberOfInterfaceElementNodes) and adding appropriate initialize/finialize routines
+                ALLOCATE(ELEMENT_CONNECTIVITY%XI(NumberOfCoupledMeshXiDirections,1,NumberOfInterfaceElementNodes),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface element connectivity.",ERR,ERROR,*999)
                 ELEMENT_CONNECTIVITY%XI=0.0_DP
+                ELEMENT_CONNECTIVITY%CONNECTED_LINE=0
+                ELEMENT_CONNECTIVITY%CONNECTED_FACE=0
               ENDIF
             ELSE
               CALL FLAG_ERROR("Interface elements connectivity array not allocated.",ERR,ERROR,*999)
@@ -888,6 +894,73 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Calculate line or face numbers for coupled mesh elements that are connected to the interface mesh
+  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY !<A pointer to interface mesh connectivity to calculate line or face numbers for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    REAL(DP) :: XiDifference
+    INTEGER(INTG) :: CoupledMeshIdx,InterfaceElementIdx,CoupledMeshXiIdx,NumberOfInterfaceElementNodes,NumberOfInterfaceMeshXi
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE",ERR,ERROR,*999)
+    
+    DO CoupledMeshIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES
+      DO InterfaceElementIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS
+        ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)
+        NumberOfInterfaceElementNodes=INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_NODES
+        NumberOfInterfaceMeshXi=INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_DIMENSIONS
+        SELECTCASE(NumberOfInterfaceMeshXi)
+        CASE(1) !Lines
+          DO CoupledMeshXiIdx=1,INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(CoupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
+            ! Calculate difference between first node and last node of an element
+            XiDifference=ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,1)- &
+              & ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)
+            IF(XiDifference==0.0_DP) THEN
+              IF(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)==0.0_DP) THEN
+                ELEMENT_CONNECTIVITY%CONNECTED_LINE=3-(CoupledMeshXiIdx-1)*2
+              ELSE
+                ELEMENT_CONNECTIVITY%CONNECTED_LINE=4-(CoupledMeshXiIdx-1)*2
+              ENDIF
+            ENDIF
+          ENDDO
+        CASE(2) !Faces
+          DO CoupledMeshXiIdx=1,INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(CoupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
+            XiDifference=ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,1)- &
+              & ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)
+            IF(XiDifference==0.0_DP) THEN
+              IF(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)==0.0_DP) THEN
+                ELEMENT_CONNECTIVITY%CONNECTED_FACE=(CoupledMeshXiIdx-1)*2+2
+              ELSE
+                ELEMENT_CONNECTIVITY%CONNECTED_FACE=(CoupledMeshXiIdx-1)*2+1
+              ENDIF
+            ENDIF
+          ENDDO
+        CASE DEFAULT 
+          LOCAL_ERROR="Number of interface mesh dimension of "//TRIM(NUMBER_TO_VSTRING(NumberOfInterfaceMeshXi,"*",ERR,ERROR))// &
+            & "is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDSELECT
+      ENDDO
+    ENDDO
+    
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE")
+    RETURN
+    
+999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE",ERR,ERROR)
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE")
+    RETURN 1
+  
+  END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE
 
   !
   !================================================================================================================================

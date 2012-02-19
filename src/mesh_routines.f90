@@ -2517,8 +2517,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,ne,surrounding_element_idx,basis_local_face_idx,surrounding_element_basis_local_face_idx, &
-      & element_local_node_idx,basis_local_face_node_idx,derivative_idx,version_idx,face_idx,node_idx,elem_idx,NODES_IN_FACE(16), &
-      & NUMBER_OF_FACES,MAX_NUMBER_OF_FACES,NEW_MAX_NUMBER_OF_FACES,FACE_NUMBER!,NODE_COUNT,node_idx1,node_idx2,node_idx3,node_idx4,nf2,np2
+      & element_local_node_idx,basis_local_face_node_idx,basis_local_face_derivative_idx,derivative_idx,version_idx,face_idx, &
+      & node_idx,elem_idx,NODES_IN_FACE(16),NUMBER_OF_FACES,MAX_NUMBER_OF_FACES,NEW_MAX_NUMBER_OF_FACES,FACE_NUMBER
     INTEGER(INTG), ALLOCATABLE :: NODES_NUMBER_OF_FACES(:)
     INTEGER(INTG), POINTER :: TEMP_FACES(:,:),NEW_TEMP_FACES(:,:)
     LOGICAL :: FOUND
@@ -2560,7 +2560,7 @@ CONTAINS
                 IF(ASSOCIATED(DOMAIN_NODES)) THEN
                   DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                   IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
-                    !Guestimate the number of faces
+                    !Estimate the number of faces
                     SELECT CASE(DOMAIN%NUMBER_OF_DIMENSIONS)
                     CASE(1)
                       ! Faces not calculated in 1D 
@@ -2568,8 +2568,8 @@ CONTAINS
                       ! Faces not calculated in 2D
                     CASE(3)
                       !This should give the maximum and will over estimate the number of faces for a "cube mesh" by approx 33%
-                      MAX_NUMBER_OF_FACES=NINT(((REAL(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS,DP)*5.0_DP)+1.0_DP)&
-                                                                                                 & *(4.0_DP/3.0_DP),INTG)
+                      MAX_NUMBER_OF_FACES= &
+                        & NINT(((REAL(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS,DP)*5.0_DP)+1.0_DP)*(4.0_DP/3.0_DP),INTG)
 
                       DOMAIN_FACES=>DOMAIN_TOPOLOGY%FACES
                       IF(ASSOCIATED(DOMAIN_FACES)) THEN
@@ -2626,7 +2626,7 @@ CONTAINS
                               IF(NUMBER_OF_FACES==MAX_NUMBER_OF_FACES) THEN
                                 !We are at maximum. Reallocate the FACES array to be 20% bigger and try again.
                                 NEW_MAX_NUMBER_OF_FACES=NINT(1.20_DP*REAL(MAX_NUMBER_OF_FACES,DP),INTG)
-!HERE: Change 16 to a variable and above for NODES_IN_FACE
+                                !\todo: Change 16 to a variable and above for NODES_IN_FACE
                                 ALLOCATE(NEW_TEMP_FACES(16,NEW_MAX_NUMBER_OF_FACES),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new number of faces",ERR,ERROR,*999)
                                 NEW_TEMP_FACES(:,1:NUMBER_OF_FACES)=TEMP_FACES(:,1:NUMBER_OF_FACES)
@@ -2698,11 +2698,14 @@ CONTAINS
                               ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                                 & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)),STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face derivatives in face",ERR,ERROR,*999)
+                              DOMAIN_FACE%DERIVATIVES_IN_FACE=0
                               !Set nodes in face based upon face number
                               DOMAIN_FACE%NODES_IN_FACE=TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx), &
                                 & FACE_NUMBER)
                               !Set derivatives of nodes in domain face from derivatives of nodes in element
                               DO basis_local_face_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)
+                                element_local_node_idx=BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx, &
+                                  & basis_local_face_idx)
                                 !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
                                 DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
                                 !Set version number of u (NO_GLOBAL_DERIV) for the domain face
@@ -2710,14 +2713,18 @@ CONTAINS
                                   & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
                                 DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                 IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                  derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                    & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
-                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(1,2,basis_local_face_node_idx)=derivative_idx
-                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                    & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
-                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(2,2,basis_local_face_node_idx)=version_idx
+                                  DO basis_local_face_derivative_idx=2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
+                                      & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(1,basis_local_face_derivative_idx, &
+                                      & basis_local_face_node_idx)=derivative_idx
+                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
+                                      & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(2,basis_local_face_derivative_idx, &
+                                      & basis_local_face_node_idx)=version_idx
+                                  ENDDO !basis_local_face_derivative_idx
                                 ENDIF
                               ENDDO !basis_local_face_node_idx
                             ENDIF
@@ -2725,7 +2732,7 @@ CONTAINS
                         ENDDO !ne
 
                         DEALLOCATE(TEMP_FACES)
-! Note: Adjacency will be left out of faces calculation for the time being
+                        !\todo Note: Adjacency will be left out of faces calculation for the time being
                         !Calculate adjacent faces and the surrounding elements for each face
                         DO face_idx=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
                           DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(face_idx)
@@ -2840,7 +2847,7 @@ CONTAINS
                       IF(ASSOCIATED(DOMAIN_NODES)) THEN
                         DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                         IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
-                          DOMAIN_FACES=>DOMAIN_TOPOLOGY%FACES                      
+                          DOMAIN_FACES=>DOMAIN_TOPOLOGY%FACES
                           IF(ASSOCIATED(DOMAIN_FACES)) THEN
                             ALLOCATE(DOMAIN_FACES%FACES(DECOMPOSITION_FACES%NUMBER_OF_FACES),STAT=ERR)
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain faces faces",ERR,ERROR,*999)
@@ -2879,14 +2886,18 @@ CONTAINS
                                     & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
                                   DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                   IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
-                                      & element_local_node_idx)
-                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(1,2,basis_local_face_node_idx)=derivative_idx
-                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
-                                      & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
-                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(2,2,basis_local_face_node_idx)=version_idx
+                                    DO basis_local_face_derivative_idx=2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                                      derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                        & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
+                                        & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                      DOMAIN_FACE%DERIVATIVES_IN_FACE(1,basis_local_face_derivative_idx, &
+                                        & basis_local_face_node_idx)=derivative_idx
+                                      version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                        & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
+                                        & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                      DOMAIN_FACE%DERIVATIVES_IN_FACE(2,basis_local_face_derivative_idx, &
+                                        & basis_local_face_node_idx)=version_idx
+                                    ENDDO !basis_local_face_derivative_idx
                                   ENDIF
                                   NODES_NUMBER_OF_FACES(node_idx)=NODES_NUMBER_OF_FACES(node_idx)+1
                                 ENDDO !basis_local_face_node_idx
