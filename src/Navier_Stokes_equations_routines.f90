@@ -4347,12 +4347,6 @@ CONTAINS
                                                   & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                                                 IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== &
                                                   & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN) THEN
-                                                  !Taylor-Green whole field initialization
-                                                  IF(CURRENT_TIME==0.0_DP) THEN
-                                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
-                                                      & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
-                                                      & VALUE,ERR,ERROR,*999)
-                                                  ENDIF
                                                   !Taylor-Green boundary conditions update
                                                   IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                                     BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
