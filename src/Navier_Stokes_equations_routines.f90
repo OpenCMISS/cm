@@ -4284,7 +4284,6 @@ CONTAINS
                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                             ! Analytic parameters
                             ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
-                            EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)=CURRENT_TIME 
                             NULLIFY(ANALYTIC_VARIABLE)
                             NULLIFY(ANALYTIC_PARAMETERS)
                             IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
