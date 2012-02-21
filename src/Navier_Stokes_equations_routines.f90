@@ -6919,8 +6919,8 @@ CONTAINS
                 !Calculate element length scale H
                 !TODO: calculate this length scale in field_routines instead
                 H_SUPG=0.0_DP
-                X1(1:3)=0.0_DP
-                X2(1:3)=0.0_DP
+                X1=0.0_DP
+                X2=0.0_DP
                 LINE_LENGTH=0.0_DP
                 GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
                 GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
@@ -6965,7 +6965,7 @@ CONTAINS
 
                 UMAG_SUPG=0.0_DP
                 UMAX_SUPG=0.0_DP
-                U_VALUE(1:3)=0.0_DP
+                U_VALUE=0.0_DP
 
                 !Calculate element-based velocity metrics
                 CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
@@ -6976,7 +6976,7 @@ CONTAINS
                   & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
                 DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                  U_SUPG(1:3)=0.0_DP
+                  U_SUPG=0.0_DP
                   CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                     & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
@@ -6994,7 +6994,7 @@ CONTAINS
                   END IF
                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                    U_SUPG(1:3)=U_SUPG(1:3)+U_VALUE(1:3)*PHIMS
+                    U_SUPG=U_SUPG+U_VALUE*PHIMS
                   END DO !ms
                   UMAG_SUPG=SQRT(U_SUPG(1)**2.0_DP+U_SUPG(2)**2.0_DP+U_SUPG(3)**2.0_DP)
                   UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG) !maximum velocity magnitude over all gauss points
