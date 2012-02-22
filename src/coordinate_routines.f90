@@ -680,7 +680,7 @@ CONTAINS
             DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
               METRICS%GL(ni,ni)=1.0_DP
               METRICS%GU(ni,ni)=1.0_DP
-            ENDDO !i
+            ENDDO !ni
             METRICS%JACOBIAN=0.0_DP
             
             !Calculate the covariant metric tensor GL(i,j)

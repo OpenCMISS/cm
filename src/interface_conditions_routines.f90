@@ -2179,7 +2179,7 @@ CONTAINS
     INTEGER(INTG) :: ng, mh, mhs, ms, nh, nhs, ns, mhc, dir,derivativeIdx,derivative,localNode,localNodeIdx,localElementNode
     INTEGER(INTG) :: connectedLine,lineNodeIdx,decompositionLineNumber,localLineNode,localLineNodeIdx
     INTEGER(INTG) :: connectedFace,faceNodeIdx,decompositionFaceNumber,localFaceNode,localFaceNodeIdx
-    INTEGER(INTG) :: interfaceNode,interfaceDerivative
+    INTEGER(INTG) :: interfaceNode,interfaceDerivative,coupledMeshElementNumber
     REAL(DP) :: XI(3),RWG,PGMSI,PGNSI,MATRIX_COEFFICIENT
     INTEGER(INTG) :: interface_matrix_idx
     INTEGER(INTG) :: INTERFACE_MATRIX_VARIABLE_TYPE,LAGRANGE_VARIABLE_TYPE
@@ -2236,7 +2236,7 @@ CONTAINS
             & GEOMETRIC_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
           MATRIX_COEFFICIENT=1.0_DP
-          DO interface_matrix_idx=1,INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES-1
+          DO interface_matrix_idx=1,INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
             IF(INTERFACE_EQUATIONS%INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR%UPDATE_MATRIX) THEN
               !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
               IF(interface_matrix_idx>1) THEN
@@ -2251,6 +2251,7 @@ CONTAINS
               INTERFACE_ELEMENT_MATRIX=>INTERFACE_EQUATIONS%INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR%ELEMENT_MATRIX
               ELEMENT_CONNECTIVITY=>INTERFACE_CONDITION%INTERFACE%MESH_CONNECTIVITY% &
                 & ELEMENT_CONNECTIVITY(ELEMENT_NUMBER,interface_matrix_idx)
+              coupledMeshElementNumber=ELEMENT_CONNECTIVITY%COUPLED_MESH_ELEMENT_NUMBER
               SELECT CASE(INTERFACE_CONDITION%OPERATOR)
               CASE(INTERFACE_CONDITION_FIELD_GAUSS_CONTINUITY_OPERATOR)
                 !Loop over gauss points
@@ -2285,12 +2286,12 @@ CONTAINS
                     DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                       mhc=INTERFACE_MATRIX_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                       COUPLED_MESH_BASIS=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% & 
-                        & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%BASIS
                       SELECT CASE(INTERFACE_DEPENDENT_BASIS%NUMBER_OF_XI)
                       CASE(1) !1D interface (line)
                         connectedLine = ELEMENT_CONNECTIVITY%CONNECTED_LINE
                         decompositionLineNumber=INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY% &
-                          & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_LINES(connectedLine)
+                          & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%ELEMENT_LINES(connectedLine)
                         COUPLED_MESH_DOMAIN_LINE=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% &
                           & LINES%LINES(decompositionLineNumber)
                         DO localLineNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(connectedLine)
@@ -2347,7 +2348,7 @@ CONTAINS
                         CASE(3) !Coupled Mesh has 3 xi directions
                           connectedFace = ELEMENT_CONNECTIVITY%CONNECTED_FACE
                           decompositionFaceNumber=INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY% &
-                            & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_FACES(connectedFace)
+                            & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%ELEMENT_FACES(connectedFace)
                           COUPLED_MESH_DOMAIN_FACE=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% &
                             & FACES%FACES(decompositionFaceNumber)
                           DO localFaceNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(connectedFace)
@@ -2387,26 +2388,16 @@ CONTAINS
                 DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                   mhc=INTERFACE_MATRIX_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   COUPLED_MESH_BASIS=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% & 
-                    & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%BASIS
                   SELECT CASE(INTERFACE_DEPENDENT_BASIS%NUMBER_OF_XI)
                   CASE(1) !1D interface (line)
                     connectedLine = ELEMENT_CONNECTIVITY%CONNECTED_LINE
                     decompositionLineNumber=INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY% &
-                      & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_LINES(connectedLine)
+                      & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%ELEMENT_LINES(connectedLine)
                     COUPLED_MESH_DOMAIN_LINE=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% &
                       & LINES%LINES(decompositionLineNumber)
                     DO localLineNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(connectedLine)
                       localElementNode=COUPLED_MESH_BASIS%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
-                      IF (mh==4) THEN
-                        PGMSI=1.0_DP
-                      ELSE
-                        !Calculate PGMSI based on node NO_PART_DERIV
-                        !\todo defaults to first mesh component, Generalise
-                        PGMSI=BASIS_EVALUATE_XI(COUPLED_MESH_BASIS,COUPLED_MESH_BASIS% &
-                          & ELEMENT_PARAMETER_INDEX(1,localElementNode),NO_PART_DERIV,INTERFACE_CONDITION%INTERFACE% &
-                          & MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(ELEMENT_NUMBER,interface_matrix_idx)% &
-                          & XI(:,1,localLineNodeIdx),ERR,ERROR)
-                      ENDIF
                       DO derivativeIdx=1,COUPLED_MESH_DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
                         derivative=COUPLED_MESH_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
                         derivative=COUPLED_MESH_DOMAIN_LINE%DERIVATIVES_IN_LINE(1,derivativeIdx,localLineNodeIdx)
@@ -2418,23 +2409,13 @@ CONTAINS
                         !Direct map between nodal lagrange parameter and corresponding coupled mesh parameter therefore PGNSI=1, so not required below
                         !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
                         INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                          & PGMSI*MATRIX_COEFFICIENT
+                          & MATRIX_COEFFICIENT
                       ENDDO !derivativeIdx
                     ENDDO !lineNodeIdx
                   CASE(2) !2D interface (face)
                     SELECT CASE(COUPLED_MESH_BASIS%NUMBER_OF_XI)
                     CASE(2) !Coupled Mesh has 2 xi directions
                       DO localElementNode=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES
-                        IF (mh==4) THEN
-                          PGMSI=1.0_DP
-                        ELSE
-                          !Calculate PGMSI based on node NO_PART_DERIV
-                          !\todo defaults to first mesh component, Generalise
-                          PGMSI=BASIS_EVALUATE_XI(COUPLED_MESH_BASIS,COUPLED_MESH_BASIS% &
-                            & ELEMENT_PARAMETER_INDEX(1,localElementNode),NO_PART_DERIV,INTERFACE_CONDITION%INTERFACE% &
-                            & MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(ELEMENT_NUMBER,interface_matrix_idx)% &
-                            & XI(:,1,localElementNode),ERR,ERROR)
-                        ENDIF
                         DO derivative=1,COUPLED_MESH_DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
                           ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
                           mhs=ms+COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
@@ -2444,27 +2425,17 @@ CONTAINS
                           !Direct map between nodal lagrange parameter and corresponding coupled mesh parameter therefore PGNSI=1, so not required below
                           !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
                           INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                            & PGMSI*MATRIX_COEFFICIENT
+                            & MATRIX_COEFFICIENT
                         ENDDO !derivative
                       ENDDO !localElementNode
                     CASE(3) !Coupled Mesh has 3 xi directions
                       connectedFace = ELEMENT_CONNECTIVITY%CONNECTED_FACE
                       decompositionFaceNumber=INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY% &
-                        & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_FACES(connectedFace)
+                        & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%ELEMENT_FACES(connectedFace)
                       COUPLED_MESH_DOMAIN_FACE=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% &
                         & FACES%FACES(decompositionFaceNumber)
                       DO localFaceNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(connectedFace)
                         localElementNode=COUPLED_MESH_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(localFaceNodeIdx,connectedFace)
-                        IF (mh==4) THEN
-                          PGMSI=1.0_DP
-                        ELSE
-                          !Calculate PGMSI based on node NO_PART_DERIV
-                          !\todo defaults to first mesh component, Generalise
-                          PGMSI=BASIS_EVALUATE_XI(COUPLED_MESH_BASIS,COUPLED_MESH_BASIS% &
-                            & ELEMENT_PARAMETER_INDEX(1,localElementNode),NO_PART_DERIV,INTERFACE_CONDITION%INTERFACE% &
-                            & MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(ELEMENT_NUMBER,interface_matrix_idx)% &
-                            & XI(:,1,localFaceNodeIdx),ERR,ERROR)
-                        ENDIF
                         DO derivativeIdx=1,COUPLED_MESH_DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
                           derivative=COUPLED_MESH_BASIS% &
                             & DERIVATIVE_NUMBERS_IN_LOCAL_FACE(derivativeIdx,localFaceNodeIdx,connectedFace)
@@ -2476,7 +2447,7 @@ CONTAINS
                           !Direct map between nodal lagrange parameter and corresponding coupled mesh parameter therefore PGNSI=1, so not required below
                           !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
                           INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                            & PGMSI*MATRIX_COEFFICIENT
+                            & MATRIX_COEFFICIENT
                         ENDDO !derivativeIdx
                       ENDDO !FaceNodeIdx
                     END SELECT
@@ -2524,7 +2495,7 @@ CONTAINS
                   DO mh=1,LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
                     mhc=INTERFACE_MATRIX_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                     COUPLED_MESH_BASIS=>INTERFACE_MATRIX_DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(mhc)%PTR%TOPOLOGY% & 
-                      & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                      & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%BASIS
                     !Loop over element rows
                     DO ms=1,COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       mhs=mhs+1
@@ -2543,9 +2514,9 @@ CONTAINS
                 ENDIF
                 !Scale factor adjustment for the row dependent variable
                 IF(INTERFACE_MATRIX_DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,INTERFACE_EQUATIONS%INTERPOLATION% &
-                    & VARIABLE_INTERPOLATION(interface_matrix_idx)%DEPENDENT_INTERPOLATION(1)% & 
-                    & INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(coupledMeshElementNumber, &
+                    & INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(interface_matrix_idx)% &
+                    & DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(INTERFACE_MATRIX_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                   mhs=0
                   DO mh=1,INTERFACE_MATRIX_VARIABLE%NUMBER_OF_COMPONENTS
                     !Loop over element rows
@@ -2657,7 +2628,7 @@ CONTAINS
             & INTERFACE_MESH_CONNECTIVITY%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP &
             & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,GAUSS_POINT) * INTERFACE_MESH_CONNECTIVITY% & 
             & ELEMENT_CONNECTIVITY(ELEMENT_NUMBER,COUPLED_MESH_NUMBER)%XI(:,1,ms)
-        END DO
+        ENDDO
       ELSE
         CALL FLAG_ERROR("Coupled Mesh xi array not allocated.",ERR,ERROR,*999)
       END IF
