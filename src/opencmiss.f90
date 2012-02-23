@@ -4099,7 +4099,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterfaceEquations_OutputTypeGet,CMISSInterfaceEquations_OutputTypeSet
 
->>>>>>> d6f129767628a2056337bd131676493fd5e01e4b
 !!==================================================================================================================================
 !!
 !! KINDS
@@ -7116,57 +7115,6 @@ CONTAINS
      RETURN
 
    END SUBROUTINE CMISSInterfaceMeshConnectivity_Initialise
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Initialises a CMISSInterfaceMeshConnectivityType object.
-   SUBROUTINE CMISSInterfacePointsConnectivityTypeInitialise(CMISSInterfacePointsConnectivity,Err)
-   
-     !Argument variables
-     TYPE(CMISSInterfacePointsConnectivityType), INTENT(OUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
-     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-     !Local variables
- 
-     CALL ENTERS("CMISSInterfacePointsConnectivityTypeInitialise",err,error,*999)
-     
-     NULLIFY(CMISSInterfacePointsConnectivity%POINTS_CONNECTIVITY)
- 
-     CALL EXITS("CMISSInterfacePointsConnectivityTypeInitialise")
-     RETURN
- 999 CALL ERRORS("CMISSInterfacePointsConnectivityTypeInitialise",err,ERROR)
-     CALL EXITS("CMISSInterfacePointsConnectivityTypeInitialise")    
-     CALL CMISS_HANDLE_ERROR(Err,ERROR)
-     RETURN
-     
-   END SUBROUTINE CMISSInterfacePointsConnectivityTypeInitialise
-
-  !
-  !================================================================================================================================
-  !		
-  
-    !>Initialises a CMISSInterfaceMeshConnectivityType object.
-   SUBROUTINE CMISSInterfacePointsConnectivityNumberOfPointsSet(CMISSInterfacePointsConnectivity,NumberOfDataPoints,Err)
-   
-     !Argument variables
-     TYPE(CMISSInterfacePointsConnectivityType), INTENT(INOUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
-     INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints
-     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-     !Local variables
- 
-     CALL ENTERS("CMISSInterfacePointsConnectivityNumberOfPointsSet",err,error,*999)
-     
-     
- 
-     CALL EXITS("CMISSInterfacePointsConnectivityNumberOfPointsSet")
-     RETURN
- 999 CALL ERRORS("CMISSInterfacePointsConnectivityNumberOfPointsSet",err,ERROR)
-     CALL EXITS("CMISSInterfacePointsConnectivityNumberOfPointsSet")    
-     CALL CMISS_HANDLE_ERROR(Err,ERROR)
-     RETURN
-     
-   END SUBROUTINE CMISSInterfacePointsConnectivityNumberOfPointsSet
 
   !
   !================================================================================================================================
@@ -32101,7 +32049,7 @@ CONTAINS
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceCreateStartObj
+  END SUBROUTINE CMISSInterface_CreateStartObj
   
   !  
   !================================================================================================================================
@@ -32219,14 +32167,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
-    CALL EXITS("CMISSInterfaceCoordinateSystemGetNumber")
+    CALL EXITS("CMISSInterface_CoordinateSystemGetNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceCoordinateSystemGetNumber",err,ERROR)
-    CALL EXITS("CMISSInterfaceCoordinateSystemGetNumber")
+999 CALL ERRORS("CMISSInterface_CoordinateSystemGetNumber",err,ERROR)
+    CALL EXITS("CMISSInterface_CoordinateSystemGetNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceCoordinateSystemGetNumber
+  END SUBROUTINE CMISSInterface_CoordinateSystemGetNumber
 
   !  
   !================================================================================================================================
