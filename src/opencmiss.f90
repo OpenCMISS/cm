@@ -3827,6 +3827,7 @@ MODULE OPENCMISS
   !Interfaces
 
   !>Adds a mesh to an interface.
+
   INTERFACE CMISSInterface_MeshAdd
     MODULE PROCEDURE CMISSInterface_MeshAddNumber
     MODULE PROCEDURE CMISSInterface_MeshAddObj
@@ -3843,6 +3844,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterface_CreateStartNumber
     MODULE PROCEDURE CMISSInterface_CreateStartObj
   END INTERFACE !CMISSInterface_CreateStart
+
+  !>Set the coordinate system of an inteface
+  INTERFACE CMISSInterface_CoordinateSystemSet
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemSetNumber
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemSetObj
+  END INTERFACE !CMISSInterfaceCoordinateSystemSet
+  
+  !>Get the coordinate system of an inteface
+  INTERFACE CMISSInterface_CoordinateSystemGet
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemGetNumber
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemGetObj
+  END INTERFACE !CMISSInterface_CoordinateSystemGet
 
   !>Destroys an interface.
   INTERFACE CMISSInterface_Destroy
@@ -3905,6 +3918,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterface_MeshAdd
 
   PUBLIC CMISSInterface_CreateFinish,CMISSInterface_CreateStart
+  
+  PUBLIC CMISSInterface_CoordinateSystemSet,CMISSInterface_CoordinateSystemGet
 
   PUBLIC CMISSInterface_Destroy
 
@@ -6068,14 +6083,14 @@ CONTAINS
           IF(ASSOCIATED(BasesCPtrs)) THEN
             bases(basis_idx)%BASIS => Basis%BASIS
           ELSE
-            CALL FLAG_ERROR("error converting C pointer.",ERR,error,*999)
+            CALL FLAG_ERROR("error converting C pointer.",err,error,*999)
           END IF
         END DO
       ELSE
-        CALL FLAG_ERROR("error converting C pointer.",ERR,error,*999)
+        CALL FLAG_ERROR("error converting C pointer.",err,error,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("bases C pointer is not associated.",ERR,error,*999)
+      CALL FLAG_ERROR("bases C pointer is not associated.",err,error,*999)
     END IF
 
     CALL EXITS("CMISSBasisTypesCopy")
@@ -6737,12 +6752,12 @@ CONTAINS
 
     IF(ASSOCIATED(Interface%iNTERFACE)) THEN
       IF(ASSOCIATED(fields%FIELDS)) THEN
-        CALL FLAG_ERROR("fields is already associated.",ERR,error,*999)
+        CALL FLAG_ERROR("fields is already associated.",err,error,*999)
       ELSE
         fields%FIELDS=>Interface%iNTERFACE%FIELDS
       END IF
     ELSE
-      CALL FLAG_ERROR("The interface is not associated.",ERR,error,*999)
+      CALL FLAG_ERROR("The interface is not associated.",err,error,*999)
     END IF
 
     CALL EXITS("CMISSFields_CreateInterface")
@@ -6771,12 +6786,12 @@ CONTAINS
 
     IF(ASSOCIATED(region%REGION)) THEN
       IF(ASSOCIATED(fields%FIELDS)) THEN
-        CALL FLAG_ERROR("fields is already associated.",ERR,error,*999)
+        CALL FLAG_ERROR("fields is already associated.",err,error,*999)
       ELSE
         fields%FIELDS=>region%REGION%FIELDS
       END IF
     ELSE
-      CALL FLAG_ERROR("The region is not associated.",ERR,error,*999)
+      CALL FLAG_ERROR("The region is not associated.",err,error,*999)
     END IF
 
     CALL EXITS("CMISSFields_CreateRegion")
@@ -7103,7 +7118,7 @@ CONTAINS
 
   !
   !================================================================================================================================
-  !
+  !		
 
   !>Finalises a CMISSHistoryType object.
   SUBROUTINE CMISSHistory_Finalise(CMISSHistory,err)
@@ -7665,7 +7680,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
-          & componentNumber,value,ERR, error,*999)
+          & componentNumber,value,err, error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -7707,7 +7722,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(field%FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
-      & componentNumber,value,ERR,error,*999)
+      & componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj")
 
@@ -7751,7 +7766,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
-          & componentNumber,value,ERR,error,*999)
+          & componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -7793,7 +7808,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(field%FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
-      & componentNumber,value,ERR,error,*999)
+      & componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj")
 
@@ -7838,7 +7853,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
-          & componentNumber,value,ERR,error,*999)
+          & componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -7880,7 +7895,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(field%FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
-      & componentNumber,value,ERR,error,*999)
+      & componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj")
 
@@ -7921,7 +7936,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
+        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(FIELD,variableType,elementNumber,componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -7959,7 +7974,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetElementObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
+    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetElementObj")
 
@@ -8000,7 +8015,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
+        CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(FIELD,variableType,elementNumber,componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8038,7 +8053,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetElementObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
+    CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetElementObj")
 
@@ -8080,7 +8095,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
+        CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(FIELD,variableType,elementNumber,componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8118,7 +8133,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetElementObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
+    CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetElementObj")
 
@@ -8158,7 +8173,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_CONSTANT(FIELD,variableType,componentNumber,value,ERR,error,*999)
+        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_CONSTANT(FIELD,variableType,componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8195,7 +8210,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,ERR,error,*999)
+    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantObj")
 
@@ -8235,7 +8250,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_CONSTANT(FIELD,variableType,componentNumber,value,ERR,error,*999)
+        CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_CONSTANT(FIELD,variableType,componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8272,7 +8287,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetConstantObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,ERR,error,*999)
+    CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetConstantObj")
 
@@ -8313,7 +8328,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT(FIELD,variableType,componentNumber,value,ERR,error,*999)
+        CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT(FIELD,variableType,componentNumber,value,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8350,7 +8365,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetConstantObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,ERR,error,*999)
+    CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetConstantObj")
 
@@ -8394,7 +8409,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE(FIELD,variableType,componentNumber,errorType,localValue,localGhostValue, &
-          & globalValue,ERR,error,*999)
+          & globalValue,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8436,7 +8451,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE(field%FIELD,variableType,componentNumber,errorType,localValue,localGhostValue, &
-      & globalValue,ERR,error,*999)
+      & globalValue,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeObj")
 
@@ -8480,7 +8495,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT(FIELD,variableType,componentNumber,errorType,localValue,localGhostValue, &
-          & globalValue,ERR,error,*999)
+          & globalValue,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -8522,7 +8537,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT(field%FIELD,variableType,componentNumber,errorType,localValue,localGhostValue, &
-      & globalValue,ERR,error,*999)
+      & globalValue,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementObj")
 
@@ -8768,7 +8783,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENTAGE_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue, &
-      & ghostIntegralValue,ERR,error,*999)
+      & ghostIntegralValue,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")
 
@@ -8974,7 +8989,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(FIELD,variableType,componentNumber,integralValue, &
-          & ghostIntegralValue,ERR,error,*999)
+          & ghostIntegralValue,err,error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -9014,7 +9029,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",err,error,*999)
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(field%FIELD,variableType,componentNumber,integralValue, &
-      & ghostIntegralValue,ERR,error,*999)
+      & ghostIntegralValue,err,error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")
 
@@ -9055,7 +9070,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(FIELD,variableType,componentNumber,integralValue,ghostIntegralValue,ERR, &
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(FIELD,variableType,componentNumber,integralValue,ghostIntegralValue,err, &
           & error,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
@@ -9094,7 +9109,7 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",err,error,*999)
 
-    CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue,ERR, &
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue,err, &
       & error,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")
@@ -9224,7 +9239,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
-    CALL ENTERS("CMISSTimingSetOff",ERR,error,*999)
+    CALL ENTERS("CMISSTimingSetOff",err,error,*999)
 
     CALL TIMING_SET_OFF(err,error,*999)
 
@@ -9308,7 +9323,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_CollapsedXiGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_COLLAPSED_XI_GET(BASIS,collapsedXi,err,error,*999)
     ELSE
@@ -9366,10 +9381,10 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSBasis_CollapsedXiSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSBasis_CollapsedXiSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_COLLAPSED_XI_SET(BASIS,collapsedXi,err,error,*999)
     ELSE
@@ -9426,7 +9441,7 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSBasis_CreateFinishNumber",ERR,error,*999)
+    CALL ENTERS("CMISSBasis_CreateFinishNumber",err,error,*999)
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
@@ -9557,7 +9572,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_DestroyNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_DESTROY(BASIS,err,error,*999)
     ELSE
@@ -9617,7 +9632,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_InterpolationXiGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_INTERPOLATION_XI_GET(BASIS,interpolationXi,err,error,*999)
     ELSE
@@ -9675,10 +9690,10 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSBasis_InterpolationXiSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSBasis_InterpolationXiSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_INTERPOLATION_XI_SET(BASIS,interpolationXi,err,error,*999)
     ELSE
@@ -9739,7 +9754,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_NumberOfLocalNodesGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_NUMBER_OF_LOCAL_NODES_GET(BASIS,numberOfLocalNodes,err,error,*999)
     ELSE
@@ -9800,7 +9815,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_NumberOfXiGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_NUMBER_OF_XI_GET(BASIS,numberOfXi,err,error,*999)
     ELSE
@@ -9861,7 +9876,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_NumberOfXiSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_NUMBER_OF_XI_SET(BASIS,numberOfXi,err,error,*999)
     ELSE
@@ -9922,7 +9937,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureNumberOfGaussXiGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET(BASIS,numberOfGaussXi,err,error,*999)
     ELSE
@@ -9983,7 +9998,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureNumberOfGaussXiSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET(BASIS,numberOfGaussXi,err,error,*999)
     ELSE
@@ -10044,7 +10059,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureOrderGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_ORDER_GET(BASIS,quadratureOrder,err,error,*999)
     ELSE
@@ -10106,7 +10121,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureOrderSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_ORDER_SET(BASIS,quadratureOrder,err,error,*999)
     ELSE
@@ -10167,7 +10182,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureTypeGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_TYPE_GET(BASIS,quadratureType,err,error,*999)
     ELSE
@@ -10228,7 +10243,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureTypeSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_TYPE_SET(BASIS,quadratureType,err,error,*999)
     ELSE
@@ -10289,7 +10304,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET(BASIS,faceGaussEvaluate,err,error,*999)
     ELSE
@@ -10349,7 +10364,7 @@ CONTAINS
     CALL ENTERS("CMISSBasis_TypeGetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_TYPE_GET(BASIS,basisType,err,error,*999)
     ELSE
@@ -10407,10 +10422,10 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSBasis_TypeSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSBasis_TypeSetNumber",err,error,*999)
 
     NULLIFY(BASIS)
-    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
     IF(ASSOCIATED(BASIS)) THEN
       CALL BASIS_TYPE_SET(BASIS,basisType,err,error,*999)
     ELSE
@@ -10784,7 +10799,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSBoundaryConditions_SetConstantObj",ERR,error,*999)
+    CALL ENTERS("CMISSBoundaryConditions_SetConstantObj",err,error,*999)
 
     CALL BOUNDARY_CONDITIONS_SET_CONSTANT(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,componentNumber, &
       & condition,value,err,error,*999)
@@ -13966,7 +13981,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSComputationalNodeNumberGet",ERR,error,*999)
+    CALL ENTERS("CMISSComputationalNodeNumberGet",err,error,*999)
 
     nodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
 
@@ -13991,7 +14006,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSComputationalNumberOfNodesGet",ERR,error,*999)
+    CALL ENTERS("CMISSComputationalNumberOfNodesGet",err,error,*999)
 
     numberOfNodes = COMPUTATIONAL_NODES_NUMBER_GET(err,error)
 
@@ -14015,7 +14030,7 @@ CONTAINS
     INTEGER(INTG),INTENT(IN) :: numberComputationalNodes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSComputationalWorkGroup_CreateStart",ERR,error,*999)
+    CALL ENTERS("CMISSComputationalWorkGroup_CreateStart",err,error,*999)
 
     CALL COMPUTATIONAL_WORK_GROUP_CREATE_START(worldWorkGroup%COMPUTATIONAL_WORK_GROUP,numberComputationalNodes, &
       & err,error,*999)
@@ -14039,7 +14054,7 @@ CONTAINS
     TYPE(CMISSComputationalWorkGroupType), INTENT(INOUT) :: worldWorkGroup
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSComputationalWorkGroup_CreateFinish",ERR,error,*999)
+    CALL ENTERS("CMISSComputationalWorkGroup_CreateFinish",err,error,*999)
 
     CALL COMPUTATIONAL_WORK_GROUP_CREATE_FINISH(worldWorkGroup%COMPUTATIONAL_WORK_GROUP, err,error,*999)
 
@@ -14064,7 +14079,7 @@ CONTAINS
     INTEGER(INTG),INTENT(IN) :: numberComputationalNodes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSComputationalWorkGroup_SubgroupAdd",ERR,error,*999)
+    CALL ENTERS("CMISSComputationalWorkGroup_SubgroupAdd",err,error,*999)
 
     CALL COMPUTATIONAL_WORK_GROUP_SUBGROUP_ADD(parentWorkGroup%COMPUTATIONAL_WORK_GROUP,numberComputationalNodes, &
     & addedWorkGroup%COMPUTATIONAL_WORK_GROUP, err,error,*999)
@@ -18450,7 +18465,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18458,7 +18473,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_GET(DATA_PROJECTION,absoluteTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18518,7 +18533,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18526,7 +18541,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_SET(DATA_PROJECTION,absoluteTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18585,7 +18600,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_CreateFinishNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_CreateFinishNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18593,7 +18608,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_CREATE_FINISH(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18667,7 +18682,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(fieldRegionUserNumber,GEOMETRIC_FIELD_REGION,err,error,*999)
     IF(ASSOCIATED(DATA_POINTS_REGION)) THEN
       IF(ASSOCIATED(GEOMETRIC_FIELD_REGION)) THEN
-        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,GEOMETRIC_FIELD_REGION,GEOMETRIC_FIELD,ERR,error,*999)
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,GEOMETRIC_FIELD_REGION,GEOMETRIC_FIELD,err,error,*999)
         IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
           CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,error,*999)
           CALL DATA_PROJECTION_CREATE_START(DATA_POINTS,GEOMETRIC_FIELD,DATA_PROJECTION,err,error,*999)
@@ -18739,7 +18754,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_DestroyNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_DestroyNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18747,7 +18762,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_DESTROY(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18805,7 +18820,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_EvaluateNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_EvaluateNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18813,7 +18828,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_EVALUATE(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18872,7 +18887,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18880,7 +18895,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET(DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18940,7 +18955,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18948,7 +18963,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_SET(DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19008,7 +19023,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19016,7 +19031,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET(DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19076,7 +19091,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19084,7 +19099,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_SET(DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19144,7 +19159,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19152,7 +19167,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_GET(DATA_PROJECTION,numberOfClosestElements,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19212,7 +19227,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19220,7 +19235,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET(DATA_PROJECTION,numberOfClosestElements,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19280,7 +19295,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19288,7 +19303,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_PROJECTION_TYPE_GET(DATA_PROJECTION,projectionType,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19348,7 +19363,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19356,7 +19371,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_PROJECTION_TYPE_SET(DATA_PROJECTION,projectionType,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19416,7 +19431,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19424,7 +19439,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_RELATIVE_TOLERANCE_GET(DATA_PROJECTION,relativeTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19484,7 +19499,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19492,7 +19507,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_RELATIVE_TOLERANCE_SET(DATA_PROJECTION,relativeTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19552,7 +19567,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19560,7 +19575,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_STARTING_XI_GET(DATA_PROJECTION,startingXi,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19620,7 +19635,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19628,7 +19643,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,err,error,*999)
       CALL DATA_PROJECTION_STARTING_XI_SET(DATA_PROJECTION,startingXi,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19699,7 +19714,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_DESTROY(EQUATIONS,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -19772,7 +19787,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_LINEARITY_TYPE_GET(EQUATIONS,linearityType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -19846,7 +19861,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_LUMPING_TYPE_GET(EQUATIONS,lumpingType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -19920,7 +19935,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_LUMPING_TYPE_SET(EQUATIONS,lumpingType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -19994,7 +20009,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_OUTPUT_TYPE_GET(EQUATIONS,outputType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -20068,7 +20083,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_OUTPUT_TYPE_SET(EQUATIONS,outputType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -20142,7 +20157,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_SPARSITY_TYPE_GET(EQUATIONS,sparsityType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -20216,7 +20231,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_SPARSITY_TYPE_SET(EQUATIONS,sparsityType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -20290,7 +20305,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,error,*999)
+        CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,err,error,*999)
         CALL EQUATIONS_TIME_DEPENDENCE_TYPE_GET(EQUATIONS,timeDependenceType,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -20438,7 +20453,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL FIELD_USER_NUMBER_FIND(analyticFieldUserNumber,REGION,ANALYTIC_FIELD,ERR,error,*999)
+        CALL FIELD_USER_NUMBER_FIND(analyticFieldUserNumber,REGION,ANALYTIC_FIELD,err,error,*999)
         CALL EQUATIONS_SET_ANALYTIC_CREATE_START(EQUATIONS_SET,analyticFunctionType,analyticFieldUserNumber,ANALYTIC_FIELD, &
           & err,error,*999)
       ELSE
@@ -21273,7 +21288,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL FIELD_USER_NUMBER_FIND(dependentFieldUserNumber,REGION,DEPENDENT_FIELD,ERR,error,*999)
+        CALL FIELD_USER_NUMBER_FIND(dependentFieldUserNumber,REGION,DEPENDENT_FIELD,err,error,*999)
         CALL EQUATIONS_SET_DEPENDENT_CREATE_START(EQUATIONS_SET,dependentFieldUserNumber,DEPENDENT_FIELD,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -21697,7 +21712,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL FIELD_USER_NUMBER_FIND(independentFieldUserNumber,REGION,INDEPENDENT_FIELD,ERR,error,*999)
+        CALL FIELD_USER_NUMBER_FIND(independentFieldUserNumber,REGION,INDEPENDENT_FIELD,err,error,*999)
         CALL EQUATIONS_SET_DEPENDENT_CREATE_START(EQUATIONS_SET,independentFieldUserNumber,INDEPENDENT_FIELD,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -21915,7 +21930,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL FIELD_USER_NUMBER_FIND(materialsFieldUserNumber,REGION,MATERIALS_FIELD,ERR,error,*999)
+        CALL FIELD_USER_NUMBER_FIND(materialsFieldUserNumber,REGION,MATERIALS_FIELD,err,error,*999)
         CALL EQUATIONS_SET_MATERIALS_CREATE_START(EQUATIONS_SET,materialsFieldUserNumber,MATERIALS_FIELD,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -22271,7 +22286,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL FIELD_USER_NUMBER_FIND(sourceFieldUserNumber,REGION,SOURCE_FIELD,ERR,error,*999)
+        CALL FIELD_USER_NUMBER_FIND(sourceFieldUserNumber,REGION,SOURCE_FIELD,err,error,*999)
         CALL EQUATIONS_SET_SOURCE_CREATE_START(EQUATIONS_SET,sourceFieldUserNumber,SOURCE_FIELD,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
@@ -31888,7 +31903,7 @@ CONTAINS
     CALL ENTERS("CMISSField_ParameterSetGetGaussPointCoordObj",err,error,*999)
 
     CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD(meshEmbedding%MESH_EMBEDDING,componentNumber, &
-      & NumberofGaussPoints,COORDS,ERR,error,*999)
+      & NumberofGaussPoints,COORDS,err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetGetGaussPointCoordObj")
 
@@ -32033,10 +32048,161 @@ CONTAINS
     CALL EXITS("CMISSInterface_CreateStartObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
-
+    
   END SUBROUTINE CMISSInterface_CreateStartObj
+  
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the coordinate system for a region identified by an user number.
+  SUBROUTINE CMISSInterface_CoordinateSystemSetNumber(parentRegionUserNumber,interfaceUserNumber,coordinateSystemUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region where interface was created.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the region to set the coordinate system for.    
+    INTEGER(INTG), INTENT(IN) :: coordinateSystemUserNumber !<The user number of the coordinate system to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterface_CoordinateSystemSetNumber",err,error,*999)
+ 
+    NULLIFY(INTERFACE)
+    NULLIFY(REGION)
+    NULLIFY(COORDINATE_SYSTEM)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,REGION,err,error,*999)
+    CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
+    
+    IF(ASSOCIATED(INTERFACE)) THEN
+      CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
+      IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+        CALL INTERFACE_COORDINATE_SYSTEM_SET(INTERFACE,COORDINATE_SYSTEM,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A coordinate system with an user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterface_CoordinateSystemSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterface_CoordinateSystemSetNumber",err,ERROR)
+    CALL EXITS("CMISSInterface_CoordinateSystemSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterface_CoordinateSystemSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the coordinate system for a region identified by an object.
+  SUBROUTINE CMISSInterface_CoordinateSystemSetObj(interface,coordinateSystem,err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to set the coordinate system for
+    TYPE(CMISSCoordinateSystemType), INTENT(IN) :: coordinateSystem !<The coordinate system to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterface_CoordinateSystemSetObj",err,error,*999)
+ 
+    CALL INTERFACE_COORDINATE_SYSTEM_SET(interface%INTERFACE,coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
+
+    CALL EXITS("CMISSInterface_CoordinateSystemSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterface_CoordinateSystemSetObj",err,ERROR)
+    CALL EXITS("CMISSInterface_CoordinateSystemSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterface_CoordinateSystemSetObj
 
   !
+  !================================================================================================================================
+  !   
+  
+  !>Returns the coordinate system for a region identified by an user number.
+  SUBROUTINE CMISSInterface_CoordinateSystemGetNumber(parentRegionUserNumber,interfaceUserNumber,coordinateSystemUserNumber,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the region to get the coordinate system for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to get the coordinate system for. 
+    INTEGER(INTG), INTENT(OUT) :: coordinateSystemUserNumber !<On return, the coordinate system user number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCoordinateSystemGetNumber",err,error,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(COORDINATE_SYSTEM)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,REGION,err,error,*999)
+    CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
+    IF(ASSOCIATED(INTERFACE)) THEN
+      CALL INTERFACE_COORDINATE_SYSTEM_GET(INTERFACE,COORDINATE_SYSTEM,err,error,*999)
+      IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+        coordinateSystemUserNumber = COORDINATE_SYSTEM%USER_NUMBER
+      ELSE
+        LOCAL_ERROR="The coordinate system is not associated for region number "// &
+          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterface_CoordinateSystemGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterface_CoordinateSystemGetNumber",err,ERROR)
+    CALL EXITS("CMISSInterface_CoordinateSystemGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterface_CoordinateSystemGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the coordinate system for a region identified by an object.
+  SUBROUTINE CMISSInterface_CoordinateSystemGetObj(Interface,CoordinateSystem,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The region to get the coordinate system for.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the regions coordinate system.
+   INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterface_CoordinateSystemGetObj",err,error,*999)
+ 
+    CALL INTERFACE_COORDINATE_SYSTEM_GET(Interface%INTERFACE,CoordinateSystem%COORDINATE_SYSTEM,err,error,*999)
+
+    CALL EXITS("CMISSInterface_CoordinateSystemGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterface_CoordinateSystemGetObj",err,ERROR)
+    CALL EXITS("CMISSInterface_CoordinateSystemGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterface_CoordinateSystemGetObj
+  
+  !  
   !================================================================================================================================
   !
 
@@ -32592,7 +32758,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL MESH_USER_NUMBER_FIND(meshNumber,INTERFACE,MESH,ERR,error,*999)
+        CALL MESH_USER_NUMBER_FIND(meshNumber,INTERFACE,MESH,err,error,*999)
         IF(ASSOCIATED(MESH)) THEN
           CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE,MESH,INTERFACE_MESH_CONNECTIVITY,err,error,*999)
         ELSE
@@ -32702,7 +32868,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
 
   !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementXiSetNumber(regionUserNumber,interfaceUserNumber,interfaceElementNumber, &
@@ -46911,7 +47076,7 @@ CONTAINS
     CALL FIELDML_INPUT_INITIALISE_FROM_FILE( fieldml%fieldmlInfo, filename, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCreateFromFileVS")
@@ -46942,7 +47107,7 @@ CONTAINS
     CALL FIELDML_INPUT_INITIALISE_FROM_FILE( fieldml%fieldmlInfo, var_str(filename), err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCreateFromFileC")
@@ -46976,7 +47141,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputMeshCreateStartObjVS")
@@ -47014,7 +47179,7 @@ CONTAINS
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, meshArgumentName, mesh, meshNumber, region, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputMeshCreateStartNumberVS")
@@ -47048,7 +47213,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputMeshCreateStartObjC")
@@ -47087,7 +47252,7 @@ CONTAINS
       & err, error, *999)
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputMeshCreateStartNumberC")
@@ -47120,7 +47285,7 @@ CONTAINS
       & userNumber, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS")
@@ -47156,7 +47321,7 @@ CONTAINS
       & userNumber, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartNumberVS")
@@ -47189,7 +47354,7 @@ CONTAINS
       & coordinateSystem%COORDINATE_SYSTEM, userNumber, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartObjC")
@@ -47225,7 +47390,7 @@ CONTAINS
       & userNumber, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartNumberC")
@@ -47260,7 +47425,7 @@ CONTAINS
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, evaluatorName, userNumber, basis, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputBasisCreateStartNumberVS")
@@ -47292,7 +47457,7 @@ CONTAINS
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, evaluatorName, userNumber, basis%BASIS, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputBasisCreateStartObjVS")
@@ -47327,7 +47492,7 @@ CONTAINS
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, var_str(evaluatorName), userNumber, basis, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputBasisCreateStartNumberC")
@@ -47359,7 +47524,7 @@ CONTAINS
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, var_str(evaluatorName), userNumber, basis%BASIS, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputBasisCreateStartObjC")
@@ -47395,7 +47560,7 @@ CONTAINS
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, nodesArgumentName, region, nodes%NODES, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputNodesCreateStartNumberVS")
@@ -47427,7 +47592,7 @@ CONTAINS
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, nodesArgumentName, region%REGION, nodes%NODES, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
@@ -47463,7 +47628,7 @@ CONTAINS
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, var_str(nodesArgumentName), region, nodes%NODES, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputNodesCreateStartNumberC")
@@ -47496,7 +47661,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjC")
@@ -47528,7 +47693,7 @@ CONTAINS
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh%MESH, componentNumber, evaluatorName, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentObjVS")
@@ -47568,7 +47733,7 @@ CONTAINS
 
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh, componentNumber, evaluatorName, err, error, *999 )
 
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
@@ -47602,7 +47767,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentObjC")
@@ -47643,7 +47808,7 @@ CONTAINS
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh, componentNumber, var_str(evaluatorName), err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
@@ -47681,7 +47846,7 @@ CONTAINS
       & field%FIELD, variableType, evaluatorName, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldCreateStartObjVS")
@@ -47729,7 +47894,7 @@ CONTAINS
       & evaluatorName, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldCreateStartNumberVS")
@@ -47766,7 +47931,7 @@ CONTAINS
       & field%FIELD, variableType, var_str(evaluatorName), err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldCreateStartObjC")
@@ -47814,7 +47979,7 @@ CONTAINS
       & var_str(evaluatorName), err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldCreateStartNumberC")
@@ -47849,7 +48014,7 @@ CONTAINS
       &  setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateObjVS")
@@ -47892,7 +48057,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateNumberVS")
@@ -47927,7 +48092,7 @@ CONTAINS
       & setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateObjC")
@@ -47970,7 +48135,7 @@ CONTAINS
       & setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateNumberC")
@@ -48006,7 +48171,7 @@ CONTAINS
     CALL FIELDML_OUTPUT_WRITE( fieldml%fieldmlInfo, filename, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputWriteVS")
@@ -48040,7 +48205,7 @@ CONTAINS
     CALL FIELDML_OUTPUT_WRITE( fieldml%fieldmlInfo, var_str(filename), err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputWriteC")
@@ -48075,7 +48240,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeObjVS")
@@ -48118,7 +48283,7 @@ CONTAINS
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeNumberVS")
@@ -48154,7 +48319,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeObjVS")
@@ -48199,7 +48364,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeNumberVS")
@@ -48234,7 +48399,7 @@ CONTAINS
       & setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeObjC")
@@ -48278,7 +48443,7 @@ CONTAINS
       & setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeNumberC")
@@ -48314,7 +48479,7 @@ CONTAINS
       & typeHandle, setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeObjC")
@@ -48359,7 +48524,7 @@ CONTAINS
       & setType, typeHandle, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeNumberC")
@@ -48394,7 +48559,7 @@ CONTAINS
       & err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputCreateObjVS")
@@ -48435,7 +48600,7 @@ CONTAINS
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, location, baseName, connectivityFormat, fieldml%fieldmlInfo, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputCreateNumberVS")
@@ -48470,7 +48635,7 @@ CONTAINS
       & fieldml%fieldmlInfo, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputCreateObjC")
@@ -48512,7 +48677,7 @@ CONTAINS
       & fieldml%fieldmlInfo, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputCreateNumberC")
@@ -48550,7 +48715,7 @@ CONTAINS
       & fieldComponentNumbers, variableType, setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsObjVS")
@@ -48596,7 +48761,7 @@ CONTAINS
       & variableType, setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsNumberVS")
@@ -48634,7 +48799,7 @@ CONTAINS
       & field%FIELD, fieldComponentNumbers, variableType, setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsObjC")
@@ -48680,7 +48845,7 @@ CONTAINS
       & field, fieldComponentNumbers, variableType, setType, err, error, *999 )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsNumberC")
@@ -48717,7 +48882,7 @@ CONTAINS
     IF(err/=0) GOTO 999
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldML_OutputAddImport")
@@ -48746,7 +48911,7 @@ CONTAINS
     CALL FIELDML_IO_FINALISE( fieldml%fieldmlInfo, err, error, *999  )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldMLIO_Finalise")
@@ -48775,7 +48940,7 @@ CONTAINS
     NULLIFY( fieldml%fieldmlInfo )
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldMLIO_Initialise")
@@ -48805,7 +48970,7 @@ CONTAINS
     sessionHandle = fieldml%fieldmlInfo%FML_HANDLE
 
 #else
-    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",err,error,*999)
 #endif
 
     CALL EXITS("CMISSFieldMLIO_GetSession")

@@ -413,6 +413,31 @@ CONTAINS
                   ENDDO !variable_idx                  
                 ELSE
                   CALL FLAG_ERROR("Interface field variable is not associated.",ERR,ERROR,*999)
+                ENDIF            
+              CASE(INTERFACE_CONDITION_FRICTIONLESS_CONTACT_OPERATOR)
+                !Check that the dependent variables have the same number of components
+                FIELD_VARIABLE=>INTERFACE_DEPENDENT%FIELD_VARIABLES(1)%PTR
+                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                  NUMBER_OF_COMPONENTS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  DO variable_idx=2,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                    FIELD_VARIABLE=>INTERFACE_DEPENDENT%FIELD_VARIABLES(variable_idx)%PTR
+                    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                      IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS/=NUMBER_OF_COMPONENTS) THEN
+                        LOCAL_ERROR="Inconsistent dependent variable number of components. Dependent variable index "// &
+                          & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//" has "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
+                          & " components and dependent variable index 1 has "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      LOCAL_ERROR="The interface condition field variables is not associated for variable index "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !variable_idx                  
+                ELSE
+                  CALL FLAG_ERROR("Interface field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1406,10 +1431,20 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 DO component_idx=1,INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS
-                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-                    & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  !TPBG
+                  !Temporary for removing lagrange multiplyer from finite elasticity couple equation sets since hydrostatic pressure can be decoupled and mechanics will ensure that the value is correct. In reality if two coupled regions have different mechanical properties then there is no reason why hydrostatic pressue needs to be continuous.
+                  IF (component_idx==4) THEN
+                  !TPBG
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                      & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  ELSE
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                      & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  ENDIF
                 ENDDO !component_idx
                 CALL FIELD_SCALING_TYPE_GET(INTERFACE_CONDITION%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
                   & ERR,ERROR,*999)
@@ -1650,6 +1685,8 @@ CONTAINS
         SELECT CASE(INTERFACE_CONDITION_OPERATOR)
         CASE(INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR)
           INTERFACE_CONDITION%OPERATOR=INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR
+        CASE(INTERFACE_CONDITION_FRICTIONLESS_CONTACT_OPERATOR)
+          INTERFACE_CONDITION%OPERATOR=INTERFACE_CONDITION_FRICTIONLESS_CONTACT_OPERATOR
         CASE(INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR)
           INTERFACE_CONDITION%OPERATOR=INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR
         CASE(INTERFACE_CONDITION_SOLID_FLUID_OPERATOR)
@@ -1921,8 +1958,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-
+  
   !>Calculates the element stiffness matries for the given element number for a finite element interface equations.
   SUBROUTINE INTERFACE_CONDITION_FINITE_ELEMENT_CALCULATE(INTERFACE_CONDITION,ELEM,ERR,ERROR,*)
 
@@ -2136,16 +2172,20 @@ CONTAINS
     CALL ENTERS("INTERFACE_TRANSFORM_GPT",ERR,ERROR,*999)
     
     INTERFACE_TRANSFORM_GPT=0.0_DP
-    IF(.NOT.ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) CALL FLAG_ERROR("Mesh Connectivity is not associated.",ERR,ERROR,*999)
-    IF(.NOT.ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(ELEMENT_NUMBER,DOMAIN_NUMBER)%XI)) THEN
-      CALL FLAG_ERROR("Coupled Mesh xi array not allocated.",ERR,ERROR,*999)
-    END IF
-
-    DO ms = 1,INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-      INTERFACE_TRANSFORM_GPT(:)= INTERFACE_TRANSFORM_GPT(:) + INTERFACE_MESH_CONNECTIVITY%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP &
-         & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,GAUSSPT) * INTERFACE_MESH_CONNECTIVITY% & 
-         & ELEMENTS_CONNECTIVITY(ELEMENT_NUMBER,DOMAIN_NUMBER)%XI(:,1,ms)
-    END DO
+    IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) THEN
+      IF(ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(ELEMENT_NUMBER,DOMAIN_NUMBER)%XI)) THEN
+        DO ms = 1,INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+          INTERFACE_TRANSFORM_GPT(:)= INTERFACE_TRANSFORM_GPT(:) + &
+            & INTERFACE_MESH_CONNECTIVITY%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP &
+            & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,GAUSSPT) * INTERFACE_MESH_CONNECTIVITY% & 
+            & ELEMENTS_CONNECTIVITY(ELEMENT_NUMBER,DOMAIN_NUMBER)%XI(:,1,ms)
+        END DO
+      ELSE
+        CALL FLAG_ERROR("Coupled Mesh xi array not allocated.",ERR,ERROR,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Mesh Connectivity is not associated.",ERR,ERROR,*999)
+    ENDIF
      
     CALL EXITS("INTERFACE_TRANSFORM_GPT")
     RETURN

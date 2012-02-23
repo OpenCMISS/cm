@@ -494,20 +494,12 @@ CONTAINS
           NULLIFY(INTERFACE)
           INTERFACE=>GENERATED_MESH%INTERFACE
           IF(ASSOCIATED(INTERFACE)) THEN
-            PARENT_REGION=>INTERFACE%PARENT_REGION
-            IF(ASSOCIATED(PARENT_REGION)) THEN
-              COORDINATE_SYSTEM=>PARENT_REGION%COORDINATE_SYSTEM
-              IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
-                LOCAL_ERROR="The coordinate system is not associated for generated mesh number "// &
-                  & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
-                  & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
-                  & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="The parent region not associated for generated mesh number "// &
+            COORDINATE_SYSTEM=>INTERFACE%COORDINATE_SYSTEM
+            IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
+              LOCAL_ERROR="The coordinate system is not associated for generated mesh number "// &
                 & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
-                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
+                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
+                & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
@@ -4119,7 +4111,7 @@ CONTAINS
           ! build indices first (some of these are dummy arguments)
           CALL GENERATED_MESH_REGULAR_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
               & REGULAR_MESH%MAXIMUM_EXTENT,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX,DELTA,DELTAI,ERR,ERROR,*999)
-          node_counter=0
+          node_counter=0   
           SELECT CASE(SURFACE_TYPE)
           CASE(GENERATED_MESH_REGULAR_LEFT_SURFACE)
             ALLOCATE(SURFACE_NODES((SIZE(NIDX,2))*(SIZE(NIDX,3))),STAT=ERR)
@@ -5118,13 +5110,11 @@ CONTAINS
         ELSE
         CALL FLAG_ERROR("The regular mesh for this generated mesh is not associated.",ERR,ERROR,*999)
         ENDIF
-
         !Number of nodes in each xi direction
         NUMBER_OF_NODES_XIC=1
         DO xi_idx=1,NUM_DIMS
           NUMBER_OF_NODES_XIC(xi_idx)=BASES(BASIS_INDEX)%PTR%NUMBER_OF_NODES_XIC(xi_idx)
         ENDDO
-
         !Calculate current element indices and number
         REMINDER_TEMP=0;
         ELEM_IDX=1;
@@ -5159,8 +5149,6 @@ CONTAINS
           ELEMENT_NO=(ELEM_IDX(3)-1)*NUMBER_OF_ELEMENTS_XI(1)*NUMBER_OF_ELEMENTS_XI(2)+ &
             & (ELEM_IDX(2)-1)*NUMBER_OF_ELEMENTS_XI(1)+ELEM_IDX(1)
         END SELECT
-
-
         !If not the first basis, check if previous basis have same interpolation order in each xi direction
         !SAME_BASIS(3) is initialised to have zeros in all entries. If an interpolation scheme has been
         !found to have appeared in previous basis, then record the basis number in the corresponding
@@ -5202,7 +5190,6 @@ CONTAINS
           ENDDO
         ELSE
           !If the basis has never appeared exactly in previous basis
-
           !Find corner node user number from the first basis
           BASIS_FIRST_COMP=>BASES(1)%PTR
           DO nn3=1,2
@@ -5486,10 +5473,10 @@ CONTAINS
     CALL EXITS("GENERATED_MESH_REGULAR_COMPONENT_NODES_TO_USER_NUMBERS")
     RETURN 1
   END SUBROUTINE GENERATED_MESH_REGULAR_COMPONENT_NODES_TO_USER_NUMBERS
-
+ 
   !
   !================================================================================================================================
-  !
+  !  
 
   !>Retrieve the user node number for a component number in a regular generated mesh
   SUBROUTINE GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(GENERATED_MESH,BASIS_INDEX, &
