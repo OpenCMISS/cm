@@ -2249,7 +2249,7 @@ CONTAINS
       WRITE(14,'("    ", es25.16 )')NodeUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeVValue(I)
 
-      IF(NumberOfDimensions==3 .OR. NumberOfDimensions==2) THEN
+      IF(NumberOfDimensions==3) THEN
       WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
