@@ -3843,6 +3843,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterface_CreateStartNumber
     MODULE PROCEDURE CMISSInterface_CreateStartObj
   END INTERFACE !CMISSInterface_CreateStart
+  
+  !>Set the coordinate system of an inteface
+  INTERFACE CMISSInterface_CoordinateSystemSet
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemSetNumber
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemSetObj
+  END INTERFACE !CMISSInterfaceCoordinateSystemSet
+  
+  !>Get the coordinate system of an inteface
+  INTERFACE CMISSInterface_CoordinateSystemGet
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemGetNumber
+    MODULE PROCEDURE CMISSInterface_CoordinateSystemGetObj
+  END INTERFACE !CMISSInterface_CoordinateSystemGet
 
   !>Destroys an interface.
   INTERFACE CMISSInterface_Destroy
@@ -3905,6 +3917,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterface_MeshAdd
 
   PUBLIC CMISSInterface_CreateFinish,CMISSInterface_CreateStart
+  
+  PUBLIC CMISSInterface_CoordinateSystemSet,CMISSInterface_CoordinateSystemGet
 
   PUBLIC CMISSInterface_Destroy
 
