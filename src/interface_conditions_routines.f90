@@ -2398,6 +2398,19 @@ CONTAINS
                       & LINES%LINES(decompositionLineNumber)
                     DO localLineNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(connectedLine)
                       localElementNode=COUPLED_MESH_BASIS%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
+                      IF (mh==4) THEN
+                        PGMSI=1.0_DP
+                      ELSE
+                        !Calculate PGMSI based on node NO_PART_DERIV
+                        !\todo defaults to first mesh component, Generalise
+                        PGMSI=BASIS_EVALUATE_XI(COUPLED_MESH_BASIS,COUPLED_MESH_BASIS% &
+                          & ELEMENT_PARAMETER_INDEX(1,localElementNode),NO_PART_DERIV,INTERFACE_CONDITION%INTERFACE% &
+                          & MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(ELEMENT_NUMBER,interface_matrix_idx)% &
+                          & XI(:,1,localLineNodeIdx),ERR,ERROR)
+                      ENDIF
+                      IF (PGMSI<1.0_DP .AND. PGMSI >ZERO_TOLERANCE)THEN
+                        PGMSI=PGMSI*2.0_DP
+                      ENDIF
                       DO derivativeIdx=1,COUPLED_MESH_DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
                         derivative=COUPLED_MESH_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
                         derivative=COUPLED_MESH_DOMAIN_LINE%DERIVATIVES_IN_LINE(1,derivativeIdx,localLineNodeIdx)
@@ -2409,7 +2422,7 @@ CONTAINS
                         !Direct map between nodal lagrange parameter and corresponding coupled mesh parameter therefore PGNSI=1, so not required below
                         !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
                         INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                          & MATRIX_COEFFICIENT
+                          & PGMSI*MATRIX_COEFFICIENT
                       ENDDO !derivativeIdx
                     ENDDO !lineNodeIdx
                   CASE(2) !2D interface (face)
@@ -2420,7 +2433,7 @@ CONTAINS
                           ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
                           mhs=ms+COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
                           !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
-                          ns=INTERFACE_DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
+                          ns=INTERFACE_DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
                           nhs=ns+INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
                           !Direct map between nodal lagrange parameter and corresponding coupled mesh parameter therefore PGNSI=1, so not required below
                           !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
@@ -2477,7 +2490,7 @@ CONTAINS
                     !Loop over element Lagrange variable rows
                     DO ms=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       mhs=mhs+1
-                      INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,nhs) * &
+                      INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,mhs)=INTERFACE_ELEMENT_MATRIX%MATRIX(mhs,mhs) * &
                         & INTERFACE_INTERPOLATION%DEPENDENT_INTERPOLATION(1)% &
                         & INTERPOLATION_PARAMETERS(LAGRANGE_VARIABLE_TYPE)%PTR%SCALE_FACTORS(ms,mh)**2
                     ENDDO !ms

@@ -3882,7 +3882,7 @@ MODULE OPENCMISS
   INTERFACE CMISSInterfaceMeshConnectivity_ElementXiSet
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementXiSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementXiSetObj
-  END INTERFACE !CMISSInterfaceMeshConnectivity_ElementXiSet <<>>
+  END INTERFACE !CMISSInterfaceMeshConnectivity_ElementXiSet
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivity_ElementNumberSet
