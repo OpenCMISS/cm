@@ -392,7 +392,7 @@ class Interface(CodeObject):
 
         all_subroutines = []
         routine_re = re.compile(
-            r'MODULE PROCEDURE ([A-Z0-9_]+)', re.IGNORECASE)
+            r'^\s*MODULE PROCEDURE ([A-Z0-9_]+)', re.IGNORECASE)
         varying_string_re = re.compile(
             r'VSC*(Obj|Number|)[0-9]*$', re.IGNORECASE)
 
@@ -409,7 +409,11 @@ class Interface(CodeObject):
         subroutines = self._get_array_routines(all_subroutines)
 
         for routine in subroutines:
-            self.source.subroutines[routine].interface = self
+            try:
+                self.source.subroutines[routine].interface = self
+            except KeyError:
+                raise KeyError("Couldn't find subroutine %s for interface %s" %
+                        (routine, self.name))
 
         return subroutines
 
@@ -503,11 +507,9 @@ class Subroutine(CodeObject):
             # Before parameter name
                 [,\s:]
             # Parameter name
-                %s
+                %s\b
             # Array dimensions if present
                 (\(([0-9,:]+)\))?
-            # Space or comma after parameter name
-                [,\s$]
             # Doxygen comment
                 [^!]*(!<(.*)$)?
             """ % param
