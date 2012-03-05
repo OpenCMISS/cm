@@ -43,7 +43,13 @@ def wrap_cmiss_routine(routine, args=None):
                 new_args.append(arg.cmiss_type)
             else:
                 try:
-                    new_args.append([a.cmiss_type for a in arg])
+                    # Try to convert a list of CMISS types first.
+                    # Check length to avoid empty strings being converted
+                    # to an empty list
+                    if len(arg) > 0:
+                        new_args.append([a.cmiss_type for a in arg])
+                    else:
+                        new_args.append(arg)
                 except (TypeError, AttributeError):
                     new_args.append(arg)
         r = routine(*new_args)
@@ -58,14 +64,14 @@ def wrap_cmiss_routine(routine, args=None):
     else:
         status = r
         return_val = None
-    if status != _opencmiss_swig.cvar.CMISSNoError:
-        if status == _opencmiss_swig.cvar.CMISSPointerIsNULL:
+    if status != _opencmiss_swig.cvar.CMISS_NO_ERROR:
+        if status == _opencmiss_swig.cvar.CMISS_POINTER_IS_NULL:
             raise CMISSError("CMISS type pointer is null")
-        elif status == _opencmiss_swig.cvar.CMISSPointerNotNULL:
+        elif status == _opencmiss_swig.cvar.CMISS_POINTER_NOT_NULL:
             raise CMISSError("CMISS type pointer is not null")
-        elif status == _opencmiss_swig.cvar.CMISSCouldNotAllocatePointer:
+        elif status == _opencmiss_swig.cvar.CMISS_COULD_NOT_ALLOCATE_POINTER:
             raise CMISSError("Could not allocate pointer")
-        elif status == _opencmiss_swig.cvar.CMISSErrorConvertingPointer:
+        elif status == _opencmiss_swig.cvar.CMISS_ERROR_CONVERTING_POINTER:
             raise CMISSError("Error converting pointer")
         else:
             raise CMISSError(_opencmiss_swig.CMISSExtractErrorMessage()[1])

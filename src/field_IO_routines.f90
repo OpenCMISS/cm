@@ -106,6 +106,7 @@ MODULE FIELD_IO_ROUTINES
     !attention: the pointers in COMPONENTS(:) point to those nodal components which are in the same local domain in current implementation
     !it may be replaced in the future implementation
     TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), ALLOCATABLE:: COMPONENTS(:) !<A array of pointers to those components of the node in this local domain
+    INTEGER(INTG), ALLOCATABLE:: COMPONENT_VERSIONS(:) !<COMPONENT_VERSIONS(component_idx). The number of versions for component_idx'th component
   END TYPE FIELD_IO_COMPONENT_INFO_SET
 
   TYPE FIELD_IO_COMPONENT_INFO_SET_PTR_TYPE
@@ -352,6 +353,21 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT), VALUE :: valueIndex
       INTEGER(C_INT) :: FieldExport_DerivativeIndices
     END FUNCTION FieldExport_DerivativeIndices
+
+    FUNCTION FieldExport_EndComponent(handle) BIND(C,NAME="FieldExport_EndComponent")
+      USE TYPES
+      USE ISO_C_BINDING
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT) :: FieldExport_EndComponent
+    END FUNCTION FieldExport_EndComponent
+
+    FUNCTION FieldExport_VersionInfo(handle, numberOfVersions) BIND(C,NAME="FieldExport_VersionInfo")
+      USE TYPES
+      USE ISO_C_BINDING
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: numberOfVersions
+      INTEGER(C_INT) :: FieldExport_VersionInfo
+    END FUNCTION FieldExport_VersionInfo
 
   END INTERFACE
 
@@ -952,6 +968,36 @@ CONTAINS
 999 CALL ERRORS("FIELD_IO_DERIVATIVE_INFO",ERR,ERROR)
     CALL EXITS("FIELD_IO_DERIVATIVE_INFO")
   END FUNCTION FIELD_IO_DERIVATIVE_INFO
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Use the element version information to calcualte the derivative index of a given nodal derivative for an element
+  FUNCTION FIELD_IO_ELEMENT_DERIVATIVE_INDEX(ELEMENT, DERIVATIVE_NUMBER, NODE_NUMBER, ERR, ERROR)
+    !Argument variables
+    TYPE(DOMAIN_ELEMENT_TYPE), INTENT(IN) :: ELEMENT !<The element to calculate the derivative index for
+    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The number of the derivative to calcualte
+    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The local element node number
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Return variable
+    INTEGER(INTG) :: FIELD_IO_ELEMENT_DERIVATIVE_INDEX !<On return, the calculated derative index
+    !Local Variables
+    INTEGER(INTG) :: VERSION_NUMBER,NUMBER_OF_DERIVATIVES
+
+    CALL ENTERS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX", ERR, ERROR, *999)
+
+    VERSION_NUMBER=ELEMENT%ELEMENT_DERIVATIVES(2, DERIVATIVE_NUMBER, NODE_NUMBER)
+    NUMBER_OF_DERIVATIVES=ELEMENT%BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+    FIELD_IO_ELEMENT_DERIVATIVE_INDEX=(VERSION_NUMBER-1)*NUMBER_OF_DERIVATIVES + &
+      & ELEMENT%ELEMENT_DERIVATIVES(1, DERIVATIVE_NUMBER, NODE_NUMBER)
+
+    CALL EXITS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX")
+    RETURN
+999 CALL ERRORS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX",ERR,ERROR)
+    CALL EXITS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX")
+  END FUNCTION FIELD_IO_ELEMENT_DERIVATIVE_INDEX
 
   !
   !================================================================================================================================
@@ -2799,9 +2845,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                        & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2825,9 +2870,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2851,9 +2895,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2877,9 +2920,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2905,9 +2947,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2931,9 +2972,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2957,9 +2997,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2983,9 +3022,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3011,9 +3049,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3037,9 +3074,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3063,9 +3099,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3089,9 +3124,8 @@ CONTAINS
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                     DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)= &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3105,8 +3139,8 @@ CONTAINS
           DO nn=1,BASIS%NUMBER_OF_NODES
             NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
             DO mm=1,NUMBER_OF_DERIVATIVES(nn)
-              ELEMENT_DERIVATIVES(derivativeIndex) = &
-                & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(1,mm,nn)
+              ELEMENT_DERIVATIVES(derivativeIndex) = FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,nn,ERR,ERROR)
               derivativeIndex = derivativeIndex + 1
             ENDDO !mm
           ENDDO !nn
@@ -3566,8 +3600,9 @@ CONTAINS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS1, DOMAIN_ELEMENTS2! domain nodes
     INTEGER(INTG) :: global_number1, local_number1, global_number2, local_number2
     INTEGER(INTG) :: component_idx, nn1, nn2 ! nn, tmp2, tmp1!temporary variable
+    INTEGER(INTG) :: node_idx, deriv_idx
     TYPE(FIELD_IO_COMPONENT_INFO_SET), POINTER :: tmpInfoSet
-    LOGICAL :: SWITCH
+    LOGICAL :: SAME_ELEMENT_INFO
 
     !from now on, global numbering are used
     CALL ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_SORT",ERR,ERROR,*999)
@@ -3594,9 +3629,9 @@ CONTAINS
       global_number1=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
       DO nn2=nn1+1,ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
         global_number2=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
-        IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS==&
-         &ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
-          SWITCH=.TRUE.
+        IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS== &
+            & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
+          SAME_ELEMENT_INFO=.TRUE.
           !we will check the component (type of component, partial derivative).
           DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
             !not safe, but it is fast
@@ -3606,7 +3641,7 @@ CONTAINS
             !are they in the same memory address?
             IF(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR, &
               &TARGET=ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR))  THEN
-              SWITCH=.FALSE.
+              SAME_ELEMENT_INFO=.FALSE.
               EXIT
             ENDIF !ASSCOCIATED
 
@@ -3617,19 +3652,19 @@ CONTAINS
             !!are they in the same field?
             !IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER/= &
             !&ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER) THEN
-            !  SWITCH=.FALSE.
+            !  SAME_ELEMENT_INFO=.FALSE.
             !  EXIT
             !ELSE  !GLOBAL_NUBMER
             !  !are they the same variable?
             !  IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER/= &
             !  & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER) THEN
-            !     SWITCH=.FALSE.
+            !     SAME_ELEMENT_INFO=.FALSE.
             !     EXIT
             !   ELSE !VARIABLE_NUBMER
             !    !are they the same component?
             !    IF(LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER/=&
             !      &LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER) THEN
-            !       SWITCH=.FALSE.
+            !       SAME_ELEMENT_INFO=.FALSE.
             !       EXIT
             !     ENDIF !COMPONENT_NUMBER
             !  ENDIF ! VARIABLE_NUBMER
@@ -3637,7 +3672,7 @@ CONTAINS
           ENDDO !component_idx
 
           !check whether correspoding two components have the same partial derivatives
-          IF(SWITCH) THEN
+          IF(SAME_ELEMENT_INFO) THEN
             DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
               !finding the local numbering for the NODAL_INFO_SET(nn1)
               DOMAIN_MAPPING_ELEMENTS=>&
@@ -3666,15 +3701,27 @@ CONTAINS
               !checking whether they have the same basis
               IF(DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%GLOBAL_NUMBER/=&
                 &DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%BASIS%GLOBAL_NUMBER) THEN
-                SWITCH=.FALSE.
+                SAME_ELEMENT_INFO=.FALSE.
                 EXIT
               ENDIF  !DOMAIN_ELEMENTS1
+
+              !Check that the elements use the same versions of all derivatives for all element nodes
+              DO node_idx=1,DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%NUMBER_OF_NODES
+                DO deriv_idx=1,DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%NUMBER_OF_DERIVATIVES(node_idx)
+                  IF (DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%ELEMENT_DERIVATIVES(2,deriv_idx,node_idx)/= &
+                      & DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%ELEMENT_DERIVATIVES(2,deriv_idx,node_idx)) THEN
+                    SAME_ELEMENT_INFO=.FALSE.
+                    EXIT
+                  END IF
+                END DO
+              END DO
+
             ENDDO !component_idx
-          ENDIF !SWITCH==.TRUE.
+          ENDIF !SAME_ELEMENT_INFO==.TRUE.
         ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS==LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn+1)%PTR%NUMBER_OF_COMPONENTS
 
         !find two elements which have the same output, and then they should put together
-        IF(SWITCH) THEN
+        IF(SAME_ELEMENT_INFO) THEN
           tmpInfoSet => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
           ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
           ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
@@ -3688,7 +3735,7 @@ CONTAINS
 
           !increase nn1 to skip the nodes which have the same output
           nn1=nn1+1
-        ENDIF !(SWITCH=.TRUE.)
+        ENDIF !(SAME_ELEMENT_INFO=.TRUE.)
       ENDDO !nn2
       !increase the nn1 to check next node
       nn1=nn1+1
@@ -3717,7 +3764,7 @@ CONTAINS
     !        !nk and nu are used here temporarily
     !        DO tmp1=1,component_idx
     !           print "(A, I)", "tmp1=", tmp1
-    !           SWITCH=.FALSE.
+    !           SAME_ELEMENT_INFO=.FALSE.
     !           DO tmp2=1,(component_idx-tmp1)
     !              IF(LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2)%PTR%COMPONENT_NUMBER>&
     !              &LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2+1)%PTR%COMPONENT_NUMBER) THEN
@@ -3726,10 +3773,10 @@ CONTAINS
     !                 LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2)%PTR
     !
     !                 LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(tmp2)%PTR=>tmp_ptr
-    !                 SWITCH=.TRUE.
+    !                 SAME_ELEMENT_INFO=.TRUE.
     !              ENDIF
     !           ENDDO
-    !           IF(SWITCH) THEN
+    !           IF(SAME_ELEMENT_INFO) THEN
     !              EXIT
     !           ENDIF
     !        ENDDO
@@ -4114,6 +4161,12 @@ CONTAINS
           EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
         ENDIF
       ENDIF
+
+      ! Check that the nodes have the same number of versions, otherwise they must be grouped separately
+      IF(SET1%COMPONENT_VERSIONS(component_idx)/=SET2%COMPONENT_VERSIONS(component_idx)) THEN
+        doesMatch = .FALSE.
+        EXIT
+      END IF
     ENDDO !component_idx
 
     CALL EXITS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES")
@@ -4139,7 +4192,7 @@ CONTAINS
     TYPE(FIELD_IO_COMPONENT_INFO_SET), POINTER :: tmpInfoSet
     INTEGER(INTG) :: global_number1, global_number2
     INTEGER(INTG) :: nn1, nn2
-    LOGICAL :: SWITCH
+    LOGICAL :: SAME_NODAL_INFO
 
     !from now on, global numbering are used
     CALL ENTERS("FIELD_IO_NODAL_INFO_SET_SORT",ERR,ERROR,*999)
@@ -4160,18 +4213,18 @@ CONTAINS
       DO nn2=nn1+1,NODAL_INFO_SET%NUMBER_OF_ENTRIES
         global_number2=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
 
-        SWITCH = FIELD_IO_COMPARE_INFO_SET_COMPONENTS( NODAL_INFO_SET%COMPONENT_INFO_SET( nn1 )%PTR, &
+        SAME_NODAL_INFO = FIELD_IO_COMPARE_INFO_SET_COMPONENTS( NODAL_INFO_SET%COMPONENT_INFO_SET( nn1 )%PTR, &
           & NODAL_INFO_SET%COMPONENT_INFO_SET( nn2 )%PTR )
 
         !check whether correspoding two components have the same partial derivatives
-        IF( SWITCH ) THEN
+        IF( SAME_NODAL_INFO ) THEN
           CALL FIELD_IO_COMPARE_INFO_SET_DERIVATIVES( NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR, &
               & NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR, my_computational_node_number, global_number1, global_number2, &
-              & SWITCH, ERR, ERROR, *999 )
-        ENDIF !SWITCH==.TRUE.
+              & SAME_NODAL_INFO, ERR, ERROR, *999 )
+        ENDIF !SAME_NODAL_INFO==.TRUE.
 
         !find two nodes which have the same output, and then they should put together
-        IF(SWITCH) THEN
+        IF(SAME_NODAL_INFO) THEN
           tmpInfoSet => NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
           NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
           NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
@@ -4185,7 +4238,7 @@ CONTAINS
 
           !increase nn1 to skip the nodes which have the same output
           nn1=nn1+1
-        ENDIF !(SWITCH=.TRUE.)
+        ENDIF !(SAME_NODAL_INFO=.TRUE.)
 
       ENDDO !nn2
       !increase the nn1 to check next node
@@ -4215,7 +4268,7 @@ CONTAINS
     !        !nk and nu are used here temporarily
     !        DO tmp1=1,component_idx
     !           print "(A, I)", "tmp1=", tmp1
-    !           SWITCH=.FALSE.
+    !           SAME_NODAL_INFO=.FALSE.
     !           DO tmp2=1,(component_idx-tmp1)
     !              IF(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2)%PTR%COMPONENT_NUMBER>&
     !              &NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2+1)%PTR%COMPONENT_NUMBER) THEN
@@ -4224,10 +4277,10 @@ CONTAINS
     !                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2)%PTR
     !
     !                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS(tmp2)%PTR=>tmp_ptr
-    !                 SWITCH=.TRUE.
+    !                 SAME_NODAL_INFO=.TRUE.
     !              ENDIF
     !           ENDDO
-    !           IF(SWITCH) THEN
+    !           IF(SAME_NODAL_INFO) THEN
     !              EXIT
     !           ENDIF
     !        ENDDO
@@ -4949,6 +5002,7 @@ CONTAINS
 
             value_idx = value_idx + 1
 
+            ERR = FieldExport_EndComponent( sessionHandle )
             CYCLE
           ENDIF
 
@@ -4964,6 +5018,7 @@ CONTAINS
           ENDDO !local_number
 
           IF( .NOT. FOUND ) THEN
+            ERR = FieldExport_EndComponent( sessionHandle )
             CYCLE
           ENDIF
 
@@ -4987,6 +5042,12 @@ CONTAINS
                 & variable_ptr%FIELD%TYPE, &
                 & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
           ENDIF
+
+          ERR = FieldExport_VersionInfo( sessionHandle, fieldInfoSet%COMPONENT_VERSIONS(comp_idx1) )
+          IF(ERR/=0) THEN
+            CALL FLAG_ERROR( "Error exporting version information.", ERR, ERROR,*999 )
+          ENDIF
+          ERR = FieldExport_EndComponent( sessionHandle )
 
           !increase the component index
           comp_idx1=comp_idx1+1
@@ -5027,7 +5088,8 @@ CONTAINS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
     INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount,DERIVATIVE_INDEXES(PART_DERIV_S4_S4_S4)
     INTEGER(INTG), ALLOCATABLE :: paddingInfo(:)
-    INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES, total_nodal_values
+    INTEGER(INTG) :: nn, comp_idx,  dev_idx, version_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES, total_nodal_values
+    INTEGER(INTG) :: NUMBER_VERSIONS, MAX_NUMBER_VERSIONS
     INTEGER(INTG), POINTER :: GEOMETRIC_PARAMETERS_INTG(:)
     LOGICAL :: FOUND
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: NODAL_BUFFER(:), TOTAL_NODAL_BUFFER(:)
@@ -5089,15 +5151,16 @@ CONTAINS
         CALL FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR, &
           & global_number, MAX_NUM_OF_NODAL_DERIVATIVES, my_computational_node_number, sessionHandle, &
           & paddingInfo, ERR,ERROR,*999)
+        MAX_NUMBER_VERSIONS = MAXVAL(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS)
         !value_idx=value_idx-1 !the len of NODAL_BUFFER
         !checking: whether need to allocate temporary memory for Io writing
         IF(ALLOCATED(NODAL_BUFFER)) THEN
-          IF(SIZE(NODAL_BUFFER)<MAX_NUM_OF_NODAL_DERIVATIVES) THEN
-            CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
+          IF(SIZE(NODAL_BUFFER)<MAX_NUM_OF_NODAL_DERIVATIVES*MAX_NUMBER_VERSIONS) THEN
+            CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES*MAX_NUMBER_VERSIONS, &
               & "Could not allocate temporary nodal buffer in IO writing", ERR, ERROR, *999 )
           ENDIF
         ELSE
-          CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
+          CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES*MAX_NUMBER_VERSIONS, &
             & "Could not allocate temporary nodal buffer in IO writing", ERR, ERROR, *999 )
         ENDIF
       ENDIF !NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%SAME_HEADER==.FALSE.
@@ -5107,6 +5170,7 @@ CONTAINS
       CALL CHECKED_DEALLOCATE( TOTAL_NODAL_BUFFER )
       DO comp_idx=1,NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS
         COMPONENT => NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR
+        NUMBER_VERSIONS = NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS(comp_idx)
         DOMAIN_NODES=>COMPONENT%DOMAIN%TOPOLOGY%NODES
         FOUND=.FALSE.
         DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
@@ -5158,27 +5222,44 @@ CONTAINS
         ENDDO
 
         !Output the dofs, sorted according to derivative index
+        !Loop over versions outside of derivatives, as cmgui treats versions differently
         NUM_OF_NODAL_DEV = 0
-        DO dev_idx=1, SIZE(DERIVATIVE_INDEXES)
-          IF( DERIVATIVE_INDEXES( dev_idx ) == -1 ) THEN
-            CYCLE
-          ENDIF
+        DO version_idx=1, NUMBER_VERSIONS
+          DO dev_idx=1, SIZE(DERIVATIVE_INDEXES)
+            IF( DERIVATIVE_INDEXES( dev_idx ) == -1 ) THEN
+              CYCLE
+            ENDIF
 
-          NUM_OF_NODAL_DEV = NUM_OF_NODAL_DEV + 1
+            NUM_OF_NODAL_DEV = NUM_OF_NODAL_DEV + 1
 
-          SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
-          CASE(FIELD_INTG_TYPE)
-            VALUE=REAL(GEOMETRIC_PARAMETERS_INTG( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
-              & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(1) ) ,DP)
-          CASE(FIELD_DP_TYPE)
-           !Default to version 1 of each node derivative
-            VALUE=GEOMETRIC_PARAMETERS_DP( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
-              & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(1) )
-          CASE DEFAULT
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          END SELECT
-          NODAL_BUFFER( NUM_OF_NODAL_DEV ) = VALUE
-        ENDDO !dev_idx
+            SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
+            CASE(FIELD_INTG_TYPE)
+              IF(COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+                  & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%NUMBER_OF_VERSIONS < version_idx) THEN
+                !If the number of versions for this derivative isn't equal to the maximum number of versions for the
+                !component, then fill the rest of the version data with the first version
+                VALUE=REAL(GEOMETRIC_PARAMETERS_INTG( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+                  & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(1) ) ,DP)
+              ELSE
+                VALUE=REAL(GEOMETRIC_PARAMETERS_INTG( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+                  & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(version_idx) ) ,DP)
+              ENDIF
+            CASE(FIELD_DP_TYPE)
+              !Default to version 1 of each node derivative
+              IF(COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+                  & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%NUMBER_OF_VERSIONS < version_idx) THEN
+                VALUE=GEOMETRIC_PARAMETERS_DP( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+                  & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(1) )
+              ELSE
+                VALUE=GEOMETRIC_PARAMETERS_DP( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+                  & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(version_idx) )
+              ENDIF
+            CASE DEFAULT
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END SELECT
+            NODAL_BUFFER( NUM_OF_NODAL_DEV ) = VALUE
+          ENDDO !dev_idx
+        ENDDO !verion_idx
 
         CALL GROW_ARRAY( TOTAL_NODAL_BUFFER, NUM_OF_NODAL_DEV, "Insufficient memory during I/O", ERR, ERROR, *999 )
         TOTAL_NODAL_BUFFER(total_nodal_values+1:total_nodal_values+NUM_OF_NODAL_DEV) = NODAL_BUFFER(1:NUM_OF_NODAL_DEV)
@@ -5567,7 +5648,8 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(DOMAIN_NODES_TYPE), POINTER:: DOMAIN_NODES !nodes in local domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER:: FIELD_VARIABLE !field variable
-    INTEGER(INTG) :: field_idx, var_idx, component_idx, np, nn, num_field !temporary variable
+    INTEGER(INTG) :: field_idx, var_idx, component_idx, deriv_idx, np, nn, num_field !temporary variable
+    INTEGER(INTG) :: MAX_NUMBER_VERSIONS
     LOGICAL :: foundNewNode
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -5698,6 +5780,7 @@ CONTAINS
       NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%SAME_HEADER = .FALSE.
       NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS = 0
       CALL CHECKED_DEALLOCATE( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS )
+      CALL CHECKED_DEALLOCATE( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS )
     ENDDO
 
     !collect nodal information from local process
@@ -5723,6 +5806,14 @@ CONTAINS
           DO np = 1, DOMAIN_NODES%NUMBER_OF_NODES
             DO nn = 1, NODAL_INFO_SET%NUMBER_OF_ENTRIES
               IF( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER( nn ) == DOMAIN_NODES%NODES( np )%GLOBAL_NUMBER ) THEN
+                ! Old CMISS and cmgui treat versions differently, the version loop is outside the derivative
+                ! loop rather than the other way around as in OpenCMISS, so we have to have the same number of
+                ! versions for all derivatives
+                MAX_NUMBER_VERSIONS = 1
+                DO deriv_idx=1,DOMAIN_NODES%NODES( np )%NUMBER_OF_DERIVATIVES
+                  MAX_NUMBER_VERSIONS = MAX(MAX_NUMBER_VERSIONS, &
+                    & DOMAIN_NODES%NODES(np)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS)
+                END DO
                 !allocate variable component memory
                 CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, 1, &
                   & "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
@@ -5730,6 +5821,11 @@ CONTAINS
                   & %NUMBER_OF_COMPONENTS+1)%PTR=>FIELD_VARIABLE%COMPONENTS( component_idx )
                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS = &
                   & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1
+                CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS, 1, &
+                  & "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
+                NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS( &
+                  & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR &
+                  & %NUMBER_OF_COMPONENTS) = MAX_NUMBER_VERSIONS
                 EXIT
               ENDIF
             ENDDO
@@ -5770,6 +5866,7 @@ CONTAINS
             NULLIFY(LOCAL_PROCESS_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(ncomp)%PTR)
           ENDDO
           CALL CHECKED_DEALLOCATE( LOCAL_PROCESS_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS )
+          CALL CHECKED_DEALLOCATE( LOCAL_PROCESS_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS )
           DEALLOCATE( LOCAL_PROCESS_INFO_SET%COMPONENT_INFO_SET(nn)%PTR )
         ENDIF
       ENDDO

@@ -470,6 +470,12 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_USER_NUMBER_FIND_REGION
   END INTERFACE !FIELD_USER_NUMBER_FIND
   
+  !> Find the field with the given user number, or throw an error if it does not exist.
+  INTERFACE FIELD_USER_NUMBER_TO_FIELD
+    MODULE PROCEDURE FIELD_USER_NUMBER_TO_FIELD_INTERFACE
+    MODULE PROCEDURE FIELD_USER_NUMBER_TO_FIELD_REGION
+  END INTERFACE !FIELD_USER_NUMBER_TO_FIELD
+  
   !>Gets the label for a field variable type.
   INTERFACE FIELD_VARIABLE_LABEL_GET
     MODULE PROCEDURE FIELD_VARIABLE_LABEL_GET_C
@@ -602,6 +608,8 @@ MODULE FIELD_ROUTINES
   
   PUBLIC FIELD_PARAMETER_SET_CREATE
 
+  PUBLIC FIELD_PARAMETER_SET_CREATED
+
   PUBLIC FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE
 
   PUBLIC FIELD_PARAMETER_SET_GET_CONSTANT,FIELD_PARAMETER_SET_GET_ELEMENT,FIELD_PARAMETER_SET_GET_LOCAL_DOF, &
@@ -623,7 +631,7 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_TYPE_CHECK,FIELD_TYPE_GET,FIELD_TYPE_SET,FIELD_TYPE_SET_AND_LOCK
   
-  PUBLIC FIELD_USER_NUMBER_FIND
+  PUBLIC FIELD_USER_NUMBER_FIND, FIELD_USER_NUMBER_TO_FIELD
 
   PUBLIC FIELD_VARIABLE_GET
 
@@ -14967,6 +14975,66 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Checks whether a field parameter set has been created
+  SUBROUTINE FIELD_PARAMETER_SET_CREATED(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,PARAMETER_SET_CREATED,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    INTEGER(INTG),  INTENT(IN) :: VARIABLE_TYPE !<The field variable type to check the parameter set creation for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    LOGICAL, INTENT(OUT) :: PARAMETER_SET_CREATED
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_PARAMETER_SET_CREATED",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(VARIABLE_TYPE>0.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+        FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+        IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+          !Check the set type input
+          IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+            !Check if this set type has been created
+            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR)) THEN
+              PARAMETER_SET_CREATED=.TRUE.
+            ELSE
+              PARAMETER_SET_CREATED=.FALSE.
+            END IF
+          ELSE
+            LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+              & " is invalid. The field parameter set type must be between 1 and "// &
+              & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+          & " is invalid. The variable type must be between 1 and "// &
+          & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_PARAMETER_SET_CREATED")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_CREATED",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_CREATED")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_CREATED
+
+  !
+  !================================================================================================================================
+  !
+
   !>Destroys the parameter set of type set type for a field variable and deallocates all memory. \see OPENCMISS::CMISSFieldParameterSetDestroy
   SUBROUTINE FIELD_PARAMETER_SET_DESTROY(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,ERR,ERROR,*)
 
@@ -24045,7 +24113,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MESH_EMBEDDING_PULL_GAUSS_POINT_DATA
 
- !
+  !
   !================================================================================================================================
   !
 
@@ -24082,5 +24150,79 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD
-!========================================================================================================================================
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the field with the given user number, or throw an error if it does not exist.
+  SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_REGION( USER_NUMBER, REGION, FIELD, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_USER_NUMBER_TO_FIELD_REGION", ERR, ERROR, *999 )
+
+    NULLIFY( FIELD )
+    CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, REGION, FIELD, ERR, ERROR, *999 )
+      CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, REGION, FIELD, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( FIELD ) ) THEN
+      LOCAL_ERROR = "A field with an user number of "//TRIM(NUMBER_TO_VSTRING( USER_NUMBER, "*", ERR, ERROR ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( REGION%USER_NUMBER, "*", ERR, ERROR ))//"."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_REGION" )
+    RETURN
+999 CALL ERRORS( "FIELD_USER_NUMBER_TO_FIELD_REGION", ERR, ERROR )
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_REGION" )
+    RETURN 1
+
+  END SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_REGION
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the field with the given user number, or throw an error if it does not exist.
+  SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_INTERFACE( USER_NUMBER, INTERFACE, FIELD, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to find
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_USER_NUMBER_TO_FIELD_INTERFACE", ERR, ERROR, *999 )
+
+    NULLIFY( FIELD )
+    CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, INTERFACE, FIELD, ERR, ERROR, *999 )
+      CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, INTERFACE, FIELD, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( FIELD ) ) THEN
+      LOCAL_ERROR = "A field with an user number of "//TRIM(NUMBER_TO_VSTRING( USER_NUMBER, "*", ERR, ERROR ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( INTERFACE%USER_NUMBER, "*", ERR, ERROR ))//"."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_INTERFACE" )
+    RETURN
+999 CALL ERRORS( "FIELD_USER_NUMBER_TO_FIELD_INTERFACE", ERR, ERROR )
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_INTERFACE" )
+    RETURN 1
+
+  END SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE FIELD_ROUTINES

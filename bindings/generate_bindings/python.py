@@ -19,7 +19,7 @@ INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
 WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
 # Don't output errors, we'll include trace in exception
-ErrorHandlingModeSet(ErrorHandlingModes.ReturnErrorCode)
+ErrorHandlingModeSet(ErrorHandlingModes.RETURN_ERROR_CODE)
 
 # Ignore SIGPIPE generated when closing the help pager when it isn't fully
 # buffered, otherwise it gets caught by OpenCMISS and crashes the interpreter
@@ -83,15 +83,28 @@ def type_to_py(type):
     cmiss_type = type.name[len(PREFIX):-len('Type')]
     docstring = remove_doxygen_commands('\n    '.join(type.comment_lines))
 
+    # Find initialise routine
+    for method in type.methods:
+        if method.name.endswith('_Initialise'):
+            initialise_method = method.name
+            break
+        if method.name.endswith('TypeInitialise'):
+            initialise_method = method.name
+            break
+    else:
+        raise RuntimeError("Couldn't find initialise routine for %s" %
+                type.name)
+
     py_class = ["class %s(CMISSType):" % cmiss_type]
     py_class.append('    """%s\n    """\n' % docstring)
     py_class.append("    def __init__(self):")
     py_class.append('        """Initialise a null %s"""\n' % type.name)
     py_class.append("        self.cmiss_type = "
-        "_wrap_routine(_opencmiss_swig.%sInitialise, None)\n" % type.name)
+        "_wrap_routine(_opencmiss_swig.%s, None)\n" % initialise_method)
 
     for method in type.methods:
-        if not method.name.endswith('TypeInitialise'):
+        if (not method.name.endswith('TypeInitialise') and
+                not method.name.endswith('_Initialise')):
             try:
                 py_class.append(py_method(type, method))
                 py_class.append('')
@@ -155,7 +168,17 @@ def method_name(type, routine):
     "Return the name of a method of an object"""
 
     c_name = subroutine_c_names(routine)[0]
-    name = c_name[len(type.name) - len('Type'):]
+    if '_' in c_name:
+        name = c_name.split('_')[-1]
+    elif (c_name.startswith('CMISSFieldML') and
+            not c_name.startswith('CMISSFieldMLIO')):
+        # Special case for FieldML routines that start
+        # with FieldML but take a CMISSFieldMLIOType, although
+        # some start with CMISSFieldMLIO...
+        name = c_name[len('CMISSFieldML'):]
+    else:
+        # Old code style
+        name = c_name[len(type.name) - len('Type'):]
     if name == 'TypeFinalise':
         name = 'Finalise'
     return name
@@ -166,22 +189,16 @@ def py_method(type, routine):
 
     name = method_name(type, routine)
     c_name = subroutine_c_names(routine)[0]
-    create_start_name = type.name[:-len('Type')] + 'CreateStart'
 
-    if c_name.startswith(create_start_name):
-        # Last parameter is self parameter
-        self_parameter = routine.parameters[-1]
-        all_parameters = routine.parameters[0:-1]
-    else:
-        self_parameter = routine.parameters[0]
-        all_parameters = routine.parameters[1:]
+    self_parameter = routine.parameters[routine.self_idx]
+    all_parameters = (routine.parameters[0:routine.self_idx] +
+            routine.parameters[routine.self_idx + 1:])
 
     (pre_code, py_args, swig_args) = process_parameters(all_parameters)
 
-    if c_name.startswith(create_start_name):
-        swig_args = swig_args + [self_parameter.name]
-    else:
-        swig_args = [self_parameter.name] + swig_args
+    # Add in self parameter to pass to swig
+    swig_args.insert(routine.self_idx, self_parameter.name)
+
     py_args = (['self'] + py_args)
 
     docstring = [remove_doxygen_commands(
@@ -387,14 +404,14 @@ def remove_prefix_and_suffix(names):
     suffix_length = 0
     if len(names) == 1:
         # Special cases we have to specify
-        if names[0] == 'CMISSControlLoopNode':
-            prefix_length = len('CMISSControlLoop')
-        elif names[0] == 'CMISSEquationsSetHelmholtzEquationTwoDim1':
-            prefix_length = len('CMISSEquationsSetHelmholtzEquation')
-        elif names[0] == 'CMISSEquationsSetPoiseuilleTwoDim1':
-            prefix_length = len('CMISSEquationsSetPoiseuille')
-        elif names[0] == 'CMISSEquationsSetFiniteElasticityCylinder':
-            prefix_length = len('CMISSEquationsSetFiniteElasticity')
+        if names[0] == 'CMISS_CONTROL_LOOP_NODE':
+            prefix_length = len('CMISS_CONTROL_LOOP_')
+        elif names[0] == 'CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_')
+        elif names[0] == 'CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_')
+        elif names[0] == 'CMISS_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER':
+            prefix_length = len('CMISS_EQUATIONS_SET_FINITE_ELASTICITY_')
         else:
             sys.stderr.write("Warning: Found an unknown enum "
                     "group with only one name: %s.\n" % names[0])
@@ -415,26 +432,15 @@ def remove_prefix_and_suffix(names):
             else:
                 break
 
-        # Make sure the suffix starts with uppercase.  So we get eg.
-        # EquationsLumpingTypes.Unlumped and Lumped rather than Unl and L
-        # Do the same for the prefix so that TwoDim and ThreeDim don't become
-        # woDim and hreeDim.  This breaks with a CMISS or CMISSCellML prefix
-        # for example though.
-        #
-        # Constants will change to capitals with underscores soon so this
-        # won't be an issue then, we can just check the prefix ends with an
-        # underscore
+        # Make sure the suffix starts with an underscore.  So we get eg.
+        # EquationsLumpingTypes.UNLUMPED and LUMPED rather than UNL and L
+        # Do the same for the prefix so that TWO_DIM and THREE_DIM don't become
+        # WO_DIM and HREE_DIM.
         if prefix_length > 0:
-            prefix = names[0][0:prefix_length]
-            if prefix == PREFIX:
-                pass
-            elif prefix == PREFIX + 'CellML':
-                pass
-            else:
-                while names[0][prefix_length - 1].isupper():
-                    prefix_length -= 1
+            while names[0][prefix_length - 1] != '_' and prefix_length > 0:
+                prefix_length -= 1
         if suffix_length > 0:
-            while names[0][-suffix_length].islower():
+            while names[0][-suffix_length] != '_' and suffix_length > 0:
                 suffix_length -= 1
 
     if suffix_length == 0:
@@ -443,16 +449,13 @@ def remove_prefix_and_suffix(names):
         new_names = [name[prefix_length:-suffix_length] for name in names]
     for (i, name) in enumerate(new_names):
         # Eg. NoOutputType should become None, not No
-        if name == 'No':
-            new_names[i] = 'NONE'
-        elif name == 'None':
-            # Can't assign to None
+        if name == 'NO':
             new_names[i] = 'NONE'
         elif name[0].isdigit():
             new_names[i] = digit_to_word(name[0]) + name[1:]
-        elif name.endswith('VariableType'):
+        elif name.endswith('_VARIABLE_TYPE'):
             # The NumberOfVariableSubtypes in this enum stuffs everything up
-            new_names[i] = name[:-len('VariableType')]
+            new_names[i] = name[:-len('_VARIABLE_TYPE')]
 
     return new_names
 
