@@ -1465,13 +1465,13 @@ CONTAINS
                         IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS.EQ.1) THEN
 
                           IF(CURRENT_LOOP_ITERATION<10) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_000",I0)') CURRENT_LOOP_ITERATION
                           ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_00",I0)') CURRENT_LOOP_ITERATION
                           ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_0",I0)') CURRENT_LOOP_ITERATION
                           ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_",I0)') CURRENT_LOOP_ITERATION
                           END IF
                         ELSE
                           IF(CURRENT_LOOP_ITERATION<10) THEN
