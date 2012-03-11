@@ -264,14 +264,16 @@ MODULE TYPES
   TYPE COORDINATE_SYSTEM_PTR_TYPE
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: PTR !<A pointer to the coordinate system
   END TYPE COORDINATE_SYSTEM_PTR_TYPE
-  
+
+  !
   !================================================================================================================================
   !
-  ! Data point types
+  ! Data projection types
   !
-
+  
   !>Contains information about a data projection result.
   TYPE DATA_PROJECTION_RESULT_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user number of the data point to which the projection result corresponds to.   
     REAL(DP) :: DISTANCE !<The distances between the data point and the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
     INTEGER(INTG) :: ELEMENT_NUMBER !<The element of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
     INTEGER(INTG) :: ELEMENT_FACE_NUMBER !<The element face of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE is chosen    
@@ -280,6 +282,37 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
   END TYPE DATA_PROJECTION_RESULT_TYPE
 
+  TYPE DATA_PROJECTION_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data projection. 
+    INTEGER(INTG) :: USER_NUMBER !<The user defined number of data projection. 
+    TYPE(VARYING_STRING) :: LABEL !<A string label for the data projection.
+    LOGICAL :: DATA_PROJECTION_FINISHED !<Is .TRUE. if the data projection has finished being created, .FALSE. if not.
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<The pointer to the data points for this data projection.
+    !TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The pointer to the geometric field for this data projection.
+    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSIONS !<The coordinate system dimension of this data projection.
+    REAL(DP) :: MAXIMUM_ITERATION_UPDATE !<The maximum xi update allowed at each newton iteration, analogous to maximum trust region size in the trust region model approach.
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
+    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh where data points are projected
+    INTEGER(INTG) :: NUMBER_OF_CLOSEST_ELEMENTS !<The number of closest elements to perform full projection on. The algorithm first find the distance of the data point to each elements base on starting xi, full projection is only performed on the first few elements sorted by the distance
+    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi of the mesh, ie. the mesh dimension
+    INTEGER(INTG) :: PROJECTION_TYPE !<type of projection to perform. \See DATA_PROJECTION_ROUTINES     
+    REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
+    REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
+    REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
+    LOGICAL :: DATA_PROJECTION_PROJECTED !<Is .TRUE. if the data projection have been projected, .FALSE. if not.
+    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTION_RESULTS(:)
+  END TYPE DATA_PROJECTION_TYPE
+
+  !>A buffer type to allow for an array of pointers to a DATA_PROJECTION_TYPE.
+  TYPE DATA_PROJECTION_PTR_TYPE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: PTR !<The pointer to the data projection.
+  END TYPE DATA_PROJECTION_PTR_TYPE
+  
+  !================================================================================================================================
+  !
+  ! Data point types
+  !
+
   !>Contains information about a data point.
   TYPE DATA_POINT_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data point. 
@@ -287,7 +320,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
     REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
-    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTIONS_RESULT(:)
+!    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTIONS_RESULT(:)
   END TYPE DATA_POINT_TYPE
 
   !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
@@ -299,39 +332,9 @@ MODULE TYPES
     TYPE(DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<DATA_POINTS(data_points_idx). The data point information for the data_points_idx'th global data point.
     TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<The tree for user to global data point mapping.
     INTEGER(INTG) :: NUMBER_OF_DATA_PROJECTIONS !<The number of data projections defined on the data points.
-    TYPE(DATA_PROJECTION_PTR_TYPE), POINTER :: DATA_PROJECTIONS(:) !<DATA_PROJECTIONS(projection_idx). A pointer to the projection_idx'th data projection for the data points.
+    TYPE(DATA_PROJECTION_PTR_TYPE), ALLOCATABLE :: DATA_PROJECTIONS(:) !<DATA_PROJECTIONS(projection_idx). A pointer to the projection_idx'th data projection for the data points.
     TYPE(TREE_TYPE), POINTER :: DATA_PROJECTIONS_TREE !<The tree for user to global data projections mapping.
   END TYPE DATA_POINTS_TYPE
-  
-  !
-  !================================================================================================================================
-  !
-  ! Data projection types
-  !
-
-  TYPE DATA_PROJECTION_TYPE
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data projection. 
-    INTEGER(INTG) :: USER_NUMBER !<The user defined number of data projection. 
-    TYPE(VARYING_STRING) :: LABEL !<A string label for the data projection.
-    LOGICAL :: DATA_PROJECTION_FINISHED !<Is .TRUE. if the data projection has finished being created, .FALSE. if not.
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<The pointer to the data points for this data projection.
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The pointer to the geometric field for this data projection.
-    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSIONS !<The coordinate system dimension of this data projection.
-    REAL(DP) :: MAXIMUM_ITERATION_UPDATE !<The maximum xi update allowed at each newton iteration, analogous to maximum trust region size in the trust region model approach.
-    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
-    INTEGER(INTG) :: NUMBER_OF_CLOSEST_ELEMENTS !<The number of closest elements to perform full projection on. The algorithm first find the distance of the data point to each elements base on starting xi, full projection is only performed on the first few elements sorted by the distance
-    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi of the mesh, ie. the mesh dimension
-    INTEGER(INTG) :: PROJECTION_TYPE !<type of projection to perform. \See DATA_PROJECTION_ROUTINES     
-    REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
-    REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
-    REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
-    LOGICAL :: DATA_PROJECTION_PROJECTED !<Is .TRUE. if the data projection have been projected, .FALSE. if not.
-  END TYPE DATA_PROJECTION_TYPE
-
-  !>A buffer type to allow for an array of pointers to a DATA_PROJECTION_TYPE.
-  TYPE DATA_PROJECTION_PTR_TYPE
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: PTR !<The pointer to the data projection.
-  END TYPE DATA_PROJECTION_PTR_TYPE
 
   !
   !================================================================================================================================
@@ -2058,6 +2061,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER :: GLOBAL_NUMBER !<The global number of the interface in the list of interfaces for a particular parent region.
     LOGICAL :: INTERFACE_FINISHED !<Is .TRUE. if the interface has finished being created, .FALSE. if not.
     TYPE(VARYING_STRING) :: LABEL !<A user defined label for the region.
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system used by the interface.     
     TYPE(INTERFACES_TYPE), POINTER :: INTERFACES !<A pointer back to the parent interfaces
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A point to the parent region containing the interface.
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
