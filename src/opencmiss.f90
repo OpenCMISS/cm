@@ -1748,11 +1748,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_DestroyObj
   END INTERFACE !CMISSDataProjection_Destroy
 
-  !>Starts the evluation of data projection.
-  INTERFACE CMISSDataProjection_Evaluate
-    MODULE PROCEDURE CMISSDataProjection_EvaluateNumber
-    MODULE PROCEDURE CMISSDataProjection_EvaluateObj
-  END INTERFACE !CMISSDataProjection_Evaluate
+  !>Starts the evluation of data projection on the geometric field.
+  INTERFACE CMISSDataProjection_ProjectionEvaluate
+    MODULE PROCEDURE CMISSDataProjection_ProjectionEvaluateNumber
+    MODULE PROCEDURE CMISSDataProjection_ProjectionEvaluateObj
+  END INTERFACE !CMISSDataProjection_ProjectionEvaluate
 
   !>Returns the maximum iteration update for a data projection.
   INTERFACE CMISSDataProjection_MaximumIterationUpdateGet
@@ -1836,7 +1836,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDataProjection_Destroy
 
-  PUBLIC CMISSDataProjection_Evaluate
+  PUBLIC CMISSDataProjection_ProjectionEvaluate
 
   PUBLIC CMISSDataProjection_MaximumIterationUpdateGet,CMISSDataProjection_MaximumIterationUpdateSet
 
@@ -18179,7 +18179,6 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
     CALL ENTERS("CMISSDataPoints_ValuesGetNumber",err,error,*999)
 
     NULLIFY(REGION)
@@ -18438,9 +18437,10 @@ CONTAINS
 !!==================================================================================================================================
 
   !>Returns the absolute tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_AbsoluteToleranceGetNumber(regionUserNumber,absoluteTolerance,err)
+  SUBROUTINE CMISSDataProjection_AbsoluteToleranceGetNumber(dataProjectionUserNumber,regionUserNumber,absoluteTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get tolerance for.
     REAL(DP), INTENT(OUT) :: absoluteTolerance !<On exit, the absolute tolerance of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18449,6 +18449,7 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
     CALL ENTERS("CMISSDataProjection_AbsoluteToleranceGetNumber",ERR,error,*999)
 
@@ -18458,7 +18459,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_GET(DATA_PROJECTION,absoluteTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18506,9 +18508,10 @@ CONTAINS
   !
 
   !>Sets/changes the absolute tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_AbsoluteToleranceSetNumber(regionUserNumber,absoluteTolerance,err)
+  SUBROUTINE CMISSDataProjection_AbsoluteToleranceSetNumber(dataProjectionUserNumber,regionUserNumber,absoluteTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set tolerance for.
     REAL(DP), INTENT(IN) :: absoluteTolerance !<the absolute tolerance to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18517,8 +18520,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18526,7 +18530,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_SET(DATA_PROJECTION,absoluteTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18574,9 +18579,10 @@ CONTAINS
   !
 
   !>Finishes the creation of a new data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_CreateFinishNumber(regionUserNumber,err)
+  SUBROUTINE CMISSDataProjection_CreateFinishNumber(dataProjectionUserNumber,regionUserNumber,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points which associates to the data projection to finish the creation of.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
@@ -18584,8 +18590,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_CreateFinishNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_CreateFinishNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18593,7 +18600,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_CREATE_FINISH(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18640,60 +18648,62 @@ CONTAINS
   !
 
   !>Starts the creation of a new data projection for a data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_CreateStartNumber(dataPointRegionUserNumber,fieldUserNumber, &
-    & fieldRegionUserNumber,err)
-
+  SUBROUTINE CMISSDataProjection_CreateStartNumber(dataProjectionUserNumber,dataPointRegionUserNumber,meshUserNumber, &
+    & meshRegionUserNumber,err)
+  
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: dataPointRegionUserNumber !<The region user number of the data points to be projected
-    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number of the geometric field data points are be projected on
-    INTEGER(INTG), INTENT(IN) :: fieldRegionUserNumber !<The region user number of the geometric field data points are be projected on
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number.
+    INTEGER(INTG), INTENT(IN) :: dataPointRegionUserNumber !<The region user number of the data points to be projected.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The field user number of the geometric field data points are be projected on.
+    INTEGER(INTG), INTENT(IN) :: meshRegionUserNumber !<The region user number of the geometric field data points are be projected on.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
+    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(REGION_TYPE), POINTER :: DATA_POINTS_REGION
-    TYPE(REGION_TYPE), POINTER :: GEOMETRIC_FIELD_REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(REGION_TYPE), POINTER :: MESH_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR    
 
-    CALL ENTERS("CMISSDataProjection_CreateStartNumber",err,error,*999)
+    CALL ENTERS("CMISSDataProjection_CreateStartNumber",err,ERROR,*999)
 
     NULLIFY(DATA_PROJECTION)
-    NULLIFY(DATA_POINTS)
-    NULLIFY(GEOMETRIC_FIELD)
+    NULLIFY(DATA_POINTS) 
+    NULLIFY(MESH)   
     NULLIFY(DATA_POINTS_REGION)
-    NULLIFY(GEOMETRIC_FIELD_REGION)
-    CALL REGION_USER_NUMBER_FIND(dataPointRegionUserNumber,DATA_POINTS_REGION,err,error,*999)
-    CALL REGION_USER_NUMBER_FIND(fieldRegionUserNumber,GEOMETRIC_FIELD_REGION,err,error,*999)
+    NULLIFY(MESH_REGION)
+    CALL REGION_USER_NUMBER_FIND(dataPointRegionUserNumber,DATA_POINTS_REGION,err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(meshRegionUserNumber,MESH_REGION,err,ERROR,*999)
     IF(ASSOCIATED(DATA_POINTS_REGION)) THEN
-      IF(ASSOCIATED(GEOMETRIC_FIELD_REGION)) THEN
-        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,GEOMETRIC_FIELD_REGION,GEOMETRIC_FIELD,ERR,error,*999)
-        IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-          CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,error,*999)
-          CALL DATA_PROJECTION_CREATE_START(DATA_POINTS,GEOMETRIC_FIELD,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(MESH_REGION)) THEN
+        CALL MESH_USER_NUMBER_FIND(meshUserNumber,MESH_REGION,MESH,err,ERROR,*999)
+        IF(ASSOCIATED(MESH)) THEN
+          CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,ERROR,*999)
+          CALL DATA_PROJECTION_CREATE_START_DATA_POINTS(dataProjectionUserNumber,DATA_POINTS,MESH,DATA_PROJECTION,err, &
+            & ERROR,*999)
         ELSE
-          LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,ERROR))// &
             & " does not exist."
-          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-        END IF
+          CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+        ENDIF
       ELSE
-        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldRegionUserNumber,"*",err,error))// &
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(meshRegionUserNumber,"*",err,ERROR))// &
           & " does not exist."
-        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-      END IF
+        CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(dataPointRegionUserNumber,"*",err,error))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(dataPointRegionUserNumber,"*",err,ERROR))// &
         & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+      CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+    ENDIF
 
     CALL EXITS("CMISSDataProjection_CreateStartNumber")
     RETURN
-999 CALL ERRORS("CMISSDataProjection_CreateStartNumber",err,error)
+999 CALL ERRORS("CMISSDataProjection_CreateStartNumber",err,ERROR)
     CALL EXITS("CMISSDataProjection_CreateStartNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
+    CALL CMISS_HANDLE_ERROR(err,ERROR)
     RETURN
-
+    
   END SUBROUTINE CMISSDataProjection_CreateStartNumber
 
   !
@@ -18701,18 +18711,20 @@ CONTAINS
   !
 
   !>Starts the creation of a new data projection for a data projection identified by an object.
-  SUBROUTINE CMISSDataProjection_CreateStartObj(dataPoints,geometricField,dataProjection,err)
+  SUBROUTINE CMISSDataProjection_CreateStartObj(dataProjectionUserNumber,dataPoints,mesh,dataProjection,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number.
     TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to be projected
-    TYPE(CMISSFieldType), INTENT(IN) :: geometricField !<The geometric field data points is projected on
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh !<The mesh where data points is projected on
     TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<On exit, the newly created data projection.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSDataProjection_CreateStartObj",err,error,*999)
 
-    CALL DATA_PROJECTION_CREATE_START(dataPoints%DATA_POINTS,geometricField%FIELD,dataProjection%DATA_PROJECTION,err,error,*999)
+    CALL DATA_PROJECTION_CREATE_START_DATA_POINTS(dataProjectionUserNumber,dataPoints%DATA_POINTS,mesh%MESH, &
+      & dataProjection%DATA_PROJECTION,err,ERROR,*999)
 
     CALL EXITS("CMISSDataProjection_CreateStartObj")
     RETURN
@@ -18728,9 +18740,10 @@ CONTAINS
   !
 
   !>Destroys a data projection identified by region user number.
-  SUBROUTINE CMISSDataProjection_DestroyNumber(regionUserNumber,err)
+  SUBROUTINE CMISSDataProjection_DestroyNumber(dataProjectionUserNumber,regionUserNumber,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to destroy.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -18738,8 +18751,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_DestroyNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_DestroyNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18747,7 +18761,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_DESTROY(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18794,75 +18809,103 @@ CONTAINS
   !
 
   !>Evaluate a data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_EvaluateNumber(regionUserNumber,err)
+  SUBROUTINE CMISSDataProjection_ProjectionEvaluateNumber(dataProjectionUserNumber,dataPointsRegionUserNumber, &
+    & projectionFieldUserNumber,projectionFieldRegionUserNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to evaluate.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointsRegionUserNumber !<The region user number of the data projection to evaluate.
+    INTEGER(INTG), INTENT(IN) :: projectionFieldUserNumber !<The field user number of the field data points are be projected on.
+    INTEGER(INTG), INTENT(IN) :: projectionFieldRegionUserNumber !<The region user number of the field data points are be projected on.    
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    !Local variables  
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(FIELD_TYPE), POINTER :: PROJECTION_FIELD
+    TYPE(REGION_TYPE), POINTER :: DATA_POINTS_REGION
+    TYPE(REGION_TYPE), POINTER :: PROJECTION_FIELD_REGION
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
+    TYPE(VARYING_STRING) :: LOCAL_ERROR      
 
-    CALL ENTERS("CMISSDataProjection_EvaluateNumber",ERR,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
+    CALL ENTERS("CMISSDataProjection_ProjectionEvaluateNumber",err,error,*999)
+    
     NULLIFY(DATA_PROJECTION)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
-      CALL DATA_PROJECTION_EVALUATE(DATA_PROJECTION,err,error,*999)
+    NULLIFY(DATA_POINTS) 
+    NULLIFY(PROJECTION_FIELD)   
+    NULLIFY(DATA_POINTS_REGION)
+    NULLIFY(PROJECTION_FIELD_REGION)
+    CALL REGION_USER_NUMBER_FIND(dataPointsRegionUserNumber,DATA_POINTS_REGION,err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(projectionFieldRegionUserNumber,PROJECTION_FIELD_REGION,err,ERROR,*999)
+    IF(ASSOCIATED(DATA_POINTS_REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
+      IF(ASSOCIATED(PROJECTION_FIELD_REGION)) THEN
+        CALL FIELD_USER_NUMBER_FIND(projectionFieldUserNumber,PROJECTION_FIELD_REGION,PROJECTION_FIELD,err,ERROR,*999)
+        IF(ASSOCIATED(PROJECTION_FIELD)) THEN
+          CALL DATA_PROJECTION_DATA_POINTS_EVALUATE(DATA_PROJECTION,PROJECTION_FIELD,err,error,*999)
+        ELSE
+          LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(projectionFieldUserNumber,"*",err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(projectionFieldRegionUserNumber,"*",err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(dataPointsRegionUserNumber,"*",err,error))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
-    CALL EXITS("CMISSDataProjection_EvaluateNumber")
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateNumber")
     RETURN
-999 CALL ERRORS("CMISSDataProjection_EvaluateNumber",err,error)
-    CALL EXITS("CMISSDataProjection_EvaluateNumber")
+999 CALL ERRORS("CMISSDataProjection_ProjectionEvaluateNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDataProjection_EvaluateNumber
+  END SUBROUTINE CMISSDataProjection_ProjectionEvaluateNumber
+
 
   !
   !================================================================================================================================
   !
 
   !>Evaluate a data projection identified by an object.
-  SUBROUTINE CMISSDataProjection_EvaluateObj(dataProjection,err)
+  SUBROUTINE CMISSDataProjection_ProjectionEvaluateObj(dataProjection,projectionField,err)
 
     !Argument variables
     TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to evaluate.
+    TYPE(CMISSFieldType), INTENT(IN) :: projectionField !<The field data points is projected on
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSDataProjection_EvaluateObj",err,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionEvaluateObj",err,error,*999)
 
-    CALL DATA_PROJECTION_EVALUATE(dataProjection%DATA_PROJECTION,err,error,*999)
+    CALL DATA_PROJECTION_EVALUATE(dataProjection%DATA_PROJECTION,projectionField%FIELD,err,error,*999)
 
-    CALL EXITS("CMISSDataProjection_EvaluateObj")
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateObj")
     RETURN
-999 CALL ERRORS("CMISSDataProjection_EvaluateObj",err,error)
-    CALL EXITS("CMISSDataProjection_EvaluateObj")
+999 CALL ERRORS("CMISSDataProjection_ProjectionEvaluateObj",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDataProjection_EvaluateObj
+  END SUBROUTINE CMISSDataProjection_ProjectionEvaluateObj
 
   !
   !================================================================================================================================
   !
 
   !>Returns the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateGetNumber(regionUserNumber,maximumIterationUpdate,err)
+  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateGetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumIterationUpdate,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get tolerance for.
     REAL(DP), INTENT(OUT) :: maximumIterationUpdate !<On exit, the maximum iteration update of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18871,8 +18914,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18880,7 +18924,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET(DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18928,9 +18973,11 @@ CONTAINS
   !
 
   !>Sets/changes the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateSetNumber(regionUserNumber,maximumIterationUpdate,err)
+  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateSetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumIterationUpdate,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set tolerance for.
     REAL(DP), INTENT(IN) :: maximumIterationUpdate !<the maximum iteration update to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18939,8 +18986,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18948,7 +18996,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_SET(DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18996,9 +19045,11 @@ CONTAINS
   !
 
   !>Returns the maximum number of iterations of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsGetNumber(regionUserNumber,maximumNumberOfIterations,err)
+  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsGetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumNumberOfIterations,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get maximum number of iterations for.
     INTEGER(INTG), INTENT(OUT) :: maximumNumberOfIterations !<On exit, the maximum number of iterations of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19007,8 +19058,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19016,7 +19068,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET(DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19064,9 +19117,11 @@ CONTAINS
   !
 
   !>Sets/changes the maximum number of iterations of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsSetNumber(regionUserNumber,maximumNumberOfIterations,err)
+  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsSetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumNumberOfIterations,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set maximum number of iterations for.
     INTEGER(INTG), INTENT(IN) :: maximumNumberOfIterations !<the maximum number of iterations to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19075,8 +19130,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19084,7 +19140,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_SET(DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19132,9 +19189,11 @@ CONTAINS
   !
 
   !>Returns the number of closest elements of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsGetNumber(regionUserNumber,numberOfClosestElements,err)
+  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsGetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & numberOfClosestElements,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get number of closest elements for.
     INTEGER(INTG), INTENT(OUT) :: numberOfClosestElements !<On exit, the number of closest elements of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19143,8 +19202,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19152,7 +19212,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_GET(DATA_PROJECTION,numberOfClosestElements,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19200,9 +19261,11 @@ CONTAINS
   !
 
   !>Sets/changes the number of closest elements of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsSetNumber(regionUserNumber,numberOfClosestElements,err)
+  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsSetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & numberOfClosestElements,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set number of closest elements for.
     INTEGER(INTG), INTENT(IN) :: numberOfClosestElements !<the number of closest elements to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19211,8 +19274,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19220,7 +19284,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET(DATA_PROJECTION,numberOfClosestElements,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19268,9 +19333,10 @@ CONTAINS
   !
 
   !>Returns the projection type of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_ProjectionTypeGetNumber(regionUserNumber,projectionType,err)
+  SUBROUTINE CMISSDataProjection_ProjectionTypeGetNumber(dataProjectionUserNumber,regionUserNumber,projectionType,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get projection type for.
     INTEGER(INTG), INTENT(OUT) :: projectionType !<On exit, the projection type of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19279,8 +19345,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19288,7 +19355,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_PROJECTION_TYPE_GET(DATA_PROJECTION,projectionType,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19336,9 +19404,10 @@ CONTAINS
   !
 
   !>Sets/changes the projection type of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_ProjectionTypeSetNumber(regionUserNumber,projectionType,err)
+  SUBROUTINE CMISSDataProjection_ProjectionTypeSetNumber(dataProjectionUserNumber,regionUserNumber,projectionType,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set projection type for.
     INTEGER(INTG), INTENT(IN) :: projectionType !<the projection type to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19347,8 +19416,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19356,7 +19426,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_PROJECTION_TYPE_SET(DATA_PROJECTION,projectionType,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19403,10 +19474,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_RelativeToleranceGetNumber(regionUserNumber,relativeTolerance,err)
+  !>Returns the relative tolerance of data projection identified by a data projection user number and a region user number.
+  SUBROUTINE CMISSDataProjection_RelativeToleranceGetNumber(dataProjectionUserNumber,regionUserNumber,relativeTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get relative tolerance for.
     REAL(DP), INTENT(OUT) :: relativeTolerance !<On exit, the absolute relative tolerance of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19415,8 +19487,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19424,7 +19497,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_RELATIVE_TOLERANCE_GET(DATA_PROJECTION,relativeTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19471,10 +19545,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_RelativeToleranceSetNumber(regionUserNumber,relativeTolerance,err)
+  !>Sets/changes the relative tolerance of data projection identified by a data projection user number and a region user number.
+  SUBROUTINE CMISSDataProjection_RelativeToleranceSetNumber(dataProjectionUserNumber,regionUserNumber,relativeTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set relative tolerance for.
     REAL(DP), INTENT(IN) :: relativeTolerance !<the absolute relative tolerance to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19483,8 +19558,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19492,7 +19568,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_RELATIVE_TOLERANCE_SET(DATA_PROJECTION,relativeTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19539,10 +19616,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the starting xi of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_StartingXiGetNumber(regionUserNumber,startingXi,err)
+  !>Returns the starting xi of data projection identified by a data projection user number and region user number.
+  SUBROUTINE CMISSDataProjection_StartingXiGetNumber(dataProjectionUserNumber,regionUserNumber,startingXi,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get starting xi for.
     REAL(DP), INTENT(OUT) :: startingXi(:) !<On exit, the absolute starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19551,8 +19629,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19560,7 +19639,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_STARTING_XI_GET(DATA_PROJECTION,startingXi,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19576,6 +19656,7 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_StartingXiGetNumber
+
 
   !
   !================================================================================================================================
@@ -19608,9 +19689,10 @@ CONTAINS
   !
 
   !>Sets/changes the starting xi of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_StartingXiSetNumber(regionUserNumber,startingXi,err)
+  SUBROUTINE CMISSDataProjection_StartingXiSetNumber(dataProjectionUserNumber,regionUserNumber,startingXi,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set starting xi for.
     REAL(DP), INTENT(IN) :: startingXi(:) !<the absolute starting xi to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19619,8 +19701,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
-    CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19628,7 +19711,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_STARTING_XI_SET(DATA_PROJECTION,startingXi,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
