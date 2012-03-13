@@ -1552,6 +1552,15 @@ CONTAINS
                               & " is not valid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT !EQUATIONS_SET%CLASS
+                        CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
+                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+                            !Pre residual evaluate not used
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
+                              & " is not valid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT !EQUATIONS_SET%CLASS
                         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -1670,6 +1679,15 @@ CONTAINS
                           CASE(EQUATIONS_SET_MODAL_CLASS)
                             !Post residual evaluate not used
                           CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+                            !Post residual evaluate not used
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
+                              & " is not valid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT !EQUATIONS_SET%CLASS
+                        CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
+                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
                             !Post residual evaluate not used
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
