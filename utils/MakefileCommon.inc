@@ -309,7 +309,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   endif
   ifeq ($(CC),icc)
     # Turn on all warnings
-    C_FLGS += -Wall -m$(ABI)
+    C_FLGS += -Wall -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -407,7 +407,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # turn on preprocessing,
     # turn on warnings,
     # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all -m$(ABI)
+    F_FLGS += -cpp -warn all -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
