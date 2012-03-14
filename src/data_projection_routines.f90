@@ -581,56 +581,52 @@ CONTAINS
               CALL FLAG_ERROR("Mesh is not associated with a region or a interface.",ERR,ERROR,*999)
             ENDIF
             IF(DATA_POINTS_REGION_DIMENSIONS==MESH_REGION_DIMENSIONS) THEN !Dimension has to be equal
-              IF(ASSOCIATED(DATA_PROJECTION)) THEN
-                DATA_PROJECTION%GLOBAL_NUMBER=data_projection_idx
-                DATA_PROJECTION%USER_NUMBER=DATA_PROJECTION_USER_NUMBER
-                DATA_PROJECTION%LABEL=""
-                CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER,data_projection_idx, &
-                  & INSERT_STATUS,ERR,ERROR,*999)
-                DATA_PROJECTION%DATA_PROJECTION_FINISHED=.FALSE.
-                DATA_PROJECTION%DATA_POINTS=>DATA_POINTS
-                DATA_PROJECTION%MESH=>MESH
-                DATA_PROJECTION%COORDINATE_SYSTEM_DIMENSIONS=DATA_POINTS_REGION_DIMENSIONS
-                DATA_PROJECTION%MAXIMUM_ITERATION_UPDATE=0.5_DP
-                DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=25                   
-                !Default always project to boundaries faces/lines when mesh dimension is equal to region dimension. If mesh dimension is less, project to all elements            
-                IF(MESH%NUMBER_OF_DIMENSIONS<DATA_POINTS_REGION_DIMENSIONS) THEN !mesh dimension < data dimension
-                  DATA_PROJECTION%NUMBER_OF_XI=MESH%NUMBER_OF_DIMENSIONS
-                  DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
-                ELSE
-                  SELECT CASE(MESH%NUMBER_OF_DIMENSIONS) !mesh dimension = data dimension
-                  CASE (2) 
-                    DATA_PROJECTION%NUMBER_OF_XI=1
-                    DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE
-                  CASE (3)
-                    DATA_PROJECTION%NUMBER_OF_XI=2
-                    DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
-                  CASE DEFAULT
-                    CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
-                  END SELECT
-                ENDIF
-                SELECT CASE(DATA_PROJECTION%NUMBER_OF_XI) !mesh dimension = data dimension
-                CASE (1)
-                  DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=2
-                CASE (2)
-                  DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=4  
+              ALLOCATE(DATA_PROJECTION,STAT=ERR)
+              !indentation
+              DATA_PROJECTION%GLOBAL_NUMBER=data_projection_idx
+              DATA_PROJECTION%USER_NUMBER=DATA_PROJECTION_USER_NUMBER
+              DATA_PROJECTION%LABEL=""
+              CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER,data_projection_idx, &
+                & INSERT_STATUS,ERR,ERROR,*999)
+              DATA_PROJECTION%DATA_PROJECTION_FINISHED=.FALSE.
+              DATA_PROJECTION%DATA_POINTS=>DATA_POINTS
+              DATA_PROJECTION%MESH=>MESH
+              DATA_PROJECTION%COORDINATE_SYSTEM_DIMENSIONS=DATA_POINTS_REGION_DIMENSIONS
+              DATA_PROJECTION%MAXIMUM_ITERATION_UPDATE=0.5_DP
+              DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=25                   
+              !Default always project to boundaries faces/lines when mesh dimension is equal to region dimension. If mesh dimension is less, project to all elements            
+              IF(MESH%NUMBER_OF_DIMENSIONS<DATA_POINTS_REGION_DIMENSIONS) THEN !mesh dimension < data dimension
+                DATA_PROJECTION%NUMBER_OF_XI=MESH%NUMBER_OF_DIMENSIONS
+                DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
+              ELSE
+                SELECT CASE(MESH%NUMBER_OF_DIMENSIONS) !mesh dimension = data dimension
+                CASE (2) 
+                  DATA_PROJECTION%NUMBER_OF_XI=1
+                  DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE
                 CASE (3)
-                  DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=8
+                  DATA_PROJECTION%NUMBER_OF_XI=2
+                  DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
                 CASE DEFAULT
                   CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
-                END SELECT 
-                ALLOCATE(DATA_PROJECTION%STARTING_XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data projection starting xi.",ERR,ERROR,*999)
-                DO xi_idx=1,DATA_PROJECTION%NUMBER_OF_XI
-                  DATA_PROJECTION%STARTING_XI(xi_idx)=0.5_DP !<initialised to 0.5 in each xi direction
-                ENDDO !xi_idx              
-                DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
-                DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP
-                !Return the pointer        
-                DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR=>DATA_PROJECTION
-              ELSE
-                CALL FLAG_ERROR("Data projection is already associated.",ERR,ERROR,*999)
-              ENDIF !ASSOCIATED(DATA_PROJECTION)
+                END SELECT
+              ENDIF
+              SELECT CASE(DATA_PROJECTION%NUMBER_OF_XI) !mesh dimension = data dimension
+              CASE (1)
+                DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=2
+              CASE (2)
+                DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=4  
+              CASE (3)
+                DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=8
+              CASE DEFAULT
+                CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
+              END SELECT 
+              ALLOCATE(DATA_PROJECTION%STARTING_XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data projection starting xi.",ERR,ERROR,*999)
+              DO xi_idx=1,DATA_PROJECTION%NUMBER_OF_XI
+                DATA_PROJECTION%STARTING_XI(xi_idx)=0.5_DP !<initialised to 0.5 in each xi direction
+              ENDDO !xi_idx              
+              DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
+              DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP  
               IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS>0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
