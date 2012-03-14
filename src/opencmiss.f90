@@ -32054,12 +32054,12 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Sets/changes the coordinate system for a region identified by an user number.
+  !>Sets/changes the coordinate system for an interface identified by an user number.
   SUBROUTINE CMISSInterface_CoordinateSystemSetNumber(parentRegionUserNumber,interfaceUserNumber,coordinateSystemUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region where interface was created.
-    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the region to set the coordinate system for.    
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to set the coordinate system for.    
     INTEGER(INTG), INTENT(IN) :: coordinateSystemUserNumber !<The user number of the coordinate system to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -32082,11 +32082,11 @@ CONTAINS
         CALL INTERFACE_COORDINATE_SYSTEM_SET(INTERFACE,COORDINATE_SYSTEM,err,error,*999)
       ELSE
         LOCAL_ERROR="A coordinate system with an user number of "// &
-          & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",err,ERROR))//"."
+          & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",err,ERROR))//" does not exist."
         CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,ERROR))// &
+      LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
@@ -32104,7 +32104,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Sets/changes the coordinate system for a region identified by an object.
+  !>Sets/changes the coordinate system for an interface identified by an object.
   SUBROUTINE CMISSInterface_CoordinateSystemSetObj(interface,coordinateSystem,err)
   
     !Argument variables
