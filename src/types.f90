@@ -268,6 +268,49 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! Data projection types
+  !
+  
+  !>Contains information about a data projection result.
+  TYPE DATA_PROJECTION_RESULT_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user number of the data point to which the projection result corresponds to.   
+    REAL(DP) :: DISTANCE !<The distances between the data point and the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    INTEGER(INTG) :: ELEMENT_FACE_NUMBER !<The element face of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE is chosen    
+    INTEGER(INTG) :: ELEMENT_LINE_NUMBER !<The element line of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE is chosen
+    INTEGER(INTG) :: EXIT_TAG !<The exit tage of the data projection. \See DATA_PROJECTION_ROUTINES. Assigned only if DATA_POINTS_PROJECTED is .TRUE. 
+    REAL(DP), ALLOCATABLE :: XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+  END TYPE DATA_PROJECTION_RESULT_TYPE
+
+  TYPE DATA_PROJECTION_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data projection. 
+    INTEGER(INTG) :: USER_NUMBER !<The user defined number of data projection. 
+    TYPE(VARYING_STRING) :: LABEL !<A string label for the data projection.
+    LOGICAL :: DATA_PROJECTION_FINISHED !<Is .TRUE. if the data projection has finished being created, .FALSE. if not.
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<The pointer to the data points for this data projection.
+    !TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The pointer to the geometric field for this data projection.
+    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSIONS !<The coordinate system dimension of this data projection.
+    REAL(DP) :: MAXIMUM_ITERATION_UPDATE !<The maximum xi update allowed at each newton iteration, analogous to maximum trust region size in the trust region model approach.
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
+    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh where data points are projected
+    INTEGER(INTG) :: NUMBER_OF_CLOSEST_ELEMENTS !<The number of closest elements to perform full projection on. The algorithm first find the distance of the data point to each elements base on starting xi, full projection is only performed on the first few elements sorted by the distance
+    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi of the mesh, ie. the mesh dimension
+    INTEGER(INTG) :: PROJECTION_TYPE !<type of projection to perform. \See DATA_PROJECTION_ROUTINES     
+    REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
+    REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
+    REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
+    LOGICAL :: DATA_PROJECTION_PROJECTED !<Is .TRUE. if the data projection have been projected, .FALSE. if not.
+    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTION_RESULTS(:)
+  END TYPE DATA_PROJECTION_TYPE
+  
+  !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
+  TYPE DATA_PROJECTION_PTR_TYPE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: PTR !<The pointer to the data projection.
+  END TYPE DATA_PROJECTION_PTR_TYPE
+  
+  !
+  !================================================================================================================================
+  !
   ! Data point types
   !
 
@@ -278,12 +321,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
     REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
-    REAL(DP) :: PROJECTION_DISTANCE !<The distances between the data point and the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
-    INTEGER(INTG) :: PROJECTION_ELEMENT_NUMBER !<The element of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
-    INTEGER(INTG) :: PROJECTION_ELEMENT_FACE_NUMBER !<The element face of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE is chosen    
-    INTEGER(INTG) :: PROJECTION_ELEMENT_LINE_NUMBER !<The element line of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE is chosen
-    INTEGER(INTG) :: PROJECTION_EXIT_TAG !<The exit tage of the data projection. \See DATA_PROJECTION_ROUTINES. Assigned only if DATA_POINTS_PROJECTED is .TRUE. 
-    REAL(DP), ALLOCATABLE :: PROJECTION_XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+!    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTIONS_RESULT(:)
   END TYPE DATA_POINT_TYPE
 
   !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
@@ -291,33 +329,13 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the data points. If the data points are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the data points. If the data points are in a region rather than an interface then this pointer will be NULL and the interface pointer should be used.
     LOGICAL :: DATA_POINTS_FINISHED !<Is .TRUE. if the data points have finished being created, .FALSE. if not.
-    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points defined on the region.
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points defined on the region/interface.
     TYPE(DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<DATA_POINTS(data_points_idx). The data point information for the data_points_idx'th global data point.
     TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<The tree for user to global data point mapping.
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for the data points.
-    LOGICAL :: DATA_POINTS_PROJECTED !<Is .TRUE. if the data points have been projected, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_DATA_PROJECTIONS !<The number of data projections defined on the data points.
+    TYPE(DATA_PROJECTION_PTR_TYPE), ALLOCATABLE :: DATA_PROJECTIONS(:) !<DATA_PROJECTIONS(projection_idx). A pointer to the projection_idx'th data projection for the data points.
+    TYPE(TREE_TYPE), POINTER :: DATA_PROJECTIONS_TREE !<The tree for user to global data projections mapping.
   END TYPE DATA_POINTS_TYPE
-  
-  !
-  !================================================================================================================================
-  !
-  ! Data projection types
-  !
-
-  TYPE DATA_PROJECTION_TYPE
-    LOGICAL :: DATA_PROJECTION_FINISHED !<Is .TRUE. if the data projection has finished being created, .FALSE. if not.
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<The pointer to the data points for this data projection.
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The pointer to the geometric field for this data projection.
-    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSIONS !<The coordinate system dimension of this data projection.
-    REAL(DP) :: MAXIMUM_ITERATION_UPDATE !<The maximum xi update allowed at each newton iteration, analogous to maximum trust region size in the trust region model approach.
-    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
-    INTEGER(INTG) :: NUMBER_OF_CLOSEST_ELEMENTS !<The number of closest elements to perform full projection on. The algorithm first find the distance of the data point to each elements base on starting xi, full projection is only performed on the first few elements sorted by the distance
-    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi of the mesh, ie. the mesh dimension
-    INTEGER(INTG) :: PROJECTION_TYPE !<type of projection to perform. \See DATA_PROJECTION_ROUTINES     
-    REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
-    REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
-    REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
-  END TYPE DATA_PROJECTION_TYPE
 
   !
   !================================================================================================================================
@@ -412,6 +430,34 @@ MODULE TYPES
     TYPE(MESH_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of the mesh. NODES(np) contains the topological information for the np'th global node of the mesh. \todo Should this be allocatable???
     TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the mesh global number to the region nodes global number.
   END TYPE MESH_NODES_TYPE
+  
+  TYPE MESH_ELEMENT_DATA_POINT_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<User number of the projected data point
+    INTEGER(INTG) :: GLOBAL_NUMBER !<Global number of the data point, sequence is according to element number sequence  
+  END TYPE MESH_ELEMENT_DATA_POINT_TYPE
+  
+  !>Contains information on the projected data points on an element
+  TYPE MESH_ELEMENT_DATA_POINTS_TYPE
+    INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
+    TYPE(MESH_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
+  END TYPE MESH_ELEMENT_DATA_POINTS_TYPE
+  
+  !>Contains information of the projected data point 
+  TYPE MESH_DATA_POINT_TYPE 
+    INTEGER(INTG) :: USER_NUMBER !<User number of the projected data point
+    INTEGER(INTG) :: GLOBAL_NUMBER !<Global number of the data point, sequence is according to element number sequence 
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number which the data point is projected on 
+  END TYPE MESH_DATA_POINT_TYPE 
+  
+  !<Contains the information for the data points of a mesh
+  TYPE MESH_DATA_POINTS_TYPE
+    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for this data points information.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in the mesh where data points are attached to.
+    TYPE(MESH_DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<Information of the projected data points
+    TYPE(MESH_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements 
+  END TYPE MESH_DATA_POINTS_TYPE
 
   !>Contains information on the (global) topology of a mesh.
   TYPE MESH_TOPOLOGY_TYPE
@@ -420,6 +466,7 @@ MODULE TYPES
     TYPE(MESH_NODES_TYPE), POINTER :: NODES !<Pointer to the nodes within the mesh topology.
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
     TYPE(MESH_DOFS_TYPE), POINTER :: DOFS !<Pointer to the dofs within the mesh topology.
+    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<Pointer to the data points within the mesh topology
   END TYPE MESH_TOPOLOGY_TYPE
 
   !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
@@ -667,6 +714,30 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of this domain. NODES(np) contains the topological information for the np'th local node of the domain. \todo Change this to allocatable???
     TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the domain local number to the region nodes user number.
   END TYPE DOMAIN_NODES_TYPE
+  
+  !>Contains data point information
+  TYPE DOMAIN_ELEMENT_DATA_POINT_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<User number of the projected data point
+    INTEGER(INTG) :: GLOBAL_NUMBER !<Global number of the data point, sequence is according to element number sequence  
+    INTEGER(INTG) :: LOCAL_NUMBER !<local number of the data point
+  END TYPE DOMAIN_ELEMENT_DATA_POINT_TYPE
+  
+  !>Contains information on the projected data points on an element
+  TYPE DOMAIN_ELEMENT_DATA_POINTS_TYPE
+    INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
+    TYPE(DOMAIN_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
+  END TYPE DOMAIN_ELEMENT_DATA_POINTS_TYPE       
+  
+  !>Contains data points topology information for this domain.
+  TYPE DOMAIN_DATA_POINTS_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this elements topology information.
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points (excluding ghost data points) in this domain topology.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DATA_POINTS !<The total number of data points (including ghost data points) in this domain topology.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DATA_POINTS !<The number of global data points in this domain topology.
+    TYPE(DOMAIN_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements 
+    TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<A tree mapping the domain local number to the region data point user number.
+  END TYPE DOMAIN_DATA_POINTS_TYPE
 
   !>Contains the topology information for a domain
   TYPE DOMAIN_TOPOLOGY_TYPE
@@ -676,6 +747,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this domain.
     TYPE(DOMAIN_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this domain.
     TYPE(DOMAIN_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this domain.
+    TYPE(DOMAIN_DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<The pointer to the topology information for the data points of this domain.
   END TYPE DOMAIN_TOPOLOGY_TYPE
 
   !
@@ -880,6 +952,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS !<Pointer to the element mappings for the domain decomposition.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES !<Pointer to the node mappings for the domain decomposition.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOFS !<Pointer to the dof mappings for the domain decomposition.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DATA_POINTS !<Pointer to the data points mappings for the domain decomposition.
   END TYPE DOMAIN_MAPPINGS_TYPE
   
   !>A pointer to the domain decomposition for this domain.
@@ -970,6 +1043,23 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this decomposition. ELEMENTS(ne) contains the topological information for the ne'th local element of the decomposition. \todo Change this to allocatable???
     TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the decomposition local element number to the decomposition user element number.
   END TYPE DECOMPOSITION_ELEMENTS_TYPE
+  
+  !>Contains information on the projected data points on an element, for decomposition since data points on elements go with the elements
+  TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
+    INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
+    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES(:)
+  END TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
+  
+  !>Contains data point decompostion topology   
+  TYPE DECOMPOSITION_DATA_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this faces topology information.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in the interface mesh
+    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES_LIST(:) !<List of data_points indices, sorting in asceding order
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_MAP(:) !<Corresponding element numbers in the DATA_INDICES_LIST order
+    TYPE(DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements for decomposition of data points
+  END TYPE DECOMPOSITION_DATA_TYPE
 
    !>Contains the topology information for a decomposition
   TYPE DECOMPOSITION_TOPOLOGY_TYPE
@@ -977,6 +1067,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
     TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
     TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
+    TYPE(DECOMPOSITION_DATA_TYPE), POINTER :: DATA_POINTS !<The pointer to the topology information for the data of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
   !>Contains information on the mesh decomposition. \see OPENCMISS::CMISSDecompositionType
@@ -1108,11 +1199,13 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_NODE_DOFS !<The number of node based degrees-of-freedom in the field dofs.
     INTEGER(INTG) :: NUMBER_OF_GRID_POINT_DOFS !<The number of grid point based degrees-of-freedom in the field dofs.
     INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_DOFS !<The number of Gauss point based degrees-of-freedom in the field dofs.
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINT_DOFS !<The number of data point based degrees-of-freedom in the field dofs.
     INTEGER(INTG), ALLOCATABLE :: CONSTANT_DOF2PARAM_MAP(:) !<CONSTANT_DOF2PARAM_MAP(nyy). The mapping from constant field dofs to field parameters for the nyy'th constant field dof. The DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOF2PARAM_MAP(:,:) !<ELEMENT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from element based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
     INTEGER(INTG), ALLOCATABLE :: NODE_DOF2PARAM_MAP(:,:) !<NODE_DOF2PARAM_MAP(i=1..4,nyy). The mapping from node based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the version number (version_idx) of the field parameter. When i=2 the DOF2PARAM_MAP gives the derivative number (derivative_idx) of the field parameter. When i=3 the DOF2PARAM_MAP gives the node number (node_idx) of the field parameter. When i=4 the DOF2PARAM_MAP gives the component number (component_idx) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
     INTEGER(INTG), ALLOCATABLE :: GRID_POINT_DOF2PARAM_MAP(:,:) !<GRID_POINT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from grid point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the grid point number (nq) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
     INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_DOF2PARAM_MAP(:,:) !<GAUSS_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from Gauss point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the Gauss point number (ng) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
+    INTEGER(INTG), ALLOCATABLE :: DATA_POINT_DOF2PARAM_MAP(:,:)!<DATA_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from data point based field dofs to field parameters for the nyy'th data point field dof. When i=1 the DOF2PARAM_MAP gives the data point number (ng) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
   END TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
 
   !>A type to hold the mapping from a field node derivative's versions to field dof numbers for a particular field variable component.
@@ -1150,6 +1243,12 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !<The number of Gauss point based field parameters for this field variable component.
     INTEGER(INTG), ALLOCATABLE :: GAUSS_POINTS(:,:) !<GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx). The field variable dof number of the gauss_point_idx'th Gauss point in the element_idx'th element based parameter for this field variable component. 
   END TYPE FIELD_GAUSS_POINT_PARAM_TO_DOF_MAP_TYPE
+  
+  !>A type to hold the mapping from field data points to field dof numbers for a particular field variable component.
+  TYPE FIELD_DATA_POINT_PARAM_TO_DOF_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINT_PARAMETERS !<The number of Gauss point based field parameters for this field variable component.
+    INTEGER(INTG), ALLOCATABLE :: DATA_POINTS(:) !<DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(data_point_idx). The field variable dof number of the data_point_idx'th Gauss point in the element_idx'th element based parameter for this field variable component. 
+  END TYPE FIELD_DATA_POINT_PARAM_TO_DOF_MAP_TYPE
 
   !>A type to hold the mapping from field parameters (nodes, elements, etc) to field dof numbers for a particular field variable component.
   TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
@@ -1159,6 +1258,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_NODE_PARAM_TO_DOF_MAP_TYPE) :: NODE_PARAM2DOF_MAP !> A type to hold the mapping from field node parameters to field dof numbers
     TYPE(FIELD_GRID_POINT_PARAM_TO_DOF_MAP_TYPE) :: GRID_POINT_PARAM2DOF_MAP !> A type to hold the mapping from grid point element parameters to field dof numbers
     TYPE(FIELD_GAUSS_POINT_PARAM_TO_DOF_MAP_TYPE) :: GAUSS_POINT_PARAM2DOF_MAP !> A type to hold the mapping from field gauss point parameters to field dof numbers
+    TYPE(FIELD_DATA_POINT_PARAM_TO_DOF_MAP_TYPE) :: DATA_POINT_PARAM2DOF_MAP !> A type to hold the mapping from field data point parameters to field dof numbers
   END TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
 
   !>Contains information for a component of a field variable.
