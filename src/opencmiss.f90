@@ -32086,7 +32086,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,ERROR))// &
+      LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
@@ -32129,7 +32129,7 @@ CONTAINS
   !================================================================================================================================
   !   
   
-  !>Returns the coordinate system for a region identified by an user number.
+  !>Returns the coordinate system for an interface identified by an user number.
   SUBROUTINE CMISSInterface_CoordinateSystemGetNumber(parentRegionUserNumber,interfaceUserNumber,coordinateSystemUserNumber,err)
   
     !Argument variables
@@ -32143,7 +32143,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSInterfaceCoordinateSystemGetNumber",err,error,*999)
+    CALL ENTERS("CMISSInterface_CoordinateSystemGetNumber",err,error,*999)
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -32155,8 +32155,8 @@ CONTAINS
       IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
         coordinateSystemUserNumber = COORDINATE_SYSTEM%USER_NUMBER
       ELSE
-        LOCAL_ERROR="The coordinate system is not associated for region number "// &
-          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",err,ERROR))//"."
+        LOCAL_ERROR="The coordinate system is not associated for interface number "// &
+          & TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,ERROR))//" does not exist."
         CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
       ENDIF
     ELSE
@@ -32178,12 +32178,12 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the coordinate system for a region identified by an object.
+  !>Returns the coordinate system for an interface identified by an object. 
   SUBROUTINE CMISSInterface_CoordinateSystemGetObj(Interface,CoordinateSystem,Err)
   
     !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The region to get the coordinate system for.
-    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the regions coordinate system.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to get the coordinate system for.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the interface coordinate system.
    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
