@@ -264,7 +264,7 @@ MODULE TYPES
   TYPE COORDINATE_SYSTEM_PTR_TYPE
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: PTR !<A pointer to the coordinate system
   END TYPE COORDINATE_SYSTEM_PTR_TYPE
-  
+
   !
   !================================================================================================================================
   !
@@ -302,13 +302,21 @@ MODULE TYPES
     LOGICAL :: DATA_PROJECTION_PROJECTED !<Is .TRUE. if the data projection have been projected, .FALSE. if not.
     TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTION_RESULTS(:)
   END TYPE DATA_PROJECTION_TYPE
+<<<<<<< HEAD
   
   !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
+=======
+
+  !>A buffer type to allow for an array of pointers to a DATA_PROJECTION_TYPE.
+>>>>>>> TimSzuHsienWu/master
   TYPE DATA_PROJECTION_PTR_TYPE
     TYPE(DATA_PROJECTION_TYPE), POINTER :: PTR !<The pointer to the data projection.
   END TYPE DATA_PROJECTION_PTR_TYPE
   
+<<<<<<< HEAD
   !
+=======
+>>>>>>> TimSzuHsienWu/master
   !================================================================================================================================
   !
   ! Data point types
