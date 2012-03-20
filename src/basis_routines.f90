@@ -3276,10 +3276,10 @@ CONTAINS
                   CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
                 ENDIF
               CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
-                LOCAL_WARNING="For simplex elements, the number of gauss points should not be set."
+                LOCAL_WARNING="For simplex elements please set quadrature order rather than number of gauss points."
                 CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
               CASE(BASIS_QUADRATIC_SIMPLEX_INTERPOLATION)
-                LOCAL_WARNING="For simplex elements, the number of gauss points should not be set."
+                LOCAL_WARNING="For simplex elements please set quadrature order rather than number of gauss points."
                 CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="Interpolation xi value "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_XI(ni),"*",ERR,ERROR))// &
