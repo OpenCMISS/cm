@@ -6950,7 +6950,7 @@ CONTAINS
                       & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                     X2(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                   ENDDO !dim_idx
-                  LINE_LENGTH = ((X1(1)-X2(1))**2+(X1(2)-X2(2))**2+(X1(3)-X2(3))**2)**(0.5)
+                  LINE_LENGTH = L2NORM(X1-X2)
                   H_SUPG = MAX(H_SUPG,LINE_LENGTH)
                 END DO  
                 H_SUPG = H_SUPG/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
