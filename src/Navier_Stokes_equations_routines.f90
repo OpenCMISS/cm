@@ -7004,7 +7004,7 @@ CONTAINS
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                     U_SUPG=U_SUPG+U_VALUE*PHIMS
                   END DO !ms
-                  UMAG_SUPG=SQRT(U_SUPG(1)**2.0_DP+U_SUPG(2)**2.0_DP+U_SUPG(3)**2.0_DP)
+                  UMAG_SUPG=L2NORM(U_SUPG)
                   UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG) !maximum velocity magnitude over all gauss points
                 END DO !ng
 
