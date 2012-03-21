@@ -6876,9 +6876,11 @@ CONTAINS
     REAL(DP) :: PHIMS,MU_PARAM,RHO_PARAM,X1(3),X2(3),U_VALUE(3),U_SUPG(3)
     REAL(DP) :: ALPHA_SUPG,UMAG_SUPG,UMAX_SUPG,H_SUPG,RE_SUPG,PE_SUPG,SUPG_TOLERANCE,LINE_LENGTH
     INTEGER(INTG) :: NODE_IDX,element_node_idx,numberOfDimensions,NODES_PER_COMPONENT
-    INTEGER(INTG) :: dim_idx, local_ny
+    INTEGER(INTG) :: dim_idx,deriv_idx,version_idx,local_ny
     REAL(DP) :: H_PARAMETER
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
 
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -6933,25 +6935,40 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                 numberOfDimensions=FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1
-                !First element node that lengths will be calculated relative to:  
-                NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
-                DO dim_idx=1,numberOfDimensions
-                  local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-                  X1(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                ENDDO !dim_idx
-                NODES_PER_COMPONENT=EQUATIONS_SET%REGION%MESHES%MESHES(1)%PTR%TOPOLOGY(1)%PTR%NODES%NUMBER_OF_NODES
-                DO element_node_idx=2,GEOMETRIC_BASIS%NUMBER_OF_NODES
+
+                !Loop over element nodes
+                DO element_node_idx=1,GEOMETRIC_BASIS%NUMBER_OF_NODES
                   NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(element_node_idx)
-                  DO dim_idx=1,numberOfDimensions
-                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                      & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-                    X2(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                  ENDDO !dim_idx
-                  LINE_LENGTH = L2NORM(X1-X2)
-                  H_SUPG = MAX(H_SUPG,LINE_LENGTH)
+                  DOMAIN=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
+                  IF(ASSOCIATED(DOMAIN)) THEN
+                    IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                      !Loop over the derivatives
+                      DO deriv_idx=1,DOMAIN_NODES%NODES(NODE_IDX)%NUMBER_OF_DERIVATIVES
+                        !Loop over versions
+                        DO version_idx=1,DOMAIN_NODES%NODES(NODE_IDX)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS
+                          !Loop over dimensions
+                          DO dim_idx=1,numberOfDimensions
+                            local_ny=FIELD_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP%NODES(NODE_IDX)%DERIVATIVES(deriv_idx)%VERSIONS(version_idx)
+                            IF(element_node_idx==1 .AND. deriv_idx==1 .AND. version_idx==1) THEN
+                              !First node that lengths will be calculated relative to:  
+                              X1(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ELSE
+                              X2(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ENDIF
+                          ENDDO !dim_idx
+                          LINE_LENGTH = L2NORM(X1-X2)
+                          H_SUPG = MAX(H_SUPG,LINE_LENGTH)
+                        ENDDO !version_idx
+                      ENDDO !deriv_idx
+                    ELSE
+                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                  ENDIF
                 END DO  
                 H_SUPG = H_SUPG/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
 
@@ -7027,7 +7044,12 @@ CONTAINS
               !TODO: set SUPG tolerance relative to iterative solver tolerance (or user defined)
               SUPG_TOLERANCE=1.0E-8_DP
               IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
-                ALPHA_SUPG = COTH(PE_SUPG/2.0_DP) - (2.0_DP/PE_SUPG)
+                IF(PE_SUPG.GT.100) THEN
+                  !Approximation to avoid overflow FPEs
+                  ALPHA_SUPG = 1.0_DP - 1.0_DP/PE_SUPG
+                ELSE
+                  ALPHA_SUPG = COTH(PE_SUPG/2.0_DP) - (2.0_DP/PE_SUPG)
+                ENDIF
                 TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
               ELSE
                 TAU_SUPG=0.0_DP
