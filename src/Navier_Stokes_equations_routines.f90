@@ -6916,7 +6916,7 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)                
 
-              IF(H_PARAMETER==0.0_DP) THEN
+              IF(ABS(H_PARAMETER)<=ZERO_TOLERANCE) THEN
                 !Calculate element length scale H
                 !TODO: calculate this length scale in field_routines instead
                 H_SUPG=0.0_DP
