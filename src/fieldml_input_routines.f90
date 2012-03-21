@@ -300,6 +300,34 @@ CONTAINS
       IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.bilinearSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_LINEAR_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.biquadraticSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.biquadraticSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.3d.unit.trilinearSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.3d.unit.trilinearSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_LINEAR_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.3d.unit.triquadraticSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.3d.unit.triquadraticSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
     ELSE
       CALL FLAG_ERROR( "Basis "//NAME(1:LENGTH)//" cannot yet be interpreted.", ERR, ERROR, *999 )
     ENDIF
@@ -354,7 +382,11 @@ CONTAINS
     IF( ( INDEX( NAME, 'interpolator.3d.unit.triquadraticLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.1d.unit.linearLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') /= 1 ) .AND. &
-      & ( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') /= 1 ) ) THEN
+      & ( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.bilinearSimplex') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.biquadraticSimplex') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.3d.unit.trilinearSimplex') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.3d.unit.triquadraticSimplex') /= 1 ) ) THEN
       FIELDML_INPUT_IS_KNOWN_BASIS = .FALSE.
     ELSE
       FIELDML_INPUT_IS_KNOWN_BASIS = .TRUE.
@@ -733,7 +765,8 @@ CONTAINS
     CALL BASIS_TYPE_SET( BASIS, BASISTYPE, ERR, ERROR, *999 )
     CALL BASIS_NUMBER_OF_XI_SET( BASIS, size( BASIS_INTERPOLATIONS ), ERR, ERROR, *999 )
     CALL BASIS_INTERPOLATION_XI_SET( BASIS, BASIS_INTERPOLATIONS, ERR, ERROR, *999 )
-    IF( size( BASIS_INTERPOLATIONS ) > 1 ) THEN
+    !Note: collapse bases currently only supported for BASIS_LAGRANGE_HERMITE_TP_TYPE
+    IF( size( BASIS_INTERPOLATIONS ) > 1 .AND. ALLOCATED(COLLAPSE)) THEN
       CALL BASIS_COLLAPSED_XI_SET( BASIS, COLLAPSE, ERR, ERROR, *999 )
     ENDIF
     
