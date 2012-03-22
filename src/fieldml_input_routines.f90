@@ -283,6 +283,15 @@ CONTAINS
       IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.biquadraticLagrange') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.biquadraticLagrange.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      ALLOCATE( COLLAPSE(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
+      BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.2d.unit.bilinearLagrange.argument"//C_NULL_CHAR )
@@ -382,6 +391,7 @@ CONTAINS
 
     IF( ( INDEX( NAME, 'interpolator.3d.unit.triquadraticLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.1d.unit.linearLagrange') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.biquadraticLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.2d.unit.bilinearSimplex') /= 1 ) .AND. &
