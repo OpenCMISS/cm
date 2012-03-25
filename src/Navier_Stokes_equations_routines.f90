@@ -57,6 +57,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   USE EQUATIONS_MATRICES_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FIELD_ROUTINES
+  USE FIELD_IO_ROUTINES
   USE FLUID_MECHANICS_IO_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
@@ -5600,12 +5601,17 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(FIELDS_TYPE), POINTER :: Fields  !<the field object for standard field IO
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,NUMBER_OF_DIMENSIONS
     LOGICAL :: EXPORT_FIELD
-    TYPE(VARYING_STRING) :: METHOD!,FILE
+    TYPE(VARYING_STRING) :: METHOD
     CHARACTER(14) :: FILE
     CHARACTER(14) :: OUTPUT_FILE
+    TYPE(VARYING_STRING) :: VFileName
+    INTEGER(INTG) :: FileNameLength
+
+    NULLIFY(Fields) 
 
     CALL ENTERS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
@@ -5662,7 +5668,24 @@ CONTAINS
   !          FILE="TRANSIENT_OUTPUT"
                         METHOD="FORTRAN"
                         EXPORT_FIELD=.TRUE.
-                        IF(EXPORT_FIELD) THEN          
+                        IF(EXPORT_FIELD .AND. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)) THEN
+                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                            !Use standard field IO routines (also only export nodes after first step as not a moving mesh case)
+                            FileNameLength = LEN_TRIM(OUTPUT_FILE)
+                            VFileName = OUTPUT_FILE(1:FileNameLength)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export nodal values... ",ERR,ERROR,*999)
+                            Fields=>EQUATIONS_SET%REGION%FIELDS
+                            CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                            IF(CURRENT_LOOP_ITERATION==0) THEN
+                              CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+                            ENDIF
+                            NULLIFY(Fields)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                          ENDIF                          
+                        ELSE IF(EXPORT_FIELD) THEN          
                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
