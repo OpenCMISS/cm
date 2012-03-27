@@ -1652,10 +1652,12 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS !<Number of pressure incremented boundary conditions associated with this variable (\todo: is this the best place?)
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS !<Number of pressure boundary conditions (not incremented) associated with this variable.
     INTEGER(INTG) :: NUMBER_OF_IMPERMEABILITY_CONDITIONS !<Number of impermeable wall boundary conditions associated with this variable.
+    INTEGER(INTG) :: NUMBER_OF_NEUMANN_CONDITIONS !<Number of Neumann boundary conditions associated with this variable.
     LOGICAL :: FIXED_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one fixed incremented boundary condition type has been assigned
     LOGICAL :: PRESSURE_CONDITION_USED=.FALSE. !<True if at least one fixed pressured boundary condition type has been assigned
     LOGICAL :: PRESSURE_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one incremented pressure boundary condition type has been assigned
     LOGICAL :: IMPERMEABILITY_CONDITION_USED=.FALSE. !<True if at least one impermeability boundary condition type has been assigned
+    LOGICAL :: NEUMANN_CONDITION_USED=.FALSE. !<True if at least one impermeability boundary condition type has been assigned
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1693,9 +1695,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
   TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
     INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
-    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
-    INTEGER(INTG), ALLOCATABLE :: SET_DOF_CONDITIONS(:) !<Array of user-set conditions of DOFs on boundary
-    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES_PREV(:) !<Array of user-set values of DOFs on boundary from previous time step
     INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
     REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
     INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
