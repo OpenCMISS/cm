@@ -4831,7 +4831,7 @@ CONTAINS
                                       NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
                                       DO dof_number=1,NUMBER_OF_DOFS
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                          & CONDITION_TYPES(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
                                           !--- Reset boundary condition to the initial normal-velocity boundary condition
                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
@@ -6951,7 +6951,7 @@ CONTAINS
 ! !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
 ! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 ! ! !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% &
-! ! !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+! ! !                                                 & CONDITION_TYPES(local_ny)
 ! ! !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
 ! ! !                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
 ! ! !                                                  & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &

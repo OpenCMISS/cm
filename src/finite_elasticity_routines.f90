@@ -5776,7 +5776,7 @@ CONTAINS
                                           & PTR%NUMBER_OF_DOFS
                                       DO dof_number=1,GEOMETRY_NUMBER_OF_DOFS
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                          & CONDITION_TYPES(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
                                           & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
                                           !--- To obtain absolute positions, add nodal coordinates on top of mesh displacement
@@ -5796,7 +5796,7 @@ CONTAINS
                                           & PTR%NUMBER_OF_DOFS
                                       DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                          & CONDITION_TYPES(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
                                           & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
 

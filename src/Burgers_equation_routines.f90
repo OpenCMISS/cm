@@ -1507,7 +1507,7 @@ CONTAINS
                                             & FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                                           IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                             BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                              & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                              & CONDITION_TYPES(local_ny)
                                             IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
                                                 & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 

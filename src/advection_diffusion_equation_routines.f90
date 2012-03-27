@@ -4044,7 +4044,7 @@ CONTAINS
                             & 1,NO_GLOBAL_DERIV,BOUNDARY_NODES(node_idx), &
                             & 1,local_ny,global_ny,ERR,ERROR,*999)
                           BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                            & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                            & CONDITION_TYPES(local_ny)
                           IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                               & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, &

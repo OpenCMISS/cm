@@ -3280,7 +3280,7 @@ CONTAINS
 !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
 !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% & 
-!                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+!                                                 & CONDITION_TYPES(local_ny)
 !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
 !                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
 !                                                  & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
@@ -3401,7 +3401,7 @@ CONTAINS
 !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
 !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% & 
-!                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+!                                                 & CONDITION_TYPES(local_ny)
 !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
 !                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
 !                                                  & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
@@ -3632,7 +3632,7 @@ CONTAINS
                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                               BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                                & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                                & CONDITION_TYPES(local_ny)
                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
                                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
                                                   & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
