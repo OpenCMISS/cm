@@ -998,6 +998,7 @@ CONTAINS
           CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE, &
             & ERR,ERROR,*999)
           IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+            CALL BoundaryConditions_CheckInterpolationType(CONDITION,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERR,ERROR,*999)
             CALL BOUNDARY_CONDITIONS_ADD_LOCAL_DOF(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE, &
               & local_ny,CONDITION,VALUE,ERR,ERROR,*999)
           ELSE
@@ -1055,6 +1056,7 @@ CONTAINS
           CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
           CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
           IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+            CALL BoundaryConditions_CheckInterpolationType(CONDITION,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERR,ERROR,*999)
             CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE, &
               & local_ny,CONDITION,VALUE,ERR,ERROR,*999)
           ELSE
@@ -1552,6 +1554,7 @@ CONTAINS
           IF(ASSOCIATED(FIELD_VARIABLE)) THEN
             CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
             IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+              CALL BoundaryConditions_CheckInterpolationType(CONDITION,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERR,ERROR,*999)
               CALL BOUNDARY_CONDITIONS_ADD_LOCAL_DOF(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE, &
                 & local_ny,CONDITION,VALUE,ERR,ERROR,*999)
             ELSE
@@ -1581,6 +1584,82 @@ CONTAINS
   !================================================================================================================================
   !
  
+  !> Checks that the specified boundary condition is appropriate for the field variable interpolation type
+  SUBROUTINE BoundaryConditions_CheckInterpolationType(condition,field,variableType,componentNumber,err,error,*)
+
+    ! Argument variables
+    INTEGER(INTG), INTENT(IN) :: condition !<The boundary condition type being set
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field the boundary condition is set on
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type the boundary condition is set on
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number the boundary condition is set on
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    ! Local variables
+    INTEGER(INTG) :: interpolationType
+    LOGICAL :: validCondition
+
+    CALL FIELD_COMPONENT_INTERPOLATION_GET(field,variableType,componentNumber,interpolationType,err,error,*999)
+
+    validCondition=.TRUE.
+    SELECT CASE(condition)
+    CASE(BOUNDARY_CONDITION_FREE, &
+        & BOUNDARY_CONDITION_FIXED, &
+        & BOUNDARY_CONDITION_FIXED_INCREMENTED)
+      ! Valid for all interpolation types
+    CASE(BOUNDARY_CONDITION_FIXED_INLET, &
+        & BOUNDARY_CONDITION_FIXED_OUTLET)
+      IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
+        validCondition=.FALSE.
+      END IF
+    CASE(BOUNDARY_CONDITION_FIXED_WALL, &
+        & BOUNDARY_CONDITION_MOVED_WALL, &
+        & BOUNDARY_CONDITION_FREE_WALL, &
+        & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED)
+      IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
+        validCondition=.FALSE.
+      END IF
+    CASE(BOUNDARY_CONDITION_PRESSURE, &
+        & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
+      IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
+        validCondition=.FALSE.
+      END IF
+    CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
+      IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
+        validCondition=.FALSE.
+      END IF
+    CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
+      IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
+        validCondition=.FALSE.
+      END IF
+    CASE(BOUNDARY_CONDITION_NEUMANN_POINT, &
+        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+        & BOUNDARY_CONDITION_NEUMANN_FREE)
+      IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
+        validCondition=.FALSE.
+      END IF
+    CASE DEFAULT
+      CALL FLAG_ERROR("The specified boundary condition type of "// &
+        & TRIM(NUMBER_TO_VSTRING(condition,"*",err,error))//" is invalid.", &
+        & err,error,*999)
+    END SELECT
+    IF(.NOT.validCondition) THEN
+      CALL FLAG_ERROR("The specified boundary condition type of "// &
+        & TRIM(NUMBER_TO_VSTRING(condition,"*",err,error))//" is not valid for the field component "// &
+        & "interpolation type of "//TRIM(NUMBER_TO_VSTRING(interpolationType,"*",err,error))//".", &
+        & err,error,*999)
+    END IF
+
+    CALL EXITS("BoundaryConditions_CheckInterpolationType")
+    RETURN
+999 CALL ERRORS("BoundaryConditions_CheckInterpolationType",err,error)
+    CALL EXITS("BoundaryConditions_CheckInterpolationType")
+    RETURN 1
+  END SUBROUTINE BoundaryConditions_CheckInterpolationType
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets a boundary condition on the specified user element. \see OPENCMISS_CMISSBoundaryConditionsSetElement
   SUBROUTINE BOUNDARY_CONDITIONS_SET_ELEMENT(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
@@ -1617,6 +1696,7 @@ CONTAINS
           IF(ASSOCIATED(FIELD_VARIABLE)) THEN
             CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
             IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+              CALL BoundaryConditions_CheckInterpolationType(CONDITION,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERR,ERROR,*999)
               CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE, &
                 & local_ny,CONDITION,VALUE,ERR,ERROR,*999)
             ELSE
@@ -1684,6 +1764,7 @@ CONTAINS
           IF(ASSOCIATED(FIELD_VARIABLE)) THEN
             CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
             IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+              CALL BoundaryConditions_CheckInterpolationType(CONDITION,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERR,ERROR,*999)
               CALL BOUNDARY_CONDITIONS_ADD_LOCAL_DOF(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE, &
                 & local_ny,CONDITION,VALUE,ERR,ERROR,*999)
             ELSE
@@ -3531,6 +3612,7 @@ CONTAINS
             CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE, &
               & ERR,ERROR,*999)
             IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+              CALL BoundaryConditions_CheckInterpolationType(CONDITION,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERR,ERROR,*999)
               CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE, &
                 & local_ny,CONDITION,VALUE,ERR,ERROR,*999)
             ELSE
