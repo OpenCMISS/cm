@@ -1478,18 +1478,20 @@ CONTAINS
       boundaryConditionsVariable%FIXED_INCREMENTED_CONDITION_USED=.TRUE.
     CASE(BOUNDARY_CONDITION_PRESSURE)
       boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=BOUNDARY_CONDITION_PRESSURE
-      boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FIXED
+      ! Pressure boundary conditions leave the RHS dof as free, as the Neumann terms
+      ! are calculated in finite elasticity routines when calculating the element residual
+      boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FREE
       boundaryConditionsVariable%PRESSURE_CONDITION_USED=.TRUE.
     CASE(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
       boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=BOUNDARY_CONDITION_PRESSURE_INCREMENTED
-      boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FIXED
+      boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FREE
       boundaryConditionsVariable%PRESSURE_INCREMENTED_CONDITION_USED=.TRUE.
     CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
       boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
       boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FIXED
     CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
       boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=BOUNDARY_CONDITION_IMPERMEABLE_WALL
-      boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FIXED
+      boundaryConditionsVariable%DOF_TYPES(dofIndex)=BOUNDARY_CONDITION_DOF_FREE
       boundaryConditionsVariable%IMPERMEABILITY_CONDITION_USED=.TRUE.
     CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
       boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=BOUNDARY_CONDITION_NEUMANN_POINT
