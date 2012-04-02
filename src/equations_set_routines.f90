@@ -6107,7 +6107,7 @@ CONTAINS
                   ENDIF
 
                   !There might also be pressure incremented conditions
-                  IF (BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS>0) THEN 
+                  IF (BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)>0) THEN
                     ! handle pressure incremented boundary conditions
                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) THEN
                       PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE% &
@@ -6124,7 +6124,8 @@ CONTAINS
                       !Calculate the new load, update the old load
                       IF(ITERATION_NUMBER==1) THEN
                         !On the first iteration, FIELD_PRESSURE_VALUES_SET_TYPE actually contains the full load
-                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                            & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                           !Global dof index
                           pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
                             & (pressure_incremented_idx)
@@ -6154,7 +6155,8 @@ CONTAINS
                         ENDDO !pressure_incremented_idx
                       ELSE
                         !Calculate the new load, keep the current load
-                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                            & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                           !This is global dof idx
                           pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
                             & (pressure_incremented_idx)
@@ -6192,7 +6194,7 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="Pressure incremented boundary condition for variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated even though"// &
-                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS, &
+                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED), &
                         & '*',ERR,ERROR))//" conditions of this type has been counted."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF

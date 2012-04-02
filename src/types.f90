@@ -1649,15 +1649,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
-    INTEGER(INTG) :: NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS !<Number of pressure incremented boundary conditions associated with this variable (\todo: is this the best place?)
-    INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS !<Number of pressure boundary conditions (not incremented) associated with this variable.
-    INTEGER(INTG) :: NUMBER_OF_IMPERMEABILITY_CONDITIONS !<Number of impermeable wall boundary conditions associated with this variable.
-    INTEGER(INTG) :: NUMBER_OF_NEUMANN_CONDITIONS !<Number of Neumann boundary conditions associated with this variable.
-    LOGICAL :: FIXED_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one fixed incremented boundary condition type has been assigned
-    LOGICAL :: PRESSURE_CONDITION_USED=.FALSE. !<True if at least one fixed pressured boundary condition type has been assigned
-    LOGICAL :: PRESSURE_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one incremented pressure boundary condition type has been assigned
-    LOGICAL :: IMPERMEABILITY_CONDITION_USED=.FALSE. !<True if at least one impermeability boundary condition type has been assigned
-    LOGICAL :: NEUMANN_CONDITION_USED=.FALSE. !<True if at least one Neumann boundary condition type has been assigned
+    INTEGER(INTG), ALLOCATABLE :: DOF_COUNTS(:) !<DOF_COUNTS(CONDITION_TYPE): The number of DOFs that have a CONDITION_TYPE boundary condition set
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
