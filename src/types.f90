@@ -1657,7 +1657,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: PRESSURE_CONDITION_USED=.FALSE. !<True if at least one fixed pressured boundary condition type has been assigned
     LOGICAL :: PRESSURE_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one incremented pressure boundary condition type has been assigned
     LOGICAL :: IMPERMEABILITY_CONDITION_USED=.FALSE. !<True if at least one impermeability boundary condition type has been assigned
-    LOGICAL :: NEUMANN_CONDITION_USED=.FALSE. !<True if at least one impermeability boundary condition type has been assigned
+    LOGICAL :: NEUMANN_CONDITION_USED=.FALSE. !<True if at least one Neumann boundary condition type has been assigned
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
