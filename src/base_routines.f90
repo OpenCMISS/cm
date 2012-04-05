@@ -192,6 +192,11 @@ MODULE BASE_ROUTINES
 
   END INTERFACE
 
+  INTERFACE EXTRACT_ERROR_MESSAGE
+    MODULE PROCEDURE EXTRACT_ERROR_MESSAGE_C
+    MODULE PROCEDURE EXTRACT_ERROR_MESSAGE_VS
+  END INTERFACE !EXTRACT_ERROR_MESSAGE
+
   !>Flags an error condition \see BASE_ROUTINES
   INTERFACE FLAG_ERROR
     MODULE PROCEDURE FLAG_ERROR_C
@@ -535,27 +540,46 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Extracts the error message from a CMISS error string and returns it as varying string
-  FUNCTION EXTRACT_ERROR_MESSAGE(ERR,ERROR)
+  !>Extracts the error message from a CMISS error string and returns it as a varying string
+  SUBROUTINE EXTRACT_ERROR_MESSAGE_VS(ERROR_MESSAGE,ERR,ERROR,*)
 
-    !Argument variables    
+    !Argument variables
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR_MESSAGE !<The extracted error message
     INTEGER(INTG), INTENT(IN) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(IN) :: ERROR !<The error string
-    !Function variable
-    TYPE(VARYING_STRING) :: EXTRACT_ERROR_MESSAGE !<On exit, the error message contained in the error string
     !Local Variables
     INTEGER(INTG) :: POSITION
-    
+
     POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-    EXTRACT_ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
-    
-    RETURN    
-  END FUNCTION EXTRACT_ERROR_MESSAGE
-    
+    ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
+
+    RETURN
+  END SUBROUTINE EXTRACT_ERROR_MESSAGE_VS
+
   !
   !================================================================================================================================
   !
- 
+
+  !>Extracts the error message from a CMISS error string and returns it as a character array
+  SUBROUTINE EXTRACT_ERROR_MESSAGE_C(ERROR_MESSAGE,ERR,ERROR,*)
+
+    !Argument variables
+    CHARACTER(LEN=*), INTENT(OUT) :: ERROR_MESSAGE !<The extracted error message
+    INTEGER(INTG), INTENT(IN) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(IN) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: POSITION
+
+    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
+    ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
+
+    RETURN
+  END SUBROUTINE EXTRACT_ERROR_MESSAGE_C
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the error string specified by a character string and flags an error 
   SUBROUTINE FLAG_ERROR_C(STRING,ERR,ERROR,*)
 
@@ -814,7 +838,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j,LEVEL
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
-    CHARACTER(LEN=1) :: CHARAC1, CHARAC2
+    CHARACTER(LEN=1) :: CHARAC
     CHARACTER(LEN=MAXSTRLEN) :: FILENAME
     TYPE(ROUTINE_LIST_ITEM_TYPE), POINTER :: NEXT_ROUTINE,PREVIOUS_ROUTINE,ROUTINE
     TYPE(VARYING_STRING) :: LOCAL_STRING
@@ -853,15 +877,10 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
       ROUTINE%NAME=""
       DO i=1,LEN(ROUTINE_LIST(1))
-        CHARAC1=ROUTINE_LIST(1)(i:i)
-        IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-          CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-        ELSE
-          CHARAC2=CHARAC1
-        ENDIF
+        CHARAC=ROUTINE_LIST(1)(i:i)
         !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-        !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-        LOCAL_STRING=ROUTINE%NAME//CHARAC2
+        !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+        LOCAL_STRING=ROUTINE%NAME//CHARAC
         ROUTINE%NAME=CHAR(LOCAL_STRING)
       ENDDO !i
       PREVIOUS_ROUTINE=>ROUTINE
@@ -872,15 +891,10 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
         ROUTINE%NAME=""
         DO j=1,LEN(ROUTINE_LIST(i))
-          CHARAC1=ROUTINE_LIST(i)(j:j)
-          IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-            CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-          ELSE
-            CHARAC2=CHARAC1
-          ENDIF
+          CHARAC=ROUTINE_LIST(i)(j:j)
           !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-          !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-          LOCAL_STRING=ROUTINE%NAME//CHARAC2
+          !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+          LOCAL_STRING=ROUTINE%NAME//CHARAC
           ROUTINE%NAME=CHAR(LOCAL_STRING)
         ENDDO !i
         NULLIFY(ROUTINE%NEXT_ROUTINE)
@@ -1147,7 +1161,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
-    CHARACTER(LEN=1) :: CHARAC1,CHARAC2
+    CHARACTER(LEN=1) :: CHARAC
     CHARACTER(LEN=MAXSTRLEN) :: FILENAME
     TYPE(ROUTINE_LIST_ITEM_TYPE), POINTER :: NEXT_ROUTINE,PREVIOUS_ROUTINE,ROUTINE
     TYPE(VARYING_STRING) :: LOCAL_STRING
@@ -1185,15 +1199,10 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
       ROUTINE%NAME=""
       DO i=1,LEN(ROUTINE_LIST(1))
-        CHARAC1=ROUTINE_LIST(1)(i:i)
-        IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-          CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-        ELSE
-          CHARAC2=CHARAC1
-        ENDIF
+        CHARAC=ROUTINE_LIST(1)(i:i)
         !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-        !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-        LOCAL_STRING=ROUTINE%NAME//CHARAC2
+        !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+        LOCAL_STRING=ROUTINE%NAME//CHARAC
         ROUTINE%NAME=CHAR(LOCAL_STRING)
       ENDDO !i
       PREVIOUS_ROUTINE=>ROUTINE
@@ -1209,15 +1218,10 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
         ROUTINE%NAME=""
         DO j=1,LEN(ROUTINE_LIST(i))
-          CHARAC1=ROUTINE_LIST(i)(j:j)
-          IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-            CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-          ELSE
-            CHARAC2=CHARAC1
-          ENDIF
+          CHARAC=ROUTINE_LIST(i)(j:j)
           !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-          !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-          LOCAL_STRING=ROUTINE%NAME//CHARAC2
+          !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+          LOCAL_STRING=ROUTINE%NAME//CHARAC
           ROUTINE%NAME=CHAR(LOCAL_STRING)
         ENDDO !i
         NULLIFY(ROUTINE%NEXT_ROUTINE)
@@ -1377,8 +1381,6 @@ CONTAINS
     ENDDO
     WRITE(OP_STRING,'(A)') INDENT_STRING(1:INDENT)//CHAR(ERROR)
     CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
-    ERR=0
-    ERROR=""
 
     RETURN
     !Don't return an error code here otherwise we will get into a circular loop

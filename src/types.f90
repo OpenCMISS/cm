@@ -92,6 +92,10 @@ MODULE TYPES
   TYPE INTEGER_INTG_PTR_TYPE
     INTEGER(INTG), POINTER :: PTR(:)
   END TYPE INTEGER_INTG_PTR_TYPE
+
+  TYPE INTEGER_CINT_ALLOC_TYPE
+    INTEGER(C_INT), ALLOCATABLE :: ARRAY(:)
+  END TYPE INTEGER_CINT_ALLOC_TYPE
   
   !
   !================================================================================================================================
@@ -106,6 +110,7 @@ MODULE TYPES
 
   !>Contains information on a list
   TYPE LIST_TYPE
+    LOGICAL :: MUTABLE !<If true, list entries can be changed once they have been added. False by default.
     LOGICAL :: LIST_FINISHED !<Is .TRUE. if the list has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_IN_LIST !<The number of items currently in the list
     INTEGER(INTG) :: DATA_DIMENSION !<The dimension of the data being stored
@@ -121,6 +126,8 @@ MODULE TYPES
     REAL(SP), ALLOCATABLE :: LIST_SP2(:,:) !<The single precision data (dimension > 1) for single precision real lists. 
     REAL(DP), ALLOCATABLE :: LIST_DP(:) !<The double precision data (dimension = 1)for double precision real lists. 
     REAL(DP), ALLOCATABLE :: LIST_DP2(:,:) !<The double precision data (dimension > 1) for double precision real lists. 
+    INTEGER(C_INT), ALLOCATABLE :: LIST_C_INT(:) !<The integer data (dimension = 1) for integer lists. 
+    INTEGER(C_INT), ALLOCATABLE :: LIST_C_INT2(:,:) !<The integer data (dimension > 1) for integer lists. 
   END TYPE LIST_TYPE
     
   !
@@ -281,7 +288,8 @@ MODULE TYPES
 
   !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
   TYPE DATA_POINTS_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the data points.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the data points. If the data points are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the data points. If the data points are in a region rather than an interface then this pointer will be NULL and the interface pointer should be used.
     LOGICAL :: DATA_POINTS_FINISHED !<Is .TRUE. if the data points have finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points defined on the region.
     TYPE(DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<DATA_POINTS(data_points_idx). The data point information for the data_points_idx'th global data point.
@@ -1338,6 +1346,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_JACOBIAN !<The element matrix for this Jacobian matrix. This is not used if the Jacobian is not supplied.
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The calculation type (analytic of finite difference) of the Jacobian.
   END TYPE EQUATIONS_JACOBIAN_TYPE
 
   !>A buffer type to allow for an array of pointers to a EQUATIONS_JACOBIAN_TYPE \see TYPES::EQUATIONS_JACOBIAN_TYPE.
@@ -1369,6 +1378,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this residual vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
+    INTEGER(INTG) :: ELEMENT_RESIDUAL_CALCULATED !<The number of the element the residual is calculated for, or zero if it isn't calculated
   END TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
 
   !>Contains information of the RHS vector for equations matrices
@@ -1614,7 +1624,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
     TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the equations.
-    
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations.
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
   END TYPE EQUATIONS_TYPE
@@ -1635,7 +1644,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: VARIABLE_TYPE !<The type of variable for this variable boundary conditions
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field variable. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
-    !TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS_VALUES !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
@@ -2036,11 +2044,13 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER :: GLOBAL_NUMBER !<The global number of the interface in the list of interfaces for a particular parent region.
     LOGICAL :: INTERFACE_FINISHED !<Is .TRUE. if the interface has finished being created, .FALSE. if not.
     TYPE(VARYING_STRING) :: LABEL !<A user defined label for the region.
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system used by the interface. 
     TYPE(INTERFACES_TYPE), POINTER :: INTERFACES !<A pointer back to the parent interfaces
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A point to the parent region containing the interface.
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
     TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY !<A pointer to the meshes connectivity the interface.
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<A pointer to the data points defined in an interface.          
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
     TYPE(GENERATED_MESHES_TYPE), POINTER :: GENERATED_MESHES !<A pointer to the generated meshes in an interface.
@@ -2860,6 +2870,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE CONTROL_LOOP_TIME_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
+    INTEGER(INTG) :: GLOBAL_ITERATION_NUMBER
 ! sebk: is thei usefull?
     INTEGER(INTG) :: OUTPUT_NUMBER
     INTEGER(INTG) :: INPUT_NUMBER

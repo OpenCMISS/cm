@@ -1202,6 +1202,9 @@ CONTAINS
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
+                ! Use the analytic Jacobian calculation
+                CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                  & ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1270,6 +1273,9 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
+                ! Use the analytic Jacobian calculation
+                CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                  & ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -2225,6 +2231,10 @@ CONTAINS
      
     CALL ENTERS("BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
+    NULLIFY(DAMPING_MATRIX)
+    NULLIFY(DYNAMIC_MATRICES)
+    NULLIFY(STIFFNESS_MATRIX)
+
     UPDATE_STIFFNESS=.FALSE.
     FIRST_STIFFNESS=.FALSE.
     UPDATE_DAMPING=.FALSE.
@@ -2368,7 +2378,7 @@ CONTAINS
                                 & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)
                             ENDDO !ni
                           ENDDO !mi
-                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)- &
                             & B_PARAM*SUM*JGW
                         ENDIF
                         !Mass matrix

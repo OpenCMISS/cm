@@ -2957,6 +2957,9 @@ CONTAINS
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
               !Create the equations matrices
               CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
+              ! Use the analytic Jacobian calculation
+              CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                & ERR,ERROR,*999)
               !Set up matrix storage and structure
               IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
                 !Set up lumping
@@ -4053,10 +4056,6 @@ CONTAINS
 !                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
 !                 ENDIF
 
-              ELSE  
-                ! do nothing ???
-!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
-!                   & ERR,ERROR,*999)
               END IF
             CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==2) THEN
@@ -4107,10 +4106,6 @@ CONTAINS
 !                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
 !                 ENDIF
 
-              ELSE  
-                ! do nothing ???
-!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
-!                   & ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
@@ -4254,10 +4249,6 @@ CONTAINS
 !                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
 !                 ENDIF
 
-              ELSE  
-                ! do nothing ???
-!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
-!                   & ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
@@ -5377,7 +5368,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
    
     CALL ENTERS("DIFFUSION_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
-    
+
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN

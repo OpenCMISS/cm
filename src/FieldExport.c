@@ -401,7 +401,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     case FIELD_FIBRE_TYPE:
         switch( variableType )
@@ -415,7 +415,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "second time derivative of variable";
         default:
-            return "unknown field variable type";
+            return "real";
         }
     case FIELD_GENERAL_TYPE:
         switch( variableType )
@@ -429,7 +429,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     case FIELD_MATERIAL_TYPE:
         switch( variableType )
@@ -443,7 +443,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     default:
         switch( variableType )
@@ -457,7 +457,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  unknown second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     }
 }
@@ -977,7 +977,7 @@ static int FieldExport_FieldDerivateLabels( FileSession *session, const int numb
               FieldExport_FPrintf( session, "d4/ds1ds2ds3ds4" );
               break;
         default:
-              FieldExport_FPrintf( session, "unknown field variable type %d", derivatives[i] );
+              FieldExport_FPrintf( session, "real" );
         }
     }
     FieldExport_FPrintf( session, ")" );
@@ -993,8 +993,6 @@ static int FieldExport_File_DerivativeIndices( FileSession *session, const int c
     FieldExport_FPrintf( session, "   %d.  Value index= %d, #Derivatives= %d", componentNumber, valueIndex, numberOfDerivatives - 1 );
 
     FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
-
-    FieldExport_FPrintf( session, "\n" );
 
     return session->error;
 }
@@ -1016,8 +1014,6 @@ static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, c
     }
 
     FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
-
-    FieldExport_FPrintf( session, "\n" );
 
     return session->error;
 }
@@ -1430,4 +1426,47 @@ int FieldExport_DerivativeIndices( const int handle, const int componentNumber, 
     }
 
     return FIELD_EXPORT_NO_ERROR;
+}
+
+int FieldExport_VersionInfo( const int handle, const int numberOfVersions )
+{
+    SessionListEntry *session = FieldExport_GetSession( handle );
+
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        if (numberOfVersions > 1) {
+            return FieldExport_FPrintf( &session->fileSession, ", #Versions=%d", numberOfVersions );
+        }
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
+
+    return FIELD_EXPORT_NO_ERROR;
+}
+
+int FieldExport_EndComponent( const int handle )
+{
+    SessionListEntry *session = FieldExport_GetSession( handle );
+
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_FPrintf( &session->fileSession, "\n" );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
+
+    /* Shouldn't get to here */
+    return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
 }

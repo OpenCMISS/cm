@@ -67,13 +67,25 @@ MODULE DATA_POINT_ROUTINES
 
   !Interfaces
 
-  !>Gets the label for a node identified by a given global number.
+  !>Starts the process of creating data points for an interface or region
+  INTERFACE DATA_POINTS_CREATE_START
+    MODULE PROCEDURE DATA_POINTS_CREATE_START_REGION
+    MODULE PROCEDURE DATA_POINTS_CREATE_START_INTERFACE
+  END INTERFACE !DATA_POINTS_CREATE_START
+
+  !>Initialises data points for an interface or region
+  INTERFACE DATA_POINTS_INITIALISE
+    MODULE PROCEDURE DATA_POINTS_INITIALISE_REGION
+    MODULE PROCEDURE DATA_POINTS_INITIALISE_INTERFACE
+  END INTERFACE !DATA_POINTS_INITIALIES
+
+  !>Gets the label for a data point identified by a given global number.
   INTERFACE DATA_POINTS_LABEL_GET
     MODULE PROCEDURE DATA_POINTS_LABEL_GET_C
     MODULE PROCEDURE DATA_POINTS_LABEL_GET_VS
   END INTERFACE !DATA_POINTS_LABEL_SET
 
-  !>Changes/sets the label for a node identified by a given global number.
+  !>Changes/sets the label for a data point identified by a given global number.
   INTERFACE DATA_POINTS_LABEL_SET
     MODULE PROCEDURE DATA_POINTS_LABEL_SET_C
     MODULE PROCEDURE DATA_POINTS_LABEL_SET_VS
@@ -88,6 +100,8 @@ MODULE DATA_POINT_ROUTINES
   PUBLIC DATA_POINTS_LABEL_GET,DATA_POINTS_LABEL_SET
   
   PUBLIC DATA_POINTS_VALUES_GET,DATA_POINTS_VALUES_SET
+
+  PUBLIC DATA_POINTS_NUMBER_OF_DATA_POINTS_GET
   
   PUBLIC DATA_POINTS_USER_NUMBER_GET,DATA_POINTS_USER_NUMBER_SET
   
@@ -182,7 +196,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ndp
+    INTEGER(INTG) :: data_point_idx
     
     CALL ENTERS("DATA_POINTS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -198,15 +212,15 @@ CONTAINS
     
     IF(DIAGNOSTICS1) THEN !<TODO Still Diagnostics 1??
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of data points = ",DATA_POINTS%NUMBER_OF_DATA_POINTS,ERR,ERROR,*999)
-      DO ndp=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Data Points = ",ndp,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number    = ",DATA_POINTS%DATA_POINTS(ndp)%GLOBAL_NUMBER, &
+      DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Data Points = ",data_point_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number    = ",DATA_POINTS%DATA_POINTS(data_point_idx)% &
+          & GLOBAL_NUMBER,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number      = ",DATA_POINTS%DATA_POINTS(data_point_idx)% &
+          & USER_NUMBER,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Label            = ",DATA_POINTS%DATA_POINTS(data_point_idx)%LABEL, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number      = ",DATA_POINTS%DATA_POINTS(ndp)%USER_NUMBER, &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Label            = ",DATA_POINTS%DATA_POINTS(ndp)%LABEL, &
-          & ERR,ERROR,*999)
-      ENDDO !ndp
+      ENDDO !data_point_idx
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"User->Global number tree",ERR,ERROR,*999)
       CALL TREE_OUTPUT(DIAGNOSTIC_OUTPUT_TYPE,DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
     ENDIF
@@ -223,56 +237,147 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating data points in the region.
-  SUBROUTINE DATA_POINTS_CREATE_START(REGION,NUMBER_OF_DATA_POINTS,DATA_POINTS,ERR,ERROR,*)
+  !>Starts the process of creating generic data points
+  SUBROUTINE DATA_POINTS_CREATE_START_GENERIC(DATA_POINTS,NUMBER_OF_DATA_POINTS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_POINTS !<The number of data points to create
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of dimensions for data points values
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: INSERT_STATUS,data_point_idx,coord_idx
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DATA_POINTS_CREATE_START_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_POINTS)) THEN
+      IF(NUMBER_OF_DATA_POINTS>0) THEN
+        ALLOCATE(DATA_POINTS%DATA_POINTS(NUMBER_OF_DATA_POINTS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points.",ERR,ERROR,*999)
+        DATA_POINTS%NUMBER_OF_DATA_POINTS=NUMBER_OF_DATA_POINTS
+        CALL TREE_CREATE_START(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
+        CALL TREE_INSERT_TYPE_SET(DATA_POINTS%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+        CALL TREE_CREATE_FINISH(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
+        !Set default data point numbers
+        DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
+          DATA_POINTS%DATA_POINTS(data_point_idx)%GLOBAL_NUMBER=data_point_idx
+          DATA_POINTS%DATA_POINTS(data_point_idx)%USER_NUMBER=data_point_idx
+          DATA_POINTS%DATA_POINTS(data_point_idx)%LABEL=""
+          ! initialise data points values to 0.0 and weights to 1.0
+          ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES(NUMBER_OF_DIMENSIONS),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points values("//TRIM(NUMBER_TO_VSTRING &
+            & (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)
+          ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(NUMBER_OF_DIMENSIONS),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points weights("//TRIM(NUMBER_TO_VSTRING &
+            & (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)              
+          DO coord_idx=1,NUMBER_OF_DIMENSIONS
+            DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES(coord_idx)=0.0_DP
+            DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(coord_idx)=1.0_DP
+          ENDDO
+          CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_POINTS_TREE,data_point_idx,data_point_idx,INSERT_STATUS,ERR,ERROR,*999)
+        ENDDO !data_point_idx
+        NULLIFY(DATA_POINTS%DATA_PROJECTION)
+        DATA_POINTS%DATA_POINTS_PROJECTED=.FALSE.    
+      ELSE
+        LOCAL_ERROR="The specified number of data points of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))// &
+          & " is invalid. The number of data points must be > 0."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    NULLIFY(DATA_POINTS)
+
+    CALL EXITS("DATA_POINTS_CREATE_START_GENERIC")
+    RETURN  
+999 CALL ERRORS("DATA_POINTS_CREATE_START_GENERIC",ERR,ERROR)
+    CALL EXITS("DATA_POINTS_CREATE_START_GENERIC")
+    RETURN 1
+   
+  END SUBROUTINE DATA_POINTS_CREATE_START_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating data points in an interface.
+  SUBROUTINE DATA_POINTS_CREATE_START_INTERFACE(INTERFACE,NUMBER_OF_DATA_POINTS,DATA_POINTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface in which to create the data points
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_POINTS !<The number of data points to create
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("DATA_POINTS_CREATE_START_INTERFACE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(DATA_POINTS)) THEN
+        CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(INTERFACE%DATA_POINTS)) THEN
+          CALL FLAG_ERROR("Interface already has data points associated.",ERR,ERROR,*998)
+        ELSE
+          !Initialise the data points for the interface
+          CALL DATA_POINTS_INITIALISE(INTERFACE,ERR,ERROR,*999)
+          !Create the data points 
+          CALL DATA_POINTS_CREATE_START_GENERIC(INTERFACE%DATA_POINTS,NUMBER_OF_DATA_POINTS,INTERFACE% &
+            & COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+          !Return the pointer        
+          DATA_POINTS=>INTERFACE%DATA_POINTS
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*998)
+    ENDIF
+    
+    CALL EXITS("DATA_POINTS_CREATE_START_INTERFACE")
+    RETURN
+999 CALL DATA_POINTS_FINALISE(INTERFACE%DATA_POINTS,DUMMY_ERR,DUMMY_ERROR,*998)    
+998 CALL ERRORS("DATA_POINTS_CREATE_START_INTERFACE",ERR,ERROR)
+    CALL EXITS("DATA_POINTS_CREATE_START_INTERFACE")
+    RETURN 1
+   
+  END SUBROUTINE DATA_POINTS_CREATE_START_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating data points in an region.
+  SUBROUTINE DATA_POINTS_CREATE_START_REGION(REGION,NUMBER_OF_DATA_POINTS,DATA_POINTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region in which to create the data points
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_POINTS !<The number of data points to create
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,INSERT_STATUS,ndp,coord_idx
+    INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("DATA_POINTS_CREATE_START",ERR,ERROR,*998)
+    CALL ENTERS("DATA_POINTS_CREATE_START_REGION",ERR,ERROR,*998)
 
-    NULLIFY(DATA_POINTS)
     IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Region already has data points associated.",ERR,ERROR,*998)
+      IF(ASSOCIATED(DATA_POINTS)) THEN
+        CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*999)
       ELSE
-        IF(ASSOCIATED(DATA_POINTS)) THEN
-          CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*998)
+        IF(ASSOCIATED(REGION%DATA_POINTS)) THEN
+          CALL FLAG_ERROR("Region already has data points associated.",ERR,ERROR,*998)
         ELSE
+          !Initialise the data points for the region
           CALL DATA_POINTS_INITIALISE(REGION,ERR,ERROR,*999)
-          ALLOCATE(REGION%DATA_POINTS%DATA_POINTS(NUMBER_OF_DATA_POINTS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points.",ERR,ERROR,*999)
-          REGION%DATA_POINTS%NUMBER_OF_DATA_POINTS=NUMBER_OF_DATA_POINTS
-          CALL TREE_CREATE_START(REGION%DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
-          CALL TREE_INSERT_TYPE_SET(REGION%DATA_POINTS%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-          CALL TREE_CREATE_FINISH(REGION%DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
-          !Set default data point numbers
-          DO ndp=1,REGION%DATA_POINTS%NUMBER_OF_DATA_POINTS
-            REGION%DATA_POINTS%DATA_POINTS(ndp)%GLOBAL_NUMBER=ndp
-            REGION%DATA_POINTS%DATA_POINTS(ndp)%USER_NUMBER=ndp
-            REGION%DATA_POINTS%DATA_POINTS(ndp)%LABEL=""
-            ! initialise data points values to 0.0 and weights to 1.0
-            ALLOCATE(REGION%DATA_POINTS%DATA_POINTS(ndp)%VALUES(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points values("//TRIM(NUMBER_TO_VSTRING &
-              & (ndp,"*",ERR,ERROR))//").",ERR,ERROR,*999)
-            ALLOCATE(REGION%DATA_POINTS%DATA_POINTS(ndp)%WEIGHTS(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points weights("//TRIM(NUMBER_TO_VSTRING &
-              & (ndp,"*",ERR,ERROR))//").",ERR,ERROR,*999)              
-            DO coord_idx=1,SIZE(REGION%DATA_POINTS%DATA_POINTS(ndp)%VALUES,1)
-              REGION%DATA_POINTS%DATA_POINTS(ndp)%VALUES(coord_idx)=0.0_DP
-              REGION%DATA_POINTS%DATA_POINTS(ndp)%WEIGHTS(coord_idx)=1.0_DP
-            ENDDO
-            CALL TREE_ITEM_INSERT(REGION%DATA_POINTS%DATA_POINTS_TREE,ndp,ndp,INSERT_STATUS,ERR,ERROR,*999)
-          ENDDO !ndp
-          NULLIFY(REGION%DATA_POINTS%DATA_PROJECTION)
-          REGION%DATA_POINTS%DATA_POINTS_PROJECTED=.FALSE.          
+          !Create the data points 
+          CALL DATA_POINTS_CREATE_START_GENERIC(REGION%DATA_POINTS,NUMBER_OF_DATA_POINTS,REGION%COORDINATE_SYSTEM% &
+            & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
           !Return the pointer        
           DATA_POINTS=>REGION%DATA_POINTS
         ENDIF
@@ -281,20 +386,21 @@ CONTAINS
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
     ENDIF
     
-    CALL EXITS("DATA_POINTS_CREATE_START")
+    CALL EXITS("DATA_POINTS_CREATE_START_REGION")
     RETURN
 999 CALL DATA_POINTS_FINALISE(REGION%DATA_POINTS,DUMMY_ERR,DUMMY_ERROR,*998)    
-998 CALL ERRORS("DATA_POINTS_CREATE_START",ERR,ERROR)
-    CALL EXITS("DATA_POINTS_CREATE_START")
+998 CALL ERRORS("DATA_POINTS_CREATE_START_REGION",ERR,ERROR)
+    CALL EXITS("DATA_POINTS_CREATE_START_REGION")
     RETURN 1
    
-  END SUBROUTINE DATA_POINTS_CREATE_START
+  END SUBROUTINE DATA_POINTS_CREATE_START_REGION
+
      
   !
   !================================================================================================================================
   !
 
-  !>Destroys data points.
+  !>Destroys data points. \see OPENCMISS::CMISSDataPointsDestroy
   SUBROUTINE DATA_POINTS_DESTROY(DATA_POINTS,ERR,ERROR,*)
 
     !Argument variables
@@ -309,7 +415,11 @@ CONTAINS
       IF(ASSOCIATED(DATA_POINTS%REGION)) THEN
         NULLIFY(DATA_POINTS%REGION%DATA_POINTS)
       ELSE
-        CALL FLAG_ERROR("Data points region is not associated.",ERR,ERROR,*999)
+        IF(ASSOCIATED(DATA_POINTS%INTERFACE)) THEN
+          NULLIFY(DATA_POINTS%INTERFACE%DATA_POINTS)
+        ELSE
+          CALL FLAG_ERROR("Data points region and interface are not associated.",ERR,ERROR,*999)
+        ENDIF
       ENDIF
       CALL DATA_POINTS_FINALISE(DATA_POINTS,ERR,ERROR,*999)
     ELSE
@@ -374,15 +484,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ndp
+    INTEGER(INTG) :: data_point_idx
 
     CALL ENTERS("DATA_POINTS_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(ALLOCATED(DATA_POINTS%DATA_POINTS)) THEN
-        DO ndp=1,SIZE(DATA_POINTS%DATA_POINTS,1)
-          CALL DATA_POINT_FINALISE(DATA_POINTS%DATA_POINTS(ndp),ERR,ERROR,*999)
-        ENDDO !ndp
+        DO data_point_idx=1,SIZE(DATA_POINTS%DATA_POINTS,1)
+          CALL DATA_POINT_FINALISE(DATA_POINTS%DATA_POINTS(data_point_idx),ERR,ERROR,*999)
+        ENDDO !data_point_idx
         DEALLOCATE(DATA_POINTS%DATA_POINTS)
       ENDIF
       IF(ASSOCIATED(DATA_POINTS%DATA_POINTS_TREE)) CALL TREE_DESTROY(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
@@ -401,8 +511,76 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the data points.
+  SUBROUTINE DATA_POINTS_INITIALISE_GENERIC(DATA_POINTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DATA_POINTS_INITIALISE_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_POINTS)) THEN
+      NULLIFY(DATA_POINTS%REGION)
+      NULLIFY(DATA_POINTS%INTERFACE)
+      DATA_POINTS%DATA_POINTS_FINISHED=.FALSE.
+      DATA_POINTS%NUMBER_OF_DATA_POINTS=0
+      NULLIFY(DATA_POINTS%DATA_POINTS_TREE)
+    ELSE
+      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_POINTS_INITIALISE_GENERIC")
+    RETURN
+999 CALL ERRORS("DATA_POINTS_INITIALISE_GENERIC",ERR,ERROR)
+    CALL EXITS("DATA_POINTS_INITIALISE_GENERIC")
+    RETURN 1
+  END SUBROUTINE DATA_POINTS_INITIALISE_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the data points in a given interface.
+  SUBROUTINE DATA_POINTS_INITIALISE_INTERFACE(INTERFACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to initialise the data points for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DATA_POINTS_INITIALISE_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(INTERFACE%DATA_POINTS)) THEN
+        CALL FLAG_ERROR("Interface already has associated data points.",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(INTERFACE%DATA_POINTS,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface data points.",ERR,ERROR,*999)
+        CALL DATA_POINTS_INITIALISE_GENERIC(INTERFACE%DATA_POINTS,ERR,ERROR,*999)
+        INTERFACE%DATA_POINTS%INTERFACE=>INTERFACE
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_POINTS_INITIALISE_INTERFACE")
+    RETURN
+999 CALL ERRORS("DATA_POINTS_INITIALISE_INTERFACE",ERR,ERROR)
+    CALL EXITS("DATA_POINTS_INITIALISE_INTERFACE")
+    RETURN 1
+    
+  END SUBROUTINE DATA_POINTS_INITIALISE_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Initialises the data points in a given region.
-  SUBROUTINE DATA_POINTS_INITIALISE(REGION,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_INITIALISE_REGION(REGION,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the data points for
@@ -410,7 +588,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("DATA_POINTS_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("DATA_POINTS_INITIALISE_REGION",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%DATA_POINTS)) THEN
@@ -418,22 +596,19 @@ CONTAINS
       ELSE
         ALLOCATE(REGION%DATA_POINTS,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region data points.",ERR,ERROR,*999)
+        CALL DATA_POINTS_INITIALISE_GENERIC(REGION%DATA_POINTS,ERR,ERROR,*999)
         REGION%DATA_POINTS%REGION=>REGION
-        REGION%DATA_POINTS%DATA_POINTS_FINISHED=.FALSE.
-        REGION%DATA_POINTS%NUMBER_OF_DATA_POINTS=0
-        NULLIFY(REGION%DATA_POINTS%DATA_POINTS_TREE)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("DATA_POINTS_INITIALISE")
+    CALL EXITS("DATA_POINTS_INITIALISE_REGION")
     RETURN
-999 CALL ERRORS("DATA_POINTS_INITIALISE",ERR,ERROR)
-    CALL EXITS("DATA_POINTS_INITIALISE")
+999 CALL ERRORS("DATA_POINTS_INITIALISE_REGION",ERR,ERROR)
+    CALL EXITS("DATA_POINTS_INITIALISE_REGION")
     RETURN 1
-
-  END SUBROUTINE DATA_POINTS_INITIALISE
+  END SUBROUTINE DATA_POINTS_INITIALISE_REGION
        
   !
   !================================================================================================================================
@@ -712,6 +887,40 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_POINTS_VALUES_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of data points. \see OPENCMISS::CMISSDataPointsNumberOfDataPointsGet
+  SUBROUTINE DATA_POINTS_NUMBER_OF_DATA_POINTS_GET(DATA_POINTS,NUMBER_OF_DATA_POINTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to get the number of data points for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_DATA_POINTS !<On return, the number of data points
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("DATA_POINTS_NUMBER_OF_DATA_POINTS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_POINTS)) THEN
+      IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
+        NUMBER_OF_DATA_POINTS=DATA_POINTS%NUMBER_OF_DATA_POINTS
+      ELSE
+        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_POINTS_NUMBER_OF_DATA_POINTS_GET")
+    RETURN
+999 CALL ERRORS("DATA_POINTS_NUMBER_OF_DATA_POINTS_GET",ERR,ERROR)    
+    CALL EXITS("DATA_POINTS_NUMBER_OF_DATA_POINTS_GET")
+    RETURN 1
+   
+  END SUBROUTINE DATA_POINTS_NUMBER_OF_DATA_POINTS_GET
 
   !
   !================================================================================================================================
