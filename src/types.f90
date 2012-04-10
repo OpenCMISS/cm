@@ -1065,7 +1065,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<BASES(component_idx). An array to hold a pointer to the basis (if any) used for interpolating the component_idx'th component of the field variable.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_PARAMETERS(:) !<NUMBER_OF_PARAMETERS(component_idx). The number of interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The ns'th interpolation parameter used for interpolating the component_idx'th component of the field variable.
-    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling then component_idx'th component of the field variable. 
+    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling the component_idx'th component of the field variable.
   END TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
 
   TYPE FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE
@@ -1648,6 +1648,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
+    TYPE(BoundaryConditionsNeumannType), POINTER :: neumannBoundaryConditions
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: DOF_COUNTS(:) !<DOF_COUNTS(CONDITION_TYPE): The number of DOFs that have a CONDITION_TYPE boundary condition set
     LOGICAL, ALLOCATABLE :: parameterSetRequired(:) !<parameterSetRequired(PARAMETER_SET) is true if any boundary condition has been set that requires the PARAMETER_SET field parameter set
@@ -1711,6 +1712,15 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
     INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
   END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
+
+  !>Contains information used to integrate Neumann boundary conditions
+  TYPE BoundaryConditionsNeumannType
+    INTEGER(INTG), ALLOCATABLE :: setDofs(:) !<setDofs(neumann_idx): the global dof for the neumann_idx'th Neumann condition
+    INTEGER(INTG), ALLOCATABLE :: localDofs(:) !<localDofs(neumann_idx): the local dof for the neumann_idx'th Neumann condition, or zero if the DOF is not local to this computational node
+    REAL(DP), ALLOCATABLE :: integrationMatrix(:,:) !<The N matrix that multiples the point values vector q to give the integrated values f. Number of rows equals number of local dofs, and number of columns equals number of set point DOFs.
+    REAL(DP), ALLOCATABLE :: pointValues(:) !<The vector of set point values q
+    REAL(DP), ALLOCATABLE :: integratedValues(:) !<The integrated values vector f. Number of terms is the number of local dofs.
+  END TYPE BoundaryConditionsNeumannType
 
   !>Contains information on dofs associated with pressure incremented conditions
   TYPE BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE

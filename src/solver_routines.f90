@@ -10279,12 +10279,9 @@ CONTAINS
                                         CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
                                           & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                         IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-
-                                          !Call SOLVER_NEUMANN_CALCULATE to check whether any Neumann boundary conditions
-                                          !have been set if set then Neumann Boundary Condition calculate routines are called
-                                       !   CALL SOLVER_NEUMANN_CALCULATE(RHS_MAPPING,BOUNDARY_CONDITIONS, &
-                                       !     & EQUATIONS_MAPPING,DEPENDENT_FIELD,ERR,ERROR,*999)
-
+                                          !Update RHS field by integrating any point Neumann conditions
+                                          CALL BoundaryConditions_NeumannIntegrate(RHS_BOUNDARY_CONDITIONS, &
+                                            & ERR,ERROR,*999)
                                           !Loop over the rows in the equations set
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                             !Get the dynamic contribution to the the RHS values
@@ -11470,12 +11467,9 @@ CONTAINS
                                     CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
                                       & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                     IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-
-                                      !Call SOLVER_NEUMANN_CALCULATE to check whether any Neumann boundary conditions
-                                      !have been set if set then Neumann Boundary Condition calculate routines are called
-                                      CALL SOLVER_NEUMANN_CALCULATE(RHS_MAPPING,BOUNDARY_CONDITIONS, &
-                                        & EQUATIONS_MAPPING,DEPENDENT_FIELD,ERR,ERROR,*999)
-
+                                      !Update RHS field by integrating any point Neumann conditions
+                                      CALL BoundaryConditions_NeumannIntegrate(RHS_BOUNDARY_CONDITIONS, &
+                                        & ERR,ERROR,*999)
                                       !Loop over the rows in the equations set
                                       DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                         !Get the source vector contribute to the RHS values if there are any
