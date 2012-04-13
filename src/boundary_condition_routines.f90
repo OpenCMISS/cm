@@ -155,7 +155,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS,COUNT
     INTEGER(INTG) :: variable_idx,dof_idx, equ_matrix_idx, dirichlet_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
-    INTEGER(INTG) :: col_idx,equations_set_idx,bc_idx
+    INTEGER(INTG) :: col_idx,equations_set_idx,bc_idx,parameterSetIdx
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
@@ -206,9 +206,6 @@ CONTAINS
                       & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
-                  ! Update to ensure all set boundary condition values are sent to ghosts
-                  CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
 
                   ! Update the total number of boundary condition types by summing across all nodes
                   CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS, &
@@ -218,21 +215,18 @@ CONTAINS
                     & 1,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                   CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
 
-                  !There are more than one possible field set types that hold boundary conditions. Take care of them.
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_FIXED_INCREMENTED)>0.OR. &
-                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE)>0.OR. &
-                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)>0) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_IMPERMEABLE_WALL)>0) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
+                  !Make sure the required parameter sets are created on all computational nodes and begin updating them
+                  CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%parameterSetRequired, &
+                    & FIELD_NUMBER_OF_SET_TYPES,MPI_LOGICAL,MPI_LAND,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                  CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
+                  DO parameterSetIdx=1,FIELD_NUMBER_OF_SET_TYPES
+                    IF(BOUNDARY_CONDITION_VARIABLE%parameterSetRequired(parameterSetIdx)) THEN
+                      CALL Field_ParameterSetEnsureCreated(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
+                        & parameterSetIdx,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
+                        & parameterSetIdx,ERR,ERROR,*999)
+                    END IF
+                  END DO
 
                   ! Set up pressure incremented condition, if it exists
                   IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)>0) THEN
@@ -486,23 +480,12 @@ CONTAINS
                     ENDIF
                   ENDIF
                   ! Finish field update
-                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  !Update the other field set types
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_FIXED_INCREMENTED)>0.OR. &
-                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE)>0.OR. &
-                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)>0) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_IMPERMEABLE_WALL)>0) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
-                      & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
+                  DO parameterSetIdx=1,FIELD_NUMBER_OF_SET_TYPES
+                    IF(BOUNDARY_CONDITION_VARIABLE%parameterSetRequired(parameterSetIdx)) THEN
+                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
+                        & parameterSetIdx,ERR,ERROR,*999)
+                    END IF
+                  END DO
                 ELSE
                   LOCAL_ERROR="Field variable is not associated for variable index "// &
                     & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
@@ -565,9 +548,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    LOGICAL :: LOAD_INCREMENT=.FALSE.
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_START",ERR,ERROR,*999)
@@ -580,32 +560,8 @@ CONTAINS
           CALL FLAG_ERROR("Boundary conditions is already associated.",ERR,ERROR,*999)
         ELSE
           IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
-            !Check for an equations set type that requires load incremented boundary conditions
-            DO equations_set_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                SELECT CASE(EQUATIONS_SET%CLASS)
-                CASE(EQUATIONS_SET_ELASTICITY_CLASS,EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-                  IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
-                    LOAD_INCREMENT=.TRUE.
-                  ENDIF
-                CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                  IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE) THEN
-                    LOAD_INCREMENT=.TRUE.
-                  ENDIF
-                END SELECT
-              ELSE
-                LOCAL_ERROR="Equations Set is not associated for solver equations equations set "// &
-                  & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ENDDO !equations_set_idx
             !Initialise the boundary conditions
             CALL BOUNDARY_CONDITIONS_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
-            IF(LOAD_INCREMENT) THEN
-              !Setup the required parameter sets for load increments
-              CALL BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(SOLVER_EQUATIONS,ERR,ERROR,*999)
-            ENDIF
           ELSE
             LOCAL_ERROR="Solver equations solver mapping is not associated."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -860,107 +816,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets up parameter sets for problems with load incremented boundary conditions
-  SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(SOLVER_EQUATIONS,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to initialise the boundary conditions for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: variable_idx,equations_set_idx
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-
-    CALL ENTERS("BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-      IF(ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)) THEN
-        DO variable_idx=1,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
-          BOUNDARY_CONDITIONS_VARIABLE=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
-          IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-            VARIABLE=>BOUNDARY_CONDITIONS_VARIABLE%VARIABLE
-            IF(ASSOCIATED(VARIABLE)) THEN
-              IF(.NOT.ASSOCIATED(VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD,VARIABLE%VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                  & ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Boundary conditions variable field variable is not associated for variable index " &
-                & //TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//".",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Boundary conditions variable is not associated for variable index " &
-              & //TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//".",ERR,ERROR,*999)
-          ENDIF
-        ENDDO !variable_idx
-        !Also create current & previous pressue set types, if FINITE ELASTICITY equations type
-        !\todo: this is a hacky place to do it
-        IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
-          DO equations_set_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-            EQUATIONS_SET=>SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            IF(ASSOCIATED(EQUATIONS_SET)) THEN
-              EQUATIONS=>EQUATIONS_SET%EQUATIONS
-              IF(ASSOCIATED(EQUATIONS)) THEN
-                EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                  RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                  IF(ASSOCIATED(RHS_MAPPING)) THEN
-                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
-                      IF(.NOT.ASSOCIATED(RHS_MAPPING%RHS_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PRESSURE_VALUES_SET_TYPE)%PTR)) THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
-                      ENDIF
-                      IF(.NOT.ASSOCIATED(RHS_MAPPING%RHS_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_PRESSURE_SET_TYPE)%PTR)) &
-                        & THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PREVIOUS_PRESSURE_SET_TYPE,ERR,ERROR,*999)
-                      ENDIF
-                    ENDIF
-                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) THEN
-                      IF(.NOT.ASSOCIATED(RHS_MAPPING%RHS_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)% &
-                        & PTR)) THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
-                      ENDIF
-                    ENDIF
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ENDDO !equations_set_idx
-        ELSE
-          CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Boundary conditions is not associated for these solver equations.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver equations is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT")
-    RETURN
-999 CALL ERRORS("BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT",ERR,ERROR)
-    CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT")
-    RETURN 1
-    
-  END SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT
-
-  !
-  !================================================================================================================================
-  !
- 
   !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant. \see OPENCMISS::CMISSBoundaryConditionAddConstant
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_CONSTANT(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1153,7 +1008,7 @@ CONTAINS
                       local_ny=DOF_INDICES(i)
                       IF(local_ny>=1.AND.local_ny<=DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
                         global_ny=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
-                        ! Set boundary condition and dof type
+                        ! Set boundary condition and dof type, and make sure parameter sets are created
                         CALL BoundaryConditions_SetConditionType(BOUNDARY_CONDITIONS_VARIABLE,global_ny,CONDITIONS(i), &
                           & ERR,ERROR,*999)
                         ! Update field sets by adding boundary condition values
@@ -1206,18 +1061,12 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
                           ! Make sure we have a boundary conditions parameter set to store values,
                           ! but we only create it if we need it, so don't create it earlier
-                          CALL Field_ParameterSetEnsureCreated(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                            & ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
-                          CALL Field_ParameterSetEnsureCreated(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                            & ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_FREE)
-                          CALL Field_ParameterSetEnsureCreated(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                            & ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE DEFAULT
@@ -1389,18 +1238,12 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
                           ! No field update
                         CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
-                          CALL Field_ParameterSetEnsureCreated(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                            & ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
-                          CALL Field_ParameterSetEnsureCreated(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                            & ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_FREE)
-                          CALL Field_ParameterSetEnsureCreated(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                            & ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
@@ -1464,6 +1307,7 @@ CONTAINS
   !
 
   !> Checks the boundary condition type and sets the boundary condition type and dof type for the boundary conditions.
+  !> Makes sure any field parameter sets required are created, and sets the parameter set required array value.
   SUBROUTINE BoundaryConditions_SetConditionType(boundaryConditionsVariable,dofIndex,condition,err,error,*)
 
     !Argument variables
@@ -1479,6 +1323,8 @@ CONTAINS
 
     ! We won't do much checking here as this is only used internally and everything has been checked for
     ! association already
+    ! Don't need to make sure field values set type is available as this will always be there, but need
+    ! to make sure any other parameter sets required are.
     SELECT CASE(condition)
     CASE(BOUNDARY_CONDITION_FREE)
       dofType=BOUNDARY_CONDITION_DOF_FREE
@@ -1496,20 +1342,41 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FREE
     CASE(BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_FIXED_INCREMENTED) !For load increment loops
       dofType=BOUNDARY_CONDITION_DOF_FIXED
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_PRESSURE)
       ! Pressure boundary conditions leave the RHS dof as free, as the Neumann terms
       ! are calculated in finite elasticity routines when calculating the element residual
       dofType=BOUNDARY_CONDITION_DOF_FREE
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_PRESSURE_VALUES_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_PRESSURE_VALUES_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
       dofType=BOUNDARY_CONDITION_DOF_FREE
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_PRESSURE_VALUES_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_PRESSURE_VALUES_SET_TYPE)=.TRUE.
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_PREVIOUS_PRESSURE_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_PREVIOUS_PRESSURE_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
       dofType=BOUNDARY_CONDITION_DOF_FREE
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
+      boundaryConditionsVariable%parameterSetRequired(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE(BOUNDARY_CONDITION_NEUMANN_FREE)
@@ -3734,6 +3601,10 @@ CONTAINS
             BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS=0
             NULLIFY(BOUNDARY_CONDITIONS_VARIABLE%NEUMANN_BOUNDARY_CONDITIONS)
             NULLIFY(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)
+            ALLOCATE(BOUNDARY_CONDITIONS_VARIABLE%parameterSetRequired(FIELD_NUMBER_OF_SET_TYPES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary condition parameter set required array.",ERR,ERROR,*999)
+            BOUNDARY_CONDITIONS_VARIABLE%parameterSetRequired=.FALSE.
+            BOUNDARY_CONDITIONS_VARIABLE%parameterSetRequired(FIELD_VALUES_SET_TYPE)=.TRUE.
 
             CALL MOVE_ALLOC(NEW_BOUNDARY_CONDITIONS_VARIABLES,BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)
             BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES= &
