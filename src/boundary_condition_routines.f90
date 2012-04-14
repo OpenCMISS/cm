@@ -215,6 +215,9 @@ CONTAINS
                     & 1,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                   CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
 
+                  ! Check that the boundary conditions set are appropriate for equations sets
+                  CALL BoundaryConditions_CheckEquations(BOUNDARY_CONDITION_VARIABLE,ERR,ERROR,*999)
+
                   !Make sure the required parameter sets are created on all computational nodes and begin updating them
                   CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%parameterSetRequired, &
                     & FIELD_NUMBER_OF_SET_TYPES,MPI_LOGICAL,MPI_LAND,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
@@ -1551,6 +1554,116 @@ CONTAINS
     CALL EXITS("BoundaryConditions_CheckInterpolationType")
     RETURN 1
   END SUBROUTINE BoundaryConditions_CheckInterpolationType
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Checks that the applied boundary conditions are supported by the equations sets in the solver equations
+  SUBROUTINE BoundaryConditions_CheckEquations(boundaryConditionsVariable,err,error,*)
+
+    ! Argument variables
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable !<A pointer to the boundary conditions variable to check
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    type(varying_string), intent(out) :: error !<The error string
+    ! Local variables
+    INTEGER(INTG) :: boundaryConditionType,equationsSetIdx
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    LOGICAL :: validEquationsSetFound
+
+    CALL ENTERS("BoundaryConditions_CheckEquations",err,error,*999)
+
+    !Get and check pointers we need
+    solverEquations=>boundaryConditionsVariable%BOUNDARY_CONDITIONS%SOLVER_EQUATIONS
+    IF(.NOT.ASSOCIATED(solverEquations)) THEN
+      CALL FLAG_ERROR("Boundary conditions solver equations are not associated.",err,error,*999)
+    END IF
+    solverMapping=>solverEquations%SOLVER_MAPPING
+    IF(.NOT.ASSOCIATED(solverMapping)) THEN
+      CALL FLAG_ERROR("Solver equations solver mapping is not associated.",err,error,*999)
+    END IF
+
+    DO boundaryConditionType=1,MAX_BOUNDARY_CONDITION_NUMBER
+      !Check if any DOFs have been set to this BC type
+      IF(boundaryConditionsVariable%DOF_COUNTS(boundaryConditionType)>0) THEN
+        validEquationsSetFound=.FALSE.
+        DO equationsSetIdx=1,solverMapping%NUMBER_OF_EQUATIONS_SETS
+          equationsSet=>solverMapping%EQUATIONS_SETS(equationsSetIdx)%PTR
+          IF(.NOT.ASSOCIATED(equationsSet)) THEN
+            CALL FLAG_ERROR("Solver equations equations set is not associated.",err,error,*999)
+          END IF
+
+          SELECT CASE(boundaryConditionType)
+          CASE(BOUNDARY_CONDITION_FREE)
+            ! Valid for any equations set
+            validEquationsSetFound=.TRUE.
+          CASE(BOUNDARY_CONDITION_FIXED)
+            validEquationsSetFound=.TRUE.
+          CASE(BOUNDARY_CONDITION_FIXED_INLET, &
+              & BOUNDARY_CONDITION_FIXED_OUTLET)
+            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
+              validEquationsSetFound=.TRUE.
+            END IF
+          CASE(BOUNDARY_CONDITION_FIXED_WALL,BOUNDARY_CONDITION_MOVED_WALL, &
+              & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED,BOUNDARY_CONDITION_FREE_WALL)
+            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE.OR. &
+                & equationsSet%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE)) THEN
+              validEquationsSetFound=.TRUE.
+            ELSE IF(equationsSet%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS.AND. &
+                & equationsSet%TYPE==EQUATIONS_SET_LAPLACE_EQUATION_TYPE.AND. &
+                & equationsSet%SUBTYPE==EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE) THEN
+              validEquationsSetFound=.TRUE.
+            END IF
+          CASE(BOUNDARY_CONDITION_FIXED_INCREMENTED)
+            validEquationsSetFound=.TRUE.
+          CASE(BOUNDARY_CONDITION_PRESSURE, &
+              & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
+            IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
+                & equationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
+              validEquationsSetFound=.TRUE.
+            END IF
+          CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
+            !Not actually used anywhere? So keep it as invalid, although maybe it should be removed?
+            validEquationsSetFound=.FALSE.
+          CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
+            IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
+                & equationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE.AND. &
+                & (equationsSet%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE.OR. &
+                & equationsSet%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
+                & equationsSet%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)) THEN
+              validEquationsSetFound=.TRUE.
+            END IF
+          CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
+            validEquationsSetFound=.TRUE.
+          CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+            validEquationsSetFound=.TRUE.
+          CASE DEFAULT
+            CALL FLAG_ERROR("The specified boundary condition type of "// &
+              & TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &
+              & " is invalid.",err,error,*999)
+          END SELECT
+        END DO
+
+        IF(.NOT.validEquationsSetFound) THEN
+            CALL FLAG_ERROR("The specified boundary condition type of "// &
+              & TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &
+              & " is invalid for the equations sets in the solver equations.",err,error,*999)
+        END IF
+      END IF
+    END DO
+
+    CALL EXITS("BoundaryConditions_CheckEquations")
+    RETURN
+999 CALL ERRORS("BoundaryConditions_CheckEquations",err,error)
+    CALL EXITS("BoundaryConditions_CheckEquations")
+    RETURN 1
+  END SUBROUTINE BoundaryConditions_CheckEquations
 
   !
   !================================================================================================================================
