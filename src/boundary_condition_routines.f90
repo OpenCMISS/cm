@@ -1625,6 +1625,8 @@ CONTAINS
     INTEGER(INTG) :: interpolationType
     LOGICAL :: validCondition
 
+    CALL ENTERS("BoundaryConditions_CheckInterpolationType",err,error,*999)
+
     CALL FIELD_COMPONENT_INTERPOLATION_GET(field,variableType,componentNumber,interpolationType,err,error,*999)
 
     validCondition=.TRUE.
