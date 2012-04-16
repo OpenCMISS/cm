@@ -4024,54 +4024,38 @@ CONTAINS
                             IF(ASSOCIATED(DYNAMIC_VARIABLE)) THEN
                               !Set up the parameter sets to hold the required solver parameters
                               !1st degree or higher so set up displacement parameter sets
-                              IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
-                                & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                              CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                 & FIELD_PREVIOUS_VALUES_SET_TYPE,ERR,ERROR,*999)
-                              IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                              CALL Field_ParameterSetEnsureCreated( &
                                 & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
                               IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_SECOND_DEGREE) THEN
                                 !2nd degree or higher so set up velocity parameter sets
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_VELOCITY_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_VELOCITY_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VELOCITY_SET_TYPE)% &
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_PREVIOUS_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD, &
                                   & DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
                                 IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_THIRD_DEGREE) THEN
                                   !3rd degree or higher so set up acceleration parameter sets
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_ACCELERATION_VALUES_SET_TYPE)% &
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                     & FIELD_ACCELERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREVIOUS_ACCELERATION_SET_TYPE)%PTR))  &
-                                    & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                     & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                  CALL Field_ParameterSetEnsureCreated( &
                                     & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
                                     & ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                               IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                                 !Nonlinear so set up nonlinear parameter sets
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_INCREMENTAL_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                CALL Field_ParameterSetEnsureCreated( &
                                   & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                  & SET_TYPE(FIELD_RESIDUAL_SET_TYPE)% & 
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                  & SET_TYPE(FIELD_PREVIOUS_RESIDUAL_SET_TYPE)% & 
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
                               END IF                              
                               !Create the dynamic matrices temporary vector for matrix-vector products
