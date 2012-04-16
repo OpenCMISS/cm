@@ -1629,7 +1629,6 @@ CONTAINS
             ENDDO
 
             ! we only want to store the indepent components of the STRAIN FIELD
-            ! ORDER: U_11, U_12, U_13, U_22, U_23, U_33 (upper triangular matrix)
             IF(NUMBER_OF_DIMENSIONS==3) THEN
               ! 3 dimensional problem
               ! ORDER OF THE COMPONENTS: U_11, U_12, U_13, U_22, U_23, U_33 (upper triangular matrix)
@@ -1647,6 +1646,7 @@ CONTAINS
                 & gauss_idx,6,E(3,3),ERR,ERROR,*999)
             ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
               ! 2 dimensional problem
+              ! ORDER OF THE COMPONENTS: U_11, U_12, U_22 (upper triangular matrix)
               CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
                 & gauss_idx,1,E(1,1),ERR,ERROR,*999)
               CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
@@ -1751,7 +1751,7 @@ CONTAINS
               E(i,i)=E(i,i)-0.5_DP
             ENDDO
 
-            !   we only want to store the 6 indepent components of the STRAIN FIELD + the PRESSURE FIELD
+            ! we only want to store the indepent components of the STRAIN FIELD
             IF(NUMBER_OF_DIMENSIONS==3) THEN
               ! 3 dimensional problem
               ! ORDER OF THE COMPONENTS: U_11, U_12, U_13, U_22, U_23, U_33 (upper triangular matrix)
@@ -2092,7 +2092,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: EQUATIONS_SET_SUBTYPE !<The equation subtype
-    INTEGER(INTG) :: i,j,PRESSURE_COMPONENT
+    INTEGER(INTG) :: i,j,PRESSURE_COMPONENT,USER_ELEMENT_NUMBER
     REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),P,ACTIVTIME,IDENTITY(3,3),AZLT(3,3),AZUT(3,3)
     REAL(DP) :: I1,I2,I3            !Invariants, if needed
     REAL(DP) :: TEMP(3,3),TEMPTERM  !Temporary variables
@@ -2163,10 +2163,15 @@ CONTAINS
         ! add the active stress component (stored in the independent field) to the 1,1-direction of the 2-PK tensor
         PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+INDEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
       ELSE IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN( &
+          & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP( &
+          & ELEMENT_NUMBER),USER_ELEMENT_NUMBER,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%ELEMENTS,&
+          & ERR,ERROR,*999)
         CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-          & FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,1,VALUE,ERR,ERROR,*999)
+          & FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER,GAUSS_POINT_NUMBER,1,VALUE,ERR,ERROR,*999)
         PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
       ENDIF
+
 
     CASE(EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE)
       !Form of constitutive model is:
@@ -5367,9 +5372,6 @@ CONTAINS
             CALL SOLVERS_SOLVER_GET(CONTROL_LOOP_SOLID%SOLVERS,1,SOLVER_SOLID,ERR,ERROR,*999)
             !--- For PGM: Get the displacement field
             CALL FINITE_ELASTICITY_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER_SOLID,ERR,ERROR,*999)
-          CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
-            ! interpolate the independent field from the CellML values
-            CALL FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE(CONTROL_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
             !do nothing
         END SELECT
@@ -5387,174 +5389,6 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Interpolates the finite elasticity independent field from the biolectrics independent field.
-  SUBROUTINE FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE(CONTROL_LOOP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the time control loop
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
-    !Local Variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_ROOT,CONTROL_LOOP_PARENT,CONTROL_LOOP_ELASTICITY,CONTROL_LOOP_MONODOMAIN
-
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_MONODOMAIN,INDEPENDENT_FIELD_ELASTICITY
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: INDEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
-    INTEGER(INTG) :: node_idx,node_idx_2,NODE,equation_set_idx,element_idx,gauss_idx,ne
-    INTEGER(INTG) :: nearestGP,inElement
-    INTEGER(INTG) :: NUMBER_OF_GAUSS_POINTS
-    REAL(DP) :: DISTANCE,XVALUE_FE,XVALUE_M,VALUE
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES(:)
-    REAL(INTG), ALLOCATABLE :: ACTIVE_STRESS_VALUES(:)
-
-    NULLIFY(CONTROL_LOOP_PARENT)
-    NULLIFY(CONTROL_LOOP_MONODOMAIN)
-    NULLIFY(CONTROL_LOOP_ELASTICITY)
-    NULLIFY(SOLVERS)
-    NULLIFY(SOLVER)
-    
-    CALL ENTERS("FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      PROBLEM=>CONTROL_LOOP%PROBLEM
-      IF(ASSOCIATED(PROBLEM)) THEN
-        SELECT CASE(PROBLEM%SUBTYPE)
-        CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
-          IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
-            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP_PARENT,ERR,ERROR,*999)
-            !--- MONODOMAIN ---
-            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,1,CONTROL_LOOP_MONODOMAIN,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_MONODOMAIN,SOLVERS,ERR,ERROR,*999)
-            CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
-                IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                  INDEPENDENT_FIELD_MONODOMAIN=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
-                  IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD_MONODOMAIN)) CALL FLAG_ERROR("Independent field is not associated.", &
-                    & ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-
-            !--- FINITE ELASTICITY ---
-            NULLIFY(SOLVERS)
-            NULLIFY(SOLVER)
-            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,2,CONTROL_LOOP_ELASTICITY,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_ELASTICITY,SOLVERS,ERR,ERROR,*999)
-            CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
-                IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                  INDEPENDENT_FIELD_ELASTICITY=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
-                  IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD_ELASTICITY)) CALL FLAG_ERROR("Independent field is not associated.",ERR, &
-                    & ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-
-            !--- NOW INTERPOLATE ---
-            ELEMENTS_MAPPING=>INDEPENDENT_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD_ELASTICITY%DECOMPOSITION% &
-              & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
-            !loop through the finite elasticity elements
-            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
-              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
-              
-              NUMBER_OF_GAUSS_POINTS=INDEPENDENT_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD_ELASTICITY% &
-                & DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP &
-                & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
-
-              ALLOCATE(NUMBER_OF_NODES(NUMBER_OF_GAUSS_POINTS))
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes array.",ERR,ERROR,*999)
-              NUMBER_OF_NODES=0
-              ALLOCATE(ACTIVE_STRESS_VALUES(NUMBER_OF_GAUSS_POINTS))
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate active stress values array.",ERR,ERROR,*999)
-              ACTIVE_STRESS_VALUES=0.0_DP
-              
-              !loop throught the bioelectrics nodes
-              DO node_idx=1,INDEPENDENT_FIELD_MONODOMAIN%REGION%NODES%NUMBER_OF_NODES
-                CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
-                  & node_idx,5,inElement,ERR,ERROR,*999) !component 5 of variable V contains inElem info
-                !check if the bioelectrics node is located within the finite elasticity element
-                IF(inElement==ne) THEN
-                  CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
-                    & node_idx,4,nearestGP,ERR,ERROR,*999) !component 4 of variable V contains Nearest Gauss Point info
-                  CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
-                    & node_idx,1,VALUE,ERR,ERROR,*999) !component 1 of variable U contains the active stress
-                  !count the number of bioelectrics nodes that are closest to each finite elasticity Gauss point
-                  NUMBER_OF_NODES(nearestGP)=NUMBER_OF_NODES(nearestGP)+1
-                  !add up the active stress value
-                  ACTIVE_STRESS_VALUES(nearestGP)=ACTIVE_STRESS_VALUES(nearestGP)+VALUE
-                ENDIF
-              ENDDO
-
-              !loop throught the finite elasticity Gauss points
-              DO gauss_idx=1,NUMBER_OF_GAUSS_POINTS
-                !make sure we don't divide by zero
-                IF(NUMBER_OF_NODES(gauss_idx)<=0) THEN
-                  VALUE=0.0_DP
-                ELSE
-                  VALUE=ACTIVE_STRESS_VALUES(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
-                ENDIF
-                CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,ne,gauss_idx,1,VALUE,ERR,ERROR,*999)
-              ENDDO
-
-              DEALLOCATE(NUMBER_OF_NODES)
-              DEALLOCATE(ACTIVE_STRESS_VALUES)
-              
-            ENDDO
-          ENDIF
-        CASE DEFAULT
-          LOCAL_ERROR="Independent field interpolation is not implemented for problem subtype " &
-            & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-      ELSE
-        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE")
-    RETURN
-999 CALL ERRORS("FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE",ERR,ERROR)
-    CALL EXITS("FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE")
-    RETURN 1
-
-  END SUBROUTINE FINITE_ELASTICITY_INDEPENDENT_FIELD_INTERPOLATE
 
   !
   !================================================================================================================================

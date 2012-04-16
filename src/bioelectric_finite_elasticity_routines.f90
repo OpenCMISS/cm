@@ -62,6 +62,8 @@ MODULE BIOELECTRIC_FINITE_ELASTICITY_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
+  USE MESH_ROUTINES
+  USE NODE_ROUTINES
   USE PROBLEM_CONSTANTS
   USE STRINGS
   USE SOLVER_ROUTINES
@@ -649,6 +651,9 @@ CONTAINS
             CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
               !do nothing ???
             CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+              IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE) THEN
+                CALL BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE(CONTROL_LOOP,ERR,ERROR,*999)
+              ENDIF
               CALL FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Control loop loop type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%LOOP_TYPE,"*",ERR,ERROR))// &
@@ -856,9 +861,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING,NODES_MAPPING
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
 !    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    INTEGER(INTG) :: USER_ELEMENT_NUMBER,USER_NODE_NUMBER,PREV_USER_NODE_NUMBER
     INTEGER(INTG) :: component_idx,element_idx,ne
     INTEGER(INTG) :: DEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
     INTEGER(INTG) :: node_idx,node_idx_2,NODE_LEFT,NODE_RIGHT,NUMBER_OF_NODES,GAUSS_POINT,gauss_idx,fibre_idx
@@ -1046,10 +1052,14 @@ CONTAINS
               fibre_idx=0
               CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
 
-              !loop through the elements of the finite elasticity mesh
               ELEMENTS_MAPPING=>GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION% &
                 & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
-              DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+              NODES_MAPPING=>GEOMETRIC_FIELD_MONODOMAIN%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD_MONODOMAIN%DECOMPOSITION% &
+                & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%NODES
+
+              !loop through the elements of the finite elasticity mesh (internal and boundary elements)
+              !no need to consider ghost elements here since only bioelectrical fields are changed
+              DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%BOUNDARY_FINISH
                 ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
 
                 !get the finite elasticity dependent field interpolation parameters of this element
@@ -1059,12 +1069,14 @@ CONTAINS
                 INTERPOLATED_POINT=>EQUATIONS_SET%EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
 
                 !the Field_V_Variable_Type of the FE independent field contains the number of nodes in each Xi-direction of the bioelectrics grid
+                CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(ELEMENTS_MAPPING%LOCAL_TO_GLOBAL_MAP(ne), &
+                  & USER_ELEMENT_NUMBER,GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%ELEMENTS,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_GET_ELEMENT(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,ne,1,nodes_in_Xi_1,ERR,ERROR,*999)
+                  & FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER,1,nodes_in_Xi_1,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_GET_ELEMENT(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,ne,2,nodes_in_Xi_2,ERR,ERROR,*999)
+                  & FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER,2,nodes_in_Xi_2,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_GET_ELEMENT(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,ne,3,nodes_in_Xi_3,ERR,ERROR,*999)
+                  & FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER,3,nodes_in_Xi_3,ERR,ERROR,*999)
 
                 !if there is no bioelectrics grid in this finite elasticity element, jump to the next finite elasticity element
                 IF((nodes_in_Xi_1==0).OR.(nodes_in_Xi_2==0).OR.(nodes_in_Xi_3==0)) CYCLE
@@ -1084,9 +1096,11 @@ CONTAINS
                     DO n1=1,nodes_in_Xi_1
                       node_idx=node_idx+1
                       
+                      CALL NODES_USER_NUMBER_GET(GEOMETRIC_FIELD_MONODOMAIN%REGION%NODES, &
+                        & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(node_idx),USER_NODE_NUMBER,ERR,ERROR,*999)
                       !store the fibre number this bioelectrics node belongs to.
                       CALL FIELD_PARAMETER_SET_UPDATE_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx,3,fibre_idx,ERR,ERROR,*999)
+                        & FIELD_VALUES_SET_TYPE,1,1,USER_NODE_NUMBER,3,fibre_idx,ERR,ERROR,*999)
 
                       !find the interpolated position of the bioelectric grid node from the FE dependent field
                       CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
@@ -1094,18 +1108,21 @@ CONTAINS
                       DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                         !the Field_V_Variable_Type of the monodomain dependent field contains the nodal positions in 3D
                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,component_idx,INTERPOLATED_POINT%VALUES(component_idx,1),ERR, &
-                          & ERROR,*999)
+                          & FIELD_VALUES_SET_TYPE,1,1,USER_NODE_NUMBER,component_idx, &
+                          & INTERPOLATED_POINT%VALUES(component_idx,1),ERR,ERROR,*999)
                       ENDDO
                       IF(n1==1) THEN
                         !a new line of bioelectrics grid nodes begins
                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,0.0_DP,ERR,ERROR,*999)
+                          & FIELD_VALUES_SET_TYPE,1,1,USER_NODE_NUMBER,1,0.0_DP,ERR,ERROR,*999)
                       ELSE
                         !get the position in 3D of the previous node
+                        CALL NODES_USER_NUMBER_GET(GEOMETRIC_FIELD_MONODOMAIN%REGION%NODES, &
+                          & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(node_idx-1),PREV_USER_NODE_NUMBER,ERR,ERROR,*999)
                         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                           CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,component_idx,PREVIOUS_NODE(component_idx),ERR,ERROR,*999)
+                            & FIELD_VALUES_SET_TYPE,1,1,PREV_USER_NODE_NUMBER,component_idx, &
+                            & PREVIOUS_NODE(component_idx),ERR,ERROR,*999)
                         ENDDO
                         !compute the distance between the previous node and the actual node
                         VALUE=SQRT( &
@@ -1114,10 +1131,10 @@ CONTAINS
                           & (INTERPOLATED_POINT%VALUES(3,1)-PREVIOUS_NODE(3))*(INTERPOLATED_POINT%VALUES(3,1)-PREVIOUS_NODE(3)))
                         !get the position in 1D of the previous node
                         CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,1,VALUE_LEFT,ERR,ERROR,*999)
+                          & FIELD_VALUES_SET_TYPE,1,1,PREV_USER_NODE_NUMBER,1,VALUE_LEFT,ERR,ERROR,*999)
                         !update the current 1D node position
                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE_LEFT+VALUE,ERR,ERROR,*999)
+                          & FIELD_VALUES_SET_TYPE,1,1,USER_NODE_NUMBER,1,VALUE_LEFT+VALUE,ERR,ERROR,*999)
                       ENDIF
                         
                       IF(CALC_CLOSEST_GAUSS_POINT) THEN
@@ -1136,11 +1153,11 @@ CONTAINS
                           ENDIF
                         ENDDO !gauss_idx
                         IF(GAUSS_POINT==0) CALL FLAG_WARNING("Closest Gauss Point not found",ERR,ERROR,*999)
-                        !store the nearest Gauss Point info and the inElement info
+                        !store the nearest Gauss Point info and the inElement info (user element number!!!)
                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,4,GAUSS_POINT,ERR,ERROR,*999)
+                          & FIELD_VALUES_SET_TYPE,1,1,USER_NODE_NUMBER,4,GAUSS_POINT,ERR,ERROR,*999)
                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx,5,ne,ERR,ERROR,*999)
+                          & FIELD_VALUES_SET_TYPE,1,1,USER_NODE_NUMBER,5,USER_ELEMENT_NUMBER,ERR,ERROR,*999)
                       ENDIF !CALC_CLOSEST_GAUSS_POINT
                       
                       XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1-1))
@@ -1181,6 +1198,189 @@ CONTAINS
     CALL EXITS("BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD")
     RETURN 1
   END SUBROUTINE BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the finite elasticity independent field from the biolectrics independent field.
+  SUBROUTINE BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the time control loop
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local Variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_ROOT,CONTROL_LOOP_PARENT,CONTROL_LOOP_ELASTICITY,CONTROL_LOOP_MONODOMAIN
+
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_MONODOMAIN,INDEPENDENT_FIELD_ELASTICITY
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING,NODES_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: INDEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
+    INTEGER(INTG) :: node_idx,node_idx_2,NODE,equation_set_idx,element_idx,gauss_idx,ne
+    INTEGER(INTG) :: nearestGP,inElement
+    INTEGER(INTG) :: NUMBER_OF_GAUSS_POINTS
+    REAL(DP) :: DISTANCE,XVALUE_FE,XVALUE_M,VALUE
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES(:)
+    REAL(INTG), ALLOCATABLE :: ACTIVE_STRESS_VALUES(:)
+
+    NULLIFY(CONTROL_LOOP_PARENT)
+    NULLIFY(CONTROL_LOOP_MONODOMAIN)
+    NULLIFY(CONTROL_LOOP_ELASTICITY)
+    NULLIFY(SOLVERS)
+    NULLIFY(SOLVER)
+    
+    CALL ENTERS("BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      PROBLEM=>CONTROL_LOOP%PROBLEM
+      IF(ASSOCIATED(PROBLEM)) THEN
+        SELECT CASE(PROBLEM%SUBTYPE)
+        CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
+          IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
+            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP_PARENT,ERR,ERROR,*999)
+            !--- MONODOMAIN ---
+            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,1,CONTROL_LOOP_MONODOMAIN,ERR,ERROR,*999)
+            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_MONODOMAIN,SOLVERS,ERR,ERROR,*999)
+            CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                  INDEPENDENT_FIELD_MONODOMAIN=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                  IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD_MONODOMAIN)) CALL FLAG_ERROR("Independent field is not associated.", &
+                    & ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+
+            !--- FINITE ELASTICITY ---
+            NULLIFY(SOLVERS)
+            NULLIFY(SOLVER)
+            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_PARENT,2,CONTROL_LOOP_ELASTICITY,ERR,ERROR,*999)
+            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP_ELASTICITY,SOLVERS,ERR,ERROR,*999)
+            CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                  INDEPENDENT_FIELD_ELASTICITY=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                  IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD_ELASTICITY)) CALL FLAG_ERROR("Independent field is not associated.",ERR, &
+                    & ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+
+            !--- NOW INTERPOLATE ---
+            ELEMENTS_MAPPING=>INDEPENDENT_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD_ELASTICITY%DECOMPOSITION% &
+              & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
+            NODES_MAPPING=>INDEPENDENT_FIELD_MONODOMAIN%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD_MONODOMAIN%DECOMPOSITION% &
+              & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%NODES
+            !loop through the finite elasticity elements
+            !first process the internal and boundary elements
+            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%BOUNDARY_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              
+              NUMBER_OF_GAUSS_POINTS=INDEPENDENT_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD_ELASTICITY% &
+                & DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP &
+                & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
+
+              ALLOCATE(NUMBER_OF_NODES(NUMBER_OF_GAUSS_POINTS))
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes array.",ERR,ERROR,*999)
+              NUMBER_OF_NODES=0
+              ALLOCATE(ACTIVE_STRESS_VALUES(NUMBER_OF_GAUSS_POINTS))
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate active stress values array.",ERR,ERROR,*999)
+              ACTIVE_STRESS_VALUES=0.0_DP
+              
+              !loop through the bioelectrics nodes
+              DO node_idx=1,NODES_MAPPING%NUMBER_OF_LOCAL
+                CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
+                  & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(node_idx),5,inElement,ERR,ERROR,*999) !component 5 of variable V contains inElem info
+                !check if the bioelectrics node is located within the finite elasticity element
+                IF(inElement==ELEMENTS_MAPPING%LOCAL_TO_GLOBAL_MAP(ne)) THEN
+                  !component 4 of variable V contains Nearest Gauss Point info
+                  CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
+                    & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(node_idx),4,nearestGP,ERR,ERROR,*999) 
+                  !component 1 of variable U contains the active stress
+                  CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
+                    & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(node_idx),1,VALUE,ERR,ERROR,*999) 
+                  !count the number of bioelectrics nodes that are closest to each finite elasticity Gauss point
+                  NUMBER_OF_NODES(nearestGP)=NUMBER_OF_NODES(nearestGP)+1
+                  !add up the active stress value
+                  ACTIVE_STRESS_VALUES(nearestGP)=ACTIVE_STRESS_VALUES(nearestGP)+VALUE
+                ENDIF
+              ENDDO
+
+              !loop throught the finite elasticity Gauss points
+              DO gauss_idx=1,NUMBER_OF_GAUSS_POINTS
+                !make sure we don't divide by zero
+                IF(NUMBER_OF_NODES(gauss_idx)<=0) THEN
+                  VALUE=0.0_DP
+                ELSE
+                  VALUE=ACTIVE_STRESS_VALUES(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
+                ENDIF
+                CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,ELEMENTS_MAPPING%LOCAL_TO_GLOBAL_MAP(ne),gauss_idx,1,VALUE,ERR,ERROR,*999)
+!tomo
+                WRITE(*,*) ne,' , ',gauss_idx,' , ',VALUE
+!tomo end
+              ENDDO !gauss_idx
+
+              DEALLOCATE(NUMBER_OF_NODES)
+              DEALLOCATE(ACTIVE_STRESS_VALUES)
+              
+            ENDDO !element_idx
+
+            !now the ghost elements -- get the relevant info from the other computational nodes
+            CALL FIELD_PARAMETER_SET_UPDATE_START(INDEPENDENT_FIELD_ELASTICITY, & 
+              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(INDEPENDENT_FIELD_ELASTICITY, & 
+              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="Independent field interpolation is not implemented for problem subtype " &
+            & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE")
+    RETURN
+999 CALL ERRORS("BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE",ERR,ERROR)
+    CALL EXITS("BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE")
+    RETURN 1
+
+  END SUBROUTINE BIOELECTRIC_FIN_ELA_INDEPENDENT_FIELD_INTERPOLATE
 
   !
   !================================================================================================================================
