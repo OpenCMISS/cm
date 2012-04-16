@@ -2824,7 +2824,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
-    TYPE(REGION_TYPE), POINTER :: REGION,PARENT_REGION
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_COORDINATE_SYSTEM_GET",ERR,ERROR,*999)
@@ -2847,22 +2847,13 @@ CONTAINS
         ELSE
           INTERFACE=>FIELD%INTERFACE
           IF(ASSOCIATED(INTERFACE)) THEN
-            PARENT_REGION=>INTERFACE%PARENT_REGION
-            IF(ASSOCIATED(PARENT_REGION)) THEN
-              COORDINATE_SYSTEM=>PARENT_REGION%COORDINATE_SYSTEM
-              IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
-                LOCAL_ERROR="The coordinate system is not associated for field number "// &
-                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
-                  & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
-                  & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="The parent region not associated for field number "// &
+            COORDINATE_SYSTEM=>INTERFACE%COORDINATE_SYSTEM
+            IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
+              LOCAL_ERROR="The coordinate system is not associated for field number "// &
                 & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
                 & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
+            ENDIF         
           ELSE
             LOCAL_ERROR="The region or interface is not associated for field number "// &
               & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
