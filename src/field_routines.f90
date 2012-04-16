@@ -15049,6 +15049,8 @@ CONTAINS
     !Local variables
     LOGICAL :: parameterSetCreated
 
+    CALL ENTERS("Field_ParameterSetEnsureCreated",err,error,*999)
+
     CALL FIELD_PARAMETER_SET_CREATED(field,variableType,fieldSetType,parameterSetCreated,err,error,*999)
     IF(.NOT.parameterSetCreated) THEN
       CALL FIELD_PARAMETER_SET_CREATE(field,variableType,fieldSetType,err,error,*999)
