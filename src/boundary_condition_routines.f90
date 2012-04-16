@@ -220,7 +220,7 @@ CONTAINS
 
                   !Make sure the required parameter sets are created on all computational nodes and begin updating them
                   CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%parameterSetRequired, &
-                    & FIELD_NUMBER_OF_SET_TYPES,MPI_LOGICAL,MPI_LAND,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                    & FIELD_NUMBER_OF_SET_TYPES,MPI_LOGICAL,MPI_LOR,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                   CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
                   DO parameterSetIdx=1,FIELD_NUMBER_OF_SET_TYPES
                     IF(BOUNDARY_CONDITION_VARIABLE%parameterSetRequired(parameterSetIdx)) THEN
