@@ -16642,7 +16642,6 @@ CONTAINS
 
   !>Returns from the given parameter set a double precision value for the specified element of a field variable component. \see OPENCMISS::CMISSFieldParameterSetGetElement
   SUBROUTINE FIELD_PARAMETER_SET_GET_ELEMENT_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
-
     & VALUE,ERR,ERROR,*)
 
     !Argument variables

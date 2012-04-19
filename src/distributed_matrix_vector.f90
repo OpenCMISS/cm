@@ -542,6 +542,7 @@ CONTAINS
       IF(CMISS_MATRIX%DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
         DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
       ELSE
+        !if a mesh consists of 2 disconnected parts, and the decomposition is set up in a way such that each part is assigned one domain, the adjacent_domains_list array will be empty... To avoid this problem:
         IF(size(CMISS_MATRIX%DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST)==0) THEN
           DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID-1
         ELSE
@@ -5807,6 +5808,7 @@ CONTAINS
           IF(DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
             DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
           ELSE
+            !if a mesh consists of 2 disconnected parts, and the decomposition is set up in a way such that each part is assigned one domain, the adjacent_domains_list array will be empty... To avoid this problem:
             IF(size(DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST)==0) THEN
               DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID-1
             ELSE
