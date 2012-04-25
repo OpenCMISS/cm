@@ -48,6 +48,7 @@ MODULE DATA_PROJECTION_ROUTINES
   USE BASE_ROUTINES
   USE CMISS_MPI  
   USE COMP_ENVIRONMENT
+  USE DATA_POINT_ROUTINES
   USE DOMAIN_MAPPINGS
   USE FIELD_ROUTINES  
   USE INPUT_OUTPUT
@@ -103,6 +104,12 @@ MODULE DATA_PROJECTION_ROUTINES
   PUBLIC DATA_PROJECTION_STARTING_XI_GET,DATA_PROJECTION_STARTING_XI_SET
   
   PUBLIC DATA_PROJECTION_XI_SET,DATA_PROJECTION_ELEMENT_SET
+  
+  PUBLIC DATA_PROJECTION_RESULT_DISTANCE_GET,DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET
+  
+  PUBLIC DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET,DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET
+  
+  PUBLIC DATA_PROJECTION_RESULT_EXIT_TAG_GET,DATA_PROJECTION_RESULT_XI_GET
  
 CONTAINS
 
@@ -581,62 +588,60 @@ CONTAINS
               CALL FLAG_ERROR("Mesh is not associated with a region or a interface.",ERR,ERROR,*999)
             ENDIF
             IF(DATA_POINTS_REGION_DIMENSIONS==MESH_REGION_DIMENSIONS) THEN !Dimension has to be equal
-              IF(ASSOCIATED(DATA_PROJECTION)) THEN
-                DATA_PROJECTION%GLOBAL_NUMBER=data_projection_idx
-                DATA_PROJECTION%USER_NUMBER=DATA_PROJECTION_USER_NUMBER
-                DATA_PROJECTION%LABEL=""
-                CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER,data_projection_idx, &
-                  & INSERT_STATUS,ERR,ERROR,*999)
-                DATA_PROJECTION%DATA_PROJECTION_FINISHED=.FALSE.
-                DATA_PROJECTION%DATA_POINTS=>DATA_POINTS
-                DATA_PROJECTION%MESH=>MESH
-                DATA_PROJECTION%COORDINATE_SYSTEM_DIMENSIONS=DATA_POINTS_REGION_DIMENSIONS
-                DATA_PROJECTION%MAXIMUM_ITERATION_UPDATE=0.5_DP
-                DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=25                   
-                !Default always project to boundaries faces/lines when mesh dimension is equal to region dimension. If mesh dimension is less, project to all elements            
-                IF(MESH%NUMBER_OF_DIMENSIONS<DATA_POINTS_REGION_DIMENSIONS) THEN !mesh dimension < data dimension
-                  DATA_PROJECTION%NUMBER_OF_XI=MESH%NUMBER_OF_DIMENSIONS
-                  DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
-                ELSE
-                  SELECT CASE(MESH%NUMBER_OF_DIMENSIONS) !mesh dimension = data dimension
-                  CASE (2) 
-                    DATA_PROJECTION%NUMBER_OF_XI=1
-                    DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE
-                  CASE (3)
-                    DATA_PROJECTION%NUMBER_OF_XI=2
-                    DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
-                  CASE DEFAULT
-                    CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
-                  END SELECT
-                ENDIF
-                SELECT CASE(DATA_PROJECTION%NUMBER_OF_XI) !mesh dimension = data dimension
-                CASE (1)
-                  DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=2
-                CASE (2)
-                  DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=4  
+              ALLOCATE(DATA_PROJECTION,STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data projection.",ERR,ERROR,*999)
+              DATA_PROJECTION%GLOBAL_NUMBER=data_projection_idx
+              DATA_PROJECTION%USER_NUMBER=DATA_PROJECTION_USER_NUMBER
+              DATA_PROJECTION%LABEL=""
+              CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER,data_projection_idx, &
+                & INSERT_STATUS,ERR,ERROR,*999)
+              DATA_PROJECTION%DATA_PROJECTION_FINISHED=.FALSE.
+              DATA_PROJECTION%DATA_POINTS=>DATA_POINTS
+              DATA_PROJECTION%MESH=>MESH
+              DATA_PROJECTION%COORDINATE_SYSTEM_DIMENSIONS=DATA_POINTS_REGION_DIMENSIONS
+              DATA_PROJECTION%MAXIMUM_ITERATION_UPDATE=0.5_DP
+              DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=25                   
+              !Default always project to boundaries faces/lines when mesh dimension is equal to region dimension. If mesh dimension is less, project to all elements            
+              IF(MESH%NUMBER_OF_DIMENSIONS<DATA_POINTS_REGION_DIMENSIONS) THEN !mesh dimension < data dimension
+                DATA_PROJECTION%NUMBER_OF_XI=MESH%NUMBER_OF_DIMENSIONS
+                DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
+              ELSE
+                SELECT CASE(MESH%NUMBER_OF_DIMENSIONS) !mesh dimension = data dimension
+                CASE (2) 
+                  DATA_PROJECTION%NUMBER_OF_XI=1
+                  DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE
                 CASE (3)
-                  DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=8
+                  DATA_PROJECTION%NUMBER_OF_XI=2
+                  DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
                 CASE DEFAULT
                   CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
-                END SELECT 
-                ALLOCATE(DATA_PROJECTION%STARTING_XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data projection starting xi.",ERR,ERROR,*999)
-                DO xi_idx=1,DATA_PROJECTION%NUMBER_OF_XI
-                  DATA_PROJECTION%STARTING_XI(xi_idx)=0.5_DP !<initialised to 0.5 in each xi direction
-                ENDDO !xi_idx              
-                DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
-                DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP
-                !Return the pointer        
-                DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR=>DATA_PROJECTION
-              ELSE
-                CALL FLAG_ERROR("Data projection is already associated.",ERR,ERROR,*999)
-              ENDIF !ASSOCIATED(DATA_PROJECTION)
+                END SELECT
+              ENDIF
+              SELECT CASE(DATA_PROJECTION%NUMBER_OF_XI) !mesh dimension = data dimension
+              CASE (1)
+                DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=2
+              CASE (2)
+                DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=4  
+              CASE (3)
+                DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=8
+              CASE DEFAULT
+                CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
+              END SELECT 
+              ALLOCATE(DATA_PROJECTION%STARTING_XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data projection starting xi.",ERR,ERROR,*999)
+              DO xi_idx=1,DATA_PROJECTION%NUMBER_OF_XI
+                DATA_PROJECTION%STARTING_XI(xi_idx)=0.5_DP !<initialised to 0.5 in each xi direction
+              ENDDO !xi_idx              
+              DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
+              DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP
+              !Return the pointer
+              DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR=>DATA_PROJECTION
               IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS>0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
                 DO data_projection_idx=1,DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS
                   NEW_DATA_PROJECTIONS_PTR(data_projection_idx)%PTR=>DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR
-                ENDDO !xi_idx 
+                ENDDO !xi_idx
               ELSE IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS==0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
@@ -2793,6 +2798,287 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_XI_SET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Gets the projection distance for a data point identified by a given global number.
+  SUBROUTINE DATA_PROJECTION_RESULT_DISTANCE_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,PROJECTION_DISTANCE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for which projection result is stored
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<The Data projection user number to get the projection distance for
+    REAL(DP), INTENT(OUT) :: PROJECTION_DISTANCE !<On exit, the projection distance of the specified data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DATA_PROJECTION_RESULT_DISTANCE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        IF(DATA_PROJECTION%DATA_PROJECTION_PROJECTED) THEN
+          CALL DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION%DATA_POINTS,DATA_POINT_USER_NUMBER,DATA_POINT_GLOBAL_NUMBER,ERR,ERROR &
+            & ,*999)
+          PROJECTION_DISTANCE=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%DISTANCE
+        ELSE
+          CALL FLAG_ERROR("Data projection have not been projected.",ERR,ERROR,*999)  
+        ENDIF    
+      ELSE
+        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_RESULT_DISTANCE_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_RESULT_DISTANCE_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_RESULT_DISTANCE_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_RESULT_DISTANCE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the projection element number for a data point identified by a given global number.
+  SUBROUTINE DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,PROJECTION_ELEMENT_NUMBER,ERR,ERROR &
+    & ,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for which projection result is stored
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<The Data projection user number to get the projection element number for
+    INTEGER(INTG), INTENT(OUT) :: PROJECTION_ELEMENT_NUMBER !<On exit, the projection element number of the specified global data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        IF(DATA_PROJECTION%DATA_PROJECTION_PROJECTED) THEN
+          CALL DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION%DATA_POINTS,DATA_POINT_USER_NUMBER,DATA_POINT_GLOBAL_NUMBER,ERR,ERROR &
+            & ,*999)
+          PROJECTION_ELEMENT_NUMBER=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%ELEMENT_NUMBER
+        ELSE
+          CALL FLAG_ERROR("Data projection have not been projected.",ERR,ERROR,*999)  
+        ENDIF    
+      ELSE
+        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Gets the projection element face number for a data point identified by a given global number.
+  SUBROUTINE DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,PROJECTION_ELEMENT_FACE_NUMBER &
+    & ,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for which projection result is stored
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<The Data projection user number to get the projection element face number for
+    INTEGER(INTG), INTENT(OUT) :: PROJECTION_ELEMENT_FACE_NUMBER !<On exit, the projection element face number of the specified global data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        IF(DATA_PROJECTION%DATA_PROJECTION_PROJECTED) THEN
+          ! Check if boundary faces projection type was set
+          IF(DATA_PROJECTION%PROJECTION_TYPE==DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) THEN
+            CALL DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION%DATA_POINTS,DATA_POINT_USER_NUMBER,DATA_POINT_GLOBAL_NUMBER,ERR, &
+              & ERROR,*999)
+            PROJECTION_ELEMENT_FACE_NUMBER=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%ELEMENT_FACE_NUMBER
+          ELSE
+            CALL FLAG_ERROR("Data projection data projection projection type is not set to boundary faces projection type.", &
+              & ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Data projection have not been projected.",ERR,ERROR,*999)  
+        ENDIF    
+      ELSE
+        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Gets the projection element line number for a data point identified by a given global number.
+  SUBROUTINE DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,PROJECTION_ELEMENT_LINE_NUMBER &
+    & ,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for which projection result is stored
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<The Data projection user number to get the element line number distance for
+    INTEGER(INTG), INTENT(OUT) :: PROJECTION_ELEMENT_LINE_NUMBER !<On exit, the projection element line number of the specified global data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        IF(DATA_PROJECTION%DATA_PROJECTION_PROJECTED) THEN
+          ! Check if boundary lines projection type was set
+          IF(DATA_PROJECTION%PROJECTION_TYPE==DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) THEN
+            CALL DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION%DATA_POINTS,DATA_POINT_USER_NUMBER,DATA_POINT_GLOBAL_NUMBER,ERR, &
+              & ERROR,*999)
+            PROJECTION_ELEMENT_LINE_NUMBER=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%ELEMENT_LINE_NUMBER
+          ELSE
+            CALL FLAG_ERROR("Data projection data projection projection type is not set to boundary lines projection type.", &
+              & ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Data projection have not been projected.",ERR,ERROR,*999)  
+        ENDIF    
+      ELSE
+        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Gets the projection exit tag for a data point identified by a given global number.
+  SUBROUTINE DATA_PROJECTION_RESULT_EXIT_TAG_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,PROJECTION_EXIT_TAG,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for which projection result is stored
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<The Data projection user number to get the projection exit tag for
+    INTEGER(INTG), INTENT(OUT) :: PROJECTION_EXIT_TAG !<On exit, the projection exit tag of the specified global data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DATA_PROJECTION_RESULT_EXIT_TAG_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        IF(DATA_PROJECTION%DATA_PROJECTION_PROJECTED) THEN
+          CALL DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION%DATA_POINTS,DATA_POINT_USER_NUMBER,DATA_POINT_GLOBAL_NUMBER,ERR,ERROR &
+            & ,*999)
+          PROJECTION_EXIT_TAG=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%EXIT_TAG
+        ELSE
+          CALL FLAG_ERROR("Data projection have not been projected.",ERR,ERROR,*999)  
+        ENDIF    
+      ELSE
+        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_RESULT_EXIT_TAG_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_RESULT_EXIT_TAG_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_RESULT_EXIT_TAG_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_RESULT_EXIT_TAG_GET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Gets the projection xi for a data point identified by a given global number.
+  SUBROUTINE DATA_PROJECTION_RESULT_XI_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,PROJECTION_XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for which projection result is stored
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<The Data projection user number to get the projection xi for
+    REAL(DP), INTENT(OUT) :: PROJECTION_XI(:) !<On exit, the projection xi of the specified global data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DATA_PROJECTION_RESULT_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        IF(DATA_PROJECTION%DATA_PROJECTION_PROJECTED) THEN
+          CALL DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION%DATA_POINTS,DATA_POINT_USER_NUMBER,DATA_POINT_GLOBAL_NUMBER,ERR,ERROR &
+            & ,*999)
+          IF(SIZE(PROJECTION_XI,1)==SIZE(DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI,1)) THEN
+            PROJECTION_XI=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI
+          ELSE
+            CALL FLAG_ERROR("projection xi has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(PROJECTION_XI,1),"*",ERR,ERROR))// &
+              & "but it needs to have size of "// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(DATA_PROJECTION%DATA_PROJECTION_RESULTS &
+              & (DATA_POINT_GLOBAL_NUMBER)%XI,1),"*",ERR,ERROR))// &
+              & "." ,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Data projection have not been projected.",ERR,ERROR,*999)
+        ENDIF   
+      ELSE
+        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_RESULT_XI_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_RESULT_XI_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_RESULT_XI_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_RESULT_XI_GET
         
   !
   !================================================================================================================================
