@@ -456,7 +456,7 @@ CONTAINS
             !Set the current time to be the start time. Solvers should use the first time step to do any initialisation.
             TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME
             TIME_LOOP%ITERATION_NUMBER=0
-            DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
+            DO WHILE(TIME_LOOP%CURRENT_TIME<TIME_LOOP%STOP_TIME)
               IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Time control loop iteration: ",TIME_LOOP%ITERATION_NUMBER, &
