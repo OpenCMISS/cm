@@ -1039,8 +1039,6 @@ CONTAINS
     REAL(DP), INTENT(IN) :: TIME !<The time for the CellML evaluator solver to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_CELLML_EVALUATOR_TIME_SET",ERR,ERROR,*999)
     
@@ -1429,10 +1427,26 @@ CONTAINS
       IF(SOLVER%SOLVER_FINISHED) THEN
         CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
-        !Set the finished flag. The final solver finish will be done once the solver equations have been finished.
+        !Mark linked solvers as finished
         DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
           SOLVER%LINKED_SOLVERS(solver_idx)%PTR%SOLVER_FINISHED=.TRUE.
         ENDDO !solver_idx
+        !Call the specific solver finishing routine for this solver type
+        SELECT CASE(SOLVER%SOLVE_TYPE)
+        CASE(SOLVER_LINEAR_TYPE)
+          CALL SOLVER_LINEAR_CREATE_FINISH(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_NONLINEAR_TYPE)
+          CALL SOLVER_NONLINEAR_CREATE_FINISH(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DYNAMIC_TYPE)
+          CALL SOLVER_DYNAMIC_CREATE_FINISH(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_TYPE)
+          CALL SOLVER_DAE_CREATE_FINISH(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_EIGENPROBLEM_TYPE)
+          CALL SOLVER_EIGENPROBLEM_CREATE_FINISH(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+        CASE DEFAULT
+          CALL FLAG_ERROR("The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid.",ERR,ERROR,*999)
+        END SELECT
         SOLVER%SOLVER_FINISHED=.TRUE.
       ENDIF
     ELSE
@@ -4010,54 +4024,38 @@ CONTAINS
                             IF(ASSOCIATED(DYNAMIC_VARIABLE)) THEN
                               !Set up the parameter sets to hold the required solver parameters
                               !1st degree or higher so set up displacement parameter sets
-                              IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
-                                & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                              CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                 & FIELD_PREVIOUS_VALUES_SET_TYPE,ERR,ERROR,*999)
-                              IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                              CALL Field_ParameterSetEnsureCreated( &
                                 & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
                               IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_SECOND_DEGREE) THEN
                                 !2nd degree or higher so set up velocity parameter sets
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_VELOCITY_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_VELOCITY_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VELOCITY_SET_TYPE)% &
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_PREVIOUS_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD, &
                                   & DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
                                 IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_THIRD_DEGREE) THEN
                                   !3rd degree or higher so set up acceleration parameter sets
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_ACCELERATION_VALUES_SET_TYPE)% &
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                     & FIELD_ACCELERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREVIOUS_ACCELERATION_SET_TYPE)%PTR))  &
-                                    & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                     & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                  CALL Field_ParameterSetEnsureCreated( &
                                     & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
                                     & ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                               IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                                 !Nonlinear so set up nonlinear parameter sets
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_INCREMENTAL_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                CALL Field_ParameterSetEnsureCreated( &
                                   & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                  & SET_TYPE(FIELD_RESIDUAL_SET_TYPE)% & 
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                  & SET_TYPE(FIELD_PREVIOUS_RESIDUAL_SET_TYPE)% & 
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
                               END IF                              
                               !Create the dynamic matrices temporary vector for matrix-vector products
@@ -4770,13 +4768,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_set_idx,residual_variable_dof,equations_row_number
+    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_set_idx
     REAL(DP) :: DELTA_T,FIRST_MEAN_PREDICTION_FACTOR, SECOND_MEAN_PREDICTION_FACTOR,THIRD_MEAN_PREDICTION_FACTOR
-    REAL(DP) :: FIRST_PREDICTION_FACTOR, SECOND_PREDICTION_FACTOR,THIRD_PREDICTION_FACTOR,RESIDUAL_VALUE,ALPHA_FACTOR
+    REAL(DP) :: FIRST_PREDICTION_FACTOR, SECOND_PREDICTION_FACTOR,THIRD_PREDICTION_FACTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -5996,7 +5991,7 @@ CONTAINS
     CALL ENTERS("SOLVER_EQUATIONS_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
+      IF(.NOT.SOLVER%SOLVER_FINISHED) THEN
         IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           CALL FLAG_ERROR("Can not start solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
         ELSE
@@ -6026,7 +6021,7 @@ CONTAINS
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -6415,7 +6410,6 @@ CONTAINS
     !Local Variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -6431,22 +6425,8 @@ CONTAINS
             ELSE
               !Finish of the solver mapping
               CALL SOLVER_MAPPING_CREATE_FINISH(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
-              !Now finish off with the solver specific actions
-              SELECT CASE(SOLVER%SOLVE_TYPE)
-              CASE(SOLVER_LINEAR_TYPE)
-                CALL SOLVER_LINEAR_CREATE_FINISH(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-              CASE(SOLVER_NONLINEAR_TYPE)
-                CALL SOLVER_NONLINEAR_CREATE_FINISH(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-              CASE(SOLVER_DYNAMIC_TYPE)
-                CALL SOLVER_DYNAMIC_CREATE_FINISH(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
-              CASE(SOLVER_DAE_TYPE)
-                CALL SOLVER_DAE_CREATE_FINISH(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
-              CASE(SOLVER_EIGENPROBLEM_TYPE)
-                CALL SOLVER_EIGENPROBLEM_CREATE_FINISH(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
-              CASE DEFAULT
-                LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
+              !Now finish off the solver
+              CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
             ENDIF
           ENDIF
         ELSE
@@ -9849,7 +9829,7 @@ CONTAINS
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DEPENDENT_VECTOR,DYNAMIC_TEMP_VECTOR,EQUATIONS_RHS_VECTOR,DISTRIBUTED_SOURCE_VECTOR, &
       & LINEAR_TEMP_VECTOR,PREDICTED_MEAN_ACCELERATION_VECTOR,PREDICTED_MEAN_DISPLACEMENT_VECTOR,PREDICTED_MEAN_VELOCITY_VECTOR, &
       & SOLVER_RHS_VECTOR, SOLVER_RESIDUAL_VECTOR,RESIDUAL_VECTOR,INCREMENTAL_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_DOMAIN_MAPPING,RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -9869,7 +9849,7 @@ CONTAINS
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE,RESIDUAL_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -10412,13 +10392,10 @@ CONTAINS
                                             !Get the dynamic contribution to the the RHS values
                                             rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
                                             rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                            rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS% & 
-                                              & GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+                                            rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
                                             !Apply boundary conditions
                                             SELECT CASE(rhs_boundary_condition)
-                                            CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL, &
-                                              & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-                                              & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                            CASE(BOUNDARY_CONDITION_DOF_FREE)
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
@@ -10462,20 +10439,10 @@ CONTAINS
                                                     variable_dof=DYNAMIC_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
                                                       & equations_row_number)
                                                     variable_global_dof=VARIABLE_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
-                                                    variable_boundary_condition=DEPENDENT_BOUNDARY_CONDITIONS% &
-                                                      & GLOBAL_BOUNDARY_CONDITIONS(variable_global_dof)
+                                                    variable_boundary_condition=DEPENDENT_BOUNDARY_CONDITIONS%DOF_TYPES( &
+                                                      & variable_global_dof)
 
-                                                    IF(variable_boundary_condition==BOUNDARY_CONDITION_FIXED.OR. & 
-                                                      & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_INLET.OR. &
-                                                      & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
-                                                      & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
-                                                      & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL.OR. & 
-                                                      & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-                                                      !chrm 22/06/2010: \ToDo Does 'BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED'
-                                                      !show up here as does 'BOUNDARY_CONDITION_MOVED_WALL', 
-                                                      !or does it not, since 'BOUNDARY_CONDITION_FIXED_INCREMENTED' does not
-                                                      !show up here either ???
-
+                                                    IF(variable_boundary_condition==BOUNDARY_CONDITION_DOF_FIXED) THEN
                                                       SELECT CASE(DYNAMIC_SOLVER%DEGREE)
                                                       CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
                                                         ALPHA_VALUE=(FIELD_VALUES_VECTOR(variable_dof)- &
@@ -10660,7 +10627,7 @@ CONTAINS
                                                 ENDIF
                                               ENDIF
 
-                                            CASE(BOUNDARY_CONDITION_FIXED)
+                                            CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                               !Set Neumann boundary conditions
                                               !Loop over the solver rows associated with this equations set row
                                               DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -10675,12 +10642,9 @@ CONTAINS
                                                 CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                   & ERR,ERROR,*999)
                                               ENDDO !solver_row_idx
-                                            CASE(BOUNDARY_CONDITION_MIXED)
+                                            CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                               !Set Robin or is it Cauchy??? boundary conditions
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                            CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
-                                              !Don't do anything - it's taken care of in the Darcy equation finite element calculate
-                                              !  in the form of a penalty term
                                             CASE DEFAULT
                                               LOCAL_ERROR="The RHS boundary condition of "// &
                                                 & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
@@ -11090,7 +11054,7 @@ CONTAINS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DEPENDENT_VECTOR,DISTRIBUTED_SOURCE_VECTOR,EQUATIONS_RHS_VECTOR, &
       & LINEAR_TEMP_VECTOR,RESIDUAL_VECTOR,SOLVER_RESIDUAL_VECTOR,SOLVER_RHS_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_DOMAIN_MAPPING,RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -11107,7 +11071,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,LAGRANGE_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LINEAR_VARIABLE,RESIDUAL_VARIABLE,RHS_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: INTERFACE_LAGRANGE
@@ -11546,10 +11510,10 @@ CONTAINS
                                         ENDIF
                                         rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
                                         rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                        rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+                                        rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
                                         !Apply boundary conditions
                                         SELECT CASE(rhs_boundary_condition)
-                                        CASE(BOUNDARY_CONDITION_FREE)
+                                        CASE(BOUNDARY_CONDITION_DOF_FREE)
                                           !Add in equations RHS values
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                             & RHS_VALUE,ERR,ERROR,*999)
@@ -11580,19 +11544,9 @@ CONTAINS
                                               variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
                                                 & equations_row_number,variable_idx)
                                               variable_global_dof=VARIABLE_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
-                                              variable_boundary_condition=DEPENDENT_BOUNDARY_CONDITIONS% &
-                                                & GLOBAL_BOUNDARY_CONDITIONS(variable_global_dof)
-                                              IF(variable_boundary_condition==BOUNDARY_CONDITION_FIXED.OR. & 
-                                                & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_INLET.OR. &
-                                                & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
-                                                & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
-                                                & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL.OR. & 
-                                                & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-                                                !chrm 22/06/2010: \ToDo Does 'BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED'
-                                                !show up here as does 'BOUNDARY_CONDITION_MOVED_WALL', 
-                                                !or does it not, since 'BOUNDARY_CONDITION_FIXED_INCREMENTED' does not
-                                                !show up here either ???
-
+                                              variable_boundary_condition=DEPENDENT_BOUNDARY_CONDITIONS%DOF_TYPES( &
+                                                & variable_global_dof)
+                                              IF(variable_boundary_condition==BOUNDARY_CONDITION_DOF_FIXED) THEN
                                                 DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_idx)%PTR(variable_dof)
                                                 IF(ABS(DEPENDENT_VALUE)>=ZERO_TOLERANCE) THEN
                                                   DO equations_matrix_idx=1,LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
@@ -11721,9 +11675,7 @@ CONTAINS
                                               ENDIF
                                             ENDDO !variable_idx
                                           ENDIF
-                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
-                                          & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-                                          & BOUNDARY_CONDITION_NEUMANN_FREE,BOUNDARY_CONDITION_FIXED_INCREMENTED)
+                                        CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
@@ -11740,14 +11692,9 @@ CONTAINS
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
                                           ENDIF
-                                        CASE(BOUNDARY_CONDITION_MIXED)
+                                        CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                           !Set Robin or is it Cauchy??? boundary conditions
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(BOUNDARY_CONDITION_PRESSURE,BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
-                                          !Don't do anything - it's taken care of in the finite elasticity residual calculation
-                                        CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
-                                          !Don't do anything - it's taken care of in the Darcy equation finite element calculate
-                                          !  in the form of a penalty term
                                         CASE DEFAULT
                                           LOCAL_ERROR="The RHS boundary condition of "// &
                                             & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
@@ -15241,19 +15188,15 @@ CONTAINS
     CALL ENTERS("SOLVER_SOLVER_EQUATIONS_GET",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN 
-        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-          CALL FLAG_ERROR("Solver equations is already associated.",ERR,ERROR,*998)
-        ELSE
-          SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-          IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+        CALL FLAG_ERROR("Solver equations is already associated.",ERR,ERROR,*998)
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
-      ENDIF
+        SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+        IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      END IF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
-    ENDIF
+    END IF
        
     CALL EXITS("SOLVER_SOLVER_EQUATIONS_GET")
     RETURN
@@ -15816,19 +15759,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: VARIABLE_TYPE,equations_set_idx,equations_row_number,residual_variable_dof,solver_matrix_idx, &
+    INTEGER(INTG) :: VARIABLE_TYPE,equations_set_idx,solver_matrix_idx, &
       & residual_variable_idx,variable_idx
-    REAL(DP) :: RESIDUAL_VALUE
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,RESIDUAL_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -15960,7 +15898,7 @@ CONTAINS
     REAL(DP) :: ALPHA_VALUE,DYNAMIC_ALPHA_FACTOR, DYNAMIC_U_FACTOR,PREDICTED_DISPLACEMENT
     INTEGER(INTG) :: variable_idx,VARIABLE_TYPE
     REAL(DP), POINTER :: SOLVER_DATA(:)
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR,PREDICTED_DISPLACEMENT_VECTOR
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
@@ -16379,9 +16317,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: solver_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
    
     CALL ENTERS("SOLVERS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -16393,14 +16329,6 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP)) THEN          
           !Finish the solver creation
           IF(ALLOCATED(SOLVERS%SOLVERS)) THEN
-            DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
-              SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
-              IF(ASSOCIATED(SOLVER)) THEN
-                CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDDO !solver_idx            
             SOLVERS%SOLVERS_FINISHED=.TRUE.
           ELSE
             CALL FLAG_ERROR("Solvers solvers is not allocated.",ERR,ERROR,*999)
@@ -16742,7 +16670,7 @@ CONTAINS
             DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
               rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
               rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%CONDITION_TYPES(rhs_global_dof)
               IF(rhs_boundary_condition==BOUNDARY_CONDITION_NEUMANN_POINT.OR.&
                 & rhs_boundary_condition==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
                 NUMBER_OF_NEUMANN_ROWS=NUMBER_OF_NEUMANN_ROWS+1

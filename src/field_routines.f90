@@ -511,7 +511,7 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_CONSTANT_DOF_TYPE,FIELD_ELEMENT_DOF_TYPE,FIELD_NODE_DOF_TYPE,FIELD_GRID_POINT_DOF_TYPE,FIELD_GAUSS_POINT_DOF_TYPE
 
-  PUBLIC FIELD_NUMBER_OF_VARIABLE_TYPES,FIELD_NUMBER_OF_VARIABLE_SUBTYPES, &
+  PUBLIC FIELD_NUMBER_OF_VARIABLE_TYPES,FIELD_NUMBER_OF_VARIABLE_SUBTYPES,FIELD_NUMBER_OF_SET_TYPES, &
     & FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DELUDELT_VARIABLE_TYPE, &
     & FIELD_DEL2UDELT2_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE,FIELD_DELVDELT_VARIABLE_TYPE, &
     & FIELD_DEL2VDELT2_VARIABLE_TYPE,&
@@ -608,7 +608,7 @@ MODULE FIELD_ROUTINES
   
   PUBLIC FIELD_PARAMETER_SET_CREATE
 
-  PUBLIC FIELD_PARAMETER_SET_CREATED
+  PUBLIC Field_ParameterSetEnsureCreated,FIELD_PARAMETER_SET_CREATED
 
   PUBLIC FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE
 
@@ -14852,7 +14852,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Creates a new parameter set of type set type for a field variable. \see OPENCMISS::CMISSFieldParameterSetCreate
+  !>Creates a new parameter set of type set type for a field variable. If the field parameter set has already been
+  !>created then an error will be raised. \see OPENCMISS::CMISSFieldParameterSetCreate
   SUBROUTINE FIELD_PARAMETER_SET_CREATE(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -15029,6 +15030,37 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_CREATED")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_CREATED
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Creates a new parameter set of type fieldSetType for a field variable if it does not already exist,
+  !>otherwise it will do nothing.
+  SUBROUTINE Field_ParameterSetEnsureCreated(field,variableType,fieldSetType,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to create the parameter set for
+    INTEGER(INTG),  INTENT(IN) :: variableType !<The variable type to create the parameter set for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    LOGICAL :: parameterSetCreated
+
+    CALL ENTERS("Field_ParameterSetEnsureCreated",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_CREATED(field,variableType,fieldSetType,parameterSetCreated,err,error,*999)
+    IF(.NOT.parameterSetCreated) THEN
+      CALL FIELD_PARAMETER_SET_CREATE(field,variableType,fieldSetType,err,error,*999)
+    END IF
+
+    CALL EXITS("Field_ParameterSetEnsureCreated")
+    RETURN
+999 CALL ERRORS("Field_ParameterSetEnsureCreated",err,error)
+    CALL EXITS("Field_ParameterSetEnsureCreated")
+    RETURN 1
+  END SUBROUTINE Field_ParameterSetEnsureCreated
 
   !
   !================================================================================================================================
