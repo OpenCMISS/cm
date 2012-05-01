@@ -494,24 +494,16 @@ CONTAINS
           NULLIFY(INTERFACE)
           INTERFACE=>GENERATED_MESH%INTERFACE
           IF(ASSOCIATED(INTERFACE)) THEN
-            PARENT_REGION=>INTERFACE%PARENT_REGION
-            IF(ASSOCIATED(PARENT_REGION)) THEN
-              COORDINATE_SYSTEM=>PARENT_REGION%COORDINATE_SYSTEM
-              IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
-                LOCAL_ERROR="The coordinate system is not associated for generated mesh number "// &
-                  & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
-                  & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
-                  & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="The parent region not associated for generated mesh number "// &
+            COORDINATE_SYSTEM=>INTERFACE%COORDINATE_SYSTEM
+            IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
+              LOCAL_ERROR="The coordinate system is not associated for generated mesh number "// &
                 & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
-                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
+                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
+                & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The region or interface is not associated for generated mesh number "// &
+            LOCAL_ERROR="The interface is not associated for generated mesh number "// &
               & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
