@@ -1320,7 +1320,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local variables
-    INTEGER(INTG) :: dofType
+    INTEGER(INTG) :: dofType, previousCondition, previousDof
 
     CALL ENTERS("BoundaryConditions_SetConditionType",err,error,*999)
 
@@ -1391,18 +1391,35 @@ CONTAINS
         & err,error,*999)
     END SELECT
 
-    !If we have a valid condition type then set it
-    boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=condition
-    boundaryConditionsVariable%DOF_TYPES(dofIndex)=dofType
-
-    !Increment count for condition type
-    boundaryConditionsVariable%DOF_COUNTS(condition)= &
-      & boundaryConditionsVariable%DOF_COUNTS(condition)+1
-    !If this is a Dirichlet condition, increment the Dirichlet counter
-    IF(dofType==BOUNDARY_CONDITION_DOF_FIXED) THEN
+    !We have a valid boundary condition type
+    !Update condition type counts
+    previousCondition=boundaryConditionsVariable%CONDITION_TYPES(dofIndex)
+    IF(previousCondition/=condition) THEN
+      ! DOF_COUNTS array doesn't include a count for BOUNDARY_CONDITION_FREE, which equals zero
+      IF(previousCondition/=BOUNDARY_CONDITION_FREE) THEN
+        boundaryConditionsVariable%DOF_COUNTS(previousCondition)= &
+          & boundaryConditionsVariable%DOF_COUNTS(previousCondition)-1
+      END IF
+      IF(condition/=BOUNDARY_CONDITION_FREE) THEN
+        boundaryConditionsVariable%DOF_COUNTS(condition)= &
+          & boundaryConditionsVariable%DOF_COUNTS(condition)+1
+      END IF
+    END IF
+    !Update Dirichlet DOF count
+    previousDof=boundaryConditionsVariable%DOF_TYPES(dofIndex)
+    IF(dofType==BOUNDARY_CONDITION_DOF_FIXED.AND.previousDof==BOUNDARY_CONDITION_DOF_FREE) THEN
       boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS= &
         & boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS+1
+    ELSE IF(dofType==BOUNDARY_CONDITION_DOF_FREE.AND.previousDof==BOUNDARY_CONDITION_DOF_FIXED) THEN
+      boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS= &
+        & boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS-1
+    ELSE IF(dofType==BOUNDARY_CONDITION_DOF_MIXED.OR.previousDof==BOUNDARY_CONDITION_DOF_MIXED) THEN
+      CALL FLAG_ERROR("Mixed condition DOFs are not implemented.",err,error,*999)
     END IF
+
+    !Set the boundary condition type and DOF type
+    boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=condition
+    boundaryConditionsVariable%DOF_TYPES(dofIndex)=dofType
 
     CALL EXITS("BoundaryConditions_SetConditionType")
     RETURN
