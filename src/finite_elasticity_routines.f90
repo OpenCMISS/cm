@@ -1371,7 +1371,7 @@ CONTAINS
           & ELEMENT_NUMBER,ERR,ERROR,*999)
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS,NDOFS,NDOFS,&
           & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(:), &
-          & '("",4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
+          & '(4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
       ENDIF
     ENDIF
     !-----------------------------------------------------------------------------------------------------------------------------------
