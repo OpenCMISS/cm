@@ -193,6 +193,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: ELEMENT_NUMBER
   INTEGER(INTG):: lagrange_simplex
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerMeshComponent
+  INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: DofsPerMeshComponent
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE::SimplexOutputHelp,HexOutputHelp
   INTEGER(INTG) FLD, DIMEN, OPENCMISS_INTERPOLATION(3),a,b
   INTEGER(INTG) NumberOfNodesPerElement(3), ArrayOfNodesDefined(3), NumberOfElementsDefined(3), TotalNumberOfNodes
@@ -313,6 +314,7 @@ CONTAINS
 
     IF (ALLOCATED(NodesPerElement)) DEALLOCATE(NodesPerElement)
     IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(NodesPerMeshComponent)
+    IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(DofsPerMeshComponent)
     IF (ALLOCATED(XI_COORDINATES)) DEALLOCATE(XI_COORDINATES)
     IF (ALLOCATED(COORDINATES)) DEALLOCATE(COORDINATES)
     IF (ALLOCATED(NodeXValue)) DEALLOCATE(NodeXValue)
@@ -445,14 +447,16 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(MAX(NumberOfMeshComponents,NumberOfElements)))
 
     IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
+
+    IF(.NOT.ALLOCATED(DofsPerMeshComponent)) ALLOCATE(DofsPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
       NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%number_of_dofs
     END DO
-
 
 !     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
@@ -572,10 +576,16 @@ CONTAINS
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
 !          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
 !          & %ptr%number_of_nodes_xi(2)-1.0)
+    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE)THEN
+        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
+    ELSE
         XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
           & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
+    ENDIF
         IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
           XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
@@ -2241,7 +2251,9 @@ CONTAINS
 
 ! NOW WRITE NODE INFORMATION
 
-    DO I = 1,NodesPerMeshComponent(1)
+    !DO I = 1,NodesPerMeshComponent(1)
+    DO I = 1,DofsPerMeshComponent(1)
+
       WRITE(14,*) ' Node: ',I
       WRITE(14,'("    ", es25.16 )')NodeXValue(I)
 
