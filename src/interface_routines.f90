@@ -81,6 +81,8 @@ MODULE INTERFACE_ROUTINES
   PUBLIC INTERFACE_MESH_ADD
 
   PUBLIC INTERFACE_CREATE_START, INTERFACE_CREATE_FINISH
+  
+  PUBLIC INTERFACE_COORDINATE_SYSTEM_SET,INTERFACE_COORDINATE_SYSTEM_GET
 
   PUBLIC INTERFACE_DESTROY, INTERFACE_MESH_CONNECTIVITY_DESTROY
 
@@ -329,6 +331,86 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Returns the coordinate system of an interface. \see OPENCMISS::CMISSInterface_CoordinateSystemGet
+  SUBROUTINE INTERFACE_COORDINATE_SYSTEM_GET(INTERFACE,COORDINATE_SYSTEM,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to get the coordinate system for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<On exit, the coordinate system for the specified interface. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("INTERFACE_COORDINATE_SYSTEM_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+          CALL FLAG_ERROR("Coordinate system is already associated.",ERR,ERROR,*999)
+        ELSE
+          COORDINATE_SYSTEM=>INTERFACE%COORDINATE_SYSTEM
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_GET")
+    RETURN
+999 CALL ERRORS("INTERFACE_COORDINATE_SYSTEM_GET",ERR,ERROR)
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_GET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_COORDINATE_SYSTEM_GET
+  
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the coordinate system of an interface.  \see OPENCMISS::CMISSInterface_CoordinateSystemSet
+  SUBROUTINE INTERFACE_COORDINATE_SYSTEM_SET(INTERFACE,COORDINATE_SYSTEM,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to set the coordinate system for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("INTERFACE_COORDINATE_SYSTEM_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        CALL FLAG_ERROR("Interface has been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+          IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+            INTERFACE%COORDINATE_SYSTEM=>COORDINATE_SYSTEM
+          ELSE
+            CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_SET")
+    RETURN
+999 CALL ERRORS("INTERFACE_COORDINATE_SYSTEM_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_SET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_COORDINATE_SYSTEM_SET
+  
+
+  !
+  !================================================================================================================================
+  !
 
   !>Destroys an interface. \see OPENCMISS::CMISSInterfaceDestroy
   SUBROUTINE INTERFACE_DESTROY(INTERFACE,ERR,ERROR,*) 
@@ -454,6 +536,7 @@ CONTAINS
       NULLIFY(INTERFACE%GENERATED_MESHES)
       NULLIFY(INTERFACE%FIELDS)
       NULLIFY(INTERFACE%INTERFACE_CONDITIONS)
+      NULLIFY(INTERFACE%COORDINATE_SYSTEM)
       CALL MESHES_INITIALISE(INTERFACE,ERR,ERROR,*999)
       CALL GENERATED_MESHES_INITIALISE(INTERFACE,ERR,ERROR,*999)
       CALL FIELDS_INITIALISE(INTERFACE,ERR,ERROR,*999)

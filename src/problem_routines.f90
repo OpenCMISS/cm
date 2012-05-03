@@ -138,8 +138,6 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_USER_NUMBER_FIND
   
-  PUBLIC PROBLEM_SOLVER_LOAD_INCREMENT_APPLY
-
 CONTAINS
 
   !
@@ -1871,8 +1869,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-!!TODO Should this be a public routine? Shouldn't the control loop apply the load increment???
-
   !> Apply the load increment for each equations_set associated with solver.
   SUBROUTINE PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER_EQUATIONS,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)
     
@@ -2752,46 +2748,50 @@ CONTAINS
     CALL ENTERS("PROBLEM_SOLVER_SOLVE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
 
-      IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solver: ",SOLVER%LABEL,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solver index = ",SOLVER%GLOBAL_NUMBER,ERR,ERROR,*999)
-      ENDIF
-      
-#ifdef TAUPROF
-      CALL TAU_STATIC_PHASE_START('Pre solve')
-#endif
-     CALL PROBLEM_SOLVER_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
-#ifdef TAUPROF
-      CALL TAU_STATIC_PHASE_STOP('Pre solve')
-      
-      CALL TAU_STATIC_PHASE_START('Solve')
-#endif
-      
-      IF(ASSOCIATED(SOLVER%SOLVER_EQUATIONS)) THEN
-        !A solver with solver equations.
-        CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-      ELSE
-        !Check for other equations.
-        IF(ASSOCIATED(SOLVER%CELLML_EQUATIONS)) THEN
-          !A solver with CellML equations.
-          CALL PROBLEM_CELLML_EQUATIONS_SOLVE(SOLVER%CELLML_EQUATIONS,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Solver does not have any equations associated.",ERR,ERROR,*999)
+        IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solver: ",SOLVER%LABEL,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solver index = ",SOLVER%GLOBAL_NUMBER,ERR,ERROR,*999)
         ENDIF
-      ENDIF
 
 #ifdef TAUPROF
-      CALL TAU_STATIC_PHASE_STOP('Solve')
-      
-      CALL TAU_STATIC_PHASE_START('Post solve')
+        CALL TAU_STATIC_PHASE_START('Pre solve')
 #endif
-      CALL PROBLEM_SOLVER_POST_SOLVE(SOLVER,ERR,ERROR,*999)
+       CALL PROBLEM_SOLVER_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
 #ifdef TAUPROF
-      CALL TAU_STATIC_PHASE_STOP('Post solve')
+        CALL TAU_STATIC_PHASE_STOP('Pre solve')
+
+        CALL TAU_STATIC_PHASE_START('Solve')
 #endif
-      
+
+        IF(ASSOCIATED(SOLVER%SOLVER_EQUATIONS)) THEN
+          !A solver with solver equations.
+          CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+        ELSE
+          !Check for other equations.
+          IF(ASSOCIATED(SOLVER%CELLML_EQUATIONS)) THEN
+            !A solver with CellML equations.
+            CALL PROBLEM_CELLML_EQUATIONS_SOLVE(SOLVER%CELLML_EQUATIONS,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Solver does not have any equations associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+
+#ifdef TAUPROF
+        CALL TAU_STATIC_PHASE_STOP('Solve')
+
+        CALL TAU_STATIC_PHASE_START('Post solve')
+#endif
+        CALL PROBLEM_SOLVER_POST_SOLVE(SOLVER,ERR,ERROR,*999)
+#ifdef TAUPROF
+        CALL TAU_STATIC_PHASE_STOP('Post solve')
+#endif
+
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF

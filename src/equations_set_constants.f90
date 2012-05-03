@@ -295,16 +295,6 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_GENERATE_ACTION=3 !<Generate setup action. \see EQUATIONS_SET_CONSTANTS_SetupActionTypes,EQUATIONS_SET_CONSTANTS
   !>@}
 
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_FixedConditions EQUATIONS_SET_CONSTANTS::FixedConditions
-  !> \brief Fixed conditons parameters
-  !> \see EQUATIONS_SET_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NOT_FIXED=0 !<The dof is not fixed. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FIXED_BOUNDARY_CONDITION=1 !<The dof is fixed as a boundary condition. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MIXED_BOUNDARY_CONDITION=2 !<The dof is set as a mixed boundary condition. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
-  !>@}
-  
-
   !> \addtogroup EQUATIONS_SET_CONSTANTS_SolutionMethods EQUATIONS_SET_CONSTANTS::SolutionMethods
   !> \brief The solution method parameters
   !> \see EQUATIONS_SET_CONSTANTS
