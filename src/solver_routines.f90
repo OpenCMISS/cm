@@ -1085,6 +1085,16 @@ CONTAINS
 
     CALL ENTERS("SOLVER_CELLML_EVALUATOR_SOLVE",ERR,ERROR,*999)
 
+    NULLIFY(MODELS_DATA)
+    NULLIFY(INTERMEDIATE_DATA)
+    NULLIFY(PARAMETERS_DATA)
+    NULLIFY(STATE_DATA)
+
+    NULLIFY(MODELS_VARIABLE)
+    NULLIFY(STATE_FIELD)
+    NULLIFY(PARAMETERS_FIELD)
+    NULLIFY(INTERMEDIATE_FIELD)
+
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN        
       SOLVER=>CELLML_EVALUATOR_SOLVER%SOLVER
       IF(ASSOCIATED(SOLVER)) THEN
@@ -1103,7 +1113,6 @@ CONTAINS
                   !Make sure CellML fields have been updated to the current value of any mapped fields
                   CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
 
-                  NULLIFY(MODELS_VARIABLE)
                   CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
                   CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                     & MODELS_DATA,ERR,ERROR,*999)
@@ -1114,12 +1123,7 @@ CONTAINS
                     IF(ASSOCIATED(STATE_FIELD)) THEN
                       CALL FIELD_PARAMETER_SET_DATA_GET(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & STATE_DATA,ERR,ERROR,*999)
-                    ELSE
-                      NULLIFY(STATE_DATA)
                     ENDIF
-                  ELSE
-                    NULLIFY(STATE_DATA)
-                    NULLIFY(STATE_FIELD)
                   ENDIF
                       
                   !Get the parameters information if this environment has any.
@@ -1128,12 +1132,7 @@ CONTAINS
                     IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
                       CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & PARAMETERS_DATA,ERR,ERROR,*999)
-                    ELSE
-                      NULLIFY(PARAMETERS_DATA)
                     ENDIF
-                  ELSE
-                    NULLIFY(PARAMETERS_DATA)
-                    NULLIFY(PARAMETERS_FIELD)
                   ENDIF
                       
                   !Get the intermediate information if this environment has any.
@@ -1142,12 +1141,7 @@ CONTAINS
                     IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
                       CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
-                    ELSE
-                      NULLIFY(INTERMEDIATE_DATA)
                     ENDIF
-                  ELSE
-                    NULLIFY(INTERMEDIATE_DATA)
-                    NULLIFY(INTERMEDIATE_FIELD)
                   ENDIF
 
                   !Solve these CellML equations
@@ -2025,6 +2019,12 @@ CONTAINS
     
     CALL ENTERS("SOLVER_DAE_EULER_FORWARD_SOLVE",ERR,ERROR,*999)
 
+    NULLIFY(MODELS_DATA)
+    NULLIFY(INTERMEDIATE_DATA)
+    NULLIFY(PARAMETERS_DATA)
+    NULLIFY(STATE_DATA)
+    NULLIFY(MODELS_VARIABLE)
+
     IF(ASSOCIATED(FORWARD_EULER_SOLVER)) THEN
       EULER_SOLVER=>FORWARD_EULER_SOLVER%EULER_DAE_SOLVER
       IF(ASSOCIATED(EULER_SOLVER)) THEN
@@ -2047,7 +2047,6 @@ CONTAINS
                       !Make sure CellML fields have been updated to the current value of any mapped fields
                       CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
 
-                      NULLIFY(MODELS_VARIABLE)
                       CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
                       CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & MODELS_DATA,ERR,ERROR,*999)
@@ -2058,11 +2057,7 @@ CONTAINS
                         IF(ASSOCIATED(STATE_FIELD)) THEN
                           CALL FIELD_PARAMETER_SET_DATA_GET(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & STATE_DATA,ERR,ERROR,*999)
-                        ELSE
-                          NULLIFY(STATE_DATA)
                         ENDIF
-                      ELSE
-                        NULLIFY(STATE_DATA)
                       ENDIF
                       
                       !Get the parameters information if this environment has any.
@@ -2071,11 +2066,7 @@ CONTAINS
                         IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
                           CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & PARAMETERS_DATA,ERR,ERROR,*999)
-                        ELSE
-                          NULLIFY(PARAMETERS_DATA)
                         ENDIF
-                      ELSE
-                        NULLIFY(PARAMETERS_DATA)
                       ENDIF
                       
                       !Get the intermediate information if this environment has any.
@@ -2084,11 +2075,7 @@ CONTAINS
                         IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
                           CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
-                        ELSE
-                          NULLIFY(INTERMEDIATE_DATA)
                         ENDIF
-                      ELSE
-                        NULLIFY(INTERMEDIATE_DATA)
                       ENDIF
 
                       !Integrate these CellML equations
@@ -3276,6 +3263,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_DAE_EXTERNAL_SOLVE",ERR,ERROR,*999)
+
+    NULLIFY(MODELS_DATA)
+    NULLIFY(INTERMEDIATE_DATA)
+    NULLIFY(PARAMETERS_DATA)
+    NULLIFY(STATE_DATA)
 
     IF(ASSOCIATED(EXTERNAL_SOLVER)) THEN
       DAE_SOLVER=>EXTERNAL_SOLVER%DAE_SOLVER
@@ -11821,6 +11813,7 @@ CONTAINS
                                   INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
                                   IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
                                     RHS_VARIABLE_TYPE=INTERFACE_RHS_MAPPING%RHS_VARIABLE_TYPE
+                                    NULLIFY(RHS_PARAMETERS)
                                     CALL FIELD_PARAMETER_SET_DATA_GET(LAGRANGE_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                       & RHS_PARAMETERS,ERR,ERROR,*999)
                                     INTERFACE_RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
