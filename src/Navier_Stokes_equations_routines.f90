@@ -7342,14 +7342,16 @@ CONTAINS
     INTEGER(INTG) :: faceIdx, faceNumber
     INTEGER(INTG) :: componentIdx,componentIdx2, gaussIdx
     INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx,nodeIdx
-    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx, xiIdx
+    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx,xiIdx,xiIdx2
     INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx, xiCoordinateComponentIdx
     INTEGER(INTG) :: dimIdx,derivIdx,versionIdx,local_ny,numberOfDimensions
     REAL(DP) :: gaussWeight, normalProjection, pressureGauss,mu,sumDelU,DEBUG
     REAL(DP) :: normalDifference,normalMagnitude,normalTolerance
+    REAL(DP) :: DPHIMS_DXI(3)
     REAL(DP) :: elementNormal(3),velocityGauss(3),faceNormal(3),unitNormal(3),delUGauss(3,3),dXi_dX(3,3)
     REAL(DP) :: faceVector1(3),faceVector2(3),X1(3),X2(3),lineLength,lineLength1,lineLength2,phiParameter
     LOGICAL :: elementIsMultidomainBoundary,invertedNormal
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP), POINTER :: geometricParameters(:)
 
@@ -7454,80 +7456,89 @@ CONTAINS
             !correspond to the other element.
             IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
 
-            ! Currently problems with normal calculation for simplex elements- this is a workaround
-            geometricFaceBasis=>geometricDecomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-            numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
-            X1=0.0_DP
-            X2=0.0_DP
-            lineLength=0.0_DP
-            lineLength1=0.0_DP
-            lineLength2=0.0_DP
-            faceVector1=0.0_DP
-            faceVector2=0.0_DP
-            !Loop over element nodes
-            DO faceNodeIdx=1,geometricFaceBasis%NUMBER_OF_NODES
-              nodeIdx=geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
-               & TOPOLOGY%FACES%FACES(faceNumber)%NODES_IN_FACE(faceNodeIdx)
-              domain=>geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR
-              IF(ASSOCIATED(domain)) THEN
-                IF(ASSOCIATED(domain%TOPOLOGY)) THEN
-                  domainNodes=>domain%TOPOLOGY%NODES
-                  !Loop over the derivatives
-                  DO derivIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
-                    !Loop over versions
-                    DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivIdx)%NUMBER_OF_VERSIONS
-                      !Loop over dimensions
-                      DO dimIdx=1,numberOfDimensions
-                        local_ny=fieldVariable%COMPONENTS(dimIdx)%PARAM_TO_DOF_MAP% &
-                          & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivIdx)%VERSIONS(versionIdx)
-                        IF(faceNodeIdx==1 .AND. derivIdx==1 .AND. versionIdx==1) THEN
-                          !First node that lengths will be calculated relative to:  
-                          X1(dimIdx)=geometricParameters(local_ny)
-                        ELSE
-                          X2(dimIdx)=geometricParameters(local_ny)
-                        ENDIF
-                      ENDDO !dim_idx
-                      IF(faceNodeIdx>1) THEN
-                        lineLength=L2NORM(X1-X2)
-                        IF(lineLength>lineLength1)THEN
-                          lineLength1=lineLength
-                          faceVector1=(X1-X2)
-                        ELSE IF(lineLength>lineLength2)THEN
-                          lineLength2=lineLength
-                          faceVector2=(X1-X2)
-                        ENDIF
-                      ENDIF 
-                    ENDDO !version_idx
-                  ENDDO !deriv_idx
+            SELECT CASE(dependentBasis%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              normalComponentIdx=ABS(face%XI_DIRECTION)
+            CASE(BASIS_SIMPLEX_TYPE)
+              ! Currently problems with normal calculation for simplex elements- this is a workaround
+              geometricFaceBasis=>geometricDecomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+              numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
+              X1=0.0_DP
+              X2=0.0_DP
+              lineLength=0.0_DP
+              lineLength1=0.0_DP
+              lineLength2=0.0_DP
+              faceVector1=0.0_DP
+              faceVector2=0.0_DP
+              !Loop over element nodes
+              DO faceNodeIdx=1,geometricFaceBasis%NUMBER_OF_NODES
+                nodeIdx=geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
+                 & TOPOLOGY%FACES%FACES(faceNumber)%NODES_IN_FACE(faceNodeIdx)
+                domain=>geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR
+                IF(ASSOCIATED(domain)) THEN
+                  IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                    domainNodes=>domain%TOPOLOGY%NODES
+                    !Loop over the derivatives
+                    DO derivIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                      !Loop over versions
+                      DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivIdx)%NUMBER_OF_VERSIONS
+                        !Loop over dimensions
+                        DO dimIdx=1,numberOfDimensions
+                          local_ny=fieldVariable%COMPONENTS(dimIdx)%PARAM_TO_DOF_MAP% &
+                            & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivIdx)%VERSIONS(versionIdx)
+                          IF(faceNodeIdx==1 .AND. derivIdx==1 .AND. versionIdx==1) THEN
+                            !First node that lengths will be calculated relative to:  
+                            X1(dimIdx)=geometricParameters(local_ny)
+                          ELSE
+                            X2(dimIdx)=geometricParameters(local_ny)
+                          ENDIF
+                        ENDDO !dim_idx
+                        IF(faceNodeIdx>1) THEN
+                          lineLength=L2NORM(X1-X2)
+                          IF(lineLength>lineLength1)THEN
+                            lineLength1=lineLength
+                            faceVector1=(X1-X2)
+                          ELSE IF(lineLength>lineLength2)THEN
+                            lineLength2=lineLength
+                            faceVector2=(X1-X2)
+                          ENDIF
+                        ENDIF 
+                      ENDDO !version_idx
+                    ENDDO !deriv_idx
+                  ELSE
+                    CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                  ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                 ENDIF
-              ELSE
-                CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
-              ENDIF
-            END DO  
+              END DO  
 
-            CALL CROSS_PRODUCT(faceVector1,faceVector2,faceNormal,err,error,*999)
-            IF(L2NORM(faceNormal)>0) THEN
-              unitNormal=faceNormal/L2NORM(faceNormal)          
-              !Check that this boundary face shares the same normal as the specified element normal 
-              normalDifference = L2NORM(unitNormal - elementNormal)
-            ELSE
-              CALL FLAG_ERROR("0 face normal on multidomain face boundary!",err,error,*999)
-            ENDIF
-            normalTolerance = 0.1_DP
-            invertedNormal=.FALSE.
-            !Directionality assignment of normals for simplex elements seems questionable
-            ! However, if a face has an inverted normal, we can check and correct for that here as it will
-            ! point in the exact opposite direction as the element (outward facing) normal
-            IF(normalDifference>normalTolerance) THEN
-              normalDifference = L2NORM(unitNormal + elementNormal)
-              IF(normalDifference>normalTolerance) THEN
-                CYCLE ! next face
+              CALL CROSS_PRODUCT(faceVector1,faceVector2,faceNormal,err,error,*999)
+              IF(L2NORM(faceNormal)>0) THEN
+                unitNormal=faceNormal/L2NORM(faceNormal)          
+                !Check that this boundary face shares the same normal as the specified element normal 
+                normalDifference = L2NORM(unitNormal - elementNormal)
               ELSE
-                invertedNormal=.TRUE.
+                CALL FLAG_ERROR("0 face normal on multidomain face boundary!",err,error,*999)
               ENDIF
-            ENDIF
+              normalTolerance = 0.1_DP
+              invertedNormal=.FALSE.
+              !Directionality assignment of normals for simplex elements seems questionable
+              ! However, if a face has an inverted normal, we can check and correct for that here as it will
+              ! point in the exact opposite direction as the element (outward facing) normal
+              IF(normalDifference>normalTolerance) THEN
+                normalDifference = L2NORM(unitNormal + elementNormal)
+                IF(normalDifference>normalTolerance) THEN
+                  CYCLE ! next face
+                ELSE
+                  invertedNormal=.TRUE.
+                ENDIF
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+                & " is not yet implemented for Navier-Stokes."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
 
             CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
               & dependentInterpolationParameters,err,error,*999)
@@ -7544,7 +7555,7 @@ CONTAINS
               CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
                 & geometricInterpolatedPoint,err,error,*999)
               pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-!              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
+              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
 !              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE,pointMetrics,err,error,*999)
 
               gaussWeight=faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)
@@ -7564,7 +7575,19 @@ CONTAINS
               elementBaseDofIdx=0
 
               DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                normalProjection=elementNormal(componentIdx)
+                SELECT CASE(dependentBasis%TYPE)
+                CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+                  normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
+                  IF(face%XI_DIRECTION<0) THEN
+                    normalProjection=-normalProjection
+                  END IF
+                CASE(BASIS_SIMPLEX_TYPE)
+!                  normalProjection=elementNormal(componentIdx)
+                CASE DEFAULT
+                  LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+                    & " is not yet implemented for Navier-Stokes."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
                 IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
                 !Work out the first index of the rhs vector for this element - 1
                 elementBaseDofIdx=dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
@@ -7574,21 +7597,18 @@ CONTAINS
                   DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
                     nodeDerivativeIdx=1
                     parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
-                    sumDelU=0.0_DP
-                    DO xiIdx=1,dependentBasis%NUMBER_OF_XI
-                      sumDelU=sumDelU+ & 
-                        & ((delUGauss(componentIdx,xiIdx)*dXi_dX(xiIdx,1))+ &
-                        & (delUGauss(componentIdx,xiIdx)*dXi_dX(xiIdx,2))+ &
-                        & (delUGauss(componentIdx,xiIdx)*dXi_dX(xiIdx,3)))
-                    ENDDO !xiIdx
                     faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
+                    ! sumDelU=0.0_DP
+                    ! DEBUG=0.0_DP
+                    ! DO xiIdx=1,dependentBasis%NUMBER_OF_XI
+                    !   sumDelU=sumDelU+ & 
+                    !     & ((delUGauss(componentIdx,xiIdx)*dXi_dX(xiIdx,1))+ &
+                    !     & (delUGauss(componentIdx,xiIdx)*dXi_dX(xiIdx,2))+ &
+                    !     & (delUGauss(componentIdx,xiIdx)*dXi_dX(xiIdx,3)))
+                    ! ENDDO !xiIdx
                     elementDofIdx=elementBaseDofIdx+parameterIdx
-                    DEBUG = (sumDelU*mu - pressureGauss)* &
-                      &  normalProjection*gaussWeight*pointMetrics%JACOBIAN* &
-                      &  faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)
-                    rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
-                     & (sumDelU*mu - pressureGauss)* &
-                      &  normalProjection*gaussWeight*pointMetrics%JACOBIAN* &
+                    rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) - &
+                      &  pressureGauss*normalProjection*gaussWeight*pointMetrics%JACOBIAN* &
                       &  faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)
                   END DO !nodeDerivativeIdx
                 END DO !faceNodeIdx
