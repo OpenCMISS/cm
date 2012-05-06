@@ -5182,6 +5182,7 @@ CONTAINS
                         OLD_INTERFACE_CONDITIONS(interface_condition_idx)%PTR=>SOLVER_MAPPING% &
                           & INTERFACE_CONDITIONS(interface_condition_idx)%PTR
                       ENDDO !interface_condition_idx
+                      DEALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITIONS)
                     ELSE IF(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS==0) THEN
                       !Do nothing
                     ELSE
