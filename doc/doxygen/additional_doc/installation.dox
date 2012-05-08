@@ -61,7 +61,7 @@ setenv OPENCMISSEXAMPLES_ROOT <path to your OpenCMISS folder>/examples
 
 2. Set any additional programmer script variables. 
 \anchor step4_2
-The opencmiss_programmers script in <OpenCMISSExtras>/utils/scripts will let you customise the setup by setting environment variables after the root sets and before executing the script. These variables are:
+The opencmiss_programmers script in $OPENCMISSEXTRAS_ROOT/utils/scripts will let you customise the setup by setting environment variables after the root sets and before executing the script. These variables are:
 - COMPILER : set the compiler to be used as the default. Options are gnu and intel.
 - USE_OPENCMISS_GFORTRAN : if set use the gfortran in the OpenCMISSextras repository. If not set use the system gfortran.
 - USE_OPENCMISS_CMAKE : if set use the cmake in the OpenCMISSextras repository. If not set use the system cmake.
@@ -98,8 +98,8 @@ If you use tc shell, you can execute:
 \code source ~/.tcshrc \endcode 
 
 \subsection step5 Step 5
-cd to the <OpenCMISSExtras>/utils dir
-\code cd <OpenCMISSExtras>/utils \endcode
+cd to the $OPENCMISSEXTRAS_ROOT/utils dir
+\code cd $OPENCMISSEXTRAS_ROOT/utils \endcode
 
 \subsection step6 Step 6
 Now you are ready to build OpenCMISSExtras via the make script.
@@ -133,7 +133,7 @@ For example, to build the optimised version of libraries using the Intel compile
 
 \subsection step7 Step 7
 cd to the OpenCMISS folder that is created in \ref step1 "Step 1".
-\code cd <OpenCMISS> \endcode
+\code cd $OPENCMISS_ROOT \endcode
 
 \subsection step8 Step 8
 To obtain the OpenCMISS source you need to clone the Git repository.
@@ -163,7 +163,7 @@ clone them directly from https://github.com/OpenCMISS/.
 Build the OpenCMISS celllml.
 
 1. cd to the cellml directory.
-\code cd <OpenCMISS>/cellml \endcode
+\code cd $OPENCMISS_ROOT/cellml \endcode
 
 2. Build the OpenCMISS cellml
 \code make \endcode
@@ -176,7 +176,7 @@ You may specify the following options to the build:
 Build OpenCMISS. 
 
 1. cd to the cm directory.
-\code cd <OpenCMISS>/cm \endcode
+\code cd $OPENCMISS_ROOT/cm \endcode
 
 2. Build the OpenCMISS.
 \code make \endcode
@@ -201,7 +201,7 @@ You may build OpenCMISS with python binding by
 Build an example.
 
 1. cd to an example directory, e.g the Laplace example
-\code cd <OpenCMISS>/examples/ClassicalField/Laplace/Laplace/Fortran \endcode
+\code cd $OPENCMISSEXAMPLES_ROOT/ClassicalField/Laplace/Laplace/Fortran \endcode
 
 2. Build the example
 \code make \endcode
@@ -219,14 +219,14 @@ You may specify the following options to the build:
 You may specify the arguments to execute the example, e.g.
 \code ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 1 \endcode
 
-3. Execute the example with mpi:
+4. Execute the example with mpi:
 To execute the example with mpi, you first need to start mpi.
 \code mpd & \endcode
 and then e.g. execute the examples running on two computational nodes:
 \code mpiexec -2 ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 2 \endcode
 
 5. Build and execute examples with python binding, e.g.
-\code cd <OpenCMISS>/examples/ClassicalField/Laplace/Laplace/Python \endcode
+\code cd $OPENCMISSEXAMPLES_ROOT/ClassicalField/Laplace/Laplace/Python \endcode
 and
 \code python ./LaplaceExample.py \endcode
 
