@@ -31,17 +31,21 @@ Please follow the steps for the complete installation of OpenCMISS on the linux 
 
 \subsection step1 Step 1
 Create OpenCMISSExtras directory and OpenCMISS directory
+\code 
+mkdir OpenCMISSExtras 
+mkdir OpenCMISS 
+\endcode
 
 \subsection step2 Step 2
 cd to the OpenCMISSExtras directory
-\code cd <OpenCMISSExtras> \endcode 
+\code cd OpenCMISSExtras \endcode 
 
 \subsection step3 Step 3
 In the OpenCMISSExtras directory, check out the utils repository: 
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/utils/trunk/ utils \endcode
 
 \subsection step4 Step 4
-Set up there login script to call the opencmiss_programer script.
+Set up your shell login script to call the opencmiss_programer script, which will set environment variables used when building OpenCMISS.
 
 1. Set the environment variables OPENCMISS_ROOT,
 OPENCMISSEXTRAS_ROOT and OPENCMISSEXAMPLES_ROOT to point to the directories that are created in \ref step1 "Step 1".
@@ -50,13 +54,11 @@ If you use the bash shell you can do this by adding the following lines to your 
 \code 
 export OPENCMISS_ROOT=<path to your OpenCMISS folder>
 export OPENCMISSEXTRAS_ROOT=<path to your OpenCMISSExtras folder>
-export OPENCMISSEXAMPLES_ROOT=<path to your OpenCMISS folder>/examples
 \endcode
-If you use a c to tc shell you can do this by adding the following lines to your "/.cshrc" or "~/.tcshrc" file:
+If you use C Shell or tcsh Shell you can do this by adding the following lines to your "~/.cshrc" or "~/.tcshrc" file:
 \code 
 setenv OPENCMISS_ROOT <path to your OpenCMISS folder> 
 setenv OPENCMISSEXTRAS_ROOT <path to your OpenCMISSExtras folder> 
-setenv OPENCMISSEXAMPLES_ROOT <path to your OpenCMISS folder>/examples
 \endcode 
 
 2. Set any additional programmer script variables. 
@@ -66,9 +68,11 @@ The opencmiss_programmers script in $OPENCMISSEXTRAS_ROOT/utils/scripts will let
 - USE_OPENCMISS_GFORTRAN : if set use the gfortran in the OpenCMISSextras repository. If not set use the system gfortran.
 - USE_OPENCMISS_CMAKE : if set use the cmake in the OpenCMISSextras repository. If not set use the system cmake.
 - USE_OPENCMISS_GIT : if set use the git in the OpenCMISSextras repository. If not set use the system git.
-- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4 and 4.5.
+- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4, 4.5 or 4.6.
 - OPENCMISSEXTRAS_RUN_CONFIG : select which configuration of the OpenCMISSextras binaries to use at runtime. Options are debug or optimised.
-- MPI : select what version of MPI to use. Options are mpich2, intel or openmpi.
+- MPI : select what version of MPI to use. Options are mpich2, intel, mvapich2 or openmpi.
+
+The following variables are not required if you are using Intel compiler version 12 or above: 
 - INTEL_COMPILER_VERSION : if using the pre 12.0 version of the intel compilers the compiler version to use e.g., 11.1
 - INTEL_COMPILER_BUILD : if using the pre 12.0 version of the intel compilers the build version to use e.g., 072
 - INTEL_TRACE_COLLECTOR_VERSION : the version of the intel trace collector to use e.g., 8.0.1.009
@@ -158,6 +162,16 @@ where <username> should be replaced with your GitHub username:
  git clone https://github.com/<username>/cellml.git cellml \endcode
 If you know you will not need to make changes to one or more of the repositories you can
 clone them directly from https://github.com/OpenCMISS/.
+
+You can also clone example repository to a location other than $OPENCMISS_ROOT/examples directory. 
+To do this, you need to specify the OPENCMISSEXAMPLES_ROOT variable in your login script:
+\code
+export OPENCMISSEXAMPLES_ROOT=<path to your examples folder>
+\endcode
+If you use C Shell or tcsh Shell you can do this by adding the following lines to your "~/.cshrc" or "~/.tcshrc" file:
+\code
+setenv OPENCMISSEXAMPLES_ROOT <path to your examples folder>
+\endcode 
 
 \subsection step9 Step 9
 Build the OpenCMISS celllml.
