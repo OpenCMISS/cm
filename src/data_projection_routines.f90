@@ -65,15 +65,26 @@ MODULE DATA_PROJECTION_ROUTINES
   PRIVATE
 
   !Module parameters
+
+  !> \addtogroup DATA_POINT_PROJECTION_ROUTINES_DataProjectionTypes DATA_POINT_PROJECTION_ROUTINES::DataProjectionTypes
+  !> \brief Datapoint projection definition type parameters
+  !> \see DATA_POINT_PROJECTION_ROUTINES,OPENCMISS_DataProjectionTypes
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE=1 !<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE=2 !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE=3 !<The element projection type for data projection, projects to all elements in mesh. \see DATA_PROJECTION_ROUTINES 
-  
+  !>@}
+
+  !> \addtogroup DATA_POINT_PROJECTION_ROUTINES_DataProjectionExitTags DATA_POINT_PROJECTION_ROUTINES::DataProjectionExitTags
+  !> \brief Datapoint projection exit tags
+  !> \see DATA_POINT_PROJECTION_ROUTINES,OPENCMISS_DataProjectionExitTags
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_CONVERGED=1 !<Data projection exited due to it being converged \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_BOUNDS=2 !<Data projection exited due to it hitting the bound and continue to travel out of the element. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_MAX_ITERATION=3 !<Data projection exited due to it attaining maximum number of iteration specified by user. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_NO_ELEMENT=4 !<Data projection exited due to no local element found, this happens when none of the candidate elements are within this computational node, and before MPI communication with other nodes. \see DATA_PROJECTION_ROUTINES     
-    
+  !>@}
+
   !Module types
 
   !Module variables
@@ -590,7 +601,7 @@ CONTAINS
             IF(DATA_POINTS_REGION_DIMENSIONS==MESH_REGION_DIMENSIONS) THEN !Dimension has to be equal
               ALLOCATE(DATA_PROJECTION,STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data projection.",ERR,ERROR,*999)
-              DATA_PROJECTION%GLOBAL_NUMBER=data_projection_idx
+              DATA_PROJECTION%GLOBAL_NUMBER=1!data_projection_idx
               DATA_PROJECTION%USER_NUMBER=DATA_PROJECTION_USER_NUMBER
               DATA_PROJECTION%LABEL=""
               CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER,data_projection_idx, &
@@ -635,7 +646,7 @@ CONTAINS
               DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
               DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP
               !Return the pointer
-              DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR=>DATA_PROJECTION
+              !DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR=>DATA_PROJECTION
               IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS>0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
