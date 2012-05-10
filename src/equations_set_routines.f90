@@ -1911,12 +1911,11 @@ CONTAINS
                                               RHS_VALUE=0.0_DP
                                               rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
                                               rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
-                                                & rhs_global_dof)
+                                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
+                                              !For free RHS DOFs, set the right hand side field values by multiplying the
+                                              !row by the dependent variable value
                                               SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
-                                                   & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-                                                   & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                              CASE(BOUNDARY_CONDITION_DOF_FREE)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
                                                 DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
@@ -1928,9 +1927,9 @@ CONTAINS
                                                   DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_dof)
                                                   RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
                                                 ENDDO !equations_column_idx
-                                              CASE(BOUNDARY_CONDITION_FIXED)
+                                              CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                                 !Do nothing
-                                              CASE(BOUNDARY_CONDITION_MIXED)
+                                              CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                                 !Robin or is it Cauchy??? boundary conditions
                                                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                               CASE DEFAULT
@@ -1961,12 +1960,9 @@ CONTAINS
                                               RHS_VALUE=0.0_DP
                                               rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
                                               rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
-                                                & rhs_global_dof)
+                                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
-                                                   & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-                                                   & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                              CASE(BOUNDARY_CONDITION_DOF_FREE)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
                                                 DO equations_column_idx=ROW_INDICES(equations_row_number), &
@@ -1977,9 +1973,9 @@ CONTAINS
                                                   DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_dof)
                                                   RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
                                                 ENDDO !equations_column_idx
-                                              CASE(BOUNDARY_CONDITION_FIXED)
+                                              CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                                 !Do nothing
-                                              CASE(BOUNDARY_CONDITION_MIXED)
+                                              CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                                 !Robin or is it Cauchy??? boundary conditions
                                                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                               CASE DEFAULT
@@ -2152,20 +2148,16 @@ CONTAINS
                               DO row_idx=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
                                 variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(row_idx)
                                 rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
-                                rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
-                                  & rhs_global_dof)
+                                rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
                                 SELECT CASE(rhs_boundary_condition)
-                                CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
-                                     & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-                                     & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                CASE(BOUNDARY_CONDITION_DOF_FREE)
                                   !Add residual to field value
                                   CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,row_idx,VALUE,ERR,ERROR,*999)
                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                     & variable_dof,VALUE,ERR,ERROR,*999)
-                                CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE, &
-                                    & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
+                                CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                   !Do nothing
-                                CASE(BOUNDARY_CONDITION_MIXED)
+                                CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                 CASE DEFAULT
                                   LOCAL_ERROR="The RHS variable boundary condition of "// &
@@ -6041,8 +6033,9 @@ CONTAINS
                 DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
                 IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
 
-                  ! Dirichlet boundary conditions (can be displacement or force, as RHS is a whole another field variable)
-                  IF(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
+                  ! Check if there are any incremented conditions applied for this boundary conditions variable
+                  IF(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_FIXED_INCREMENTED)>0.OR. &
+                      & BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED)>0) THEN
                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
                       DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
                       !Get the pointer to vector holding the full and current loads
@@ -6059,10 +6052,10 @@ CONTAINS
                       !Get full increment, calculate new load, then apply to dependent field
                       DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                         dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                        IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                            & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
-                            & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                            & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
+                        !Check whether we have an incremented boundary condition type
+                        SELECT CASE(BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES(dirichlet_dof_idx))
+                        CASE(BOUNDARY_CONDITION_FIXED_INCREMENTED, &
+                            & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED)
                           !Convert dof index to local index
                           IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%DOMAIN_NUMBER(1)== &
                             & MY_COMPUTATIONAL_NODE_NUMBER) THEN
@@ -6087,7 +6080,9 @@ CONTAINS
                               ENDIF !Full or intermediate load
                             ENDIF !non-ghost dof
                           ENDIF !current domain
-                        ENDIF !correct BC type
+                        CASE DEFAULT
+                          !Do nothing for non-incremented boundary conditions
+                        END SELECT
                       ENDDO !dirichlet_idx
   !---tob
                       !\ToDo: What happens if the call below is issued
@@ -6110,7 +6105,7 @@ CONTAINS
                   ENDIF
 
                   !There might also be pressure incremented conditions
-                  IF (BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS>0) THEN 
+                  IF (BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)>0) THEN
                     ! handle pressure incremented boundary conditions
                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) THEN
                       PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE% &
@@ -6127,7 +6122,8 @@ CONTAINS
                       !Calculate the new load, update the old load
                       IF(ITERATION_NUMBER==1) THEN
                         !On the first iteration, FIELD_PRESSURE_VALUES_SET_TYPE actually contains the full load
-                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                            & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                           !Global dof index
                           pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
                             & (pressure_incremented_idx)
@@ -6157,7 +6153,8 @@ CONTAINS
                         ENDDO !pressure_incremented_idx
                       ELSE
                         !Calculate the new load, keep the current load
-                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                            & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                           !This is global dof idx
                           pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
                             & (pressure_incremented_idx)
@@ -6195,7 +6192,7 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="Pressure incremented boundary condition for variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated even though"// &
-                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS, &
+                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED), &
                         & '*',ERR,ERROR))//" conditions of this type has been counted."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF

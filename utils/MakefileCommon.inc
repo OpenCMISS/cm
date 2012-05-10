@@ -309,7 +309,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   endif
   ifeq ($(CC),icc)
     # Turn on all warnings
-    C_FLGS += -Wall -m$(ABI)
+    C_FLGS += -Wall -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -407,7 +407,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # turn on preprocessing,
     # turn on warnings,
     # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all -m$(ABI)
+    F_FLGS += -cpp -warn all -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -563,17 +563,16 @@ endif
 TAO_INCLUDE_PATH =#
 TAO_LIBRARIES =#
 TAO_LIB_PATH =#
-# Disable temporarily until TAO compatible with PETSc 3.2
-#ifeq ($(OPERATING_SYSTEM),linux)# Linux
-#  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
-#  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-#else
-#  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-#    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-#  else# windows
-#    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-#  endif
-#endif
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  TAO_LIBRARIES = -ltao
+  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  else# windows
+    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
 
 #PETSc
 PETSC_INCLUDE_PATH =#
@@ -808,6 +807,23 @@ else
   endif
 endif
 
+#CUBPACK
+CUBPACK_INCLUDE_PATH =#
+CUBPACK_LIBRARIES = -lcubpack
+CUBPAK_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  CUBPACK_INCLUDE_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/include/ )
+  CUBPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    CUBPACK_INCLUDE_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/include/ )
+    CUBPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  else# windows
+    CUBPACK_INCLUDE_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/include/ )
+    CUBPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  endif
+endif
+
 #TAU/PAPI
 TAU_LIBRARIES =#
 TAU_LIB_PATH =#
@@ -986,8 +1002,8 @@ ifeq ($(USEFIELDML),true)
   CPPFLAGS += -DUSEFIELDML
 endif
 
-EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(SUPERLU_DIST_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(SUPERLU_DIST_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(PASTIX_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
-EXTERNAL_INCLUDE_PATH += $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPACK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
+EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(SUPERLU_DIST_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(CUBPACK_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(SUPERLU_DIST_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(PASTIX_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(CUBPACK_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_INCLUDE_PATH += $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPACK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(CUBPACK_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
 
 # vim:filetype=make
