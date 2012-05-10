@@ -734,7 +734,7 @@ CONTAINS
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
               CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-                   !Set start action
+                    !Set start action
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
                       IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                         !Create the auto created independent field
@@ -838,6 +838,129 @@ CONTAINS
                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
 
+                      ENDIF    
+                    !Specify finish action
+                    CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+                      IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                        CALL FIELD_CREATE_FINISH(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_MESH_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
+                      ENDIF
+                    CASE DEFAULT
+                      LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                      & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for a standard Navier-Stokes fluid"
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+              CASE(EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+                    !Set start action
+                    CASE(EQUATIONS_SET_SETUP_START_ACTION)
+                      IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                        !Create the auto created independent field
+                        !start field creation with name 'INDEPENDENT_FIELD'
+                        CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
+                          & EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                        !start creation of a new field
+                        CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                        !label the field
+                        CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,"Independent Field",ERR,ERROR, & 
+                          & *999)
+                        !define new created field to be independent
+                        CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                        !look for decomposition rule already defined
+                        CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, &
+                          & ERR,ERROR,*999)
+                        !apply decomposition rule found on new created field
+                        CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                        !point new field to geometric field
+                        CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET% & 
+                          & GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                        !set number of variables to 1 (1 for U)
+                        INDEPENDENT_FIELD_NUMBER_OF_VARIABLES=1
+                        CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                        & INDEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                          & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_DP_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                        !calculate number of components with one component for each dimension
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
+                        CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                          & FIELD_U_VARIABLE_TYPE,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        !Default to the geometric interpolation setup
+                        DO I=1,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                            & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        END DO
+                        SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                          !Specify fem solution method
+                          CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                            DO I=1,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+                              CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                              & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                            END DO
+                            CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
+                              & ERR,ERROR,*999)
+                            CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
+                              & ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
+                            DO I=1,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+                              CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                              & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                            END DO
+                            CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
+                              & ERR,ERROR,*999)
+                            CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
+                              & ERR,ERROR,*999)
+                          CASE DEFAULT
+                            LOCAL_ERROR="The solution method of " &
+                              & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT 
+                      ELSE
+                        !Check the user specified field
+                        CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                          & ERR,ERROR,*999)
+                        CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                        !calculate number of components with one component for each dimension and one for pressure
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
+                        CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                        SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                          CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                            CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                              & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                            CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                              & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
+                            CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                              & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                            CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                              & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                          CASE DEFAULT
+                            LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
+                              &"*",ERR,ERROR))//" is invalid."
+                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
                       ENDIF    
                     !Specify finish action
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -2698,10 +2821,10 @@ CONTAINS
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
                     IF(mh==1) THEN
-                      SUM=((1.3333*2.0*Q_VALUE(1)*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
-                        & (-((Q_VALUE(1)/A_VALUE)**2.0)*1.3333*A_DERIV*DXI_DX(1,1))+ &
-                        & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*((A0_PARAM(ELEMENT_NUMBER))**1.5))))* &
-                        & A_VALUE*A_DERIV*DXI_DX(1,1))+((8.0*3.1416*MU_PARAM/RHO_PARAM)*Q_VALUE(1)/A_VALUE))*PHIMS
+                      SUM=((2.0*Q_VALUE(1)*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
+                        & (-((Q_VALUE(1)/A_VALUE)**2.0)*A_DERIV*DXI_DX(1,1))+ &
+                        & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*((A0_PARAM(ELEMENT_NUMBER))**1.5))))* &
+                        & A_VALUE*A_DERIV*DXI_DX(1,1))+((8.0*3.14*MU_PARAM/RHO_PARAM)*Q_VALUE(1)/A_VALUE))*PHIMS
                       NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
                     ENDIF
 
@@ -2712,7 +2835,7 @@ CONTAINS
           ENDDO !ng
 
           !!!-- R H S  V E C T O R --!!!
-          IF(UPDATE_RHS_VECTOR) THEN
+          IF(UPDATE_NONLINEAR_RESIDUAL) THEN
 
             NULLIFY(BIF_VALUES)
             CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
@@ -2748,6 +2871,8 @@ CONTAINS
             
             !FLOW IN END OF VESSEL
             en=ELEMENT_NUMBER
+            A_0(1)=1.0
+            A_END(1)=1.0
             A_L(en)=A_END(en)
             U_L(en)=Q_END(en)/A_END(en)
             Q_L(en)=A_L(en)*U_L(en)
@@ -2766,13 +2891,13 @@ CONTAINS
 
 
             !RIEMANN - END OF VESSEL
-            W(en-1)=(U_L(en)+4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/(3.0*A0_PARAM(en)*RHO_PARAM))**0.5)*(A_L(en)**0.25))
+            W(en-1)=(U_L(en)+4.0*(((2.0*1.77*H0_PARAM*E_PARAM)/(3.0*A0_PARAM(en)*RHO_PARAM))**0.5)*(A_L(en)**0.25))
 
             !RIEMANN - TERMINAL VESSEL
-            W(en+1)=(U_R(en)-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/(3.0*A0_PARAM(en)*RHO_PARAM))**0.5)*(A_R(en)**0.25))
+            W(en+1)=(U_R(en)-4.0*(((2.0*1.77*H0_PARAM*E_PARAM)/(3.0*A0_PARAM(en)*RHO_PARAM))**0.5)*(A_R(en)**0.25))
 
             !BOUNDARY CONDITIONS - FLUX UPWINDING - PARAMETERS
-            A_TER(en)=(1/16.0)*(((W(en-1)-W(en+1))/4.0)**4.0)*(((3.0*A0_PARAM(2)*RHO_PARAM)/(2.0*1.7725*H0_PARAM*E_PARAM))**2.0)
+            A_TER(en)=(1/16.0)*(((W(en-1)-W(en+1))/4.0)**4.0)*(((3.0*A0_PARAM(2)*RHO_PARAM)/(2.0*1.77*H0_PARAM*E_PARAM))**2.0)
             Q_TER(en)=A_TER(en)*(W(en-1)+W(en+1))/2.0
 
             mhs=0
@@ -2787,76 +2912,76 @@ CONTAINS
                 
 !1st ELEMENT - FLUX UPWINDING  
                   IF(mh==1 .AND. ms==3) THEN
-                    SUM=(((1.3333*(Q_BIF(en)**2.0)/A_BIF(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))) &
-                       & -((1.3333*(Q_PRE(en)**2.0)/A_PRE(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))))
-                    RH_VECTOR(mhs)=0.1*SUM
+                    SUM=((((Q_PRE(en)**2.0)/A_PRE(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))) &
+                       & -(((Q_BIF(en)**2.0)/A_BIF(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))))
+                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
  
                   IF(mh==2 .AND. ms==3) THEN
-                    SUM=(Q_BIF(en)-Q_PRE(en))
-                    RH_VECTOR(mhs)=0.1*SUM
+                    SUM=(Q_PRE(en)-Q_BIF(en))
+                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
 
                 ELSEIF(ELEMENT_NUMBER==2) THEN
 
 !2nd ELEMENT - FLUX UPWINDING
                   IF(mh==1 .AND. ms==1) THEN
-                    SUM=(((1.3333*(Q_BIF(en)**2.0)/A_BIF(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))) &
-                       & -((1.3333*(Q_PRE(en)**2.0)/A_PRE(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))))
-                    RH_VECTOR(mhs)=0.1*SUM
+                    SUM=(((1.33*(Q_BIF(en)**2.0)/A_BIF(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))) &
+                       & -((1.33*(Q_PRE(en)**2.0)/A_PRE(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))))
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
  
                   IF(mh==2 .AND. ms==1) THEN
                     SUM=(Q_BIF(en)-Q_PRE(en))
-                    RH_VECTOR(mhs)=0.1*SUM
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
 
 !2nd ELEMENT - TERMINAL BOUNDARY CONDITION
                   IF(mh==1 .AND. ms==3) THEN
-                    SUM=(((1.3333*(Q_END(en)**2.0)/A_END(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_END(en)**2.0))) &
-                       & -((1.3333*(Q_TER(en)**2.0)/A_TER(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_TER(en)**2.0))))
-!                    RH_VECTOR(mhs)=SUM
+                    SUM=(((1.33*(Q_END(en)**2.0)/A_END(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_END(en)**2.0))) &
+                       & -((1.33*(Q_TER(en)**2.0)/A_TER(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_TER(en)**2.0))))
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
  
                   IF(mh==2 .AND. ms==3) THEN
                     SUM=(Q_END(en)-Q_TER(en))
-!                    RH_VECTOR(mhs)=SUM
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
 
                 ELSEIF(ELEMENT_NUMBER==3) THEN
 
 !3rd ELEMENT - FLUX UPWINDING
                   IF(mh==1 .AND. ms==1) THEN
-                    SUM=(((1.3333*(Q_BIF(en)**2.0)/A_BIF(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))) &
-                       & -((1.3333*(Q_PRE(en)**2.0)/A_PRE(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))))
-                    RH_VECTOR(mhs)=0.1*SUM
+                    SUM=(((1.33*(Q_BIF(en)**2.0)/A_BIF(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))) &
+                       & -((1.33*(Q_PRE(en)**2.0)/A_PRE(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))))
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
  
                   IF(mh==2 .AND. ms==1) THEN
                     SUM=(Q_BIF(en)-Q_PRE(en))
-                    RH_VECTOR(mhs)=0.1*SUM
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
 
 !3rd ELEMENT - TERMINAL BOUNDARY CONDITION                 
                   IF(mh==1 .AND. ms==3) THEN
-                    SUM=(((1.3333*(Q_END(en)**2.0)/A_END(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_END(en)**2.0))) &
-                       & -((1.3333*(Q_TER(en)**2.0)/A_TER(en))+ & 
-                       & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_TER(en)**2.0))))
-!                    RH_VECTOR(mhs)=SUM
+                    SUM=(((1.33*(Q_END(en)**2.0)/A_END(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_END(en)**2.0))) &
+                       & -((1.33*(Q_TER(en)**2.0)/A_TER(en))+ & 
+                       & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_TER(en)**2.0))))
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
  
                   IF(mh==2 .AND. ms==3) THEN
                     SUM=(Q_END(en)-Q_TER(en))
-!                    RH_VECTOR(mhs)=SUM
+!                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
                   ENDIF
 
                 ENDIF
@@ -2907,7 +3032,7 @@ CONTAINS
             !Assemble RHS vector
             IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
               IF(UPDATE_RHS_VECTOR) THEN
-                RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs_max)=RH_VECTOR(1:mhs_max)
+!                RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs_max)=RH_VECTOR(1:mhs_max)
               ENDIF
             ENDIF
             !Assemble non-linear vector
@@ -2994,43 +3119,12 @@ CONTAINS
             & ERR,ERROR,*999)
 
           !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!!
-          XI(1)=0.8
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,1,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(1,NO_PART_DERIV)
-          A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(2,NO_PART_DERIV)
-
-          XI(1)=0.2
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,2,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(1,NO_PART_DERIV)
-          A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(2,NO_PART_DERIV)
-
-          XI(1)=0.2
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,3,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          Q_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(1,NO_PART_DERIV)
-          A_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(2,NO_PART_DERIV)
-
-          !!!-- R I E M A N N   I N V A R I A N T S --!!!
-          W(1)=((Q_EX(1)/A_EX(1))+4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-              & (3.0*A0_PARAM(1)*RHO_PARAM))**0.5)*(A_EX(1)**0.25))
-          W(2)=((Q_EX(2)/A_EX(2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-              & (3.0*A0_PARAM(2)*RHO_PARAM))**0.5)*(A_EX(2)**0.25))
-          W(3)=((Q_EX(3)/A_EX(3))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-              & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(A_EX(3)**0.25))
+          W(1)=EQUATIONS%equations_set%independent%independent_field%variables(1)%parameter_sets%parameter_sets(1)% &
+              & ptr%parameters%cmiss%data_dp(1)
+          W(2)=EQUATIONS%equations_set%independent%independent_field%variables(1)%parameter_sets%parameter_sets(1)% &
+              & ptr%parameters%cmiss%data_dp(2)
+          W(3)=EQUATIONS%equations_set%independent%independent_field%variables(1)%parameter_sets%parameter_sets(1)% &
+              & ptr%parameters%cmiss%data_dp(3)
 
           !!!-- N O N L I N E A R   V E C T O R --!!!
           IF(UPDATE_NONLINEAR_RESIDUAL) THEN
@@ -3041,13 +3135,13 @@ CONTAINS
             NL_VECTOR(3)=(Q_BIF(3)/A_BIF(3))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ & 
                         & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(A_BIF(3)**0.25)- W(3)
             NL_VECTOR(5)=-(((A_BIF(1)-(((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(2)**1.5))/ &
-                        & ((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))*A_BIF(2)))) &
-                        & +(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                        & *((Q_BIF(1)**2.0)-(Q_BIF(2)**2.0))
+                        & ((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))*A_BIF(2))))! &
+!                        & +(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
+!                        & *((Q_BIF(1)**2.0)-(Q_BIF(2)**2.0))
             NL_VECTOR(6)=-(((A_BIF(1)-(((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(3)**1.5))/ &
-                        & ((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))*A_BIF(3)))) &
-                        & +(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                        & *((Q_BIF(1)**2.0)-(Q_BIF(3)**2.0))
+                        & ((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))*A_BIF(3))))! &
+!                        & +(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
+!                        & *((Q_BIF(1)**2.0)-(Q_BIF(3)**2.0))
           ENDIF
 
           !!!-- S T I F F N E S S  M A T R I X  --!!!
@@ -3409,22 +3503,22 @@ CONTAINS
 
                           !J1 ONLY
                           IF(mh==1 .AND. nh==1) THEN
-                            SUM=((1.3333*2.0*PHINS*U_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
-                              & (1.3333*2.0*Q_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE)+ &
-                              & (1.3333*(-2.0)*Q_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2.0))+ &
-                              & ((8.0*3.1416*MU_PARAM/RHO_PARAM)*PHINS/A_VALUE))*PHIMS
+                            SUM=((2.0*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
+                              & (2.0*Q_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE)+ &
+                              & ((-2.0)*Q_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2.0))+ &
+                              & ((8.0*3.14*MU_PARAM/RHO_PARAM)*PHINS/A_VALUE))*PHIMS
                             J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
 
                           !J2 ONLY
                           IF(mh==1 .AND. nh==2) THEN
-                            SUM=((1.3333*(-2.0)*Q_VALUE(1)*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2))+ &
-                              & (1.3333*2.0*PHINS*(Q_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3))+ &
-                              & (-1.3333*((Q_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1))+ &
-                              & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(ELEMENT_NUMBER)**1.5)))* &
-                              & PHINS*A_DERIV*DXI_DX(1,1))+(((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)* & 
+                            SUM=(((-2.0)*Q_VALUE(1)*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2))+ &
+                              & (2.0*PHINS*(Q_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3))+ &
+                              & (-((Q_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1))+ &
+                              & (((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(ELEMENT_NUMBER)**1.5)))* &
+                              & PHINS*A_DERIV*DXI_DX(1,1))+(((1.77*E_PARAM*H0_PARAM/((RHO_PARAM)* & 
                               & A0_PARAM(ELEMENT_NUMBER)**1.5)))*A_VALUE*DPHINS_DXI(1)*DXI_DX(1,1))+ &
-                              & (((-8.0*3.1416*MU_PARAM/RHO_PARAM)*PHINS*Q_VALUE(1)/(A_VALUE**2))))*PHIMS
+                              & (((-8.0*3.14*MU_PARAM/RHO_PARAM)*PHINS*Q_VALUE(1)/(A_VALUE**2))))*PHIMS
                             J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
 
@@ -3519,14 +3613,14 @@ CONTAINS
               J_MATRIX(3,3)=1.0/A_BIF(3)
               J_MATRIX(3,6)=(-Q_BIF(3)/(A_BIF(3)**2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
                            & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(0.25*(A_BIF(3)**(-0.75)))
-              J_MATRIX(5,1)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(2.0*Q_BIF(1))
-              J_MATRIX(5,2)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(-2.0*Q_BIF(2))
-              J_MATRIX(6,1)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(2.0*Q_BIF(1))
-              J_MATRIX(6,3)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(-2.0*Q_BIF(3))
+!              J_MATRIX(5,1)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
+!                           & *(2.0*Q_BIF(1))
+!              J_MATRIX(5,2)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
+!                           & *(-2.0*Q_BIF(2))
+!              J_MATRIX(6,1)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
+!                           & *(2.0*Q_BIF(1))
+!              J_MATRIX(6,3)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
+!                           & *(-2.0*Q_BIF(3))
             ENDIF
 
             IF(UPDATE_JACOBIAN_MATRIX) THEN
@@ -4003,7 +4097,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
@@ -4018,7 +4112,7 @@ CONTAINS
     REAL(DP), POINTER :: BIF_VALUES(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
     REAL(DP) :: T_COORDINATES(20,3)
-    REAL(DP) :: X(3),MU_PARAM,RHO_PARAM,VELOCITY,PRESSURE,FLOW(3),AREA(3)
+    REAL(DP) :: X(3),MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(3),VELOCITY,PRESSURE,FLOW(3),AREA(3),W(3),Q_EX(3),A_EX(3),XI(1)
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
@@ -4362,6 +4456,82 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+              ELSE
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                    IF(ASSOCIATED(EQUATIONS)) THEN
+                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                      INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                      MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+
+                      CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & BIF_VALUES,ERR,ERROR,*999)
+                      MU_PARAM=BIF_VALUES(1)
+                      RHO_PARAM=BIF_VALUES(2)
+                      E_PARAM=BIF_VALUES(3)
+                      H0_PARAM=BIF_VALUES(12)
+                      A0_PARAM(1)=BIF_VALUES(21)
+                      A0_PARAM(2)=BIF_VALUES(30)
+                      A0_PARAM(3)=BIF_VALUES(39)
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & BIF_VALUES,ERR,ERROR,*999)
+
+                      !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!!
+                      XI(1)=0.8
+                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,1,EQUATIONS%INTERPOLATION% &
+                        & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                        & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                             & PTR%VALUES(1,NO_PART_DERIV)
+                      A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                             & PTR%VALUES(2,NO_PART_DERIV)
+
+                      XI(1)=0.2
+                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,2,EQUATIONS%INTERPOLATION% &
+                        & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                        & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                             & PTR%VALUES(1,NO_PART_DERIV)
+                      A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                             & PTR%VALUES(2,NO_PART_DERIV)
+
+                      XI(1)=0.2
+                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,3,EQUATIONS%INTERPOLATION% &
+                        & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                        & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      Q_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                             & PTR%VALUES(1,NO_PART_DERIV)
+                      A_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                             & PTR%VALUES(2,NO_PART_DERIV)
+
+                      !!!-- R I E M A N N   I N V A R I A N T S --!!!
+                      W(1)=((Q_EX(1)/A_EX(1))+4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
+                          & (3.0*A0_PARAM(1)*RHO_PARAM))**0.5)*(A_EX(1)**0.25))
+                      W(2)=((Q_EX(2)/A_EX(2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
+                          & (3.0*A0_PARAM(2)*RHO_PARAM))**0.5)*(A_EX(2)**0.25))
+                      W(3)=((Q_EX(3)/A_EX(3))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
+                          & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(A_EX(3)**0.25))
+
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,W(1),ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,2,W(2),ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,3,W(3),ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF
               ENDIF
             CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
               !Pre solve for the linear solver
