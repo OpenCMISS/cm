@@ -312,6 +312,8 @@ CONTAINS
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
+    NULLIFY(EQUATIONS_SET_FIELD_DATA)
+
     IF (ALLOCATED(NodesPerElement)) DEALLOCATE(NodesPerElement)
     IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(NodesPerMeshComponent)
     IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(DofsPerMeshComponent)
@@ -989,6 +991,8 @@ CONTAINS
     IF (ALLOCATED(NodeVValue_error)) DEALLOCATE(NodeVValue_error)
     IF (ALLOCATED(NodeWValue_error)) DEALLOCATE(NodeWValue_error)
     IF (ALLOCATED(NodePValue_error)) DEALLOCATE(NodePValue_error)
+
+    NULLIFY(EQUATIONS_SET_FIELD_DATA)
 
     KNOT = '0'
     NMs(1) = '1'
