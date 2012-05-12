@@ -3033,7 +3033,7 @@ CONTAINS
             IF(.NOT.ASSOCIATED(faces)) THEN
               CALL FLAG_ERROR("Mesh topology faces is not associated.",err,error,*999)
             END IF
-            DO faceIdx=1,faces%NUMBER_OF_FACES
+            facesLoop: DO faceIdx=1,faces%NUMBER_OF_FACES
               face=>faces%faces(faceIdx)
               IF(.NOT.face%BOUNDARY_FACE) CYCLE
 
@@ -3083,6 +3083,12 @@ CONTAINS
                       neumannConditions%localDofs( &
                         & neumannConditionNumber(faceNumberOfNeumann))=localDof
                     END IF
+                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
+                    ! If there is an integrated Neumann value on a DOF in this face,
+                    ! then we don't integrate any other point values over this face.
+                    ! If this isn't sufficient then we might need to provide some other
+                    ! way to specify that a face shouldn't be integrated over
+                    CYCLE facesLoop
                   END IF
                 END DO
               END DO
@@ -3157,7 +3163,7 @@ CONTAINS
                   END DO !face Neumann points
                 END DO !derivIdx
               END DO faceBasisNodesLoop
-            END DO !faceIdx
+            END DO facesLoop
           CASE(2)
             ! 2D, so integrating lines
             ! Loop over all lines in the decomposition, ignoring those not on the boundary
@@ -3168,7 +3174,7 @@ CONTAINS
             IF(.NOT.ASSOCIATED(lines)) THEN
               CALL FLAG_ERROR("Mesh topology lines is not associated.",err,error,*999)
             END IF
-            DO lineIdx=1,lines%NUMBER_OF_LINES
+            linesLoop: DO lineIdx=1,lines%NUMBER_OF_LINES
               line=>lines%lines(lineIdx)
               IF(.NOT.line%BOUNDARY_LINE) CYCLE
 
@@ -3218,6 +3224,10 @@ CONTAINS
                       neumannConditions%localDofs( &
                         & neumannConditionNumber(lineNumberOfNeumann))=localDof
                     END IF
+                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
+                    ! If there is an integrated Neumann value on a DOF in this line,
+                    ! then we don't integrate any other point values over this line.
+                    CYCLE linesLoop
                   END IF
                 END DO
               END DO
@@ -3292,7 +3302,7 @@ CONTAINS
                   END DO !line Neumann points
                 END DO !derivIdx
               END DO lineBasisNodesLoop
-            END DO !lineIdx
+            END DO linesLoop
           CASE DEFAULT
             CALL FLAG_ERROR("The dimension is invalid for point Neumann conditions",err,error,*999)
           END SELECT !number of dimensions
