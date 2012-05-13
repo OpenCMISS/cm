@@ -1647,7 +1647,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: CONDITION_TYPES(:) !<CONDITION_TYPES(dof_idx). The specific boundary condition type (eg. incremented pressure) of the dof_idx'th dof of the dependent field variable, which might be specific to an equation set. The solver routines should not need to use this array, and should only need the DOF_TYPES array. \see OPENCMISS_BoundaryConditionsDOFTypes,OPENCMISS
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
-    TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
     TYPE(BoundaryConditionsNeumannType), POINTER :: neumannBoundaryConditions
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: DOF_COUNTS(:) !<DOF_COUNTS(CONDITION_TYPE): The number of DOFs that have a CONDITION_TYPE boundary condition set
@@ -1685,33 +1684,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: SPARSE_ROW_INDICES(:) !<SPARSE_ROW_INDICES(SPARSE_COLUMN_INDICES(column_idx)). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
     INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
-
-  !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
-    INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
-    INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
-    REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
-    INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: FACE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from face basis calculation for an individual face
-    INTEGER(INTG), ALLOCATABLE :: FACE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_STIFFNESS_MATRIX
-    REAL(DP), ALLOCATABLE :: FACE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from face basis calculation for an individual face
-    INTEGER(INTG), ALLOCATABLE :: FACE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_NONLINEAR_MATRIX
-    INTEGER(INTG), ALLOCATABLE :: LINES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per line, indexed by line and element_parameter, returns local_ny (dof) number. 
-    REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:) !<Array for results from line basis calculation for an individual line
-    INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: LINE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from line basis calculation for an individual line
-    INTEGER(INTG), ALLOCATABLE :: LINE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_STIFFNESS_MATRIX
-    REAL(DP), ALLOCATABLE :: LINE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from line basis calculation for an individual line
-    INTEGER(INTG), ALLOCATABLE :: LINE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_NONLINEAR_MATRIX
-    REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
-    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
-    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_Y(:) !<Mapping array of domain nodes to Y axis of INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: POINT_VALUES_VECTOR(:) !<The vector of set values, the 'x' vector
-    INTEGER(INTG), ALLOCATABLE :: POINT_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes in POINT_VALUES_VECTOR
-    REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR(:) !<Vector for the storage of the integrated values, the 'b' vector of Ax=b 
-    INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
-    INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
-  END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
 
   !>Contains information used to integrate Neumann boundary conditions
   TYPE BoundaryConditionsNeumannType
