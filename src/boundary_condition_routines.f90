@@ -1812,13 +1812,15 @@ CONTAINS
     !Local Variables
     TYPE(BoundaryConditionsNeumannType), POINTER :: boundaryConditionsNeumann
     INTEGER(INTG) :: numberOfValues,numberOfLocalDofs
+    INTEGER(INTG) :: dummyErr
+    TYPE(VARYING_STRING) :: dummyError
 
-    CALL ENTERS("BoundaryConditions_NeumannInitialise",err,error,*999)
+    CALL ENTERS("BoundaryConditions_NeumannInitialise",err,error,*998)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       numberOfValues=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
       ALLOCATE(boundaryConditionsVariable%neumannBoundaryConditions,stat=err)
-      IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann Boundary Conditions",err,error,*999)
+      IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann Boundary Conditions",err,error,*998)
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
       IF(ASSOCIATED(boundaryConditionsNeumann)) THEN
         numberOfLocalDofs=boundaryConditionsVariable%VARIABLE%NUMBER_OF_DOFS
@@ -1834,15 +1836,16 @@ CONTAINS
         ALLOCATE(boundaryConditionsNeumann%localDofs(numberOfValues),stat=err)
         IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann local DOFs vector.",err,error,*999)
       ELSE
-        CALL FLAG_ERROR("The boundary condition Neumann is not associated",err,error,*999)
+        CALL FLAG_ERROR("The boundary condition Neumann is not associated",err,error,*998)
       END IF
     ELSE
-      CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*999)
+      CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*998)
     END IF
 
     CALL EXITS("BoundaryConditions_NeumannInitialise")
     RETURN
-999 CALL ERRORS("BoundaryConditions_NeumannInitialise",err,error)
+999 CALL BoundaryConditions_NeumannFinalise(boundaryConditionsVariable,dummyErr,dummyError,*998)
+998 CALL ERRORS("BoundaryConditions_NeumannInitialise",err,error)
     CALL EXITS("BoundaryConditions_NeumannInitialise")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannInitialise
@@ -1866,12 +1869,18 @@ CONTAINS
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
       IF(ASSOCIATED(boundaryConditionsNeumann)) THEN
-        DEALLOCATE(boundaryConditionsNeumann%setDofs)
-        DEALLOCATE(boundaryConditionsNeumann%integrationMatrix)
-        DEALLOCATE(boundaryConditionsNeumann%pointValues)
-        DEALLOCATE(boundaryConditionsNeumann%integratedValues)
-        DEALLOCATE(boundaryConditionsNeumann%localDofs)
+        IF(ALLOCATED(boundaryConditionsNeumann%setDofs)) &
+          & DEALLOCATE(boundaryConditionsNeumann%setDofs)
+        IF(ALLOCATED(boundaryConditionsNeumann%integrationMatrix)) &
+          & DEALLOCATE(boundaryConditionsNeumann%integrationMatrix)
+        IF(ALLOCATED(boundaryConditionsNeumann%pointValues)) &
+          & DEALLOCATE(boundaryConditionsNeumann%pointValues)
+        IF(ALLOCATED(boundaryConditionsNeumann%integratedValues)) &
+          & DEALLOCATE(boundaryConditionsNeumann%integratedValues)
+        IF(ALLOCATED(boundaryConditionsNeumann%localDofs)) &
+          & DEALLOCATE(boundaryConditionsNeumann%localDofs)
         DEALLOCATE(boundaryConditionsNeumann)
+        NULLIFY(boundaryConditionsVariable%neumannBoundaryConditions)
       END IF
     ELSE
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*999)
