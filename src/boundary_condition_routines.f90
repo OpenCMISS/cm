@@ -1833,8 +1833,6 @@ CONTAINS
         IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann point values vector.",err,error,*999)
         ALLOCATE(boundaryConditionsNeumann%integratedValues(numberOfLocalDofs),stat=err)
         IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann integrated values vector.",err,error,*999)
-        ALLOCATE(boundaryConditionsNeumann%localDofs(numberOfValues),stat=err)
-        IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann local DOFs vector.",err,error,*999)
       ELSE
         CALL FLAG_ERROR("The boundary condition Neumann is not associated",err,error,*998)
       END IF
@@ -1877,8 +1875,6 @@ CONTAINS
           & DEALLOCATE(boundaryConditionsNeumann%pointValues)
         IF(ALLOCATED(boundaryConditionsNeumann%integratedValues)) &
           & DEALLOCATE(boundaryConditionsNeumann%integratedValues)
-        IF(ALLOCATED(boundaryConditionsNeumann%localDofs)) &
-          & DEALLOCATE(boundaryConditionsNeumann%localDofs)
         DEALLOCATE(boundaryConditionsNeumann)
         NULLIFY(boundaryConditionsVariable%neumannBoundaryConditions)
       END IF
@@ -1953,7 +1949,6 @@ CONTAINS
 
       neumannConditions%integrationMatrix=0.0_DP
       neumannConditions%pointValues=0.0_DP
-      neumannConditions%localDofs=0
 
       numberOfNeumann=rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
 
@@ -1979,6 +1974,166 @@ CONTAINS
         SELECT CASE(rhsVariable%COMPONENTS(componentIdx)%INTERPOLATION_TYPE)
         CASE(FIELD_NODE_BASED_INTERPOLATION)
           SELECT CASE(rhsVariable%COMPONENTS(componentIdx)%DOMAIN%NUMBER_OF_DIMENSIONS)
+          CASE(1)
+            ! This is the same as setting an integrated value, but we'll set up the integration
+            ! matrix and point values vector to avoid making things more complicated
+            DO localDof=1,rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL
+              globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
+              IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                matrixNeumannDofIdx=0
+                DO neumannConditionIdx=1,numberOfNeumann
+                  IF(neumannConditions%setDofs(neumannConditionIdx)==globalDof) THEN
+                    matrixNeumannDofIdx=neumannConditionIdx
+                    CYCLE
+                  END IF
+                END DO
+                IF(matrixNeumannDofIdx==0) THEN
+                  CALL FLAG_ERROR("Could not find matching Neumann condition index for local DOF "// &
+                    & TRIM(NUMBER_TO_VSTRING(localDof,"*",err,error))//".",err,error,*999)
+                END IF
+                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
+                  & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,localDof,pointValue,err,error,*999)
+                neumannConditions%pointValues(matrixNeumannDofIdx)=pointValue
+                neumannConditions%integrationMatrix(localDof,matrixNeumannDofIdx)=1.0_DP
+              END IF
+            END DO
+          CASE(2)
+            ! 2D, so integrating lines
+            ! Loop over all lines in the decomposition, ignoring those not on the boundary
+            IF(.NOT.decomposition%CALCULATE_LINES) THEN
+              CALL FLAG_ERROR("Decomposition does not have lines calculated.",err,error,*999)
+            END IF
+            lines=>topology%LINES
+            IF(.NOT.ASSOCIATED(lines)) THEN
+              CALL FLAG_ERROR("Mesh topology lines is not associated.",err,error,*999)
+            END IF
+            linesLoop: DO lineIdx=1,lines%NUMBER_OF_LINES
+              line=>lines%lines(lineIdx)
+              IF(.NOT.line%BOUNDARY_LINE) CYCLE
+
+              basis=>line%basis
+              IF(.NOT.ASSOCIATED(basis)) THEN
+                CALL FLAG_ERROR("Line basis is not associated.",err,error,*999)
+              END IF
+
+              ! Check if any of the dofs in this line have a Neumann condition set, and keep
+              ! track of their dof numbers as well as local element node and derivative numbers
+              lineNumberOfNeumann=0
+              DO nodeIdx=1,basis%NUMBER_OF_NODES
+                localNode=line%NODES_IN_LINE(nodeIdx)
+                DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  version=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
+                  localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
+                  globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
+                  IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                    lineNumberOfNeumann=lineNumberOfNeumann+1
+                    IF(lineNumberOfNeumann>16) CALL FLAG_ERROR( &
+                      & "Got more than the expected maximum number of line Neumann DOFs.",err,error,*999)
+                    ! Find the Neumann condition index that matches the global dof
+                    neumannConditionNumber(lineNumberOfNeumann)=0
+                    DO neumannConditionIdx=1,numberOfNeumann
+                      IF(neumannConditions%setDofs(neumannConditionIdx)==globalDof) THEN
+                        neumannConditionNumber(lineNumberOfNeumann)=neumannConditionIdx
+                        CYCLE
+                      END IF
+                    END DO
+                    IF(neumannConditionNumber(lineNumberOfNeumann)==0) THEN
+                      CALL FLAG_ERROR("Could not find matching Neumann condition index for local DOF "// &
+                        & TRIM(NUMBER_TO_VSTRING(localDof,"*",err,error))//".",err,error,*999)
+                    END IF
+                    neumannNodeAndDeriv(lineNumberOfNeumann,1)=nodeIdx
+                    neumannNodeAndDeriv(lineNumberOfNeumann,2)=derivIdx
+                    ! We will also update the point values vector while we know the local DOF number, and
+                    ! keep track of the local DOF numbers.
+                    ! Check that this isn't a ghost DOF so that we can later do an MPI reduce to
+                    ! get all point values.
+                    ! This will be called multiple times for DOFs in multiple lines, but that's OK
+                    IF(localDof<=rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
+                        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,localDof,pointValue,err,error,*999)
+                      neumannConditions%pointValues( &
+                        & neumannConditionNumber(lineNumberOfNeumann))=pointValue
+                    END IF
+                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
+                    ! If there is an integrated Neumann value on a DOF in this line,
+                    ! then we don't integrate any other point values over this line.
+                    CYCLE linesLoop
+                  END IF
+                END DO
+              END DO
+              IF(lineNumberOfNeumann==0) CYCLE
+
+              quadratureScheme=>basis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+              IF(.NOT.ASSOCIATED(quadratureScheme)) THEN
+                CALL FLAG_ERROR("Line basis default quadrature scheme is not associated.",err,error,*999)
+              END IF
+              CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,lineIdx, &
+                & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+              IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(line%ELEMENT_NUMBER, &
+                  & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+              END IF
+
+              ! Calculate the line integrals, then add the calculated values into the integration matrix N
+              lineBasisNodesLoop: DO nodeIdx=1,basis%NUMBER_OF_NODES
+                localNode=line%NODES_IN_LINE(nodeIdx)
+                DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  version=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
+                  localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
+                  ! localDof is the weighting DOF
+                  IF(localDof>rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
+                    ! We might have a face in this domain but nodes in the line that are ghosted
+                    CYCLE lineBasisNodesLoop
+                  END IF
+                  ! Loop over all dofs on this line with a Neumann condition set
+                  DO elementNeumannDofIdx=1,lineNumberOfNeumann
+                    ! Calculate the integral term
+                    ! Calculates the term: S(m,a) * S(o,y) * line_integral( phi_m^a phi_o^y )
+                    ! Where m and o are the local node and derivative indices for the weighting DOF
+                    ! and o and y are the local node and derivative indices for a DOF with a Neumann condition set
+
+                    neumannNode=neumannNodeAndDeriv(elementNeumannDofIdx,1)
+                    neumannDeriv=neumannNodeAndDeriv(elementNeumannDofIdx,2)
+
+                    ! Get element parameter local dofs
+                    ms=basis%ELEMENT_PARAMETER_INDEX(derivIdx,nodeIdx)
+                    os=basis%ELEMENT_PARAMETER_INDEX(neumannDeriv,neumannNode)
+
+                    integratedValue=0.0_DP
+                    ! Loop over line gauss points, adding gauss weighted terms to the integral
+                    DO gaussIdx=1,quadratureScheme%NUMBER_OF_GAUSS
+                      CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
+                        & interpolatedPoints(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+                      CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_LINE_TYPE, &
+                        & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+
+                      !Get basis function values at guass points
+                      phim=quadratureScheme%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,gaussIdx)
+                      phio=quadratureScheme%GAUSS_BASIS_FNS(os,NO_PART_DERIV,gaussIdx)
+
+                      !Add gauss point value to total line integral
+                      integratedValue=integratedValue+phim*phio* &
+                        & quadratureScheme%GAUSS_WEIGHTS(gaussIdx)* &
+                        & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr%jacobian
+                    END DO
+
+                    ! Multiply by scale factors
+                    IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                      integratedValue=integratedValue* &
+                        & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr%SCALE_FACTORS(ms,componentIdx)* &
+                        & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr%SCALE_FACTORS(os,componentIdx)
+                    END IF
+
+                    ! Add integral term to N matrix
+                    matrixNeumannDofIdx=neumannConditionNumber(elementNeumannDofIdx)
+                    neumannConditions%integrationMatrix(localDof,matrixNeumannDofIdx)= &
+                      & neumannConditions%integrationMatrix(localDof,matrixNeumannDofIdx)+integratedValue
+                  END DO !line Neumann points
+                END DO !derivIdx
+              END DO lineBasisNodesLoop
+            END DO linesLoop
           CASE(3)
             ! 3D, so integrating faces
             ! Loop over all faces in the decomposition, ignoring those not on the boundary
@@ -2036,8 +2191,6 @@ CONTAINS
                         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,localDof,pointValue,err,error,*999)
                       neumannConditions%pointValues( &
                         & neumannConditionNumber(faceNumberOfNeumann))=pointValue
-                      neumannConditions%localDofs( &
-                        & neumannConditionNumber(faceNumberOfNeumann))=localDof
                     END IF
                   ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
                     ! If there is an integrated Neumann value on a DOF in this face,
@@ -2120,145 +2273,6 @@ CONTAINS
                 END DO !derivIdx
               END DO faceBasisNodesLoop
             END DO facesLoop
-          CASE(2)
-            ! 2D, so integrating lines
-            ! Loop over all lines in the decomposition, ignoring those not on the boundary
-            IF(.NOT.decomposition%CALCULATE_LINES) THEN
-              CALL FLAG_ERROR("Decomposition does not have lines calculated.",err,error,*999)
-            END IF
-            lines=>topology%LINES
-            IF(.NOT.ASSOCIATED(lines)) THEN
-              CALL FLAG_ERROR("Mesh topology lines is not associated.",err,error,*999)
-            END IF
-            linesLoop: DO lineIdx=1,lines%NUMBER_OF_LINES
-              line=>lines%lines(lineIdx)
-              IF(.NOT.line%BOUNDARY_LINE) CYCLE
-
-              basis=>line%basis
-              IF(.NOT.ASSOCIATED(basis)) THEN
-                CALL FLAG_ERROR("Line basis is not associated.",err,error,*999)
-              END IF
-
-              ! Check if any of the dofs in this line have a Neumann condition set, and keep
-              ! track of their dof numbers as well as local element node and derivative numbers
-              lineNumberOfNeumann=0
-              DO nodeIdx=1,basis%NUMBER_OF_NODES
-                localNode=line%NODES_IN_LINE(nodeIdx)
-                DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
-                  version=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
-                  localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
-                  globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
-                  IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                    lineNumberOfNeumann=lineNumberOfNeumann+1
-                    IF(lineNumberOfNeumann>16) CALL FLAG_ERROR( &
-                      & "Got more than the expected maximum number of line Neumann DOFs.",err,error,*999)
-                    ! Find the Neumann condition index that matches the global dof
-                    neumannConditionNumber(lineNumberOfNeumann)=0
-                    DO neumannConditionIdx=1,numberOfNeumann
-                      IF(neumannConditions%setDofs(neumannConditionIdx)==globalDof) THEN
-                        neumannConditionNumber(lineNumberOfNeumann)=neumannConditionIdx
-                        CYCLE
-                      END IF
-                    END DO
-                    IF(neumannConditionNumber(lineNumberOfNeumann)==0) THEN
-                      CALL FLAG_ERROR("Could not find matching Neumann condition index for local DOF "// &
-                        & TRIM(NUMBER_TO_VSTRING(localDof,"*",err,error))//".",err,error,*999)
-                    END IF
-                    neumannNodeAndDeriv(lineNumberOfNeumann,1)=nodeIdx
-                    neumannNodeAndDeriv(lineNumberOfNeumann,2)=derivIdx
-                    ! We will also update the point values vector while we know the local DOF number, and
-                    ! keep track of the local DOF numbers.
-                    ! Check that this isn't a ghost DOF so that we can later do an MPI reduce to
-                    ! get all point values.
-                    ! This will be called multiple times for DOFs in multiple lines, but that's OK
-                    IF(localDof<=rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-                        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,localDof,pointValue,err,error,*999)
-                      neumannConditions%pointValues( &
-                        & neumannConditionNumber(lineNumberOfNeumann))=pointValue
-                      neumannConditions%localDofs( &
-                        & neumannConditionNumber(lineNumberOfNeumann))=localDof
-                    END IF
-                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
-                    ! If there is an integrated Neumann value on a DOF in this line,
-                    ! then we don't integrate any other point values over this line.
-                    CYCLE linesLoop
-                  END IF
-                END DO
-              END DO
-              IF(lineNumberOfNeumann==0) CYCLE
-
-              quadratureScheme=>basis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              IF(.NOT.ASSOCIATED(quadratureScheme)) THEN
-                CALL FLAG_ERROR("Line basis default quadrature scheme is not associated.",err,error,*999)
-              END IF
-              CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,lineIdx, &
-                & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
-              IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(line%ELEMENT_NUMBER, &
-                  & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
-              END IF
-
-              ! Calculate the line integrals, then add the calculated values into the integration matrix N
-              lineBasisNodesLoop: DO nodeIdx=1,basis%NUMBER_OF_NODES
-                localNode=line%NODES_IN_LINE(nodeIdx)
-                DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
-                  version=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
-                  localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
-                  ! localDof is the weighting DOF
-                  IF(localDof>rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
-                    ! We might have a face in this domain but nodes in the line that are ghosted
-                    CYCLE lineBasisNodesLoop
-                  END IF
-                  ! Loop over all dofs on this line with a Neumann condition set
-                  DO elementNeumannDofIdx=1,lineNumberOfNeumann
-                    ! Calculate the integral term
-                    ! Calculates the term: S(m,a) * S(o,y) * line_integral( phi_m^a phi_o^y )
-                    ! Where m and o are the local node and derivative indices for the weighting DOF
-                    ! and o and y are the local node and derivative indices for a DOF with a Neumann condition set
-
-                    neumannNode=neumannNodeAndDeriv(elementNeumannDofIdx,1)
-                    neumannDeriv=neumannNodeAndDeriv(elementNeumannDofIdx,2)
-
-                    ! Get element parameter local dofs
-                    ms=basis%ELEMENT_PARAMETER_INDEX(derivIdx,nodeIdx)
-                    os=basis%ELEMENT_PARAMETER_INDEX(neumannDeriv,neumannNode)
-
-                    integratedValue=0.0_DP
-                    ! Loop over line gauss points, adding gauss weighted terms to the integral
-                    DO gaussIdx=1,quadratureScheme%NUMBER_OF_GAUSS
-                      CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
-                        & interpolatedPoints(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
-                      CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_LINE_TYPE, &
-                        & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
-
-                      !Get basis function values at guass points
-                      phim=quadratureScheme%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,gaussIdx)
-                      phio=quadratureScheme%GAUSS_BASIS_FNS(os,NO_PART_DERIV,gaussIdx)
-
-                      !Add gauss point value to total line integral
-                      integratedValue=integratedValue+phim*phio* &
-                        & quadratureScheme%GAUSS_WEIGHTS(gaussIdx)* &
-                        & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr%jacobian
-                    END DO
-
-                    ! Multiply by scale factors
-                    IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                      integratedValue=integratedValue* &
-                        & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr%SCALE_FACTORS(ms,componentIdx)* &
-                        & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr%SCALE_FACTORS(os,componentIdx)
-                    END IF
-
-                    ! Add integral term to N matrix
-                    matrixNeumannDofIdx=neumannConditionNumber(elementNeumannDofIdx)
-                    neumannConditions%integrationMatrix(localDof,matrixNeumannDofIdx)= &
-                      & neumannConditions%integrationMatrix(localDof,matrixNeumannDofIdx)+integratedValue
-                  END DO !line Neumann points
-                END DO !derivIdx
-              END DO lineBasisNodesLoop
-            END DO linesLoop
           CASE DEFAULT
             CALL FLAG_ERROR("The dimension is invalid for point Neumann conditions",err,error,*999)
           END SELECT !number of dimensions
