@@ -1364,6 +1364,8 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FIXED
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
+      CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
+        & FIELD_INTEGRATED_NEUMANN_SET_TYPE,err,error,*999)
       boundaryConditionsVariable%parameterSetRequired(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
@@ -2308,7 +2310,7 @@ CONTAINS
         ! Check that the DOF doesn't have an integrated value already set
         IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)/=BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-            & FIELD_VALUES_SET_TYPE,localDof,neumannConditions%integratedValues(localDof),err,error,*999)
+            & FIELD_INTEGRATED_NEUMANN_SET_TYPE,localDof,neumannConditions%integratedValues(localDof),err,error,*999)
         END IF
       END DO
       CALL FIELD_PARAMETER_SET_UPDATE_START(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
