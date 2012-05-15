@@ -794,6 +794,10 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE PetscInitialize
 
+    SUBROUTINE PetscPopSignalHandler(ierr)
+      PetscInt ierr
+    END SUBROUTINE PetscPopSignalHandler
+
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
     SUBROUTINE PetscLogView(viewer,ierr)
       PetscViewer viewer
@@ -1526,6 +1530,14 @@ CONTAINS
         CHKERRQ(ERR)
       ENDIF
       CALL FLAG_ERROR("PETSc error in PetscInitialize",ERR,ERROR,*999)
+    ENDIF
+    ! Disable PETSc's signal handler as we have our own OpenCMISS signal handlers in cmiss_c.c
+    CALL PetscPopSignalHandler(ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PetscPopSignalHandler",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("PETSC_INITIALIZE")
