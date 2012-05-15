@@ -98,9 +98,10 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED=17 !<The dof is fixed as a boundary condition, to be used with load increment loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE=18 !<The dof is fixed as a boundary condition, to be used with load increment loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_IMPERMEABLE_WALL=19 !<The dof is set such that (via penalty formulation): velocity * normal = 0. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=19 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=20 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
   
   !Module types
 
@@ -127,7 +128,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_DIRICHLET,BOUNDARY_CONDITION_NEUMANN_POINT, &
     & BOUNDARY_CONDITION_CAUCHY,BOUNDARY_CONDITION_ROBIN,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE,&
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
-    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL
+    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
 
   PUBLIC BOUNDARY_CONDITIONS_CREATE_FINISH,BOUNDARY_CONDITIONS_CREATE_START,BOUNDARY_CONDITIONS_DESTROY
   
@@ -1055,7 +1056,7 @@ CONTAINS
                           ! get the RHS variable value
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
-                        CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+                        CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
                           ! For integrated Neumann condition, integration is already done, so set the RHS
                           ! dof value directly
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -1231,7 +1232,7 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
-                        CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+                        CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
@@ -1367,7 +1368,7 @@ CONTAINS
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_INTEGRATED_NEUMANN_SET_TYPE,err,error,*999)
       boundaryConditionsVariable%parameterSetRequired(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)=.TRUE.
-    CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+    CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE DEFAULT
       CALL FLAG_ERROR("The specified boundary condition type for dof number "// &
@@ -1533,7 +1534,8 @@ CONTAINS
         validCondition=.FALSE.
       END IF
     CASE(BOUNDARY_CONDITION_NEUMANN_POINT, &
-        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
@@ -1642,7 +1644,7 @@ CONTAINS
             END IF
           CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
             validEquationsSetFound=.TRUE.
-          CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+          CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
             validEquationsSetFound=.TRUE.
           CASE DEFAULT
             CALL FLAG_ERROR("The specified boundary condition type of "// &
@@ -2057,8 +2059,8 @@ CONTAINS
                       neumannConditions%pointValues( &
                         & neumannConditionNumber(lineNumberOfNeumann))=pointValue
                     END IF
-                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
-                    ! If there is an integrated Neumann value on a DOF in this line,
+                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY) THEN
+                    ! If there is an "integrated only" Neumann value on a DOF in this line,
                     ! then we don't integrate any other point values over this line.
                     CYCLE linesLoop
                   END IF
@@ -2194,11 +2196,9 @@ CONTAINS
                       neumannConditions%pointValues( &
                         & neumannConditionNumber(faceNumberOfNeumann))=pointValue
                     END IF
-                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
-                    ! If there is an integrated Neumann value on a DOF in this face,
+                  ELSE IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY) THEN
+                    ! If there is an "integrated only" Neumann value on a DOF in this face,
                     ! then we don't integrate any other point values over this face.
-                    ! If this isn't sufficient then we might need to provide some other
-                    ! way to specify that a face shouldn't be integrated over
                     CYCLE facesLoop
                   END IF
                 END DO
@@ -2306,12 +2306,8 @@ CONTAINS
 
       ! Update RHS field variable with integrated values, these will be later transferred to the solver RHS vector
       DO localDof=1,rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL
-        globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
-        ! Check that the DOF doesn't have an integrated value already set
-        IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)/=BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
-          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-            & FIELD_INTEGRATED_NEUMANN_SET_TYPE,localDof,neumannConditions%integratedValues(localDof),err,error,*999)
-        END IF
+        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
+          & FIELD_INTEGRATED_NEUMANN_SET_TYPE,localDof,neumannConditions%integratedValues(localDof),err,error,*999)
       END DO
       CALL FIELD_PARAMETER_SET_UPDATE_START(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
         & err,error,*999)
