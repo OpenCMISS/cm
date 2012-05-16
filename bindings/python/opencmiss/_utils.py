@@ -7,11 +7,7 @@ import _opencmiss_swig
 class CMISSError(Exception):
     """Base class for errors in the OpenCMISS library"""
 
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
+    pass
 
 
 class CMISSType(object):
