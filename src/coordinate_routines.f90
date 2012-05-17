@@ -791,6 +791,7 @@ CONTAINS
               CALL INVERT(METRICS%DX_DXI,METRICS%DXI_DX,DET_DX_DXI,ERR,ERROR,*999)
             ELSE
               METRICS%DXI_DX=0.0_DP
+              CALL FLAG_WARNING("DXI_DX has been set to zero.",ERR,ERROR,*999)
             ENDIF
             
             !Calculate the Jacobian
