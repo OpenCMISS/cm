@@ -1688,9 +1688,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information used to integrate Neumann boundary conditions
   TYPE BoundaryConditionsNeumannType
     INTEGER(INTG), ALLOCATABLE :: setDofs(:) !<setDofs(neumann_idx): the global dof for the neumann_idx'th Neumann condition
-    REAL(DP), ALLOCATABLE :: integrationMatrix(:,:) !<The N matrix that multiples the point values vector q to give the integrated values f. Number of rows equals number of local dofs, and number of columns equals number of set point DOFs.
-    REAL(DP), ALLOCATABLE :: pointValues(:) !<The vector of set point values q
-    REAL(DP), ALLOCATABLE :: integratedValues(:) !<The integrated values vector f. Number of terms is the number of local dofs.
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: integrationMatrix !<The N matrix that multiples the point values vector q to give the integrated values f. Number of rows equals number of local dofs, and number of columns equals number of set point DOFs.
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: pointValues !<The vector of set point values q
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: pointDofMapping !<The domain mapping for DOFs with Neumann point conditions set.
   END TYPE BoundaryConditionsNeumannType
 
   !>Contains information on dofs associated with pressure incremented conditions
