@@ -4883,7 +4883,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: column_idx,local_column,global_column,NUMBER_OF_ROWS,row
+    INTEGER(INTG) :: column_idx,local_column,global_column,NUMBER_OF_COLUMNS,NUMBER_OF_ROWS,row,row_idx
     REAL(DP) :: SUM
     TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS_MATRIX
     TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS_VECTOR,CMISS_PRODUCT
@@ -4928,6 +4928,7 @@ CONTAINS
                                             & TRIM(NUMBER_TO_VSTRING(ROW_SELECTION_TYPE,"*",ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
+                                        NUMBER_OF_COLUMNS=COLUMN_MAPPING%NUMBER_OF_GLOBAL
                                         IF(MATRIX%DATA_TYPE==DISTRIBUTED_VECTOR%DATA_TYPE) THEN
                                           IF(MATRIX%DATA_TYPE==DISTRIBUTED_PRODUCT%DATA_TYPE) THEN
                                             SELECT CASE(MATRIX%DATA_TYPE)
@@ -4985,7 +4986,15 @@ CONTAINS
                                                   CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
                                                 ENDDO !row
                                               CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                DO column_idx=1,NUMBER_OF_COLUMNS
+                                                  DO row_idx=MATRIX%COLUMN_INDICES(column_idx),MATRIX%COLUMN_INDICES(column_idx+1)-1
+                                                    row=MATRIX%ROW_INDICES(row_idx)
+                                                    local_column=COLUMN_MAPPING%GLOBAL_TO_LOCAL_MAP(column_idx)%LOCAL_NUMBER(1)
+                                                    SUM=MATRIX%DATA_DP(row_idx)* &
+                                                      & CMISS_VECTOR%DATA_DP(local_column)
+                                                    CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                  ENDDO !local_row
+                                                ENDDO !column_idx
                                               CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
                                                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                               CASE DEFAULT

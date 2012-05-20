@@ -521,7 +521,7 @@ CONTAINS
           DO row_idx=1,MATRIX%M
             COUNT=0
             DO column_idx=1,MATRIX%N
-              DO row_idx2=MATRIX%COLUMN_INDICES(column_idx),MATRIX%COLUMN_INDICES(column_idx+1)
+              DO row_idx2=MATRIX%COLUMN_INDICES(column_idx),MATRIX%COLUMN_INDICES(column_idx+1)-1
                 IF(MATRIX%ROW_INDICES(row_idx2)==row_idx) COUNT=COUNT+1
               ENDDO !row_idx2
             ENDDO !column_idx
@@ -1693,6 +1693,12 @@ CONTAINS
             IF(SIZE(ROW_INDICES,1)==MATRIX%NUMBER_NON_ZEROS) THEN
              IF(COLUMN_INDICES(1)==1) THEN
                 IF(COLUMN_INDICES(MATRIX%N+1)==MATRIX%NUMBER_NON_ZEROS+1) THEN
+                  IF(COLUMN_INDICES(1)/=1) THEN
+                    LOCAL_ERROR="Invalid column indices. Column index 1 ("// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(1),"*",ERR,ERROR))//") "// &
+                      & " should be equal to one."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END IF
                   DO j=2,MATRIX%N+1
                     IF(COLUMN_INDICES(j)<COLUMN_INDICES(j-1)) THEN
                       LOCAL_ERROR="Invalid column indices. Column "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
@@ -1700,16 +1706,23 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(j-1,"*",ERR,ERROR))//" index number ("// &
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j-1),"*",ERR,ERROR))//")."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF                    
+                    END IF
+                    IF(COLUMN_INDICES(j)<0.OR.COLUMN_INDICES(j)>MATRIX%NUMBER_NON_ZEROS+1) THEN
+                      LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//") "// &
+                        & " should be in the range of one to the number of non-zeros + 1 ("// &
+                        & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END IF
                   ENDDO !i
                   DO j=1,MATRIX%N
                     DO i=COLUMN_INDICES(j),COLUMN_INDICES(j+1)-1
                       k=ROW_INDICES(i)
                       IF(k>0) THEN
-                        IF(k>MATRIX%NUMBER_NON_ZEROS) THEN
+                        IF(k>MATRIX%M) THEN
                           LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" ("// &
-                            & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of non-zeros ("// &
-                            & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+                            & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of rows ("// &
+                            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//")."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
