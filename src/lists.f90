@@ -226,6 +226,10 @@ MODULE LISTS
 
   PUBLIC LIST_ITEM_GET
 
+  PUBLIC List_AppendList
+
+  PUBLIC List_ClearItems
+
   PUBLIC LIST_KEY_DIMENSION_SET
 
   PUBLIC LIST_NUMBER_OF_ITEMS_GET
@@ -550,6 +554,163 @@ CONTAINS
     RETURN 1
   END SUBROUTINE LIST_FINALISE
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Appends a list to the end of this list
+  SUBROUTINE List_AppendList(list,appendedList,err,error,*)
+   !Argument Variables
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: list !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: appendedList !<The list to append
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: newSize
+    INTEGER(INTG), ALLOCATABLE :: newListIntg(:)
+    REAL(SP), ALLOCATABLE :: newListSP(:)
+    REAL(DP), ALLOCATABLE :: newListDP(:)
+    INTEGER(C_INT), ALLOCATABLE :: newListCInt(:)
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("List_AppendList",err,error,*999)
+
+    IF(ASSOCIATED(list)) THEN
+      IF(list%LIST_FINISHED) THEN
+        IF(ASSOCIATED(appendedList)) THEN
+          IF(appendedList%LIST_FINISHED) THEN
+            IF(list%DATA_TYPE==appendedList%DATA_TYPE) THEN
+              IF(list%DATA_DIMENSION==appendedList%DATA_DIMENSION) THEN
+                SELECT CASE(list%DATA_DIMENSION)
+                CASE(1)
+                  SELECT CASE(list%DATA_TYPE)
+                  CASE(LIST_INTG_TYPE)
+                    IF(list%SIZE<list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST) THEN
+                      !Reallocate
+                      newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
+                      ALLOCATE(newListIntg(newSize),stat=err)
+                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      newListIntg(1:list%NUMBER_IN_LIST)=list%LIST_INTG(1:list%NUMBER_IN_LIST)
+                      CALL MOVE_ALLOC(newListIntg,list%LIST_INTG)
+                      list%SIZE=newSize
+                    END IF
+                    list%LIST_INTG(list%NUMBER_IN_LIST+1:list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST)= &
+                      & appendedList%LIST_INTG(1:appendedList%NUMBER_IN_LIST)
+                    list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
+                  CASE(LIST_SP_TYPE)
+                    IF(list%SIZE<list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST) THEN
+                      !Reallocate
+                      newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
+                      ALLOCATE(newListSP(newSize),stat=err)
+                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      newListSP(1:list%NUMBER_IN_LIST)=list%LIST_SP(1:list%NUMBER_IN_LIST)
+                      CALL MOVE_ALLOC(newListSP,list%LIST_SP)
+                      list%SIZE=newSize
+                    END IF
+                    list%LIST_SP(list%NUMBER_IN_LIST+1:list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST)= &
+                      & appendedList%LIST_SP(1:appendedList%NUMBER_IN_LIST)
+                    list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
+                  CASE(LIST_DP_TYPE)
+                    IF(list%SIZE<list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST) THEN
+                      !Reallocate
+                      newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
+                      ALLOCATE(newListDP(newSize),stat=err)
+                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      newListDP(1:list%NUMBER_IN_LIST)=list%LIST_DP(1:list%NUMBER_IN_LIST)
+                      CALL MOVE_ALLOC(newListDP,list%LIST_DP)
+                      list%SIZE=newSize
+                    END IF
+                    list%LIST_DP(list%NUMBER_IN_LIST+1:list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST)= &
+                      & appendedList%LIST_DP(1:appendedList%NUMBER_IN_LIST)
+                    list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
+                  CASE(LIST_C_INT_TYPE)
+                    IF(list%SIZE<list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST) THEN
+                      !Reallocate
+                      newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
+                      ALLOCATE(newListCInt(newSize),stat=err)
+                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      newListCInt(1:list%NUMBER_IN_LIST)=list%LIST_C_INT(1:list%NUMBER_IN_LIST)
+                      CALL MOVE_ALLOC(newListCInt,list%LIST_C_INT)
+                      list%SIZE=newSize
+                    END IF
+                    list%LIST_C_INT(list%NUMBER_IN_LIST+1:list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST)= &
+                      & appendedList%LIST_C_INT(1:appendedList%NUMBER_IN_LIST)
+                    list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
+                  CASE DEFAULT
+                    CALL FLAG_ERROR("The list data type of "//TRIM(NUMBER_TO_VSTRING(list%DATA_TYPE,"*",err,error))// &
+                      & " is invalid.",err,error,*999)
+                  END SELECT
+                CASE DEFAULT
+                  CALL FLAG_ERROR("Dimensions > 1 not implemented for appended to a list",err,error,*999)
+                END SELECT
+              ELSE
+                localError="Invalid data dimension. The list to append has data dimension of "// &
+                  & TRIM(NUMBER_TO_VSTRING(appendedList%DATA_DIMENSION,"*",err,error))//" and the list data dimension is "// &
+                  & TRIM(NUMBER_TO_VSTRING(list%DATA_DIMENSION,"*",err,error))//"."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              ENDIF
+            ELSE
+              localError="The list data type of "//TRIM(NUMBER_TO_VSTRING(list%DATA_TYPE,"*",err,error))// &
+                & " does not match the data type of the list to append"
+              CALL FLAG_ERROR(localError,err,error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The list to append has not been finished",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The list to append is not associated",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The list has not been finished",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated",err,error,*999)
+    ENDIF
+
+    CALL EXITS("List_AppendList")
+    RETURN
+999 IF(ALLOCATED(newListIntg)) DEALLOCATE(newListIntg)
+    IF(ALLOCATED(newListSP)) DEALLOCATE(newListSP)
+    IF(ALLOCATED(newListDP)) DEALLOCATE(newListDP)
+    IF(ALLOCATED(newListCInt)) DEALLOCATE(newListCInt)
+    CALL ERRORS("List_AppendList",err,error)
+    CALL EXITS("List_AppendList")
+    RETURN 1
+  END SUBROUTINE List_AppendList
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Clears all the items from a list
+  SUBROUTINE List_ClearItems(list,err,error,*)
+   !Argument Variables
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: list !<A pointer to the list
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("List_ClearItems",err,error,*999)
+
+    IF(ASSOCIATED(list)) THEN
+      IF(list%LIST_FINISHED) THEN
+        IF(list%mutable) THEN
+          list%NUMBER_IN_LIST=0
+        ELSE
+          CALL FLAG_ERROR("The list is not mutable",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The list has not been finished",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("List is not associated",err,error,*999)
+    END IF
+
+    CALL EXITS("List_ClearItems")
+    RETURN
+999 CALL ERRORS("List_ClearItems",err,error)
+    CALL EXITS("List_ClearItems")
+    RETURN 1
+  END SUBROUTINE List_ClearItems
   !
   !================================================================================================================================
   !
