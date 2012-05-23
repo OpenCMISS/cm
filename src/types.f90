@@ -219,14 +219,15 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: LOCAL_LINE_XI_DIRECTION(:) !<LOCAL_LINE_XI_DIRECTION(nae). The Xi direction of the nae'th local line for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_LINE(:) !<NUMBER_OF_NODES_IN_LOCAL_LINE(nae). The the number of nodes in the nae'th local line for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_LINE(:,:) !<NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The local node numbers (nn) for the nnl'th line node in the nae'th local line for the basis. Old CMISS name NNL(1..,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
     !Face information
     INTEGER(INTG) :: NUMBER_OF_LOCAL_FACES !<The number of local faces in the basis.
     INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
-    !\todo: what is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local element node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
+    !\todo Remove local face node derivative below since all nodes of the face would have the same number of derivatives (unless a node is collapsed?)
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnk,nnl,nae). The element derivative numbers (nk) for the nnk'th face derivative's nnl'th face node in the nae'th local face for the basis.
+    !\todo What is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
     INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
@@ -429,14 +430,14 @@ MODULE TYPES
 
   !>Embedded mesh types
   TYPE EMBEDDING_XI_TYPE
-    INTEGER(INTG) :: NUMBER_OF_NODES                  !<Number of nodes embedded in this element
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:)     !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
-    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)           !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
+    INTEGER(INTG) :: NUMBER_OF_NODES !<Number of nodes embedded in this element
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:) !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
+    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:) !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
   END TYPE EMBEDDING_XI_TYPE
 
   TYPE EMBEDDING_GAUSSPOINT_TYPE
-    INTEGER(INTG) :: ELEMENT_NUMBER             !<Element number in child mesh
-    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:)  !<Xi coord in this element
+    INTEGER(INTG) :: ELEMENT_NUMBER !<Element number in child mesh
+    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:) !<Xi coord in this element
     REAL(DP), ALLOCATABLE :: PARENT_XI_COORD(:) !<Xi coordinates in parent element, not really needed but can be useful
   END TYPE EMBEDDING_GAUSSPOINT_TYPE
 
