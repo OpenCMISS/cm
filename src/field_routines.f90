@@ -7609,7 +7609,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,mk,nn)
                   nv=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -7732,7 +7732,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=LINES_TOPOLOGY%LINES(LINE_NUMBER)%DERIVATIVES_IN_LINE(1,mk,nn)
                   nv=LINES_TOPOLOGY%LINES(LINE_NUMBER)%DERIVATIVES_IN_LINE(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -7855,7 +7855,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=FACES_TOPOLOGY%FACES(FACE_NUMBER)%DERIVATIVES_IN_FACE(1,mk,nn)
                   nv=FACES_TOPOLOGY%FACES(FACE_NUMBER)%DERIVATIVES_IN_FACE(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk

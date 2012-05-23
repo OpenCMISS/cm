@@ -1880,7 +1880,7 @@ CONTAINS
     TYPE(LIST_TYPE), POINTER :: columnIndicesList, rowColumnIndicesList
     INTEGER(INTG) :: numberOfPointDofs, numberNonZeros, numberRowEntries, neumannConditionNumber
     INTEGER(INTG) :: neumannIdx, globalDof, localDof, localDofNyy, domainIdx, numberOfDomains, domainNumber, componentNumber
-    INTEGER(INTG) :: nodeIdx, derivIdx, nodeNumber, versionNumber, columnNodeNumber, lineIdx, faceIdx, columnDof
+    INTEGER(INTG) :: nodeIdx, derivIdx, nodeNumber, versionNumber, derivativeNumber, columnNodeNumber, lineIdx, faceIdx, columnDof
     INTEGER(INTG), ALLOCATABLE :: rowIndices(:), columnIndices(:), localDofNumbers(:)
     INTEGER(INTG) :: dummyErr
     TYPE(VARYING_STRING) :: dummyError
@@ -2034,9 +2034,10 @@ CONTAINS
                 DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
                   columnNodeNumber=line%NODES_IN_LINE(nodeIdx)
                   DO derivIdx=1,line%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
+                    derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
                     versionNumber=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
                     columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                      & NODES(columnNodeNumber)%DERIVATIVES(derivIdx)%VERSIONS(versionNumber)
+                      & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
                     globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
                     IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
                       neumannConditionNumber=0
@@ -2064,9 +2065,10 @@ CONTAINS
                 DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
                   columnNodeNumber=face%NODES_IN_FACE(nodeIdx)
                   DO derivIdx=1,face%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
+                    derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
                     versionNumber=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
                     columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                      & NODES(columnNodeNumber)%DERIVATIVES(derivIdx)%VERSIONS(versionNumber)
+                      & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
                     globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
                     IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
                       neumannConditionNumber=0
@@ -2259,7 +2261,7 @@ CONTAINS
     INTEGER(INTG) :: neumannConditionIdx,elementNeumannDofIdx
     INTEGER(INTG) :: localNeumannDofIdx,globalNeumannDofIdx
     INTEGER(INTG) :: neumannNode,neumannDeriv
-    INTEGER(INTG) :: ms,os,localNode,version
+    INTEGER(INTG) :: ms,os,localNode,version,derivativeNumber
     REAL(DP) :: integratedValue,pointValue,phim,phio
     TYPE(BoundaryConditionsNeumannType), POINTER :: neumannConditions
     TYPE(BASIS_TYPE), POINTER :: basis
@@ -2375,9 +2377,10 @@ CONTAINS
               DO nodeIdx=1,basis%NUMBER_OF_NODES
                 localNode=line%NODES_IN_LINE(nodeIdx)
                 DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
                   version=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
                   localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
+                    & NODES(localNode)%DERIVATIVES(derivativeNumber)%VERSIONS(version)
                   globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
                   IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
                     lineNumberOfNeumann=lineNumberOfNeumann+1
@@ -2423,7 +2426,7 @@ CONTAINS
               CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,lineIdx, &
                 & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
               IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(line%ELEMENT_NUMBER, &
+                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_LINE_GET(line%number, &
                   & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
               END IF
 
@@ -2431,9 +2434,10 @@ CONTAINS
               lineBasisNodesLoop: DO nodeIdx=1,basis%NUMBER_OF_NODES
                 localNode=line%NODES_IN_LINE(nodeIdx)
                 DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
                   version=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
                   localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
+                    & NODES(localNode)%DERIVATIVES(derivativeNumber)%VERSIONS(version)
                   ! localDof is the weighting DOF
                   IF(localDof>rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
                     ! We might have a face in this domain but nodes in the line that are ghosted
@@ -2511,9 +2515,10 @@ CONTAINS
               DO nodeIdx=1,basis%NUMBER_OF_NODES
                 localNode=face%NODES_IN_FACE(nodeIdx)
                 DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
                   version=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
                   localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
+                    & NODES(localNode)%DERIVATIVES(derivativeNumber)%VERSIONS(version)
                   globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
                   IF(rhsBoundaryConditions%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
                     faceNumberOfNeumann=faceNumberOfNeumann+1
@@ -2559,7 +2564,7 @@ CONTAINS
               CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,face%number, &
                 & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
               IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(face%ELEMENT_NUMBER, &
+                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_FACE_GET(face%number, &
                   & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
               END IF
 
@@ -2567,9 +2572,10 @@ CONTAINS
               faceBasisNodesLoop: DO nodeIdx=1,basis%NUMBER_OF_NODES
                 localNode=face%NODES_IN_FACE(nodeIdx)
                 DO derivIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
                   version=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
                   localDof=rhsVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(localNode)%DERIVATIVES(derivIdx)%VERSIONS(version)
+                    & NODES(localNode)%DERIVATIVES(derivativeNumber)%VERSIONS(version)
                   IF(localDof>rhsVariable%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
                     ! We might have a face in this domain but nodes in the face that are ghosted
                     CYCLE faceBasisNodesLoop
