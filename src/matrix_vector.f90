@@ -1056,11 +1056,11 @@ CONTAINS
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
           CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with row major storage.",ERR,ERROR,*999)          
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE)
-          IF(NUMBER_NON_ZEROS>0) THEN
+          IF(NUMBER_NON_ZEROS>=0) THEN
             MATRIX%NUMBER_NON_ZEROS=NUMBER_NON_ZEROS
           ELSE
             LOCAL_ERROR="The number of non-zeros ("//TRIM(NUMBER_TO_VSTRING(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
-              & ") is invalid. The number must be greater than zero."
+              & ") is invalid. The number must be greater than or equal to zero."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
