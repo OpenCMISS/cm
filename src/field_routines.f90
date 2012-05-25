@@ -22254,7 +22254,7 @@ CONTAINS
                         nu1=PART_DERIV_S1
                         ni2=3
                         nu2=PART_DERIV_S3
-                      ELSE IF(partial_derivative_idx==PART_DERIV_S1_S2) THEN
+                      ELSE IF(partial_derivative_idx==PART_DERIV_S2_S3) THEN
                         ni1=2
                         nu1=PART_DERIV_S2
                         ni2=3
