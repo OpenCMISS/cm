@@ -186,7 +186,7 @@ CONTAINS
   !>Calculates the domain mappings local map from a domain mappings global map.
   SUBROUTINE DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(DOMAIN_MAPPING,ERR,ERROR,*)
 
-   !Argument variables
+    !Argument variables
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The domain mapping to calculate the local mappings
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
