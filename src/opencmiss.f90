@@ -318,7 +318,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDecompositionType,CMISSDecomposition_Finalise,CMISSDecomposition_Initialise
 
-  PUBLIC CMISSDecomposition_CalculateFacesSet
+  PUBLIC CMISSDecomposition_CalculateFacesSet,CMISSDecomposition_CalculateLinesSet
 
   PUBLIC CMISSEquationsType,CMISSEquations_Finalise,CMISSEquations_Initialise
 
