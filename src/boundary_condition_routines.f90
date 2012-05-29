@@ -2304,7 +2304,7 @@ CONTAINS
       ! Initialise field interpolation parameters for the geometric field, which are required for the
       ! face/line Jacobian and scale factors
       CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(geometricField,interpolationParameters,err,error,*999)
-      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(geometricField,scalingParameters,err,error,*999)
+      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(rhsVariable%field,scalingParameters,err,error,*999)
       CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999)
       CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(interpolatedPoints,interpolatedPointMetrics,err,error,*999)
 
@@ -2422,7 +2422,7 @@ CONTAINS
                         & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr%jacobian
                     END DO
 
-                    ! Multiply by scale factors
+                    ! Multiply by scale factors for dependent variable
                     IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
                       integratedValue=integratedValue* &
                         & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr%SCALE_FACTORS(ms,componentNumber)* &
