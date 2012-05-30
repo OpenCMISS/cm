@@ -10384,6 +10384,12 @@ CONTAINS
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
+                                              IF(HAS_INTEGRATED_VALUES) THEN
+                                                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                                  & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
+                                                  & ERR,ERROR,*999)
+                                                RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                              END IF
                                               !Loop over the solver rows associated with this equations set row
                                               DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                                 & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -10628,7 +10634,7 @@ CONTAINS
                                                   CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                                     & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                                     & ERR,ERROR,*999)
-                                                  VALUE=VALUE + RHS_INTEGRATED_VALUE
+                                                  VALUE=VALUE+RHS_INTEGRATED_VALUE*row_coupling_coefficient
                                                 END IF
                                                 CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                   & ERR,ERROR,*999)
@@ -11508,6 +11514,12 @@ CONTAINS
                                           !Add in equations RHS values
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                             & RHS_VALUE,ERR,ERROR,*999)
+                                          IF(HAS_INTEGRATED_VALUES) THEN
+                                            CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                              & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
+                                              & ERR,ERROR,*999)
+                                            RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                          END IF
                                           !Loop over the solver rows associated with this equations set row
                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                             & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -11673,7 +11685,7 @@ CONTAINS
                                             CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                               & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                               & ERR,ERROR,*999)
-                                            RHS_VALUE=RHS_VALUE + RHS_INTEGRATED_VALUE
+                                            RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
                                           END IF
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
