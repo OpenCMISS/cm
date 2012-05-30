@@ -2005,91 +2005,92 @@ CONTAINS
 
           SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%INTERPOLATION_TYPE)
           CASE(FIELD_NODE_BASED_INTERPOLATION)
-            SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
-            CASE(1)
-              ! Only one column used, as this is the same as setting an integrated
-              ! value so no other DOFs are affected
-              globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
-              IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                ! Find the Neumann condition number
-                neumannConditionNumber=0
-                DO neumannIdx=1,numberOfPointDofs
-                  IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
-                    neumannConditionNumber=neumannIdx
+            nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
+            IF(topology%NODES%NODES(nodeNumber)%BOUNDARY_NODE) THEN
+              SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
+              CASE(1)
+                ! Only one column used, as this is the same as setting an integrated
+                ! value so no other DOFs are affected
+                globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
+                IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                  ! Find the Neumann condition number
+                  neumannConditionNumber=0
+                  DO neumannIdx=1,numberOfPointDofs
+                    IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
+                      neumannConditionNumber=neumannIdx
+                    END IF
+                  END DO
+                  IF(neumannConditionNumber==0) THEN
+                    CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
+                      & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
+                  ELSE
+                    CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
                   END IF
-                END DO
-                IF(neumannConditionNumber==0) THEN
-                  CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
-                    & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
-                ELSE
-                  CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
                 END IF
-              END IF
-            CASE(2)
-              ! Loop over all lines for this node and find any DOFs that have a Neumann point condition set
-              nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
-              DO lineIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_LINES
-                line=>topology%LINES%LINES(topology%NODES%NODES(nodeNumber)%NODE_LINES(lineIdx))
-                IF(.NOT.line%BOUNDARY_LINE) CYCLE
-                DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
-                  columnNodeNumber=line%NODES_IN_LINE(nodeIdx)
-                  DO derivIdx=1,line%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
-                    derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
-                    versionNumber=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
-                    columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                      & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
-                    globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                    IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                      neumannConditionNumber=0
-                      DO neumannIdx=1,numberOfPointDofs
-                        IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
-                          neumannConditionNumber=neumannIdx
+              CASE(2)
+                ! Loop over all lines for this node and find any DOFs that have a Neumann point condition set
+                DO lineIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_LINES
+                  line=>topology%LINES%LINES(topology%NODES%NODES(nodeNumber)%NODE_LINES(lineIdx))
+                  IF(.NOT.line%BOUNDARY_LINE) CYCLE
+                  DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
+                    columnNodeNumber=line%NODES_IN_LINE(nodeIdx)
+                    DO derivIdx=1,line%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
+                      derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
+                      versionNumber=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
+                      columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                        & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
+                      globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
+                      IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        neumannConditionNumber=0
+                        DO neumannIdx=1,numberOfPointDofs
+                          IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
+                            neumannConditionNumber=neumannIdx
+                          END IF
+                        END DO
+                        IF(neumannConditionNumber==0) THEN
+                          CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
+                            & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
+                        ELSE
+                          CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
                         END IF
-                      END DO
-                      IF(neumannConditionNumber==0) THEN
-                        CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
-                          & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
-                      ELSE
-                        CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
                       END IF
-                    END IF
+                    END DO
                   END DO
                 END DO
-              END DO
-            CASE(3)
-              ! Loop over all faces for this node and find any DOFs that have a Neumann point condition set 
-              nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
-              DO faceIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_FACES
-                face=>topology%FACES%FACES(topology%NODES%NODES(nodeNumber)%NODE_FACES(faceIdx))
-                IF(.NOT.face%BOUNDARY_FACE) CYCLE
-                DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
-                  columnNodeNumber=face%NODES_IN_FACE(nodeIdx)
-                  DO derivIdx=1,face%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
-                    derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
-                    versionNumber=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
-                    columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                      & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
-                    globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                    IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                      neumannConditionNumber=0
-                      DO neumannIdx=1,numberOfPointDofs
-                        IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
-                          neumannConditionNumber=neumannIdx
+              CASE(3)
+                ! Loop over all faces for this node and find any DOFs that have a Neumann point condition set 
+                DO faceIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_FACES
+                  face=>topology%FACES%FACES(topology%NODES%NODES(nodeNumber)%NODE_FACES(faceIdx))
+                  IF(.NOT.face%BOUNDARY_FACE) CYCLE
+                  DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
+                    columnNodeNumber=face%NODES_IN_FACE(nodeIdx)
+                    DO derivIdx=1,face%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
+                      derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
+                      versionNumber=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
+                      columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                        & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
+                      globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
+                      IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        neumannConditionNumber=0
+                        DO neumannIdx=1,numberOfPointDofs
+                          IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
+                            neumannConditionNumber=neumannIdx
+                          END IF
+                        END DO
+                        IF(neumannConditionNumber==0) THEN
+                          CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
+                            & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
+                        ELSE
+                          CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
                         END IF
-                      END DO
-                      IF(neumannConditionNumber==0) THEN
-                        CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
-                          & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
-                      ELSE
-                        CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
                       END IF
-                    END IF
+                    END DO
                   END DO
                 END DO
-              END DO
-            CASE DEFAULT
-              CALL FLAG_ERROR("The dimension is invalid for point Neumann conditions",err,error,*999)
-            END SELECT !number of dimensions
+              CASE DEFAULT
+                CALL FLAG_ERROR("The dimension is invalid for point Neumann conditions",err,error,*999)
+              END SELECT !number of dimensions
+            END IF
           CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
             CALL FLAG_ERROR("Not implemented.",err,error,*999)
           CASE(FIELD_CONSTANT_INTERPOLATION)
