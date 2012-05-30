@@ -10388,7 +10388,7 @@ CONTAINS
                                                 CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                                   & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                                   & ERR,ERROR,*999)
-                                                RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                                RHS_VALUE=RHS_VALUE-RHS_INTEGRATED_VALUE
                                               END IF
                                               !Loop over the solver rows associated with this equations set row
                                               DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -11518,7 +11518,7 @@ CONTAINS
                                             CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                               & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                               & ERR,ERROR,*999)
-                                            RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                            RHS_VALUE=RHS_VALUE-RHS_INTEGRATED_VALUE
                                           END IF
                                           !Loop over the solver rows associated with this equations set row
                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
