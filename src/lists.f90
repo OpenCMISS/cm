@@ -65,7 +65,6 @@ MODULE LISTS
   INTEGER(INTG), PARAMETER :: LIST_INTG_TYPE=INTEGER_TYPE !<Integer data type for a list \see LISTS_DataType,LISTS
   INTEGER(INTG), PARAMETER :: LIST_SP_TYPE=SINGLE_REAL_TYPE !<Single precision real data type for a list \see LISTS_DataType,LISTS
   INTEGER(INTG), PARAMETER :: LIST_DP_TYPE=DOUBLE_REAL_TYPE !<Double precision real data type for a list \see LISTS_DataType,LISTS
-  INTEGER(INTG), PARAMETER :: LIST_C_INT_TYPE=C_INT_TYPE !<C integer data type for a list \see LISTS_DataType,LISTS
   !>@}
   
   !> \addtogroup LISTS_SortingOrder LISTS::SortingOrder
@@ -204,7 +203,7 @@ MODULE LISTS
     MODULE PROCEDURE LISTS_SUBSET_OF_INTG_ARRAY
   END INTERFACE
 
-  PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE,LIST_C_INT_TYPE
+  PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE
 
   PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START
   
@@ -243,39 +242,7 @@ MODULE LISTS
   PUBLIC LIST_INTERSECTION,LIST_SUBSET_OF
   
   PUBLIC LIST_ITEM_IN_LIST
-  
-  INTERFACE LIST_ITEM_ADD_C_INT
-    MODULE PROCEDURE LIST_ITEM_ADD_C_INT1
-    MODULE PROCEDURE LIST_ITEM_ADD_C_INT2
-  END INTERFACE !LIST_ITEM_ADD_C_INT
-  
-  INTERFACE LIST_ITEM_SET_C_INT
-    MODULE PROCEDURE LIST_ITEM_SET_C_INT1
-    MODULE PROCEDURE LIST_ITEM_SET_C_INT2
-  END INTERFACE !LIST_ITEM_SET_C_INT
 
-  INTERFACE LIST_ITEM_GET_C_INT
-    MODULE PROCEDURE LIST_ITEM_GET_C_INT1
-    MODULE PROCEDURE LIST_ITEM_GET_C_INT2
-  END INTERFACE !LIST_ITEM_GET_C_INT
-
-  INTERFACE LIST_ITEM_IN_LIST_C_INT
-    MODULE PROCEDURE LIST_ITEM_IN_LIST_C_INT1
-    MODULE PROCEDURE LIST_ITEM_IN_LIST_C_INT2
-  END INTERFACE !LIST_ITEM_IN_LIST_C_INT
-
-  INTERFACE LIST_DETACH_AND_DESTROY_C_INT
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_C_INT1
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_C_INT2
-  END INTERFACE !LIST_DETACH_AND_DESTROY_C_INT
-
-  PUBLIC LIST_ITEM_ADD_C_INT, LIST_ITEM_SET_C_INT, LIST_ITEM_GET_C_INT, LIST_ITEM_IN_LIST_C_INT
-  PUBLIC LIST_DETACH_AND_DESTROY_C_INT
-  PUBLIC LIST_SEARCH_C_INT_ARRAY, LIST_SEARCH_LINEAR_C_INT_ARRAY, LIST_SORT_C_INT1_ARRAY, LIST_SORT_C_INT2_ARRAY
-  PUBLIC LIST_SORT_BUBBLE_C_INT1_ARRAY, LIST_SORT_BUBBLE_C_INT2_ARRAY, LIST_SORT_HEAP_C_INT1_ARRAY, LIST_SORT_HEAP_C_INT2_ARRAY
-  PUBLIC LIST_SORT_SHELL_C_INT1_ARRAY, LIST_SORT_SHELL_C_INT2_ARRAY
-  
-  
 CONTAINS
 
   !
@@ -311,9 +278,6 @@ CONTAINS
           CASE(LIST_DP_TYPE)
             ALLOCATE(LIST%LIST_DP(LIST%INITIAL_SIZE),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list double precision data.",ERR,ERROR,*999)
-          CASE(LIST_C_INT_TYPE)
-            ALLOCATE(LIST%LIST_C_INT(LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list c integer data.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -332,9 +296,6 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          CASE(LIST_C_INT_TYPE)
-            ALLOCATE(LIST%LIST_C_INT2(LIST%DATA_DIMENSION,LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list c integer data.",ERR,ERROR,*999)
           END SELECT
         ENDIF
         LIST%SIZE=LIST%INITIAL_SIZE
@@ -476,8 +437,6 @@ CONTAINS
           LIST%DATA_TYPE=LIST_SP_TYPE
         CASE(LIST_DP_TYPE)
           LIST%DATA_TYPE=LIST_DP_TYPE
-        CASE(LIST_C_INT_TYPE)
-          LIST%DATA_TYPE=LIST_C_INT_TYPE
         CASE DEFAULT
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -622,19 +581,6 @@ CONTAINS
                     END IF
                     list%LIST_DP(list%NUMBER_IN_LIST+1:list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST)= &
                       & appendedList%LIST_DP(1:appendedList%NUMBER_IN_LIST)
-                    list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
-                  CASE(LIST_C_INT_TYPE)
-                    IF(list%SIZE<list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST) THEN
-                      !Reallocate
-                      newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
-                      ALLOCATE(newListCInt(newSize),stat=err)
-                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
-                      newListCInt(1:list%NUMBER_IN_LIST)=list%LIST_C_INT(1:list%NUMBER_IN_LIST)
-                      CALL MOVE_ALLOC(newListCInt,list%LIST_C_INT)
-                      list%SIZE=newSize
-                    END IF
-                    list%LIST_C_INT(list%NUMBER_IN_LIST+1:list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST)= &
-                      & appendedList%LIST_C_INT(1:appendedList%NUMBER_IN_LIST)
                     list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
                   CASE DEFAULT
                     CALL FLAG_ERROR("The list data type of "//TRIM(NUMBER_TO_VSTRING(list%DATA_TYPE,"*",err,error))// &
@@ -910,124 +856,6 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE LIST_ITEM_ADD_INTG2
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Adds an item to the end of an c integer list of data dimension 1. 
-  SUBROUTINE LIST_ITEM_ADD_C_INT1(LIST,ITEM,ERR,ERROR,*)
-   !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
-    INTEGER(C_INT), INTENT(IN) :: ITEM !<The item to add
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: NEW_SIZE
-    INTEGER(C_INT), ALLOCATABLE :: NEW_LIST(:)
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("LIST_ITEM_ADD_C_INT1",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-          IF(LIST%DATA_DIMENSION==1) THEN
-            IF(LIST%NUMBER_IN_LIST==LIST%SIZE) THEN
-              !Reallocate
-              NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
-              ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
-              NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST)
-              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_C_INT)
-              LIST%SIZE=NEW_SIZE
-            ENDIF
-            LIST%LIST_C_INT(LIST%NUMBER_IN_LIST+1)=ITEM
-            LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
-          ELSE
-            LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The list has not been finished",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("LIST_ITEM_ADD_C_INT1")
-    RETURN
-999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
-    CALL ERRORS("LIST_ITEM_ADD_C_INT1",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_ADD_C_INT1")
-    RETURN 1
-  END SUBROUTINE LIST_ITEM_ADD_C_INT1
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Adds an item to the end of an c integer list of data dimension > 1. 
-  SUBROUTINE LIST_ITEM_ADD_C_INT2(LIST,ITEM,ERR,ERROR,*)
-   !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
-    INTEGER(C_INT), INTENT(IN) :: ITEM(:) !<The item to add
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: NEW_SIZE
-    INTEGER(C_INT), ALLOCATABLE :: NEW_LIST(:,:)
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("LIST_ITEM_ADD_C_INT2",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-          IF(LIST%DATA_DIMENSION==SIZE(ITEM,1)) THEN
-            IF(LIST%NUMBER_IN_LIST==LIST%SIZE) THEN
-              !Reallocate
-              NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
-              ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
-              NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_C_INT2(:,1:LIST%NUMBER_IN_LIST)
-              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_C_INT2)
-              LIST%SIZE=NEW_SIZE
-            ENDIF
-            LIST%LIST_C_INT2(:,LIST%NUMBER_IN_LIST+1)=ITEM
-            LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
-          ELSE
-            LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("LIST_ITEM_ADD_C_INT2")
-    RETURN
-999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
-    CALL ERRORS("LIST_ITEM_ADD_C_INT2",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_ADD_C_INT2")
-    RETURN 1
-    
-  END SUBROUTINE LIST_ITEM_ADD_C_INT2
   
   !
   !================================================================================================================================
@@ -1382,122 +1210,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets an in an c integer list of data dimension 1. 
-  SUBROUTINE LIST_ITEM_SET_C_INT1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
-   !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
-    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The index of the item to set
-    INTEGER(C_INT), INTENT(IN) :: ITEM !<The item to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("LIST_ITEM_SET_C_INT1",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-          IF(LIST%DATA_DIMENSION==1) THEN
-            IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
-              IF(LIST%MUTABLE) THEN
-                LIST%LIST_C_INT(LIST_ITEM)=ITEM
-              ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The list has not been finished",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("LIST_ITEM_SET_C_INT1")
-    RETURN
-999 CALL ERRORS("LIST_ITEM_SET_C_INT1",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_SET_C_INT1")
-    RETURN 1
-  END SUBROUTINE LIST_ITEM_SET_C_INT1
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets an item in an c integer list of data dimension > 1. 
-  SUBROUTINE LIST_ITEM_SET_C_INT2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
-   !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
-    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The index of the item to set. 
-    INTEGER(C_INT), INTENT(IN) :: ITEM(:) !<The item to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("LIST_ITEM_SET_C_INT2",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-          IF(LIST%DATA_DIMENSION==SIZE(ITEM,1)) THEN
-            IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
-              IF(LIST%MUTABLE) THEN
-                LIST%LIST_C_INT2(:,LIST_ITEM)=ITEM
-              ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("LIST_ITEM_SET_C_INT2")
-    RETURN
-999 CALL ERRORS("LIST_ITEM_SET_C_INT2",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_SET_C_INT2")
-    RETURN 1
-    
-  END SUBROUTINE LIST_ITEM_SET_C_INT2
-  
-  !
-  !================================================================================================================================
-  !
-
   !>Sets an item in a single precision real list of data dimension 1. 
   SUBROUTINE LIST_ITEM_SET_SP1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
@@ -1836,115 +1548,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the ITEM in a list at position LIST_ITEM in the given integer LIST. 
-  SUBROUTINE LIST_ITEM_GET_C_INT1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
-    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
-    INTEGER(C_INT), INTENT(OUT) :: ITEM !<On exit, the item at the specified position
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LIST_ITEM_GET_C_INT1",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
-            IF(LIST%DATA_DIMENSION==1) THEN
-              ITEM=LIST%LIST_C_INT(LIST_ITEM)
-            ELSE
-              LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
-              & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("LIST_ITEM_GET_C_INT1")
-    RETURN
-999 CALL ERRORS("LIST_ITEM_GET_C_INT1",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_GET_C_INT1")
-    RETURN 1
-  END SUBROUTINE LIST_ITEM_GET_C_INT1
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the ITEM in a list at position LIST_ITEM in the given integer LIST. 
-  SUBROUTINE LIST_ITEM_GET_C_INT2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
-    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
-    INTEGER(C_INT), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LIST_ITEM_GET_C_INT2",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
-            IF(LIST%DATA_DIMENSION==SIZE(ITEM,1)) THEN
-              ITEM=LIST%LIST_C_INT2(:,LIST_ITEM)
-            ELSE
-              LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
-              & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("LIST_ITEM_GET_C_INT2")
-    RETURN
-999 CALL ERRORS("LIST_ITEM_GET_C_INT2",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_GET_C_INT2")
-    RETURN 1
-  END SUBROUTINE LIST_ITEM_GET_C_INT2
-  
-  !
-  !================================================================================================================================
-  !
-
   !>Returns the ITEM in a list at position LIST_ITEM in the given single precision LIST. 
   SUBROUTINE LIST_ITEM_GET_SP1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
@@ -2256,99 +1859,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Determines if ITEM is in the given integer LIST. If it is LIST_ITEM is the index in the list. If not LIST_ITEM is 0.
-  SUBROUTINE LIST_ITEM_IN_LIST_C_INT1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
-    INTEGER(C_INT), INTENT(IN) :: ITEM !<The item to find.
-    INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LIST_ITEM_IN_LIST_C_INT1",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-!!TODO: Could search better but requires list to be sorted.
-          IF(LIST%DATA_DIMENSION==1) THEN
-            CALL LIST_SEARCH_LINEAR(LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST),ITEM,LIST_ITEM,ERR,ERROR,*999)
-          ELSE
-            CALL LIST_SEARCH_LINEAR(LIST%LIST_C_INT2(LIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM,LIST_ITEM,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("LIST_ITEM_IN_LIST_C_INT1")
-    RETURN
-999 CALL ERRORS("LIST_ITEM_IN_LIST_C_INT1",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_IN_LIST_C_INT1")
-    RETURN 1
-  END SUBROUTINE LIST_ITEM_IN_LIST_C_INT1
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Determines if ITEM is in the given integer LIST. If it is LIST_ITEM is the index in the list. If not LIST_ITEM is 0.
-  SUBROUTINE LIST_ITEM_IN_LIST_C_INT2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
-    INTEGER(C_INT), INTENT(IN) :: ITEM(:) !<The item to find.
-    INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LIST_ITEM_IN_LIST_C_INT2",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-!!TODO: Could search better but requires list to be sorted.
-          IF(LIST%DATA_DIMENSION==1) THEN
-            CALL LIST_SEARCH_LINEAR(LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION),LIST_ITEM,ERR,ERROR,*999)
-          ELSE
-            CALL LIST_SEARCH_LINEAR(LIST%LIST_C_INT2(LIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION), &
-              & LIST_ITEM,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("LIST_ITEM_IN_LIST_C_INT2")
-    RETURN
-999 CALL ERRORS("LIST_ITEM_IN_LIST_C_INT2",ERR,ERROR)
-    CALL EXITS("LIST_ITEM_IN_LIST_C_INT2")
-    RETURN 1
-  END SUBROUTINE LIST_ITEM_IN_LIST_C_INT2
-  
-  !
-  !================================================================================================================================
-  !
-
   !> Determines if ITEM is in the given single precision real LIST. If it is LIST_ITEM is the index in the list. If not
   !> LIST_ITEM is 0.
   SUBROUTINE LIST_ITEM_IN_LIST_SP1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
@@ -2566,9 +2076,6 @@ CONTAINS
             CASE(LIST_DP_TYPE)
               LIST%LIST_DP(1:LIST_ITEM-1)=LIST%LIST_DP(1:LIST_ITEM-1)
               LIST%LIST_DP(LIST_ITEM:LIST%NUMBER_IN_LIST-1)=LIST%LIST_DP(LIST_ITEM+1:LIST%NUMBER_IN_LIST)
-            CASE(LIST_C_INT_TYPE)
-              LIST%LIST_C_INT(1:LIST_ITEM-1)=LIST%LIST_C_INT(1:LIST_ITEM-1)
-              LIST%LIST_C_INT(LIST_ITEM:LIST%NUMBER_IN_LIST-1)=LIST%LIST_C_INT(LIST_ITEM+1:LIST%NUMBER_IN_LIST)
             CASE DEFAULT
               LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -2584,9 +2091,6 @@ CONTAINS
             CASE(LIST_DP_TYPE)
               LIST%LIST_DP2(:,1:LIST_ITEM-1)=LIST%LIST_DP2(:,1:LIST_ITEM-1)
               LIST%LIST_DP2(:,LIST_ITEM:LIST%NUMBER_IN_LIST-1)=LIST%LIST_DP2(:,LIST_ITEM+1:LIST%NUMBER_IN_LIST)
-            CASE(LIST_C_INT_TYPE)
-              LIST%LIST_C_INT2(:,1:LIST_ITEM-1)=LIST%LIST_C_INT2(:,1:LIST_ITEM-1)
-              LIST%LIST_C_INT2(:,LIST_ITEM:LIST%NUMBER_IN_LIST-1)=LIST%LIST_C_INT2(:,LIST_ITEM+1:LIST%NUMBER_IN_LIST)
             CASE DEFAULT
               LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -2797,117 +2301,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Detaches the list values from an integer list of data dimension 1 and returns them as an array of base type
-  !>before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to then deallocate
-  !>the returned list memory.
-  SUBROUTINE LIST_DETACH_AND_DESTROY_C_INT1(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    INTEGER(C_INT), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:) !<On exit, the detached list. Must not be allocated on entry.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("LIST_DETACH_AND_DESTROY_C_INT1",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is allocated.",ERR,ERROR,*999)
-        ELSE
-          IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-            IF(LIST%DATA_DIMENSION==1) THEN
-              NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
-              !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              CALL MOVE_ALLOC(LIST%LIST_C_INT,LIST_VALUES)
-              CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
-            ELSE
-              LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not match the integer type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("LIST_DETACH_AND_DESTROY_C_INT1")
-    RETURN
-999 CALL ERRORS("LIST_DETACH_AND_DESTROY_C_INT1",ERR,ERROR)
-    CALL EXITS("LIST_DETACH_AND_DESTROY_C_INT1")
-    RETURN 1
-  END SUBROUTINE LIST_DETACH_AND_DESTROY_C_INT1
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Detaches the list values from an integer list of data dimension > 1 and returns them as an array of base type
-  !>before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to then deallocate
-  !>the returned list memory.
-  SUBROUTINE LIST_DETACH_AND_DESTROY_C_INT2(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    INTEGER(C_INT), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:,:) !<On exit, the detached list. Must not be allocated on entry.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("LIST_DETACH_AND_DESTROY_C_INT2",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LIST)) THEN
-      IF(LIST%LIST_FINISHED) THEN
-        IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is allocated.",ERR,ERROR,*999)
-        ELSE
-          IF(LIST%DATA_TYPE==LIST_C_INT_TYPE) THEN
-            IF(LIST%DATA_DIMENSION>1) THEN
-              NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
-              !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              CALL MOVE_ALLOC(LIST%LIST_C_INT2,LIST_VALUES)
-              CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
-            ELSE
-              CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
-                & ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not match the integer type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("LIST_DETACH_AND_DESTROY_C_INT2")
-    RETURN
-999 CALL ERRORS("LIST_DETACH_AND_DESTROY_C_INT2",ERR,ERROR)
-    CALL EXITS("LIST_DETACH_AND_DESTROY_C_INT2")
-    RETURN 1
-  END SUBROUTINE LIST_DETACH_AND_DESTROY_C_INT2
-
-  !
-  !================================================================================================================================
-  !
-  
   !>Detaches the list values from a single precision real list of data dimension 1 and returns them as an array
   !>of base type before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to
   !>then deallocate the returned list memory.
@@ -3175,33 +2568,6 @@ CONTAINS
                 ENDIF
                 i=i+1
               ENDDO !i
-            CASE(LIST_C_INT_TYPE)              
-              CALL LIST_SORT(LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
-              i=1
-              DO WHILE(i<=LIST%NUMBER_IN_LIST)
-                !Find the extent of duplicate values if any
-                j=i+1
-                SAME_VALUE=.TRUE.
-                DO WHILE(j<=LIST%NUMBER_IN_LIST.AND.SAME_VALUE)
-                  IF(LIST%LIST_C_INT(j)==LIST%LIST_C_INT(i)) THEN
-                    j=j+1
-                  ELSE
-                    SAME_VALUE=.FALSE.
-                  ENDIF
-                ENDDO !j
-                IF(j>i+1.OR.SAME_VALUE) THEN
-                  !We have duplicates so remove them
-                  IF(SAME_VALUE) THEN
-                    !Duplicates to the end of the list so just set the number in the list
-                    LIST%NUMBER_IN_LIST=i
-                  ELSE
-                    NUMBER_REMOVED=j-i-1
-                    LIST%LIST_C_INT(i+1:LIST%NUMBER_IN_LIST-NUMBER_REMOVED)=LIST%LIST_C_INT(j:LIST%NUMBER_IN_LIST)
-                    LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST-NUMBER_REMOVED
-                  ENDIF
-                ENDIF
-                i=i+1
-              ENDDO !i
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
               i=1
@@ -3284,33 +2650,6 @@ CONTAINS
                   ELSE
                     NUMBER_REMOVED=j-i-1
                     LIST%LIST_INTG2(:,i+1:LIST%NUMBER_IN_LIST-NUMBER_REMOVED)=LIST%LIST_INTG2(:,j:LIST%NUMBER_IN_LIST)
-                    LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST-NUMBER_REMOVED
-                  ENDIF
-                ENDIF
-                i=i+1
-              ENDDO !i
-            CASE(LIST_C_INT_TYPE)              
-              CALL LIST_SORT(LIST%LIST_C_INT2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION,ERR,ERROR,*999)
-              i=1
-              DO WHILE(i<=LIST%NUMBER_IN_LIST)
-                !Find the extent of duplicate values if any
-                j=i+1
-                SAME_VALUE=.TRUE.
-                DO WHILE(j<=LIST%NUMBER_IN_LIST.AND.SAME_VALUE)
-                  IF(LIST%LIST_C_INT2(LIST%KEY_DIMENSION,j)==LIST%LIST_C_INT2(LIST%KEY_DIMENSION,i)) THEN
-                    j=j+1
-                  ELSE
-                    SAME_VALUE=.FALSE.
-                  ENDIF
-                ENDDO !j
-                IF(j>i+1.OR.SAME_VALUE) THEN
-                  !We have duplicates so remove them
-                  IF(SAME_VALUE) THEN
-                    !Duplicates to the end of the list so just set the number in the list
-                    LIST%NUMBER_IN_LIST=i
-                  ELSE
-                    NUMBER_REMOVED=j-i-1
-                    LIST%LIST_C_INT2(:,i+1:LIST%NUMBER_IN_LIST-NUMBER_REMOVED)=LIST%LIST_C_INT2(:,j:LIST%NUMBER_IN_LIST)
                     LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST-NUMBER_REMOVED
                   ENDIF
                 ENDIF
@@ -3686,8 +3025,6 @@ CONTAINS
             SELECT CASE(LIST%DATA_TYPE)
             CASE(LIST_INTG_TYPE)
               CALL LIST_SORT_BUBBLE_INTG1_ARRAY(LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
-            CASE(LIST_C_INT_TYPE)
-              CALL LIST_SORT_BUBBLE_C_INT1_ARRAY(LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT_BUBBLE_SP1_ARRAY(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)              
             CASE(LIST_DP_TYPE)
@@ -3700,9 +3037,6 @@ CONTAINS
             SELECT CASE(LIST%DATA_TYPE)
             CASE(LIST_INTG_TYPE)
               CALL LIST_SORT_BUBBLE_INTG2_ARRAY(LIST%LIST_INTG2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
-                & ERR,ERROR,*999)
-            CASE(LIST_C_INT_TYPE)
-              CALL LIST_SORT_BUBBLE_C_INT2_ARRAY(LIST%LIST_C_INT2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
                 & ERR,ERROR,*999)
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT_BUBBLE_SP2_ARRAY(LIST%LIST_SP2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
@@ -3720,8 +3054,6 @@ CONTAINS
             SELECT CASE(LIST%DATA_TYPE)
             CASE(LIST_INTG_TYPE)
               CALL LIST_SORT_SHELL_INTG1_ARRAY(LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
-            CASE(LIST_C_INT_TYPE)
-              CALL LIST_SORT_SHELL_C_INT1_ARRAY(LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT_SHELL_SP1_ARRAY(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)              
             CASE(LIST_DP_TYPE)
@@ -3734,9 +3066,6 @@ CONTAINS
             SELECT CASE(LIST%DATA_TYPE)
             CASE(LIST_INTG_TYPE)
               CALL LIST_SORT_SHELL_INTG2_ARRAY(LIST%LIST_INTG2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
-                & ERR,ERROR,*999)
-            CASE(LIST_C_INT_TYPE)
-              CALL LIST_SORT_SHELL_C_INT2_ARRAY(LIST%LIST_C_INT2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
                 & ERR,ERROR,*999)
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT_SHELL_SP2_ARRAY(LIST%LIST_SP2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
@@ -3754,8 +3083,6 @@ CONTAINS
             SELECT CASE(LIST%DATA_TYPE)
             CASE(LIST_INTG_TYPE)
               CALL LIST_SORT_HEAP_INTG1_ARRAY(LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
-            CASE(LIST_C_INT_TYPE)
-              CALL LIST_SORT_HEAP_C_INT1_ARRAY(LIST%LIST_C_INT(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT_HEAP_SP1_ARRAY(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)              
             CASE(LIST_DP_TYPE)
@@ -3768,9 +3095,6 @@ CONTAINS
             SELECT CASE(LIST%DATA_TYPE)
             CASE(LIST_INTG_TYPE)
               CALL LIST_SORT_HEAP_INTG2_ARRAY(LIST%LIST_INTG2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
-                & ERR,ERROR,*999)
-            CASE(LIST_C_INT_TYPE)
-              CALL LIST_SORT_HEAP_C_INT2_ARRAY(LIST%LIST_C_INT2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
                 & ERR,ERROR,*999)
             CASE(LIST_SP_TYPE)
               CALL LIST_SORT_HEAP_SP2_ARRAY(LIST%LIST_SP2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
