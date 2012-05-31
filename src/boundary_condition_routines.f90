@@ -1890,7 +1890,7 @@ CONTAINS
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       rhsVariable=>boundaryConditionsVariable%variable
       IF(.NOT.ASSOCIATED(rhsVariable)) &
-        & CALL FLAG_ERROR("RHS boundary conditions variable field variabe is not associated.",err,error,*999)
+        & CALL FLAG_ERROR("RHS boundary conditions variable field variable is not associated.",err,error,*999)
       numberOfPointDofs=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
       IF(ASSOCIATED(boundaryConditionsNeumann)) THEN
