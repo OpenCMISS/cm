@@ -10385,10 +10385,11 @@ CONTAINS
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
                                               IF(HAS_INTEGRATED_VALUES) THEN
+                                                !Add any Neumann integrated values, b = f + N q
                                                 CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                                   & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                                   & ERR,ERROR,*999)
-                                                RHS_VALUE=RHS_VALUE-RHS_INTEGRATED_VALUE
+                                                RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
                                               END IF
                                               !Loop over the solver rows associated with this equations set row
                                               DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -10631,6 +10632,7 @@ CONTAINS
                                                   & COUPLING_COEFFICIENTS(solver_row_idx)
                                                 VALUE=RHS_PARAMETERS(rhs_variable_dof)*row_coupling_coefficient
                                                 IF(HAS_INTEGRATED_VALUES) THEN
+                                                  !Add any Neumann integrated values, b = f + N q
                                                   CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                                     & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                                     & ERR,ERROR,*999)
@@ -11515,10 +11517,11 @@ CONTAINS
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                             & RHS_VALUE,ERR,ERROR,*999)
                                           IF(HAS_INTEGRATED_VALUES) THEN
+                                            !Add any Neumann integrated values, b = f + N q
                                             CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                               & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
                                               & ERR,ERROR,*999)
-                                            RHS_VALUE=RHS_VALUE-RHS_INTEGRATED_VALUE
+                                            RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
                                           END IF
                                           !Loop over the solver rows associated with this equations set row
                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -11680,7 +11683,7 @@ CONTAINS
                                           ENDIF
                                         CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
-                                          ! Add any integrated RHS values calculated from point Neumann conditions
+                                          ! Add any integrated RHS values calculated from point Neumann conditions, b = f + N q
                                           IF(HAS_INTEGRATED_VALUES) THEN
                                             CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
                                               & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
@@ -11697,7 +11700,9 @@ CONTAINS
                                               row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=-1.0_DP*RHS_VALUE*row_coupling_coefficient
+                                              !For nonlinear problems, f(x) - b = 0, and for linear, K x = b, so we always add the
+                                              !right hand side field value to the solver right hand side vector
+                                              VALUE=RHS_VALUE*row_coupling_coefficient
                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
