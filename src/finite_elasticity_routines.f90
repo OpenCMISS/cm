@@ -1983,7 +1983,8 @@ CONTAINS
               DO face_node_idx=1,FACE_BASIS%NUMBER_OF_NODES !nnf
                 element_node_idx=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx,element_face_idx) !nn
                 DO face_node_derivative_idx=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx) !nkf
-                  node_derivative_idx=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx,element_face_idx)
+                  node_derivative_idx=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                    & face_node_derivative_idx,face_node_idx,element_face_idx)
                   parameter_idx=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx,element_node_idx)
                   face_parameter_idx=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx,face_node_idx)
                   element_dof_idx=element_base_dof_idx+parameter_idx
