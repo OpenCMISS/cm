@@ -103,7 +103,14 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
   INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=20 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
-  
+
+  !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_SparsityTypes BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
+  !> \brief Storage type for matrices used by boundary conditions.
+  !>@{
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_SPARSE_MATRICES=1 !<The matrices are stored as sparse matrices.
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FULL_MATRICES=2 !<The matrices are stored as full matrices.
+  !>@}
+
   !Module types
 
   !Module variables
@@ -131,13 +138,15 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
     & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
 
+  PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
+
   PUBLIC BOUNDARY_CONDITIONS_CREATE_FINISH,BOUNDARY_CONDITIONS_CREATE_START,BOUNDARY_CONDITIONS_DESTROY
   
   PUBLIC BOUNDARY_CONDITIONS_ADD_CONSTANT,BOUNDARY_CONDITIONS_ADD_LOCAL_DOF,BOUNDARY_CONDITIONS_ADD_ELEMENT, &
     & BOUNDARY_CONDITIONS_ADD_NODE,BOUNDARY_CONDITIONS_VARIABLE_GET
 
   PUBLIC BOUNDARY_CONDITIONS_SET_CONSTANT,BOUNDARY_CONDITIONS_SET_LOCAL_DOF,BOUNDARY_CONDITIONS_SET_ELEMENT, &
-    & BOUNDARY_CONDITIONS_SET_NODE,BoundaryConditions_NeumannIntegrate
+    & BOUNDARY_CONDITIONS_SET_NODE,BoundaryConditions_NeumannIntegrate,BoundaryConditions_NeumannSparsityTypeSet
 
 CONTAINS  
 
@@ -683,6 +692,7 @@ CONTAINS
           SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.FALSE.
           SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES=0
           SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%SOLVER_EQUATIONS=>SOLVER_EQUATIONS
+          SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%neumannMatrixSparsity=BOUNDARY_CONDITION_SPARSE_MATRICES
           DO equations_set_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
             IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -1974,168 +1984,183 @@ CONTAINS
 
         CALL DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(pointDofMapping,err,error,*999)
 
-        ! Work out integration matrix sparsity structure
-        ! For a single process, compressed column would be more memory efficient, but with
-        ! multiple processes the number of Neumann point DOFs could be more than the number
-        ! of local row DOFs, and multiplying a compressed row matrix by a vector is faster,
-        ! so we will use compressed row storage
-        ALLOCATE(rowIndices(rowMapping%TOTAL_NUMBER_OF_LOCAL+1),stat=err)
-        IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann integration matrix column indices.",err,error,*999)
-        ! We don't know the number of non zeros before hand, so use a list to keep track of column indices
-        NULLIFY(columnIndicesList)
-        CALL LIST_CREATE_START(columnIndicesList,err,error,*999)
-        CALL LIST_DATA_TYPE_SET(columnIndicesList,LIST_INTG_TYPE,err,error,*999)
-        CALL LIST_CREATE_FINISH(columnIndicesList,err,error,*999)
-        ! Stores the column indices for the current row
-        NULLIFY(rowColumnIndicesList)
-        CALL LIST_CREATE_START(rowColumnIndicesList,err,error,*999)
-        CALL LIST_DATA_TYPE_SET(rowColumnIndicesList,LIST_INTG_TYPE,err,error,*999)
-        CALL LIST_MUTABLE_SET(rowColumnIndicesList,.TRUE.,err,error,*999)
-        CALL LIST_CREATE_FINISH(rowColumnIndicesList,err,error,*999)
-        rowIndices(1)=1
+        CALL DISTRIBUTED_MATRIX_CREATE_START(rowMapping,pointDofMapping,boundaryConditionsNeumann%integrationMatrix,err,error,*999)
+        SELECT CASE(boundaryConditionsVariable%BOUNDARY_CONDITIONS%neumannMatrixSparsity)
+        CASE(BOUNDARY_CONDITION_SPARSE_MATRICES)
+          ! Work out integration matrix sparsity structure
+          ! For a single process, compressed column would be more memory efficient, but with
+          ! multiple processes the number of Neumann point DOFs could be more than the number
+          ! of local row DOFs, and multiplying a compressed row matrix by a vector is faster,
+          ! so we will use compressed row storage
+          ALLOCATE(rowIndices(rowMapping%TOTAL_NUMBER_OF_LOCAL+1),stat=err)
+          IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann integration matrix column indices.",err,error,*999)
+          ! We don't know the number of non zeros before hand, so use a list to keep track of column indices
+          NULLIFY(columnIndicesList)
+          CALL LIST_CREATE_START(columnIndicesList,err,error,*999)
+          CALL LIST_DATA_TYPE_SET(columnIndicesList,LIST_INTG_TYPE,err,error,*999)
+          CALL LIST_CREATE_FINISH(columnIndicesList,err,error,*999)
+          ! Stores the column indices for the current row
+          NULLIFY(rowColumnIndicesList)
+          CALL LIST_CREATE_START(rowColumnIndicesList,err,error,*999)
+          CALL LIST_DATA_TYPE_SET(rowColumnIndicesList,LIST_INTG_TYPE,err,error,*999)
+          CALL LIST_MUTABLE_SET(rowColumnIndicesList,.TRUE.,err,error,*999)
+          CALL LIST_CREATE_FINISH(rowColumnIndicesList,err,error,*999)
+          rowIndices(1)=1
 
-        DO localDof=1,rhsVariable%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-          localDofNyy=rhsVariable%DOF_TO_PARAM_MAP%DOF_TYPE(2,localDof)
-          componentNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(4,localDofNyy)
-          ! Get topology for finding faces/lines
-          topology=>rhsVariable%COMPONENTS(componentNumber)%DOMAIN%TOPOLOGY
-          IF(.NOT.ASSOCIATED(topology)) THEN
-            CALL FLAG_ERROR("Field component topology is not associated.",err,error,*999)
+          DO localDof=1,rhsVariable%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+            localDofNyy=rhsVariable%DOF_TO_PARAM_MAP%DOF_TYPE(2,localDof)
+            componentNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(4,localDofNyy)
+            ! Get topology for finding faces/lines
+            topology=>rhsVariable%COMPONENTS(componentNumber)%DOMAIN%TOPOLOGY
+            IF(.NOT.ASSOCIATED(topology)) THEN
+              CALL FLAG_ERROR("Field component topology is not associated.",err,error,*999)
+            END IF
+
+            SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%INTERPOLATION_TYPE)
+            CASE(FIELD_NODE_BASED_INTERPOLATION)
+              nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
+              IF(topology%NODES%NODES(nodeNumber)%BOUNDARY_NODE) THEN
+                SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
+                CASE(1)
+                  ! Only one column used, as this is the same as setting an integrated
+                  ! value so no other DOFs are affected
+                  globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
+                  IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                    ! Find the Neumann condition number
+                    neumannConditionNumber=0
+                    DO neumannIdx=1,numberOfPointDofs
+                      IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
+                        neumannConditionNumber=neumannIdx
+                      END IF
+                    END DO
+                    IF(neumannConditionNumber==0) THEN
+                      CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
+                        & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
+                    ELSE
+                      CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
+                    END IF
+                  END IF
+                CASE(2)
+                  ! Loop over all lines for this node and find any DOFs that have a Neumann point condition set
+                  DO lineIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_LINES
+                    line=>topology%LINES%LINES(topology%NODES%NODES(nodeNumber)%NODE_LINES(lineIdx))
+                    IF(.NOT.line%BOUNDARY_LINE) CYCLE
+                    DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
+                      columnNodeNumber=line%NODES_IN_LINE(nodeIdx)
+                      DO derivIdx=1,line%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
+                        derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
+                        versionNumber=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
+                        columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                          & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
+                        globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
+                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                          neumannConditionNumber=0
+                          DO neumannIdx=1,numberOfPointDofs
+                            IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
+                              neumannConditionNumber=neumannIdx
+                            END IF
+                          END DO
+                          IF(neumannConditionNumber==0) THEN
+                            CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
+                              & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
+                          ELSE
+                            CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
+                          END IF
+                        END IF
+                      END DO
+                    END DO
+                  END DO
+                CASE(3)
+                  ! Loop over all faces for this node and find any DOFs that have a Neumann point condition set 
+                  DO faceIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_FACES
+                    face=>topology%FACES%FACES(topology%NODES%NODES(nodeNumber)%NODE_FACES(faceIdx))
+                    IF(.NOT.face%BOUNDARY_FACE) CYCLE
+                    DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
+                      columnNodeNumber=face%NODES_IN_FACE(nodeIdx)
+                      DO derivIdx=1,face%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
+                        derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
+                        versionNumber=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
+                        columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                          & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
+                        globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
+                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                          neumannConditionNumber=0
+                          DO neumannIdx=1,numberOfPointDofs
+                            IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
+                              neumannConditionNumber=neumannIdx
+                            END IF
+                          END DO
+                          IF(neumannConditionNumber==0) THEN
+                            CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
+                              & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
+                          ELSE
+                            CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
+                          END IF
+                        END IF
+                      END DO
+                    END DO
+                  END DO
+                CASE DEFAULT
+                  CALL FLAG_ERROR("The dimension is invalid for point Neumann conditions",err,error,*999)
+                END SELECT !number of dimensions
+              END IF
+            CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+              CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CASE(FIELD_CONSTANT_INTERPOLATION)
+              CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+              CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+              CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CASE DEFAULT
+              CALL FLAG_ERROR("The interpolation type of "// &
+                & TRIM(NUMBER_TO_VSTRING(rhsVariable%COMPONENTS(componentNumber) &
+                & %INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
+                & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",ERR,ERROR))//".", &
+                & err,error,*999)
+            END SELECT
+
+            !Sort and remove duplicates
+            CALL LIST_REMOVE_DUPLICATES(rowColumnIndicesList,err,error,*999)
+            !Now add all column DOFs in this row that use Neumann conditions to the overall column indices
+            CALL List_AppendList(columnIndicesList,rowColumnIndicesList,err,error,*999)
+            CALL LIST_NUMBER_OF_ITEMS_GET(rowColumnIndicesList,numberRowEntries,err,error,*999)
+            rowIndices(localDof+1)=rowIndices(localDof)+numberRowEntries
+            CALL List_ClearItems(rowColumnIndicesList,err,error,*999)
+          END DO !local DOFs
+
+          CALL LIST_DESTROY(rowColumnIndicesList,err,error,*999)
+          CALL LIST_DETACH_AND_DESTROY(columnIndicesList,numberNonZeros,columnIndices,err,error,*999)
+          IF(DIAGNOSTICS1) THEN
+            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Neumann integration matrix sparsity",err,error,*999)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number non-zeros = ", numberNonZeros,err,error,*999)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number columns = ",numberOfPointDofs,err,error,*999)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number rows = ", &
+              & rhsVariable%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL,err,error,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberNonZeros,6,6, &
+              & rowIndices,'("  Row indices: ",6(X,I6))', '(6X,6(X,I6))',err,error,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfPointDofs+1,6,6, &
+              & columnIndices,'("  Column indices: ",6(X,I6))', '(6X,6(X,I6))',err,error,*999)
           END IF
 
-          SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%INTERPOLATION_TYPE)
-          CASE(FIELD_NODE_BASED_INTERPOLATION)
-            nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
-            IF(topology%NODES%NODES(nodeNumber)%BOUNDARY_NODE) THEN
-              SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
-              CASE(1)
-                ! Only one column used, as this is the same as setting an integrated
-                ! value so no other DOFs are affected
-                globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
-                IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                  ! Find the Neumann condition number
-                  neumannConditionNumber=0
-                  DO neumannIdx=1,numberOfPointDofs
-                    IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
-                      neumannConditionNumber=neumannIdx
-                    END IF
-                  END DO
-                  IF(neumannConditionNumber==0) THEN
-                    CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
-                      & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
-                  ELSE
-                    CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
-                  END IF
-                END IF
-              CASE(2)
-                ! Loop over all lines for this node and find any DOFs that have a Neumann point condition set
-                DO lineIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_LINES
-                  line=>topology%LINES%LINES(topology%NODES%NODES(nodeNumber)%NODE_LINES(lineIdx))
-                  IF(.NOT.line%BOUNDARY_LINE) CYCLE
-                  DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
-                    columnNodeNumber=line%NODES_IN_LINE(nodeIdx)
-                    DO derivIdx=1,line%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
-                      derivativeNumber=line%DERIVATIVES_IN_LINE(1,derivIdx,nodeIdx)
-                      versionNumber=line%DERIVATIVES_IN_LINE(2,derivIdx,nodeIdx)
-                      columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                        & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
-                      globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                      IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                        neumannConditionNumber=0
-                        DO neumannIdx=1,numberOfPointDofs
-                          IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
-                            neumannConditionNumber=neumannIdx
-                          END IF
-                        END DO
-                        IF(neumannConditionNumber==0) THEN
-                          CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
-                            & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
-                        ELSE
-                          CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
-                        END IF
-                      END IF
-                    END DO
-                  END DO
-                END DO
-              CASE(3)
-                ! Loop over all faces for this node and find any DOFs that have a Neumann point condition set 
-                DO faceIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_FACES
-                  face=>topology%FACES%FACES(topology%NODES%NODES(nodeNumber)%NODE_FACES(faceIdx))
-                  IF(.NOT.face%BOUNDARY_FACE) CYCLE
-                  DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
-                    columnNodeNumber=face%NODES_IN_FACE(nodeIdx)
-                    DO derivIdx=1,face%BASIS%NUMBER_OF_DERIVATIVES(nodeIdx)
-                      derivativeNumber=face%DERIVATIVES_IN_FACE(1,derivIdx,nodeIdx)
-                      versionNumber=face%DERIVATIVES_IN_FACE(2,derivIdx,nodeIdx)
-                      columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                        & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
-                      globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                      IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
-                        neumannConditionNumber=0
-                        DO neumannIdx=1,numberOfPointDofs
-                          IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
-                            neumannConditionNumber=neumannIdx
-                          END IF
-                        END DO
-                        IF(neumannConditionNumber==0) THEN
-                          CALL FLAG_ERROR("Could not find matching Neuamann condition number for global DOF "// &
-                            & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" with Neumann condition set.",err,error,*999)
-                        ELSE
-                          CALL LIST_ITEM_ADD(rowColumnIndicesList,neumannConditionNumber,err,error,*999)
-                        END IF
-                      END IF
-                    END DO
-                  END DO
-                END DO
-              CASE DEFAULT
-                CALL FLAG_ERROR("The dimension is invalid for point Neumann conditions",err,error,*999)
-              END SELECT !number of dimensions
-            END IF
-          CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE(FIELD_CONSTANT_INTERPOLATION)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE DEFAULT
-            CALL FLAG_ERROR("The interpolation type of "// &
-              & TRIM(NUMBER_TO_VSTRING(rhsVariable%COMPONENTS(componentNumber) &
-              & %INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
-              & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",ERR,ERROR))//".", &
-              & err,error,*999)
-          END SELECT
+          CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_SET(boundaryConditionsNeumann%integrationMatrix, &
+            & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,err,error,*999)
+          CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET(boundaryConditionsNeumann%integrationMatrix,numberNonZeros,err,error,*999)
+          CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET(boundaryConditionsNeumann%integrationMatrix, &
+            & rowIndices,columnIndices(1:numberNonZeros),err,error,*999)
 
-          !Sort and remove duplicates
-          CALL LIST_REMOVE_DUPLICATES(rowColumnIndicesList,err,error,*999)
-          !Now add all column DOFs in this row that use Neumann conditions to the overall column indices
-          CALL List_AppendList(columnIndicesList,rowColumnIndicesList,err,error,*999)
-          CALL LIST_NUMBER_OF_ITEMS_GET(rowColumnIndicesList,numberRowEntries,err,error,*999)
-          rowIndices(localDof+1)=rowIndices(localDof)+numberRowEntries
-          CALL List_ClearItems(rowColumnIndicesList,err,error,*999)
-        END DO !local DOFs
+          DEALLOCATE(localDofNumbers)
+          DEALLOCATE(rowIndices)
+          DEALLOCATE(columnIndices)
+        CASE(BOUNDARY_CONDITION_FULL_MATRICES)
+          CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_SET(boundaryConditionsNeumann%integrationMatrix, &
+            & DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,err,error,*999)
+        CASE DEFAULT
+          CALL FLAG_ERROR("The Neumann matrix sparsity type of "// &
+              & TRIM(NUMBER_TO_VSTRING(boundaryConditionsVariable%BOUNDARY_CONDITIONS%neumannMatrixSparsity,"*",err,error))// &
+              & " is invalid.",err,error,*999)
+        END SELECT
 
-        CALL LIST_DESTROY(rowColumnIndicesList,err,error,*999)
-        CALL LIST_DETACH_AND_DESTROY(columnIndicesList,numberNonZeros,columnIndices,err,error,*999)
-        IF(DIAGNOSTICS1) THEN
-          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Neumann integration matrix sparsity",err,error,*999)
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number non-zeros = ", numberNonZeros,err,error,*999)
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number columns = ",numberOfPointDofs,err,error,*999)
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number rows = ", &
-            & rhsVariable%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL,err,error,*999)
-          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberNonZeros,6,6, &
-            & rowIndices,'("  Row indices: ",6(X,I6))', '(6X,6(X,I6))',err,error,*999)
-          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfPointDofs+1,6,6, &
-            & columnIndices,'("  Column indices: ",6(X,I6))', '(6X,6(X,I6))',err,error,*999)
-        END IF
-
-        CALL DISTRIBUTED_MATRIX_CREATE_START(rowMapping,pointDofMapping,boundaryConditionsNeumann%integrationMatrix,err,error,*999)
-        CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_SET(boundaryConditionsNeumann%integrationMatrix, &
-          & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,err,error,*999)
-        CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET(boundaryConditionsNeumann%integrationMatrix,numberNonZeros,err,error,*999)
-        CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET(boundaryConditionsNeumann%integrationMatrix, &
-          & rowIndices,columnIndices(1:numberNonZeros),err,error,*999)
         CALL DISTRIBUTED_MATRIX_CREATE_FINISH(boundaryConditionsNeumann%integrationMatrix,err,error,*999)
 
         CALL DISTRIBUTED_VECTOR_CREATE_START(pointDofMapping,boundaryConditionsNeumann%pointValues,err,error,*999)
@@ -2146,10 +2171,6 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*998)
     END IF
-
-    DEALLOCATE(localDofNumbers)
-    DEALLOCATE(rowIndices)
-    DEALLOCATE(columnIndices)
 
     CALL EXITS("BoundaryConditions_NeumannMatricesInitialise")
     RETURN
@@ -2588,6 +2609,44 @@ CONTAINS
     CALL EXITS("BoundaryConditions_NeumannIntegrate")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannIntegrate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the sparsity type for the Neumann integration matrices
+  SUBROUTINE BoundaryConditions_NeumannSparsityTypeSet(boundaryConditions,sparsityType,err,error,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: sparsityType !<The matrix sparsity type to be set \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+
+    CALL ENTERS("BoundaryConditions_NeumannSparsityTypeSet",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(boundaryConditions)) THEN
+      SELECT CASE(sparsityType)
+      CASE(BOUNDARY_CONDITION_SPARSE_MATRICES)
+        boundaryConditions%neumannMatrixSparsity=BOUNDARY_CONDITION_SPARSE_MATRICES
+      CASE(BOUNDARY_CONDITION_FULL_MATRICES)
+        boundaryConditions%neumannMatrixSparsity=BOUNDARY_CONDITION_FULL_MATRICES
+      CASE DEFAULT
+        CALL FLAG_ERROR("The specified Neumann integration matrix sparsity type of "// &
+          & TRIM(NUMBER_TO_VSTRING(sparsityType,"*",err,error))//" is invalid.",err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions are not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("BoundaryConditions_NeumannSparsityTypeSet")
+    RETURN
+999 CALL ERRORS("BoundaryConditions_NeumannSparsityTypeSet",err,error)
+    CALL EXITS("BoundaryConditions_NeumannSparsityTypeSet")
+    RETURN 1
+
+  END SUBROUTINE BoundaryConditions_NeumannSparsityTypeSet
 
   !
   !================================================================================================================================
