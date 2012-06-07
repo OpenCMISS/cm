@@ -4119,9 +4119,7 @@ CONTAINS
             DO k=1,SIZE(NIDX,3)
               DO j=1,SIZE(NIDX,2)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(1,j,k),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(1,j,k)
               ENDDO
             ENDDO
             NORMAL_XI=-1
@@ -4131,9 +4129,7 @@ CONTAINS
             DO k=1,SIZE(NIDX,3)
               DO j=1,SIZE(NIDX,2)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(SIZE(NIDX,1),j,k),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(SIZE(NIDX,1),j,k)
               ENDDO
             ENDDO
             NORMAL_XI=1
@@ -4143,9 +4139,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,2)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,j,SIZE(NIDX,3)),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,j,SIZE(NIDX,3))
               ENDDO
             ENDDO
             NORMAL_XI=3
@@ -4155,9 +4149,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,2)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,j,1),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,j,1)
               ENDDO
             ENDDO
             NORMAL_XI=-3
@@ -4167,9 +4159,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,3)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,1,j),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,1,j)
               ENDDO
             ENDDO
             NORMAL_XI=-2
@@ -4179,9 +4169,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,3)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,SIZE(NIDX,2),j),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,SIZE(NIDX,2),j)
               ENDDO
             ENDDO
             NORMAL_XI=2
@@ -4190,6 +4178,22 @@ CONTAINS
               & " is invalid for a regular mesh."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+          !Now convert the component node numbering to user numbers if a mesh has multiple components
+          DO node_counter=1,SIZE(SURFACE_NODES,1)
+            SELECT CASE(REGULAR_MESH%BASES(MESH_COMPONENT)%PTR%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
+                  & SURFACE_NODES(node_counter),NODE_USER_NUMBER,ERR,ERROR,*999)
+              SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+            CASE(BASIS_SIMPLEX_TYPE)
+              SURFACE_NODES(node_counter)=COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
+                  & SURFACE_NODES(node_counter),ERR,ERROR)
+              IF(ERR/=0) GOTO 999
+            CASE DEFAULT
+              CALL FLAG_ERROR("The basis type of "//TRIM(NUMBER_TO_VSTRING(REGULAR_MESH%BASES(MESH_COMPONENT)%PTR%TYPE, &
+                & "*",ERR,ERROR))//" is not implemented when getting a regular mesh surface.",ERR,ERROR,*999)
+            END SELECT
+          END DO
         ELSE
           CALL FLAG_ERROR("Output SURFACE_NODES array is already allocated.",ERR,ERROR,*999)
         ENDIF
@@ -5484,6 +5488,7 @@ CONTAINS
   !
 
   !>Retrieve the user node number for a component number in a regular generated mesh
+  !>This routine only works for Lagrange/Hermite elements
   SUBROUTINE GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(GENERATED_MESH,BASIS_INDEX, &
       & NODE_COMPONENT_NUMBER,NODE_USER_NUMBER,ERR,ERROR,*)
 
