@@ -656,9 +656,11 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mi,ni,nu
-    REAL(DP) :: DET_GL,DET_DX_DXI,FF,G1,G3,MU,R,RC,RCRC,RR
+    REAL(DP) :: A(2,2),B(2),C,D,DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    NULLIFY(INTERPOLATED_POINT)
 
     CALL ENTERS("COORDINATE_METRICS_CALCULATE",ERR,ERROR,*999)
 
@@ -668,21 +670,46 @@ CONTAINS
         IF(ASSOCIATED(INTERPOLATED_POINT)) THEN
           IF(INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE>=FIRST_PART_DERIV) THEN
             
-            !Calculate the derivatives of X with respect to XI
-            DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
-              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
-              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,ni)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
-            ENDDO !ni
-            
-            !Initialise the Jacobian and the metric tensors to the identity matrix
-            METRICS%GL=0.0_DP
-            METRICS%GU=0.0_DP
-            DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
-              METRICS%GL(ni,ni)=1.0_DP
-              METRICS%GU(ni,ni)=1.0_DP
-            ENDDO !i
-            METRICS%JACOBIAN=0.0_DP
-            
+            SELECT CASE(METRICS%NUMBER_OF_XI_DIMENSIONS)
+            CASE(1)
+              !Calculate the derivatives of X with respect to XI
+              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1)
+              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,1)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
+              !Initialise the covariant metric tensor to the identity matrix
+              METRICS%GL(1,1)=1.0_DP
+            CASE(2)
+              !Calculate the derivatives of X with respect to XI
+              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1)
+              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,1)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
+              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2)
+              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,2)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
+              !Initialise the covariant metric tensor to the identity matrix
+              METRICS%GL(1,1)=1.0_DP
+              METRICS%GL(1,2)=0.0_DP
+              METRICS%GL(2,1)=0.0_DP
+              METRICS%GL(2,2)=0.0_DP
+            CASE(3)
+              !Calculate the derivatives of X with respect to XI
+              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1)
+              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,1)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
+              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2)
+              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,2)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
+              nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(3)
+              METRICS%DX_DXI(1:METRICS%NUMBER_OF_X_DIMENSIONS,3)=INTERPOLATED_POINT%VALUES(1:METRICS%NUMBER_OF_X_DIMENSIONS,nu)
+              !Initialise the covariant metric tensor to the identity matrix
+              METRICS%GL(1,1)=1.0_DP
+              METRICS%GL(1,2)=0.0_DP
+              METRICS%GL(1,3)=0.0_DP
+              METRICS%GL(2,1)=0.0_DP
+              METRICS%GL(2,2)=1.0_DP
+              METRICS%GL(2,3)=0.0_DP
+              METRICS%GL(3,1)=0.0_DP
+              METRICS%GL(3,2)=0.0_DP
+              METRICS%GL(3,3)=1.0_DP
+            CASE DEFAULT
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END SELECT
+                        
             !Calculate the covariant metric tensor GL(i,j)
             SELECT CASE(COORDINATE_SYSTEM%TYPE)
             CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -790,7 +817,135 @@ CONTAINS
             IF(METRICS%NUMBER_OF_XI_DIMENSIONS==METRICS%NUMBER_OF_X_DIMENSIONS) THEN
               CALL INVERT(METRICS%DX_DXI,METRICS%DXI_DX,DET_DX_DXI,ERR,ERROR,*999)
             ELSE
-              METRICS%DXI_DX=0.0_DP
+              !We have a line or a surface embedded in a higher dimensional space
+              SELECT CASE(METRICS%NUMBER_OF_XI_DIMENSIONS)
+              CASE(1)
+                !Line in space
+                SELECT CASE(METRICS%NUMBER_OF_X_DIMENSIONS)
+                CASE(2)
+                  IF(INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE>FIRST_PART_DERIV) THEN
+                    !We have curvature information. Form the frenet vector frame.
+                    !Calculate the normal vector from the normalised second derivative of the position vector.
+                    nu=PARTIAL_DERIVATIVE_SECOND_DERIVATIVE_MAP(1)
+                    DX_DXI2=NORMALISE(INTERPOLATED_POINT%VALUES(1:2,nu),ERR,ERROR)
+                    IF(ERR/=0) GOTO 999
+                  ELSE
+                    !No curvature information but obtain other normal frenet vector by rotating tangent vector 90 deg.
+                    DX_DXI2(1)=-1.0_DP*METRICS%DX_DXI(2,1)
+                    DX_DXI2(2)=METRICS%DX_DXI(1,1)                    
+                  ENDIF
+                  DET_DX_DXI=METRICS%DX_DXI(1,1)*DX_DXI2(2)-METRICS%DX_DXI(2,1)*DX_DXI2(1)
+                  IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
+                    METRICS%DXI_DX(1,1)=DX_DXI2(2)/DET_DX_DXI
+                    METRICS%DXI_DX(1,2)=DX_DXI2(1)/DET_DX_DXI
+                    !Normalise to ensure that g^11=g^1.g^1
+                    LENGTH=L2NORM(METRICS%DXI_DX(1,1:2))
+                    SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
+                    METRICS%DXI_DX(1,1:2)=SCALE*METRICS%DXI_DX(1,1:2)
+                  ELSE
+                    CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
+                    METRICS%DXI_DX=0.0_DP                    
+                  ENDIF
+                CASE(3)
+                  IF(INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE>FIRST_PART_DERIV) THEN
+                    !We have curvature information. Form the frenet vector frame.
+                    !Calculate the normal vector from the normalised second derivative of the position vector.
+                    nu=PARTIAL_DERIVATIVE_SECOND_DERIVATIVE_MAP(1)
+                    DX_DXI2=NORMALISE(INTERPOLATED_POINT%VALUES(1:3,nu),ERR,ERROR)
+                    IF(ERR/=0) GOTO 999
+                    !Calculate the bi-normal vector from the normalised cross product of the tangent and normal vectors
+                    CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(1:3,1),DX_DXI2,DX_DXI3,ERR,ERROR,*999)
+                  ELSE
+                    !Solve system of equations to find g_2 and g_3 using g_3 = g_1 x g_2 and g_2 = g_3 x g_1
+                    !We need to choose a component of g_2 to fix this system. As we are going to normalise results
+                    !we don't need to worry about the value.
+                    !If we pick a component to set then we need to ensure that it is roughly orthogonal to the tangent
+                    !vector. Try the first component unless it is in the direction of the tangent else try the second
+                    C=METRICS%DX_DXI(1,1)/SQRT(METRICS%DX_DXI(1,1)**2+METRICS%DX_DXI(2,1)**2+METRICS%DX_DXI(3,1))
+                    IF(ABS(C)>0.9_DP) THEN
+                      !Tangent has a significant first component, set the second component of g_2
+                      C=METRICS%DX_DXI(2,1)/SQRT(METRICS%DX_DXI(1,1)**2+METRICS%DX_DXI(2,1)**2+METRICS%DX_DXI(3,1))
+                      D=1.0_DP/(1.0_DP-C)
+                      A(1,1)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)+METRICS%DX_DXI(3,1)*METRICS%DX_DXI(3,1)-1.0_DP
+                      A(1,2)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(3,1)
+                      A(2,1)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
+                      A(2,2)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)-1.0_DP
+                      B(1)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(2,1)*D
+                      B(2)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)*D
+                      CALL SOLVE_SMALL_LINEAR_SYSTEM(A,DX_DXI2(1:2),B,ERR,ERROR,*999)
+                      DX_DXI2(3)=DX_DXI2(2)
+                      DX_DXI2(2)=D
+                    ELSE
+                      !Tangent does not have a significant first component, set the first component of g_2
+                      D=1.0_DP/(1.0_DP-C)
+                      A(1,1)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(3,1)*METRICS%DX_DXI(3,1)-1
+                      A(1,2)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
+                      A(2,1)=-1.0_DP*METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
+                      A(2,2)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)-1
+                      B(1)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(2,1)
+                      B(2)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(3,1)
+                      DX_DXI2(1)=D
+                      CALL SOLVE_SMALL_LINEAR_SYSTEM(A,DX_DXI2(2:3),B,ERR,ERROR,*999)
+                    ENDIF
+                    DX_DXI2=NORMALISE(DX_DXI2,ERR,ERROR)
+                    IF(ERR/=0) GOTO 999
+                    DX_DXI3(1)=METRICS%DX_DXI(2,1)*DX_DXI2(3)-DX_DXI2(2)*METRICS%DX_DXI(3,1)
+                    DX_DXI3(2)=METRICS%DX_DXI(3,1)*DX_DXI2(1)-DX_DXI2(3)*METRICS%DX_DXI(1,1)
+                    DX_DXI3(3)=METRICS%DX_DXI(1,1)*DX_DXI2(2)-DX_DXI2(1)*METRICS%DX_DXI(2,1)
+                    DX_DXI3=NORMALISE(DX_DXI3,ERR,ERROR)
+                    IF(ERR/=0) GOTO 999
+                  ENDIF
+                  DET_DX_DXI=METRICS%DX_DXI(1,1)*(DX_DXI2(2)*DX_DXI3(3)-DX_DXI2(3)*DX_DXI3(2))+ &
+                    & DX_DXI2(1)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
+                    & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*DX_DXI2(3)-METRICS%DX_DXI(3,1)*DX_DXI2(2))
+                  IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
+                    METRICS%DXI_DX(1,1)=(DX_DXI3(3)*DX_DXI2(2)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
+                    METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*DX_DXI2(1)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
+                    METRICS%DXI_DX(1,3)=(DX_DXI3(2)*DX_DXI2(1)-DX_DXI2(2)*DX_DXI3(1))/DET_DX_DXI
+                    !Normalise to ensure that g^11=g^1.g^1
+                    LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
+                    SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
+                    METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DXI_DX(1,1:3)
+                  ELSE
+                    CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
+                    METRICS%DXI_DX=0.0_DP                    
+                  ENDIF
+                CASE DEFAULT
+                  CALL FLAG_ERROR("Invalid embedding of a line in space.",ERR,ERROR,*999)
+                END SELECT
+              CASE(2)
+                !Surface in space
+                IF(METRICS%NUMBER_OF_X_DIMENSIONS==3) THEN
+                  !Surface in 3D space.
+                  !Form the third vector by the normalised cross product and then take the inverse.
+                  CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(:,1),METRICS%DX_DXI(:,2),DX_DXI3,ERR,ERROR,*999)
+                  DET_DX_DXI=METRICS%DX_DXI(1,1)*(METRICS%DX_DXI(2,2)*DX_DXI3(3)-METRICS%DX_DXI(3,2)*DX_DXI3(2))+ &
+                    & METRICS%DX_DXI(1,2)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
+                    & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,2)-METRICS%DX_DXI(3,1)*METRICS%DX_DXI(2,2))
+                  IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
+                    METRICS%DXI_DX(1,1)=(DX_DXI3(3)*METRICS%DX_DXI(2,2)-METRICS%DX_DXI(3,2)*DX_DXI3(2))/DET_DX_DXI
+                    METRICS%DXI_DX(2,1)=-1.0_DP*(DX_DXI3(3)*METRICS%DX_DXI(2,1)-METRICS%DX_DXI(3,1)*DX_DXI3(2))/DET_DX_DXI
+                    METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*METRICS%DX_DXI(1,2)-METRICS%DX_DXI(3,2)*DX_DXI3(1))/DET_DX_DXI
+                    METRICS%DXI_DX(2,2)=(DX_DXI3(3)*METRICS%DX_DXI(1,1)-METRICS%DX_DXI(3,1)*DX_DXI3(1))/DET_DX_DXI
+                    METRICS%DXI_DX(1,3)=(DX_DXI3(2)*METRICS%DX_DXI(1,2)-METRICS%DX_DXI(2,2)*DX_DXI3(1))/DET_DX_DXI
+                    METRICS%DXI_DX(2,3)=-1.0_DP*(DX_DXI3(2)*METRICS%DX_DXI(1,1)-METRICS%DX_DXI(2,1)*DX_DXI3(1))/DET_DX_DXI
+                    !Normalise to ensure that g^11=g^1.g^1 and g^22=g^2.g^2
+                    LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
+                    SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
+                    METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DXI_DX(1,1:3)
+                    LENGTH=L2NORM(METRICS%DXI_DX(2,1:3))
+                    SCALE=SQRT(ABS(METRICS%GU(2,2)))/LENGTH
+                    METRICS%DXI_DX(2,1:3)=SCALE*METRICS%DXI_DX(2,1:3)
+                  ELSE
+                    CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
+                    METRICS%DXI_DX=0.0_DP                    
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Invalid embedding of a surface in space.",ERR,ERROR,*999)
+                ENDIF
+              CASE DEFAULT
+                CALL FLAG_ERROR("Invalid embedding in space.",ERR,ERROR,*999)
+              END SELECT
             ENDIF
             
             !Calculate the Jacobian
@@ -842,6 +997,37 @@ CONTAINS
       CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,METRICS%NUMBER_OF_X_DIMENSIONS,1,1,METRICS%NUMBER_OF_XI_DIMENSIONS, &
         & 3,3,METRICS%DX_DXI,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    dX_dXi','(",I1,",:)',' :",3(X,E13.6))', &
         & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+      IF(METRICS%NUMBER_OF_X_DIMENSIONS/=METRICS%NUMBER_OF_XI_DIMENSIONS) THEN
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Constructed derivative of X wrt Xi:",ERR,ERROR,*999)
+        SELECT CASE(METRICS%NUMBER_OF_XI_DIMENSIONS)
+        CASE(1)
+          !Line in space
+          SELECT CASE(METRICS%NUMBER_OF_X_DIMENSIONS)
+          CASE(2)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,METRICS%NUMBER_OF_X_DIMENSIONS,3,3,DX_DXI2, &
+              & '("    dX_dXi(:,2) :",3(X,E13.6))','(17X,3(X,E13.6))',ERR,ERROR,*999)      
+          CASE(3)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,METRICS%NUMBER_OF_X_DIMENSIONS,3,3,DX_DXI2, &
+              & '("    dX_dXi(:,2) :",3(X,E13.6))','(17X,3(X,E13.6))',ERR,ERROR,*999)      
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,METRICS%NUMBER_OF_X_DIMENSIONS,3,3,DX_DXI3, &
+              & '("    dX_dXi(:,3) :",3(X,E13.6))','(17X,3(X,E13.6))',ERR,ERROR,*999)      
+          CASE DEFAULT
+            CALL FLAG_ERROR("Invalid embedding of a line in space.",ERR,ERROR,*999)
+          END SELECT
+        CASE(2)
+          !Surface in space
+          SELECT CASE(METRICS%NUMBER_OF_X_DIMENSIONS)
+          CASE(3)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,METRICS%NUMBER_OF_X_DIMENSIONS,3,3,DX_DXI3, &
+              & '("    dX_dXi(:,3) :",3(X,E13.6))','(17X,3(X,E13.6))',ERR,ERROR,*999)      
+          CASE DEFAULT
+            CALL FLAG_ERROR("Invalid embedding of a surface in space.",ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          CALL FLAG_ERROR("Invalid embedding in space.",ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  det dX_dXi    = ",DET_DX_DXI,ERR,ERROR,*999)
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Derivative of Xi wrt X:",ERR,ERROR,*999)
       CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,METRICS%NUMBER_OF_XI_DIMENSIONS,1,1,METRICS%NUMBER_OF_X_DIMENSIONS, &
         & 3,3,METRICS%DXI_DX,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    dXi_dX','(",I1,",:)',' :",3(X,E13.6))', &
@@ -855,7 +1041,7 @@ CONTAINS
         & 3,3,METRICS%GU,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    GU','(",I1,",:)','     :",3(X,E13.6))','(17X,3(X,E13.6))', &
         & ERR,ERROR,*999)      
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Jacobian type = ",METRICS%JACOBIAN_TYPE,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Jacobian = ",METRICS%JACOBIAN,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Jacobian      = ",METRICS%JACOBIAN,ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("COORDINATE_METRICS_CALCULATE")
