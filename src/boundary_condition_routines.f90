@@ -100,9 +100,10 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE=18 !<The dof is fixed as a boundary condition, to be used with load increment loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_IMPERMEABLE_WALL=19 !<The dof is set such that (via penalty formulation): velocity * normal = 0. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED=21!<A Neumann point boundary condition that is incremented inside a load increment control loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=20 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=21 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
 
   !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_SparsityTypes BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
   !> \brief Storage type for matrices used by boundary conditions.
@@ -136,7 +137,8 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_DIRICHLET,BOUNDARY_CONDITION_NEUMANN_POINT, &
     & BOUNDARY_CONDITION_CAUCHY,BOUNDARY_CONDITION_ROBIN,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE,&
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
-    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
+    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
+    & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED
 
   PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -249,7 +251,8 @@ CONTAINS
                     BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED=>BOUNDARY_CONDITION_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
                   END IF
                   ! Set up Neumann condition information if there are any Neumann conditions
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0) THEN
+                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0.OR. &
+                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)>0) THEN
                     CALL BoundaryConditions_NeumannInitialise(BOUNDARY_CONDITION_VARIABLE,ERR,ERROR,*999)
                   END IF
 
@@ -260,14 +263,16 @@ CONTAINS
                     IF(BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)== BOUNDARY_CONDITION_PRESSURE_INCREMENTED) THEN
                       BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED%PRESSURE_INCREMENTED_DOF_INDICES(pressureIdx)=dof_idx
                       pressureIdx=pressureIdx+1
-                    ELSE IF(BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                    ELSE IF(BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                        & BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)==BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                       BOUNDARY_CONDITION_VARIABLE%neumannBoundaryConditions%setDofs(neumannIdx)=dof_idx
                       neumannIdx=neumannIdx+1
                     END IF
                   END DO
 
                   ! Now that we know where Neumann point DOFs are, we can calculate matrix structure
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0) THEN
+                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0.OR. &
+                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)>0) THEN
                     CALL BoundaryConditions_NeumannMatricesInitialise(BOUNDARY_CONDITION_VARIABLE,ERR,ERROR,*999)
                   END IF
 
@@ -1072,6 +1077,9 @@ CONTAINS
                           ! get the RHS variable value
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
+                        CASE(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
+                          CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                            & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
                           ! For integrated Neumann condition, integration is already done, so set the RHS
                           ! dof value directly
@@ -1248,6 +1256,9 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
+                        CASE(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                            & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
@@ -1377,7 +1388,7 @@ CONTAINS
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,err,error,*999)
       boundaryConditionsVariable%parameterSetRequired(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)=.TRUE.
-    CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
+    CASE(BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
@@ -1552,7 +1563,8 @@ CONTAINS
       END IF
     CASE(BOUNDARY_CONDITION_NEUMANN_POINT, &
         & BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
+        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
+        & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
@@ -1659,7 +1671,7 @@ CONTAINS
                 & equationsSet%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF
-          CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
+          CASE(BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
             validEquationsSetFound=.TRUE.
@@ -1839,7 +1851,8 @@ CONTAINS
     CALL ENTERS("BoundaryConditions_NeumannInitialise",err,error,*998)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
-      numberOfValues=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+      numberOfValues=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)+ &
+        & boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       ALLOCATE(boundaryConditionsVariable%neumannBoundaryConditions,stat=err)
       IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann Boundary Conditions",err,error,*998)
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
@@ -1888,10 +1901,12 @@ CONTAINS
     TYPE(DOMAIN_LINE_TYPE), POINTER :: line
     TYPE(DOMAIN_FACE_TYPE), POINTER :: face
     TYPE(LIST_TYPE), POINTER :: columnIndicesList, rowColumnIndicesList
-    INTEGER(INTG) :: numberOfPointDofs, numberNonZeros, numberRowEntries, neumannConditionNumber
+    INTEGER(INTG) :: myComputationalNodeNumber
+    INTEGER(INTG) :: numberOfPointDofs, numberNonZeros, numberRowEntries, neumannConditionNumber, localNeumannConditionIdx
     INTEGER(INTG) :: neumannIdx, globalDof, localDof, localDofNyy, domainIdx, numberOfDomains, domainNumber, componentNumber
     INTEGER(INTG) :: nodeIdx, derivIdx, nodeNumber, versionNumber, derivativeNumber, columnNodeNumber, lineIdx, faceIdx, columnDof
     INTEGER(INTG), ALLOCATABLE :: rowIndices(:), columnIndices(:), localDofNumbers(:)
+    REAL(DP) :: pointValue
     INTEGER(INTG) :: dummyErr
     TYPE(VARYING_STRING) :: dummyError
 
@@ -1901,7 +1916,8 @@ CONTAINS
       rhsVariable=>boundaryConditionsVariable%variable
       IF(.NOT.ASSOCIATED(rhsVariable)) &
         & CALL FLAG_ERROR("RHS boundary conditions variable field variable is not associated.",err,error,*999)
-      numberOfPointDofs=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+      numberOfPointDofs=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT) + &
+        & boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
       IF(ASSOCIATED(boundaryConditionsNeumann)) THEN
         ! For rows we can re-use the RHS variable row mapping
@@ -2025,7 +2041,8 @@ CONTAINS
                   ! Only one column used, as this is the same as setting an integrated
                   ! value so no other DOFs are affected
                   globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
-                  IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                  IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                      & boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                     ! Find the Neumann condition number
                     neumannConditionNumber=0
                     DO neumannIdx=1,numberOfPointDofs
@@ -2053,7 +2070,9 @@ CONTAINS
                         columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                           & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
                         globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                            & boundaryConditionsVariable%CONDITION_TYPES(globalDof)== &
+                            & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                           neumannConditionNumber=0
                           DO neumannIdx=1,numberOfPointDofs
                             IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
@@ -2083,7 +2102,9 @@ CONTAINS
                         columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                           & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
                         globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                            & boundaryConditionsVariable%CONDITION_TYPES(globalDof)== &
+                            & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                           neumannConditionNumber=0
                           DO neumannIdx=1,numberOfPointDofs
                             IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
@@ -2163,8 +2184,26 @@ CONTAINS
 
         CALL DISTRIBUTED_MATRIX_CREATE_FINISH(boundaryConditionsNeumann%integrationMatrix,err,error,*999)
 
+        !Set up vector of Neumann point values
         CALL DISTRIBUTED_VECTOR_CREATE_START(pointDofMapping,boundaryConditionsNeumann%pointValues,err,error,*999)
         CALL DISTRIBUTED_VECTOR_CREATE_FINISH(boundaryConditionsNeumann%pointValues,err,error,*999)
+        myComputationalNodeNumber=COMPUTATIONAL_NODE_NUMBER_GET(err,error)
+        !Set point values vector from boundary conditions field parameter set
+        DO neumannIdx=1,numberOfPointDofs
+          globalDof=boundaryConditionsNeumann%setDofs(neumannIdx)
+          IF(rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(globalDof)%DOMAIN_NUMBER(1)==myComputationalNodeNumber) THEN
+            localDof=rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(globalDof)%LOCAL_NUMBER(1)
+            ! Set point DOF vector value
+            localNeumannConditionIdx=boundaryConditionsNeumann%pointDofMapping%GLOBAL_TO_LOCAL_MAP(neumannIdx)%LOCAL_NUMBER(1)
+            CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
+              & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,localDof,pointValue,err,error,*999)
+            CALL DISTRIBUTED_VECTOR_VALUES_SET(boundaryConditionsNeumann%pointValues, &
+              & localNeumannConditionIdx,pointValue,err,error,*999)
+          END IF
+        END DO
+        CALL DISTRIBUTED_VECTOR_UPDATE_START(boundaryConditionsNeumann%pointValues,err,error,*999)
+        CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(boundaryConditionsNeumann%pointValues,err,error,*999)
+
       ELSE
         CALL FLAG_ERROR("The boundary condition Neumann is not associated",err,error,*998)
       END IF
@@ -2276,12 +2315,12 @@ CONTAINS
 
     !Local variables
     INTEGER(INTG) :: componentNumber,globalDof,localDof,neumannDofIdx,myComputationalNodeNumber
-    INTEGER(INTG) :: numberOfNeumann,neumannLocalDof,neumannDofNyy,localNeumannConditionIdx
+    INTEGER(INTG) :: numberOfNeumann,neumannLocalDof,neumannDofNyy
     INTEGER(INTG) :: neumannGlobalDof,neumannNodeNumber,neumannLocalNodeNumber,neumannLocalDerivNumber
     INTEGER(INTG) :: faceIdx,lineIdx,nodeIdx,derivIdx,gaussIdx
     INTEGER(INTG) :: faceNumber,lineNumber
     INTEGER(INTG) :: ms,os,nodeNumber,derivativeNumber,versionNumber
-    REAL(DP) :: integratedValue,pointValue,phim,phio
+    REAL(DP) :: integratedValue,phim,phio
     TYPE(BoundaryConditionsNeumannType), POINTER :: neumannConditions
     TYPE(BASIS_TYPE), POINTER :: basis
     TYPE(FIELD_TYPE), POINTER :: geometricField
@@ -2319,9 +2358,9 @@ CONTAINS
       END IF
 
       CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(neumannConditions%integrationMatrix,0.0_DP,err,error,*999)
-      CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(neumannConditions%pointValues,0.0_DP,err,error,*999)
 
-      numberOfNeumann=rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+      numberOfNeumann=rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT) + &
+        & rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       myComputationalNodeNumber=COMPUTATIONAL_NODE_NUMBER_GET(err,error)
 
       ! Initialise field interpolation parameters for the geometric field, which are required for the
@@ -2337,12 +2376,6 @@ CONTAINS
         neumannGlobalDof=neumannConditions%setDofs(neumannDofIdx)
         IF(rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(neumannGlobalDof)%DOMAIN_NUMBER(1)==myComputationalNodeNumber) THEN
           neumannLocalDof=rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(neumannGlobalDof)%LOCAL_NUMBER(1)
-          ! Set point DOF vector value
-          localNeumannConditionIdx=neumannConditions%pointDofMapping%GLOBAL_TO_LOCAL_MAP(neumannDofIdx)%LOCAL_NUMBER(1)
-          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-            & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,neumannLocalDof,pointValue,err,error,*999)
-          CALL DISTRIBUTED_VECTOR_VALUES_SET(neumannConditions%pointValues, &
-            & localNeumannConditionIdx,pointValue,err,error,*999)
           ! Get Neumann DOF component and topology for that component
           neumannDofNyy=rhsVariable%DOF_TO_PARAM_MAP%DOF_TYPE(2,neumannLocalDof)
           componentNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(4,neumannDofNyy)
@@ -2359,8 +2392,6 @@ CONTAINS
             neumannNodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,neumannDofNyy)
             SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
             CASE(1)
-              CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-                & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,neumannLocalDof,pointValue,err,error,*999)
               CALL DISTRIBUTED_MATRIX_VALUES_SET(neumannConditions%integrationMatrix,neumannLocalDof,neumannDofIdx, &
                 & 1.0_DP,err,error,*999)
             CASE(2)
@@ -2574,9 +2605,7 @@ CONTAINS
         END IF
       END DO
 
-      CALL DISTRIBUTED_VECTOR_UPDATE_START(neumannConditions%pointValues,err,error,*999)
       CALL DISTRIBUTED_MATRIX_UPDATE_START(neumannConditions%integrationMatrix,err,error,*999)
-      CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(neumannConditions%pointValues,err,error,*999)
       CALL DISTRIBUTED_MATRIX_UPDATE_FINISH(neumannConditions%integrationMatrix,err,error,*999)
 
       CALL FIELD_PARAMETER_SET_VECTOR_GET(rhsVariable%field,rhsVariable%variable_type,FIELD_INTEGRATED_NEUMANN_SET_TYPE, &
