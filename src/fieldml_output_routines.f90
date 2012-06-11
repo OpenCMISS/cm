@@ -644,11 +644,11 @@ CONTAINS
         interpolatorName = "interpolator.1d.unit.quadraticSimplex"
         parameterName = "parameters.1d.unit.quadraticLagrange"
       ELSE IF( xiCount == 2 ) THEN
-        interpolatorName = "interpolator.2d.unit.biquadraticSimplex"
-        parameterName = "parameters.2d.unit.biquadraticSimplex"
+        interpolatorName = "interpolator.2d.unit.biquadraticSimplex.vtk"
+        parameterName = "parameters.2d.unit.biquadraticSimplex.vtk"
       ELSE IF( xiCount == 3 ) THEN
-        interpolatorName = "interpolator.3d.unit.triquadraticSimplex"
-        parameterName = "parameters.3d.unit.triquadraticSimplex"
+        interpolatorName = "interpolator.3d.unit.triquadraticSimplex.zienkiewicz"
+        parameterName = "parameters.3d.unit.triquadraticSimplex.zienkiewicz"
       ELSE
         !Do not yet support dimensions higher than 3.
         CALL Flag_Error( var_str("Quadratic simplex interpolation not supported for ")//xiCount//" dimensions.", &
@@ -818,9 +818,9 @@ CONTAINS
       IF( xiCount == 1 ) THEN
         layoutName = "localNodes.1d.line3"
       ELSE IF( xiCount == 2 ) THEN
-        layoutName = "localNodes.2d.triangle6"
+        layoutName = "localNodes.2d.triangle6.vtk"
       ELSE IF( xiCount == 3 ) THEN
-        layoutName = "localNodes.3d.tetrahedron10"
+        layoutName = "localNodes.3d.tetrahedron10.zienkiewicz"
       ELSE
         !Do not yet support dimensions higher than 3.
         CALL Flag_Error( var_str("Quadratic Simplex interpolation not supported for ")//xiCount//" dimensions.", &
@@ -1975,6 +1975,7 @@ CONTAINS
     INTEGER(INTG) :: COMPONENT_COUNT, I, NODE_COUNT, ELEMENT_COUNT, DIMENSIONS
     INTEGER(INTG) :: REAL_1D_HANDLE, XI_COMPONENT_HANDLE, FML_ERR, SHAPE_HANDLE
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
     TYPE(NODES_TYPE), POINTER :: NODES
     TYPE(VARYING_STRING) :: SHAPE_NAME
 
@@ -2064,6 +2065,7 @@ CONTAINS
       CALL MESH_TOPOLOGY_ELEMENTS_GET( MESH, I, MESH_ELEMENTS, ERR, ERROR, *999 )
       CALL FIELDML_OUTPUT_ADD_MESH_COMPONENT( FIELDML_INFO, BASE_NAME, CONNECTIVITY_FORMAT, I, MESH_ELEMENTS, &
         & ERR, ERROR, *999 )
+      BASIS =>MESH_ELEMENTS%ELEMENTS( 1 )%BASIS
     ENDDO
 
     
@@ -2071,9 +2073,19 @@ CONTAINS
     IF( DIMENSIONS == 1 ) THEN
       SHAPE_NAME = "shape.unit.line"
     ELSE IF( DIMENSIONS == 2 ) THEN
-      SHAPE_NAME = "shape.unit.square"
+      SELECT CASE(BASIS%TYPE)
+      CASE(BASIS_SIMPLEX_TYPE)
+        SHAPE_NAME = "shape.unit.triangle"
+      CASE DEFAULT
+        SHAPE_NAME = "shape.unit.square"
+      END SELECT
     ELSE
-      SHAPE_NAME = "shape.unit.cube"
+      SELECT CASE(BASIS%TYPE)
+      CASE(BASIS_SIMPLEX_TYPE)
+        SHAPE_NAME = "shape.unit.tetrahedron"
+      CASE DEFAULT
+        SHAPE_NAME = "shape.unit.cube"
+      END SELECT
     ENDIF
 
     SHAPE_HANDLE = FIELDML_OUTPUT_IMPORT( FIELDML_INFO, SHAPE_NAME, ERR, ERROR )
