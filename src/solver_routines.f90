@@ -9805,9 +9805,10 @@ CONTAINS
     REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR,RESIDUAL_VALUE, &
       & LINEAR_VALUE,LINEAR_VALUE_SUM,MASS_MATRIX_COEFFICIENT,RHS_VALUE,row_coupling_coefficient,PREVIOUS_RESIDUAL_VALUE, &
       & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT,ALPHA_VALUE, &
-      & MATRIX_VALUE,DYNAMIC_DISPLACEMENT_FACTOR,DYNAMIC_VELOCITY_FACTOR,DYNAMIC_ACCELERATION_FACTOR
+      & MATRIX_VALUE,DYNAMIC_DISPLACEMENT_FACTOR,DYNAMIC_VELOCITY_FACTOR,DYNAMIC_ACCELERATION_FACTOR,RHS_INTEGRATED_VALUE
     REAL(DP), POINTER :: FIELD_VALUES_VECTOR(:),PREVIOUS_VALUES_VECTOR(:),PREVIOUS_VELOCITY_VECTOR(:), &
       & PREVIOUS_ACCELERATION_VECTOR(:),RHS_PARAMETERS(:)
+    LOGICAL :: HAS_INTEGRATED_VALUES
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS,DEPENDENT_BOUNDARY_CONDITIONS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
@@ -10268,16 +10269,15 @@ CONTAINS
                                         rhs_variable_type=RHS_MAPPING%RHS_VARIABLE_TYPE
                                         RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
                                         RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
+                                        CALL FIELD_PARAMETER_SET_CREATED(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                          & FIELD_INTEGRATED_NEUMANN_SET_TYPE,HAS_INTEGRATED_VALUES,ERR,ERROR,*999)
                                         EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
                                         CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
                                           & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                         IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-
-                                          !Call SOLVER_NEUMANN_CALCULATE to check whether any Neumann boundary conditions
-                                          !have been set if set then Neumann Boundary Condition calculate routines are called
-                                       !   CALL SOLVER_NEUMANN_CALCULATE(RHS_MAPPING,BOUNDARY_CONDITIONS, &
-                                       !     & EQUATIONS_MAPPING,DEPENDENT_FIELD,ERR,ERROR,*999)
-
+                                          !Update RHS field by integrating any point Neumann conditions
+                                          CALL BoundaryConditions_NeumannIntegrate(RHS_BOUNDARY_CONDITIONS, &
+                                            & ERR,ERROR,*999)
                                           !Loop over the rows in the equations set
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                             !Get the dynamic contribution to the the RHS values
@@ -10384,6 +10384,13 @@ CONTAINS
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
+                                              IF(HAS_INTEGRATED_VALUES) THEN
+                                                !Add any Neumann integrated values, b = f + N q
+                                                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                                  & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
+                                                  & ERR,ERROR,*999)
+                                                RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                              END IF
                                               !Loop over the solver rows associated with this equations set row
                                               DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                                 & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -10624,6 +10631,13 @@ CONTAINS
                                                   & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                   & COUPLING_COEFFICIENTS(solver_row_idx)
                                                 VALUE=RHS_PARAMETERS(rhs_variable_dof)*row_coupling_coefficient
+                                                IF(HAS_INTEGRATED_VALUES) THEN
+                                                  !Add any Neumann integrated values, b = f + N q
+                                                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                                    & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
+                                                    & ERR,ERROR,*999)
+                                                  VALUE=VALUE+RHS_INTEGRATED_VALUE*row_coupling_coefficient
+                                                END IF
                                                 CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                   & ERR,ERROR,*999)
                                               ENDDO !solver_row_idx
@@ -11030,9 +11044,9 @@ CONTAINS
       & dirichlet_idx,dirichlet_row
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
-      & SOURCE_VALUE,VALUE
+      & SOURCE_VALUE,VALUE,RHS_INTEGRATED_VALUE
     REAL(DP), POINTER :: RHS_PARAMETERS(:),CHECK_DATA(:),CHECK_DATA2(:),CHECK_DATA3(:),CHECK_DATA4(:)
-    LOGICAL :: SUBTRACT_FIXED_BCS_FROM_RESIDUAL
+    LOGICAL :: SUBTRACT_FIXED_BCS_FROM_RESIDUAL,HAS_INTEGRATED_VALUES
     TYPE(REAL_DP_PTR_TYPE), ALLOCATABLE :: DEPENDENT_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: DEPENDENT_BOUNDARY_CONDITIONS,RHS_BOUNDARY_CONDITIONS
@@ -11459,16 +11473,16 @@ CONTAINS
                                     RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
                                     RHS_VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
                                     RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
+                                    ! Check if there are any integrated values to add
+                                    CALL FIELD_PARAMETER_SET_CREATED(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                      & FIELD_INTEGRATED_NEUMANN_SET_TYPE,HAS_INTEGRATED_VALUES,ERR,ERROR,*999)
                                     EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
                                     CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
                                       & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                     IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-
-                                      !Call SOLVER_NEUMANN_CALCULATE to check whether any Neumann boundary conditions
-                                      !have been set if set then Neumann Boundary Condition calculate routines are called
-                                      CALL SOLVER_NEUMANN_CALCULATE(RHS_MAPPING,BOUNDARY_CONDITIONS, &
-                                        & EQUATIONS_MAPPING,DEPENDENT_FIELD,ERR,ERROR,*999)
-
+                                      !Update RHS field by integrating any point Neumann conditions
+                                      CALL BoundaryConditions_NeumannIntegrate(RHS_BOUNDARY_CONDITIONS, &
+                                        & ERR,ERROR,*999)
                                       !Loop over the rows in the equations set
                                       DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                         !Get the source vector contribute to the RHS values if there are any
@@ -11502,6 +11516,13 @@ CONTAINS
                                           !Add in equations RHS values
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                             & RHS_VALUE,ERR,ERROR,*999)
+                                          IF(HAS_INTEGRATED_VALUES) THEN
+                                            !Add any Neumann integrated values, b = f + N q
+                                            CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                              & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
+                                              & ERR,ERROR,*999)
+                                            RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                          END IF
                                           !Loop over the solver rows associated with this equations set row
                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                             & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -11662,6 +11683,13 @@ CONTAINS
                                           ENDIF
                                         CASE(BOUNDARY_CONDITION_DOF_FIXED)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
+                                          ! Add any integrated RHS values calculated from point Neumann conditions, b = f + N q
+                                          IF(HAS_INTEGRATED_VALUES) THEN
+                                            CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(RHS_VARIABLE%FIELD,RHS_VARIABLE_TYPE, &
+                                              & FIELD_INTEGRATED_NEUMANN_SET_TYPE,rhs_variable_dof,RHS_INTEGRATED_VALUE, &
+                                              & ERR,ERROR,*999)
+                                            RHS_VALUE=RHS_VALUE+RHS_INTEGRATED_VALUE
+                                          END IF
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
                                             DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -11672,7 +11700,9 @@ CONTAINS
                                               row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=-1.0_DP*RHS_VALUE*row_coupling_coefficient
+                                              !For nonlinear problems, f(x) - b = 0, and for linear, K x = b, so we always add the
+                                              !right hand side field value to the solver right hand side vector
+                                              VALUE=RHS_VALUE*row_coupling_coefficient
                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
@@ -16615,100 +16645,6 @@ CONTAINS
     
   END SUBROUTINE SOLVERS_SOLVER_GET
      
-  !
-  !================================================================================================================================
-  !
-
-  !>Calculate the Neumann Boundary conditions
-  SUBROUTINE SOLVER_NEUMANN_CALCULATE(RHS_MAPPING,BOUNDARY_CONDITIONS,EQUATIONS_MAPPING,DEPENDENT_FIELD,&
-    & ERR,ERROR,*)
-    
-    !Argument variable
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: NUMBER_OF_NEUMANN_ROWS,equations_row_number,rhs_variable_dof,rhs_global_dof,rhs_boundary_condition, &
-      & component_idx,rhs_dof,j,RHS_VARIABLE_TYPE
-    REAL(DP) :: INTEGRATED_VALUE
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE,FIELD_VARIABLE
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING
-
-    CALL ENTERS("SOLVER_NEUMANN_CALCULATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(RHS_MAPPING)) THEN
-      RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-      IF(ASSOCIATED(RHS_VARIABLE)) THEN
-        RHS_VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
-        RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
-        IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) THEN
-          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
-            & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-          IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-
-
-            !Count the number of Neumann conditions set
-            NUMBER_OF_NEUMANN_ROWS=0
-            DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-              rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
-              rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%CONDITION_TYPES(rhs_global_dof)
-              IF(rhs_boundary_condition==BOUNDARY_CONDITION_NEUMANN_POINT.OR.&
-                & rhs_boundary_condition==BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
-                NUMBER_OF_NEUMANN_ROWS=NUMBER_OF_NEUMANN_ROWS+1
-              ENDIF
-            ENDDO !equations_row_number
-
-            !Calculate the Neumann integrated flux boundary conditions
-            IF(NUMBER_OF_NEUMANN_ROWS>0) THEN
-              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(RHS_VARIABLE_TYPE)%PTR
-              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                !Iterate over components u,v,w,p
-                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-
-                  CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
-                    & RHS_VARIABLE_TYPE,component_idx,ERR,ERROR,*999)
-
-                  !Locate calculated value at dof
-                  INTEGRATED_VALUE=0.0_DP
-                  DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
-                    & %INTEGRATED_VALUES_VECTOR_SIZE
-
-                    INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
-                      & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
-                    rhs_dof=RHS_BOUNDARY_CONDITIONS &
-                      & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR_MAPPING(j)
-
-                    !Note: check whether MAPPING dofs are local or global
-
-                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
-                      & rhs_variable_type,FIELD_VALUES_SET_TYPE, &
-                      & rhs_dof,INTEGRATED_VALUE,ERR,ERROR,*999)
-                  ENDDO !j
-
-                  DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                    & INTEGRATED_VALUES_VECTOR_MAPPING)
-                  DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                    & INTEGRATED_VALUES_VECTOR)
-                ENDDO !component_idx
-              ENDIF
-            ENDIF
-          ENDIF
-        ENDIF
-      ENDIF
-    ENDIF
-
-    CALL EXITS("SOLVER_NEUMANN_CALCULATE")
-    RETURN
-999 CALL ERRORS("SOLVER_NEUMANN_CALCULATE",ERR,ERROR)
-    CALL EXITS("SOLVER_NEUMANN_CALCULATE")
-    RETURN 1
-  END SUBROUTINE SOLVER_NEUMANN_CALCULATE
-
   !
   !================================================================================================================================
   !

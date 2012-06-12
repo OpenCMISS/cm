@@ -388,6 +388,7 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(SOURCE_DIR)/boundary_condition_
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
