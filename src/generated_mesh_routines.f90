@@ -1638,7 +1638,7 @@ CONTAINS
                                 !Triangular element
                                 !Break the grid square element into 2 triangles. The 2 triangles are
                                 !Element 1: vertices {(0,0);(1,0);(1,1)}
-                                !Element 2: vertices {(0,0);(0,1);(1,1)}
+                                !Element 2: vertices {(0,0);(1,1);(0,1)}
                                 SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
                                 CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
                                   !First sub-element
@@ -1653,8 +1653,8 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+TOTAL_NUMBER_OF_NODES_XI(1)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
                                   CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
@@ -1675,11 +1675,11 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(4)=np+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(4)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(5)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(6)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(6)=np+TOTAL_NUMBER_OF_NODES_XI(1)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
                                   CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
@@ -1704,14 +1704,14 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(4)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(5)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(6)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(7)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(8)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(4)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(5)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(6)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(7)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(8)=np+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(9)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(10)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
