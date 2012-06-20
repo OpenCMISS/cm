@@ -231,7 +231,6 @@ CONTAINS
   SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
     TYPE(EQUATIONS_SET_SETUP_TYPE), INTENT(INOUT) :: EQUATIONS_SET_SETUP !<The equations set setup information
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -894,7 +893,7 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                         !calculate number of components with one component for each dimension
-                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=2
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=3
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
                           & FIELD_U_VARIABLE_TYPE,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -932,7 +931,7 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                         !calculate number of components with one component for each dimension 
-                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=2
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=3
                         CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                           & INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1002,7 +1001,7 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                         !calculate number of components with one component for each dimension
-                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=2
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=3
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
                           & FIELD_U_VARIABLE_TYPE,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -1040,7 +1039,7 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                         !calculate number of components with one component for each dimension and one for pressure
-                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=2
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=3
                         CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                           & INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1171,7 +1170,7 @@ CONTAINS
                   MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE) THEN
-                    MATERIAL_FIELD_NUMBER_OF_COMPONENTS=7!Y
+                    MATERIAL_FIELD_NUMBER_OF_COMPONENTS=30!Y
                   ELSE
                     MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
                   ENDIF
@@ -1212,15 +1211,15 @@ CONTAINS
                             & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                          CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                            & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
-                          CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                            & 2,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                          DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS
+                            CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              & I,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                          ENDDO
                           !Default the field scaling to that of the geometric field
                           CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, & 
                             & ERR,ERROR,*999)
                           CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-                       ELSE
+                        ELSE
                           !Check the user specified field
                           CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                           CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
@@ -1263,15 +1262,27 @@ CONTAINS
                               ! thickness=4
                               CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,4,1.0_DP,ERR,ERROR,*999)
-                              ! area=5
+                              ! area1=5
                               CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,5,1.0_DP,ERR,ERROR,*999)
-                              ! area1=6
+                              ! area2=6
                               CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,6,1.0_DP,ERR,ERROR,*999)
-                              ! area2=7
+                              ! area3=7
                               CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,7,1.0_DP,ERR,ERROR,*999)
+                              ! area4=8
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,8,1.0_DP,ERR,ERROR,*999)
+                              ! area5=9
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,9,1.0_DP,ERR,ERROR,*999)
+                              ! area6=10
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,10,1.0_DP,ERR,ERROR,*999)
+                              ! area7=11
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,11,1.0_DP,ERR,ERROR,*999)
                               ENDIF
 
                             ENDIF
@@ -2294,10 +2305,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: FIELD_VAR_TYPE,en,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2,nhs_max,mhs_max,nhs_min,mhs_min
-    INTEGER(INTG) :: xv,out
-    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(3),W(6),V(6), &
-              & DPHIMS_DXI(3),DPHINS_DXI(3),X(3)
+    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2,nhs_max,mhs_max,nhs_min,mhs_min
+    INTEGER(INTG) :: xv,out,i,en,bif_idx,dof_idx,nv1,nv3,node1,node3,mn
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS,TOTAL_NUMBER_OF_NODES,NUMBER_OF_VERSIONS,TOTAL_NUMBER_OF_DOFS
+    REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(9)
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
@@ -2332,14 +2343,14 @@ CONTAINS
     REAL(DP) :: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
     REAL(DP) :: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
     REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
-    REAL(DP) :: C_MATRIX(256,256)
-    REAL(DP) :: K_MATRIX(256,256)
+    REAL(DP) :: C_MATRIX(256,256) ! Damping Matrix - maximum size allocated
+    REAL(DP) :: K_MATRIX(256,256) ! Stiffness Matrix - maximum size allocated
     REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
     REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),Q_VALUE(3),A_VALUE,Q_BIF(6),A_BIF(6),Q_PRE(6),A_PRE(6)!,P_VALUE
-    REAL(DP) :: Q_TER(6),A_TER(6),Q_L(3),U_L(3),A_L(3),Q_R(3),U_R(3),A_R(3),Q_END(3),A_END(3)
-    REAL(DP) :: Rt,Q_0(3),U_0(3),A_0(3),C_0(3),C_L(3),Q_EX(3),A_EX(3)
-    REAL(DP) :: U_DERIV(3,3),A_DERIV,Q_DERIV(3,3),XI(1)!,P_DERIV
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),Q_VALUE(3),A_VALUE,Q_BIF(3),A_BIF(3),Q_PRE(3),A_PRE(3)
+    REAL(DP) :: Q_TER(3),A_TER(3),Q_L(3),U_L(3),A_L(3),Q_R(3),U_R(3),A_R(3),Q_END(3),A_END(3)
+    REAL(DP) :: Rt,Q_0(3),U_0(3),A_0(3),C_0(3),C_L(3),Q_EX(3),A_EX(3),XI(1),Beta(9),W(3),a
+    REAL(DP) :: U_DERIV(3,3),A_DERIV,Q_DERIV(3,3),Bs,Ts,As,Qs,Xs,St,Fr,Re
     
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
     out=0
@@ -2826,19 +2837,35 @@ CONTAINS
 !           1D  T R A N S I E N T 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-            !Start with matrix calculations
+            !Start with Matrix Calculations
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-              Q_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-              Q_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
-              A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
+              Q_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+              A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+              Q_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
+              A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
               E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-              A0_PARAM(1)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-              A0_PARAM(2)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-              A0_PARAM(3)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
-
+              TOTAL_NUMBER_OF_ELEMENTS=EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)% &
+                & PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+              en=ELEMENT_NUMBER
+              A0_PARAM(en)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(en+4,NO_PART_DERIV)
+              Beta(en)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                & VALUES(en+TOTAL_NUMBER_OF_ELEMENTS+4,NO_PART_DERIV)
+              NULLIFY(BIF_VALUES)
+              
+              !Reference Values
+              Qs=10.0e-6 !(m3/s)
+              As=20.0e-6 !(m2)
+              Xs=0.5     !(m)
+              Ts=0.1     !(s)
+              a=4.0/3.0  !Parabolic Flow Section
+              Bs=(4.0*1.7725*E_PARAM*H0_PARAM)/(3.0*As)
+              St=(As*Xs)/(Ts*Qs)
+              Fr=((As**2.5)/(Qs**2))*(Bs/(2*RHO_PARAM))
+              Re=8.0*3.1416*(MU_PARAM*Xs)/(Qs*RHO_PARAM)
+              
               mhs=0
+              !Loop Over Element Rows
               DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                 MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                 DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -2846,12 +2873,15 @@ CONTAINS
                 QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                 JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                   & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+                DXI_DX(1,1)=1.0_DP
+!                DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
                 ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(mh)%DOMAIN%TOPOLOGY%ELEMENTS
                 DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                   mhs=mhs+1
                   nhs=0
-                  IF(UPDATE_STIFFNESS_MATRIX.OR.UPDATE_DAMPING_MATRIX) THEN
-                    !Loop over element columns
+                  PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                  IF(UPDATE_STIFFNESS_MATRIX .OR. UPDATE_DAMPING_MATRIX) THEN
+                    !Loop Over Element Columns
                     DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                       MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                       DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -2860,7 +2890,6 @@ CONTAINS
                         &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                       DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
-                        !Calculate some general values
 !                        DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
                         DXI_DX(1,1)=1.0_DP
                         DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
@@ -2870,11 +2899,12 @@ CONTAINS
 
                         !!!-- D A M P I N G  M A T R I X --!!!
                         IF(UPDATE_DAMPING_MATRIX) THEN
+                          !Momentum Equation
                           IF(mh==1 .AND. nh==1) THEN
-                            SUM=PHINS*PHIMS
+                            SUM=PHINS*PHIMS*St
                             C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
-
+                          !Continuity Equation
                           IF(mh==2 .AND. nh==2) THEN
                             SUM=PHINS*PHIMS
                             C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
@@ -2883,8 +2913,9 @@ CONTAINS
 
                         !!!-- S T I F F N E S S  M A T R I X --!!!
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
+                          !Continuity Equation
                           IF(mh==2 .AND. nh==1) THEN
-                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS*(1/St)
                             K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
                         END IF
@@ -2892,150 +2923,99 @@ CONTAINS
                       ENDDO !ns    
                     ENDDO !nh
                   ENDIF
-                ENDDO !ms
-              ENDDO !mh
 
-              !!!-- N O N L I N E A R  V E C T O R --!!!
-              IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-                mhs=0
-                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
-                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-                  DXI_DX(1,1)=1.0_DP
-!                  DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
-                  ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(mh)%DOMAIN%TOPOLOGY%ELEMENTS
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    mhs=mhs+1
-                    PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
+                  !!!-- N O N L I N E A R  V E C T O R --!!!
+                  IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+                    !Momentum Equation
                     IF(mh==1) THEN
-                      SUM=((1.3333*2.0*Q_VALUE(1)*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
-                        & (-((Q_VALUE(1)/A_VALUE)**2.0)*1.3333*A_DERIV*DXI_DX(1,1))+ &
-                        & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*((A0_PARAM(ELEMENT_NUMBER))**1.5))))* &
-                        & A_VALUE*A_DERIV*DXI_DX(1,1))+((8.0*3.1416*MU_PARAM/RHO_PARAM)*Q_VALUE(1)/A_VALUE))*PHIMS
+                      SUM=((a*2.0*Q_VALUE(1)*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
+                        & (-((Q_VALUE(1)/A_VALUE)**2.0)*a*A_DERIV*DXI_DX(1,1))+ &
+                        & ((A_VALUE**0.5)*A_DERIV*DXI_DX(1,1))*Fr+ &
+                        & (Q_VALUE(1)/A_VALUE)*Re)*PHIMS
                       NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
                     ENDIF
+                  ENDIF
 
-                  ENDDO !ms
-                ENDDO !mh
-              ENDIF
+                ENDDO !ms
+              ENDDO !mh
             ENDIF
           ENDDO !ng
 
-          !!!-- F L U X    U P W I N D I N G --!!!
+          !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
             IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-              NULLIFY(BIF_VALUES)
+              INDEPENDENT_FIELD=>EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+              TOTAL_NUMBER_OF_DOFS=EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION% &
+                & DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
+              !Max Node in an Element
+              mn=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
+              !Number of Element First Node
+              node1=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
+              !Number of Element Last Node
+              node3=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(3)
+              !Element First Node Number of Versions
+              nv1=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+              !Element Last Node Number of Versions
+              nv3=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+              !Parent Vessel (if the last node has versions)
+              IF(nv3>1)THEN
+                !DOF Number of the First Node
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(1)
+                !Current Q and A Values at the Last Node
+                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & BIF_VALUES,ERR,ERROR,*999)
+                Q_BIF(1)=BIF_VALUES(dof_idx)
+                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+                  & BIF_VALUES,ERR,ERROR,*999)
+                !Previous Q and A Values at the Last Node
+                Q_PRE(1)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS% &
+                        & CMISS%DATA_DP(dof_idx)
+                A_PRE(1)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS% &
+                        & CMISS%DATA_DP(TOTAL_NUMBER_OF_DOFS+dof_idx)
 
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & BIF_VALUES,ERR,ERROR,*999)
-              !BIFURCATION DATA
-              Q_BIF(1)=BIF_VALUES(3)
-              Q_BIF(2)=BIF_VALUES(4)
-              Q_BIF(3)=BIF_VALUES(5)
-              A_BIF(1)=BIF_VALUES(12)
-              A_BIF(2)=BIF_VALUES(13)
-              A_BIF(3)=BIF_VALUES(14)
-              !END OF VESSEL - DATA
-              Q_END(2)=BIF_VALUES(7)
-              Q_END(3)=BIF_VALUES(9)
-              A_END(2)=BIF_VALUES(16)
-              A_END(3)=BIF_VALUES(18)
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                & BIF_VALUES,ERR,ERROR,*999)
-            
-              !!!-- CALCULATING PERIPHERAL BOUNDARY CONDITIONS --!!!
-              en=ELEMENT_NUMBER
-              A_0(1)=1.0
-              A_END(1)=1.0
+                !Momentum Equation
+                SUM=((a*((Q_PRE(1)**2.0)/A_PRE(1))+ & 
+                   & ((2/3)*(A_PRE(1)**1.5))*Fr) &
+                   & -(a*((Q_BIF(1)**2.0)/A_BIF(1))+ & 
+                   & ((2/3)*(A_BIF(1)**1.5))*Fr))
+                NL_VECTOR(mn)=NL_VECTOR(mn)+SUM
+                !Continuity Equation
+                SUM=(Q_PRE(1)-Q_BIF(1))*(1/St)
+                NL_VECTOR(2*mn)=NL_VECTOR(2*mn)+SUM
 
-              Q_TER(2)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(4)
-              Q_TER(3)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(5)
-              A_TER(2)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(6)
-              A_TER(3)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(7)
+              !Branch Vessel (if the first node has versions)
+              ELSEIF(nv1>1) THEN
+                !DOF Number of the Last Node
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(3)
+                !Current Q and A Values at the First Node             
+                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & BIF_VALUES,ERR,ERROR,*999)
+                Q_BIF(1)=BIF_VALUES(dof_idx)
+                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+                  & BIF_VALUES,ERR,ERROR,*999)
+                !Previous Q and A Values at the First Node
+                Q_PRE(1)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS% &
+                        & CMISS%DATA_DP(dof_idx)
+                A_PRE(1)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS% &
+                        & CMISS%DATA_DP(TOTAL_NUMBER_OF_DOFS+dof_idx)
 
-              Q_PRE(1)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(8)
-              Q_PRE(2)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(9)
-              Q_PRE(3)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(10)
-              A_PRE(1)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(11)
-              A_PRE(2)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(12)
-              A_PRE(3)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                  & PTR%PARAMETERS%CMISS%DATA_DP(13)
-
-              mhs=0
-              DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                  mhs=mhs+1
-
-                  IF(ELEMENT_NUMBER==1)THEN
-                
-                    !1st ELEMENT - FLUX UPWINDING  
-                    IF(mh==1 .AND. ms==3) THEN
-                      SUM=((((Q_PRE(en)**2.0)/A_PRE(en))+ & 
-                         & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))) &
-                         & -(((Q_BIF(en)**2.0)/A_BIF(en))+ & 
-                         & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))))
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
-                    ENDIF
- 
-                    IF(mh==2 .AND. ms==3) THEN
-                      SUM=(Q_PRE(en)-Q_BIF(en))
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
-                    ENDIF
-
-                  ELSEIF(ELEMENT_NUMBER==2 .OR. ELEMENT_NUMBER==3) THEN
-
-                    !2nd and 3rd ELEMENTS - FLUX UPWINDING
-                    IF(mh==1 .AND. ms==1) THEN
-                      SUM=((((Q_PRE(en)**2.0)/A_PRE(en))+ & 
-                         & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_PRE(en)**2.0))) &
-                         & -(((Q_BIF(en)**2.0)/A_BIF(en))+ & 
-                         & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_BIF(en)**2.0))))
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
-                    ENDIF
- 
-                    IF(mh==2 .AND. ms==1) THEN
-                      SUM=(Q_PRE(en)-Q_BIF(en))
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
-                    ENDIF
-
-                    !2nd and 3rd ELEMENTS - TERMINAL BOUNDARY CONDITION
-!                    IF(mh==1 .AND. ms==3) THEN
-!                      SUM=((((Q_TER(en)**2.0)/A_TER(en))+ & 
-!                         & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_TER(en)**2.0))) &
-!                         & -(((Q_END(en)**2.0)/A_END(en))+ & 
-!                         & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*0.5*(A_END(en)**2.0))))
-!                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
-!                    ENDIF
-! 
-!                    IF(mh==2 .AND. ms==3) THEN
-!                      SUM=(Q_TER(en)-Q_END(en))
-!                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM
-!                    ENDIF
-
-                  ENDIF
-                ENDDO !ms
-              ENDDO !mh
+                !Momentum Equation
+                SUM=((a*((Q_PRE(1)**2.0)/A_PRE(1))+ & 
+                   & ((2/3)*(A_PRE(1)**1.5))*Fr) &
+                   & -(a*((Q_BIF(1)**2.0)/A_BIF(1))+ & 
+                   & ((2/3)*(A_BIF(1)**1.5))*Fr))
+                NL_VECTOR(1)=NL_VECTOR(1)+SUM
+                !Continuity Equation
+                SUM=(Q_PRE(1)-Q_BIF(1))*(1/St)
+                NL_VECTOR(1+mn)=NL_VECTOR(1+mn)+SUM   
+   
+              ENDIF
             ENDIF
           ENDIF
 
-          !Assemble partial matrices in final matrix
+          !!!--   A S S E M B L E   M A T R I C E S  &  V E C T O R S   --!!!
           mhs_min=mhs
           mhs_max=nhs
           nhs_min=mhs
@@ -3060,6 +3040,7 @@ CONTAINS
               ENDIF
             ENDIF
           ENDIF
+          
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR.&
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
@@ -3098,12 +3079,6 @@ CONTAINS
             IF(UPDATE_NONLINEAR_RESIDUAL) THEN
               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=NL_VECTOR
             END IF
-
-            IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
-              IF(UPDATE_RHS_VECTOR) THEN
-                RHS_VECTOR%ELEMENT_VECTOR%VECTOR=RH_VECTOR
-              ENDIF
-            ENDIF
           END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3111,13 +3086,13 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         CASE(EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE)
-          !Set general and specific pointers
+          !Set General and Specific Pointers
           DEPENDENT_FIELD=>EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+          INDEPENDENT_FIELD=>EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
           GEOMETRIC_FIELD=>EQUATIONS%EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
           MATERIALS_FIELD=>EQUATIONS%EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-          RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
 
           SELECT CASE(EQUATIONS_SET%SUBTYPE)          
             CASE(EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE)
@@ -3130,78 +3105,101 @@ CONTAINS
               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
               IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
               IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
-              IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
             CASE DEFAULT
               LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
           NULLIFY(BIF_VALUES)
-          CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
-            & ERR,ERROR,*999)
-          MU_PARAM=BIF_VALUES(1)
-          RHO_PARAM=BIF_VALUES(2)
-          E_PARAM=BIF_VALUES(3)
-          H0_PARAM=BIF_VALUES(12)
-          A0_PARAM(1)=BIF_VALUES(21)
-          A0_PARAM(2)=BIF_VALUES(30)
-          A0_PARAM(3)=BIF_VALUES(39)
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
-            & ERR,ERROR,*999)
+          en=ELEMENT_NUMBER
+          bif_idx=0
+          dof_idx=0
+          
+          !!!--  C A L C U L A T I N G   N U M B E R   O F  B I F U R C A T I O N S  --!!!
+          TOTAL_NUMBER_OF_NODES=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+          TOTAL_NUMBER_OF_DOFS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
+          TOTAL_NUMBER_OF_ELEMENTS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+          DO i=1,TOTAL_NUMBER_OF_NODES
+            NUMBER_OF_VERSIONS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)% &
+              & NUMBER_OF_VERSIONS
+            IF(NUMBER_OF_VERSIONS>1)THEN
+              bif_idx=bif_idx+1
+              IF(en==bif_idx)THEN
+                !DOF Number of the Bifurcation Nodes
+                dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
+                !Surrounding Element Number
+                en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
+              ENDIF
+            ENDIF
+          ENDDO
 
+          !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
+          MU_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(1)
+          RHO_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(2)
+          E_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(3)
+          H0_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(4)
+          A0_PARAM(1)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(en+4)
+          A0_PARAM(2)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(en+1+4)
+          A0_PARAM(3)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(en+2+4)
+          Beta(1)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                 & DATA_DP(en+TOTAL_NUMBER_OF_ELEMENTS+4)
+          Beta(2)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                 & DATA_DP(en+1+TOTAL_NUMBER_OF_ELEMENTS+4)
+          Beta(3)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                 & DATA_DP(en+2+TOTAL_NUMBER_OF_ELEMENTS+4)
+
+          !Reference Values
+          Qs=10.0e-6 !(m3/s)
+          As=20.0e-6 !(m2)
+          Xs=0.5     !(m)
+          Ts=0.1     !(s)
+          a=4.0/3.0  !Parabolic Flow Section
+          Bs=(4.0*1.7725*E_PARAM*H0_PARAM)/(3.0*As)
+          St=(As*Xs)/(Ts*Qs)
+          Fr=((As**2.5)/(Qs**2))*(Bs/(2*RHO_PARAM))
+          Re=8.0*3.1416*(MU_PARAM*Xs)/(Qs*RHO_PARAM)
+          
+          !Current Q and A Values at the Bifurcation Nodes
           CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
             & ERR,ERROR,*999)
-          Q_BIF(1)=BIF_VALUES(3)
-          Q_BIF(2)=BIF_VALUES(4)
-          Q_BIF(3)=BIF_VALUES(5)
-          A_BIF(1)=BIF_VALUES(12)
-          A_BIF(2)=BIF_VALUES(13)
-          A_BIF(3)=BIF_VALUES(14)
+          Q_BIF(1)=BIF_VALUES(dof_idx)
+          Q_BIF(2)=BIF_VALUES(dof_idx+1)
+          Q_BIF(3)=BIF_VALUES(dof_idx+2)
+          A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+          A_BIF(2)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+1)
+          A_BIF(3)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+2)
           CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
             & ERR,ERROR,*999)
 
-          !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!!
-          W(1)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-              & PTR%PARAMETERS%CMISS%DATA_DP(1)
-          W(2)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-              & PTR%PARAMETERS%CMISS%DATA_DP(2)
-          W(3)=EQUATIONS%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-              & PTR%PARAMETERS%CMISS%DATA_DP(3)
+          !!!-- E X T R A P O L A T E D   C H A R A C T E R I S T I C S  --!!!
+          W(1)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(dof_idx-1)
+          W(2)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(dof_idx+3)
+          W(3)=INDEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(dof_idx+5)
 
           !!!-- S T I F F N E S S  M A T R I X  --!!!
           IF(UPDATE_STIFFNESS_MATRIX) THEN
+            !Conservation of Mass
             K_MATRIX(4,1)=1.0_DP
             K_MATRIX(4,2)=-1.0_DP
             K_MATRIX(4,3)=-1.0_DP
-            K_MATRIX(5,4)=1.0_DP
-            K_MATRIX(5,5)=-(((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(2)**1.5))/((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))
-            K_MATRIX(6,4)=1.0_DP
-            K_MATRIX(6,6)=-(((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(3)**1.5))/((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))
           END IF
 
           !!!-- N O N L I N E A R   V E C T O R --!!!
           IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-            NL_VECTOR(1)=(Q_BIF(1)/A_BIF(1))+4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                        & (3.0*A0_PARAM(1)*RHO_PARAM))**0.5)*(A_BIF(1)**0.25)- W(1)
-            NL_VECTOR(2)=(Q_BIF(2)/A_BIF(2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                        & (3.0*A0_PARAM(2)*RHO_PARAM))**0.5)*(A_BIF(2)**0.25)- W(2)
-            NL_VECTOR(3)=(Q_BIF(3)/A_BIF(3))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ & 
-                        & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(A_BIF(3)**0.25)- W(3)
-            NL_VECTOR(5)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                        & *((Q_BIF(1)**2.0)-(Q_BIF(2)**2.0))
-            NL_VECTOR(6)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                        & *((Q_BIF(1)**2.0)-(Q_BIF(3)**2.0))
+            !Characteristics Equations
+            NL_VECTOR(1)=(Q_BIF(1)/A_BIF(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_BIF(1)**0.25)- W(1)
+            NL_VECTOR(2)=(Q_BIF(2)/A_BIF(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_BIF(2)**0.25)- W(2)
+            NL_VECTOR(3)=(Q_BIF(3)/A_BIF(3))-4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_BIF(3)**0.25)- W(3)
+            !Continuity of Total Pressure
+            NL_VECTOR(5)=((A_BIF(1)**0.5)-(Beta(2)/Beta(1))*(A_BIF(2)**0.5)) &
+                        & -(((A0_PARAM(1)/As)**0.5)-(Beta(2)/Beta(1))*((A0_PARAM(2)/As)**0.5))+ &
+                        & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(2)/A_BIF(2))**2.0)))
+            NL_VECTOR(6)=((A_BIF(1)**0.5)-(Beta(3)/Beta(1))*(A_BIF(3)**0.5)) &
+                        & -(((A0_PARAM(1)/As)**0.5)-(Beta(3)/Beta(1))*((A0_PARAM(3)/As)**0.5))+ &
+                        & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(3)/A_BIF(3))**2.0)))
           ENDIF
 
-          !!!-- R H S   V E C T O R --!!!
-          IF(UPDATE_RHS_VECTOR) THEN
-            RH_VECTOR(5)=(((A0_PARAM(1)-(((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(2)**1.5))/ &
-                        & ((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))*A0_PARAM(2))))
-            RH_VECTOR(6)=(((A0_PARAM(1)-(((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(3)**1.5))/ &
-                        & ((1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5)))*A0_PARAM(3))))
-          ENDIF
-
+          !!!--   A S S E M B L E   M A T R I C E S  &  V E C T O R S   --!!!
           IF(UPDATE_STIFFNESS_MATRIX) THEN
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=K_MATRIX
           ENDIF
@@ -3209,12 +3207,6 @@ CONTAINS
           IF(UPDATE_NONLINEAR_RESIDUAL) THEN
             NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=NL_VECTOR
           END IF
-          
-          IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
-            IF(UPDATE_RHS_VECTOR) THEN
-              RHS_VECTOR%ELEMENT_VECTOR%VECTOR=RH_VECTOR
-            ENDIF
-          ENDIF
 
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
@@ -3249,8 +3241,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
-    INTEGER(INTG) :: x,en
-    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(3),DPHIMS_DXI(3),DPHINS_DXI(3)
+    INTEGER(INTG) :: x,en,i,bif_idx,dof_idx,nv1,nv3,node1,node3,mn
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS,TOTAL_NUMBER_OF_NODES,NUMBER_OF_VERSIONS,TOTAL_NUMBER_OF_DOFS
+    REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(9)
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
@@ -3276,10 +3269,10 @@ CONTAINS
     REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
     REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
     REAL(DP) :: J_MATRIX(256,256)
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),Q_VALUE(3),A_VALUE,Q_BIF(6),A_BIF(6),Q_PRE(6),A_PRE(6)!,P_VALUE
-    REAL(DP) :: Q_TER(6),A_TER(6),Q_L(3),U_L(3),A_L(3),Q_R(3),U_R(3),A_R(3),Q_END(3),A_END(3)
-    REAL(DP) :: Rt,Q_0(3),U_0(3),A_0(3),C_0(3),C_L(3)
-    REAL(DP) :: U_DERIV(3,3),A_DERIV,Q_DERIV(3,3)!,P_DERIV
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),Q_VALUE(3),A_VALUE,Q_BIF(3),A_BIF(3),Q_PRE(3),A_PRE(3)
+    REAL(DP) :: Q_TER(3),A_TER(3),Q_L(3),U_L(3),A_L(3),Q_R(3),U_R(3),A_R(3),Q_END(3),A_END(3)
+    REAL(DP) :: Rt,Q_0(3),U_0(3),A_0(3),C_0(3),C_L(3),Beta(9),a
+    REAL(DP) :: U_DERIV(3,3),A_DERIV,Q_DERIV(3,3),Bs,Ts,As,Qs,Xs,St,Fr,Re
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -3404,12 +3397,12 @@ CONTAINS
               !Define RHO_PARAM, density=2
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
 
-             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
 
                 U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -3435,7 +3428,7 @@ CONTAINS
                 !Start with calculation of partial matrices
                 !Here W_VALUES must be ZERO if ALE part of linear matrix
                 W_VALUE=0.0_DP
-             END IF
+              END IF
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
@@ -3511,6 +3504,7 @@ CONTAINS
 !             1D  T R A N S I E N T 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+              !Start with Matrix Calculations
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
                 Q_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -3518,12 +3512,25 @@ CONTAINS
                 A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
                 E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
                 H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-                A0_PARAM(1)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-                A0_PARAM(2)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-                A0_PARAM(3)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
                 en=ELEMENT_NUMBER
+                TOTAL_NUMBER_OF_ELEMENTS=EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)% &
+                  & PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+                A0_PARAM(en)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(en+4,NO_PART_DERIV)
+                Beta(en)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                  & VALUES(en+TOTAL_NUMBER_OF_ELEMENTS+4,NO_PART_DERIV)
 
-                !Loop over field components
+                !Reference Values
+                Qs=10.0e-6 !(m3/s)
+                As=20.0e-6 !(m2)
+                Xs=0.5     !(m)
+                Ts=0.1     !(s)
+                a=4.0/3.0  !Parabolic Flow Section
+                Bs=(4.0*1.7725*E_PARAM*H0_PARAM)/(3.0*As)
+                St=(As*Xs)/(Ts*Qs)
+                Fr=((As**2.5)/(Qs**2))*(Bs/(2*RHO_PARAM))
+                Re=8.0*3.1416*(MU_PARAM*Xs)/(Qs*RHO_PARAM)
+              
+                !Loop Over Element Rows
                 mhs=0
                 DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -3537,7 +3544,7 @@ CONTAINS
                     mhs=mhs+1
                     nhs=0
                     IF(UPDATE_JACOBIAN_MATRIX) THEN
-                      !Loop over element columns
+                      !Loop Over Element Columns
                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                         MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                         DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -3546,53 +3553,32 @@ CONTAINS
                           &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                         DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                           nhs=nhs+1
- 
 !                          DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
                           DXI_DX(1,1)=1.0_DP
                           DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
                           DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-                          NULLIFY(BIF_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                            & BIF_VALUES,ERR,ERROR,*999)
-                          !BIFURCATION DATA
-                          Q_BIF(1)=BIF_VALUES(3)
-                          Q_BIF(2)=BIF_VALUES(4)
-                          Q_BIF(3)=BIF_VALUES(5)
-                          A_BIF(1)=BIF_VALUES(12)
-                          A_BIF(2)=BIF_VALUES(13)
-                          A_BIF(3)=BIF_VALUES(14)
-                          !END OF VESSEL DATA
-                          Q_END(2)=BIF_VALUES(7)
-                          Q_END(3)=BIF_VALUES(9)
-                          A_END(2)=BIF_VALUES(16)
-                          A_END(3)=BIF_VALUES(18)
-                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                            & BIF_VALUES,ERR,ERROR,*999)
-
-                          !J1 ONLY
+                          
+                          !Momentum Equation (dF/dQ)
                           IF(mh==1 .AND. nh==1) THEN
-                            SUM=((1.3333*2.0*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
-                              & (1.3333*2.0*Q_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE)+ &
-                              & (1.3333*(-2.0)*Q_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2.0))+ &
-                              & ((8.0*3.1416*MU_PARAM/RHO_PARAM)*PHINS/A_VALUE))*PHIMS
+                            SUM=((a*2.0*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
+                              & (a*2.0*Q_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE)+ &
+                              & (a*(-2.0)*Q_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2.0))+ &
+                              & (PHINS/A_VALUE)*Re)*PHIMS
                             J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
-
-                          !J2 ONLY
+                          
+                          !Momentum Equation (dF/dA)
                           IF(mh==1 .AND. nh==2) THEN
-                            SUM=((1.3333*(-2.0)*Q_VALUE(1)*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2))+ &
-                              & (1.3333*2.0*PHINS*(Q_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3))+ &
-                              & (-1.3333*((Q_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1))+ &
-                              & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*(A0_PARAM(ELEMENT_NUMBER))**1.5)))* &
-                              & PHINS*A_DERIV*DXI_DX(1,1))+(((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)* & 
-                              & (A0_PARAM(ELEMENT_NUMBER))**1.5)))*A_VALUE*DPHINS_DXI(1)*DXI_DX(1,1))+ &
-                              & (((-8.0*3.1416*MU_PARAM/RHO_PARAM)*PHINS*Q_VALUE(1)/(A_VALUE**2))))*PHIMS
+                            SUM=((a*(-2.0)*Q_VALUE(1)*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2))+ &
+                              & (a*2.0*PHINS*(Q_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3))+ &
+                              & (-a*((Q_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1))+ &
+                              & ((0.5*PHINS*(A_VALUE**(-0.5))*A_DERIV*DXI_DX(1,1))+((A_VALUE**0.5)*DPHINS_DXI(1)*DXI_DX(1,1)))*Fr+ &
+                              & ((-PHINS*Q_VALUE(1)/(A_VALUE**2))*Re))*PHIMS
                             J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
-
+                          
                         ENDDO !ns
                       ENDDO !nh
                     ENDIF
@@ -3601,27 +3587,60 @@ CONTAINS
               END IF
             ENDDO !ng
 
-            !!!--  F L U X    U P W I N D I N G  --!!!
+            !!!--  B I F U R C A T I O N   F L U X   U P W I N D I N G  --!!!
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-              IF(en==1)THEN
-                J_MATRIX(6,3)=-1.0
-                J_MATRIX(3,3)=J_MATRIX(3,3)-(2.0*Q_BIF(en)/A_BIF(en))
-                J_MATRIX(3,6)=J_MATRIX(3,6)-((-(Q_BIF(en)/A_BIF(en))**2.0)+ &
-                             & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*(A_BIF(en))))
-              ELSEIF(en==2 .OR. en==3)THEN
-                J_MATRIX(4,1)=-1.0
-                J_MATRIX(1,1)=J_MATRIX(1,1)-(2.0*Q_BIF(en)/A_BIF(en))
-                J_MATRIX(1,4)=J_MATRIX(1,4)-((-(Q_BIF(en)/A_BIF(en))**2.0)+ &
-                             & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*(A_BIF(en))))
+              TOTAL_NUMBER_OF_DOFS=EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR% &
+                & TOPOLOGY%DOFS%NUMBER_OF_DOFS
+              !Max Node in an Element
+              mn=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
+              !Number of Element First Node
+              node1=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
+              !Number of Element Last Node
+              node3=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(3)
+              !Element First Node Number of Versions
+              nv1=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+              !Element Last Node Number of Versions
+              nv3=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+              !Parent Vessel (if the last node has versions)
+              IF(nv3>1)THEN
+                !DOF Number of the First Node
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(1)
+                !Current Values of Q and A at the Last Node
+                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & BIF_VALUES,ERR,ERROR,*999)
+                Q_BIF(1)=BIF_VALUES(dof_idx)
+                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+                  & BIF_VALUES,ERR,ERROR,*999)
 
-!                J_MATRIX(6,3)=-1.0
-!                J_MATRIX(3,3)=J_MATRIX(3,3)-(2.0*Q_END(en)/A_END(en))
-!                J_MATRIX(3,6)=J_MATRIX(3,6)-((-(Q_END(en)/A_END(en))**2.0)+ &
-!                             & (((1.7725*E_PARAM*H0_PARAM/((RHO_PARAM)*A0_PARAM(en)**1.5)))*(A_END(en))))
+                !Momentum Equation (dU/dQ - dU/dA)
+                J_MATRIX(mn,mn)=J_MATRIX(mn,mn)+(-a*2.0*Q_BIF(1)/A_BIF(1))
+                J_MATRIX(mn,2*mn)=J_MATRIX(mn,2*mn)+((a*(Q_BIF(1)/A_BIF(1))**2.0)-(A_BIF(1)**0.5)*Fr)
+                !Continuity Equation (dU/dQ)
+                J_MATRIX(2*mn,mn)=-1.0*(1/St)
+
+              !Branch Vessel (if the first node has versions)
+              ELSEIF(nv1>1) THEN
+                !DOF Number of the Last Node
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(3)
+                !Current Values of Q and A at the First Node
+                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & BIF_VALUES,ERR,ERROR,*999)
+                Q_BIF(1)=BIF_VALUES(dof_idx)
+                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+                  & BIF_VALUES,ERR,ERROR,*999)
+
+                !Momentum Equation (dU/dQ - dU/dA)
+                J_MATRIX(1,1)=J_MATRIX(1,1)+(-a*2.0*Q_BIF(1)/A_BIF(1))
+                J_MATRIX(1,1+mn)=J_MATRIX(1,1+mn)+((a*(Q_BIF(1)/A_BIF(1))**2.0)-(A_BIF(1)**0.5)*Fr)
+                !Continuity Equation (dU/dQ)
+                J_MATRIX(1+mn,1)=-1.0*(1/St)
+
               ENDIF
             ENDIF
 
-            !Assemble matrices and vectors 
+            !!!--   A S S E M B L E   M A T R I C E S  &  V E C T O R S   --!!!
             mhs_min=mhs
             mhs_max=nhs
             nhs_min=mhs
@@ -3650,7 +3669,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           CASE(EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE)
-            !Set some general and case-specific pointers
+            !Set General and Specific Pointers
             DEPENDENT_FIELD=>EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             MATERIALS_FIELD=>EQUATIONS%EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
             EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
@@ -3669,51 +3688,98 @@ CONTAINS
                   & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
+            en=ELEMENT_NUMBER
+            bif_idx=0
+            dof_idx=0
+                
+            !!!--  C A L C U L A T I N G   N U M B E R   O F  B I F U R C A T I O N S  --!!!
+            TOTAL_NUMBER_OF_NODES=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+            TOTAL_NUMBER_OF_DOFS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
+            TOTAL_NUMBER_OF_ELEMENTS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+            DO i=1,TOTAL_NUMBER_OF_NODES
+              NUMBER_OF_VERSIONS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)% &
+                & NUMBER_OF_VERSIONS
+              IF(NUMBER_OF_VERSIONS>1)THEN
+                bif_idx=bif_idx+1
+                IF(en==bif_idx)THEN
+                  !DOF Number of the Bifurcation Nodes
+                  dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
+                  !Surrounding Element Number
+                  en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
+                ENDIF
+              ENDIF
+            ENDDO
 
-            NULLIFY(BIF_VALUES)
-            CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
-              & ERR,ERROR,*999)
-            MU_PARAM=BIF_VALUES(1)
-            RHO_PARAM=BIF_VALUES(2)
-            E_PARAM=BIF_VALUES(3)
-            H0_PARAM=BIF_VALUES(12)
-            A0_PARAM(1)=BIF_VALUES(21)
-            A0_PARAM(2)=BIF_VALUES(30)
-            A0_PARAM(3)=BIF_VALUES(39)
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
-              & ERR,ERROR,*999)
+            !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
+            MU_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                    & PTR%PARAMETERS%CMISS%DATA_DP(1)
+            RHO_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                     & PTR%PARAMETERS%CMISS%DATA_DP(2)
+            E_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                   & PTR%PARAMETERS%CMISS%DATA_DP(3)
+            H0_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                    & PTR%PARAMETERS%CMISS%DATA_DP(4)
+            A0_PARAM(1)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(en+4)
+            A0_PARAM(2)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(en+1+4)
+            A0_PARAM(3)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(en+2+4)
+            Beta(1)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                   & DATA_DP(en+TOTAL_NUMBER_OF_ELEMENTS+4)
+            Beta(2)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                   & DATA_DP(en+1+TOTAL_NUMBER_OF_ELEMENTS+4)
+            Beta(3)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                   & DATA_DP(en+2+TOTAL_NUMBER_OF_ELEMENTS+4)
 
+            !Reference Values
+            Qs=10.0e-6 !(m3/s)
+            As=20.0e-6 !(m2)
+            Xs=0.5     !(m)
+            Ts=0.1     !(s)
+            a=4.0/3.0  !Parabolic Flow Section
+            Bs=(4.0*1.7725*E_PARAM*H0_PARAM)/(3.0*As)
+            St=(As*Xs)/(Ts*Qs)
+            Fr=((As**2.5)/(Qs**2))*(Bs/(2*RHO_PARAM))
+            Re=8.0*3.1416*(MU_PARAM*Xs)/(Qs*RHO_PARAM)
+            
+            !Current Q and A Values at the Bifurcation Nodes
             CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
               & ERR,ERROR,*999)
-            Q_BIF(1)=BIF_VALUES(3)
-            Q_BIF(2)=BIF_VALUES(4)
-            Q_BIF(3)=BIF_VALUES(5)
-            A_BIF(1)=BIF_VALUES(12)
-            A_BIF(2)=BIF_VALUES(13)
-            A_BIF(3)=BIF_VALUES(14)
+            Q_BIF(1)=BIF_VALUES(dof_idx)
+            Q_BIF(2)=BIF_VALUES(dof_idx+1)
+            Q_BIF(3)=BIF_VALUES(dof_idx+2)
+            A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+            A_BIF(2)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+1)
+            A_BIF(3)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+2)
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
               & ERR,ERROR,*999)
-
+              
+            !!!--  J A C O B I A N   M A T R I X  --!!!
             IF(UPDATE_JACOBIAN_MATRIX) THEN
+              !Characteristic Equation in Parent Vessel (dU/dQ - dU/dA)
               J_MATRIX(1,1)=1.0/A_BIF(1)
-              J_MATRIX(1,4)=(-Q_BIF(1)/(A_BIF(1)**2))+4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                           & (3.0*A0_PARAM(1)*RHO_PARAM))**0.5)*(0.25*(A_BIF(1)**(-0.75)))
+              J_MATRIX(1,4)=(-Q_BIF(1)/(A_BIF(1)**2.0))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(0.25*(A_BIF(1)**(-0.75)))
+              !Characteristic Equation 1st Branch Vessel (dU/dQ - dU/dA)
               J_MATRIX(2,2)=1.0/A_BIF(2)
-              J_MATRIX(2,5)=(-Q_BIF(2)/(A_BIF(2)**2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                           & (3.0*A0_PARAM(2)*RHO_PARAM))**0.5)*(0.25*(A_BIF(2)**(-0.75)))
+              J_MATRIX(2,5)=(-Q_BIF(2)/(A_BIF(2)**2.0))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(0.25*(A_BIF(2)**(-0.75)))
+              !Characteristic Equation 2nd Branch Vessel (dU/dQ - dU/dA)
               J_MATRIX(3,3)=1.0/A_BIF(3)
-              J_MATRIX(3,6)=(-Q_BIF(3)/(A_BIF(3)**2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                           & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(0.25*(A_BIF(3)**(-0.75)))
-              J_MATRIX(5,1)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(2.0*Q_BIF(1))
-              J_MATRIX(5,2)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(-2.0*Q_BIF(2))
-              J_MATRIX(6,1)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(2.0*Q_BIF(1))
-              J_MATRIX(6,3)=(RHO_PARAM/((2.0*1.7725*E_PARAM*H0_PARAM)/(A0_PARAM(1)**1.5))) &
-                           & *(-2.0*Q_BIF(3))
+              J_MATRIX(3,6)=(-Q_BIF(3)/(A_BIF(3)**2.0))-4.0*((Fr*(Beta(3)/Bs))**0.5)*(0.25*(A_BIF(3)**(-0.75)))
+              !Continuity of Total Pressure in 1st Branch (dU/dQ)
+              J_MATRIX(5,1)=(Bs/(Fr*Beta(1)))*0.25*(2.0*Q_BIF(1)/(A_BIF(1)**2.0))
+              J_MATRIX(5,2)=(Bs/(Fr*Beta(1)))*0.25*(-2.0*Q_BIF(2)/(A_BIF(2)**2.0))
+              !Continuity of Total Pressure in 1st Branch (dU/dA) 
+              J_MATRIX(5,4)=(0.5*A_BIF(1)**(-0.5))+((Bs/(Fr*Beta(1)))*0.25*(-2.0*(Q_BIF(1)**2.0)/(A_BIF(1)**3.0)))
+              J_MATRIX(5,5)=(-(Beta(2)/Beta(1))*(0.5*A_BIF(2)**(-0.5)))+ &
+                           & ((Bs/(Fr*Beta(1)))*0.25*(2.0*(Q_BIF(2)**2.0)/(A_BIF(2)**3.0)))
+              !Continuity of Total Pressure in 2nd Branch (dU/dQ)
+              J_MATRIX(6,1)=(Bs/(Fr*Beta(1)))*0.25*(2.0*Q_BIF(1)/(A_BIF(1)**2.0))
+              J_MATRIX(6,3)=(Bs/(Fr*Beta(1)))*0.25*(-2.0*Q_BIF(3)/(A_BIF(3)**2.0))
+              !Continuity of Total Pressure in 2nd Branch (dU/dA)
+              J_MATRIX(6,4)=(0.5*A_BIF(1)**(-0.5))+((Bs/(Fr*Beta(1)))*0.25*(-2.0*(Q_BIF(1)**2.0)/(A_BIF(1)**3.0)))
+              J_MATRIX(6,6)=(-(Beta(3)/Beta(1))*(0.5*A_BIF(3)**(-0.5)))+ &
+                           & ((Bs/(Fr*Beta(1)))*0.25*(2.0*(Q_BIF(3)**2.0)/(A_BIF(3)**3.0)))    
             ENDIF
-
+            
+            !!!--   A S S E M B L E   M A T R I C E S  &  V E C T O R S   --!!!
             IF(UPDATE_JACOBIAN_MATRIX) THEN
               JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=J_MATRIX
             ENDIF
@@ -3811,7 +3877,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-
   !>Sets up the Navier-Stokes problem pre solve.
   SUBROUTINE NAVIER_STOKES_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -3863,7 +3928,7 @@ CONTAINS
                           CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO
-                   ELSE
+                    ELSE
                       CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -4203,15 +4268,15 @@ CONTAINS
     REAL(DP), POINTER :: BIF_VALUES(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
     REAL(DP) :: T_COORDINATES(20,3)
-    REAL(DP) :: X(3),MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(3),VELOCITY,PRESSURE,FLOW(3),AREA(3),W(3),Q_EX(3),A_EX(3),XI(1)
-    REAL(DP) :: Q_TER(6),A_TER(6),Q_L(3),U_L(3),A_L(3),Q_R(3),U_R(3),A_R(3),Q_END(3),A_END(3)
-    REAL(DP) :: Rt,Q_0(3),U_0(3),A_0(3),C_0(3),C_L(3),Q_BIF(3),A_BIF(3),Q_PRE(3),A_PRE(3)
+    REAL(DP) :: X(3),MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(9),VELOCITY,PRESSURE,FLOW(3),AREA(3),W(9),Q_EX(9),A_EX(9),XI(1)
+    REAL(DP) :: Q_TER(6),A_TER(6),Q_L(3),U_L(3),A_L(3),Q_R(3),U_R(3),A_R(3),Q_END(3),A_END(3),Bs,a
+    REAL(DP) :: Rt,Q_0(3),U_0(3),A_0(3),C_0(3),C_L(3),Q_BIF(9),A_BIF(9),Q_PRE(9),A_PRE(9),Beta(9),Period,Ts,As,Qs,Xs,St,Fr,Re
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
-    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
-    INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),en
+    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,dof_idx
+    INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),en,ELEMENT_NODE_NUMBER,TOTAL_NUMBER_OF_ELEMENTS
+    INTEGER(INTG) :: dof_number,loop_idx,bif_idx,NUMBER_OF_DOFS,TOTAL_NUMBER_OF_NODES,NUMBER_OF_VERSIONS,TOTAL_NUMBER_OF_DOFS
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
     INTEGER(INTG) :: NDOFS_TO_PRINT
 
     CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
@@ -4495,27 +4560,24 @@ CONTAINS
                       MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
 
                       !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!!
-                      CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & BIF_VALUES,ERR,ERROR,*999)
-                      MU_PARAM=BIF_VALUES(1)
-                      RHO_PARAM=BIF_VALUES(2)
-                      E_PARAM=BIF_VALUES(3)
-                      H0_PARAM=BIF_VALUES(12)
-                      A0_PARAM(1)=BIF_VALUES(21)
-                      A0_PARAM(2)=BIF_VALUES(30)
-                      A0_PARAM(3)=BIF_VALUES(39)
-                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & BIF_VALUES,ERR,ERROR,*999)
+                      MU_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(1)
+                      RHO_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(2)
+                      E_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(3)
+                      H0_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(4)
+                      DO i=1,9
+                        A0_PARAM(i)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(i+4)
+                        Beta(i)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(i+13)
+                      ENDDO
 
-                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & BIF_VALUES,ERR,ERROR,*999)
+!                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                        & BIF_VALUES,ERR,ERROR,*999)
                       !END OF VESSEL - DATA
-                      Q_END(2)=BIF_VALUES(7)
-                      Q_END(3)=BIF_VALUES(9)
-                      A_END(2)=BIF_VALUES(16)
-                      A_END(3)=BIF_VALUES(18)
-                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                        & BIF_VALUES,ERR,ERROR,*999)
+!                      Q_END(2)=BIF_VALUES(7)
+!                      Q_END(3)=BIF_VALUES(9)
+!                      A_END(2)=BIF_VALUES(16)
+!                      A_END(3)=BIF_VALUES(18)
+!                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+!                        & BIF_VALUES,ERR,ERROR,*999)
             
                       !!!-- CALCULATING PERIPHERAL BOUNDARY CONDITIONS --!!!
             
@@ -4523,7 +4585,7 @@ CONTAINS
                       A_L(2)=A_END(2)
                       U_L(2)=Q_END(2)/A_END(2)
                       Q_L(2)=A_L(2)*U_L(2)
-                       C_L(2)=((((2.0*1.7725*H0_PARAM*E_PARAM)/(3.0*A0_PARAM((2))*RHO_PARAM))**0.5)*(A_L(2)**0.25))
+                      C_L(2)=((((2.0*1.7725*H0_PARAM*E_PARAM)/(3.0*A0_PARAM((2))*RHO_PARAM))**0.5)*(A_L(2)**0.25))
                       A_L(3)=A_END(3)
                       U_L(3)=Q_END(3)/A_END(3)
                       Q_L(3)=A_L(3)*U_L(3)
@@ -4562,11 +4624,11 @@ CONTAINS
                       A_TER(3)=(1/16.0)*(((W(2)-W(4))/4.0)**4.0)*(((3.0*A0_PARAM(2)*RHO_PARAM)/(2.0*1.77*H0_PARAM*E_PARAM))**2.0)
                       Q_TER(3)=A_TER(3)*(W(2)+W(4))/2.0
 
-                      A_TER(2)=7.0e-6
-                      Q_TER(2)=5.0E-7
+                      A_TER(2)=0.5
+                      Q_TER(2)=0.05
  
-                      A_TER(3)=7.0E-6
-                      Q_TER(3)=5.0E-7
+                      A_TER(3)=0.5
+                      Q_TER(3)=0.05
 
                       !STORING DATA
                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -4593,18 +4655,30 @@ CONTAINS
                               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
 
-                                FLOW(1)=25.0e-6
-                                ! VELOCITY =( (0.05*SIN(10.0*CURRENT_TIME*3.1416*2.0))+0.25)
-                                ! VELOCITY =( 3.56*SIN(1.0*6.0*3.1416*CURRENT_TIME+1.24383)  &
-                                !          & +2.71*SIN(2.0*6.0*3.1416*CURRENT_TIME-0.85811)  &
-                                !          & -1.20*SIN(3.0*6.0*3.1416*CURRENT_TIME+0.88226)  &
-                                !          & -0.28*SIN(4.0*6.0*3.1416*CURRENT_TIME-0.35401)  &
-                                !          & +0.22*SIN(5.0*6.0*3.1416*CURRENT_TIME+1.736)    &
-                                !          & -0.13*SIN(6.0*6.0*3.1416*CURRENT_TIME+0.101) )   /7.0686
-  
+                                Period=4.16
+                                FLOW(2)=21.76*(0.326+0.14*cos(2*pi*(CURRENT_TIME/(Period))) &
+                                               &    -0.77*cos(4*pi*(CURRENT_TIME/(Period))) &
+                                               &     +0.2*cos(6*pi*(CURRENT_TIME/(Period))) &
+                                               &   +0.125*cos(8*pi*(CURRENT_TIME/(Period))) &
+                                               &  +0.063*cos(10*pi*(CURRENT_TIME/(Period))) &
+                                               &  -0.045*cos(12*pi*(CURRENT_TIME/(Period))) &
+                                               &  -0.027*cos(14*pi*(CURRENT_TIME/(Period))) &
+                                               &  -0.001*cos(16*pi*(CURRENT_TIME/(Period))) &
+                                               &  -0.004*cos(18*pi*(CURRENT_TIME/(Period))) &
+                                               & -0.0315*cos(20*pi*(CURRENT_TIME/(Period))) &
+                                               &   +0.535*sin(2*pi*(CURRENT_TIME/(Period))) &
+                                               &   -0.116*sin(4*pi*(CURRENT_TIME/(Period))) &
+                                               &     -0.3*sin(6*pi*(CURRENT_TIME/(Period))) &
+                                               &   +0.033*sin(8*pi*(CURRENT_TIME/(Period))) &
+                                               &   +0.04*sin(10*pi*(CURRENT_TIME/(Period))) &
+                                               &  +0.042*sin(12*pi*(CURRENT_TIME/(Period))) &
+                                               &   +0.01*sin(14*pi*(CURRENT_TIME/(Period))) &
+                                               &  -0.044*sin(16*pi*(CURRENT_TIME/(Period))) &
+                                               &  -0.004*sin(18*pi*(CURRENT_TIME/(Period))) &
+                                               &    +0.0*sin(20*pi*(CURRENT_TIME/(Period))))/200.0
+                                  FLOW(1)=1.0
                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                    & FIELD_VALUES_SET_TYPE,1,FLOW(1),ERR,ERROR,*999)
-  
                                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
                                    & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, & 
@@ -4643,93 +4717,126 @@ CONTAINS
                   IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                     EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
                     IF(ASSOCIATED(EQUATIONS)) THEN
+                      !Set General and Specific Pointer
                       EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                       DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                       INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
                       MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
 
-                      CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & BIF_VALUES,ERR,ERROR,*999)
-                      MU_PARAM=BIF_VALUES(1)
-                      RHO_PARAM=BIF_VALUES(2)
-                      E_PARAM=BIF_VALUES(3)
-                      H0_PARAM=BIF_VALUES(12)
-                      A0_PARAM(1)=BIF_VALUES(21)
-                      A0_PARAM(2)=BIF_VALUES(30)
-                      A0_PARAM(3)=BIF_VALUES(39)
-                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & BIF_VALUES,ERR,ERROR,*999)
+                      MU_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(1)
+                      RHO_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(2)
+                      E_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(3)
+                      H0_PARAM=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(4)
+                      DO i=1,9
+                        A0_PARAM(i)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(i+4)
+                        Beta(i)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(i+13)
+                      ENDDO
 
-                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                        & BIF_VALUES,ERR,ERROR,*999)
-                      Q_PRE(1)=BIF_VALUES(3)
-                      Q_PRE(2)=BIF_VALUES(4)
-                      Q_PRE(3)=BIF_VALUES(5)
-                      A_PRE(1)=BIF_VALUES(12)
-                      A_PRE(2)=BIF_VALUES(13)
-                      A_PRE(3)=BIF_VALUES(14)
-                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, & 
-                        & BIF_VALUES,ERR,ERROR,*999)
+                      !!!--  C A L C U L A T I N G   N U M B E R   O F  B I F U R C A T I O N S  --!!!
+                      TOTAL_NUMBER_OF_NODES=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+                      TOTAL_NUMBER_OF_DOFS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
+                      TOTAL_NUMBER_OF_ELEMENTS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+                      bif_idx=0
+                      dof_idx=0
 
-                      !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!!
-                      XI(1)=0.8
-                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,1,EQUATIONS%INTERPOLATION% &
-                        & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                        & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                      Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                             & PTR%VALUES(1,NO_PART_DERIV)
-                      A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                             & PTR%VALUES(2,NO_PART_DERIV)
+                      !Reference Values
+                      Qs=10.0e-6 !(m3/s)
+                      As=20.0e-6 !(m2)
+                      Xs=0.5     !(m)
+                      Ts=0.1     !(s)
+                      a=4/3      !Parabolic Flow Section
+                      Bs=(4.0*1.7725*E_PARAM*H0_PARAM)/(3.0*As)
+                      St=(As*Xs)/(Ts*Qs)
+                      Fr=((As**2.5)/(Qs**2))*(Bs/(2*RHO_PARAM))
+                      Re=8*3.1416*(MU_PARAM*Xs)/(Qs*RHO_PARAM)
 
-                      XI(1)=0.2
-                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,2,EQUATIONS%INTERPOLATION% &
-                        & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                        & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                      Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                             & PTR%VALUES(1,NO_PART_DERIV)
-                      A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                             & PTR%VALUES(2,NO_PART_DERIV)
+                      DO i=1,TOTAL_NUMBER_OF_NODES
+                        NUMBER_OF_VERSIONS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)% &
+                          & DERIVATIVES(1)%NUMBER_OF_VERSIONS
+                        IF(NUMBER_OF_VERSIONS>1)THEN
+                          !Number of Bifurcations
+                          bif_idx=bif_idx+1
+                          !DOF Number of the Bifurcation Nodes
+                          dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
+                          !Surrounding Element Number
+                          en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
 
-                      XI(1)=0.2
-                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,3,EQUATIONS%INTERPOLATION% &
-                        & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                      CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                        & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                      Q_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                             & PTR%VALUES(1,NO_PART_DERIV)
-                      A_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                             & PTR%VALUES(2,NO_PART_DERIV)
+                          !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!! 
+                          Beta(1)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                                 & DATA_DP(en+TOTAL_NUMBER_OF_ELEMENTS+4)
+                          Beta(2)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                                 & DATA_DP(en+1+TOTAL_NUMBER_OF_ELEMENTS+4)
+                          Beta(3)=MATERIALS_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS% &
+                                 & DATA_DP(en+2+TOTAL_NUMBER_OF_ELEMENTS+4)
+                          !Parent Vessel Characteristic Extrapolation       
+                          XI(1)=0.8
+                          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
+                            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                                 & PTR%VALUES(1,NO_PART_DERIV)
+                          A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                                 & PTR%VALUES(2,NO_PART_DERIV)
+                          !1st Branch Vessel Characteristic Extrapolation       
+                          XI(1)=0.2
+                          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en+1,EQUATIONS%INTERPOLATION% &
+                            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                                 & PTR%VALUES(1,NO_PART_DERIV)
+                          A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                                 & PTR%VALUES(2,NO_PART_DERIV)
+                          !2nd Branch Vessel Characteristic Extrapolation       
+                          XI(1)=0.2
+                          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en+2,EQUATIONS%INTERPOLATION% &
+                            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          Q_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                                 & PTR%VALUES(1,NO_PART_DERIV)
+                          A_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                                 & PTR%VALUES(2,NO_PART_DERIV)
 
-                      !!!-- R I E M A N N   I N V A R I A N T S --!!!
-                      W(1)=((Q_EX(1)/A_EX(1))+4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                          & (3.0*A0_PARAM(1)*RHO_PARAM))**0.5)*(A_EX(1)**0.25))
-                      W(2)=((Q_EX(2)/A_EX(2))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                          & (3.0*A0_PARAM(2)*RHO_PARAM))**0.5)*(A_EX(2)**0.25))
-                      W(3)=((Q_EX(3)/A_EX(3))-4.0*(((2.0*1.7725*H0_PARAM*E_PARAM)/ &
-                          & (3.0*A0_PARAM(3)*RHO_PARAM))**0.5)*(A_EX(3)**0.25))
+                          !Riemann Invariants Values at the Bifurcation Element
+                          W(1)=((Q_EX(1)/A_EX(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
+                          W(2)=((Q_EX(2)/A_EX(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_EX(2)**0.25))
+                          W(3)=((Q_EX(3)/A_EX(3))-4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_EX(3)**0.25))
 
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,W(1),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,2,W(2),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,3,W(3),ERR,ERROR,*999)
-
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,8,Q_PRE(1),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,9,Q_PRE(2),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,10,Q_PRE(3),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,11,A_PRE(1),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,12,A_PRE(2),ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,13,A_PRE(3),ERR,ERROR,*999)
-
+                          !Previous Q and A Values at the Bifurcation Nodes
+                          CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                            & BIF_VALUES,ERR,ERROR,*999)
+                          Q_PRE(1)=BIF_VALUES(dof_idx)
+                          Q_PRE(2)=BIF_VALUES(dof_idx+1)
+                          Q_PRE(3)=BIF_VALUES(dof_idx+2)
+                          A_PRE(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
+                          A_PRE(2)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+1)
+                          A_PRE(3)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+2)
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+                          !Storing Riemann Invariants in the Independent Field
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx-1,W(1),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx+3,W(2),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx+5,W(3),ERR,ERROR,*999)
+                          !Storing Previous Q and A Values in the Independent Field
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx,Q_PRE(1),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx+1,Q_PRE(2),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx+2,Q_PRE(3),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,TOTAL_NUMBER_OF_DOFS+dof_idx,A_PRE(1),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,TOTAL_NUMBER_OF_DOFS+dof_idx+1,A_PRE(2),ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,TOTAL_NUMBER_OF_DOFS+dof_idx+2,A_PRE(3),ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
                     ELSE
                       CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
                     END IF

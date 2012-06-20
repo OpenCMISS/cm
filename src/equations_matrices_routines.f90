@@ -793,11 +793,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,global_ny,local_ny,node,node_idx,version,version_idx
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,global_ny,local_ny,node,node_idx,version,version_idx,bif_idx
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
@@ -837,21 +837,24 @@ CONTAINS
                   ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
                   ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
                 CASE(FIELD_NODE_BASED_INTERPOLATION)
-                  DO node_idx=1,COLS_FIELD_VARIABLE%components(1)%domain%topology%nodes%total_number_of_nodes
-                    version=COLS_FIELD_VARIABLE%components(1)%domain%topology%nodes%nodes(node_idx)% &
-                           & derivatives(1)%number_of_versions
-                    derivative=COLS_FIELD_VARIABLE%components(1)%domain%topology%nodes%nodes(node_idx)% &
-                              & derivatives(1)%global_derivative_index
+                  bif_idx=0
+                  TOTAL_NUMBER_OF_NODES=COLS_FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+                  DO node_idx=1,TOTAL_NUMBER_OF_NODES
+                    version=COLS_FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
+                      & DERIVATIVES(1)%NUMBER_OF_VERSIONS
                     IF(version>1) THEN
-                      DO version_idx=1,version
-                        local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                                & NODES(node_idx)%DERIVATIVES(derivative)%VERSIONS(version_idx)
-                        global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
-                        ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
-                        ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
-                        ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
-                        ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
-                      ENDDO
+                      bif_idx=bif_idx+1
+                      IF(ROW_ELEMENT_NUMBER==bif_idx)THEN
+                        DO version_idx=1,version
+                          local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
+                                  & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(version_idx)
+                          global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                          ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
+                          ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
+                          ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
+                          ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
+                        ENDDO !version_idx
+                      ENDIF
                     ENDIF
                   ENDDO !node_idx
                 CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -1164,7 +1167,7 @@ CONTAINS
                   derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
                   version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
                   local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
-                    & DERIVATIVES(derivative)%VERSIONS(version)
+                    & DERIVATIVES(1)%VERSIONS(version)
                   ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
                   ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
                 ENDDO !derivative_idx
@@ -1222,7 +1225,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version,version_idx
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version,version_idx,bif_idx
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1247,18 +1251,21 @@ CONTAINS
               ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
               ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
             CASE(FIELD_NODE_BASED_INTERPOLATION)
-              DO node_idx=1,ROWS_FIELD_VARIABLE%components(1)%domain%topology%nodes%total_number_of_nodes
-                version=ROWS_FIELD_VARIABLE%components(1)%domain%topology%nodes%nodes(node_idx)% &
-                       & derivatives(1)%number_of_versions
-                derivative=ROWS_FIELD_VARIABLE%components(1)%domain%topology%nodes%nodes(node_idx)% &
-                          & derivatives(1)%global_derivative_index
+              bif_idx=0
+              TOTAL_NUMBER_OF_NODES=ROWS_FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+              DO node_idx=1,TOTAL_NUMBER_OF_NODES
+                version=ROWS_FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
+                   & DERIVATIVES(1)%NUMBER_OF_VERSIONS
                 IF(version>1) THEN
-                  DO version_idx=1,version
-                    local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                            & NODES(node_idx)%DERIVATIVES(derivative)%VERSIONS(version_idx)
-                    ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
-                    ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
-                  ENDDO !version_idx
+                  bif_idx=bif_idx+1
+                  IF(ELEMENT_NUMBER==bif_idx)THEN
+                    DO version_idx=1,version
+                      local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
+                        & NODES(node_idx)%DERIVATIVES(derivative)%VERSIONS(version_idx)
+                      ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                      ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                    ENDDO !version_idx
+                  ENDIF
                 ENDIF
               ENDDO !node_idx
             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
