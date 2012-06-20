@@ -3637,7 +3637,7 @@ CONTAINS
                     END SELECT
                     ! assign derivative
                     !Default to version 1 of each node derivative
-                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nk)%DERIVATIVES(np)% &
+                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(np)%DERIVATIVES(nk)% &
                       & VERSIONS(1)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & ny,DERIV,ERR,ERROR,*999)

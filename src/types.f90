@@ -219,14 +219,15 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: LOCAL_LINE_XI_DIRECTION(:) !<LOCAL_LINE_XI_DIRECTION(nae). The Xi direction of the nae'th local line for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_LINE(:) !<NUMBER_OF_NODES_IN_LOCAL_LINE(nae). The the number of nodes in the nae'th local line for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_LINE(:,:) !<NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The local node numbers (nn) for the nnl'th line node in the nae'th local line for the basis. Old CMISS name NNL(1..,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
     !Face information
     INTEGER(INTG) :: NUMBER_OF_LOCAL_FACES !<The number of local faces in the basis.
     INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
-    !\todo: what is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local element node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
+    !\todo Remove local face node derivative below since all nodes of the face would have the same number of derivatives (unless a node is collapsed?)
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnk,nnl,nae). The element derivative numbers (nk) for the nnk'th face derivative's nnl'th face node in the nae'th local face for the basis.
+    !\todo What is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
     INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
@@ -335,7 +336,7 @@ MODULE TYPES
   !>Contains information on the nodes defined on a region. \see OPENCMISS::CMISSNodesType
   TYPE NODES_TYPE
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes. If the nodes are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the nodes. If the nodes are in a region rather than an interface then this pointer will be NULL and the interface pointer should be used.
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the nodes. If the nodes are in a region rather than an interface then this pointer will be NULL and the region pointer should be used.
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
     TYPE(NODE_TYPE), ALLOCATABLE :: NODES(:) !<NODES(nodes_idx). The nodal information for the nodes_idx'th global node.
@@ -429,14 +430,14 @@ MODULE TYPES
 
   !>Embedded mesh types
   TYPE EMBEDDING_XI_TYPE
-    INTEGER(INTG) :: NUMBER_OF_NODES                  !<Number of nodes embedded in this element
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:)     !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
-    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)           !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
+    INTEGER(INTG) :: NUMBER_OF_NODES !<Number of nodes embedded in this element
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:) !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
+    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:) !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
   END TYPE EMBEDDING_XI_TYPE
 
   TYPE EMBEDDING_GAUSSPOINT_TYPE
-    INTEGER(INTG) :: ELEMENT_NUMBER             !<Element number in child mesh
-    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:)  !<Xi coord in this element
+    INTEGER(INTG) :: ELEMENT_NUMBER !<Element number in child mesh
+    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:) !<Xi coord in this element
     REAL(DP), ALLOCATABLE :: PARENT_XI_COORD(:) !<Xi coordinates in parent element, not really needed but can be useful
   END TYPE EMBEDDING_GAUSSPOINT_TYPE
 
@@ -869,7 +870,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: LOCAL_TO_GLOBAL_MAP(:) !<LOCAL_TO_GLOBAL_MAP(i). The global number for the i'th local number for the mapping.
     TYPE(DOMAIN_GLOBAL_MAPPING_TYPE), ALLOCATABLE :: GLOBAL_TO_LOCAL_MAP(:) !<GLOBAL_TO_LOCAL_MAP(i). The local information for the i'th global number for the mapping.
     INTEGER(INTG) :: NUMBER_OF_ADJACENT_DOMAINS !<The number of domains that are adjacent to this domain in the mapping.
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_PTR(:) !<ADJACENT_DOMAINS_PTR(domain_no). The pointer to the list of adjacent domains for domain_no. ADJACENT_DOMAINS_PTR(domain_no) gives the starting position in ADJACENT_DOMAINS_LIST for the first adjacent domain number for domain number domain_no. ADJACENT_DOMAINS_PTR(domain_no+1) gives the last+1 position in ADJACENT_DOMAINS_LIST for the last adjacent domain number for domain number domain_no. NOTE: the index for ADJACENT_DOMAINS_PTR varies from 0 to the number of domains+1.
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_PTR(:) !<ADJACENT_DOMAINS_PTR(domain_no). The pointer to the list of adjacent domains for domain_no. ADJACENT_DOMAINS_PTR(domain_no) gives the starting position in ADJACENT_DOMAINS_LIST for the first adjacent domain number for domain number domain_no. ADJACENT_DOMAINS_PTR(domain_no+1) gives the last+1 position in ADJACENT_DOMAINS_LIST for the last adjacent domain number for domain number domain_no. NOTE: the index for ADJACENT_DOMAINS_PTR varies from 0 to the number of domains.
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_LIST(:) !<ADJACENT_DOMAINS_LIST(i). The list of adjacent domains for each domain. The start and end positions for the list for domain number domain_no are given by ADJACENT_DOMAIN_PTR(domain_no) and ADJACENT_DOMAIN_PTR(domain_no+1)-1 respectively.
     TYPE(DOMAIN_ADJACENT_DOMAIN_TYPE), ALLOCATABLE :: ADJACENT_DOMAINS(:) !<ADJACENT_DOMAINS(adjacent_domain_idx). The adjacent domain information for the adjacent_domain_idx'th adjacent domain to this domain. 
   END TYPE DOMAIN_MAPPING_TYPE
@@ -1065,7 +1066,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<BASES(component_idx). An array to hold a pointer to the basis (if any) used for interpolating the component_idx'th component of the field variable.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_PARAMETERS(:) !<NUMBER_OF_PARAMETERS(component_idx). The number of interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The ns'th interpolation parameter used for interpolating the component_idx'th component of the field variable.
-    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling then component_idx'th component of the field variable. 
+    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling the component_idx'th component of the field variable.
   END TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
 
   TYPE FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE
@@ -1399,7 +1400,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element source information
   END TYPE EQUATIONS_MATRICES_SOURCE_TYPE
   
-  !>Contains information on the equations matrices and vectorS
+  !>Contains information on the equations matrices and vectors
   TYPE EQUATIONS_MATRICES_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer back to the equations
     LOGICAL :: EQUATIONS_MATRICES_FINISHED !<Is .TRUE. if the equations matrices have finished being created, .FALSE. if not.
@@ -1643,18 +1644,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions for this boundary conditions variable
     INTEGER(INTG) :: VARIABLE_TYPE !<The type of variable for this variable boundary conditions
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this boundary condition variable
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field variable. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    INTEGER(INTG), ALLOCATABLE :: DOF_TYPES(:) !<DOF_TYPES(dof_idx). The general boundary condition type (eg. fixed or free) of the dof_idx'th dof in the dependent field variable. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
+    INTEGER(INTG), ALLOCATABLE :: CONDITION_TYPES(:) !<CONDITION_TYPES(dof_idx). The specific boundary condition type (eg. incremented pressure) of the dof_idx'th dof of the dependent field variable, which might be specific to an equation set. The solver routines should not need to use this array, and should only need the DOF_TYPES array. \see OPENCMISS_BoundaryConditionsDOFTypes,OPENCMISS
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
-    TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
+    TYPE(BoundaryConditionsNeumannType), POINTER :: neumannBoundaryConditions
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
-    INTEGER(INTG) :: NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS !<Number of pressure incremented boundary conditions associated with this variable (\todo: is this the best place?)
-    INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS !<Number of pressure boundary conditions (not incremented) associated with this variable.
-    INTEGER(INTG) :: NUMBER_OF_IMPERMEABILITY_CONDITIONS !<Number of impermeable wall boundary conditions associated with this variable.
-    LOGICAL :: FIXED_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one fixed incremented boundary condition type has been assigned
-    LOGICAL :: PRESSURE_CONDITION_USED=.FALSE. !<True if at least one fixed pressured boundary condition type has been assigned
-    LOGICAL :: PRESSURE_INCREMENTED_CONDITION_USED=.FALSE. !<True if at least one incremented pressure boundary condition type has been assigned
-    LOGICAL :: IMPERMEABILITY_CONDITION_USED=.FALSE. !<True if at least one impermeability boundary condition type has been assigned
+    INTEGER(INTG), ALLOCATABLE :: DOF_COUNTS(:) !<DOF_COUNTS(CONDITION_TYPE): The number of DOFs that have a CONDITION_TYPE boundary condition set
+    LOGICAL, ALLOCATABLE :: parameterSetRequired(:) !<parameterSetRequired(PARAMETER_SET) is true if any boundary condition has been set that requires the PARAMETER_SET field parameter set
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1668,6 +1665,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES !<The number of boundary conditions variables
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLES(:) !<BOUNDARY_CONDITIONS_VARIABLES(variable_idx). BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR is the pointer to the variable_idx'th boundary conditions variable. variable_idx ranges from 1 to NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
+    INTEGER(INTG) :: neumannMatrixSparsity !<The sparsity type of the Neumann integration matrices. \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
   END TYPE BOUNDARY_CONDITIONS_TYPE
 
   !>A buffer type to allow for an array of pointers to a BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE \see TYPES::BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
@@ -1689,35 +1687,13 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
 
-  !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
-    INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
-    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
-    INTEGER(INTG), ALLOCATABLE :: SET_DOF_CONDITIONS(:) !<Array of user-set conditions of DOFs on boundary
-    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES_PREV(:) !<Array of user-set values of DOFs on boundary from previous time step
-    INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
-    REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
-    INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: FACE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from face basis calculation for an individual face
-    INTEGER(INTG), ALLOCATABLE :: FACE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_STIFFNESS_MATRIX
-    REAL(DP), ALLOCATABLE :: FACE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from face basis calculation for an individual face
-    INTEGER(INTG), ALLOCATABLE :: FACE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_NONLINEAR_MATRIX
-    INTEGER(INTG), ALLOCATABLE :: LINES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per line, indexed by line and element_parameter, returns local_ny (dof) number. 
-    REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:) !<Array for results from line basis calculation for an individual line
-    INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: LINE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from line basis calculation for an individual line
-    INTEGER(INTG), ALLOCATABLE :: LINE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_STIFFNESS_MATRIX
-    REAL(DP), ALLOCATABLE :: LINE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from line basis calculation for an individual line
-    INTEGER(INTG), ALLOCATABLE :: LINE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_NONLINEAR_MATRIX
-    REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
-    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
-    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_Y(:) !<Mapping array of domain nodes to Y axis of INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: POINT_VALUES_VECTOR(:) !<The vector of set values, the 'x' vector
-    INTEGER(INTG), ALLOCATABLE :: POINT_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes in POINT_VALUES_VECTOR
-    REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR(:) !<Vector for the storage of the integrated values, the 'b' vector of Ax=b 
-    INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
-    INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
-  END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
+  !>Contains information used to integrate Neumann boundary conditions
+  TYPE BoundaryConditionsNeumannType
+    INTEGER(INTG), ALLOCATABLE :: setDofs(:) !<setDofs(neumann_idx): the global dof for the neumann_idx'th Neumann condition
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: integrationMatrix !<The N matrix that multiples the point values vector q to give the integrated values f. Number of rows equals number of local dofs, and number of columns equals number of set point DOFs.
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: pointValues !<The vector of set point values q
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: pointDofMapping !<The domain mapping for DOFs with Neumann point conditions set.
+  END TYPE BoundaryConditionsNeumannType
 
   !>Contains information on dofs associated with pressure incremented conditions
   TYPE BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE
@@ -1815,7 +1791,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
     TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: INDEPENDENT !<A pointer to the indepedent field information for the equations set.
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations information for the equations set
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE) :: EQUATIONS_SET_FIELD !<A pointer to the equations set field for the equations set.
   END TYPE EQUATIONS_SET_TYPE
@@ -2259,7 +2235,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: LINEARITY !<The linearity type of the solver equations
     INTEGER(INTG) :: TIME_DEPENDENCE !<The time dependence type of the solver equations
 
-    INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROTUINES_SparsityTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
 
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
