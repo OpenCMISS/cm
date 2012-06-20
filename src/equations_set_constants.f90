@@ -295,16 +295,6 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_GENERATE_ACTION=3 !<Generate setup action. \see EQUATIONS_SET_CONSTANTS_SetupActionTypes,EQUATIONS_SET_CONSTANTS
   !>@}
 
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_FixedConditions EQUATIONS_SET_CONSTANTS::FixedConditions
-  !> \brief Fixed conditons parameters
-  !> \see EQUATIONS_SET_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NOT_FIXED=0 !<The dof is not fixed. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FIXED_BOUNDARY_CONDITION=1 !<The dof is fixed as a boundary condition. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MIXED_BOUNDARY_CONDITION=2 !<The dof is set as a mixed boundary condition. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
-  !>@}
-  
-
   !> \addtogroup EQUATIONS_SET_CONSTANTS_SolutionMethods EQUATIONS_SET_CONSTANTS::SolutionMethods
   !> \brief The solution method parameters
   !> \see EQUATIONS_SET_CONSTANTS
@@ -378,17 +368,6 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1=4 !<u=ln(6/(x+y+z+1^2))
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2=5 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3=6 !<u=tbd
-  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN=7 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_DIRICHLET=8 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN_WITHOUT_SOURCE=9 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_1=10 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_2=11 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_3=12 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_4=13 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_5=14 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_6=15 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_7=16 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN_CUBIC=17 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1=18 !<u=tbd, Pressure Poisson Equation (PPE) analytic
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2=19 !<u=tbd, Pressure Poisson Equation (PPE) without input data
 

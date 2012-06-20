@@ -233,6 +233,7 @@ MODULE FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE=32 !<The parameter set corresponding to the NEGATIVE mesh velocity values for ALE \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE=33 !<The parameter set corresponding to the previous iteration field values (at iteration n) \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE=34 !<The parameter set corresponding to the impermeable flag field values \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_INTEGRATED_NEUMANN_SET_TYPE=35 !<Stores integrated Neumann values calculated from Neumann point values \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_ScalingTypes FIELD_ROUTINES::ScalingTypes
@@ -511,7 +512,7 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_CONSTANT_DOF_TYPE,FIELD_ELEMENT_DOF_TYPE,FIELD_NODE_DOF_TYPE,FIELD_GRID_POINT_DOF_TYPE,FIELD_GAUSS_POINT_DOF_TYPE
 
-  PUBLIC FIELD_NUMBER_OF_VARIABLE_TYPES,FIELD_NUMBER_OF_VARIABLE_SUBTYPES, &
+  PUBLIC FIELD_NUMBER_OF_VARIABLE_TYPES,FIELD_NUMBER_OF_VARIABLE_SUBTYPES,FIELD_NUMBER_OF_SET_TYPES, &
     & FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DELUDELT_VARIABLE_TYPE, &
     & FIELD_DEL2UDELT2_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE,FIELD_DELVDELT_VARIABLE_TYPE, &
     & FIELD_DEL2VDELT2_VARIABLE_TYPE,&
@@ -541,7 +542,7 @@ MODULE FIELD_ROUTINES
     & FIELD_PREVIOUS_PRESSURE_SET_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE, FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE, &
     & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
     & FIELD_INPUT_VEL1_SET_TYPE,FIELD_INPUT_VEL2_SET_TYPE,FIELD_INPUT_VEL3_SET_TYPE,FIELD_INPUT_LABEL_SET_TYPE, &
-    & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE
+    & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,FIELD_INTEGRATED_NEUMANN_SET_TYPE
 
 
   PUBLIC FIELD_NO_SCALING,FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_HARMONIC_MEAN_SCALING,FIELD_ARITHMETIC_MEAN_SCALING, &
@@ -608,7 +609,7 @@ MODULE FIELD_ROUTINES
   
   PUBLIC FIELD_PARAMETER_SET_CREATE
 
-  PUBLIC FIELD_PARAMETER_SET_CREATED
+  PUBLIC Field_ParameterSetEnsureCreated,FIELD_PARAMETER_SET_CREATED
 
   PUBLIC FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE
 
@@ -1989,6 +1990,8 @@ CONTAINS
    
     CALL ENTERS("FIELD_COMPONENT_VALUES_INITIALISE_INTG",ERR,ERROR,*999)
 
+    NULLIFY(FIELD_PARAMETERS)
+
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
         !Check the variable type
@@ -2208,6 +2211,8 @@ CONTAINS
    
     CALL ENTERS("FIELD_COMPONENT_VALUES_INITIALISE_SP",ERR,ERROR,*999)
 
+    NULLIFY(FIELD_PARAMETERS)
+
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
         !Check the variable type
@@ -2426,6 +2431,8 @@ CONTAINS
    
     CALL ENTERS("FIELD_COMPONENT_VALUES_INITIALISE_DP",ERR,ERROR,*999)
 
+    NULLIFY(FIELD_PARAMETERS)
+
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
         !Check the variable type
@@ -2643,6 +2650,8 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
    
     CALL ENTERS("FIELD_COMPONENT_VALUES_INITIALISE_L",ERR,ERROR,*999)
+
+    NULLIFY(FIELD_PARAMETERS)
 
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
@@ -7600,7 +7609,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,mk,nn)
                   nv=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -7723,7 +7732,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=LINES_TOPOLOGY%LINES(LINE_NUMBER)%DERIVATIVES_IN_LINE(1,mk,nn)
                   nv=LINES_TOPOLOGY%LINES(LINE_NUMBER)%DERIVATIVES_IN_LINE(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -7846,7 +7855,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=FACES_TOPOLOGY%FACES(FACE_NUMBER)%DERIVATIVES_IN_FACE(1,mk,nn)
                   nv=FACES_TOPOLOGY%FACES(FACE_NUMBER)%DERIVATIVES_IN_FACE(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -14832,7 +14841,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Creates a new parameter set of type set type for a field variable. \see OPENCMISS::CMISSFieldParameterSetCreate
+  !>Creates a new parameter set of type set type for a field variable. If the field parameter set has already been
+  !>created then an error will be raised. \see OPENCMISS::CMISSFieldParameterSetCreate
   SUBROUTINE FIELD_PARAMETER_SET_CREATE(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -15009,6 +15019,37 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_CREATED")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_CREATED
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Creates a new parameter set of type fieldSetType for a field variable if it does not already exist,
+  !>otherwise it will do nothing.
+  SUBROUTINE Field_ParameterSetEnsureCreated(field,variableType,fieldSetType,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to create the parameter set for
+    INTEGER(INTG),  INTENT(IN) :: variableType !<The variable type to create the parameter set for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    LOGICAL :: parameterSetCreated
+
+    CALL ENTERS("Field_ParameterSetEnsureCreated",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_CREATED(field,variableType,fieldSetType,parameterSetCreated,err,error,*999)
+    IF(.NOT.parameterSetCreated) THEN
+      CALL FIELD_PARAMETER_SET_CREATE(field,variableType,fieldSetType,err,error,*999)
+    END IF
+
+    CALL EXITS("Field_ParameterSetEnsureCreated")
+    RETURN
+999 CALL ERRORS("Field_ParameterSetEnsureCreated",err,error)
+    CALL EXITS("Field_ParameterSetEnsureCreated")
+    RETURN 1
+  END SUBROUTINE Field_ParameterSetEnsureCreated
 
   !
   !================================================================================================================================
@@ -22214,7 +22255,7 @@ CONTAINS
                         nu1=PART_DERIV_S1
                         ni2=3
                         nu2=PART_DERIV_S3
-                      ELSE IF(partial_derivative_idx==PART_DERIV_S1_S2) THEN
+                      ELSE IF(partial_derivative_idx==PART_DERIV_S2_S3) THEN
                         ni1=2
                         nu1=PART_DERIV_S2
                         ni2=3
