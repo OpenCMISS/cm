@@ -211,6 +211,7 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
     NULLIFY(EQUATIONS_EQUATIONS_SET_FIELD)
     NULLIFY(EQUATIONS_SET_FIELD_FIELD)
+    NULLIFY(EQUATIONS_SET_FIELD_DATA)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -317,30 +318,20 @@ CONTAINS
 
               FIELD_VARIABLE=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
 
-              IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INITIAL_VALUES_SET_TYPE)%PTR)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_INITIAL_VALUES_SET_TYPE, ERR, ERROR, *999)
-              ENDIF
+              CALL Field_ParameterSetEnsureCreated(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+                & FIELD_INITIAL_VALUES_SET_TYPE, ERR, ERROR, *999)
 
-              IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_PREVIOUS_VALUES_SET_TYPE, ERR, ERROR, *999)
-              ENDIF
+              CALL Field_ParameterSetEnsureCreated(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+                & FIELD_PREVIOUS_VALUES_SET_TYPE, ERR, ERROR, *999)
 
-              IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_MESH_DISPLACEMENT_SET_TYPE)%PTR)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_MESH_DISPLACEMENT_SET_TYPE, ERR, ERROR, *999)
-              ENDIF
+              CALL Field_ParameterSetEnsureCreated(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+                & FIELD_MESH_DISPLACEMENT_SET_TYPE, ERR, ERROR, *999)
 
-              IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_MESH_VELOCITY_SET_TYPE)%PTR)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_MESH_VELOCITY_SET_TYPE, ERR, ERROR, *999)
-              ENDIF
+              CALL Field_ParameterSetEnsureCreated(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+                & FIELD_MESH_VELOCITY_SET_TYPE, ERR, ERROR, *999)
 
-              IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE)%PTR)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE, ERR, ERROR, *999)
-              ENDIF
+              CALL Field_ParameterSetEnsureCreated(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+                & FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE, ERR, ERROR, *999)
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE .OR. &
                  EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
@@ -1834,6 +1825,7 @@ CONTAINS
     NULLIFY(DECOMPOSITION,MESH_ELEMENT)
     NULLIFY(BOUNDARY_CONDITIONS,BOUNDARY_CONDITIONS_VARIABLE)
     NULLIFY(SOURCE_VECTOR,SOURCE_FIELD)
+    NULLIFY(EQUATIONS_SET_FIELD_DATA)
 
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -3280,7 +3272,7 @@ CONTAINS
               DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
                 elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
                 DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
-                  nodeDerivativeIdx=dependentBasis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(faceNodeDerivativeIdx,faceIdx)
+                  nodeDerivativeIdx=dependentBasis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(faceNodeDerivativeIdx,faceNodeIdx,faceIdx)
                   parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
                   faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
                   elementDofIdx=elementBaseDofIdx+parameterIdx
@@ -4831,7 +4823,7 @@ CONTAINS
                                       NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
                                       DO dof_number=1,NUMBER_OF_DOFS
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                          & CONDITION_TYPES(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
                                           !--- Reset boundary condition to the initial normal-velocity boundary condition
                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
@@ -6951,7 +6943,7 @@ CONTAINS
 ! !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
 ! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 ! ! !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% &
-! ! !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+! ! !                                                 & CONDITION_TYPES(local_ny)
 ! ! !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
 ! ! !                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
 ! ! !                                                  & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
@@ -7853,7 +7845,7 @@ CONTAINS
 
                 DO face_node_derivative_idx_1=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx_1) !nkf
                   element_node_derivative_idx_1=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_1, &
-                    & element_face_idx)
+                    & face_node_idx_1,element_face_idx)
 
                   parameter_idx_1=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(element_node_derivative_idx_1,element_node_idx_1)
 
@@ -7877,7 +7869,7 @@ CONTAINS
 
                       DO face_node_derivative_idx_2=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx_2) !nkf
                         element_node_derivative_idx_2=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_2, &
-                          & element_face_idx)
+                          & face_node_idx_2, element_face_idx)
 
                         parameter_idx_2=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(element_node_derivative_idx_2,element_node_idx_2)
 

@@ -1680,7 +1680,7 @@ CONTAINS
 
         !Set up the line information
         SELECT CASE(BASIS%NUMBER_OF_XI)
-        CASE(1)
+        CASE(1) !1 xi directions
           NUMBER_OF_LOCAL_LINES=1
           BASIS%NUMBER_OF_LOCAL_LINES=1
           ALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(NUMBER_OF_LOCAL_LINES),STAT=ERR)
@@ -1703,12 +1703,12 @@ CONTAINS
                     BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nn2,1)=nk
                     EXIT
                   ENDIF
-                ENDDO !nk                
+                ENDDO !nk
                 EXIT
               ENDIF
             ENDDO !nn2
           ENDDO !nn1
-        CASE(2)
+        CASE(2) !2 xi directions
           !Determine the maximum node extent of the basis
           MAXIMUM_NODE_EXTENT(1)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,1))
           MAXIMUM_NODE_EXTENT(2)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,2))
@@ -1799,7 +1799,7 @@ CONTAINS
               ENDIF
             ENDDO !nn2
           ENDDO !ni1
-        CASE(3)
+        CASE(3) !3 xi directions
           !Determine the maximum node extent of the basis
           MAXIMUM_NODE_EXTENT(1)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,1))
           MAXIMUM_NODE_EXTENT(2)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,2))
@@ -1838,7 +1838,8 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line",ERR,ERROR,*999)
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
 
-          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC)**2,NUMBER_OF_LOCAL_FACES),STAT=ERR)
+          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+            & MAXVAL(BASIS%NUMBER_OF_NODES_XIC)**2,NUMBER_OF_LOCAL_FACES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face",ERR,ERROR,*999)
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE=NO_PART_DERIV
 
@@ -1857,7 +1858,7 @@ CONTAINS
           BASIS%NUMBER_OF_LOCAL_LINES=0
           DO ni1=1,3
             ni2=OTHER_XI_DIRECTIONS3(ni1,2,1)
-            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)            
+            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)
             !We are looking for lines going in the ni1 direction, starting from ni1=0.
             DO nn3=1,MAXIMUM_NODE_EXTENT(ni3),MAXIMUM_NODE_EXTENT(ni3)-1 
               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2),MAXIMUM_NODE_EXTENT(ni2)-1
@@ -1986,10 +1987,8 @@ CONTAINS
             ENDDO !nn3
           ENDDO !ni1
 
-!!THIS CODE BELOW NEEDS TO BE TESTED AND CHECKED.
-
-!!FROM HERE
-          
+         !Find the local nodes in each face and the local face xi direction
+         !\todo code below needs to be tested
          !Find the faces
          nn4=1
          ef=0           !element face counter
@@ -2065,22 +2064,35 @@ CONTAINS
             ENDIF
          ENDDO
          
-         NUMBER_OF_ELEMENT_FACES=ef
-         DO ni1=1,3
-            DO ef=1,NUMBER_OF_ELEMENT_FACES
-               DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)
-                  DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,ef))
-                     IF(BASIS%DERIVATIVE_ORDER_INDEX(nk,BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,ef),ni1)== &
-                          & FIRST_PART_DERIV) THEN
-                        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,ef)=nk
-                     ENDIF
-                  ENDDO !nk
-               ENDDO !nnf
-            ENDDO !ef
-         ENDDO !ni1
+      !For each face local derivative index set its corresponding global derivative index
+      BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,:,:)=NO_GLOBAL_DERIV
+      IF(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
+        !Face 1 (xi1+)
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,1)=GLOBAL_DERIV_S2
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,1)=GLOBAL_DERIV_S3
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,1)=GLOBAL_DERIV_S2_S3
+        !Face 2 (xi1-)
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,2)=GLOBAL_DERIV_S2
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,2)=GLOBAL_DERIV_S3
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,2)=GLOBAL_DERIV_S2_S3
+        !Face 3 (xi2+)
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,3)=GLOBAL_DERIV_S1
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,3)=GLOBAL_DERIV_S3
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,3)=GLOBAL_DERIV_S1_S3
+        !Face 4 (xi2-)
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,4)=GLOBAL_DERIV_S1
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,4)=GLOBAL_DERIV_S3
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,4)=GLOBAL_DERIV_S1_S3
+        !Face 5 (xi3-)
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,5)=GLOBAL_DERIV_S1
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,5)=GLOBAL_DERIV_S2
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,5)=GLOBAL_DERIV_S1_S2
+        !Face 6 (xi3-)
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,6)=GLOBAL_DERIV_S1
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,6)=GLOBAL_DERIV_S2
+        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,6)=GLOBAL_DERIV_S1_S2
+      ENDIF
 
-!! TO HERE
-         
       CASE DEFAULT
           CALL FLAG_ERROR("Invalid number of xi directions.",ERR,ERROR,*999)
         END SELECT
@@ -3275,6 +3287,12 @@ CONTAINS
                     & " Gauss points are insufficient for cubic Hermite interpolation"
                   CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
                 ENDIF
+              CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
+                LOCAL_WARNING="For simplex elements please set quadrature order rather than number of gauss points."
+                CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
+              CASE(BASIS_QUADRATIC_SIMPLEX_INTERPOLATION)
+                LOCAL_WARNING="For simplex elements please set quadrature order rather than number of gauss points."
+                CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="Interpolation xi value "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_XI(ni),"*",ERR,ERROR))// &
                   & " is invalid for xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))
@@ -4309,17 +4327,20 @@ CONTAINS
           CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
             ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
-            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            !\todo Number of local face node derivatives currenlty set to 1 (calculation of BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE for simplex elements has not been implemented yet)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
           CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
             ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
-            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            !\todo Number of local face node derivatives currenlty set to 1 (calculation of BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE for simplex elements has not been implemented yet)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
           CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
             ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
-            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            !\todo Number of local face node derivatives currenlty set to 1 (calculation of BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE for simplex elements has not been implemented yet)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="Interpolation order "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*",ERR,ERROR))// &
