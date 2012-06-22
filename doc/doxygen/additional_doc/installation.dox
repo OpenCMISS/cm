@@ -1,32 +1,330 @@
  /*!
 \page installation Obtaining the Code and Setting up the Development Environment
-\section obtain_code_and_libraries Obtaining the Code and Libraries
+\section before_start Before Start
+Before the installation, you need to check if the following libraries or tools are installed, preferably to the latest or recent versions. 
+They will be used during the installation process. 
+- Intel Fortran Compiler (Optional: to compile the libraries and OpenCMISS with intel)
+- subversion
+- GNU make
+- python
+- python-dev
+- python-setuptools
+- bison
+- SWIG
+- lesstif2-devel
+- openmotif-devel
+- libXmu-devel  
+- libstdc++-devel
+- csh
+
+It would be great if you also have the following tools installed. 
+However, if you don't have them installed or not have the right version, you can download and build them as part of the installation steps (See \ref step6 "Step 6"). 
+To do this, you need to set the USE_OPENCMISS_xxx environment variables to true in \ref step4_2 "Step 4.2".
+- cmake (you may install it later with libraries build)
+- GNU Fortran (GCC) 4.4 or 4.6 or later (you may install it later with libraries build)
+- git (you may install it later with libraries build)
+
+\section opencmiss_installation Installations
+To fully install OpenCMISS, you need to install OpenCMISSExtras and OpenCMISS. 
+OpenCMISSExtras contains the third party libraries, compilers, tools, FieldML and CellML required for OpenCMISS. 
+Please follow the steps for the complete installation of OpenCMISS on the linux systems.
+
+\subsection step1 Step 1
+Create OpenCMISSExtras directory and OpenCMISS directory
+\code 
+mkdir OpenCMISSExtras 
+mkdir OpenCMISS 
+\endcode
+
+\subsection step2 Step 2
+cd to the OpenCMISSExtras directory
+\code cd OpenCMISSExtras \endcode 
+
+\subsection step3 Step 3
+In the OpenCMISSExtras directory, check out the utils repository: 
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/utils/trunk/ utils \endcode
+
+\subsection step4 Step 4
+Set up your shell login script to call the opencmiss_programer script, which will set environment variables used when building OpenCMISS.
+
+1. Set the environment variables OPENCMISS_ROOT,
+OPENCMISSEXTRAS_ROOT and OPENCMISSEXAMPLES_ROOT to point to the directories that are created in \ref step1 "Step 1".
+
+If you use the bash shell you can do this by adding the following lines to your "~/.bashrc" file:
+\code 
+export OPENCMISS_ROOT=<path to your OpenCMISS folder>
+export OPENCMISSEXTRAS_ROOT=<path to your OpenCMISSExtras folder>
+\endcode
+If you use C Shell or tcsh Shell you can do this by adding the following lines to your "~/.cshrc" or "~/.tcshrc" file:
+\code 
+setenv OPENCMISS_ROOT <path to your OpenCMISS folder> 
+setenv OPENCMISSEXTRAS_ROOT <path to your OpenCMISSExtras folder> 
+\endcode 
+
+2. Set any additional programmer script variables. 
+\anchor step4_2
+The opencmiss_programmers script in $OPENCMISSEXTRAS_ROOT/utils/scripts will let you customise the setup by setting environment variables after the root sets and before executing the script. These variables are:
+- COMPILER : set the compiler to be used as the default. Options are gnu and intel.
+- USE_OPENCMISS_GFORTRAN : if set use the gfortran in the OpenCMISSextras repository. If not set use the system gfortran.
+- USE_OPENCMISS_CMAKE : if set use the cmake in the OpenCMISSextras repository. If not set use the system cmake.
+- USE_OPENCMISS_GIT : if set use the git in the OpenCMISSextras repository. If not set use the system git.
+- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4, 4.5 or 4.6.
+- OPENCMISSEXTRAS_RUN_CONFIG : select which configuration of the OpenCMISSextras binaries to use at runtime. Options are debug or optimised.
+- MPI : select what version of MPI to use. Options are mpich2, intel, mvapich2 or openmpi.
+
+The following variables are not required if you are using Intel compiler version 12 or above: 
+- INTEL_COMPILER_VERSION : if using the pre 12.0 version of the intel compilers the compiler version to use e.g., 11.1
+- INTEL_COMPILER_BUILD : if using the pre 12.0 version of the intel compilers the build version to use e.g., 072
+- INTEL_TRACE_COLLECTOR_VERSION : the version of the intel trace collector to use e.g., 8.0.1.009
+- INTEL_MPI_VERSION : the version of the intel MPI to use e.g., 4.0.1.007
+
+3. Add in the lines in the login script to run the script:
+
+If you use the bash shell you can do this by adding the following lines to your "~/.bashrc" file:
+\code 
+if [ -x ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.sh ]; then
+  . ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.sh
+fi
+\endcode
+If you use a c to tc shell you can do this by adding the following lines to your "/.cshrc" or "~/.tcshrc" file:
+\code 
+if ( -r ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.csh ) then
+  source ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.csh 
+endif
+\endcode 
+
+4.  Run the login script by either loging out and then back in or by sourcing it.
+If you use the bash shell, you can execute:
+\code . ~/.bashrc \endcode
+If you use a c  shell, you can execute:
+\code source ~/.cshrc \endcode
+If you use tc shell, you can execute:
+\code source ~/.tcshrc \endcode 
+
+\subsection step5 Step 5
+cd to the $OPENCMISSEXTRAS_ROOT/utils dir
+\code cd $OPENCMISSEXTRAS_ROOT/utils \endcode
+
+\subsection step6 Step 6
+Now you are ready to build OpenCMISSExtras via the make script.
+
+1. Checkout or update the required libraries from the repositories. 
+If there is no previous checkout, you may use:
+\code make checkout \endcode
+If you have checked out or built the libraries before, use:
+\code make update \endcode
+If you want to build gfortran, cmake or git from the OpenCMISSExtras repository, 
+you need to define the relevant USE_OPENCMISS_xxx environment variables described in \ref step4_2 "Step 4.2". 
+
+2. Clean the builds (Optional).
+If you want to clean the previous build and do a fresh build, you may use:
+\code make clean \endcode
+If the relevant USE_OPENCMISS_xxx environment variables are set, it will also clean the gfortran, cmake or git build from the OpenCMISSExtras repository. 
+
+3. Build the OpenCMISSExtras libraries.
+To build the OpenCMISSExtras libraries, use:
+\code make \endcode
+You may specify the following options to the build:
+- ABI=(32|64): to build 32 bit or 64 bit libraries
+- COMPILER=(intel|gnu|ibm|cray): to use the fortran and c compiler as specified
+- (DEBUG=|OPT=): compiler the libraries to the debug version or optimised (release) version
+- MPI=(mpich2|intel|openmpi|mvapich2|cray): to use the mpi as specified
+- PROF=(true|): to do a profile build
+- MPIPROF=(true|): to do a profile build with mpi
+
+For example, to build the optimised version of libraries using the Intel compiler:
+\code make COMPILER=intel OPT=true \endcode
+
+\subsection step7 Step 7
+cd to the OpenCMISS folder that is created in \ref step1 "Step 1".
+\code cd $OPENCMISS_ROOT \endcode
+
+\subsection step8 Step 8
 To obtain the OpenCMISS source you need to clone the Git repository.
-There are three parts of OpenCMISS to obtain - OpenCMISS itself, the OpenCMISS examples, and the various libraries it needs.
-In your root OpenCMISS directory, make the opencmiss and opencmissextras directories.
-Within the opencmiss directory there are three repositories - cm, examples and cellml.
-Within the opencmissextras directory there are cm and cellml directories.
-\subsection obtain_the_code Obtain the Code
+There are three parts of OpenCMISS to obtain - OpenCMISS itself, the OpenCMISS examples, and OpenCMISS CellML.
+
 If you wish to make changes to OpenCMISS it is recommended that you fork the repositories on GitHub so that
 your changes can be pulled into the central repository from your GitHub account.
 The process of forking the OpenCMISS repositories and the workflow to use with Git is described in
-a page on the OpenCMISS wiki (https://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Proposed_Workflow). It is recommended 
-to make a directory called "opencmiss" and this will be your opencmiss root directory.  
-The OpenCMISS cm repository is at https://github.com/OpenCMISS/cm and the OpenCMISS examples
-repository is at https://github.com/OpenCMISS/examples/.
+a page on the OpenCMISS wiki (https://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Proposed_Workflow). 
+
+The OpenCMISS cm repository is at https://github.com/OpenCMISS/cm.
+
+The OpenCMISS examples repository is at https://github.com/OpenCMISS/examples/.
+
 The OpenCMISS cellml repository is at https://github.com/OpenCMISS/cellml/.
+
 Once you have forked the OpenCMISS cm, examples and cellml repositories on GitHub, you can clone them
-to your local machine by issuing the following commands in the "opencmiss" directory,
+to your local machine by issuing the following commands in the OpenCMISS directory,
 where <username> should be replaced with your GitHub username:
 \code git clone https://github.com/<username>/cm.git cm
  git clone https://github.com/<username>/examples.git examples
  git clone https://github.com/<username>/cellml.git cellml \endcode
 If you know you will not need to make changes to one or more of the repositories you can
 clone them directly from https://github.com/OpenCMISS/.
-\subsection obtain_the_libraries Obtain the Libraries
-The libraries required for building and running OpenCMISS are in a Subversion repository at https://svn.physiomeproject.org/svn/opencmissextras/.
-There are a number of different components to the libraries. To use OpenCMISS you will need to
-check out libraries from the cm, fieldml, cellml, common and utils components.
+
+You can also clone example repository to a location other than $OPENCMISS_ROOT/examples directory. 
+To do this, you need to specify the OPENCMISSEXAMPLES_ROOT variable in your login script:
+\code
+export OPENCMISSEXAMPLES_ROOT=<path to your examples folder>
+\endcode
+If you use C Shell or tcsh Shell you can do this by adding the following lines to your "~/.cshrc" or "~/.tcshrc" file:
+\code
+setenv OPENCMISSEXAMPLES_ROOT <path to your examples folder>
+\endcode 
+
+\subsection step9 Step 9
+Build the OpenCMISS celllml.
+
+1. cd to the cellml directory.
+\code cd $OPENCMISS_ROOT/cellml \endcode
+
+2. Build the OpenCMISS cellml
+\code make \endcode
+You may specify the following options to the build:
+- ABI=(32|64): to build 32 bit or 64 bit libraries
+- COMPILER=(intel|gnu|ibm|cray): to use the fortran and c compiler as specified
+- (DEBUG=|OPT=): compiler the libraries to the debug version or optimised (release) version
+
+\subsection step10 Step 10
+Build OpenCMISS. 
+
+1. cd to the cm directory.
+\code cd $OPENCMISS_ROOT/cm \endcode
+
+2. Build the OpenCMISS.
+\code make \endcode
+You may specify the following options to the build:
+- (DEBUG=|OPT=): compiler the libraries to the debug version or optimised (release) version
+- MPI=(mpich2|intel|openmpi|mvapich2|cray): to use the mpi as specified
+- PROF=(true|): to do a profile build
+- MPIPROF=(true|): to do a profile build with mpi
+- ABI=(32|64): to build 32 bit or 64 bit libraries
+- COMPILER=(intel|gnu|ibm|cray): to use the fortran and c compiler as specified
+- USECELLML=(false|true): to use CellML or not
+- USEFIELDML=(false|true): to use FieldML or not
+
+For example, to build the optimised version of libraries using the Intel compiler and FieldML:
+\code make COMPILER=intel OPT=true USEFIELDML=true \endcode
+
+3. Build OpenCMISS with Python binding.
+You may build OpenCMISS with python binding by
+\code make python \endcode
+
+\subsection step11 Step 11
+Build an example.
+
+1. cd to an example directory, e.g the Laplace example
+\code cd $OPENCMISSEXAMPLES_ROOT/ClassicalField/Laplace/Laplace/Fortran \endcode
+
+2. Build the example
+\code make \endcode
+You may specify the following options to the build:
+- (DEBUG=|OPT=): compiler the libraries to the debug version or optimised (release) version
+- MPI=(mpich2|intel|openmpi|mvapich2|cray): to use the mpi as specified
+- PROF=(true|): to do a profile build
+- MPIPROF=(true|): to do a profile build with mpi
+- ABI=(32|64): to build 32 bit or 64 bit libraries
+- COMPILER=(intel|gnu|ibm|cray): to use the fortran and c compiler as specified
+- USECELLML=(false|true): to use CellML or not
+- USEFIELDML=(false|true): to use FieldML or not
+
+3. Execute the example:
+You may specify the arguments to execute the example, e.g.
+\code ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 1 \endcode
+
+4. Execute the example with mpi:
+To execute the example with mpi, you first need to start mpi.
+\code mpd & \endcode
+and then e.g. execute the examples running on two computational nodes:
+\code mpiexec -2 ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 2 \endcode
+
+5. Build and execute examples with python binding, e.g.
+\code cd $OPENCMISSEXAMPLES_ROOT/ClassicalField/Laplace/Laplace/Python \endcode
+and
+\code python ./LaplaceExample.py \endcode
+
+\section additional Additional Notes
+
+If you are using totalview, after installation you will also need to add
+\code export LM_LICENSE_FILES=<path-to-the-flex-directory> \endcode respectively, 
+\code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
+
+Details of totalview installation can be found <a href="http://www.roguewave.com/documents.aspx?entryid=1142&command=core_download">here</a>.  
+
+-For ABI users, you may use totalview installed in hpc3. It is installed in /usr/toolwork. Please make sure that you have set LM_LICENSE_FILES
+\code export LM_LICENSE_FILES=/usr/toolworks/flexlm-10.8.0-3/ \endcode respectively, 
+\code setenv LM_LICENSE_FILES /usr/toolworks/flexlm-10.8.0-3/ \endcode
+
+
+
+\internal
+
+\section obtain_code_and_libraries Obtaining the Code and Libraries
+
+\subsubsection build_libraries Build the Libraries from scratch
+You may checkout the libraries sources and build the libraries from scratch. It is highly recommended that you do in this way but it takes time. 
+
+You need to have the following software tools or libraries installed apart from the standard install, preferably to the latest or recent versions:
+- cmake (you may install it later with libraries build)
+- GNU Fortran (GCC) 4.4 or 4.6 or later (you may install it later with libraries build)
+- git (you may install it later with libraries build)
+- Intel Fortran Compiler (Optional: to compile the libraries and OpenCMISS with intel)
+- subversion
+- GNU make
+- python
+- python-dev
+- python-setuptools
+- bison
+- SWIG
+- lesstif2-devel
+- openmotif-devel
+- libXmu-devel  
+- libstdc++-devel
+
+1. Create an opencmissextras directory and set the environment variable to point to that directory:
+\code setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder>\endcode or \code export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>\endcode
+
+2. Checkout the utils component in opencmissextras from the repository to the opencmissextras directory. 
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/utils/trunk/ utils \endcode
+
+3. Checkout all the required libraries to the opencmissextras directory.
+\code make checkout \endcode by default, it will checkout the following components:
+- mpi
+- common
+- cellml
+- fieldml
+- cm
+.
+However, if you don't have cmake, gfortran or git installed, you may checkout their sources by specifying:
+\code make checkout USE_OPENCMISS_GFORTRAN=true 
+ make checkout USE_OPENCMISS_CMAKE=true 
+ make checkout USE_OPENCMISS_GIT=true \endcode
+or any combination of those.
+
+4. (Optional) Clean the build. In the utils directory, execute:
+\code make clean \endcode
+this is only for those who have built the libraries in the directory before and want to do a clean build.
+
+5. Build the libraries. In the utils directory, execute:
+\code make COMPILER=intel \endcode to build the libraries using Intel Fortran Compiler or
+\code make COMPILER=gnu \endcode to build the libraries using GNU Fortran Compiler.
+By default, it will build the following components:
+- mpi
+- common
+- cellml
+- fieldml
+- cm
+.
+However, if you have checked out cmake, gfortran or git and want to build and use it within opencmiss, you can build those libraries by specifying:
+\code make USE_OPENCMISS_GFORTRAN=true 
+ make USE_OPENCMISS_CMAKE=true 
+ make USE_OPENCMISS_GIT=true \endcode
+or any combination of those. Please also make sure you use the correct compiler.
+
+\subsubsection download_libraries Download the prebuilt binaries
+
+Alternatively, you can checkout the prebuilt binaries of the various components from the svn repository. However, it is not guaranteed that the binaries work for the operating system you are using.
 
 To check out the main trunk of the various cm libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
@@ -43,28 +341,18 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - x86_64-linux-debug
 - x86_64-linux-mpiprof
 - x86_64-linux-prof
-.
-Furthermore, a number of external packages can be checked out from https://svn.physiomeproject.org/svn/opencmissextras/cm/. To check out the packages from the code repository issue the following command in the opencmissextras directory:
-\code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/packages cm/external/packages \endcode
-Please note that this packages directory is extremely large and is only required if you want to build the opencmissextras/cm libraries from scratch.
 
 To check out the main trunk of the various MPI libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/mpi/trunk/architecture mpi/architecture \endcode
 where architecture is the appropriate architecture for the machine. Currently, the list of possible achitectures comprehends:
-- x86_64-linux
-- x86_64-linux-debug
-.
-There is also a packages directory for MPI in the code repository. To check it out issue the following command in the opencmissextras directory:
-\code svn co https://svn.physiomeproject.org/svn/opencmissextras/mpi/trunk/packages mpi/packages \endcode
+- none
 
 To check out the main trunk of the various cellml libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/architecture cellml/architecture \endcode
 where architecture is the appropriate architecture for the machine. Currently, the list of possible achitectures comprehends:
+- i386-win32-debug
 - x86_64-linux
 - x86_64-linux-debug
-.
-There is also a packages directory for cellml in the code repository. To check it out issue the following command in the opencmissextras directory:
-\code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/packages cellml/packages \endcode
 
 To check out the main trunk of the various fieldml libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/fieldml/trunk/architecture fieldml/architecture \endcode
@@ -73,9 +361,6 @@ where architecture is the appropriate architecture for the machine. Currently, t
 - i686-linux-debug
 - x86_64-linux
 - x86_64-linux-debug
-.
-There is also a packages directory for fieldml in the code repository. To check it out issue the following command in the opencmissextras directory:
-\code svn co https://svn.physiomeproject.org/svn/opencmissextras/fieldml/trunk/packages fieldml/packages \endcode
 
 To check out the main trunk of the various common libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/common/trunk/architecture common/architecture \endcode
@@ -84,11 +369,9 @@ where architecture is the appropriate architecture for the machine. Currently, t
 - i686-linux-debug
 - x86_64-linux
 - x86_64-linux-debug
-.
-There is also a packages directory for common in the code repository. To check it out issue the following command in the opencmissextras directory:
-\code svn co https://svn.physiomeproject.org/svn/opencmissextras/common/trunk/packages common/packages \endcode
 
-Finally, to check out themain trunk of the various utils in the code repository. To check it out issue the following command in the opencmissextras directory:
+
+Finally, to check out the main trunk of the various utils in the code repository. To check it out issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/utils/trunk utils\endcode
 
 -For Auckland users, you may simply set your OPENCMISSEXTRAS_ROOT environment variable to point to the libraries on hpc without creating an opencmissextras directory:
@@ -116,23 +399,9 @@ Change directory to examples/<example>
 Use gmake.
 This should result in a binary that you can run in the bin/rs6000-32-aix folder.
 
-\subsection project_setup_linux On Ubuntu 9.10
+\subsection project_setup_linux On Ubuntu 12.04
 
 \subsubsection project_setup_linux_compiler Install Compilers
-
-There are two options for compilers under Linux - Intel or gnu compilers.
-
-For the Intel compilers:
-
-Download the Intel Fotran Compiler (e.g. Version 11.1).
-Extract the file and follow the install.htm to install. 
-
-For the GNU comilers:
-
-Currently, only gfortran version 4.4 or greater will work. Download and install it (for Ubuntu 9.10, it can be downloaded from the Ubuntu software repositories). A version of the gfortran compilers for x86_64-linux can also be found in the opencmissextras svn repository. To obtain these versions change directory to the opencmissextras directory and issue the command:
-\code 
-svn co https://svn.physiomeproject.org/svn/opencmissextras/gfortran/trunk/ gfortran 
-\endcode
 
 \subsubsection project_setup_linux_environment Set environment
 
@@ -180,24 +449,26 @@ Details of totalview installation can be found <a href="http://www.roguewave.com
 
 \subsubsection project_setup_linux_compile Compile
 
-To build an example project issue the following command into the ".../opencmiss/examples/<example>/<sub-example>" directory:
+To build the OpenCMISS library issue the following command into the ".../<OPENCMISS_ROOT>/cm" directory:
 \code make \endcode
 
 Note, the default is the intel compiler. To explicitly use the gnu compiler use
 \code make COMPILER=gnu \endcode
-or set the COMPILER environment variable to be gnu. If the following error is received: 
-\code /usr/bin/ld: cannot find -lMrm \endcode
-Then you will need to ensure that you have the latest lesstif2-devel library installed on your machine. Also ensure that you have the latest openmotif-devel library installed. If a further error message is received:
-\code /usr/bin/ld: cannot find -lXmu \endcode
-Then install the libXmu-devel library. Finally if a further error message is received:
-\code /usr/bin/ld: cannot find -lstdc++ \endcode
-Then install the libstdc++-devel library.
+or set the COMPILER environment variable to be gnu.
 
+To build an example project issue the following command into the ".../<OPENCMISSEXAMPLES_ROOT>/<example>/<sub-example>" directory:
+\code make \endcode
+
+Note, the default is the intel compiler. To explicitly use the gnu compiler use
+\code make COMPILER=gnu \endcode
+or set the COMPILER environment variable to be gnu.
 
 To run the example project issue the following command into the directory where the executable is found (e.g. ".../opencmiss/examples/ClassicalField/NewLaplace/bin/x86_64-linux/mpich2/intel", depending on your example, sub-example, architecture, MPI library, and compiler):
 \code mpd & mpirun -n 2 ./<executable> \endcode
 to run the executable on two processors. To debug the project using TotalView:
 \code mpd & mpirun -tv 2 ./<executable> \endcode
+
+
 section project_setup_windows_vs2005 On Windows XP (Visual Studio 2005)
 \subsubsection project_setup_windows_vs2005_compiler Install Compilers
 Download Intel Fortran Compiler.
@@ -216,6 +487,7 @@ Debug the C project.
 \subsubsection project_setup_windows_vs2005_run Run
 To run the project in the command window:
 \code mpiexec -n 2 -localroot <path to the execution file> \endcode
+
 \subsection project_setup_windows_vs2008 On Windows Vista (Visual Studio 2008)
 \subsubsection project_setup_windows_vs2008_compiler Install Compilers
 Download Intel Fortran Compiler from here.
@@ -276,6 +548,7 @@ config/aix5.3.0.0.py --prefix=/people/tyu011/workspace/opencmissextras/cm/extern
 setenv PETSC_ARCH aix5.3.0.0 \endcode
 - \code make -e all \endcode
 - \code make -e install \endcode
+\endinternal
 */
 
 \section makefile_structure Makefile Structure

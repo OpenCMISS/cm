@@ -158,6 +158,12 @@ MODULE MATHS
     MODULE PROCEDURE NORMALISE_DP
   END INTERFACE !NORMALISE
 
+  !>Calculates the normalised vector cross product of two vectors
+  INTERFACE NORM_CROSS_PRODUCT
+    MODULE PROCEDURE NORM_CROSS_PRODUCT_SP
+    MODULE PROCEDURE NORM_CROSS_PRODUCT_DP
+  END INTERFACE NORM_CROSS_PRODUCT
+
   !>Solves a small linear system Ax=b.
   INTERFACE SOLVE_SMALL_LINEAR_SYSTEM
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_SP
@@ -171,7 +177,7 @@ MODULE MATHS
   END INTERFACE !COTH
 
   PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT, &
-    & MATRIX_TRANSPOSE,NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM,COTH
+    & MATRIX_TRANSPOSE,NORMALISE,NORM_CROSS_PRODUCT,SOLVE_SMALL_LINEAR_SYSTEM,COTH
   
   
 CONTAINS
@@ -1818,6 +1824,62 @@ CONTAINS
     RETURN    
   END FUNCTION NORMALISE_DP
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates and returns the normalised vector cross-prouct of the single precision vectors A*B in C.
+  SUBROUTINE NORM_CROSS_PRODUCT_SP(A,B,C,ERR,ERROR,*)
+  
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(:) !<The first vector in the cross product
+    REAL(SP), INTENT(IN) :: B(:) !<The second vector in the cross product
+    REAL(SP), INTENT(OUT) :: C(:) !<On exit, the normalised cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    
+    CALL ENTERS("NORM_CROSS_PRODUCT_SP",ERR,ERROR,*999)
+
+    CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
+    C=NORMALISE(C,ERR,ERROR)
+    IF(ERR/=0) GOTO 999
+
+    CALL EXITS("NORM_CROSS_PRODUCT_SP")
+    RETURN
+999 CALL ERRORS("NORM_CROSS_PRODUCT_SP",ERR,ERROR)
+    CALL EXITS("NORM_CROSS_PRODUCT_SP")
+    RETURN 1
+  END SUBROUTINE NORM_CROSS_PRODUCT_SP
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates and returns the normalised vector cross-prouct of the double precision vectors A*B in C.
+  SUBROUTINE NORM_CROSS_PRODUCT_DP(A,B,C,ERR,ERROR,*)
+  
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(:) !<The first vector in the cross product
+    REAL(DP), INTENT(IN) :: B(:) !<The second vector in the cross product
+    REAL(DP), INTENT(OUT) :: C(:) !<On exit, the normalised cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    
+    CALL ENTERS("NORM_CROSS_PRODUCT_DP",ERR,ERROR,*999)
+
+    CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
+    C=NORMALISE(C,ERR,ERROR)
+    IF(ERR/=0) GOTO 999
+
+    CALL EXITS("NORM_CROSS_PRODUCT_DP")
+    RETURN
+999 CALL ERRORS("NORM_CROSS_PRODUCT_DP",ERR,ERROR)
+    CALL EXITS("NORM_CROSS_PRODUCT_DP")
+    RETURN 1
+  END SUBROUTINE NORM_CROSS_PRODUCT_DP
+  
   !
   !================================================================================================================================
   !
