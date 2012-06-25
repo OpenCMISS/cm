@@ -14,14 +14,14 @@ accompanied by the conservation of mass (incompressibility)
 \end{equation}
 where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively.The first term represents unsteady accelerative inertial contributions, the second represents the nonlinear convective acceleration terms, the $\grad{p}$ term the pressure contributions, and the last term represents viscous stresses in the system.
 % incompressibility and the LBB condition
-As with Stokes flow, the incompressibility condition $\diverg{\vect{u}}=0$ also creates restrictions on the formulation of the velocity and pressure spaces using finite elements known as the Ladyzhenkaya, Babuska, and Brezzi (LBB) or inf-sup consistency condition. Several methods have been devised to define a pressure function that is consistent with the velocity space using primitive variables. These include mixed element methods, penalty methods, generalized petrov-galerkin methods using pressure poisson correction, operator splitting, and semi-implicit pressure correction (Chung).
+As with Stokes flow, the incompressibility condition $\diverg{\vect{u}}=0$ also creates restrictions on the formulation of the velocity and pressure spaces using finite elements known as the Ladyzhenkaya, Babuska, and Brezzi (LBB) or inf-sup consistency condition. Several methods have been devised to define a pressure function that is consistent with the velocity space using primitive variables. These include mixed element methods, penalty methods, generalized petrov-galerkin methods using pressure poisson correction, operator splitting, and semi-implicit pressure correction \cite{chung:2010}.
 
-Using a classic Galerkin formulation, mixed methods are perhaps conceptually the most straightforward method of satisfying LBB, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure), allowing incompressibility to be satisfied. It should be noted that our use of a mixed formulation to satisfy LBB will also be reflected in the shape functions that our weak formulation depends on. For example, using a 2D element with biquadratic velocity and linear pressure, we will have 9 weight functions for each velocity component and 4 for the pressure. 
+Using a classic Galerkin formulation, mixed methods are perhaps conceptually the most straightforward method of satisfying LBB, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure), allowing incompressibility to be satisfied. It should be noted that our use of a mixed formulation to satisfy LBB will also be reflected in the shape functions that our weak formulation depends on. For example, using a 2D element with biquadratic velocity and linear pressure, we will have 9 DOFs and weight functions for each velocity component and 4 for the pressure. 
 % meaning of pressure in NSE.
 
 \subsubsection{Weak Formulation}
 % Galerkin formulation
-The weak form of equations \eqref{NSE} and \eqref{NSEIncompressibility} can be found by applying standard Galerkin test functions $\vect{w}$:
+The weak form of equations \ref{eqn:NSE} and \ref{eqn:NSEIncompressibility} can be found by applying standard Galerkin test functions $\vect{w}$:
 \begin{equation}
  \label{BasicGalerkinNSE}
   \gint{\Omega}{}{\pbrac{\rho\delby{\vect{u}}{t}
@@ -44,23 +44,21 @@ Integrating by parts, we will get the weak form of the system of PDEs with the a
 \end{multline}
 
 % Boundary conditions
-For more extensive discussion of this procedure, along with other weak forms of the PDEs, we refer to (Gresho and Sani). From this weak form, we see natural (Neumann) boundary conditions arising as a direct result of the integration. Neumann boundary conditions will therefore consist of a pressure term and viscous stress acting normal to a given boundary. 
+For more extensive discussion of this procedure, along with other weak forms of the PDEs, we refer to \cite{gresho:2000}. From this weak form, we see natural (Neumann) boundary conditions arising as a direct result of the integration. Neumann boundary conditions will consist of a pressure term and viscous stress acting normal to a given boundary. 
 \begin{gather}
  \label{eqn:NSENeumannBC}  
    \fnof{\vect{q}}{\vect{x},t} = \mu\dotprod{\grad{\fnof{\vect{u}}{\vect{x},t}}}{\normal}-p\cdot{\normal}  \\
 %   \fnof{\vect{q_2}}{\vect{x},t} = p\cdot{\normal} \\
    \quad \vect{x}\in\Gamma_{N}
 \end{gather}
-Specification of Neumann boundaries will therefore require the specification of the viscous stress and pressures across lower order element DOFs using the mixed formulation. Dirichlet boundary conditions on a boundary $\Gamma_D$ for velocity or pressure will take the form:
+Specification of Neumann boundaries will simply require the specification of the terms across element DOFs. Dirichlet boundary conditions on a boundary $\Gamma_D$ for velocity will take the form:
 \begin{gather}
  \label{eqn:NSEDirichletBC} 
   \fnof{\vect{u}}{\vect{x},t} = \fnof{\vect{d}}{\vect{x},t} \quad \vect{x}\in\Gamma_{D}\\
-  \fnof{p}{\vect{x},t} = \fnof{\vect{d}}{\vect{x},t} \quad \vect{x}\in\Gamma_{D}
 \end{gather}
-Which may be directly applied to the relevant DOFs.
 
 \subsubsection{Tensor notation}
-Assuming no forcing terms and substituting the natural boundary as defined above, equation \eqref{GalerkinNSE} in tensor notation becomes:
+Assuming no forcing terms and substituting the natural boundary as defined above, equation \ref{eqn:GalerkinNSE} in tensor notation becomes:
 \begin{multline}
  \label{TensorNSE}
   \gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
@@ -127,7 +125,7 @@ In standard interpolation notation within an element, we transform from $\vect{x
 
 where $\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}$ are the time varying nodal degrees-of-freedom for velocity component $i$, node $n$, global derivative $\beta$, $\idxgbfn{i}{n}{\beta}{\vect{\xi}}$ are the corresponding velocity basis functions and $\idxgsf{i}{n}{\beta}$ are the scale factors. The scalar pressure DOFs, $\fnof{\idxnodedof{p}{}{n}{\beta}}{t}$ are interpolated similarly.
 
-For the natural boundary, we can separate $q_i$ into its component velocity and pressure terms as noted in \eqref{NSENeumannBC} and shown in \eqref{FEMNSE2}. For our current treatment, we will also assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
+For the natural boundary, we can separate $q_i$ into its component velocity and pressure terms as noted in \ref{eqn:NSENeumannBC} and shown in \ref{eqn:FEMNSE2}. For our current treatment, we will also assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
 
 \begin{equation}
   \begin{split}
@@ -148,7 +146,7 @@ For the natural boundary, we can separate $q_i$ into its component velocity and 
 
 \subsubsection{Spatial Integration}
 
-Using standard integration notation, we can rewrite our Galerkin FEM formulation from \eqref{NSEFEM2}:
+Using standard integration notation, we can rewrite our Galerkin FEM formulation from \ref{eqn:NSEFEM2}:
 
 
 \begin{multline}
@@ -267,19 +265,13 @@ We now seek to assemble this into the corresponding general form for dynamic equ
 \end{equation}
 where $\dot{\vect{d}}(t)$ and $\ddot{\vect{d}}(t)$ represent the first and second derivatives (respectively) of the degrees of freedom vector $\vect{d}(t)$, which consists of the dependent variables $\vect{u}(\vect{x},t)$ and $p(x,t)$. $\matr{M}$ is the mass matrix, which provides the shape function based weights and $\matr{C}$ is the transient damping matrix. $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function that will be used to represent the convective term and $\fnof{\vect{f}}{t}$ the forcing vector.
 
- We will assume cartesian coordinates $\vect{x}=\bbrac{x,y,z}$ and denote the corresponding velocity components $\vect{u}=\bbrac{u,v,w}$, with $N$ representing the number of velocity DOFs and $M$ the number of pressure DOFs. The DOFs vector $d$ then becomes:
+ We will assume cartesian coordinates $\vect{x}=\bbrac{x,y,z}$ and denote the corresponding velocity components $\vect{u}=\bbrac{u,v,w}$, with $N$ representing the number of velocity DOFs and $M$ the number of pressure DOFs. The vector $d$ in then becomes:
 \begin{equation}
   \vect{d}=[u_1u_2...u_Nv_1v_2...v_Nw_1w_2...w_Np_1p_2...p_M]^T=
   \begin{bmatrix}\vect{u}\\\vect{v}\\\vect{w}\\\vect{p}\end{bmatrix}
 \end{equation}
-Where $u$ has been used instead of $u(t)$ for simplicity. For further illustration, consider a simple mesh consisting of two adjacent quadrilateral elements using 2D biquadratic velocity (9 nodes per element), bilinear pressure (4 nodes per element) interpolation. The mesh will consist of 15 DOFs for the velocity and 6 for pressure, as the adjoining nodes between elements are shared. The DOFs vector $\vect{d}$ will be assembled:
 
-\begin{equation}
-  \vect{d}_{example}=[u_{1}...u_{15}v_{1}...v_{15}p_1...p_{6}]^T=
-  \begin{bmatrix}\vect{u}\\\vect{v}\\\vect{p}\end{bmatrix}
-\end{equation}
-
-All the components of \eqref{eqn:NSEGeneralDynamic} will similarly depend on the number of dimensions,$N_{dim}$, and the size of the matrices will be: $(N{\cdot}{N_{dim}}+M)^{N_{dim}}$. For the simple example used above, the size of the $d_{example}$ vector would be 36 and the matrices would be 36 x 36. 
+All the components of \ref{eqn:NSEGeneralDynamic} will similarly depend on the number of dimensions,$n_{dim}$, and the size of the matrices will be: $(N{\cdot}{n_{dim}}+M)^{n_{dim}}$. 
 
 Returning to the general case, the mass matrix $\matr{M}$ will take the form:
 
@@ -312,13 +304,14 @@ The element stiffness matrix $\matr{K}$ will contain the linear components of th
  \end{cases}
 \end{equation}
 
-To attain a square matrix of the required size, we must also apply the transpose of the gradient terms acting on the pressure DOFs. For example, in our 2D example system, $\matr{K}$ will take the form: 
+To attain a square matrix of the required size, we must also apply the transpose of the gradient terms acting on the pressure DOFs. For example, in a 3 dimensional example system, $\matr{K}$ will take the form: 
 \begin{equation}
   \matr{K}=
    \begin{bmatrix}
-     \matr{A} & \matr{0} & \matr{B}_x\\
-     \matr{0} & \matr{A} & \matr{B}_y\\
-     -\matr{B}^T_{x}& -\matr{B}^T_{y} & \matr{0}
+     \matr{A} & \matr{0} & \matr{0} & \matr{B}_x\\
+     \matr{0} & \matr{A} & \matr{0} & \matr{B}_y\\
+     \matr{0} & \matr{0} & \matr{A} & \matr{B}_z\\
+     -\matr{B}^T_{x}& -\matr{B}^T_{y} & -\matr{B}^T_z & \matr{0}
    \end{bmatrix}
 \end{equation}
 
@@ -335,11 +328,11 @@ The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and fo
 
 \subsubsection{Streamline Upwind/Petrov-Galerkin (SUPG)}
 
-For convection dominated flows, it is often useful to modify the Galerkin formulation account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
+For convection dominated flows, it is often useful to modify the Galerkin formulation account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section \ref{sec:Convective Transport} for more details. 
 
-For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces (Heinrich). These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative route is to apply SUPG weights to the convective operator in elements as a function of each element's Reynolds number (referred to subsequently as the cell Reynolds number). This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
+For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces \cite{heinrich:1999}. These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative route is to apply SUPG weights to the convective operator in elements as a function of each element's Reynolds number (referred to subsequently as the cell Reynolds number). This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
 
- Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \eqref{eq:NSEFEM2} can be written:
+ Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \ref{eqn:NSEFEM2} can be written:
 
 \begin{multline}
  \label{NSEPGFEM1}
@@ -370,7 +363,7 @@ We will retain the same value for $\alpha={\coth{\frac{\gamma}{2}} - \frac{2}{\g
 \end{equation},
 
 
-Equation \eqref{NSEPGFEM1} then becomes after integration and simplification:
+Equation \ref{eqn:NSEPGFEM1} then becomes after integration and simplification:
 
 
 \begin{multline}
@@ -411,10 +404,7 @@ Notice the integration by parts is done only to the standard Galerkin weights- t
 The use of the Petrov-Galerkin formulation in this way allows for the stabilization of moderately convective problems. However, it also results in nonsymmetric mass matrices with the additional term, making classical mass-lumping more difficult. As a result, the use of explicit methods also becomes more difficult for time-dependent problems. 
 
 
-
-
-
-
+\subsubsection{Arbitrary Lagrangian-Eulerian (ALE) Formulation}
 %ALE form
 Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
 \begin{equation}
@@ -434,7 +424,7 @@ The following section, however, describes the reordered quasi-static formulation
   \label{eqn:NavierStokesequationALE2}
 \end{equation}
 
-%\subsubsection{Weak formulation:}
+\paragraph{Weak formulation:}
 
 The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written in the general dynamic form (see section 2.3.2)
 \begin{equation}
@@ -443,8 +433,6 @@ The corresponding weak form of the equation system consisting of \eqnref{eqn:Nav
   \label{eqn:generaldynamicnonlinear}
 \end{equation}
 where u(t) is the dependent variables vector $\vect{u}(\vect{x},t)$ and $p$ for the degrees of freedom. $\matr{M}$ is the mass matrix, which provides the shape function based weights, $\matr{C}$ is the transient damping matrix (which we will discuss further below). $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator, including the viscous terms, the conservation of mass terms, and pressure terms. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function for the convective terms and $\fnof{\vect{f}}{t}$ the forcing vector. 
-
-%ALE
 
 The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written as:
 \begin{equation}
