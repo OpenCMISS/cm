@@ -15,3 +15,4 @@ src/opencmiss_c.f90
 # Editor files
 *.swp
 *~
+doc/notes/EquationSets/FluidMechanicsClass/ConvectiveTransport.tex
