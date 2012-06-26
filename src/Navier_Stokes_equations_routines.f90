@@ -2174,717 +2174,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the Jacobian element stiffness matrices and RHS for a Navier-Stokes equation finite element equations set.
-  SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) FIELD_VAR_TYPE,ng,mi,ms,mh,mhs,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
-    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER
-    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
-    REAL(DP) :: W_SUPG, TAU_SUPG,U_SUPG(3)
-    REAL(DP), POINTER :: BIF_VALUES(:)
-    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
-    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
-    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX 
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: x
-
-    LOGICAL :: UPDATE_JACOBIAN_MATRIX
-    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
-
-    !Temporary matrices- should get rid of for efficiency...
-    !REAL(DP) :: test(89,89),test2(89,89),scaling,square
-!    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-!    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-!    REAL(DP) :: J_MATRIX(256,256)
-
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
-    REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
-
-    CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
-
-!    J1_MATRIX=0.0_DP
-!    J2_MATRIX=0.0_DP
-!    J_MATRIX=0.0_DP
-
-  !Stack memory allocation error fix
-  DXI_DX=0.0_DP
-
-!\todo: Check whether or not update flags work properly and how much time is spent in each section
-
-    UPDATE_JACOBIAN_MATRIX=.FALSE.
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      NULLIFY(EQUATIONS)
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-            !Set some general and case-specific pointers
-            DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-            GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-            MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
-            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-            GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-            DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-            QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-!            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
-            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-!               SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
-                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-              CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-              CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-              CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-                EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
-                IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
-                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
-                  IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
-                INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
-                INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
-                  & PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% & 
-                  & INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CASE DEFAULT
-                LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            !Loop over all Gauss points 
-            DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                  & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                  W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                  W_VALUE(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                  IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                    W_VALUE(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                  END IF 
-              ELSE
-                W_VALUE=0.0_DP
-              END IF
-              !Define MU_PARAM, viscosity=1
-              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              !Define RHO_PARAM, density=2
-              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-
-             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-
-                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
-                U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
-                U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
-                U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
-                IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                  U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                  U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
-                  U_DERIV(3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S2)
-                  U_DERIV(3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S3)
-                  U_DERIV(1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S3)
-                  U_DERIV(2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S3)
-                ELSE
-                  U_VALUE(3)=0.0_DP
-                  U_DERIV(3,1)=0.0_DP
-                  U_DERIV(3,2)=0.0_DP
-                  U_DERIV(3,3)=0.0_DP
-                  U_DERIV(1,3)=0.0_DP
-                  U_DERIV(2,3)=0.0_DP
-                END IF
-                !Start with calculation of partial matrices
-                !Here W_VALUES must be ZERO if ALE part of linear matrix
-                W_VALUE=0.0_DP
-             END IF
-
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-                !Loop over field components
-                mhs=0
-
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                  U_SUPG=0.0_DP
-                  DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
-                    MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                    DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                    QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                    DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                      PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                      U_SUPG(mh)=U_SUPG(mh)+U_VALUE(mh)*PHIMS
-                    END DO !ms
-                  END DO !mh
-                END IF ! SUPG
-
-                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
-                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    mhs=mhs+1
-                    nhs=0
-                    IF(UPDATE_JACOBIAN_MATRIX) THEN
-                      !Loop over element columns
-                      DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
-                        MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                        DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
-                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                        QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
-                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
-                        ! &GAUSS_WEIGHTS(ng)                        
-                        DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
-                          nhs=nhs+1
-                          !Calculate some general values needed below
-!\todo: Check how much time is spent here 
-                          DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                            DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                              DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-                                & DXI_DX(mi,ni)
-                            END DO
-                            DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                            DPHINS_DXI(ni)=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                          END DO !ni
-                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                          PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                          SUM=0.0_DP
-                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                          !Add SUPG weighting terms
-                           IF(UPDATE_JACOBIAN_MATRIX) THEN
-                             !Calculate J1 only
-                             W_SUPG=0.0_DP
-                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                               DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                               IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) DPHIMS_DXI(3)=0.0_DP
-                               DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                 DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-                                  & DXI_DX(mi,ni)
-                               END DO !mi
-                               W_SUPG=W_SUPG+((U_SUPG(1)*DPHIMS_DXI(ni)*DXI_DX(ni,1))+ &
-                                            & (U_SUPG(2)*DPHIMS_DXI(ni)*DXI_DX(ni,2))+ &
-                                            & (U_SUPG(3)*DPHIMS_DXI(ni)*DXI_DX(ni,3)))*TAU_SUPG
-                             END DO !ni 
-                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS+W_SUPG)*RHO_PARAM)
-                             ENDDO 
-                              !Calculate MATRIX  
-!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                               & +SUM*JGW
-                              !Calculate J2 only
-                              IF(nh==mh) THEN 
-                                SUM=0.0_DP
-                                !Calculate SUM 
-                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                    SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS+W_SUPG)
-                                  ENDDO !mi
-                                ENDDO !x
-                                !Calculate MATRIX
-!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                                 & +SUM*JGW
-!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) = JACOBIAN_MATRIX%ELEMENT_JACOBIAN% &
-!                                 & MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
-                            END IF
-
-                          ELSE
-                          !Normal Galerkin weighting
-                            IF(UPDATE_JACOBIAN_MATRIX) THEN
-                              !Calculate J1 only
-                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
-                              ENDDO 
-                              !Calculate MATRIX  
-!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                               & +SUM*JGW
-                              !Calculate J2 only
-                              IF(nh==mh) THEN 
-                                SUM=0.0_DP
-                                !Calculate SUM 
-                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                    SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
-                                  ENDDO !mi
-                                ENDDO !x
-                                !Calculate MATRIX
-!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                                 & +SUM*JGW
-                              END IF
-                            END IF
-                          END IF !if SUPG
-                        ENDDO !ns    
-                      ENDDO !nh
-                    ENDIF
-                  ENDDO !ms
-                ENDDO !mh
-              END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! 1D TRANSIENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-!                P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
-                A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
-!                P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
-                MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-                A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-                SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-
-                !Loop over field components
-                mhs=0
-                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
-                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    mhs=mhs+1
-                    nhs=0
-
-                    IF(UPDATE_JACOBIAN_MATRIX) THEN
-                      !Loop over element columns
-                     DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                        MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                        DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                        QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP&
-                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
-
-                        DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                          nhs=nhs+1
- 
-                          DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
-                          DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
-                          DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
-                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                          PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-!                          !J1 ONLY
-!                          IF(mh==1) THEN
-!                            IF(nh==1) THEN
-!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
-!
-!                          !J2 ONLY
-!                          IF(mh==2) THEN
-!                            IF(nh==1) THEN
-!                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
-!
-!                          !J3 ONLY
-!                          IF(mh==2) THEN
-!                            IF(nh==2) THEN
-!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
-
-                        !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-                        IF(ELEMENT_NUMBER==1) THEN
-                          !J1 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==1) THEN
-                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
-                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                               & +SUM*JGW
-                            END IF
-                          END IF
-
-                          !J2 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==2) THEN
-                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-!                              J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J3 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==1) THEN
-                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J4 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==2) THEN
-                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          IF(mh==2 .AND. ms==1 .AND. nh==2) THEN
-                            SUM=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
-                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) )
-!                            J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
-                          END IF
-
-                        ELSEIF(ELEMENT_NUMBER==2) THEN
-                          !J1 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==1) THEN
-                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
-                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J2 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==2) THEN
-                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-!                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J3 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==1) THEN
-                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J4 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==2) THEN
-                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW
-                            END IF
-                          END IF
-
-                          IF(mh==1 .AND. ms==2 .AND. nh==2) THEN
-                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) ) 
-!                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)+SUM*JGW
-                          END IF
-
-                        ELSEIF(ELEMENT_NUMBER==3) THEN
-                          !J1 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==1) THEN
-                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
-                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW 
-                           END IF
-                          END IF
-
-                          !J2 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==2) THEN
-                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-!                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW 
-                            END IF
-                          END IF
-
-                          !J3 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==1) THEN
-                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW 
-                            END IF
-                          END IF
-
-                          !J4 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==2) THEN
-                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
-                            END IF
-                          END IF
-
-                          IF(mh==1 .AND. ms==3 .AND. nh==2) THEN
-                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                               & ( 0.25*PHINS*(A_VALUE**(-0.75) ) )   
-!                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
-                            JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
-                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
-                          ENDIF
-                        END IF
-                        ENDDO !ns
-                      ENDDO !nh
-                    ENDIF
-                  ENDDO !ms
-                ENDDO !mh
-              END IF
-        ENDDO !ng
-
-            ! !Assemble matrices and vectors 
-            ! mhs_min=mhs
-            ! mhs_max=nhs
-            ! nhs_min=mhs
-            ! nhs_max=nhs
- !            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
-!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-!               !Assemble Jacobian matrix first
-! !              IF(UPDATE_JACOBIAN_MATRIX) THEN
-! !                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
-! !                  & J2_MATRIX(1:mhs_min,1:nhs_min)
-!                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J_MATRIX(1:mhs_min,1:nhs_min)
-!               END IF
-!             ENDIF
-
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-              IF(UPDATE_JACOBIAN_MATRIX) THEN
-              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-              NULLIFY(BIF_VALUES)
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-
-              U_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(2)
-              U_BI_VALUE(1)=BIF_VALUES(U_BI_VALUE(1))
-
-              A_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(2)
-              A_BI_VALUE(1)=BIF_VALUES(A_BI_VALUE(1))
-
-              U_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(3)
-              U_BI_VALUE(2)=BIF_VALUES(U_BI_VALUE(2))
-
-              A_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(3)
-              A_BI_VALUE(2)=BIF_VALUES(A_BI_VALUE(2))
-
-              U_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(4)
-              U_BI_VALUE(3)=BIF_VALUES(U_BI_VALUE(3))
-
-              A_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(4)
-              A_BI_VALUE(3)=BIF_VALUES(A_BI_VALUE(3))
-
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-
-              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-              IF(ELEMENT_NUMBER==1) THEN
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(4,10)=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
-                             & ( 0.25*(A_BI_VALUE(1)**(-0.75)) )
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(10,4)=A_BI_VALUE(1)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(10,10)=U_BI_VALUE(1)
-
-              ELSEIF(ELEMENT_NUMBER==2) THEN
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,8)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                             & ( 0.25*(A_BI_VALUE(2)**(-0.75)) ) 
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,2)=-A_BI_VALUE(2)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,8)=-U_BI_VALUE(2)
-
-              ELSEIF(ELEMENT_NUMBER==3) THEN
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,9)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                             & ( 0.25*(A_BI_VALUE(3)**(-0.75) ))   
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,3)=-A_BI_VALUE(3)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,9)=-U_BI_VALUE(3)
-
-              ENDIF
-              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-
-!                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs+6,1:nhs+6)=J_MATRIX(1:mhs+6,1:nhs+6)
-              END IF
-            ENDIF
-
-
-
-          CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-      ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
-
-  !
-  !================================================================================================================================
-  !
-
   !>Evaluates the residual element stiffness matrices and RHS for a Navier-Stokes equation finite element equations set.
   SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
@@ -4013,6 +3302,718 @@ CONTAINS
     CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE")
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the Jacobian element stiffness matrices and RHS for a Navier-Stokes equation finite element equations set.
+  SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) FIELD_VAR_TYPE,ng,mi,ms,mh,mhs,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER
+    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
+    REAL(DP) :: W_SUPG, TAU_SUPG,U_SUPG(3)
+    REAL(DP), POINTER :: BIF_VALUES(:)
+    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX 
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: x
+
+    LOGICAL :: UPDATE_JACOBIAN_MATRIX
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
+
+    !Temporary matrices- should get rid of for efficiency...
+    !REAL(DP) :: test(89,89),test2(89,89),scaling,square
+!    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+!    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+!    REAL(DP) :: J_MATRIX(256,256)
+
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
+    REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
+
+    CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+
+!    J1_MATRIX=0.0_DP
+!    J2_MATRIX=0.0_DP
+!    J_MATRIX=0.0_DP
+
+  !Stack memory allocation error fix
+  DXI_DX=0.0_DP
+
+!\todo: Check whether or not update flags work properly and how much time is spent in each section
+
+    UPDATE_JACOBIAN_MATRIX=.FALSE.
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      NULLIFY(EQUATIONS)
+      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+      IF(ASSOCIATED(EQUATIONS)) THEN
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+            !Set some general and case-specific pointers
+            DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+            GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
+            MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
+            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+            GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+            DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+            QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+                & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
+                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+!               SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+                EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+                IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
+                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                  IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
+                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
+                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
+                      TAU_SUPG=0.0_DP
+                      !Calculate SUPG element metrics
+                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
+                ENDIF
+              CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
+                INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
+                INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
+                  & PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% & 
+                  & INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            !Loop over all Gauss points 
+            DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
+                & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                  & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                  W_VALUE(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                  IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                    W_VALUE(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                  END IF 
+              ELSE
+                W_VALUE=0.0_DP
+              END IF
+              !Define MU_PARAM, viscosity=1
+              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+              !Define RHO_PARAM, density=2
+              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+
+             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+
+                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
+                U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
+                U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
+                U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
+                IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                  U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                  U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
+                  U_DERIV(3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S2)
+                  U_DERIV(3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S3)
+                  U_DERIV(1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S3)
+                  U_DERIV(2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S3)
+                ELSE
+                  U_VALUE(3)=0.0_DP
+                  U_DERIV(3,1)=0.0_DP
+                  U_DERIV(3,2)=0.0_DP
+                  U_DERIV(3,3)=0.0_DP
+                  U_DERIV(1,3)=0.0_DP
+                  U_DERIV(2,3)=0.0_DP
+                END IF
+                !Start with calculation of partial matrices
+                !Here W_VALUES must be ZERO if ALE part of linear matrix
+                W_VALUE=0.0_DP
+             END IF
+
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+                !Loop over field components
+                mhs=0
+
+                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                  U_SUPG=0.0_DP
+                  DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+                    MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                    DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                      PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                      U_SUPG(mh)=U_SUPG(mh)+U_VALUE(mh)*PHIMS
+                    END DO !ms
+                  END DO !mh
+                END IF ! SUPG
+
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    nhs=0
+                    IF(UPDATE_JACOBIAN_MATRIX) THEN
+                      !Loop over element columns
+                      DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
+                        MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                        DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
+                        ! &GAUSS_WEIGHTS(ng)                        
+                        DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+                          !Calculate some general values needed below
+!\todo: Check how much time is spent here 
+                          DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                            DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                              DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                & DXI_DX(mi,ni)
+                            END DO
+                            DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                            DPHINS_DXI(ni)=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          END DO !ni
+                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                          SUM=0.0_DP
+                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                          !Add SUPG weighting terms
+                           IF(UPDATE_JACOBIAN_MATRIX) THEN
+                             !Calculate J1 only
+                             W_SUPG=0.0_DP
+                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                               DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                               IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) DPHIMS_DXI(3)=0.0_DP
+                               DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                 DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                  & DXI_DX(mi,ni)
+                               END DO !mi
+                               W_SUPG=W_SUPG+((U_SUPG(1)*DPHIMS_DXI(ni)*DXI_DX(ni,1))+ &
+                                            & (U_SUPG(2)*DPHIMS_DXI(ni)*DXI_DX(ni,2))+ &
+                                            & (U_SUPG(3)*DPHIMS_DXI(ni)*DXI_DX(ni,3)))*TAU_SUPG
+                             END DO !ni 
+                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS+W_SUPG)*RHO_PARAM)
+                             ENDDO 
+                              !Calculate MATRIX  
+!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
+                              !Calculate J2 only
+                              IF(nh==mh) THEN 
+                                SUM=0.0_DP
+                                !Calculate SUM 
+                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                    SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS+W_SUPG)
+                                  ENDDO !mi
+                                ENDDO !x
+                                !Calculate MATRIX
+!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                                 & +SUM*JGW
+!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) = JACOBIAN_MATRIX%ELEMENT_JACOBIAN% &
+!                                 & MATRIX(mhs,nhs)+SUM*JGW
+                              END IF
+                            END IF
+
+                          ELSE
+                          !Normal Galerkin weighting
+                            IF(UPDATE_JACOBIAN_MATRIX) THEN
+                              !Calculate J1 only
+                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
+                              ENDDO 
+                              !Calculate MATRIX  
+!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
+                              !Calculate J2 only
+                              IF(nh==mh) THEN 
+                                SUM=0.0_DP
+                                !Calculate SUM 
+                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                    SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
+                                  ENDDO !mi
+                                ENDDO !x
+                                !Calculate MATRIX
+!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                                 & +SUM*JGW
+                              END IF
+                            END IF
+                          END IF !if SUPG
+                        ENDDO !ns    
+                      ENDDO !nh
+                    ENDIF
+                  ENDDO !ms
+                ENDDO !mh
+              END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! 1D TRANSIENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+!                P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
+                A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
+!                P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
+                MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
+                A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
+                SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
+
+                !Loop over field components
+                mhs=0
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    nhs=0
+
+                    IF(UPDATE_JACOBIAN_MATRIX) THEN
+                      !Loop over element columns
+                     DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                        MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                        DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
+
+                        DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+ 
+                          DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
+                          DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
+                          DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
+                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+!                          !J1 ONLY
+!                          IF(mh==1) THEN
+!                            IF(nh==1) THEN
+!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                            END IF
+!                          END IF
+!
+!                          !J2 ONLY
+!                          IF(mh==2) THEN
+!                            IF(nh==1) THEN
+!                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                            END IF
+!                          END IF
+!
+!                          !J3 ONLY
+!                          IF(mh==2) THEN
+!                            IF(nh==2) THEN
+!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                            END IF
+!                          END IF
+
+                        !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+                        IF(ELEMENT_NUMBER==1) THEN
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
+                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
+                            END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
+!                              J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J4 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==2 .AND. ms==1 .AND. nh==2) THEN
+                            SUM=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
+                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) )
+!                            J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
+                          END IF
+
+                        ELSEIF(ELEMENT_NUMBER==2) THEN
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
+                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
+!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
+!                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J4 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==1 .AND. ms==2 .AND. nh==2) THEN
+                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) ) 
+!                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)+SUM*JGW
+                          END IF
+
+                        ELSEIF(ELEMENT_NUMBER==3) THEN
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
+                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
+!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW 
+                           END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
+!                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW 
+                            END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW 
+                            END IF
+                          END IF
+
+                          !J4 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
+                            END IF
+                          END IF
+
+                          IF(mh==1 .AND. ms==3 .AND. nh==2) THEN
+                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                               & ( 0.25*PHINS*(A_VALUE**(-0.75) ) )   
+!                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+                            JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
+                          ENDIF
+                        END IF
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDIF
+                  ENDDO !ms
+                ENDDO !mh
+              END IF
+        ENDDO !ng
+
+            ! !Assemble matrices and vectors 
+            ! mhs_min=mhs
+            ! mhs_max=nhs
+            ! nhs_min=mhs
+            ! nhs_max=nhs
+ !            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+!               !Assemble Jacobian matrix first
+! !              IF(UPDATE_JACOBIAN_MATRIX) THEN
+! !                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
+! !                  & J2_MATRIX(1:mhs_min,1:nhs_min)
+!                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J_MATRIX(1:mhs_min,1:nhs_min)
+!               END IF
+!             ENDIF
+
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+              IF(UPDATE_JACOBIAN_MATRIX) THEN
+              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+              NULLIFY(BIF_VALUES)
+              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+
+              U_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(2)
+              U_BI_VALUE(1)=BIF_VALUES(U_BI_VALUE(1))
+
+              A_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(2)
+              A_BI_VALUE(1)=BIF_VALUES(A_BI_VALUE(1))
+
+              U_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(3)
+              U_BI_VALUE(2)=BIF_VALUES(U_BI_VALUE(2))
+
+              A_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(3)
+              A_BI_VALUE(2)=BIF_VALUES(A_BI_VALUE(2))
+
+              U_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(4)
+              U_BI_VALUE(3)=BIF_VALUES(U_BI_VALUE(3))
+
+              A_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(4)
+              A_BI_VALUE(3)=BIF_VALUES(A_BI_VALUE(3))
+
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+
+              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+              IF(ELEMENT_NUMBER==1) THEN
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(4,10)=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
+                             & ( 0.25*(A_BI_VALUE(1)**(-0.75)) )
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(10,4)=A_BI_VALUE(1)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(10,10)=U_BI_VALUE(1)
+
+              ELSEIF(ELEMENT_NUMBER==2) THEN
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,8)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                             & ( 0.25*(A_BI_VALUE(2)**(-0.75)) ) 
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,2)=-A_BI_VALUE(2)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,8)=-U_BI_VALUE(2)
+
+              ELSEIF(ELEMENT_NUMBER==3) THEN
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,9)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                             & ( 0.25*(A_BI_VALUE(3)**(-0.75) ))   
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,3)=-A_BI_VALUE(3)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,9)=-U_BI_VALUE(3)
+
+              ENDIF
+              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+
+!                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs+6,1:nhs+6)=J_MATRIX(1:mhs+6,1:nhs+6)
+              END IF
+            ENDIF
+
+
+
+          CASE DEFAULT
+            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN
+999 CALL ERRORS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN 1
+  END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
 
   !
