@@ -310,6 +310,8 @@ CONTAINS
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(EQUATIONS_SET_FIELD_FIELD)
     NULLIFY(EQUATIONS_SET_FIELD_DATA)
 
     IF (ALLOCATED(NodesPerElement)) DEALLOCATE(NodesPerElement)
@@ -2152,12 +2154,11 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(len=14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
-!     CHARACTER :: FILENAME !<the prefix name of file.
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG):: I
-    INTEGER(INTG) :: ERR
+    INTEGER(INTG) :: ERR, ierror
     TYPE(VARYING_STRING):: ERROR 
     LOGICAL:: ANALYTIC
 
@@ -2170,7 +2171,7 @@ CONTAINS
     END IF
  
     FILENAME="./output/"//NAME//".exnode"
-    OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+    OPEN(UNIT=14, FILE=CHAR(FILENAME), STATUS='unknown', IOSTAT=ierror)
 
 ! WRITING HEADER INFORMATION
 
@@ -2370,7 +2371,7 @@ CONTAINS
     END DO
  
     WRITE(14,*) ' '
-    CLOSE(14)
+    CLOSE(UNIT=14)
 
     IF( DARCY%ANALYTIC ) THEN
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_MAX_ERROR
@@ -2380,7 +2381,7 @@ CONTAINS
     IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
       IF(DN) THEN
         FILENAME="./output/"//NAME//".davidn"
-        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown', IOSTAT=ierror)
         WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
         DO I=1,NodesPerMeshComponent(1) 
           WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
@@ -2391,14 +2392,14 @@ CONTAINS
         DO I=1,NodesPerMeshComponent(2)
           WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
         ENDDO
-        CLOSE(14)
+        CLOSE(UNIT=14)
       ENDIF
     END IF
 
     IF(NumberOfDimensions==1) THEN
       IF(DN) THEN
         FILENAME="./output/"//NAME//".davidn"
-        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown', IOSTAT=ierror)
         WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1)
         DO I=1,NodesPerMeshComponent(1) 
           WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
@@ -2406,7 +2407,7 @@ CONTAINS
         DO I=1,NodesPerMeshComponent(1) 
           WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
         ENDDO
-        CLOSE(14)
+        CLOSE(UNIT=14)
       ENDIF
     END IF
 
@@ -2425,17 +2426,17 @@ CONTAINS
   SUBROUTINE FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
 
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(len=14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
     ! CHARACTER*60 ELEM_TYPE
     INTEGER(INTG):: I,J,K,KK
-    INTEGER(INTG) :: ERR
+    INTEGER(INTG) :: ERR,ierror
     TYPE(VARYING_STRING):: ERROR
     LOGICAL:: OUTPUT_FLAG
 
     FILENAME="./output/"//NAME//".exelem"
-    OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown')
+    OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown', IOSTAT=ierror)
     WRITE(5,*) 'Group name: OpenCMISS'
 
 
@@ -2737,7 +2738,7 @@ CONTAINS
 
 
     WRITE(5,*) ' '
-    CLOSE(5)
+    CLOSE(UNIT=5)
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Elements...",ERR,ERROR,*999)
     RETURN
 999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI",ERR,ERROR)    
