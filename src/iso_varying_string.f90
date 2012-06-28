@@ -578,10 +578,28 @@ contains
     type(varying_string), intent(in) :: string_a
     type(varying_string), intent(in) :: string_b
     logical                          :: op_eq
+    integer                          :: len_a, len_b, min_len
 
 ! Compare (==) two varying strings
 
-    op_eq = char(string_a) == char(string_b)
+    op_eq = .TRUE.
+    len_a = len(string_a)
+    len_b = len(string_b)
+    min_len = min(len_a, len_b)
+
+    if(any(string_a%chars(1:min_len)/=string_b%chars(1:min_len))) then
+      op_eq = .FALSE.
+      return
+    end if
+    !Strings might have different length but be padded with space
+    if(any(string_a%chars(len_b+1:len_a)/=" ")) then
+      op_eq = .FALSE.
+      return
+    end if
+    if(any(string_b%chars(len_a+1:len_b)/=" ")) then
+      op_eq = .FALSE.
+      return
+    end if
 
 ! Finish
 
