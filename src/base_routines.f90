@@ -112,7 +112,7 @@ MODULE BASE_ROUTINES
 
   !>Contains information for an item in the routine list for diagnostics or timing
   TYPE ROUTINE_LIST_ITEM_TYPE
-    TYPE(VARYING_STRING) :: NAME !<Name of the routine
+    CHARACTER(LEN=63) :: NAME !<Name of the routine
     INTEGER(INTG) :: NUMBER_OF_INVOCATIONS !<Number of times the routine has been invocted
     REAL(SP) :: TOTAL_INCLUSIVE_CPU_TIME !<Total User CPU time spent in the routine inclusive of calls
     REAL(SP) :: TOTAL_INCLUSIVE_SYSTEM_TIME !<Total System CPU time spent in the routine inclusive of calls
@@ -128,7 +128,7 @@ MODULE BASE_ROUTINES
 
   !>Contains information for an item in the routine invocation stack
   TYPE ROUTINE_STACK_ITEM_TYPE
-    TYPE(VARYING_STRING) :: NAME !<The name of the routine
+    CHARACTER(LEN=63) :: NAME !<Name of the routine
     REAL(SP) :: INCLUSIVE_CPU_TIME !<User CPU time spent in the routine inclusive of calls 
     REAL(SP) :: INCLUSIVE_SYSTEM_TIME !<System CPU time spent in the routine inclusive of calls 
     REAL(SP) :: EXCLUSIVE_CPU_TIME !<User CPU time spent in the routine exclusive of calls 
@@ -320,7 +320,8 @@ CONTAINS
           FINISHED=.FALSE.
           LIST_ROUTINE_PTR=>DIAG_ROUTINE_LIST%HEAD
           DO WHILE(ASSOCIATED(LIST_ROUTINE_PTR).AND..NOT.FINISHED)
-            IF(LIST_ROUTINE_PTR%NAME==ROUTINE_PTR%NAME) THEN
+            IF(LIST_ROUTINE_PTR%NAME(1:LEN_TRIM(LIST_ROUTINE_PTR%NAME))== &
+                & ROUTINE_PTR%NAME(1:LEN_TRIM(ROUTINE_PTR%NAME))) THEN
               ROUTINE_PTR%DIAGNOSTICS=.TRUE.
               ROUTINE_PTR%ROUTINE_LIST_ITEM=>LIST_ROUTINE_PTR
               FINISHED=.TRUE.
@@ -373,7 +374,8 @@ CONTAINS
           FINISHED=.FALSE.
           LIST_ROUTINE_PTR=>TIMING_ROUTINE_LIST%HEAD
           DO WHILE(ASSOCIATED(LIST_ROUTINE_PTR).AND..NOT.FINISHED)
-            IF(LIST_ROUTINE_PTR%NAME==ROUTINE_PTR%NAME) THEN
+            IF(LIST_ROUTINE_PTR%NAME(1:LEN_TRIM(LIST_ROUTINE_PTR%NAME))== &
+                & ROUTINE_PTR%NAME(1:LEN_TRIM(ROUTINE_PTR%NAME))) THEN
               ROUTINE_PTR%TIMING=.TRUE.
               ROUTINE_PTR%ROUTINE_LIST_ITEM=>LIST_ROUTINE_PTR
               FINISHED=.TRUE.
@@ -525,8 +527,7 @@ CONTAINS
         ENDIF
 
         !Delete the routine pointer
-        CALL erase(ROUTINE_PTR%NAME) !Routine name (varying string) remains allocated - it's a leak hazard
-        DEALLOCATE(ROUTINE_PTR) 
+        DEALLOCATE(ROUTINE_PTR)
 
         !ELSE ERROR????
       ENDIF
@@ -875,28 +876,14 @@ CONTAINS
       ENDIF
       ALLOCATE(ROUTINE,STAT=ERR)
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
-      ROUTINE%NAME=""
-      DO i=1,LEN(ROUTINE_LIST(1))
-        CHARAC=ROUTINE_LIST(1)(i:i)
-        !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-        !ROUTINE%NAME=ROUTINE%NAME//CHARAC
-        LOCAL_STRING=ROUTINE%NAME//CHARAC
-        ROUTINE%NAME=CHAR(LOCAL_STRING)
-      ENDDO !i
+      ROUTINE%NAME=ROUTINE_LIST(1)
       PREVIOUS_ROUTINE=>ROUTINE
       NULLIFY(ROUTINE%NEXT_ROUTINE)
       DIAG_ROUTINE_LIST%HEAD=>ROUTINE
       DO i=2,SIZE(ROUTINE_LIST,1)
         ALLOCATE(ROUTINE,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
-        ROUTINE%NAME=""
-        DO j=1,LEN(ROUTINE_LIST(i))
-          CHARAC=ROUTINE_LIST(i)(j:j)
-          !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-          !ROUTINE%NAME=ROUTINE%NAME//CHARAC
-          LOCAL_STRING=ROUTINE%NAME//CHARAC
-          ROUTINE%NAME=CHAR(LOCAL_STRING)
-        ENDDO !i
+        ROUTINE%NAME=ROUTINE_LIST(i)
         NULLIFY(ROUTINE%NEXT_ROUTINE)
         PREVIOUS_ROUTINE%NEXT_ROUTINE=>ROUTINE
         PREVIOUS_ROUTINE=>ROUTINE
@@ -1197,14 +1184,7 @@ CONTAINS
       ENDIF
       ALLOCATE(ROUTINE,STAT=ERR)
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
-      ROUTINE%NAME=""
-      DO i=1,LEN(ROUTINE_LIST(1))
-        CHARAC=ROUTINE_LIST(1)(i:i)
-        !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-        !ROUTINE%NAME=ROUTINE%NAME//CHARAC
-        LOCAL_STRING=ROUTINE%NAME//CHARAC
-        ROUTINE%NAME=CHAR(LOCAL_STRING)
-      ENDDO !i
+      ROUTINE%NAME=ROUTINE_LIST(1)
       PREVIOUS_ROUTINE=>ROUTINE
       NULLIFY(ROUTINE%NEXT_ROUTINE)
       TIMING_ROUTINE_LIST%HEAD=>ROUTINE
@@ -1216,14 +1196,7 @@ CONTAINS
       DO i=2,SIZE(ROUTINE_LIST,1)
         ALLOCATE(ROUTINE,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
-        ROUTINE%NAME=""
-        DO j=1,LEN(ROUTINE_LIST(i))
-          CHARAC=ROUTINE_LIST(i)(j:j)
-          !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-          !ROUTINE%NAME=ROUTINE%NAME//CHARAC
-          LOCAL_STRING=ROUTINE%NAME//CHARAC
-          ROUTINE%NAME=CHAR(LOCAL_STRING)
-        ENDDO !i
+        ROUTINE%NAME=ROUTINE_LIST(i)
         NULLIFY(ROUTINE%NEXT_ROUTINE)
         PREVIOUS_ROUTINE%NEXT_ROUTINE=>ROUTINE
         PREVIOUS_ROUTINE=>ROUTINE
@@ -1284,7 +1257,7 @@ CONTAINS
       CALL WRITE_STR(TIMING_OUTPUT_TYPE,ERR,ERROR,*999)
       ROUTINE_PTR=>TIMING_ROUTINE_LIST%HEAD
       DO WHILE(ASSOCIATED(ROUTINE_PTR))
-        WRITE(OP_STRING,'("*** Routine : ",A)') CHAR(TRIM(ROUTINE_PTR%NAME))
+        WRITE(OP_STRING,'("*** Routine : ",A)') TRIM(ROUTINE_PTR%NAME)
         CALL WRITE_STR(TIMING_OUTPUT_TYPE,ERR,ERROR,*999)
         WRITE(OP_STRING,'("***    Number of invocations: ",I10)') ROUTINE_PTR%NUMBER_OF_INVOCATIONS
         CALL WRITE_STR(TIMING_OUTPUT_TYPE,ERR,ERROR,*999)
