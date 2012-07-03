@@ -171,8 +171,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:),MATERIAL_INTERPOLATION_PARAMETERS(:)
   TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:),MATERIAL_INTERPOLATED_POINT(:)
 
-  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: SOURCE_INTERPOLATION_PARAMETERS(:)
-  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERPOLATED_POINT(:)
+  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: SOURCE_INTERPOLATION_PARAMETERS(:),ANALYTIC_INTERPOLATION_PARAMETERS(:)
+  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERPOLATED_POINT(:), ANALYTIC_INTERPOLATED_POINT(:)
 
 
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerElement
@@ -309,6 +309,9 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
+
+    REAL(DP), POINTER :: ANALYTIC_VALUES(:)
+    LOGICAL:: ANALYTIC
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
@@ -540,8 +543,9 @@ CONTAINS
           IF( ASSOCIATED(SOURCE_FIELD) ) OUTPUT_SOURCE = .TRUE.
     END IF
 
-    NULLIFY(INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATION_PARAMETERS,SOURCE_INTERPOLATION_PARAMETERS)
-    NULLIFY(INTERPOLATED_POINT,MATERIAL_INTERPOLATED_POINT,SOURCE_INTERPOLATED_POINT)
+    NULLIFY(INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATION_PARAMETERS,SOURCE_INTERPOLATION_PARAMETERS, & 
+      & ANALYTIC_INTERPOLATION_PARAMETERS)
+    NULLIFY(INTERPOLATED_POINT,MATERIAL_INTERPOLATED_POINT,SOURCE_INTERPOLATED_POINT,ANALYTIC_INTERPOLATED_POINT)
 
     CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
@@ -560,6 +564,15 @@ CONTAINS
       NumberOfFields = NumberOfFields + 1
     END IF
 
+    !analytic field
+    ANALYTIC=.FALSE.         
+    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+      ANALYTIC=.TRUE.         
+      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,ANALYTIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINTS_INITIALISE(ANALYTIC_INTERPOLATION_PARAMETERS,ANALYTIC_INTERPOLATED_POINT,ERR,ERROR,*999)
+      CALL FIELD_PARAMETER_SET_DATA_GET(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_ANALYTIC_VALUES_SET_TYPE,ANALYTIC_VALUES, &
+        & ERR,ERROR,*999)
+    ENDIF
 
     DO I=1,NumberOfElements
 
@@ -682,6 +695,13 @@ CONTAINS
           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
 
+        !analytic field
+        IF( ANALYTIC ) THEN
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_ANALYTIC_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+            & ANALYTIC_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,ANALYTIC_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
+            & ERR,ERROR,*999)
+        END IF
 
         !material
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
@@ -719,34 +739,33 @@ CONTAINS
           IF ((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) .OR. &
           & (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)) THEN
             NodeUValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(1,1)
-            NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
-            NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
+            IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
+              NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
+            ENDIF
+            IF(NumberOfDimensions==3)THEN
+              NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
+            ENDIF
           ENDIF
         ELSE
-!           NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
-!           NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS .OR. &
             & EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) THEN  
-           NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
              & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
              & cmiss%data_dp(K+NodesPerMeshComponent(1))
 
             IF(NumberOfDimensions==3)THEN
-           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-!                & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
-               & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
-               & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+              NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+                & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
+                & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
             END IF
           END IF
         END IF
 
-
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
-
 
         IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
           & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
@@ -759,6 +778,27 @@ CONTAINS
             NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
           END IF
         END IF
+
+        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) THEN         
+          IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN         
+            NodeUValue_analytic(K)=ANALYTIC_VALUES(K)
+            IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
+              NodeVValue_analytic(K)=ANALYTIC_VALUES(K+NodesPerMeshComponent(1))
+              IF(NumberOfDimensions==3)THEN           
+                NodeWValue_analytic(K)=ANALYTIC_VALUES(K+2*NodesPerMeshComponent(1))
+              ENDIF
+            ENDIF
+            SELECT CASE(NumberOfDimensions)
+            CASE(1)
+              NodePValue_analytic(K)=ANALYTIC_INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
+            CASE(2)
+              NodePValue_analytic(K)=ANALYTIC_INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
+            CASE(3)
+              NodePValue_analytic(K)=ANALYTIC_INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(4,1)
+            END SELECT
+          ENDIF
+        ENDIF
+
 
 !---tob: Mass increase for coupled elasticity Darcy INRIA model
         IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
@@ -2186,6 +2226,8 @@ CONTAINS
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_ERROR
     END IF
  
+    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) ANALYTIC=.TRUE.
+
     FILENAME="./output/"//NAME//".exnode"
     OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
 
@@ -2270,9 +2312,12 @@ CONTAINS
       END IF
 
       WRITE(14,'("    ", es25.16 )')NodeUValue(I)
-      WRITE(14,'("    ", es25.16 )')NodeVValue(I)
 
-      IF(NumberOfDimensions==3 .OR. NumberOfDimensions==2) THEN
+      IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
+      WRITE(14,'("    ", es25.16 )')NodeVValue(I)
+      ENDIF
+
+      IF(NumberOfDimensions==3) THEN
       WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
@@ -2371,6 +2416,12 @@ CONTAINS
           WRITE(14,'("    ", es25.16 )')NodePValue_analytic(I)
         END IF
 
+        !Calculate Analytic/Numeric error values
+        NodeUValue_error(I)=NodeUValue(I)-NodeUValue_analytic(I)
+        NodeVValue_error(I)=NodeVValue(I)-NodeVValue_analytic(I)
+        NodeWValue_error(I)=NodeWValue(I)-NodeWValue_analytic(I)
+        NodePValue_error(I)=NodePValue(I)-NodePValue_analytic(I)
+
         WRITE(14,'("    ", es25.16 )')NodeUValue_error(I)
         IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeVValue_error(I)
@@ -2396,6 +2447,7 @@ CONTAINS
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_MAX_ERROR
     END IF
 
+<<<<<<< HEAD
 !test output for DN only
     IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
       IF(DN) THEN
@@ -2429,6 +2481,41 @@ CONTAINS
         CLOSE(14)
       ENDIF
     END IF
+=======
+! !test output for DN only
+!     IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
+!       IF(DN) THEN
+!         FILENAME="./output/"//NAME//".davidn"
+!         OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+!         WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
+!         DO I=1,NodesPerMeshComponent(1) 
+!           WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+!         ENDDO
+!         DO I=1,NodesPerMeshComponent(1) 
+!           WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+!         ENDDO
+!         DO I=1,NodesPerMeshComponent(2)
+!           WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
+!         ENDDO
+!         CLOSE(14)
+!       ENDIF
+!     END IF
+
+!     IF(NumberOfDimensions==1) THEN
+!       IF(DN) THEN
+!         FILENAME="./output/"//NAME//".davidn"
+!         OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+!         WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1)
+!         DO I=1,NodesPerMeshComponent(1) 
+!           WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+!         ENDDO
+!         DO I=1,NodesPerMeshComponent(1) 
+!           WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+!         ENDDO
+!         CLOSE(14)
+!       ENDIF
+!     END IF
+>>>>>>> b69bf28d5766bbc09b938f4200bf3b57a71d7b02
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Nodes...",ERR,ERROR,*999)
     RETURN

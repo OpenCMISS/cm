@@ -143,7 +143,7 @@ CONTAINS
       LENGTH=LEN(Fstrings(1))
     ENDIF
     DO string_idx=1,SIZE(Fstrings,1)
-      Fstrings(string_idx)=""
+      Fstrings(string_idx)=" "
       DO i=1,LENGTH
         IF(Cstrings(i,string_idx)==C_NULL_CHAR) THEN
           EXIT

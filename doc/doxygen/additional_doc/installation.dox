@@ -10,6 +10,7 @@ They will be used during the installation process.
 - python-dev
 - python-setuptools
 - bison
+- yacc
 - SWIG
 - lesstif2-devel
 - openmotif-devel
@@ -47,8 +48,7 @@ In the OpenCMISSExtras directory, check out the utils repository:
 \subsection step4 Step 4
 Set up your shell login script to call the opencmiss_programer script, which will set environment variables used when building OpenCMISS.
 
-1. Set the environment variables OPENCMISS_ROOT,
-OPENCMISSEXTRAS_ROOT and OPENCMISSEXAMPLES_ROOT to point to the directories that are created in \ref step1 "Step 1".
+1. Set the environment variables OPENCMISS_ROOT and OPENCMISSEXTRAS_ROOT to point to the directories that are created in \ref step1 "Step 1".
 
 If you use the bash shell you can do this by adding the following lines to your "~/.bashrc" file:
 \code 
