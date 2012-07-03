@@ -1057,12 +1057,7 @@ CONTAINS
                   & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
                   !variable X with has Y components, here Y represents viscosity only
                   MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-                     & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE) THEN
-                    MATERIAL_FIELD_NUMBER_OF_COMPONENTS=12!Y
-                  ELSE
-                    MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
-                  ENDIF
+                  MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     !Specify start action
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
