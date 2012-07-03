@@ -2447,41 +2447,6 @@ CONTAINS
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_MAX_ERROR
     END IF
 
-<<<<<<< HEAD
-!test output for DN only
-    IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
-      IF(DN) THEN
-        FILENAME="./output/"//NAME//".davidn"
-        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
-        WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
-        DO I=1,NodesPerMeshComponent(1) 
-          WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
-        ENDDO
-        DO I=1,NodesPerMeshComponent(1) 
-          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
-        ENDDO
-        DO I=1,NodesPerMeshComponent(2)
-          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
-        ENDDO
-        CLOSE(14)
-      ENDIF
-    END IF
-
-    IF(NumberOfDimensions==1) THEN
-      IF(DN) THEN
-        FILENAME="./output/"//NAME//".davidn"
-        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
-        WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1)
-        DO I=1,NodesPerMeshComponent(1) 
-          WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I)
-        ENDDO
-        DO I=1,NodesPerMeshComponent(1) 
-          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeUValue(I),NodeVValue(I)
-        ENDDO
-        CLOSE(14)
-      ENDIF
-    END IF
-=======
 ! !test output for DN only
 !     IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
 !       IF(DN) THEN
@@ -2515,7 +2480,6 @@ CONTAINS
 !         CLOSE(14)
 !       ENDIF
 !     END IF
->>>>>>> b69bf28d5766bbc09b938f4200bf3b57a71d7b02
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Nodes...",ERR,ERROR,*999)
     RETURN
