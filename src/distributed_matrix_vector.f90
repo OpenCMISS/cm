@@ -262,6 +262,8 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DISTRIBUTED_MATRIX_FORM
 
+  PUBLIC DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET
+
   PUBLIC DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET
 
   PUBLIC DISTRIBUTED_MATRIX_LINKLIST_SET,DISTRIBUTED_MATRIX_LINKLIST_GET
@@ -301,6 +303,8 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   PUBLIC DISTRIBUTED_VECTOR_DESTROY
 
   PUBLIC DISTRIBUTED_VECTOR_DUPLICATE
+
+  PUBLIC DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET
 
   PUBLIC DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET
 
@@ -532,6 +536,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
     
@@ -539,14 +544,18 @@ CONTAINS
 
     IF(ASSOCIATED(CMISS_MATRIX)) THEN
       CMISS_MATRIX%BASE_TAG_NUMBER=DISTRIBUTED_DATA_ID
-      IF(CMISS_MATRIX%DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
-        DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
+      DOMAIN_MAPPING=>CMISS_MATRIX%DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING
+      IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+        IF(DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
+          DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
+        ELSE
+          DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+ &
+            & DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(DOMAIN_MAPPING%NUMBER_OF_DOMAINS)
+        END IF
+        CALL MATRIX_CREATE_FINISH(CMISS_MATRIX%MATRIX,ERR,ERROR,*999)
       ELSE
-        DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+ &
-          & CMISS_MATRIX%DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST(CMISS_MATRIX%DISTRIBUTED_MATRIX% &
-          & ROW_DOMAIN_MAPPING%NUMBER_OF_DOMAINS)-1
+        CALL FLAG_ERROR("Distributed matrix row domain mapping is not associated.",ERR,ERROR,*998)
       ENDIF
-      CALL MATRIX_CREATE_FINISH(CMISS_MATRIX%MATRIX,ERR,ERROR,*999)      
     ELSE
       CALL FLAG_ERROR("Distributed matrix CMISS is not associated.",ERR,ERROR,*998)
     ENDIF
@@ -4865,7 +4874,8 @@ CONTAINS
 
   !>Calculates the matrix vector product of a distrubted matrix times a distributed vector and adds it to the distributed
   !>product vector. NOTE: This will only work for specific CMISS distributed matrices i.e., ones in which the columns of the
-  !>matrix are distributed in the same way as the rows of the vectors are distributed.
+  !>matrix are distributed in the same way as the rows of the multiplied vector are distributed, and the rows of the matrix
+  !>are distributed in the same way as the rows of the product vector.
   SUBROUTINE DISTRIBUTED_MATRIX_BY_VECTOR_ADD(ROW_SELECTION_TYPE,ALPHA,DISTRIBUTED_MATRIX,DISTRIBUTED_VECTOR,DISTRIBUTED_PRODUCT, &
     & ERR,ERROR,*)
 
@@ -4878,14 +4888,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: column_idx,local_column,global_column,NUMBER_OF_ROWS,row
+    INTEGER(INTG) :: column_idx,local_column,global_column,NUMBER_OF_COLUMNS,NUMBER_OF_ROWS,row,row_idx
     REAL(DP) :: SUM
     TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS_MATRIX
     TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS_VECTOR,CMISS_PRODUCT
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_MAPPING,COLUMN_MAPPING
     TYPE(MATRIX_TYPE), POINTER :: MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+
     CALL ENTERS("DISTRIBUTED_MATRIX_BY_VECTOR_ADD",ERR,ERROR,*999)
 
     IF(ABS(ALPHA)>ZERO_TOLERANCE) THEN
@@ -4897,146 +4907,160 @@ CONTAINS
                 IF(DISTRIBUTED_PRODUCT%VECTOR_FINISHED) THEN
                   IF(DISTRIBUTED_MATRIX%LIBRARY_TYPE==DISTRIBUTED_VECTOR%LIBRARY_TYPE) THEN
                     IF(DISTRIBUTED_MATRIX%LIBRARY_TYPE==DISTRIBUTED_PRODUCT%LIBRARY_TYPE) THEN
-                      DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%COLUMN_DOMAIN_MAPPING
-                      IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
-                        IF(ASSOCIATED(DOMAIN_MAPPING,DISTRIBUTED_VECTOR%DOMAIN_MAPPING)) THEN
-                          IF(ASSOCIATED(DOMAIN_MAPPING,DISTRIBUTED_PRODUCT%DOMAIN_MAPPING)) THEN
-                            SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
-                            CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
-                              CMISS_MATRIX=>DISTRIBUTED_MATRIX%CMISS
-                              IF(ASSOCIATED(CMISS_MATRIX)) THEN
-                                MATRIX=>CMISS_MATRIX%MATRIX
-                                IF(ASSOCIATED(MATRIX)) THEN
-                                  CMISS_VECTOR=>DISTRIBUTED_VECTOR%CMISS
-                                  IF(ASSOCIATED(CMISS_VECTOR)) THEN
-                                    CMISS_PRODUCT=>DISTRIBUTED_PRODUCT%CMISS
-                                    IF(ASSOCIATED(CMISS_PRODUCT)) THEN
-                                      SELECT CASE(ROW_SELECTION_TYPE)
-                                      CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
-                                        NUMBER_OF_ROWS=DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                      CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
-                                        NUMBER_OF_ROWS=DOMAIN_MAPPING%NUMBER_OF_LOCAL
-                                      CASE DEFAULT
-                                        LOCAL_ERROR="The row selection type of "// &
-                                          & TRIM(NUMBER_TO_VSTRING(ROW_SELECTION_TYPE,"*",ERR,ERROR))//" is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                      IF(MATRIX%DATA_TYPE==DISTRIBUTED_VECTOR%DATA_TYPE) THEN
-                                        IF(MATRIX%DATA_TYPE==DISTRIBUTED_PRODUCT%DATA_TYPE) THEN
-                                          SELECT CASE(MATRIX%DATA_TYPE)
-                                          CASE(DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE(DISTRIBUTED_MATRIX_VECTOR_SP_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE(DISTRIBUTED_MATRIX_VECTOR_DP_TYPE)
-                                            SELECT CASE(MATRIX%STORAGE_TYPE)
-                                            CASE(MATRIX_BLOCK_STORAGE_TYPE)
-                                              DO row=1,NUMBER_OF_ROWS
-                                                SUM=0.0_DP
-                                                DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                                  global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
-                                                  SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%M)* &
-                                                    & CMISS_VECTOR%DATA_DP(local_column)
-                                                ENDDO !local_column
-                                                CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
-                                              ENDDO !row                                
-                                            CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-                                              DO row=1,NUMBER_OF_ROWS
-                                                SUM=MATRIX%DATA_DP(row)*CMISS_VECTOR%DATA_DP(row)
-                                                CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
-                                              ENDDO !row                                
-                                            CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                              DO row=1,NUMBER_OF_ROWS
-                                                SUM=0.0_DP
-                                                DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                                  global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
-                                                  SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%MAX_M)* &
-                                                    & CMISS_VECTOR%DATA_DP(local_column)
-                                                ENDDO !local_column
-                                                CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
-                                              ENDDO !row                                
-                                            CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                              DO row=1,NUMBER_OF_ROWS
-                                                SUM=0.0_DP
-                                                DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                                  global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
-                                                  SUM=SUM+MATRIX%DATA_DP((row-1)*MATRIX%MAX_N+global_column)* &
-                                                    & CMISS_VECTOR%DATA_DP(local_column)
-                                                ENDDO !local_column
-                                                CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
-                                              ENDDO !row                                
-                                            CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                              DO row=1,NUMBER_OF_ROWS
-                                                SUM=0.0_DP
-                                                DO column_idx=MATRIX%ROW_INDICES(row),MATRIX%ROW_INDICES(row+1)-1
-                                                  global_column=MATRIX%COLUMN_INDICES(column_idx)
-                                                  !This ranks global to local mappings are stored in the first position
-                                                  local_column=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(global_column)%LOCAL_NUMBER(1)
-                                                  SUM=SUM+MATRIX%DATA_DP(column_idx)* &
-                                                    & CMISS_VECTOR%DATA_DP(local_column)
-                                                ENDDO !local_column
-                                                CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
-                                              ENDDO !row                                
-                                            CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                      COLUMN_MAPPING=>DISTRIBUTED_MATRIX%COLUMN_DOMAIN_MAPPING
+                      IF(ASSOCIATED(COLUMN_MAPPING)) THEN
+                        ROW_MAPPING=>DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING
+                        IF(ASSOCIATED(ROW_MAPPING)) THEN
+                          IF(ASSOCIATED(COLUMN_MAPPING,DISTRIBUTED_VECTOR%DOMAIN_MAPPING)) THEN
+                            IF(ASSOCIATED(ROW_MAPPING,DISTRIBUTED_PRODUCT%DOMAIN_MAPPING)) THEN
+                              SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+                              CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+                                CMISS_MATRIX=>DISTRIBUTED_MATRIX%CMISS
+                                IF(ASSOCIATED(CMISS_MATRIX)) THEN
+                                  MATRIX=>CMISS_MATRIX%MATRIX
+                                  IF(ASSOCIATED(MATRIX)) THEN
+                                    CMISS_VECTOR=>DISTRIBUTED_VECTOR%CMISS
+                                    IF(ASSOCIATED(CMISS_VECTOR)) THEN
+                                      CMISS_PRODUCT=>DISTRIBUTED_PRODUCT%CMISS
+                                      IF(ASSOCIATED(CMISS_PRODUCT)) THEN
+                                        SELECT CASE(ROW_SELECTION_TYPE)
+                                        CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
+                                          NUMBER_OF_ROWS=ROW_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                        CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
+                                          NUMBER_OF_ROWS=ROW_MAPPING%NUMBER_OF_LOCAL
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The row selection type of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(ROW_SELECTION_TYPE,"*",ERR,ERROR))//" is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                        NUMBER_OF_COLUMNS=COLUMN_MAPPING%NUMBER_OF_GLOBAL
+                                        IF(MATRIX%DATA_TYPE==DISTRIBUTED_VECTOR%DATA_TYPE) THEN
+                                          IF(MATRIX%DATA_TYPE==DISTRIBUTED_PRODUCT%DATA_TYPE) THEN
+                                            SELECT CASE(MATRIX%DATA_TYPE)
+                                            CASE(DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE)
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                            CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                            CASE(DISTRIBUTED_MATRIX_VECTOR_SP_TYPE)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE(DISTRIBUTED_MATRIX_VECTOR_DP_TYPE)
+                                              SELECT CASE(MATRIX%STORAGE_TYPE)
+                                              CASE(MATRIX_BLOCK_STORAGE_TYPE)
+                                                DO row=1,NUMBER_OF_ROWS
+                                                  SUM=0.0_DP
+                                                  DO local_column=1,COLUMN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                                    global_column=COLUMN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                                    SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%M)* &
+                                                      & CMISS_VECTOR%DATA_DP(local_column)
+                                                  ENDDO !local_column
+                                                  CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                ENDDO !row
+                                              CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+                                                DO row=1,NUMBER_OF_ROWS
+                                                  SUM=MATRIX%DATA_DP(row)*CMISS_VECTOR%DATA_DP(row)
+                                                  CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                ENDDO !row
+                                              CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                                DO row=1,NUMBER_OF_ROWS
+                                                  SUM=0.0_DP
+                                                  DO local_column=1,COLUMN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                                    global_column=COLUMN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                                    SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%MAX_M)* &
+                                                      & CMISS_VECTOR%DATA_DP(local_column)
+                                                  ENDDO !local_column
+                                                  CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                ENDDO !row
+                                              CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                                DO row=1,NUMBER_OF_ROWS
+                                                  SUM=0.0_DP
+                                                  DO local_column=1,COLUMN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                                    global_column=COLUMN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                                    SUM=SUM+MATRIX%DATA_DP((row-1)*MATRIX%MAX_N+global_column)* &
+                                                      & CMISS_VECTOR%DATA_DP(local_column)
+                                                  ENDDO !local_column
+                                                  CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                ENDDO !row
+                                              CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                                DO row=1,NUMBER_OF_ROWS
+                                                  SUM=0.0_DP
+                                                  DO column_idx=MATRIX%ROW_INDICES(row),MATRIX%ROW_INDICES(row+1)-1
+                                                    global_column=MATRIX%COLUMN_INDICES(column_idx)
+                                                    !This ranks global to local mappings are stored in the first position
+                                                    local_column=COLUMN_MAPPING%GLOBAL_TO_LOCAL_MAP(global_column)%LOCAL_NUMBER(1)
+                                                    SUM=SUM+MATRIX%DATA_DP(column_idx)* &
+                                                      & CMISS_VECTOR%DATA_DP(local_column)
+                                                  ENDDO !local_column
+                                                  CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                ENDDO !row
+                                              CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                                DO column_idx=1,NUMBER_OF_COLUMNS
+                                                  DO row_idx=MATRIX%COLUMN_INDICES(column_idx),MATRIX%COLUMN_INDICES(column_idx+1)-1
+                                                    row=MATRIX%ROW_INDICES(row_idx)
+                                                    local_column=COLUMN_MAPPING%GLOBAL_TO_LOCAL_MAP(column_idx)%LOCAL_NUMBER(1)
+                                                    SUM=MATRIX%DATA_DP(row_idx)* &
+                                                      & CMISS_VECTOR%DATA_DP(local_column)
+                                                    CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
+                                                  ENDDO !local_row
+                                                ENDDO !column_idx
+                                              CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CASE DEFAULT
+                                                LOCAL_ERROR="The matrix storage type of "// &
+                                                  & TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+
+                                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                              END SELECT
+                                            CASE(DISTRIBUTED_MATRIX_VECTOR_L_TYPE)
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                             CASE DEFAULT
-                                              LOCAL_ERROR="The matrix storage type of "// &
-                                                & TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-
+                                              LOCAL_ERROR="The distributed matrix vector data type of "// &
+                                                & TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
                                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                             END SELECT
-                                          CASE(DISTRIBUTED_MATRIX_VECTOR_L_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE DEFAULT
-                                            LOCAL_ERROR="The distributed matrix vector data type of "// &
-                                              & TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+                                          ELSE
+                                            LOCAL_ERROR="The distributed product vector data type of "// &
+                                              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_PRODUCT%DATA_TYPE,"*",ERR,ERROR))// &
+                                              & " does not match the distributed matrix data type of "// &
+                                              & TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//"."
                                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                          END SELECT
+                                          ENDIF
                                         ELSE
-                                          LOCAL_ERROR="The distributed product vector data type of "// &
-                                            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_PRODUCT%DATA_TYPE,"*",ERR,ERROR))// &
+                                          LOCAL_ERROR="The distributed vector data type of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
                                             & " does not match the distributed matrix data type of "// &
                                             & TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//"."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        LOCAL_ERROR="The distributed vector data type of "// &
-                                          & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-                                          & " does not match the distributed matrix data type of "// &
-                                          & TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//"."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FLAG_ERROR("Distributed product CMISS vector is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Distributed product CMISS vector is not associated.",ERR,ERROR,*999)
+                                      CALL FLAG_ERROR("Distributed vector CMISS vector is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Distributed vector CMISS vector is not associated.",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("CMISS matrix matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("CMISS matrix matrix is not associated.",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Distrubuted matrix CMISS is not associated.",ERR,ERROR,*999)
                                 ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Distrubuted matrix CMISS is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)          
-                            CASE DEFAULT
-                              LOCAL_ERROR="The distributed matrix library type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            END SELECT
+                              CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CASE DEFAULT
+                                LOCAL_ERROR="The distributed matrix library type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                            ELSE
+                              CALL FLAG_ERROR("The distributed matrix and the distributed product vector have different "// &
+                                & "domain mappings.",ERR,ERROR,*999)
+                            ENDIF
                           ELSE
-                            CALL FLAG_ERROR("The distributed matrix and the distributed product vector have different "// &
-                              & "domain mappings.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("The distributed matrix and the distributed vector have different domain mappings.", &
+                              & ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("The distributed matrix and the distributed vector have different domain mappings.", &
-                            & ERR,ERROR,*999)
+                          CALL FLAG_ERROR("The distributed matrix row domain mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("The distributed matrix domain mapping is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("The distributed matrix column domain mapping is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="The distributed product vector library type of "// &
@@ -5054,7 +5078,7 @@ CONTAINS
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("The distributed product vector has not been finished.",ERR,ERROR,*999)
-                ENDIF            
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("The distributed product vector is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -5062,7 +5086,7 @@ CONTAINS
               CALL FLAG_ERROR("Distributed vector has not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Distrubuted vector is not associated.",ERR,ERROR,*999)          
+            CALL FLAG_ERROR("Distrubuted vector is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("Distributed matrix has not been finished.",ERR,ERROR,*999)
@@ -5070,7 +5094,7 @@ CONTAINS
       ELSE
         CALL FLAG_ERROR("Distributed matrix is not associated",ERR,ERROR,*999)
       ENDIF
-    ENDIF  
+    ENDIF
     CALL EXITS("DISTRIBUTED_MATRIX_BY_VECTOR_ADD")
     RETURN
 999 CALL ERRORS("DISTRIBUTED_MATRIX_BY_VECTOR_ADD",ERR,ERROR)
@@ -5803,8 +5827,9 @@ CONTAINS
           IF(DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
             DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
           ELSE
-            DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST(DOMAIN_MAPPING%NUMBER_OF_DOMAINS)-1
-          ENDIF
+            DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+ &
+              & DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(DOMAIN_MAPPING%NUMBER_OF_DOMAINS)
+          END IF
           IF(DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS>0) THEN
             my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
             IF(ERR/=0) GOTO 999
@@ -8714,7 +8739,7 @@ CONTAINS
             CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
               IF(ASSOCIATED(DISTRIBUTED_VECTOR%CMISS)) THEN
                 DO i=1,SIZE(INDICES,1)
-                   IF(INDICES(i)>0.AND.INDICES(i)<=DISTRIBUTED_VECTOR%CMISS%DATA_SIZE) THEN
+                  IF(INDICES(i)>0.AND.INDICES(i)<=DISTRIBUTED_VECTOR%CMISS%DATA_SIZE) THEN
                     VALUES(i)=DISTRIBUTED_VECTOR%CMISS%DATA_DP(INDICES(i))
                   ELSE
                     LOCAL_ERROR="Index "//TRIM(NUMBER_TO_VSTRING(INDICES(i),"*",ERR,ERROR))// &

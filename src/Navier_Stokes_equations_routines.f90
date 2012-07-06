@@ -90,7 +90,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
   PUBLIC NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP
-  PUBLIC NAVIER_STOKES_SUPG_CALCULATE
+  PUBLIC NavierStokes_SUPGCalculate
 
   INTEGER(INTG) :: SOLVER_NUMBER_NAVIER_STOKES
 
@@ -4551,7 +4551,7 @@ CONTAINS
                                                   !Taylor-Green boundary conditions update
                                                   IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                                     BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                                      & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                                      & CONDITION_TYPES(local_ny)
                                                     IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED .AND. &
                                                       & component_idx<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
                                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
@@ -4822,7 +4822,7 @@ CONTAINS
                                                 & ERR,ERROR,*999)
                                               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                                 BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                                  & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                                  & CONDITION_TYPES(local_ny)
                                                 IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
                                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
                                                    & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
@@ -5008,7 +5008,7 @@ CONTAINS
                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                        & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                      BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                       & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                       & CONDITION_TYPES(local_ny)
                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                                          & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, &
@@ -5093,7 +5093,7 @@ CONTAINS
                                           & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                         DISPLACEMENT_VALUE=0.0_DP
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                          & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                          & CONDITION_TYPES(local_ny)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
                                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
@@ -5177,7 +5177,7 @@ CONTAINS
                                         local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                           & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                          & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                          & CONDITION_TYPES(local_ny)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
                                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
@@ -5262,7 +5262,7 @@ CONTAINS
                                           & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                         DISPLACEMENT_VALUE=0.0_DP
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                          & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                          & CONDITION_TYPES(local_ny)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
                                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
@@ -7089,221 +7089,229 @@ CONTAINS
   !
 
   !>Update SUPG parameters for Navier-Stokes equation
-  SUBROUTINE NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*)
+  SUBROUTINE NavierStokes_SUPGCalculate(equationsSet,elementNumber,tauSUPG,err,error,*)
 
     !Argument variables                               
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    REAL(DP), INTENT(OUT):: TAU_SUPG !<The convective element-wise weighting function to be calculated
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to perform the finite element calculations on
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    REAL(DP), INTENT(OUT):: tauSUPG !<The convective element-wise weighting function to be calculated
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
     !Local Variables                        
-    INTEGER(INTG) FIELD_VAR_TYPE,ng,ms,MESH_COMPONENT1
-    REAL(DP) :: PHIMS,MU_PARAM,RHO_PARAM,X1(3),X2(3),U_VALUE(3),U_SUPG(3)
-    REAL(DP) :: ALPHA_SUPG,UMAG_SUPG,UMAX_SUPG,H_SUPG,RE_SUPG,PE_SUPG,SUPG_TOLERANCE,LINE_LENGTH
-    INTEGER(INTG) :: NODE_IDX,element_node_idx,numberOfDimensions,NODES_PER_COMPONENT
-    INTEGER(INTG) :: dim_idx,deriv_idx,version_idx,local_ny
-    REAL(DP) :: H_PARAMETER
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    REAL(DP), POINTER :: geometricParameters(:)
+    TYPE(DOMAIN_TYPE), POINTER :: domain
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
+    TYPE(BASIS_TYPE), POINTER :: dependentBasis,geometricBasis
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
+    TYPE(FIELD_TYPE), POINTER :: equationsSetField
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: quadratureScheme
+    TYPE(FIELD_TYPE), POINTER :: dependentField,geometricField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable
 
-    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,GEOMETRIC_BASIS
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
-    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
-    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: dimensionIdx,derivativeIdx,versionIdx,gaussIdx,parameterIdx,elementNodeIdx
+    INTEGER(INTG) :: fieldVariableType,meshComponent1
+    INTEGER(INTG) :: nodeNumber,numberOfDimensions,local_ny
+    REAL(DP) :: muParameter,rhoParameter,alphaParameter,lengthScale,reynoldsNumber,pecletNumber
+    REAL(DP) :: magnitudeVelocitySUPG,maxVelocitySUPG,lineLength
+    REAL(DP) :: X1(3),X2(3),velocityGauss(3),velocityGaussSUPG(3)
+    TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("NAVIER_STOKES_SUPG_CALCULATE",ERR,ERROR,*999)
+    CALL ENTERS("NavierStokes_SUPGCalculate",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET))THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
-      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
-        EQUATIONS=>EQUATIONS_SET%EQUATIONS
-        IF(ASSOCIATED(EQUATIONS)) THEN
+    ! Nullify all local pointers
+    NULLIFY(geometricParameters)
+    NULLIFY(domain)
+    NULLIFY(domainNodes)
+    NULLIFY(dependentBasis)
+    NULLIFY(geometricBasis)
+    NULLIFY(equations)
+    NULLIFY(equationsMapping)
+    NULLIFY(nonlinearMapping)
+    NULLIFY(equationsEquationsSetField)
+    NULLIFY(equationsSetField)
+    NULLIFY(quadratureScheme)
+    NULLIFY(dependentField)
+    NULLIFY(geometricField)
+    NULLIFY(fieldVariable)
+    NULLIFY(geometricVariable)
+
+    IF(ASSOCIATED(equationsSet))THEN
+      SELECT CASE(equationsSet%SUBTYPE)
+      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+        equations=>equationsSet%EQUATIONS
+        IF(ASSOCIATED(equations)) THEN
           !Set general and specific pointers
-          DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-          DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-          QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-          EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-          NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-          FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-          FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-          EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
-          IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
-            EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
-            IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+          equationsMapping=>equations%EQUATIONS_MAPPING
+          nonlinearMapping=>equationsMapping%NONLINEAR_MAPPING
+          fieldVariable=>nonlinearMapping%RESIDUAL_VARIABLES(1)%PTR
+          fieldVariableType=fieldVariable%VARIABLE_TYPE
+          equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
+          meshComponent1=fieldVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+          dependentField=>equations%INTERPOLATION%DEPENDENT_FIELD
+          dependentBasis=>dependentField%DECOMPOSITION%DOMAIN(meshComponent1)%PTR% &
+            & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+          quadratureScheme=>dependentBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+          IF(ASSOCIATED(equationsEquationsSetField)) THEN
+            equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
+            IF(ASSOCIATED(equationsSetField)) THEN
 
-              H_PARAMETER=0.0_DP
-              CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)                
+              lengthScale=0.0_DP
+              CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & elementNumber,1,lengthScale,err,error,*999)                
 
-              IF(ABS(H_PARAMETER)<=ZERO_TOLERANCE) THEN
+              IF(ABS(lengthScale)<=ZERO_TOLERANCE) THEN
                 !Calculate element length scale H
                 !TODO: calculate this length scale in field_routines instead
-                H_SUPG=0.0_DP
+                lengthScale=0.0_DP
                 X1=0.0_DP
                 X2=0.0_DP
-                LINE_LENGTH=0.0_DP
-                GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-                GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                NULLIFY(GEOMETRIC_VARIABLE)
-                CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-                NULLIFY(GEOMETRIC_PARAMETERS)
+                lineLength=0.0_DP
+                geometricField=>equations%INTERPOLATION%GEOMETRIC_FIELD
+                geometricBasis=>geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                  & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+                CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,err,error,*999)
                 !Get the geometric distributed vector
-                CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-                numberOfDimensions=FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1
+                CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & geometricParameters,err,error,*999)
+                numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
 
                 !Loop over element nodes
-                DO element_node_idx=1,GEOMETRIC_BASIS%NUMBER_OF_NODES
-                  NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(element_node_idx)
-                  DOMAIN=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
-                  IF(ASSOCIATED(DOMAIN)) THEN
-                    IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                DO elementNodeIdx=1,geometricBasis%NUMBER_OF_NODES
+                  nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                   & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_NODES(elementNodeIdx)
+                  domain=>geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
+                  IF(ASSOCIATED(domain)) THEN
+                    IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                      domainNodes=>domain%TOPOLOGY%NODES
                       !Loop over the derivatives
-                      DO deriv_idx=1,DOMAIN_NODES%NODES(NODE_IDX)%NUMBER_OF_DERIVATIVES
+                      DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
                         !Loop over versions
-                        DO version_idx=1,DOMAIN_NODES%NODES(NODE_IDX)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS
+                        DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
                           !Loop over dimensions
-                          DO dim_idx=1,numberOfDimensions
-                            local_ny=FIELD_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP% &
-                              & NODE_PARAM2DOF_MAP%NODES(NODE_IDX)%DERIVATIVES(deriv_idx)%VERSIONS(version_idx)
-                            IF(element_node_idx==1 .AND. deriv_idx==1 .AND. version_idx==1) THEN
+                          DO dimensionIdx=1,numberOfDimensions
+                            local_ny=fieldVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                            IF(elementNodeIdx==1 .AND. derivativeIdx==1 .AND. versionIdx==1) THEN
                               !First node that lengths will be calculated relative to:  
-                              X1(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                              X1(dimensionIdx)=geometricParameters(local_ny)
                             ELSE
-                              X2(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                              X2(dimensionIdx)=geometricParameters(local_ny)
                             ENDIF
-                          ENDDO !dim_idx
-                          LINE_LENGTH = L2NORM(X1-X2)
-                          H_SUPG = MAX(H_SUPG,LINE_LENGTH)
-                        ENDDO !version_idx
-                      ENDDO !deriv_idx
+                          ENDDO !dimensionIdx
+                          lineLength = L2NORM(X1-X2)
+                          lengthScale = MAX(lengthScale,lineLength)
+                        ENDDO !versionIdx
+                      ENDDO !derivativeIdx
                     ELSE
-                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Domain topology is not associated.",err,error,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
                   ENDIF
                 END DO  
-                H_SUPG = H_SUPG/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
+                lengthScale = lengthScale/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
 
-                !Length scale hadn't been calculated for this element, so add element components for each metric
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & ELEMENT_NUMBER,1,H_SUPG,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & ELEMENT_NUMBER,2,0.0_DP,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & ELEMENT_NUMBER,3,0.0_DP,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & ELEMENT_NUMBER,4,0.0_DP,ERR,ERROR,*999)
+                !Length scale hadn't been calculated for this element, so add element components for each SUPG metric
+                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & elementNumber,1,lengthScale,err,error,*999)
+                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & elementNumber,2,0.0_DP,err,error,*999)
+                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & elementNumber,3,0.0_DP,err,error,*999)
+                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & elementNumber,4,0.0_DP,err,error,*999)
                 !Restore the geometric distributed vector
-                CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-              ELSE
-                H_SUPG=H_PARAMETER
-              ENDIF !H_SUPG associated
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & geometricParameters,err,error,*999)
+              ENDIF !lengthScale unassociated
 
-                UMAG_SUPG=0.0_DP
-                UMAX_SUPG=0.0_DP
-                U_VALUE=0.0_DP
+                magnitudeVelocitySUPG=0.0_DP
+                maxVelocitySUPG=0.0_DP
+                velocityGauss=0.0_DP
 
                 !Calculate element-based velocity metrics
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                  & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                  & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                  & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
+                  & DEPENDENT_INTERP_PARAMETERS(fieldVariableType)%PTR,err,error,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
+                  & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
+                  & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
 
-                DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                  U_SUPG=0.0_DP
-                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                    & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                    & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                  U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                  U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                  IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                    U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                DO gaussIdx=1,quadratureScheme%NUMBER_OF_GAUSS
+                  velocityGaussSUPG=0.0_DP
+                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx,equations%INTERPOLATION% &
+                    & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                  velocityGauss(1)=equations%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                  velocityGauss(2)=equations%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                  IF(fieldVariable%NUMBER_OF_COMPONENTS==4) THEN
+                    velocityGauss(3)=equations%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% & 
+                     & VALUES(3,NO_PART_DERIV)
                   ELSE
-                    U_VALUE(3)=0.0_DP
+                    velocityGauss(3)=0.0_DP
                   END IF
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                    U_SUPG=U_SUPG+U_VALUE*PHIMS
-                  END DO !ms
-                  UMAG_SUPG=L2NORM(U_SUPG)
-                  UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG) !maximum velocity magnitude over all gauss points
-                END DO !ng
+                  DO parameterIdx=1,dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS
+                    velocityGaussSUPG=velocityGaussSUPG+velocityGauss*quadratureScheme% &
+                     & GAUSS_BASIS_FNS(parameterIdx,NO_PART_DERIV,gaussIdx)
+                  END DO !parameterIdx
+                  magnitudeVelocitySUPG=L2NORM(velocityGaussSUPG)
+                  maxVelocitySUPG=MAX(magnitudeVelocitySUPG,maxVelocitySUPG) !maximum velocity magnitude over all gauss points
+                END DO !gaussIdx
 
-                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,1,EQUATIONS%INTERPOLATION% &
-                  & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,1,equations%INTERPOLATION% &
+                  & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
                 !Materials parameters
-                MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                muParameter=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                rhoParameter=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
 
                 !store umax for later metric calculation (e.g. courant #)
-                CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & ELEMENT_NUMBER,2,UMAX_SUPG,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & elementNumber,2,maxVelocitySUPG,err,error,*999)
 
               !Calculate cell Reynolds (Re) and Peclet (Pe) numbers
-              RE_SUPG=UMAX_SUPG*H_SUPG*RHO_PARAM/MU_PARAM
-              PE_SUPG=RE_SUPG*UMAX_SUPG*H_SUPG
+              reynoldsNumber=maxVelocitySUPG*lengthScale*rhoParameter/muParameter
+              pecletNumber=reynoldsNumber*maxVelocitySUPG*lengthScale
               !Store element (cell) Reynolds number
-              CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & ELEMENT_NUMBER,3,RE_SUPG,ERR,ERROR,*999)
-              !TODO: set SUPG tolerance relative to iterative solver tolerance (or user defined)
-              SUPG_TOLERANCE=1.0E-8_DP
-              IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
-                IF(PE_SUPG.GT.100) THEN
+              CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & elementNumber,3,reynoldsNumber,err,error,*999)
+              IF(pecletNumber.GT.ZERO_TOLERANCE) THEN
+                IF(pecletNumber.GT.100) THEN
                   !Approximation to avoid overflow FPEs
-                  ALPHA_SUPG = 1.0_DP - 1.0_DP/PE_SUPG
+                  alphaParameter = 1.0_DP - 1.0_DP/pecletNumber
                 ELSE
-                  ALPHA_SUPG = COTH(PE_SUPG/2.0_DP) - (2.0_DP/PE_SUPG)
+                  alphaParameter = COTH(pecletNumber/2.0_DP) - (2.0_DP/pecletNumber)
                 ENDIF
-                TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
+                tauSUPG=(alphaParameter*lengthScale)/(2.0_DP*maxVelocitySUPG)
               ELSE
-                TAU_SUPG=0.0_DP
+                tauSUPG=0.0_DP
               ENDIF
 
             ELSE
-              CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Equations set field field is not associated.",err,error,*999)
             ENDIF               
           ELSE
-            CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Equations equations set field is not associated.",err,error,*999)
           ENDIF               
         ELSE
-          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
         ENDIF               
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
           & " is not a valid subtype to use SUPG weighting functions."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FLAG_ERROR(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF               
-    CALL EXITS("NAVIER_STOKES_SUPG_CALCULATE")
+    CALL EXITS("NavierStokes_SUPGCalculate")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_SUPG_CALCULATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_SUPG_CALCULATE")
+999 CALL ERRORS("NavierStokes_SUPGCalculate",err,error)
+    CALL EXITS("NavierStokes_SUPGCalculate")
     RETURN 1
-  END SUBROUTINE NAVIER_STOKES_SUPG_CALCULATE
+  END SUBROUTINE NavierStokes_SUPGCalculate
 
   !
   !================================================================================================================================
