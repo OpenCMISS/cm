@@ -2339,7 +2339,7 @@ CONTAINS
                     IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
                       TAU_SUPG=0.0_DP
                       !Calculate SUPG element metrics
-                      CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -2381,7 +2381,7 @@ CONTAINS
                     IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
                       TAU_SUPG=0.0_DP
                       !Calculate SUPG element metrics
-                      CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                       !If this is a boundary element, calculate RHS vector for multidomain boundaries
                       IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
                         CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
@@ -3482,7 +3482,7 @@ CONTAINS
                     IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
                       TAU_SUPG=0.0_DP
                       !Calculate SUPG element metrics
-                      CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -3515,7 +3515,7 @@ CONTAINS
                     IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
                       TAU_SUPG=0.0_DP
                       !Calculate SUPG element metrics
-                      CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                       ! !If this is a boundary element, calculate RHS vector for multidomain boundaries
                        ! IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
                        !   CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
