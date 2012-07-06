@@ -133,6 +133,8 @@ class HtmlOutput(Plugin):
             self.html.append('<br /><a class="fail">'+str(len(result.failures))+' FAILs, '+str(len(result.errors))+ 'ERRORs</a>')                             
         else:
             self.html.append('<br /><a class="success">ALL PASS</a>')
+        if os.path.exists(os.environ['OPENCMISS_ROOT']+"/build/logs/invalid_jason_filelist") :
+          self.html.append('<br><a href="%slogs_%s/invalid_jason_filelist">Some examples not tested due to invalid JSON configuration.</a>' %(self.buildbotUrl,os.environ['archname']))
         # print >> sys.stderr, self.html
         for l in self.html:
             self.stream.writeln(l)
