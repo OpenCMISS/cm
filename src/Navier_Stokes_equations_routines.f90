@@ -7141,7 +7141,8 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet))THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+        &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
         equations=>equationsSet%EQUATIONS
         IF(ASSOCIATED(equations)) THEN
           !Set general and specific pointers
@@ -7479,7 +7480,7 @@ CONTAINS
             SELECT CASE(dependentBasis%TYPE)
             CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
               normalComponentIdx=ABS(face%XI_DIRECTION)
-               !How does this differentiate between wall and in/outlet boundaries?
+              !How does this differentiate between wall and in/outlet boundaries?
             CASE(BASIS_SIMPLEX_TYPE)
               ! Currently problems with normal calculation for simplex elements- this is a workaround
               geometricFaceBasis=>geometricDecomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
@@ -7712,7 +7713,7 @@ CONTAINS
     INTEGER(INTG) :: dimIdx,derivIdx,versionIdx,local_ny,numberOfDimensions,boundaryID
     REAL(DP) :: gaussWeight, normalProjection, pressureGauss,mu,sumDelU,DEBUG,elementNormal(3)
     REAL(DP) :: normalDifference,normalTolerance,delUGauss(3,3),dXi_dX(3,3),faceFlux
-    REAL(DP) :: velocityGauss(3),faceNormal(3),unitNormal(3),boundaryValue,faceArea,faceVelocity,boundaryFlux(10)
+    REAL(DP) :: velocityGauss(3),faceNormal(3),unitNormal(3),boundaryValue,faceArea,faceVelocity,boundaryFlux(10),boundaryArea(10)
     LOGICAL :: correctFace,ghostElement,elementExists
 
     REAL(DP), POINTER :: geometricParameters(:)
@@ -7786,7 +7787,7 @@ CONTAINS
       CALL FLAG_ERROR("Control Loop is not associated.",err,error,*999)
     END IF
 
-
+    boundaryArea=0.0_DP
     boundaryFlux=0.0_DP
     faceFlux=0.0_DP
 
@@ -7940,8 +7941,8 @@ CONTAINS
                     END DO !componentIdx
                   END DO !gaussIdx
                 END DO !faceIdx
-  !              boundaryFlux(boundaryID) = boundaryFlux(boundaryID) + faceVelocity*faceArea
                 boundaryFlux(boundaryID) = boundaryFlux(boundaryID) + faceVelocity
+                boundaryArea(boundaryID) = boundaryArea(boundaryID) + faceArea
               END IF !boundaryIdentifier
             END IF ! computational node check
           ELSE
