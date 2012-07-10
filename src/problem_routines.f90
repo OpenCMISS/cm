@@ -1689,7 +1689,7 @@ CONTAINS
                             !Post residual evaluate not used
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid."
+                              & " is not valid with the nodal solution method."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT !EQUATIONS_SET%CLASS
                         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
