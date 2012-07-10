@@ -570,20 +570,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,global_ny,local_ny,node,node_idx,version,version_idx
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,global_ny,local_ny,node,node_idx,version
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
-    !Local Variables
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-
 
     CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE",ERR,ERROR,*999)
 
@@ -779,7 +769,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculate the positions in the equations matrices of the element matrix. Old CMISS name MELGE.
+  !>Calculate the positions in the equations matrices of the nodal matrix.
   SUBROUTINE EQUATIONS_MATRICES_NODAL_MATRIX_CALCULATE(ELEMENT_MATRIX,UPDATE_MATRIX,ROW_ELEMENT_NUMBER,COLUMN_ELEMENT_NUMBER, &
     & ROWS_FIELD_VARIABLE,COLS_FIELD_VARIABLE,ERR,ERROR,*)
 
@@ -798,15 +788,6 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
-    !Local Variables
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-
 
     CALL ENTERS("EQUATIONS_MATRICES_NODAL_MATRIX_CALCULATE",ERR,ERROR,*999)
 
@@ -1128,14 +1109,13 @@ CONTAINS
 
     !Argument variables
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element vector to calculate.
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element vector to calculate.
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the element vector is to be updated, .FALSE. if not.
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROWS_FIELD_VARIABLE !<A pointer to the field variable associated with the rows
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version,version_idx
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1167,7 +1147,7 @@ CONTAINS
                   derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
                   version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
                   local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
-                    & DERIVATIVES(1)%VERSIONS(version)
+                    & DERIVATIVES(derivative)%VERSIONS(version)
                   ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
                   ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
                 ENDDO !derivative_idx
@@ -1212,7 +1192,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculate the positions in the equations rhs of the element rhs vector. Old CMISS name MELGE.
+  !>Calculate the positions in the equations rhs of the nodal rhs vector.
   SUBROUTINE EQUATIONS_MATRICES_NODAL_VECTOR_CALCULATE(ELEMENT_VECTOR,UPDATE_VECTOR,ELEMENT_NUMBER,ROWS_FIELD_VARIABLE, &
     & ERR,ERROR,*)
 
