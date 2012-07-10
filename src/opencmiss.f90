@@ -33055,6 +33055,59 @@ CONTAINS
   !================================================================================================================================
   !
 
+  SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetNumber(regionUserNumber,interfaceUserNumber,interfaceBasisNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface and interface condition to destroy the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to destroy the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceBasisNumber !<The user number of the basis to denote the interface mesh connectivity basis
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(BASIS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL BASIS_USER_NUMBER_FIND(interfaceBasisNumber,BASIS,err,error,*999)
+        IF (ASSOCIATED(BASIS)) THEN
+          CALL INTERFACE_MESH_CONNECTIVITY_SET_BASIS(INTERFACE%MESH_CONNECTIVITY,BASIS,err,error,*999)
+        ELSE
+          LOCAL_ERROR="A basis with the user number "//TRIM(NUMBER_TO_VSTRING(interfaceBasisNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+        END IF
+     ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the basis for the mesh connectivity
   SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetObj(interfaceMeshConnectivity,interfaceMappingBasis,err)
 
@@ -33147,62 +33200,6 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterfaceMeshConnectivity_DestroyObj
-
-
-  !
-  !================================================================================================================================
-  !
-
-
-  SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetNumber(regionUserNumber,interfaceUserNumber,interfaceBasisNumber,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface and interface condition to destroy the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to destroy the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceBasisNumber !<The user number of the basis to denote the interface mesh connectivity basis
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(INTERFACE)
-    NULLIFY(BASIS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
-      IF(ASSOCIATED(INTERFACE)) THEN
-        CALL BASIS_USER_NUMBER_FIND(interfaceBasisNumber,BASIS,err,error,*999)
-        IF (ASSOCIATED(BASIS)) THEN
-          CALL INTERFACE_MESH_CONNECTIVITY_SET_BASIS(INTERFACE%MESH_CONNECTIVITY,BASIS,err,error,*999)
-        ELSE
-          LOCAL_ERROR="A basis with the user number "//TRIM(NUMBER_TO_VSTRING(interfaceBasisNumber,"*",err,error))// &
-            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-        END IF
-     ELSE
-        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
-          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-      END IF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
-    RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetNumber
-
 
 !!==================================================================================================================================
 !!
