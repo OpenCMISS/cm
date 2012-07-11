@@ -1198,7 +1198,6 @@ CONTAINS
 
     !Argument variables
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element vector to calculate.
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element vector to calculate.
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the element vector is to be updated, .FALSE. if not.
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROWS_FIELD_VARIABLE !<A pointer to the field variable associated with the rows
