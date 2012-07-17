@@ -1404,6 +1404,8 @@ CONTAINS
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(SOLVER_TYPE), POINTER :: SOLVER_NAVIER_STOKES  !<A pointer to the solvers
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
+    TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: solver_matrix_idx
 
@@ -1450,6 +1452,17 @@ CONTAINS
               !Update transient boundary conditions
               CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 !              CALL NavierStokes_CalculateBoundaryFlux(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
+              IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+                !check for a linked CellML solver 
+                CELLML_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                IF(ASSOCIATED(CELLML_SOLVER)) THEN
+                  ! Calculate the CellML equations
+                  CALL SOLVER_SOLVE(CELLML_SOLVER,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+              ENDIF              
           CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
               !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
               SOLVER_NUMBER_NAVIER_STOKES=1
@@ -1626,9 +1639,10 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER, MESH_SOLVER
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,MESH_SOLVER,CELLML_SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS,MESH_SOLVER_EQUATIONS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
 
 
     CALL ENTERS("NAVIER_STOKES_PROBLEM_SETUP",ERR,ERROR,*999)
@@ -1636,9 +1650,12 @@ CONTAINS
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
     NULLIFY(MESH_SOLVER)
+    NULLIFY(CELLML_SOLVER)
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(MESH_SOLVER_EQUATIONS)
+    NULLIFY(CELLML_EQUATIONS)
     NULLIFY(SOLVERS)
+
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
         !All steady state cases of Navier-Stokes
@@ -1783,6 +1800,13 @@ CONTAINS
                   CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_FIRST_DEGREE,ERR,ERROR,*999)
                   CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME,ERR,ERROR,*999)
                   CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
+                  !setup CellML evaluator
+                  IF(PROBLEM%SUBTYPE==PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                    !Create the CellML evaluator solver
+                    CALL SOLVER_NEWTON_CELLML_EVALUATOR_CREATE(SOLVER,CELLML_SOLVER,ERR,ERROR,*999)
+                    !Link the CellML evaluator solver to the solver
+                    CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,CELLML_SOLVER,SOLVER_CELLML_EVALUATOR_TYPE,ERR,ERROR,*999)
+                  ENDIF
                 CASE(PROBLEM_SETUP_FINISH_ACTION)
                   !Get the solvers
                   CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
@@ -1824,6 +1848,39 @@ CONTAINS
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Navier-Stokes fluid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(PROBLEM_SETUP_CELLML_EQUATIONS_TYPE)
+              SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+              CASE(PROBLEM_SETUP_START_ACTION)
+                !Get the control loop
+                CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+                CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+                !Get the solver
+                CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+                !Get the CellML evaluator solver
+                CALL SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,ERR,ERROR,*999)
+                !Create the CellML equations
+                CALL CELLML_EQUATIONS_CREATE_START(CELLML_SOLVER,CELLML_EQUATIONS, &
+                  & ERR,ERROR,*999)
+              CASE(PROBLEM_SETUP_FINISH_ACTION)
+                !Get the control loop
+                CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+                CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+                !Get the solver
+                CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+                !Get the CellML evaluator solver
+                CALL SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,ERR,ERROR,*999)
+                !Get the CellML equations for the CellML evaluator solver
+                CALL SOLVER_CELLML_EQUATIONS_GET(CELLML_SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
+                !Finish the CellML equations creation
+                CALL CELLML_EQUATIONS_CREATE_FINISH(CELLML_EQUATIONS,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                  & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid for a CellML setup for a  transient Navier-Stokes equation."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -2398,10 +2455,10 @@ CONTAINS
                       TAU_SUPG=0.0_DP
                       !Calculate SUPG element metrics
                       CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                      ! !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                      ! IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-                      !   CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                      ! ENDIF
+                      !If this is a boundary element, calculate RHS vector for multidomain boundaries
+                      IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
+                        CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
+                      ENDIF
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -3165,21 +3222,21 @@ CONTAINS
             ENDIF
           ENDDO !ng gauss points
 
-          ! Face integration for RHS
-          IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
-              USER_ELEMENT_EXISTS=.FALSE.
-              GHOST_ELEMENT=.TRUE.
-              CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-              IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-                  CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-            ENDIF
-          ENDIF
+          ! ! Face integration for RHS
+          ! IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+          !   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+          !     USER_ELEMENT_EXISTS=.FALSE.
+          !     GHOST_ELEMENT=.TRUE.
+          !     CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
+          !       & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+          !     IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
+          !       !If this is a boundary element, calculate RHS vector for multidomain boundaries
+          !       IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
+          !         CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
+          !       ENDIF
+          !     ENDIF
+          !   ENDIF
+          ! ENDIF
 
           !Assemble partial matrices in final matrix
           mhs_min=mhs
@@ -3549,10 +3606,10 @@ CONTAINS
                       TAU_SUPG=0.0_DP
                       !Calculate SUPG element metrics
                       CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                      ! !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                       ! IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-                       !   CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                       ! ENDIF
+                      !If this is a boundary element, calculate RHS vector for multidomain boundaries
+                       IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
+                         CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
+                       ENDIF
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -5863,14 +5920,14 @@ CONTAINS
                             FileNameLength = LEN_TRIM(OUTPUT_FILE)
                             VFileName = OUTPUT_FILE(1:FileNameLength)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export nodal values... ",ERR,ERROR,*999)
+!                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export nodal values... ",ERR,ERROR,*999)
                             Fields=>EQUATIONS_SET%REGION%FIELDS
-                            CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+!                            CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                               & ERR,ERROR,*999)
                             IF(CURRENT_LOOP_ITERATION==0) THEN
-                              CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+!                              CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+!                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
                             ENDIF
                             NULLIFY(Fields)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
@@ -7394,6 +7451,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(FIELD_TYPE), POINTER :: dependentField
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     INTEGER(INTG) :: faceIdx, faceNumber
@@ -7439,6 +7497,7 @@ CONTAINS
     NULLIFY(geometricInterpolatedPoint)
     NULLIFY(geometricInterpolationParameters)
     NULLIFY(rhsVector)
+    NULLIFY(nonlinearMatrices)
     NULLIFY(dependentField)
     NULLIFY(geometricField)
     NULLIFY(equationsEquationsSetField)
@@ -7450,6 +7509,10 @@ CONTAINS
         equationsMatrices=>equations%EQUATIONS_MATRICES
         IF(ASSOCIATED(equationsMatrices)) THEN
           rhsVector=>equationsMatrices%RHS_VECTOR
+          nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+          IF(.NOT. ASSOCIATED(nonlinearMatrices)) THEN
+            CALL FLAG_ERROR("Nonlinear Matrices not associated.",err,error,*999)
+          ENDIF
         END IF
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
@@ -7635,8 +7698,14 @@ CONTAINS
                     faceParameterIdx=faceBasis1%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
                     elementDofIdx=elementBaseDofIdx+parameterIdx
 !                    IF(boundaryID > 1) THEN
-                    rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
-                      &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                    ! rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
+                    !   &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                    !   &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                    !   &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
+
+                    nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
+                      & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) - &
+                      &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)*unitNormal(componentIdx)* &
                       &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
                       &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
                   END DO !nodeDerivativeIdx
@@ -7689,6 +7758,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: geometricDecomposition
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: decompElement
     TYPE(BASIS_TYPE), POINTER :: dependentBasis
+    TYPE(BASIS_TYPE), POINTER :: dependentBasis2
     TYPE(BASIS_TYPE), POINTER :: geometricFaceBasis
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
     TYPE(DECOMPOSITION_FACE_TYPE), POINTER :: face
@@ -7727,6 +7797,7 @@ CONTAINS
     NULLIFY(geometricParameters)
     NULLIFY(decompElement)
     NULLIFY(dependentBasis)
+    NULLIFY(dependentBasis2)
     NULLIFY(geometricFaceBasis)
     NULLIFY(geometricVariable)
     NULLIFY(equations)
@@ -7986,6 +8057,8 @@ CONTAINS
       ! ENDDO !elementIdx                  
 
       ! Loop over elements again to allocate flux terms to boundary nodes
+
+      decomposition=>dependentVariable%FIELD%DECOMPOSITION
       DO elementIdx=elementsMapping%INTERNAL_START,elementsMapping%INTERNAL_FINISH
         CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,5,elementNormal(1),err,error,*999)
@@ -8004,10 +8077,12 @@ CONTAINS
           !Check if boundary element is a multidomain boundary element
           boundaryID=NINT(boundaryValue)
           IF(boundaryID>1) THEN
+            meshComponentNumber=2
             decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementIdx)
             elementNumber=decompElement%USER_NUMBER
-
-            DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
+            dependentBasis2=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
+              & ELEMENTS(elementIdx)%BASIS
+            DO faceIdx=1,dependentBasis2%NUMBER_OF_LOCAL_FACES
               !Get the face normal and quadrature information
               IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
                 faceNumber=decompElement%ELEMENT_FACES(faceIdx)
@@ -8016,14 +8091,16 @@ CONTAINS
               END IF
               face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
               IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
+              !CellML model is evaluated over the pressure space basis
+              meshComponentNumber=2
               faceBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
               faceQuadratureScheme=>faceBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 
-              SELECT CASE(dependentBasis%TYPE)
+              SELECT CASE(dependentBasis2%TYPE)
               CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
                 normalComponentIdx=ABS(face%XI_DIRECTION)
               CASE DEFAULT
-                LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis2%TYPE,"*",ERR,ERROR))// &
                   & " is not yet implemented for Navier-Stokes."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
@@ -8043,7 +8120,7 @@ CONTAINS
               IF(normalDifference>normalTolerance) CYCLE
 
               DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
-                elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
+                elementNodeIdx=dependentBasis2%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
                 DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
                   nodeNumber=decomposition%DOMAIN(meshComponentNumber)%PTR% &
                    & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_NODES(elementNodeIdx)

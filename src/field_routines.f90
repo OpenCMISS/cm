@@ -11185,7 +11185,7 @@ CONTAINS
                         FROM_DOMAIN=>FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%DOMAIN
                         TO_DOMAIN=>TO_FIELD_VARIABLE%COMPONENTS(TO_COMPONENT_NUMBER)%DOMAIN
                         IF(ASSOCIATED(FROM_DOMAIN)) THEN
-                          IF(ASSOCIATED(FROM_DOMAIN,TO_DOMAIN)) THEN
+!WIP                          IF(ASSOCIATED(FROM_DOMAIN,TO_DOMAIN)) THEN
                             IF(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%INTERPOLATION_TYPE== &
                               & TO_FIELD_VARIABLE%COMPONENTS(TO_COMPONENT_NUMBER)%INTERPOLATION_TYPE) THEN
                               IF(FROM_FIELD_VARIABLE%DATA_TYPE==TO_FIELD_VARIABLE%DATA_TYPE) THEN
@@ -11350,7 +11350,8 @@ CONTAINS
                                       CASE(FIELD_DP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
-                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+!WIP                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                                        DO node_idx=1,TO_DOMAIN%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
                                           DO deriv_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                             DO version_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                               & NUMBER_OF_VERSIONS
@@ -11455,10 +11456,10 @@ CONTAINS
                                 & TRIM(NUMBER_TO_VSTRING(TO_FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))//"."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("The from field variable component domain is not associated with the "// &
-                              & "to field variable component domain.",ERR,ERROR,*999)
-                          ENDIF
+                          ! ELSE
+                          !   CALL FLAG_ERROR("The from field variable component domain is not associated with the "// &
+                          !     & "to field variable component domain.",ERR,ERROR,*999)
+                          ! ENDIF
                         ELSE
                           CALL FLAG_ERROR("The from variable component domain is not associated.",ERR,ERROR,*999)
                         ENDIF
