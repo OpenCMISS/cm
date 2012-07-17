@@ -1683,7 +1683,7 @@ CONTAINS
               ELEMENT_SYSTEM_ELAPSED=0.0_SP
             ENDIF
             NUMBER_OF_TIMES=0
-            !Loop over the internal nodes
+            !Loop over nodes
             ne=0
             DO node_idx=1,EQUATIONS_SET%geometry%geometric_field%variables(1)%components(1)%domain%topology%nodes% &
                        & total_number_of_nodes
@@ -1692,7 +1692,6 @@ CONTAINS
               IF(version_idx>1) THEN
               ne=ne+1
               NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-             ! CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
@@ -1722,33 +1721,6 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)              
-            ENDIF
-            !Loop over the boundary and ghost elements
-            DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
-              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
-              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ENDDO !element_idx
-            !Output timing information if required
-            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
-              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
-              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
-              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
-              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
-              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
-              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
-                & ERR,ERROR,*999)
-              IF(NUMBER_OF_TIMES>0) THEN
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
-                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
-                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
-              ENDIF
             ENDIF
             !Finalise the element matrices
             CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)

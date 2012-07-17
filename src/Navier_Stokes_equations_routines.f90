@@ -591,7 +591,7 @@ CONTAINS
                 !start creation of a new field
                 CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 !label the field
-                CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
+                CALL FIELD_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
                 !define new created field to be dependent
                 CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
@@ -730,7 +730,7 @@ CONTAINS
               !start creation of a new field
               CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               !label the field
-              CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
+              CALL FIELD_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
               !define new created field to be dependent
               CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                 & FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
@@ -965,7 +965,7 @@ CONTAINS
                 !start creation of a new field
                 CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 !label the field
-                CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,"Independent Field",ERR,ERROR, & 
+                CALL FIELD_LABEL_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,"Independent Field",ERR,ERROR, & 
                   & *999)
                 !define new created field to be independent
                 CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
@@ -1333,7 +1333,7 @@ CONTAINS
                     & EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
                   CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                   !label the field
-                  CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,"Materials Field",ERR,ERROR,*999)
+                  CALL FIELD_LABEL_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,"Materials Field",ERR,ERROR,*999)
                   CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_INDEPENDENT_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, & 
@@ -1422,7 +1422,7 @@ CONTAINS
                     & EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
                   CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                   !label the field
-                  CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,"Materials Field",ERR,ERROR,*999)
+                  CALL FIELD_LABEL_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,"Materials Field",ERR,ERROR,*999)
                   CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_INDEPENDENT_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, & 
@@ -2636,7 +2636,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2,nhs_max,mhs_max,nhs_min,mhs_min
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(9)
-    INTEGER(INTG) :: i,en,bif_idx,dof_idx,nv1,nv3,node1,node3,mn
+    INTEGER(INTG) :: i,en,bif_idx,dof_idx,nv1,nv3,node1,node3,mn,vn
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS,TOTAL_NUMBER_OF_NODES,NUMBER_OF_VERSIONS,TOTAL_NUMBER_OF_DOFS
     REAL(DP) :: TAU_SUPG, W_SUPG,U_SUPG(3)
     INTEGER(INTG) :: NODES_PER_ELEMENT,component_idx,nl,node_idx,element_node_idx,NUM_COMPONENTS,NODES_PER_COMPONENT
@@ -3386,8 +3386,10 @@ CONTAINS
               nv3=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
               !Parent Vessel (if the last node has versions)
               IF(nv3>1)THEN
+                !Version Number of the First Node
+                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,3)
                 !DOF Number of the First Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(1)
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(vn)
                 !Current Q and A Values at the Last Node
                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & BIF_VALUES,ERR,ERROR,*999)
@@ -3413,8 +3415,10 @@ CONTAINS
 
               !Branch Vessel (if the first node has versions)
               ELSEIF(nv1>1) THEN
+                !Version Number of the First Node
+                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,1)
                 !DOF Number of the Last Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(3)
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(vn)
                 !Current Q and A Values at the First Node             
                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & BIF_VALUES,ERR,ERROR,*999)
@@ -3655,7 +3659,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
-    INTEGER(INTG) :: x,en,i,bif_idx,dof_idx,nv1,nv3,node1,node3,mn
+    INTEGER(INTG) :: x,en,i,bif_idx,dof_idx,nv1,nv3,node1,node3,mn,vn
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS,TOTAL_NUMBER_OF_NODES,NUMBER_OF_VERSIONS,TOTAL_NUMBER_OF_DOFS
     INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM(9)
@@ -4118,8 +4122,10 @@ CONTAINS
               nv3=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
               !Parent Vessel (if the last node has versions)
               IF(nv3>1)THEN
+                !Version Number of the First Node
+                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,3)
                 !DOF Number of the First Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(1)
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(vn)
                 !Current Values of Q and A at the Last Node
                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & BIF_VALUES,ERR,ERROR,*999)
@@ -4138,8 +4144,10 @@ CONTAINS
 
               !Branch Vessel (if the first node has versions)
               ELSEIF(nv1>1) THEN
+                !Version Number of the First Node
+                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,1)
                 !DOF Number of the Last Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(3)
+                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(vn)
                 !Current Values of Q and A at the First Node
                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & BIF_VALUES,ERR,ERROR,*999)
