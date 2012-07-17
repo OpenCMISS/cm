@@ -1421,26 +1421,10 @@ CONTAINS
       IF(SOLVER%SOLVER_FINISHED) THEN
         CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
-        !Mark linked solvers as finished
+        !Set the finished flag. The final solver finish will be done once the solver equations have been finished.
         DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
           SOLVER%LINKED_SOLVERS(solver_idx)%PTR%SOLVER_FINISHED=.TRUE.
         ENDDO !solver_idx
-        !Call the specific solver finishing routine for this solver type
-        SELECT CASE(SOLVER%SOLVE_TYPE)
-        CASE(SOLVER_LINEAR_TYPE)
-          CALL SOLVER_LINEAR_CREATE_FINISH(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-        CASE(SOLVER_NONLINEAR_TYPE)
-          CALL SOLVER_NONLINEAR_CREATE_FINISH(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-        CASE(SOLVER_DYNAMIC_TYPE)
-          CALL SOLVER_DYNAMIC_CREATE_FINISH(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
-        CASE(SOLVER_DAE_TYPE)
-          CALL SOLVER_DAE_CREATE_FINISH(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
-        CASE(SOLVER_EIGENPROBLEM_TYPE)
-          CALL SOLVER_EIGENPROBLEM_CREATE_FINISH(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
-        CASE DEFAULT
-          CALL FLAG_ERROR("The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))// &
-            & " is invalid.",ERR,ERROR,*999)
-        END SELECT
         SOLVER%SOLVER_FINISHED=.TRUE.
       ENDIF
     ELSE
@@ -5976,7 +5960,7 @@ CONTAINS
     CALL ENTERS("SOLVER_EQUATIONS_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      IF(.NOT.SOLVER%SOLVER_FINISHED) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
         IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           CALL FLAG_ERROR("Can not start solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
         ELSE
@@ -6006,7 +5990,7 @@ CONTAINS
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -6395,6 +6379,7 @@ CONTAINS
     !Local Variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -6410,8 +6395,22 @@ CONTAINS
             ELSE
               !Finish of the solver mapping
               CALL SOLVER_MAPPING_CREATE_FINISH(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
-              !Now finish off the solver
-              CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
+              !Now finish off with the solver specific actions
+              SELECT CASE(SOLVER%SOLVE_TYPE)
+              CASE(SOLVER_LINEAR_TYPE)
+                CALL SOLVER_LINEAR_CREATE_FINISH(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_NONLINEAR_TYPE)
+                CALL SOLVER_NONLINEAR_CREATE_FINISH(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DYNAMIC_TYPE)
+                CALL SOLVER_DYNAMIC_CREATE_FINISH(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_TYPE)
+                CALL SOLVER_DAE_CREATE_FINISH(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_EIGENPROBLEM_TYPE)
+                CALL SOLVER_EIGENPROBLEM_CREATE_FINISH(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             ENDIF
           ENDIF
         ELSE
@@ -15204,15 +15203,19 @@ CONTAINS
     CALL ENTERS("SOLVER_SOLVER_EQUATIONS_GET",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-        CALL FLAG_ERROR("Solver equations is already associated.",ERR,ERROR,*998)
+      IF(SOLVER%SOLVER_FINISHED) THEN 
+        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+          CALL FLAG_ERROR("Solver equations is already associated.",ERR,ERROR,*998)
+        ELSE
+          SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+          IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+        ENDIF
       ELSE
-        SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-        IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-      END IF
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
-    END IF
+    ENDIF
        
     CALL EXITS("SOLVER_SOLVER_EQUATIONS_GET")
     RETURN
@@ -16333,7 +16336,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solver_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
    
     CALL ENTERS("SOLVERS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -16345,6 +16350,14 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP)) THEN          
           !Finish the solver creation
           IF(ALLOCATED(SOLVERS%SOLVERS)) THEN
+            DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
+              SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
+              IF(ASSOCIATED(SOLVER)) THEN
+                CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDDO !solver_idx            
             SOLVERS%SOLVERS_FINISHED=.TRUE.
           ELSE
             CALL FLAG_ERROR("Solvers solvers is not allocated.",ERR,ERROR,*999)
