@@ -318,7 +318,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDecompositionType,CMISSDecomposition_Finalise,CMISSDecomposition_Initialise
 
-  PUBLIC CMISSDecomposition_CalculateFacesSet
+  PUBLIC CMISSDecomposition_CalculateFacesSet,CMISSDecomposition_CalculateLinesSet
 
   PUBLIC CMISSEquationsType,CMISSEquations_Finalise,CMISSEquations_Initialise
 
@@ -795,9 +795,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED = BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FREE_WALL = BOUNDARY_CONDITION_FREE_WALL
 
-  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_POINT = BOUNDARY_CONDITION_NEUMANN_POINT
-  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED = BOUNDARY_CONDITION_NEUMANN_INTEGRATED
-  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_FREE = BOUNDARY_CONDITION_NEUMANN_FREE
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_POINT = BOUNDARY_CONDITION_NEUMANN_POINT !<Specify the normal derivative at a node, which is then integrated to find the nodal load term
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED = BOUNDARY_CONDITION_NEUMANN_INTEGRATED !<Set the integrated right hand side load value directly
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_DIRICHLET = BOUNDARY_CONDITION_DIRICHLET
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_CAUCHY = BOUNDARY_CONDITION_CAUCHY
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_ROBIN = BOUNDARY_CONDITION_ROBIN
@@ -808,6 +807,14 @@ MODULE OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL = BOUNDARY_CONDITION_IMPERMEABLE_WALL
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY = BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof
+  !>@}
+  !> \addtogroup OPENCMISS_BoundaryConditionSparsityTypes OPENCMISS::BoundaryConditions::SparsityTypes
+  !> \brief Storage type for matrices used by boundary conditions.
+  !> \see OPENCMISS::BoundaryConditions,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_SPARSE_MATRICES = BOUNDARY_CONDITION_SPARSE_MATRICES
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FULL_MATRICES = BOUNDARY_CONDITION_FULL_MATRICES
   !>@}
   !>@}
 
@@ -861,14 +868,24 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBoundaryConditions_SetNodeObj
   END INTERFACE !CMISSBoundaryConditions_SetNode
 
+  !>Sets the matrix sparsity type for Neumann integration matrices, used when integrating Neumann point values.
+  INTERFACE CMISSBoundaryConditions_NeumannSparsityTypeSet
+    MODULE PROCEDURE CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0
+    MODULE PROCEDURE CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1
+    MODULE PROCEDURE CMISSBoundaryConditions_NeumannSparsityTypeSetObj
+  END INTERFACE !CMISSBoundaryConditions_NeumannSparsityTypeSet
+
   PUBLIC CMISS_BOUNDARY_CONDITION_FREE,CMISS_BOUNDARY_CONDITION_FIXED, &
     & CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
     & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
-    & CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL
+    & CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL, &
+    & CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
 
   PUBLIC CMISS_BOUNDARY_CONDITION_NEUMANN_POINT,CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED,CMISS_BOUNDARY_CONDITION_DIRICHLET
   PUBLIC CMISS_BOUNDARY_CONDITION_CAUCHY,CMISS_BOUNDARY_CONDITION_ROBIN,CMISS_BOUNDARY_CONDITION_FIXED_INCREMENTED
-  PUBLIC CMISS_BOUNDARY_CONDITION_PRESSURE,CMISS_BOUNDARY_CONDITION_PRESSURE_INCREMENTED,CMISS_BOUNDARY_CONDITION_NEUMANN_FREE
+  PUBLIC CMISS_BOUNDARY_CONDITION_PRESSURE,CMISS_BOUNDARY_CONDITION_PRESSURE_INCREMENTED
+
+  PUBLIC CMISS_BOUNDARY_CONDITION_SPARSE_MATRICES,CMISS_BOUNDARY_CONDITION_FULL_MATRICES
 
   PUBLIC CMISSBoundaryConditions_Destroy
 
@@ -877,6 +894,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditions_AddElement,CMISSBoundaryConditions_SetElement
 
   PUBLIC CMISSBoundaryConditions_AddNode,CMISSBoundaryConditions_SetNode
+
+  PUBLIC CMISSBoundaryConditions_NeumannSparsityTypeSet
 
 !!==================================================================================================================================
 !!
@@ -2097,6 +2116,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = & 
+    & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = &
     & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2306,17 +2327,6 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_NEUMANN = TEST_CASE_NEUMANN !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_NEUMANN_WITHOUT_SOURCE = TEST_CASE_NEUMANN_WITHOUT_SOURCE !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_DIRICHLET = TEST_CASE_DIRICHLET !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_1 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_1 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_2 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_2 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_3 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_3 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_4 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_4 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_5 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_5 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_6 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_6 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_7 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_7 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_NEUMANN_CUBIC = TEST_CASE_NEUMANN_CUBIC !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
   !> \brief The analytic function types for a diffusion equation.
@@ -2366,6 +2376,10 @@ MODULE OPENCMISS
   !> \brief The analytic function types for a Navier-Stokes equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE !< fully developed 2D channel flow (parabolic) \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN !< 2D dynamic nonlinear Taylor-Green vortex decay \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
@@ -2502,7 +2516,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE, &
@@ -2595,12 +2609,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3
   PUBLIC CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2, &
     & CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3
-  PUBLIC CMISS_TEST_CASE_NEUMANN,CMISS_TEST_CASE_DIRICHLET,CMISS_TEST_CASE_NEUMANN_WITHOUT_SOURCE
-  PUBLIC CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_1,CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_2, &
-    & CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_3
-  PUBLIC CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_4,CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_6, &
-    & CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_7
-  PUBLIC CMISS_TEST_CASE_NEUMANN_CUBIC,CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1, &
+  PUBLIC CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1, &
     & CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2
 
   PUBLIC CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2, &
@@ -2610,6 +2619,8 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3
   PUBLIC CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4,CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5
 
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE, &
+    & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2, &
     & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5
@@ -2999,6 +3010,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_PRESSURE_VALUES_SET_TYPE = FIELD_PRESSURE_VALUES_SET_TYPE !<The parameter set corresponding to the surface pressure values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_PREVIOUS_PRESSURE_SET_TYPE = FIELD_PREVIOUS_PRESSURE_SET_TYPE !<The parameter set corresponding to the previous surface pressure values (at time T). \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE = FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE !<The parameter set corresponding to the impermeable flag values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INTEGRATED_NEUMANN_SET_TYPE = FIELD_INTEGRATED_NEUMANN_SET_TYPE !<Stores integrated Neumann values calculated from Neumann point values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldScalingTypes OPENCMISS::Field::ScalingTypes
   !> \brief Field scaling type parameters
@@ -3483,7 +3495,7 @@ MODULE OPENCMISS
     & CMISS_FIELD_PREVIOUS_ACCELERATION_SET_TYPE, &
     & CMISS_FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, CMISS_FIELD_PRESSURE_VALUES_SET_TYPE, &
     & CMISS_FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
-    & CMISS_FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE
+    & CMISS_FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,CMISS_FIELD_INTEGRATED_NEUMANN_SET_TYPE
 
   PUBLIC CMISS_FIELD_NO_SCALING,CMISS_FIELD_UNIT_SCALING,CMISS_FIELD_ARC_LENGTH_SCALING,CMISS_FIELD_ARITHMETIC_MEAN_SCALING, &
     & CMISS_FIELD_GEOMETRIC_MEAN_SCALING,CMISS_FIELD_HARMONIC_MEAN_SCALING
@@ -4601,6 +4613,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE = PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE = PROBLEM_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4757,7 +4770,7 @@ MODULE OPENCMISS
     & CMISS_PROBLEM_OPTIMISED_STOKES_SUBTYPE,CMISS_PROBLEM_ALE_STOKES_SUBTYPE,CMISS_PROBLEM_PGM_STOKES_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE
@@ -11350,6 +11363,140 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSBoundaryConditions_SetNodeObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the Neumann integration matrix sparsity for boundary conditions identified by a control loop identifier.
+  SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0( &
+      & problemUserNumber,controlLoopIdentifier,solverIndex,sparsityType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem containing the solver equations.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier of the solver equations containing the boundary conditions.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the solver equations boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: sparsityType !<The sparsity type for the Neumann integration matrices. \see OPENCMISS_BoundaryConditionSparsityTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solverEquations)
+    NULLIFY(boundaryConditions)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_EQUATIONS_GET(problem,controlLoopIdentifier,solverIndex,solverEquations,err,error,*999)
+      IF(ASSOCIATED(solverEquations)) THEN
+        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(solverEquations,boundaryConditions,err,error,*999)
+        IF(ASSOCIATED(boundaryConditions)) THEN
+          CALL BoundaryConditions_NeumannSparsityTypeSet(boundaryConditions,sparsityType,err,error,*999)
+        ELSE
+          localError="Solver equations boundary conditions is not associated."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="Solver equations with the given solver index and control loop identifier do not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0",err,error)
+    CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the Neumann integration matrix sparsity for boundary conditions identified by a control loop identifier.
+  SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1( &
+      & problemUserNumber,controlLoopIdentifiers,solverIndex,sparsityType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem containing the solver equations to destroy the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the solver equations for.
+    INTEGER(INTG), INTENT(IN) :: sparsityType !<The sparsity type for the Neumann integration matrices. \see OPENCMISS_BoundaryConditionSparsityTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solverEquations)
+    NULLIFY(boundaryConditions)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_EQUATIONS_GET(problem,controlLoopIdentifiers,solverIndex,solverEquations,err,error,*999)
+      IF(ASSOCIATED(solverEquations)) THEN
+        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(solverEquations,boundaryConditions,err,error,*999)
+        IF(ASSOCIATED(boundaryConditions)) THEN
+          CALL BoundaryConditions_NeumannSparsityTypeSet(boundaryConditions,sparsityType,err,error,*999)
+        ELSE
+          localError="Solver equations boundary conditions is not associated."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="Solver equations with the given solver index and control loop identifier do not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1",err,error)
+    CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the Neumann integration matrix sparsity type for the boundary conditions
+  SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetObj(boundaryConditions,sparsityType,err)
+
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: boundaryConditions !<The boundary conditions
+    INTEGER(INTG), INTENT(IN) :: sparsityType !<The sparsity type for the Neumann integration matrices. \see OPENCMISS_BoundaryConditionSparsityTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj",err,error,*999)
+
+    CALL BoundaryConditions_NeumannSparsityTypeSet(boundaryConditions%BOUNDARY_CONDITIONS,sparsityType,err,error,*999)
+
+    CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj",err,error)
+    CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetObj
 
 !!==================================================================================================================================
 !!

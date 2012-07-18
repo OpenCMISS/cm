@@ -378,11 +378,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGF_FLGS += -O0 -ffpe-trap=invalid,zero -fbacktrace
     ifdef COMPILER_VERSION
-      ifeq ($(COMPILER_VERSION),4.5)
-        DBGF_FLGS += -fcheck=all
-      endif
       ifeq ($(COMPILER_VERSION),4.4)
         DBGF_FLGS += -fbounds-check
+      else
+				# For any more recent versions
+        DBGF_FLGS += -fcheck=all
       endif
     endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
@@ -941,6 +941,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     else
       ifeq ($(MPI),openmpi)
         MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
         MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil
         MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
       else
