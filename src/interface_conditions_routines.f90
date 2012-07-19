@@ -2296,7 +2296,7 @@ CONTAINS
                           & LINES%LINES(decompositionLineNumber)
                         DO localLineNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(connectedLine)
                           localElementNode=COUPLED_MESH_BASIS%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
-                          DO derivativeIdx=1,COUPLED_MESH_DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
+                          DO derivativeIdx=1,COUPLED_MESH_DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(localLineNodeIdx)
                             derivative=COUPLED_MESH_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
                             derivative=COUPLED_MESH_DOMAIN_LINE%DERIVATIVES_IN_LINE(1,derivativeIdx,localLineNodeIdx)
                             ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
@@ -2307,7 +2307,7 @@ CONTAINS
                             ENDIF
                             mhs=ms+COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
                             DO interfaceNode=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_NODES
-                              DO interfaceDerivative=1,INTERFACE_DEPENDENT_BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                              DO interfaceDerivative=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_DERIVATIVES(interfaceNode)
                                 !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
                                 ns=INTERFACE_DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
                                 PGNSI=INTERFACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
@@ -2323,7 +2323,7 @@ CONTAINS
                         SELECT CASE(COUPLED_MESH_BASIS%NUMBER_OF_XI)
                         CASE(2) !Coupled Mesh has 2 xi directions
                           DO localElementNode=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES
-                            DO derivative=1,COUPLED_MESH_DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
+                            DO derivative=1,COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localElementNode)
                               ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
                               IF (mh==4) THEN
                                 PGMSI=1.0_DP
@@ -2333,7 +2333,7 @@ CONTAINS
                               ENDIF
                               mhs=ms+COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
                               DO interfaceNode=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_NODES
-                                DO interfaceDerivative=1,INTERFACE_DEPENDENT_BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                                DO interfaceDerivative=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_DERIVATIVES(interfaceNode)
                                   !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
                                   ns=INTERFACE_DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
                                   PGNSI=INTERFACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
@@ -2353,7 +2353,7 @@ CONTAINS
                             & FACES%FACES(decompositionFaceNumber)
                           DO localFaceNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(connectedFace)
                             localElementNode=COUPLED_MESH_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(localFaceNodeIdx,connectedFace)
-                            DO derivativeIdx=1,COUPLED_MESH_DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                            DO derivativeIdx=1,COUPLED_MESH_DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(localFaceNodeIdx)
                               derivative=COUPLED_MESH_BASIS% &
                                 & DERIVATIVE_NUMBERS_IN_LOCAL_FACE(derivativeIdx,localFaceNodeIdx,connectedFace)
                               ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
@@ -2365,7 +2365,7 @@ CONTAINS
                               ENDIF
                               mhs=ms+COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
                               DO interfaceNode=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_NODES
-                                DO interfaceDerivative=1,INTERFACE_DEPENDENT_BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                                DO interfaceDerivative=1,INTERFACE_DEPENDENT_BASIS%NUMBER_OF_DERIVATIVES(interfaceNode)
                                   !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
                                   ns=INTERFACE_DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
                                   PGNSI=INTERFACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
@@ -2411,7 +2411,7 @@ CONTAINS
                       IF (PGMSI<1.0_DP .AND. PGMSI >ZERO_TOLERANCE)THEN
                         PGMSI=PGMSI*2.0_DP
                       ENDIF
-                      DO derivativeIdx=1,COUPLED_MESH_DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
+                      DO derivativeIdx=1,COUPLED_MESH_DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(localLineNodeIdx)
                         derivative=COUPLED_MESH_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
                         derivative=COUPLED_MESH_DOMAIN_LINE%DERIVATIVES_IN_LINE(1,derivativeIdx,localLineNodeIdx)
                         ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
@@ -2429,7 +2429,7 @@ CONTAINS
                     SELECT CASE(COUPLED_MESH_BASIS%NUMBER_OF_XI)
                     CASE(2) !Coupled Mesh has 2 xi directions
                       DO localElementNode=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES
-                        DO derivative=1,COUPLED_MESH_DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES!COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localNode)
+                        DO derivative=1,COUPLED_MESH_BASIS%NUMBER_OF_DERIVATIVES(localElementNode)
                           ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
                           mhs=ms+COUPLED_MESH_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*(mh-1)
                           !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
@@ -2449,7 +2449,7 @@ CONTAINS
                         & FACES%FACES(decompositionFaceNumber)
                       DO localFaceNodeIdx=1,COUPLED_MESH_BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(connectedFace)
                         localElementNode=COUPLED_MESH_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(localFaceNodeIdx,connectedFace)
-                        DO derivativeIdx=1,COUPLED_MESH_DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
+                        DO derivativeIdx=1,COUPLED_MESH_DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(localFaceNodeIdx)
                           derivative=COUPLED_MESH_BASIS% &
                             & DERIVATIVE_NUMBERS_IN_LOCAL_FACE(derivativeIdx,localFaceNodeIdx,connectedFace)
                           ms=COUPLED_MESH_BASIS%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
