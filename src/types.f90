@@ -2031,10 +2031,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   
   !>Contains information on the mesh connectivity for a given coupled mesh element
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<The number of the coupled meshes element
-    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) \TODO FIX !<The xi_idx'th xi connectivity of a given coupled mesh element to an interface mesh's xi_idx'th xi, interface_mesh_component_idx'th' and element_idx'th interface element
-    INTEGER(INTG) :: CONNECTED_FACE !<The coupled mesh element face number to be connected to the interface mesh
-    INTEGER(INTG) :: CONNECTED_LINE !<The coupled mesh element line number to be connected to the interface mesh
+    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !< The coupled mesh number to define the connectivity for.
+    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) The xi_idx'th xi of a coupled mesh element to be copuled to an interface mesh's interface_mesh_component_idx'th interface_mesh_components's element_parameter_idx'th element_parameter. !\todo the XI array needs to be restructured to efficiently utilize memory when coupling bodies with 2xi directions to bodies with 3xi directions using an interface.
+    INTEGER(INTG) :: CONNECTED_FACE !<The coupled mesh element face number to be connected to the interface mesh.
+    INTEGER(INTG) :: CONNECTED_LINE !<The coupled mesh element line number to be connected to the interface mesh.
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 
   !>Contains information on the coupling between meshes in an interface

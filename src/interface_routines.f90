@@ -883,6 +883,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: coupled_mesh_number_of_xi
     TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
     
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET",ERR,ERROR,*999)
@@ -904,19 +905,28 @@ CONTAINS
                     ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY% &
                       & ELEMENT_CONNECTIVITY(INTERFACE_MESH_ELEMENT_NUMBER,COUPLED_MESH_INDEX)
                     IF(ELEMENT_CONNECTIVITY%COUPLED_MESH_ELEMENT_NUMBER==COUPLED_MESH_ELEMENT_NUMBER)THEN
-                      ELEMENT_CONNECTIVITY%XI(:,INTERFACE_MESH_COMPONENT_NUMBER,INTERFACE_MESH_LOCAL_NODE_NUMBER)=XI(:)
+                      coupled_mesh_number_of_xi = INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(COUPLED_MESH_INDEX)%PTR% & 
+                        & TOPOLOGY(1)%PTR%ELEMENTS%ELEMENTS(COUPLED_MESH_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI
+                      IF(SIZE(XI)==coupled_mesh_number_of_xi) THEN
+                        !\todo the ELEMENT_CONNECTIVITY%XI array needs to be restructured to efficiently utilize memory when coupling bodies with 2xi directions to bodies with 3xi directions using an interface.
+                        ELEMENT_CONNECTIVITY%XI(1:coupled_mesh_number_of_xi,INTERFACE_MESH_COMPONENT_NUMBER, &
+                          & INTERFACE_MESH_LOCAL_NODE_NUMBER)=XI(1:coupled_mesh_number_of_xi)
+                      ELSE
+                        CALL FLAG_ERROR("The size of the xi array provided does not match the coupled mesh element's' number"// &
+                          & " of xi.",ERR,ERROR,*999)
+                      ENDIF
                     ELSE
                       CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",ERR,ERROR,*999)
-                    END IF
+                    ENDIF
                   ELSE
                     CALL FLAG_ERROR("Interface local node number is out of range.",ERR,ERROR,*999)
-                  END IF
+                  ENDIF
                 ELSE
                   CALL FLAG_ERROR("Interface component number is out of range.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Coupled mesh element number out of range.",ERR,ERROR,*999)
-              END IF
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Interface coupled mesh index number out of range.",ERR,ERROR,*999)
             ENDIF
