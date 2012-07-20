@@ -88,7 +88,6 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NAVIER_STOKES_PROBLEM_SETUP
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
-  PUBLIC NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP
   PUBLIC NavierStokes_SUPGCalculate
 
   INTEGER(INTG) :: SOLVER_NUMBER_NAVIER_STOKES
@@ -3326,7 +3325,7 @@ CONTAINS
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !Continuity Equation
                           IF(mh==2 .AND. nh==1) THEN
-                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS*(1/St)
+                            SUM=(DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS)/St
                             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
                               & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
@@ -3340,9 +3339,9 @@ CONTAINS
                   IF(UPDATE_NONLINEAR_RESIDUAL) THEN
                     !Momentum Equation
                     IF(mh==1) THEN
-                      SUM=((K*2.0*Q_VALUE(1)*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
-                        & (-((Q_VALUE(1)/A_VALUE)**2.0)*K*A_DERIV*DXI_DX(1,1))+ &
-                        & ((A_VALUE**0.5)*A_DERIV*DXI_DX(1,1))*Fr+ &
+                      SUM=((K*(2.0_DP)*Q_VALUE(1)*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
+                        & (-((Q_VALUE(1)/A_VALUE)**2)*K*A_DERIV*DXI_DX(1,1))+ &
+                        & ((A_VALUE**(0.5_DP))*A_DERIV*DXI_DX(1,1))*Fr+ &
                         & (Q_VALUE(1)/A_VALUE)*Re)*PHIMS
                       NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
                     ENDIF
@@ -3395,13 +3394,13 @@ CONTAINS
                         & VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx,NO_PART_DERIV)
 
                 !Momentum Equation
-                SUM=((K*((Q_PRE(1)**2.0)/A_PRE(1))+ & 
-                   & ((2/3)*(A_PRE(1)**1.5))*Fr) &
-                   & -(K*((Q_BIF(1)**2.0)/A_BIF(1))+ & 
-                   & ((2/3)*(A_BIF(1)**1.5))*Fr))
+                SUM=((K*((Q_PRE(1)**2)/A_PRE(1))+ & 
+                   & (((2.0_DP/3.0_DP)*(A_PRE(1)**(1.5_DP)))*Fr)) &
+                   & -(K*((Q_BIF(1)**2)/A_BIF(1))+ & 
+                   & (((2.0_DP/3.0_DP)*(A_BIF(1)**(1.5_DP)))*Fr)))
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mn)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mn)+SUM
                 !Continuity Equation
-                SUM=(Q_PRE(1)-Q_BIF(1))*(1/St)
+                SUM=(Q_PRE(1)-Q_BIF(1))/St
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2*mn)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2*mn)+SUM
 
               !Branch Vessel (if the first node has versions)
@@ -3424,13 +3423,13 @@ CONTAINS
                         & VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx,NO_PART_DERIV)
 
                 !Momentum Equation
-                SUM=((K*((Q_PRE(1)**2.0)/A_PRE(1))+ & 
-                   & ((2/3)*(A_PRE(1)**1.5))*Fr) &
-                   & -(K*((Q_BIF(1)**2.0)/A_BIF(1))+ & 
-                   & ((2/3)*(A_BIF(1)**1.5))*Fr))
+                SUM=((K*((Q_PRE(1)**2)/A_PRE(1))+ & 
+                   & ((2.0_DP/3.0_DP)*(A_PRE(1)**(1.5_DP)))*Fr) &
+                   & -(K*((Q_BIF(1)**2)/A_BIF(1))+ & 
+                   & ((2.0_DP/3.0_DP)*(A_BIF(1)**(1.5_DP)))*Fr))
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)+SUM
                 !Continuity Equation
-                SUM=(Q_PRE(1)-Q_BIF(1))*(1/St)
+                SUM=(Q_PRE(1)-Q_BIF(1))/St
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1+mn)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1+mn)+SUM
    
               ENDIF
@@ -3603,18 +3602,18 @@ CONTAINS
           IF(UPDATE_NONLINEAR_RESIDUAL) THEN
             !Characteristics Equations
             NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)=(Q_BIF(1)/A_BIF(1)) &
-              & +4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_BIF(1)**0.25)- W(1)
+              & +4.0_DP*((Fr*(Beta(1)/Bs))**(0.5_DP))*(A_BIF(1)**(0.25_DP))- W(1)
             NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)=(Q_BIF(2)/A_BIF(2)) &
-              & -4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_BIF(2)**0.25)- W(2)
+              & -4.0_DP*((Fr*(Beta(2)/Bs))**(0.5_DP))*(A_BIF(2)**(0.25_DP))- W(2)
             NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)=(Q_BIF(3)/A_BIF(3)) &
-              & -4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_BIF(3)**0.25)- W(3)
+              & -4.0_DP*((Fr*(Beta(3)/Bs))**(0.5_DP))*(A_BIF(3)**(0.25_DP))- W(3)
             !Continuity of Total Pressure
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(5)=((A_BIF(1)**0.5)-(Beta(2)/Beta(1))*(A_BIF(2)**0.5)) &
-              & -(((A0_PARAM(1)/As)**0.5)-(Beta(2)/Beta(1))*((A0_PARAM(2)/As)**0.5))+ &
-              & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(2)/A_BIF(2))**2.0)))
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(6)=((A_BIF(1)**0.5)-(Beta(3)/Beta(1))*(A_BIF(3)**0.5)) &
-              & -(((A0_PARAM(1)/As)**0.5)-(Beta(3)/Beta(1))*((A0_PARAM(3)/As)**0.5))+ &
-              & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(3)/A_BIF(3))**2.0)))
+            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(5)=((A_BIF(1)**(0.5_DP))-(Beta(2)/Beta(1))*(A_BIF(2)**(0.5_DP))) &
+              & -(((A0_PARAM(1)/As)**(0.5_DP))-(Beta(2)/Beta(1))*((A0_PARAM(2)/As)**(0.5_DP)))+ &
+              & (Bs/(Fr*Beta(1))*(0.25_DP)*(((Q_BIF(1)/A_BIF(1))**2)-((Q_BIF(2)/A_BIF(2))**2)))
+            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(6)=((A_BIF(1)**(0.5_DP))-(Beta(3)/Beta(1))*(A_BIF(3)**(0.5_DP))) &
+              & -(((A0_PARAM(1)/As)**(0.5_DP))-(Beta(3)/Beta(1))*((A0_PARAM(3)/As)**(0.5_DP)))+ &
+              & (Bs/(Fr*Beta(1))*(0.25_DP)*(((Q_BIF(1)/A_BIF(1))**2)-((Q_BIF(3)/A_BIF(3))**2)))
           ENDIF
 
         CASE DEFAULT
@@ -4069,9 +4068,9 @@ CONTAINS
                           
                           !Momentum Equation (dF/dQ)
                           IF(mh==1 .AND. nh==1) THEN
-                            SUM=((K*2.0*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
-                              & (K*2.0*Q_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE)+ &
-                              & (K*(-2.0)*Q_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2.0))+ &
+                            SUM=((K*2.0_DP*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/A_VALUE)+ &
+                              & (K*2.0_DP*Q_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE)+ &
+                              & (K*(-2.0_DP)*Q_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2))+ &
                               & (PHINS/A_VALUE)*Re)*PHIMS
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
                                & +SUM*JGW
@@ -4079,10 +4078,11 @@ CONTAINS
                           
                           !Momentum Equation (dF/dA)
                           IF(mh==1 .AND. nh==2) THEN
-                            SUM=((K*(-2.0)*Q_VALUE(1)*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2))+ &
-                              & (K*2.0*PHINS*(Q_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3))+ &
+                            SUM=((K*(-2.0_DP)*Q_VALUE(1)*PHINS*Q_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2))+ &
+                              & (K*2.0_DP*PHINS*(Q_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3))+ &
                               & (-K*((Q_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1))+ &
-                              & ((0.5*PHINS*(A_VALUE**(-0.5))*A_DERIV*DXI_DX(1,1))+((A_VALUE**0.5)*DPHINS_DXI(1)*DXI_DX(1,1)))*Fr+ &
+                              & (((0.5_DP)*PHINS*(A_VALUE**(-(1/2)))*A_DERIV*DXI_DX(1,1))+ &
+                              & ((A_VALUE**(1/2))*DPHINS_DXI(1)*DXI_DX(1,1)))*Fr+ &
                               & ((-PHINS*Q_VALUE(1)/(A_VALUE**2))*Re))*PHIMS
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
                                & +SUM*JGW
@@ -4126,11 +4126,12 @@ CONTAINS
 
                 !Momentum Equation (dU/dQ - dU/dA)
                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,mn)+ &
-                  & (-K*2.0*Q_BIF(1)/A_BIF(1))
+                  & (-K*2.0_DP*Q_BIF(1)/A_BIF(1))
                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,2*mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,2*mn)+ &
-                  & ((K*(Q_BIF(1)/A_BIF(1))**2.0)-(A_BIF(1)**0.5)*Fr)
+                  & ((K*((Q_BIF(1)/A_BIF(1))**2))-((A_BIF(1)**(0.5_DP))*Fr))
                 !Continuity Equation (dU/dQ)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*mn,mn)=-1.0*(1/St)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*mn,mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*mn,mn)+ &
+                  & (-1.0_DP/St)
 
               !Branch Vessel (if the first node has versions)
               ELSEIF(nv1>1) THEN
@@ -4148,11 +4149,12 @@ CONTAINS
 
                 !Momentum Equation (dU/dQ - dU/dA)
                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)+ &
-                  & (-K*2.0*Q_BIF(1)/A_BIF(1))
+                  & (-K*2.0_DP*Q_BIF(1)/A_BIF(1))
                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1+mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1+mn)+ &
-                  & ((K*(Q_BIF(1)/A_BIF(1))**2.0)-(A_BIF(1)**0.5)*Fr)
+                  & ((K*((Q_BIF(1)/A_BIF(1))**2))-((A_BIF(1)**(0.5_DP))*Fr))
                 !Continuity Equation (dU/dQ)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1+mn,1)=-1.0*(1/St)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1+mn,1)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1+mn,1)+ &
+                  & (-1.0_DP/St)
 
               ENDIF
             ENDIF
@@ -4264,33 +4266,33 @@ CONTAINS
             !!!--  J A C O B I A N   M A T R I X  --!!!
             IF(UPDATE_JACOBIAN_MATRIX) THEN
               !Characteristic Equation in Parent Vessel (dU/dQ - dU/dA)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)=1.0/A_BIF(1)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,4)=(-Q_BIF(1)/(A_BIF(1)**2.0)) &
-                & +4.0*((Fr*(Beta(1)/Bs))**0.5)*(0.25*(A_BIF(1)**(-0.75)))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)=1.0_DP/A_BIF(1)
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,4)=(-Q_BIF(1)/(A_BIF(1)**2)) &
+                & +4.0_DP*((Fr*(Beta(1)/Bs))**(0.5_DP))*(0.25_DP*(A_BIF(1)**(-(0.75_DP))))
               !Characteristic Equation 1st Branch Vessel (dU/dQ - dU/dA)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,2)=1.0/A_BIF(2)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,5)=(-Q_BIF(2)/(A_BIF(2)**2.0)) &
-                & -4.0*((Fr*(Beta(2)/Bs))**0.5)*(0.25*(A_BIF(2)**(-0.75)))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,2)=1.0_DP/A_BIF(2)
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,5)=(-Q_BIF(2)/(A_BIF(2)**2)) &
+                & -4.0_DP*((Fr*(Beta(2)/Bs))**(0.5_DP))*(0.25_DP*(A_BIF(2)**(-(0.75_DP))))
               !Characteristic Equation 2nd Branch Vessel (dU/dQ - dU/dA)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,3)=1.0/A_BIF(3)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,6)=(-Q_BIF(3)/(A_BIF(3)**2.0)) &
-                & -4.0*((Fr*(Beta(3)/Bs))**0.5)*(0.25*(A_BIF(3)**(-0.75)))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,3)=1.0_DP/A_BIF(3)
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,6)=(-Q_BIF(3)/(A_BIF(3)**2)) &
+                & -4.0_DP*((Fr*(Beta(3)/Bs))**(0.5_DP))*(0.25_DP*(A_BIF(3)**(-(0.75_DP))))
               !Continuity of Total Pressure in 1st Branch (dU/dQ)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,1)=(Bs/(Fr*Beta(1)))*0.25*(2.0*Q_BIF(1)/(A_BIF(1)**2.0))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,2)=(Bs/(Fr*Beta(1)))*0.25*(-2.0*Q_BIF(2)/(A_BIF(2)**2.0))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,1)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(1)/(A_BIF(1)**2))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,2)=(Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*Q_BIF(2)/(A_BIF(2)**2))
               !Continuity of Total Pressure in 1st Branch (dU/dA) 
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,4)=(0.5*A_BIF(1)**(-0.5))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25*(-2.0*(Q_BIF(1)**2.0)/(A_BIF(1)**3.0)))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,5)=(-(Beta(2)/Beta(1))*(0.5*A_BIF(2)**(-0.5)))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25*(2.0*(Q_BIF(2)**2.0)/(A_BIF(2)**3.0)))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,4)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
+                & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,5)=(-(Beta(2)/Beta(1))*(0.5_DP*A_BIF(2)**(-(0.5_DP))))+ &
+                & ((Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*(Q_BIF(2)**2)/(A_BIF(2)**3)))
               !Continuity of Total Pressure in 2nd Branch (dU/dQ)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,1)=(Bs/(Fr*Beta(1)))*0.25*(2.0*Q_BIF(1)/(A_BIF(1)**2.0))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,3)=(Bs/(Fr*Beta(1)))*0.25*(-2.0*Q_BIF(3)/(A_BIF(3)**2.0))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,1)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(1)/(A_BIF(1)**2))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,3)=(Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*Q_BIF(3)/(A_BIF(3)**2))
               !Continuity of Total Pressure in 2nd Branch (dU/dA)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,4)=(0.5*A_BIF(1)**(-0.5))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25*(-2.0*(Q_BIF(1)**2.0)/(A_BIF(1)**3.0)))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,6)=(-(Beta(3)/Beta(1))*(0.5*A_BIF(3)**(-0.5)))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25*(2.0*(Q_BIF(3)**2.0)/(A_BIF(3)**3.0)))    
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,4)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
+                & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,6)=(-(Beta(3)/Beta(1))*(0.5_DP*A_BIF(3)**(-(0.5_DP))))+ &
+                & ((Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*(Q_BIF(3)**2)/(A_BIF(3)**3)))    
             ENDIF
 
           CASE DEFAULT
@@ -4383,239 +4385,6 @@ CONTAINS
     CALL EXITS("NAVIER_STOKES_POST_SOLVE")
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_POST_SOLVE
-
-  !
-  !================================================================================================================================
-  !
-
-   SUBROUTINE NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the time control loop for the NAVIER_STOKES  problem
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
-    !Local Variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_NAVIER_STOKES
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER_NAVIER_STOKES
-
-    CALL ENTERS("NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP",ERR,ERROR,*999)
-
-    !Get the solver for the NAVIER_STOKES problem
-    NULLIFY(SOLVER_NAVIER_STOKES)
-    NULLIFY(CONTROL_LOOP_NAVIER_STOKES)
-    !SOLVER_NUMBER_NAVIER_STOKES has to be set here so that store_reference_data and store_previous_data have access to it
-    SOLVER_NUMBER_NAVIER_STOKES=1
-    CALL CONTROL_LOOP_GET(CONTROL_LOOP,(/CONTROL_LOOP_NODE/),CONTROL_LOOP_NAVIER_STOKES,ERR,ERROR,*999)
-    CALL SOLVERS_SOLVER_GET(CONTROL_LOOP_NAVIER_STOKES%SOLVERS,SOLVER_NUMBER_NAVIER_STOKES,SOLVER_NAVIER_STOKES,ERR,ERROR,*999)
-
-    !If this is the first time step then store reference data
-    IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER==1) THEN
-      IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
-        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing reference data',ERR,ERROR,*999)
-      ENDIF
-      CALL NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA(CONTROL_LOOP,SOLVER_NAVIER_STOKES,ERR,ERROR,*999)
-    ENDIF
-
-    !Store data of previous time step (mesh position); executed once per time step before subiteration
-    IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
-      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing previous data',ERR,ERROR,*999)
-    ENDIF
-    CALL NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA(CONTROL_LOOP,SOLVER_NAVIER_STOKES,ERR,ERROR,*999)
-
-
-    CALL EXITS("NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Store some reference data for 1D_NAVIER_STOKES problem
-  SUBROUTINE NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, GEOMETRIC_FIELD
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-
-    REAL(DP) :: ALPHA
-    REAL(DP), POINTER :: INITIAL_VALUES(:)
-
-    INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: NDOFS_TO_PRINT
-
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA",ERR,ERROR,*999)
-
-    NULLIFY(SOLVER_EQUATIONS)
-    NULLIFY(SOLVER_MAPPING)
-    NULLIFY(EQUATIONS_SET)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_NAVIER_STOKES) THEN
-          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
-                IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                  DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                  GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                  IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                    !Store the initial (= reference) GEOMETRY field values
-                    ALPHA = 1.0_DP
-                    CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
-                    EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                    IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                      FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                        FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                        !Store the initial DEPENDENT field values
-                        ALPHA = 1.0_DP
-                        CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                             & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
-                        IF(DIAGNOSTICS1) THEN
-                          NULLIFY(INITIAL_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                               & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
-                          NDOFS_TO_PRINT = SIZE(INITIAL_VALUES,1)
-                          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT,NDOFS_TO_PRINT,&
-                               & INITIAL_VALUES, &
-                               & '(" DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE = ",4(X,E13.6))', &
-                               & '4(4(X,E13.6))',ERR,ERROR,*999)
-                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                               & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          ! do nothing ???
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_PRE_SOLVE_STORE_REFERENCE_DATA
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Store data of previous time step (mesh position) for 1D_NAVIER_STOKES problem
-  SUBROUTINE NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-
-    REAL(DP) :: ALPHA
-
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA",ERR,ERROR,*999)
-
-    NULLIFY(SOLVER_EQUATIONS)
-    NULLIFY(SOLVER_MAPPING)
-    NULLIFY(EQUATIONS_SET)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_NAVIER_STOKES) THEN
-          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
-                IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                  GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                  DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                  IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                    !Store the GEOMETRY field values of the previous time step
-                    ALPHA = 1.0_DP
-!                    CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-!                       & FIELD_VALUES_SET_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                       & FIELD_VALUES_SET_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          ! do nothing ???
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_PRE_SOLVE_STORE_PREVIOUS_DATA
 
   !
   !================================================================================================================================
@@ -5132,29 +4901,29 @@ CONTAINS
                            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                              FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
 
-                             Period=1.0
-                             FLOW(1)=21.76*(0.326+0.14*cos(2*pi*(CURRENT_TIME/(Period))) &
-                                            &    -0.77*cos(4*pi*(CURRENT_TIME/(Period))) &
-                                            &     +0.2*cos(6*pi*(CURRENT_TIME/(Period))) &
-                                            &   +0.125*cos(8*pi*(CURRENT_TIME/(Period))) &
-                                            &  +0.063*cos(10*pi*(CURRENT_TIME/(Period))) &
-                                            &  -0.045*cos(12*pi*(CURRENT_TIME/(Period))) &
-                                            &  -0.027*cos(14*pi*(CURRENT_TIME/(Period))) &
-                                            &  -0.001*cos(16*pi*(CURRENT_TIME/(Period))) &
-                                            &  -0.004*cos(18*pi*(CURRENT_TIME/(Period))) &
-                                            & -0.0315*cos(20*pi*(CURRENT_TIME/(Period))) &
-                                            &   +0.535*sin(2*pi*(CURRENT_TIME/(Period))) &
-                                            &   -0.116*sin(4*pi*(CURRENT_TIME/(Period))) &
-                                            &     -0.3*sin(6*pi*(CURRENT_TIME/(Period))) &
-                                            &   +0.033*sin(8*pi*(CURRENT_TIME/(Period))) &
-                                            &   +0.04*sin(10*pi*(CURRENT_TIME/(Period))) &
-                                            &  +0.042*sin(12*pi*(CURRENT_TIME/(Period))) &
-                                            &   +0.01*sin(14*pi*(CURRENT_TIME/(Period))) &
-                                            &  -0.044*sin(16*pi*(CURRENT_TIME/(Period))) &
-                                            &  -0.004*sin(18*pi*(CURRENT_TIME/(Period))) &
-                                            &    +0.0*sin(20*pi*(CURRENT_TIME/(Period))))/10.0
+                             Period=1.0_DP
+                             FLOW(1)=21.76_DP*(0.326_DP+0.14_DP*cos(2*pi*(CURRENT_TIME/(Period))) &
+                                                  &    -0.77_DP*cos(4*pi*(CURRENT_TIME/(Period))) &
+                                                  &     +0.2_DP*cos(6*pi*(CURRENT_TIME/(Period))) &
+                                                  &   +0.125_DP*cos(8*pi*(CURRENT_TIME/(Period))) &
+                                                  &  +0.063_DP*cos(10*pi*(CURRENT_TIME/(Period))) &
+                                                  &  -0.045_DP*cos(12*pi*(CURRENT_TIME/(Period))) &
+                                                  &  -0.027_DP*cos(14*pi*(CURRENT_TIME/(Period))) &
+                                                  &  -0.001_DP*cos(16*pi*(CURRENT_TIME/(Period))) &
+                                                  &  -0.004_DP*cos(18*pi*(CURRENT_TIME/(Period))) &
+                                                  & -0.0315_DP*cos(20*pi*(CURRENT_TIME/(Period))) &
+                                                  &   +0.535_DP*sin(2*pi*(CURRENT_TIME/(Period))) &
+                                                  &   -0.116_DP*sin(4*pi*(CURRENT_TIME/(Period))) &
+                                                  &     -0.3_DP*sin(6*pi*(CURRENT_TIME/(Period))) &
+                                                  &   +0.033_DP*sin(8*pi*(CURRENT_TIME/(Period))) &
+                                                  &   +0.04_DP*sin(10*pi*(CURRENT_TIME/(Period))) &
+                                                  &  +0.042_DP*sin(12*pi*(CURRENT_TIME/(Period))) &
+                                                  &   +0.01_DP*sin(14*pi*(CURRENT_TIME/(Period))) &
+                                                  &  -0.044_DP*sin(16*pi*(CURRENT_TIME/(Period))) &
+                                                  &  -0.004_DP*sin(18*pi*(CURRENT_TIME/(Period))) &
+                                                  &    +0.0_DP*sin(20*pi*(CURRENT_TIME/(Period))))/10.0_DP
 
-                             FLOW(2)=1.0
+                             FLOW(2)=1.0_DP
                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                & FIELD_VALUES_SET_TYPE,1,FLOW(2),ERR,ERROR,*999)
                              CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
@@ -5285,9 +5054,9 @@ CONTAINS
                          & PTR%VALUES(2,NO_PART_DERIV)
 
                        !Riemann Invariants Values at the Bifurcation Element
-                       W(1)=((Q_EX(1)/A_EX(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
-                       W(2)=((Q_EX(2)/A_EX(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_EX(2)**0.25))
-                       W(3)=((Q_EX(3)/A_EX(3))-4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_EX(3)**0.25))
+                       W(1)=((Q_EX(1)/A_EX(1))+4.0_DP*((Fr*(Beta(1)/Bs))**(0.5_DP))*(A_EX(1)**(0.25_DP)))
+                       W(2)=((Q_EX(2)/A_EX(2))-4.0_DP*((Fr*(Beta(2)/Bs))**(0.5_DP))*(A_EX(2)**(0.25_DP)))
+                       W(3)=((Q_EX(3)/A_EX(3))-4.0_DP*((Fr*(Beta(3)/Bs))**(0.5_DP))*(A_EX(3)**(0.25_DP)))
 
                        !Previous Q and A Values at the Bifurcation Nodes
                        CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
