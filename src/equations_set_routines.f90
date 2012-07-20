@@ -1683,6 +1683,7 @@ CONTAINS
               ELEMENT_SYSTEM_ELAPSED=0.0_SP
             ENDIF
             NUMBER_OF_TIMES=0
+
             !Loop over the nodes
             ne=0
             DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
