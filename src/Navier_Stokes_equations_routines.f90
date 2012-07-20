@@ -4902,6 +4902,7 @@ CONTAINS
                              FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
 
                              Period=1.0_DP
+
                              FLOW(1)=21.76_DP*(0.326_DP+0.14_DP*cos(2*pi*(CURRENT_TIME/(Period))) &
                                                   &    -0.77_DP*cos(4*pi*(CURRENT_TIME/(Period))) &
                                                   &     +0.2_DP*cos(6*pi*(CURRENT_TIME/(Period))) &
