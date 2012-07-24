@@ -3883,6 +3883,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterface_LabelSetVSObj
   END INTERFACE !CMISSInterface_LabelSet
 
+  !>Returns the nodes for a interface.
+  INTERFACE CMISSInterface_NodesGet
+    MODULE PROCEDURE CMISSInterface_NodesGetObj
+  END INTERFACE !CMISSInterface_NodesGet
+
   !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshConnectivity_CreateStart
   INTERFACE CMISSInterfaceMeshConnectivity_CreateFinish
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_CreateFinishNumber
@@ -3928,6 +3933,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterface_Destroy
 
   PUBLIC CMISSInterface_LabelGet,CMISSInterface_LabelSet
+
+  PUBLIC CMISSInterface_NodesGet
 
   PUBLIC CMISSInterfaceMeshConnectivity_CreateFinish,CMISSInterfaceMeshConnectivity_CreateStart
 
@@ -32776,6 +32783,32 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterface_LabelSetVSObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the nodes for a interface identified by an object.
+  SUBROUTINE CMISSInterface_NodesGetObj(interface,nodes,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to get the nodes for.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes !<On return, the interfaces nodes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterface_NodesGetObj",err,error,*999)
+
+    CALL INTERFACE_NODES_GET(interface%INTERFACE,nodes%NODES,err,error,*999)
+
+    CALL EXITS("CMISSInterface_NodesGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterface_NodesGetObj",err,error)
+    CALL EXITS("CMISSInterface_NodesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterface_NodesGetObj
 
   !
   !================================================================================================================================

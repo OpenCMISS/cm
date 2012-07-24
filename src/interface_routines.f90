@@ -88,6 +88,8 @@ MODULE INTERFACE_ROUTINES
 
   PUBLIC INTERFACE_LABEL_GET,INTERFACE_LABEL_SET
 
+  PUBLIC INTERFACE_NODES_GET
+
   PUBLIC INTERFACE_MESH_CONNECTIVITY_CREATE_START, INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH
 
   PUBLIC INTERFACE_USER_NUMBER_FIND
@@ -684,6 +686,46 @@ CONTAINS
     CALL EXITS("INTERFACE_LABEL_SET_VS")
     RETURN 1
   END SUBROUTINE INTERFACE_LABEL_SET_VS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns a pointer to the nodes for a interface. \see OPENCMISS::CMISSInterfaceNodesGet
+  SUBROUTINE INTERFACE_NODES_GET(INTERFACE,NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to get the nodes for
+    TYPE(NODES_TYPE), POINTER :: NODES !<On exit, a pointer to the nodes for the interface. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("INTERFACE_NODES_GET",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN 
+        IF(ASSOCIATED(NODES)) THEN
+          CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
+        ELSE
+          NODES=>INTERFACE%NODES
+          IF(.NOT.ASSOCIATED(NODES)) CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface has not been finished.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("INTERFACE_NODES_GET")
+    RETURN
+999 NULLIFY(NODES)
+998 CALL ERRORS("INTERFACE_NODES_GET",ERR,ERROR)
+    CALL EXITS("INTERFACE_NODES_GET")
+    RETURN 1
+    
+  END SUBROUTINE INTERFACE_NODES_GET
 
   !
   !================================================================================================================================
