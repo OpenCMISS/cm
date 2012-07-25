@@ -1236,6 +1236,7 @@ CONTAINS
                 version=ROWS_FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
                    & DERIVATIVES(1)%NUMBER_OF_VERSIONS
                 IF(version>1) THEN
+                  derivative=1
                   bif_idx=bif_idx+1
                   IF(ELEMENT_NUMBER==bif_idx)THEN
                     DO version_idx=1,version
