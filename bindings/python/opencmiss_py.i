@@ -109,7 +109,7 @@
           free($3);
           return NULL;
         }
-        *($3 + j*$2 + i) = (sequence_type) convert_routine(oj);
+        *($3 + j*$1 + i) = (sequence_type) convert_routine(oj);
         Py_DECREF(oj);
       }
       Py_DECREF(oi);
@@ -192,7 +192,7 @@
     PyList_SetItem(output_list, i, sub_list);
     for (j=0; j<$2; j++) {
       /* Fortran stores arrays by column */
-      list_item = convert_call((convert_type) *($3 + j*$2 + i));
+      list_item = convert_call((convert_type) *($3 + j*$1 + i));
       PyList_SetItem(sub_list, j, list_item);
     }
   }

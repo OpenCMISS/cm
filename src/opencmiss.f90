@@ -3375,13 +3375,21 @@ MODULE OPENCMISS
 
   !>Updates the given parameter set with the given value for a particular gauss point of a field variable component.
   INTERFACE CMISSField_ParameterSetUpdateGaussPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateGaussPointDPNumber
     MODULE PROCEDURE CMISSField_ParameterSetUpdateGaussPointDPObj
   END INTERFACE !CMISSField_ParameterSetUpdateGaussPoint
 
   !>Interpolates the given parameter set at a specified xi location for specified element and derviative.
   INTERFACE CMISSField_ParameterSetInterpolateXi
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateXiDPNumber
     MODULE PROCEDURE CMISSField_ParameterSetInterpolateXiDPObj
   END INTERFACE !CMISSField_ParameterSetInterpolateXi
+
+  !>Interpolates the given parameter set at a specified set of Gauss points for specified element and derviative. If no Gauss points are specified then all Gauss points are interpolated.Interpolates the given parameter set at a specified xi location for specified element and derviative.
+  INTERFACE CMISSField_ParameterSetInterpolateGauss
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateGaussDPNumber
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateGaussDPObj
+  END INTERFACE !CMISSField_ParameterSetInterpolateGauss
 
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSField_ParameterSetUpdateFinish
   INTERFACE CMISSField_ParameterSetUpdateStart
@@ -3550,6 +3558,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetUpdateGaussPoint, CMISSField_ParameterSetGetGaussPoint
 
   PUBLIC CMISSField_ParameterSetInterpolateXi
+
+  PUBLIC CMISSField_ParameterSetInterpolateGauss
 
   PUBLIC CMISSField_ParameterSetUpdateFinish,CMISSField_ParameterSetUpdateStart
 
@@ -29132,17 +29142,69 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userElementNumber,gaussPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the Gauss point value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the Gauss point value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the Gauss point value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the Gauss point value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the Gauss point value for the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateGaussPointDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
+      & componentNumber,value, err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateGaussPointDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateGaussPointDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateGaussPointDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
   !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by an object.
   SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPObj(field,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
     & componentNumber, value,err)
 
     !Argument variables
-    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the Gauss point value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the Gauss point value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the Gauss point value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The user element number of the field variable component to update for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the Gauss point value for the field parameter set.
     REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -29165,25 +29227,77 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Interpolates the given parameter set at a specified xi location for specified element and derviative and returns double precision values for a field identified by an object.
+  !>Interpolates the given parameter set at a specified set of xi locations for specified element and derviative and returns double precision values for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetInterpolateXiDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & derivativeNumber,userElementNumber,xi,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:,:) !<The sets of element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateXiDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_INTERPOLATE_XI(FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+          & xi,values,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateXiDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateXiDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateXiDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateXiDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of xi locations for specified element and derviative and returns double precision values for a field identified by an object.
   SUBROUTINE CMISSField_ParameterSetInterpolateXiDPObj(field,variableType,fieldSetType,derivativeNumber,userElementNumber,xi, &
     & values,err)
 
     !Argument variables
-    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate
-    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
-    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
-    REAL(DP), INTENT(OUT) :: values(:) !<The interpolated values.
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:,:) !<The sets of element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_ParameterSetInterpolateXiDPObj",err,error,*999)
 
     CALL FIELD_PARAMETER_SET_INTERPOLATE_XI(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber,xi, &
-      & values, err,error,*999)
+      & values,err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetInterpolateXiDPObj")
     RETURN
@@ -29193,6 +29307,93 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetInterpolateXiDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of Gauss points for specified element and derviative and returns double precision values for a or a field identified by a user number. If no Gauss points are specified then all Gauss points are interpolated.
+  SUBROUTINE CMISSField_ParameterSetInterpolateGaussDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & derivativeNumber,userElementNumber,quadratureScheme,GaussPoints,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to interpolate the field for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateGaussDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_INTERPOLATE_GAUSS(FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+          & quadratureScheme,GaussPoints,values,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateGaussDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateGaussDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateGaussDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateGaussDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of Gauss points for specified element and derviative and returns double precision values for a field identified by an object. If no Gauss points are specified then all Gauss points are interpolated.
+  SUBROUTINE CMISSField_ParameterSetInterpolateGaussDPObj(field,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+    & quadratureScheme, GaussPoints,values,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to interpolate the field for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateGaussDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_INTERPOLATE_GAUSS(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+      & quadratureScheme,GaussPoints,values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateGaussDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateGaussDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateGaussDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateGaussDPObj
 
   !
   !================================================================================================================================
