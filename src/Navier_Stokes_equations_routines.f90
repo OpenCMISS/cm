@@ -342,7 +342,7 @@ CONTAINS
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
               ! Equations set field setup
               EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 1 
-              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 5
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 !Create the auto created equations set field field for a CellML coupled 1D problem
@@ -371,7 +371,7 @@ CONTAINS
               IF(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 CALL FIELD_CREATE_FINISH(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
                 !Default the coupling parameter values 0.0
-                EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4
+                EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 5
                 DO component_idx=1,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
                   CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,component_idx,0.0_DP,ERR,ERROR,*999)
@@ -527,7 +527,7 @@ CONTAINS
           CASE (EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4  !pCellML, pPrevious, pVesselWall, pExternal (see NavierStokes_Couple1D0D)
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 5  !pCellML, pPrevious, pVesselWall, pExternal, qPrevious (see NavierStokes_Couple1D0D)
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
@@ -2060,7 +2060,7 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
               ENDIF              
-          CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+          CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
             !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
             SOLVER_NUMBER_NAVIER_STOKES=2
             !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
@@ -2091,6 +2091,37 @@ CONTAINS
               ENDIF
             ENDIF
             CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+          CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+            !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
+            SOLVER_NUMBER_NAVIER_STOKES=2
+            !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==2) THEN
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                  IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                    DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                      SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                      IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                        SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                      ELSE
+                        CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
+                  ELSE
+                    CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             ! do nothing ???
             CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -2616,7 +2647,8 @@ CONTAINS
                 CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
                 !Get the solver
                 CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-                CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+                ! The dynamic nonlinear 1D Navier-Stokes solver is solver2 (nonlinear bifurcation/characteristics solver is 1)
+                CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
                 !Get the CellML evaluator solver
                 CALL SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,ERR,ERROR,*999)
                 !Create the CellML equations
@@ -2628,7 +2660,8 @@ CONTAINS
                 CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
                 !Get the solver
                 CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-                CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+                ! The dynamic nonlinear 1D Navier-Stokes solver is solver2 (nonlinear bifurcation/characteristics solver is 1)
+                CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
                 !Get the CellML evaluator solver
                 CALL SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,ERR,ERROR,*999)
                 !Get the CellML equations for the CellML evaluator solver
@@ -5342,7 +5375,8 @@ CONTAINS
               & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
           CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==2) THEN
+!Temp to avoid flow waveform
+            IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==5) THEN
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -5424,7 +5458,7 @@ CONTAINS
                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-           ELSE
+           ELSE IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==1) THEN
              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -5525,6 +5559,12 @@ CONTAINS
                          Q_EX(3)=0.0_DP
                          A_EX(3)=1.0_DP ! to avoid /0 errors
                          W(3)=0.0_DP
+
+                         !Riemann Invariants Values at the 1D0D interface
+                         ! Either In or Outgoing wave at boundary will be updated by NavierStokes_Couple1D0D
+                         W(1)=((Q_EX(1)/A_EX(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
+!                         W(2)=((Q_EX(2)/A_EX(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_EX(2)**0.25))
+                         W(2)=((Q_EX(1)/A_EX(1))-4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
 
                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                            & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
@@ -8795,7 +8835,7 @@ CONTAINS
   !
 
   !> Update the solution for the 1D solver with boundary conditions from a lumped parameter model defined by CellML. For more information please see chapter 11 of:  
-  !> L. Formaggia, A. Quarteroni, and A. Veneziani, Cardiovascular mathematics : modeling and simulation of the circulatory system. Milan; New York: Springer, 2009.
+  !> L. Formaggia, A. Quarteroni, and A. Veneziani, Cardiovascular mathematics: modeling and simulation of the circulatory system. Milan; New York: Springer, 2009.
 
   SUBROUTINE NavierStokes_Couple1D0D(controlLoop,solver,err,error,*)
 
@@ -8806,6 +8846,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
     !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: solver2
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
@@ -8815,15 +8856,18 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField
     TYPE(EQUATIONS_TYPE), POINTER :: equations
     REAL(DP), POINTER :: BIF_VALUES(:)
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    REAL(DP), POINTER :: dependentParameters(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    INTEGER(INTG) :: iterationIdx,maxIterations,nodeIdx,bif_idx,dofIdx,en,nodeNumber
-    INTEGER(INTG) :: numberOfVersions,numberOfNodes1D,numberOfDofs1D,numberOfElements1D
+    INTEGER(INTG) :: iterationIdx,maxIterations,nodeIdx,bif_idx,dofIdx,en
+    INTEGER(INTG) :: nodeNumber,nodeNumberFirst,nodeNumberLast,boundaryIdx,local_ny
+    INTEGER(INTG) :: numberOfVersions,numberOfNodes1D,numberOfDofs1D,numberOfElements1D,numberOfElementNodes
     REAL(DP) :: MU_PARAM,RHO_PARAM,Bs,As,Re,Fr,St
     REAL(DP) :: XI(1),couplingTolerance
     REAL(DP) :: A_PRE(3),Q_PRE(3),Q_EX(3),A_EX(3),W(3),A0_PARAM(9),Beta(9)
-    REAL(DP) :: pCellML,pPrevious,pVesselWall,pExternal
-    LOGICAL :: converged
+    REAL(DP) :: pCellML,pPrevious,pVesselWall,pExternal,qBoundary,aBoundary,qPrevious
+    LOGICAL :: converged,boundaryNode
 
     !Nullify pointers
     NULLIFY(solverEquations)
@@ -8837,14 +8881,18 @@ CONTAINS
     NULLIFY(materialsField)
     NULLIFY(equationsSetField)
     NULLIFY(BIF_VALUES)
+    NULLIFY(fieldVariable)
+
+    !returned solver actually bifurcation solver rather than dynamic NavierStokes so workaround:
+    solver2=>controlLoop%SOLVERS%SOLVERS(2)%PTR
 
     ! Some preliminary sanity checks
     IF(ASSOCIATED(controlLoop)) THEN
-      IF(ASSOCIATED(solver)) THEN
+      IF(ASSOCIATED(solver2)) THEN
         IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
           SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
           CASE(PROBLEM_Coupled1D0D_Navier_Stokes_SUBTYPE)
-            solverEquations=>solver%SOLVER_EQUATIONS
+            solverEquations=>solver2%SOLVER_EQUATIONS
             IF(ASSOCIATED(solverEquations)) THEN
               solverMapping=>solverEquations%SOLVER_MAPPING
               IF(ASSOCIATED(solverMapping)) THEN
@@ -8914,9 +8962,12 @@ CONTAINS
     A_EX(3)=0.0_DP
     Q_PRE(3)=0.0_DP
     Q_EX(3)=0.0_DP
+    qBoundary=0.0_DP
+    qPrevious=0.0_DP
+    aBoundary=0.0_DP
 
     DO iterationIdx=1,maxIterations  
-      nonlinearSolver=>solver%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
+      nonlinearSolver=>solver2%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
       IF(ASSOCIATED(nonlinearSolver)) THEN
         !check for a linked CellML solver 
         cellmlSolver=>nonlinearSolver%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
@@ -8931,108 +8982,97 @@ CONTAINS
       numberOfNodes1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
       numberOfDofs1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
       numberOfElements1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+      numberOfElementNodes=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS
       bif_idx=0
       nodeIdx=0
       dofIdx=0
+      boundaryIdx=0
       converged=.TRUE. ! false when find node that hasn't converged values across 1D-0D interface
 
       ! Loop over 1D nodes to find coupled nodes and update characteristic values
       DO nodeIdx=1,numberOfNodes1D
         numberOfVersions=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
           & DERIVATIVES(1)%NUMBER_OF_VERSIONS
-        IF(numberOfVersions>1)THEN
-          ! may be either a coupled or bifurcation node
-          !Number of Bifurcations
+        dofIdx=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)%DERIVATIVES(1)%DOF_INDEX(1)
+        !Surrounding Element Number
+        en=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(1)
+        !User Node Number- if a boundary node will either be 1st or last on the element
+        nodeNumberFirst=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(en)%ELEMENT_NODES(1)
+        nodeNumberLast=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(en)% &
+         & ELEMENT_NODES(numberOfElementNodes)
+
+        boundaryNode=.FALSE.
+        IF(equationsSet%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+          & NODES(nodeNumberFirst)%BOUNDARY_NODE) THEN
+          boundaryNode=.TRUE.
+          nodeNumber=nodeNumberFirst
+          XI(1)=0.0
+        ELSE IF(equationsSet%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+          & NODES(nodeNumberLast)%BOUNDARY_NODE) THEN
+          boundaryNode=.TRUE.
+          nodeNumber=nodeNumberLast
+          XI(1)=1.0
+        ENDIF
+
+        IF(numberOfVersions>1) THEN
           bif_idx=bif_idx+1
-          !DOF Number of the Bifurcation Nodes
-          dofIdx=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)%DERIVATIVES(1)%DOF_INDEX(1)
-          !Surrounding Element Number
-          en=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(1)
-          !User Node Number
-          nodeNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(en)%ELEMENT_NODES(3)
 
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,bif_idx,EQUATIONS% &
-            & INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-            & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          IF(boundaryNode) THEN
+            !Number of Boundaries
+            boundaryIdx=boundaryIdx+1
 
-          !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
-          MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(1,NO_PART_DERIV)
-          RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(2,NO_PART_DERIV)
-          Bs=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(4,NO_PART_DERIV)
-          As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(5,NO_PART_DERIV)
-          Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(6,NO_PART_DERIV)
-          Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(7,NO_PART_DERIV)
-          St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-            & VALUES(8,NO_PART_DERIV)
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS% &
+              & INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
-          !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!! 
-          !Current Materials Parameters at the Bifurcation Nodes
-          CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_U_VARIABLE_TYPE, &
-            & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-          A0_PARAM(1)=BIF_VALUES(8+en)
-          A0_PARAM(2)=BIF_VALUES(8+en+1)
-          A0_PARAM(3)=BIF_VALUES(8+en+2)
-          Beta(1)=BIF_VALUES(8+numberOfElements1D+en)
-          Beta(2)=BIF_VALUES(8+numberOfElements1D+en+1)
-          Beta(3)=BIF_VALUES(8+numberOfElements1D+en+2)
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE, &
-            & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+            !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
+            RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+              & VALUES(2,NO_PART_DERIV)
 
-          !Parent Vessel Characteristic Extrapolation       
-          XI(1)=0.8
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(1,NO_PART_DERIV)
-          A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(2,NO_PART_DERIV)
-          !1st Branch Vessel Characteristic Extrapolation       
-          XI(1)=0.2
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en+1,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(1,NO_PART_DERIV)
-          A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(2,NO_PART_DERIV)
-          !2nd Branch Vessel Characteristic Extrapolation       
-          XI(1)=0.2
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en+2,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          Q_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(1,NO_PART_DERIV)
-          A_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-            & PTR%VALUES(2,NO_PART_DERIV)
+                         ! Outgoing Characteristic Extrapolation       
+                         XI(1)=0.8
+                         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
+                           & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                           & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                         Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(1,NO_PART_DERIV)
+                         A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(2,NO_PART_DERIV)
+                         ! Re-entering Characteristic Extrapolation       
+                         XI(1)=0.2
+                         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                           & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                         Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(1,NO_PART_DERIV)
+                         A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(2,NO_PART_DERIV)
 
-          !Previous Q and A Values at the Bifurcation Nodes
-          CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-            & BIF_VALUES,ERR,ERROR,*999)
-          Q_PRE(1)=BIF_VALUES(nodeIdx)
-          Q_PRE(2)=BIF_VALUES(nodeIdx+1)
-          Q_PRE(3)=BIF_VALUES(nodeIdx+2)
-          A_PRE(1)=BIF_VALUES(numberOfDofs1D+dofIdx)
-          A_PRE(2)=BIF_VALUES(numberOfDofs1D+dofIdx+1)
-          A_PRE(3)=BIF_VALUES(numberOfDofs1D+dofIdx+2)
+            XI(1)=1.0
+            !Vessel Characteristic - interpolate at xi=1 or 0 depending if in or outgoing wave
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            qBoundary=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+              & PTR%VALUES(1,NO_PART_DERIV)
+            aBoundary=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+              & PTR%VALUES(2,NO_PART_DERIV)
 
-          !for a coupled problem, A(3) will be zero (there is no third branch)
-          IF(A_PRE(3) < ZERO_TOLERANCE .AND. A_EX(3) < ZERO_TOLERANCE)  THEN
+            CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & dependentParameters,err,error,*999)
 
-            A_PRE(3)=0.0_DP
-            A_EX(3)=0.0_DP
-            Q_PRE(3)=0.0_DP
-            Q_EX(3)=0.0_DP
+            fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(1)
+            qBoundary=dependentParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
+              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(1)
+            aBoundary=dependentParameters(local_ny)
+
+            CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & dependentParameters,err,error,*999)
 
             ! Get nodal values from CellML stored in equations set field from their respective locations
             CALL FIELD_PARAMETER_SET_GET_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1, &
@@ -9043,57 +9083,46 @@ CONTAINS
              & 1,nodeNumber,3,pVesselWall,err,error,*999)
             CALL FIELD_PARAMETER_SET_GET_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1, &
              & 1,nodeNumber,4,pExternal,err,error,*999)
+            CALL FIELD_PARAMETER_SET_GET_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1, &
+             & 1,nodeNumber,5,qPrevious,err,error,*999)
 
             ! Check whether p values have converged, w values need to be recalculated, or we need to exit after maximum iterations
-            IF(ABS(pCellML-pPrevious) < couplingTolerance .AND. ABS(Q_PRE(1)-Q_EX(1)) < couplingTolerance ) THEN
+            IF(ABS(pCellML-pPrevious) < couplingTolerance .AND. ABS(qBoundary-qPrevious) < couplingTolerance ) THEN
               CYCLE ! coupled node converged, go to the next
             ELSE IF (iterationIdx < maxIterations) THEN
 
               converged=.FALSE. !coupled node has not converged (so neither has the global solution)
               pPrevious=pCellML !current p will be pPrevious for next iteration
+              qPrevious=qBoundary
               CALL FIELD_PARAMETER_SET_UPDATE_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1, &
                & 1,nodeNumber,2,pPrevious,err,error,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1, &
+               & 1,nodeNumber,5,qPrevious,err,error,*999)
 
-              ! C a l c u l a t e   C h a r a c t e r i s t i c s
+              ! C a l c u l a t e    C h a r a c t e r i s t i c 
               !--------------------------------------------------
               ! Characteristic variable exiting 1D toward 0D. Will be the same as the parent vessel in a bifurcation
-              W(1)=((Q_EX(1)/A_EX(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
+              ! W(1)=((Q_EX(1)/A_EX(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
               ! Calculate characteristic variable W(2) re-entering the 1D domain based on values from coupled 0D system
-              W(2)=(Q_EX(2)/A_EX(2))-(8.0_DP/RHO_PARAM)*(SQRT(pCellML-pExternal+pVesselWall) - SQRT(pVesselWall))
-              ! No 2nd daughter branch contribution for a coupled problem
-              W(3)=0.0_DP
+              W(2)=(qBoundary/aBoundary)-(8.0_DP/RHO_PARAM)*(SQRT(pCellML-pExternal+pVesselWall) - SQRT(pVesselWall))
 
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-              !Storing Riemann Invariants in the Independent Field
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,dofIdx-1,W(1),ERR,ERROR,*999)
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
                & FIELD_VALUES_SET_TYPE,dofIdx+3,W(2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,dofIdx+5,W(3),ERR,ERROR,*999)
-              !Storing Previous Q and A Values in the Independent Field
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,dofIdx,Q_PRE(1),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,dofIdx+1,Q_PRE(2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,dofIdx+2,Q_PRE(3),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,numberOfDofs1D+dofIdx,A_PRE(1),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,numberOfDofs1D+dofIdx+1,A_PRE(2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,numberOfDofs1D+dofIdx+2,A_PRE(3),ERR,ERROR,*999)
 
             ELSE
               LOCAL_ERROR="Values at the coupled 1D-0D fluid interface have not converged over "// &
                 & TRIM(NUMBER_TO_VSTRING(iterationIdx,"*",ERR,ERROR))//" iterations."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)           
             ENDIF ! check if converged for this node
-          ENDIF ! check if coupled or bifurcation
+          ENDIF ! check for versions>1
         ENDIF ! check for multiple versions (could be coupled or bifurcation)
-      ENDDO ! loop over nodes                         
+      ENDDO ! loop over nodes 
+
+      IF(converged .AND. boundaryIdx==0) THEN
+        LOCAL_ERROR="1D-0D coupling has been called but no boundaries have been found over "// &
+          & TRIM(NUMBER_TO_VSTRING(numberOfNodes1D,"*",ERR,ERROR))//" 1D nodes."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)           
+      ENDIF ! check if converged for this node                        
 
       ! If the global P,Q values at the 1D-0D interface have converged, exit the routine and continue on to the
       ! next timestep and 1D solution. Otherwise re-solve the 1D problem with new characteristic values, at this
