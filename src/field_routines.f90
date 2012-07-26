@@ -17712,13 +17712,31 @@ CONTAINS
                         IF(USER_NODE_EXISTS) THEN
                           DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                           IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                            !Only checks if version number is greater than zero
                             IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                              NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
-                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & NUMBER_OF_DERIVATIVES) THEN
+                              IF(VERSION_NUMBER>0.AND.VERSION_NUMBER<= &
+                                & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
-                                & VERSIONS(VERSION_NUMBER)
-                              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                                & NUMBER_OF_VERSIONS) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Version number "//TRIM(NUMBER_TO_VSTRING(VERSION_NUMBER,"*",ERR,ERROR))// &
+                                  & " is invalid for derivative number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))//" of node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & DERIVATIVES(DERIVATIVE_NUMBER)%NUMBER_OF_VERSIONS,"*",ERR,ERROR))//" versions "// &
+                                  & "(note version numbers are indexed directly from the value the user specifies and no "// &
+                                  & "record is kept of the total number of versions set."// & 
+                                  & "Only the maximum version number is stored.)."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              ENDIF
                             ELSE
                               LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
                                 & " is invalid for user node number "// &
