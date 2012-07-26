@@ -21780,9 +21780,9 @@ CONTAINS
                         VALUES(xi_set,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
                       ENDDO
                     ELSE
-                      LOCAL_ERROR="The size of the xi index of the specified array QUADRATURE_GAUSS_XI is invalid. "// &
+                      LOCAL_ERROR="The number of the xi values to interpolate the field at is invalid. "// &
                         & "The supplied size is "// &
-                        & TRIM(NUMBER_TO_VSTRING(SIZE(XI,2),"*",ERR,ERROR))//" and needs to be = "// &
+                        & TRIM(NUMBER_TO_VSTRING(SIZE(XI,2),"*",ERR,ERROR))//" and should be = "// &
                         & TRIM(NUMBER_TO_VSTRING(DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI,"*", &
                         & ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -21887,26 +21887,43 @@ CONTAINS
                       & QUADRATURE_SCHEME_MAP(SCHEME)%PTR
                     IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
                       IF(SIZE(GAUSS_POINTS,1)==0) THEN !Interpolate all Gauss points.
-                        DO Gauss_point=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                          CALL FIELD_INTERPOLATE_XI(DERIVATIVE_NUMBER,QUADRATURE_SCHEME%GAUSS_POSITIONS(:,Gauss_point), &
-                            & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                          VALUES(Gauss_point,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
-                        ENDDO
-                      ELSE !Interpolate only at the specified Gauss points.
-                        DO Gauss_point_idx=1,SIZE(GAUSS_POINTS,1)
-                          Gauss_point=GAUSS_POINTS(Gauss_point_idx)
-                          IF(Gauss_point>0.AND.Gauss_point<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
-                            CALL FIELD_INTERPOLATE_XI(DERIVATIVE_NUMBER,QUADRATURE_SCHEME%GAUSS_POSITIONS(:,Gauss_point), &
+                        IF(SIZE(VALUES,1)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                          DO Gauss_point=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+                            CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,Gauss_point, &
                               & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                            VALUES(Gauss_point_idx,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
-                          ELSE
-                            LOCAL_ERROR="The specified Gauss point number of "// & 
-                              & TRIM(NUMBER_TO_VSTRING(Gauss_point,"*",ERR,ERROR))//"is invalid for the specified quadrature "// &
-                              & "scheme of the specified element for this field which has "// &
-                              & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          ENDIF
-                        ENDDO
+                            VALUES(Gauss_point,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                          ENDDO
+                        ELSE
+                          LOCAL_ERROR="The size of the Gauss point index of the interpolated field values output array is "// & 
+                            & "invalid. For returning the interpolated field values at all element Gauss points, the "//&
+                            & "output should be allocated for "//TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*", &
+                            & ERR,ERROR))//" Gauss points for the specified quadrature scheme."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ELSE !Interpolate only at the specified Gauss points.
+                        IF(SIZE(VALUES,1)==SIZE(GAUSS_POINTS,1)) THEN
+                          DO Gauss_point_idx=1,SIZE(GAUSS_POINTS,1)
+                            Gauss_point=GAUSS_POINTS(Gauss_point_idx)
+                            IF(Gauss_point>0.AND.Gauss_point<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                              CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,Gauss_point, &
+                                & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              VALUES(Gauss_point_idx,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                            ELSE
+                              LOCAL_ERROR="The specified Gauss point number of "// & 
+                                & TRIM(NUMBER_TO_VSTRING(Gauss_point,"*",ERR,ERROR))//"is invalid for the specified quadrature "// &
+                                & "scheme of the specified element for this field which has "// &
+                                & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO
+                        ELSE
+                          LOCAL_ERROR="The size of the Gauss point index of the interpolated field values output array is "// &
+                            & "invalid. For returning the interpolated field values at "// &
+                            & TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_POINTS,1),"*",ERR,ERROR))//" Gauss points, the "//&
+                            & "output should be allocated for "//TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_POINTS,1),"*", &
+                            & ERR,ERROR))//" Gauss points."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
                       ENDIF
                     ELSE
                       CALL FLAG_ERROR("The specified quadrature scheme is not associated the specified element's basis.", &

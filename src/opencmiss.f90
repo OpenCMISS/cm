@@ -693,6 +693,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBasis_QuadratureNumberOfGaussXiSetObj
   END INTERFACE !CMISSBasis_QuadratureNumberOfGaussXiSet
 
+  !>Returns the xi positions of Gauss points on a basis quadrature.
+  INTERFACE CMISSBasis_QuadratureGaussXiGet
+    MODULE PROCEDURE CMISSBasis_QuadratureGaussXiGetNumber
+    MODULE PROCEDURE CMISSBasis_QuadratureGaussXiGetObj
+  END INTERFACE !CMISSBasis_QuadratureGaussXiGet
+
   !>Returns the order of quadrature for a basis quadrature.
   INTERFACE CMISSBasis_QuadratureOrderGet
     MODULE PROCEDURE CMISSBasis_QuadratureOrderGetNumber
@@ -763,6 +769,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBasis_NumberOfXiGet,CMISSBasis_NumberOfXiSet
 
   PUBLIC CMISSBasis_QuadratureNumberOfGaussXiGet,CMISSBasis_QuadratureNumberOfGaussXiSet
+
+  PUBLIC CMISSBasis_QuadratureGaussXiGet
 
   PUBLIC CMISSBasis_QuadratureOrderGet,CMISSBasis_QuadratureOrderSet
 
@@ -3385,7 +3393,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetInterpolateXiDPObj
   END INTERFACE !CMISSField_ParameterSetInterpolateXi
 
-  !>Interpolates the given parameter set at a specified set of Gauss points for specified element and derviative. If no Gauss points are specified then all Gauss points are interpolated.Interpolates the given parameter set at a specified xi location for specified element and derviative.
+  !>Interpolates the given parameter set at a specified set of Gauss points for specified element and derviative. If no Gauss points are specified then all Gauss points are interpolated.
   INTERFACE CMISSField_ParameterSetInterpolateGauss
     MODULE PROCEDURE CMISSField_ParameterSetInterpolateGaussDPNumber
     MODULE PROCEDURE CMISSField_ParameterSetInterpolateGaussDPObj
@@ -10065,6 +10073,71 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSBasis_QuadratureNumberOfGaussXiSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by a user number.
+  SUBROUTINE CMISSBasis_QuadratureGaussXiGetNumber(userNumber,quadratureScheme,GaussPoints,GaussXi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the basis to get the Gauss Xi positions for.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to return the Gauss positions for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GaussXi(:,:) !<On return, GaussXi(Gauss_point,xi_direction) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSBasis_QuadratureGaussXiGetNumber",err,error,*999)
+
+    NULLIFY(BASIS)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    IF(ASSOCIATED(BASIS)) THEN
+      CALL BASIS_QUADRATURE_GAUSS_XI_GET(BASIS,quadratureScheme,GaussPoints,GaussXi,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A basis with an user number of "//TRIM(NUMBER_TO_VSTRING(userNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSBasis_QuadratureGaussXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSBasis_QuadratureGaussXiGetNumber",err,error)
+    CALL EXITS("CMISSBasis_QuadratureGaussXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBasis_QuadratureGaussXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by an object.
+  SUBROUTINE CMISSBasis_QuadratureGaussXiGetObj(basis,quadratureScheme,GaussPoints,GaussXi,err)
+
+    !Argument variables
+    TYPE(CMISSBasisType), INTENT(IN) :: basis !<The basis to get the Gauss Xi positions for.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to return the Gauss xi positions for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GaussXi(:,:) !<On return, GaussXi(Gauss_point,xi_direction) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSBasis_QuadratureGaussXiGetObj",err,error,*999)
+
+    CALL BASIS_QUADRATURE_GAUSS_XI_GET(basis%BASIS,quadratureScheme,GaussPoints,GaussXi,err,error,*999)
+
+    CALL EXITS("CMISSBasis_QuadratureGaussXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSBasis_QuadratureGaussXiGetObj",err,error)
+    CALL EXITS("CMISSBasis_QuadratureGaussXiGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBasis_QuadratureGaussXiGetObj
 
   !
   !================================================================================================================================
