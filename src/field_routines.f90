@@ -21773,12 +21773,21 @@ CONTAINS
                     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
                     CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER, &
                       & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                    IF(SIZE(XI,1)==DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI) THEN
-                      DO xi_set=1,SIZE(XI,1)
-                        CALL FIELD_INTERPOLATE_XI(DERIVATIVE_NUMBER,XI(xi_set,:),INTERPOLATED_POINT(VARIABLE_TYPE)%PTR, &
-                          & ERR,ERROR,*999)
-                        VALUES(xi_set,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
-                      ENDDO
+                    IF(SIZE(XI,2)==DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI) THEN
+                      IF(SIZE(VALUES,1)==SIZE(XI,1)) THEN
+                        DO xi_set=1,SIZE(XI,1)
+                          CALL FIELD_INTERPOLATE_XI(DERIVATIVE_NUMBER,XI(xi_set,:),INTERPOLATED_POINT(VARIABLE_TYPE)%PTR, &
+                            & ERR,ERROR,*999)
+                          VALUES(xi_set,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                        ENDDO
+                      ELSE
+                        LOCAL_ERROR="The number of output sets of xi in the field interpolated values output array is "// &
+                          & "invalid. For returning the interpolated field values at "// &
+                          & TRIM(NUMBER_TO_VSTRING(SIZE(XI,1),"*",ERR,ERROR))//" sets of xi the "//&
+                          & "output array is required to be allocated for "//TRIM(NUMBER_TO_VSTRING(SIZE(XI,1),"*", &
+                          & ERR,ERROR))//" sets of xi."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
                     ELSE
                       LOCAL_ERROR="The number of the xi values to interpolate the field at is invalid. "// &
                         & "The supplied size is "// &
@@ -21894,10 +21903,11 @@ CONTAINS
                             VALUES(Gauss_point,:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
                           ENDDO
                         ELSE
-                          LOCAL_ERROR="The size of the Gauss point index of the interpolated field values output array is "// & 
+                          LOCAL_ERROR="The number of output Gauss points in the field interpolated values output array is "// & 
                             & "invalid. For returning the interpolated field values at all element Gauss points, the "//&
-                            & "output should be allocated for "//TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*", &
-                            & ERR,ERROR))//" Gauss points for the specified quadrature scheme."
+                            & "output array is required to be allocated for "// &
+                            & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))// &
+                            & " Gauss points for the specified quadrature scheme."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE !Interpolate only at the specified Gauss points.
@@ -21917,10 +21927,10 @@ CONTAINS
                             ENDIF
                           ENDDO
                         ELSE
-                          LOCAL_ERROR="The size of the Gauss point index of the interpolated field values output array is "// &
+                          LOCAL_ERROR="The number of output Gauss points in the field interpolated values output array is "// &
                             & "invalid. For returning the interpolated field values at "// &
                             & TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_POINTS,1),"*",ERR,ERROR))//" Gauss points, the "//&
-                            & "output should be allocated for "//TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_POINTS,1),"*", &
+                            & "output array is required to be allocated for "//TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_POINTS,1),"*", &
                             & ERR,ERROR))//" Gauss points."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
