@@ -3907,19 +3907,20 @@ CONTAINS
               & NUMBER_OF_VERSIONS
             IF(NUMBER_OF_VERSIONS>1)THEN
               bif_idx=bif_idx+1
-              IF(en==bif_idx)THEN    ! Does this depend on there being 1 bifurcation/element? (If element number = bifurcation number?)
-                !DOF Number of the Bifurcation Nodes
-                dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
-                !Surrounding Element Number
-                en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
-              ! Else check if this is a boundary node and the node is on the current element
-              ELSE IF(GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(i)%BOUNDARY_NODE .AND. &
-                & en==DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)) THEN
+              !check if this is a boundary node and the node is on the current element
+!                ELSE IF(GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(i)%BOUNDARY_NODE .AND. &
+!                  & en==DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)) THEN
+              IF(NUMBER_OF_VERSIONS==2 .AND. en==bif_idx) THEN
                 dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
                 !Surrounding Element Number
                 en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
                 boundaryIdx=boundaryIdx+1
                 boundaryNode=.TRUE.
+              ELSE IF(en==bif_idx)THEN    ! Does this depend on there being 1 bifurcation/element? (If element number = bifurcation number?)
+                !DOF Number of the Bifurcation Nodes
+                dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
+                !Surrounding Element Number
+                en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
               ENDIF
             ENDIF
           ENDDO
@@ -3945,7 +3946,7 @@ CONTAINS
             A0_PARAM(3)=BIF_VALUES(8+en+2)
             Beta(1)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en)
             Beta(2)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+1)
-            Beta(3)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+2)
+            Beta(3)=0.0_DP
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,BIF_VALUES, &
               & ERR,ERROR,*999)
 
@@ -3965,6 +3966,30 @@ CONTAINS
             W(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dof_idx-1,NO_PART_DERIV)
             W(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dof_idx+3,NO_PART_DERIV)
             W(3)=0.0_DP
+
+            !!!-- S T I F F N E S S  M A T R I X  --!!!
+            IF(UPDATE_STIFFNESS_MATRIX) THEN
+              !Conservation of Mass
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,1)=1.0_DP
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,2)=-1.0_DP
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,3)=0.0_DP
+            END IF
+
+            !!!-- N O N L I N E A R   V E C T O R --!!!
+            IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+              !Characteristics Equations
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)=(Q_BIF(1)/A_BIF(1)) &
+                & +4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_BIF(1)**0.25)- W(1)
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)=(Q_BIF(2)/A_BIF(2)) &
+                & -4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_BIF(2)**0.25)- W(2)
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)=0.0_DP
+              !Continuity of Total Pressure
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(5)=((A_BIF(1)**0.5)-(Beta(2)/Beta(1))*(A_BIF(2)**0.5)) &
+                & -(((A0_PARAM(1)/As)**0.5)-(Beta(2)/Beta(1))*((A0_PARAM(2)/As)**0.5))+ &
+                & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(2)/A_BIF(2))**2.0)))
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(6)=0.0_DP
+
+            ENDIF
 
           ELSE
           !Bifurcation
@@ -3998,32 +4023,32 @@ CONTAINS
             W(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dof_idx+3,NO_PART_DERIV)
             W(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dof_idx+5,NO_PART_DERIV)
 
-          ENDIF
+            !!!-- S T I F F N E S S  M A T R I X  --!!!
+            IF(UPDATE_STIFFNESS_MATRIX) THEN
+              !Conservation of Mass
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,1)=1.0_DP
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,2)=-1.0_DP
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,3)=-1.0_DP
+            END IF
 
-          !!!-- S T I F F N E S S  M A T R I X  --!!!
-          IF(UPDATE_STIFFNESS_MATRIX) THEN
-            !Conservation of Mass
-            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,1)=1.0_DP
-            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,2)=-1.0_DP
-            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,3)=-1.0_DP
-          END IF
+            !!!-- N O N L I N E A R   V E C T O R --!!!
+            IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+              !Characteristics Equations
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)=(Q_BIF(1)/A_BIF(1)) &
+                & +4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_BIF(1)**0.25)- W(1)
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)=(Q_BIF(2)/A_BIF(2)) &
+                & -4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_BIF(2)**0.25)- W(2)
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)=(Q_BIF(3)/A_BIF(3)) &
+                & -4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_BIF(3)**0.25)- W(3)
+              !Continuity of Total Pressure
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(5)=((A_BIF(1)**0.5)-(Beta(2)/Beta(1))*(A_BIF(2)**0.5)) &
+                & -(((A0_PARAM(1)/As)**0.5)-(Beta(2)/Beta(1))*((A0_PARAM(2)/As)**0.5))+ &
+                & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(2)/A_BIF(2))**2.0)))
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(6)=((A_BIF(1)**0.5)-(Beta(3)/Beta(1))*(A_BIF(3)**0.5)) &
+                & -(((A0_PARAM(1)/As)**0.5)-(Beta(3)/Beta(1))*((A0_PARAM(3)/As)**0.5))+ &
+                & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(3)/A_BIF(3))**2.0)))
+            ENDIF
 
-          !!!-- N O N L I N E A R   V E C T O R --!!!
-          IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-            !Characteristics Equations
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)=(Q_BIF(1)/A_BIF(1)) &
-              & +4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_BIF(1)**0.25)- W(1)
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)=(Q_BIF(2)/A_BIF(2)) &
-              & -4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_BIF(2)**0.25)- W(2)
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)=(Q_BIF(3)/A_BIF(3)) &
-              & -4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_BIF(3)**0.25)- W(3)
-            !Continuity of Total Pressure
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(5)=((A_BIF(1)**0.5)-(Beta(2)/Beta(1))*(A_BIF(2)**0.5)) &
-              & -(((A0_PARAM(1)/As)**0.5)-(Beta(2)/Beta(1))*((A0_PARAM(2)/As)**0.5))+ &
-              & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(2)/A_BIF(2))**2.0)))
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(6)=((A_BIF(1)**0.5)-(Beta(3)/Beta(1))*(A_BIF(3)**0.5)) &
-              & -(((A0_PARAM(1)/As)**0.5)-(Beta(3)/Beta(1))*((A0_PARAM(3)/As)**0.5))+ &
-              & (Bs/(Fr*Beta(1))*0.25*(((Q_BIF(1)/A_BIF(1))**2.0)-((Q_BIF(3)/A_BIF(3))**2.0)))
           ENDIF
 
         CASE DEFAULT
@@ -4673,19 +4698,20 @@ CONTAINS
                 & NUMBER_OF_VERSIONS
               IF(NUMBER_OF_VERSIONS>1)THEN
                 bif_idx=bif_idx+1
-                IF(en==bif_idx)THEN    ! Does this depend on there being 1 bifurcation/element? (If element number = bifurcation number?)
-                  !DOF Number of the Bifurcation Nodes
-                  dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
-                  !Surrounding Element Number
-                  en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
-                ! Else check if this is a boundary node and the node is on the current element
-                ELSE IF(GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(i)%BOUNDARY_NODE .AND. &
-                  & en==DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)) THEN
+                !check if this is a boundary node and the node is on the current element
+!                ELSE IF(GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES%NODES(i)%BOUNDARY_NODE .AND. &
+!                  & en==DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)) THEN
+                IF(NUMBER_OF_VERSIONS==2 .AND. en==bif_idx) THEN
                   dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
                   !Surrounding Element Number
                   en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
                   boundaryIdx=boundaryIdx+1
                   boundaryNode=.TRUE.
+                ELSE IF(en==bif_idx)THEN    ! Does this depend on there being 1 bifurcation/element? (If element number = bifurcation number?)
+                  !DOF Number of the Bifurcation Nodes
+                  dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
+                  !Surrounding Element Number
+                  en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
                 ENDIF
               ENDIF
             ENDDO
@@ -5509,26 +5535,26 @@ CONTAINS
                        St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                          & VALUES(8,NO_PART_DERIV)
 
-                       !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!! 
-                       !Current Materials Parameters at the Bifurcation Nodes
-                       CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-                       A0_PARAM(1)=BIF_VALUES(8+en)
-                       A0_PARAM(2)=BIF_VALUES(8+en+1)
-                       A0_PARAM(3)=BIF_VALUES(8+en+2)
-                       Beta(1)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en)
-                       Beta(2)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+1)
-                       Beta(3)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+2)
-                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-
-                       CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                         & BIF_VALUES,ERR,ERROR,*999)
-
                        ! boundary condition node (coupled 1D-0D or coupled 3D-1D)
-                       IF(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                          & NODES(i)%BOUNDARY_NODE) THEN
+                       ! IF(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+                       !    & NODES(i)%BOUNDARY_NODE) THEN
+                       IF(NUMBER_OF_VERSIONS== 2 ) THEN
 
+                         !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!! 
+                         !Current Materials Parameters at the Bifurcation Nodes
+                         CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+                         A0_PARAM(1)=BIF_VALUES(8+en)
+                         A0_PARAM(2)=BIF_VALUES(8+en+1)
+                         A0_PARAM(3)=BIF_VALUES(8+en+2)
+                         Beta(1)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en)
+                         Beta(2)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+1)
+                         Beta(3)=0.0_DP
+                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+
+                         CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                           & BIF_VALUES,ERR,ERROR,*999)
                          !Previous Q and A Values at the Bifurcation Nodes
                          Q_PRE(1)=BIF_VALUES(dof_idx)
                          Q_PRE(2)=BIF_VALUES(dof_idx+1)
@@ -5536,6 +5562,8 @@ CONTAINS
                          A_PRE(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
                          A_PRE(2)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+1)
                          A_PRE(3)=1.0_DP
+                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
 
                          ! Outgoing Characteristic Extrapolation       
                          XI(1)=0.8
@@ -5563,11 +5591,8 @@ CONTAINS
                          !Riemann Invariants Values at the 1D0D interface
                          ! Either In or Outgoing wave at boundary will be updated by NavierStokes_Couple1D0D
                          W(1)=((Q_EX(1)/A_EX(1))+4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
-!                         W(2)=((Q_EX(2)/A_EX(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_EX(2)**0.25))
-                         W(2)=((Q_EX(1)/A_EX(1))-4.0*((Fr*(Beta(1)/Bs))**0.5)*(A_EX(1)**0.25))
+                         W(2)=((Q_EX(2)/A_EX(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_EX(2)**0.25))
 
-                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                           & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
                          !Storing Riemann Invariants in the Independent Field
                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                            & FIELD_VALUES_SET_TYPE,dof_idx-1,W(1),ERR,ERROR,*999)
@@ -5591,6 +5616,21 @@ CONTAINS
 
                        ELSE ! Bifurcation
 
+                         !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!! 
+                         !Current Materials Parameters at the Bifurcation Nodes
+                         CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+                         A0_PARAM(1)=BIF_VALUES(8+en)
+                         A0_PARAM(2)=BIF_VALUES(8+en+1)
+                         A0_PARAM(3)=BIF_VALUES(8+en+2)
+                         Beta(1)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en)
+                         Beta(2)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+1)
+                         Beta(3)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+2)
+                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                           & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+
+                         CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                           & BIF_VALUES,ERR,ERROR,*999)
                          !Previous Q and A Values at the Bifurcation Nodes
                          Q_PRE(1)=BIF_VALUES(dof_idx)
                          Q_PRE(2)=BIF_VALUES(dof_idx+1)
@@ -5598,6 +5638,8 @@ CONTAINS
                          A_PRE(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
                          A_PRE(2)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+1)
                          A_PRE(3)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+2)
+                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
 
                          !Parent Vessel Characteristic Extrapolation       
                          XI(1)=0.8
@@ -5635,8 +5677,6 @@ CONTAINS
                          W(2)=((Q_EX(2)/A_EX(2))-4.0*((Fr*(Beta(2)/Bs))**0.5)*(A_EX(2)**0.25))
                          W(3)=((Q_EX(3)/A_EX(3))-4.0*((Fr*(Beta(3)/Bs))**0.5)*(A_EX(3)**0.25))
 
-                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
                         !Storing Riemann Invariants in the Independent Field
                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,dof_idx-1,W(1),ERR,ERROR,*999)
@@ -8379,16 +8419,16 @@ CONTAINS
                     faceParameterIdx=faceBasis1%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
                     elementDofIdx=elementBaseDofIdx+parameterIdx
 !                    IF(boundaryID > 1) THEN
-                    ! rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
+                    rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
+                      &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                      &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                      &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
+
+                    ! nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
+                    !   & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) + &
                     !   &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
                     !   &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
                     !   &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
-
-                    nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
-                      & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) - &
-                      &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)*unitNormal(componentIdx)* &
-                      &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
-                      &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
                   END DO !nodeDerivativeIdx
                 END DO !faceNodeIdx
               ENDDO !componentIdx
@@ -8467,7 +8507,9 @@ CONTAINS
     REAL(DP) :: conserveFaces,sumFaceFlux
     REAL(DP) :: velocityGauss(3),faceNormal(3),unitNormal(3),boundaryValue,faceArea,faceVelocity,boundaryFlux(10),boundaryArea(10)
     REAL(DP) :: boundaryFluxPrevious
+    REAL(DP) :: faceVector1(3),faceVector2(3),X1(3),X2(3),lineLength,lineLength1,lineLength2,phiParameter
     LOGICAL :: correctFace,ghostElement,elementExists
+    LOGICAL :: elementIsMultidomainBoundary,invertedNormal,original
 
     REAL(DP), POINTER :: geometricParameters(:)
 
@@ -8623,6 +8665,82 @@ CONTAINS
               SELECT CASE(dependentBasis%TYPE)
               CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
                 normalComponentIdx=ABS(face%XI_DIRECTION)
+              CASE(BASIS_SIMPLEX_TYPE)
+                ! Currently problems with normal calculation for simplex elements- this is a workaround
+                geometricFaceBasis=>geometricDecomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+                numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
+                X1=0.0_DP
+                X2=0.0_DP
+                lineLength=0.0_DP
+                lineLength1=0.0_DP
+                lineLength2=0.0_DP
+                faceVector1=0.0_DP
+                faceVector2=0.0_DP
+                !Loop over element nodes
+                DO faceNodeIdx=1,geometricFaceBasis%NUMBER_OF_NODES
+                  nodeIdx=geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
+                   & TOPOLOGY%FACES%FACES(faceNumber)%NODES_IN_FACE(faceNodeIdx)
+                  domain=>geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR
+                  IF(ASSOCIATED(domain)) THEN
+                    IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                      domainNodes=>domain%TOPOLOGY%NODES
+                      !Loop over the derivatives
+                      DO derivIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                        !Loop over versions
+                        DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivIdx)%NUMBER_OF_VERSIONS
+                          !Loop over dimensions
+                          DO dimIdx=1,numberOfDimensions
+                            local_ny=fieldVariable%COMPONENTS(dimIdx)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivIdx)%VERSIONS(versionIdx)
+                            IF(faceNodeIdx==1 .AND. derivIdx==1 .AND. versionIdx==1) THEN
+                              !First node that lengths will be calculated relative to:  
+                              X1(dimIdx)=geometricParameters(local_ny)
+                            ELSE
+                              X2(dimIdx)=geometricParameters(local_ny)
+                            ENDIF
+                          ENDDO !dim_idx
+                          IF(faceNodeIdx>1) THEN
+                            lineLength=L2NORM(X1-X2)
+                            IF(lineLength>lineLength1)THEN
+                              lineLength1=lineLength
+                              faceVector1=(X1-X2)
+                            ELSE IF(lineLength>lineLength2)THEN
+                              lineLength2=lineLength
+                              faceVector2=(X1-X2)
+                            ENDIF
+                          ENDIF 
+                        ENDDO !version_idx
+                      ENDDO !deriv_idx
+                    ELSE
+                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                END DO  
+
+                CALL CROSS_PRODUCT(faceVector1,faceVector2,faceNormal,err,error,*999)
+                IF(L2NORM(faceNormal)>0) THEN
+                  unitNormal=faceNormal/L2NORM(faceNormal)          
+                  !Check that this boundary face shares the same normal as the specified element normal 
+                  normalDifference = L2NORM(unitNormal - elementNormal)
+                ELSE
+                  CALL FLAG_ERROR("0 face normal on boundary!",err,error,*999)
+                ENDIF
+                normalTolerance = 0.1_DP
+                invertedNormal=.FALSE.
+                !Directionality assignment of normals for simplex elements seems questionable
+                ! However, if a face has an inverted normal, we can check and correct for that here as it will
+                ! point in the exact opposite direction as the element (outward facing) normal
+                IF(normalDifference>normalTolerance) THEN
+                  normalDifference = L2NORM(unitNormal + elementNormal)
+                  IF(normalDifference>normalTolerance) THEN
+                    CYCLE ! next face
+                  ELSE
+                    invertedNormal=.TRUE.
+                  ENDIF
+                ENDIF
+
               CASE DEFAULT
                 LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
                   & " is not yet implemented for Navier-Stokes."
@@ -8662,18 +8780,27 @@ CONTAINS
 
                 elementBaseDofIdx=0
 
-                correctFace=.TRUE.
-                DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                  normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                  IF(face%XI_DIRECTION<0) THEN
-                    normalProjection=-normalProjection
-                  END IF
-                  faceNormal(componentIdx)=normalProjection
-                END DO !componentIdx
-                unitNormal=faceNormal/L2NORM(faceNormal)
-                normalDifference=L2NORM(elementNormal-unitNormal)
-                normalTolerance=0.1_DP
-                IF(normalDifference>normalTolerance) EXIT
+                SELECT CASE(dependentBasis%TYPE)
+                CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+                  correctFace=.TRUE.
+                  DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+                    normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
+                    IF(face%XI_DIRECTION<0) THEN
+                      normalProjection=-normalProjection
+                    END IF
+                    faceNormal(componentIdx)=normalProjection
+                  END DO !componentIdx
+                  unitNormal=faceNormal/L2NORM(faceNormal)
+                  normalDifference=L2NORM(elementNormal-unitNormal)
+                  normalTolerance=0.1_DP
+                  IF(normalDifference>normalTolerance) EXIT
+                CASE(BASIS_SIMPLEX_TYPE)
+                  faceNormal=unitNormal
+                CASE DEFAULT
+                  LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+                    & " is not yet implemented for Navier-Stokes."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
 
                 DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
                   normalProjection=faceNormal(componentIdx)
@@ -8780,22 +8907,24 @@ CONTAINS
               SELECT CASE(dependentBasis2%TYPE)
               CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
                 normalComponentIdx=ABS(face%XI_DIRECTION)
+                pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
+                CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
+                DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+                  normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
+                  IF(face%XI_DIRECTION<0) THEN
+                    normalProjection=-normalProjection
+                  END IF
+                  faceNormal(componentIdx)=normalProjection
+                END DO !componentIdx
+                unitNormal=faceNormal/L2NORM(faceNormal)
+              CASE(BASIS_SIMPLEX_TYPE)
+                !still have faceNormal/unitNormal
               CASE DEFAULT
                 LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis2%TYPE,"*",ERR,ERROR))// &
                   & " is not yet implemented for Navier-Stokes."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
 
-              pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
-              DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                IF(face%XI_DIRECTION<0) THEN
-                  normalProjection=-normalProjection
-                END IF
-                faceNormal(componentIdx)=normalProjection
-              END DO !componentIdx
-              unitNormal=faceNormal/L2NORM(faceNormal)
               normalDifference=L2NORM(elementNormal-unitNormal)
               normalTolerance=0.1_DP
               IF(normalDifference>normalTolerance) CYCLE
@@ -9001,21 +9130,25 @@ CONTAINS
         nodeNumberLast=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(en)% &
          & ELEMENT_NODES(numberOfElementNodes)
 
-        boundaryNode=.FALSE.
-        IF(equationsSet%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-          & NODES(nodeNumberFirst)%BOUNDARY_NODE) THEN
-          boundaryNode=.TRUE.
-          nodeNumber=nodeNumberFirst
-          XI(1)=0.0
-        ELSE IF(equationsSet%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-          & NODES(nodeNumberLast)%BOUNDARY_NODE) THEN
-          boundaryNode=.TRUE.
-          nodeNumber=nodeNumberLast
-          XI(1)=1.0
-        ENDIF
+        nodeNumber=nodeNumberLast
+        ! IF(equationsSet%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+        !   & NODES(nodeNumberFirst)%BOUNDARY_NODE) THEN
+        !   boundaryNode=.TRUE.
+        !   nodeNumber=nodeNumberFirst
+        !   XI(1)=0.0
+        ! ELSE IF(equationsSet%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+        !   & NODES(nodeNumberLast)%BOUNDARY_NODE) THEN
+        !   boundaryNode=.TRUE.
+        !   nodeNumber=nodeNumberLast
+        !   XI(1)=1.0
+        ! ENDIF
 
         IF(numberOfVersions>1) THEN
+
           bif_idx=bif_idx+1
+          IF(numberOfVersions==2) THEN
+            boundaryNode=.TRUE.
+          ENDIF
 
           IF(boundaryNode) THEN
             !Number of Boundaries
@@ -9030,25 +9163,6 @@ CONTAINS
             RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
               & VALUES(2,NO_PART_DERIV)
 
-                         ! Outgoing Characteristic Extrapolation       
-                         XI(1)=0.8
-                         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
-                           & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                           & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                         Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                           & PTR%VALUES(1,NO_PART_DERIV)
-                         A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                           & PTR%VALUES(2,NO_PART_DERIV)
-                         ! Re-entering Characteristic Extrapolation       
-                         XI(1)=0.2
-                         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                           & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                         Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                           & PTR%VALUES(1,NO_PART_DERIV)
-                         A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                           & PTR%VALUES(2,NO_PART_DERIV)
-
             XI(1)=1.0
             !Vessel Characteristic - interpolate at xi=1 or 0 depending if in or outgoing wave
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
@@ -9060,19 +9174,17 @@ CONTAINS
             aBoundary=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
               & PTR%VALUES(2,NO_PART_DERIV)
 
-            CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & dependentParameters,err,error,*999)
-
-            fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
-              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(1)
-            qBoundary=dependentParameters(local_ny)
-            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
-              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(1)
-            aBoundary=dependentParameters(local_ny)
-
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & dependentParameters,err,error,*999)
+            ! CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            !   & dependentParameters,err,error,*999)
+            ! fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+            ! local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+            !   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(1)
+            ! qBoundary=dependentParameters(local_ny)
+            ! local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
+            !   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(1)
+            ! aBoundary=dependentParameters(local_ny)
+            ! CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            !   & dependentParameters,err,error,*999)
 
             ! Get nodal values from CellML stored in equations set field from their respective locations
             CALL FIELD_PARAMETER_SET_GET_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1, &
