@@ -82,15 +82,15 @@ def parameter_swig_lines(parameter):
     if parameter.intent == 'OUT':
         if parameter.array_dims == parameter.required_sizes == 1:
             if parameter.var_type == Parameter.INTEGER:
-                typemap = 'const int ArraySize, int *DummyOutputArray'
+                typemap = 'const int DIM1, int *ARGOUT_ARRAY1'
                 apply_to = ('const int %(name)sSize, int *%(name)s' %
                     parameter.__dict__)
             elif parameter.var_type == Parameter.DOUBLE:
-                typemap = 'const int ArraySize, double *DummyOutputArray'
+                typemap = 'const int DIM1, double *ARGOUT_ARRAY1'
                 apply_to = ('const int %(name)sSize, double *%(name)s' %
                     parameter.__dict__)
             elif parameter.var_type == Parameter.FLOAT:
-                typemap = 'const int ArraySize, float *DummyOutputArray'
+                typemap = 'const int DIM1, float *ARGOUT_ARRAY1'
                 apply_to = ('const int %(name)sSize, float *%(name)s' %
                     parameter.__dict__)
             elif parameter.var_type == Parameter.CHARACTER:
@@ -99,26 +99,23 @@ def parameter_swig_lines(parameter):
                     parameter.__dict__)
         elif parameter.array_dims == 1 and parameter.required_sizes == 0:
             if parameter.var_type == Parameter.INTEGER:
-                typemap = ('int *DummyOutputArraySize%d' %
-                           int(parameter.array_spec[0]))
-                apply_to = ('int *%(name)s' %
-                            parameter.__dict__)
+                typemap = 'int ARGOUT_ARRAY1[ANY]'
+                apply_to = ('int %s[%d]' % (
+                    parameter.name, int(parameter.array_spec[0])))
             elif parameter.var_type == Parameter.DOUBLE:
-                typemap = ('double *DummyOutputArraySize%d' %
-                           int(parameter.array_spec[0]))
-                apply_to = ('double *%(name)s' %
-                            parameter.__dict__)
+                typemap = 'double ARGOUT_ARRAY1[ANY]'
+                apply_to = ('double %s[%d]' % (
+                    parameter.name, int(parameter.array_spec[0])))
             elif parameter.var_type == Parameter.FLOAT:
-                typemap = ('float *DummyOutputArraySize%d' %
-                           int(parameter.array_spec[0]))
-                apply_to = ('float *%(name)s' %
-                            parameter.__dict__)
+                typemap = 'float ARGOUT_ARRAY1[%d]'
+                apply_to = ('float %s[%d]' % (
+                    parameter.name, int(parameter.array_spec[0])))
         elif parameter.array_dims == parameter.required_sizes == 2:
             if parameter.var_type in (Parameter.INTEGER, Parameter.FLOAT,
                     Parameter.DOUBLE):
                 c_type = c.PARAMETER_CTYPES[parameter.var_type]
-                typemap = ('const int ArraySize1, const int ArraySize2, '
-                    '%s *DummyOutputArray' % c_type)
+                typemap = ('const int DIM1, const int DIM2, '
+                    '%s *ARGOUT_FARRAY2' % c_type)
                 apply_to = ('const int %(name)sSize1, '
                     'const int %(name)sSize2, %(type)s *%(name)s' %
                     {'name': parameter.name, 'type': c_type})
@@ -157,15 +154,15 @@ def parameter_swig_lines(parameter):
                     'const char *%(name)s' % parameter.__dict__)
         elif parameter.array_dims == parameter.required_sizes == 1:
             if parameter.var_type == Parameter.INTEGER:
-                typemap = 'const int ArraySize, const int *DummyInputArray'
+                typemap = 'const int DIM1, const int *IN_ARRAY1'
                 apply_to = ('const int %(name)sSize, const int *%(name)s' %
                     parameter.__dict__)
             elif parameter.var_type == Parameter.DOUBLE:
-                typemap = 'const int ArraySize, const double *DummyInputArray'
+                typemap = 'const int DIM1, const double *IN_ARRAY1'
                 apply_to = ('const int %(name)sSize, const double *%(name)s' %
                     parameter.__dict__)
             elif parameter.var_type == Parameter.FLOAT:
-                typemap = 'const int ArraySize, const float *DummyInputArray'
+                typemap = 'const int DIM1, const float *IN_ARRAY1'
                 apply_to = ('const int %(name)sSize, const float *%(name)s' %
                     parameter.__dict__)
             elif parameter.var_type == Parameter.CUSTOM_TYPE:
@@ -180,8 +177,8 @@ def parameter_swig_lines(parameter):
             if (parameter.var_type in
                     (Parameter.INTEGER, Parameter.DOUBLE, Parameter.FLOAT)):
                 c_type = c.PARAMETER_CTYPES[parameter.var_type]
-                typemap = ('const int ArraySize1, const int ArraySize2, '
-                    'const %s *DummyInputArray' % c_type)
+                typemap = ('const int DIM1, const int DIM2, '
+                    'const %s *IN_FARRAY2' % c_type)
                 apply_to = ('const int %(name)sSize1, const int '
                     '%(name)sSize2, const %(type)s *%(name)s' %
                     {'name': parameter.name, 'type': c_type})

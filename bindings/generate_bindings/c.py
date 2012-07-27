@@ -465,8 +465,10 @@ def parameter_to_c(parameter):
     """
 
     param = parameter.name
-    # pointer argument?
-    if (parameter.array_dims > 0 or parameter.var_type == Parameter.CHARACTER
+    # array or pointer argument?
+    if (parameter.array_dims == 1 and parameter.required_sizes == 0):
+        param = param + '[' + parameter.array_spec[0] + ']'
+    elif (parameter.array_dims > 0 or parameter.var_type == Parameter.CHARACTER
             or c_intent(parameter) == 'OUT'):
         param = '*' + param
     if c_intent(parameter) == 'OUT' and parameter.pointer == True:
