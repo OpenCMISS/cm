@@ -4882,7 +4882,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx,numberOfVersions,versionIdx,nodalElement
     REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
@@ -4927,18 +4927,18 @@ CONTAINS
             ENDIF
             NUMBER_OF_TIMES=0
             !Loop over the nodes
-            ne=0
+            nodalElement=0
             DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                       & TOTAL_NUMBER_OF_NODES
-              version_idx=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                         & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              IF(version_idx>1) THEN
-              ne=ne+1
-              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-              CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-              ENDIF
+              & TOTAL_NUMBER_OF_NODES
+              numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+               & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+              DO versionIdx=1,numberOfVersions
+                nodalElement = nodalElement + 1
+                NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+                CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+                CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+                CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+              ENDDO
             ENDDO  
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
@@ -5619,7 +5619,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx,numberOfVersions,versionIdx,nodalElement
     REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
@@ -5665,18 +5665,18 @@ CONTAINS
             ENDIF
             NUMBER_OF_TIMES=0
             !Loop over the nodes
-            ne=0
+            nodalElement=0
             DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                       & TOTAL_NUMBER_OF_NODES
-              version_idx=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                         & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              IF(version_idx>1) THEN
-              ne=ne+1
-              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-              CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-              ENDIF
+              & TOTAL_NUMBER_OF_NODES
+              numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+               & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+              DO versionIdx=1,numberOfVersions
+                nodalElement = nodalElement + 1
+                NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+                CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+                CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+                CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+              ENDDO
             ENDDO  
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
