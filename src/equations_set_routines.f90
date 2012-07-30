@@ -4930,15 +4930,15 @@ CONTAINS
             nodalElement=0
             DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
               & TOTAL_NUMBER_OF_NODES
-              numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-               & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              DO versionIdx=1,numberOfVersions
+            !  numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+            !   & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+            !  DO versionIdx=1,numberOfVersions
                 nodalElement = nodalElement + 1
                 NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
                 CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
                 CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-              ENDDO
+            !  ENDDO
             ENDDO  
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
@@ -5668,15 +5668,15 @@ CONTAINS
             nodalElement=0
             DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
               & TOTAL_NUMBER_OF_NODES
-              numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-               & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              DO versionIdx=1,numberOfVersions
+           !   numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
+           !    & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+           !   DO versionIdx=1,numberOfVersions
                 nodalElement = nodalElement + 1
                 NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
                 CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
                 CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-              ENDDO
+           !   ENDDO
             ENDDO  
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN

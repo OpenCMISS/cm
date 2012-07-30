@@ -3526,14 +3526,15 @@ CONTAINS
           IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
           IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
 
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-            & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-            & INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-            & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-            & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          ! Interpolate fields at first gauss point
+          ! CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+          !   & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          ! CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+          !   & INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          ! CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
+          !   & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          ! CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
+          !   & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
           NULLIFY(materialsParameters)
           NULLIFY(dependentParameters)
@@ -3552,45 +3553,71 @@ CONTAINS
             CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
           ENDIF
 
-          ! Loop over nodes to find which node this DOF is on (as there is one Nodal Element Matrix entry per DOF)
-          ! this gives number of versions for this node (maybe there is a less intensive way to do this?)
-          DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
-            nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-             & TOPOLOGY%ELEMENTS%ELEMENTS(nodalElementNumber)%ELEMENT_NODES(nodeIdx)
-            !Loop over the derivatives
-            DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
-              !Loop over versions
-              DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-                dofIdx=dofIdx+1
-                IF(dofIdx==nodalElementNumber) THEN
-                  numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-                ENDIF
-              ENDDO ! loop versions
-            ENDDO ! loop derivatives
-          ENDDO ! loop nodes
+          ! ! Loop over nodes to find which node this DOF is on (as there is one Nodal Element Matrix entry per DOF)
+          ! ! this gives number of versions for this node (maybe there is a less intensive way to do this?)
+          ! DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
+          !   nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+          !    & TOPOLOGY%ELEMENTS%ELEMENTS(nodalElementNumber)%ELEMENT_NODES(nodeIdx)
+          !   !Loop over the derivatives
+          !   DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
+          !     !Loop over versions
+          !     DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+          !       dofIdx=dofIdx+1
+          !       IF(dofIdx==nodalElementNumber) THEN
+          !         numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+          !       ENDIF
+          !     ENDDO ! loop versions
+          !   ENDDO ! loop derivatives
+          ! ENDDO ! loop nodes
+
+          nodeNumber=nodalElementNumber
+          numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+!          fieldVariable=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+          fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+          derivativeIdx=1
 
           !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
           CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,materialsParameters, &
             & ERR,ERROR,*999)         
           ! Constant material parameters
-          MU_PARAM=materialsParameters(1)
-          RHO_PARAM=materialsParameters(2)
-          K=materialsParameters(3)
-          Bs=materialsParameters(4)
-          As=materialsParameters(5)
-          Re=materialsParameters(6)
-          Fr=materialsParameters(7)
-          St=materialsParameters(8)
+          versionIdx=1
+          local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          MU_PARAM=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          RHO_PARAM=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          K=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          Bs=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(5)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          As=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          Re=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(7)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          Fr=materialsParameters(local_ny)
+          local_ny=fieldVariable%COMPONENTS(8)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          St=materialsParameters(local_ny)
           materialIdx=8
-          fieldVariable=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+          materialIdx=materialIdx+1
           ! Materials dependent on number of characteristics
           DO versionIdx=1,numberOfVersions
-            materialIdx=materialIdx+1
-            A0_PARAM(versionIdx)=materialsParameters(materialIdx+versionIdx)
+            local_ny=fieldVariable%COMPONENTS(materialIdx)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            A0_PARAM(versionIdx)=materialsParameters(local_ny)
           ENDDO
+          materialIdx=materialIdx+1
           DO versionIdx=1,numberOfVersions
-            materialIdx=materialIdx+1
-            Beta(versionIdx)=materialsParameters(materialIdx+versionIdx)
+            local_ny=fieldVariable%COMPONENTS(materialIdx)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            Beta(versionIdx)=materialsParameters(local_ny)
           ENDDO
           CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,materialsParameters, &
             & ERR,ERROR,*999)
@@ -3600,23 +3627,42 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dependentParameters, &
             & ERR,ERROR,*999)
           dependentParameterIdx=0
+          dependentParameterIdx=dependentParameterIdx+1
           DO versionIdx=1,numberOfVersions
-            dependentParameterIdx=dependentParameterIdx+1
-            Q_BIF(versionIdx)=dependentParameters(dependentParameterIdx)
+            local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            Q_BIF(versionIdx)=dependentParameters(local_ny)
           ENDDO
+          dependentParameterIdx=dependentParameterIdx+1
           DO versionIdx=1,numberOfVersions
-            dependentParameterIdx=dependentParameterIdx+1
-            A_BIF(versionIdx)=dependentParameters(dependentParameterIdx)
+            local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            A_BIF(versionIdx)=dependentParameters(local_ny)
           ENDDO
           CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dependentParameters, &
             & ERR,ERROR,*999)
           
-          !!!-- E X T R A P O L A T E D   C H A R A C T E R I S T I C S  --!!!
-          ! Note: sign of W will also indicate whether the wave is entering or exiting (inlet/outlet)
+
+          !!!--  C H A R A C T E R I S T I C     P A R A M E T E R S  --!!!
+          !Current Q and A Values at the Bifurcation Nodes
+          CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,independentParameters, &
+            & ERR,ERROR,*999)
+          independentParameterIdx=0
+          independentParameterIdx=independentParameterIdx+1
           DO versionIdx=1,numberOfVersions
-            W(versionIdx)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-             & VALUES(versionIdx,NO_PART_DERIV)
+            local_ny=fieldVariable%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
+              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            W(versionIdx)=independentParameters(local_ny)
           ENDDO
+          CALL FIELD_PARAMETER_SET_DATA_RESTORE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            & independentParameters,ERR,ERROR,*999)
+
+          ! !!!-- E X T R A P O L A T E D   C H A R A C T E R I S T I C S  --!!!
+          ! ! Note: sign of W will also indicate whether the wave is entering or exiting (inlet/outlet)
+          ! DO versionIdx=1,numberOfVersions
+          !   W(versionIdx)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+          !    & VALUES(versionIdx,NO_PART_DERIV)
+          ! ENDDO
 
           !!!-- S T I F F N E S S  M A T R I X  --!!!
           IF(UPDATE_STIFFNESS_MATRIX) THEN
@@ -3644,7 +3690,7 @@ CONTAINS
               ENDIF
               rowIdx=rowIdx + 1
               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
-                & + waveDirection*4.0*((Fr*(Beta(versionIdx)/Bs))**0.5)*(A_BIF(versionIdx)**0.25)- W(versionIdx)
+                & + waveDirection*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**0.5_DP)*(A_BIF(versionIdx)**0.25_DP)- W(versionIdx)
             ENDDO
             !Continuity of Total Pressure (relative to the first component)
             DO versionIdx=1,numberOfVersions
@@ -3656,8 +3702,9 @@ CONTAINS
               rowIdx=rowIdx + 1
               ! will be 0 when versionIdx = 1
               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))*((A0_PARAM(versionIdx)/As)**0.5))+ &
-                & (Bs/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)-((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
+                & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+                & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(Bs/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
+                & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
             ENDDO
           ENDIF
 
@@ -3852,8 +3899,21 @@ CONTAINS
 !    REAL(DP) :: J_MATRIX(256,256)
 
     REAL(DP) :: U_VALUE(3),W_VALUE(3),Q_VALUE(3),A_VALUE,Q_BIF(3),A_BIF(3)
-    REAL(DP) :: Beta(9)
+    REAL(DP) :: Beta(9),W(3)
     REAL(DP) :: U_DERIV(3,3),A_DERIV,Q_DERIV(3,3),Bs,As,St,Fr,Re,K,Betta,A0
+
+    TYPE(FIELD_TYPE), POINTER :: geometricField
+    TYPE(FIELD_TYPE), POINTER :: dependentField
+    TYPE(FIELD_TYPE), POINTER :: independentField
+    REAL(DP), POINTER :: dependentParameters(:)
+    REAL(DP), POINTER :: materialsParameters(:)
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(DOMAIN_TYPE), POINTER :: domain
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
+    REAL(DP) :: waveDirection
+    INTEGER(INTG) :: nodalElementNumber,nodeNumber
+    INTEGER(INTG) :: numberOfVersions
+    INTEGER(INTG) :: dofIdx,nodeIdx,derivativeIdx,versionIdx,materialIdx,rowIdx,dependentParameterIdx,baseIdx,columnIdx
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -4362,10 +4422,10 @@ CONTAINS
             NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
             IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
 
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% &
-              & INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-              & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            ! CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% &
+            !   & INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            ! CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
+            !   & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
             en=ELEMENT_NUMBER
             bif_idx=0
@@ -4384,45 +4444,70 @@ CONTAINS
               CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
             ENDIF
 
-            ! Loop over nodes to find which node this DOF is on (as there is one Nodal Element Matrix entry per DOF)
-            ! this gives number of versions for this node (maybe there is a less intensive way to do this?)
-            DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
-              nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-               & TOPOLOGY%ELEMENTS%ELEMENTS(nodalElementNumber)%ELEMENT_NODES(nodeIdx)
-              !Loop over the derivatives
-              DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
-                !Loop over versions
-                DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-                  dofIdx=dofIdx+1
-                  IF(dofIdx==nodalElementNumber) THEN
-                    numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-                  ENDIF
-                ENDDO ! loop versions
-              ENDDO ! loop derivatives
-            ENDDO ! loop nodes
+            ! ! Loop over nodes to find which node this DOF is on (as there is one Nodal Element Matrix entry per DOF)
+            ! ! this gives number of versions for this node (maybe there is a less intensive way to do this?)
+            ! DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
+            !   nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+            !    & TOPOLOGY%ELEMENTS%ELEMENTS(nodalElementNumber)%ELEMENT_NODES(nodeIdx)
+            !   !Loop over the derivatives
+            !   DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
+            !     !Loop over versions
+            !     DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+            !       dofIdx=dofIdx+1
+            !       IF(dofIdx==nodalElementNumber) THEN
+            !         numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+            !       ENDIF
+            !     ENDDO ! loop versions
+            !   ENDDO ! loop derivatives
+            ! ENDDO ! loop nodes
+
+            nodeNumber=nodalElementNumber
+            numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
+            fieldVariable=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+            derivativeIdx=1
 
             !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
             CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,materialsParameters, &
               & ERR,ERROR,*999)         
             ! Constant material parameters
-            MU_PARAM=materialsParameters(1)
-            RHO_PARAM=materialsParameters(2)
-            K=materialsParameters(3)
-            Bs=materialsParameters(4)
-            As=materialsParameters(5)
-            Re=materialsParameters(6)
-            Fr=materialsParameters(7)
-            St=materialsParameters(8)
+            versionIdx=1
+            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            MU_PARAM=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            RHO_PARAM=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            K=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            Bs=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(5)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            As=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            Re=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(7)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            Fr=materialsParameters(local_ny)
+            local_ny=fieldVariable%COMPONENTS(8)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            St=materialsParameters(local_ny)
             materialIdx=8
-            fieldVariable=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
             ! Materials dependent on number of characteristics
+            materialIdx=materialIdx+1
             DO versionIdx=1,numberOfVersions
-              materialIdx=materialIdx+1
-              A0_PARAM(versionIdx)=materialsParameters(materialIdx+versionIdx)
+              local_ny=fieldVariable%COMPONENTS(materialIdx)%PARAM_TO_DOF_MAP% &
+               & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+              A0_PARAM(versionIdx)=materialsParameters(local_ny)
             ENDDO
+            materialIdx=materialIdx+1
             DO versionIdx=1,numberOfVersions
-              materialIdx=materialIdx+1
-              Beta(versionIdx)=materialsParameters(materialIdx+versionIdx)
+              local_ny=fieldVariable%COMPONENTS(materialIdx)%PARAM_TO_DOF_MAP% &
+               & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+              Beta(versionIdx)=materialsParameters(local_ny)
             ENDDO
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,materialsParameters, &
               & ERR,ERROR,*999)
@@ -4432,13 +4517,17 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dependentParameters, &
               & ERR,ERROR,*999)
             dependentParameterIdx=0
+            dependentParameterIdx=dependentParameterIdx+1
             DO versionIdx=1,numberOfVersions
-              dependentParameterIdx=dependentParameterIdx+1
-              Q_BIF(versionIdx)=dependentParameters(dependentParameterIdx)
+              local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
+               & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+              Q_BIF(versionIdx)=dependentParameters(local_ny)
             ENDDO
+            dependentParameterIdx=dependentParameterIdx+1
             DO versionIdx=1,numberOfVersions
-              dependentParameterIdx=dependentParameterIdx+1
-              A_BIF(versionIdx)=dependentParameters(dependentParameterIdx)
+              local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
+               & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+              A_BIF(versionIdx)=dependentParameters(local_ny)
             ENDDO
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dependentParameters, &
               & ERR,ERROR,*999)
@@ -4456,7 +4545,7 @@ CONTAINS
               columnIdx=0
               DO versionIdx=1,numberOfVersions
                 columnIdx=columnIdx+1
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(versionIdx,versionIdx)=1.0_DP/A_BIF(versionIdx)                
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(versionIdx,columnIdx)=1.0_DP/A_BIF(versionIdx)                
               ENDDO
               DO versionIdx=1,numberOfVersions
                 columnIdx=columnIdx+1
@@ -4469,54 +4558,42 @@ CONTAINS
                  & +waveDirection*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**(0.5_DP))*(0.25_DP*(A_BIF(versionIdx)**(-(0.75_DP))))
               ENDDO
               rowIdx=numberOfVersions+1
-              ! TODO: check this against the theory again here
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,:)=0.0_DP
-              ! Continuity of total pressure (relative to first component)
-              DO versionIdx=1,numberOfVersions
-                rowIdx=rowIdx+1
-                IF(W(versionIdx)>ZERO_TOLERANCE) THEN
-                  waveDirection=1.0_DP
-                ELSE
-                  waveDirection=-1.0_DP
-                ENDIF
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,versionIdx)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(versionIdx)/(A_BIF(1)**2))
+              ! TODO: check this matrix against the theory again
+              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,:)=0.0_DP !4
 
+              DO baseIdx=2,numberOfVersions ! 2,3
+                rowIdx=baseIdx+numberOfVersions ! 5,6
+                DO versionIdx=1,numberOfVersions ! 1,2,3
+                  columnIdx=versionIdx+numberOfVersions 
+                  IF(versionIdx==1 .OR. versionIdx==baseIdx) THEN
 
+                    IF(W(versionIdx)>ZERO_TOLERANCE) THEN
+                      waveDirection=1.0_DP
+                    ELSE
+                      waveDirection=-1.0_DP
+                    ENDIF
+                    !Continuity of Total Pressure (dU/dQ)
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,versionIdx)=(Bs/(Fr*Beta(1)))*0.25_DP* &
+                     & (waveDirection*2.0_DP*Q_BIF(versionIdx)/(A_BIF(1)**2))
 
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,1)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(1)/(A_BIF(1)**2))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,1)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(1)/(A_BIF(1)**2))                
+                    !columnIdx=versionIdx+numberOfVersions ! 5,4;5,5;6,4;6,6
+                    !Continuity of Total Pressure (dU/dA) 
+                    IF(versionIdx==1) THEN
+                      JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,columnIdx)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
+                        & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
+                    ELSE
+                      JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,columnIdx)=(-(Beta(versionIdx)/Beta(1))* &
+                        & (0.5_DP*A_BIF(versionIdx)**(-(0.5_DP))))+((Bs/(Fr*Beta(1)))*0.25_DP* &
+                        & (-2.0_DP*waveDirection*(Q_BIF(versionIdx)**2)/(A_BIF(versionIdx)**3)))
+                    ENDIF
 
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,2)=(Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*Q_BIF(2)/(A_BIF(2)**2))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,3)=(Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*Q_BIF(3)/(A_BIF(3)**2))
-
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,4)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,4)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
-
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,5)=(-(Beta(2)/Beta(1))*(0.5_DP*A_BIF(2)**(-(0.5_DP))))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*(Q_BIF(2)**2)/(A_BIF(2)**3)))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,6)=(-(Beta(3)/Beta(1))*(0.5_DP*A_BIF(3)**(-(0.5_DP))))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*(Q_BIF(3)**2)/(A_BIF(3)**3)))    
-
-              !Continuity of Total Pressure in 1st Branch (dU/dQ)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,1)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(1)/(A_BIF(1)**2))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,2)=(Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*Q_BIF(2)/(A_BIF(2)**2))
-              !Continuity of Total Pressure in 1st Branch (dU/dA) 
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,4)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(5,5)=(-(Beta(2)/Beta(1))*(0.5_DP*A_BIF(2)**(-(0.5_DP))))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*(Q_BIF(2)**2)/(A_BIF(2)**3)))
-              !Continuity of Total Pressure in 2nd Branch (dU/dQ)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,1)=(Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*Q_BIF(1)/(A_BIF(1)**2))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,3)=(Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*Q_BIF(3)/(A_BIF(3)**2))
-              !Continuity of Total Pressure in 2nd Branch (dU/dA)
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,4)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
-              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(6,6)=(-(Beta(3)/Beta(1))*(0.5_DP*A_BIF(3)**(-(0.5_DP))))+ &
-                & ((Bs/(Fr*Beta(1)))*0.25_DP*(2.0_DP*(Q_BIF(3)**2)/(A_BIF(3)**3)))    
-            ENDIF
-
+                  ELSE
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,versionIdx)=0.0_DP
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(rowIdx,columnIdx)=0.0_DP
+                  ENDIF
+                ENDDO !versionIdx
+              ENDDO !baseidx
+            ENDIF !update jacobian
 
           CASE(EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE)
             !Set General and Specific Pointers
@@ -5309,6 +5386,11 @@ CONTAINS
                    INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
                    MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
 
+                   fieldVariable=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                   fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                   NULLIFY(materialsParameters)
+                   NULLIFY(dependentParameters)
+
                    TOTAL_NUMBER_OF_NODES=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
                    TOTAL_NUMBER_OF_DOFS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
                    TOTAL_NUMBER_OF_ELEMENTS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
@@ -5316,127 +5398,166 @@ CONTAINS
                    dof_idx=0
 
                    !!!--  C A L C U L A T I N G   N U M B E R   O F  B I F U R C A T I O N S  --!!!
-                   DO i=1,TOTAL_NUMBER_OF_NODES
-                     NUMBER_OF_VERSIONS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)% &
+                   DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
+                     !number of versions at this node
+                     numberOfVersions=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
                        & DERIVATIVES(1)%NUMBER_OF_VERSIONS
-                     IF(NUMBER_OF_VERSIONS>1)THEN
-                       !Number of Bifurcations
-                       bif_idx=bif_idx+1
-                       !DOF Number of the Bifurcation Nodes
-                       dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%DERIVATIVES(1)%DOF_INDEX(1)
-                       !Surrounding Element Number
-                       en=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(i)%SURROUNDING_ELEMENTS(1)
+                     !DOF Number of the Bifurcation Nodes
+                     dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                       & DERIVATIVES(1)%DOF_INDEX(1)
+                     !Surrounding Element Number
+                     elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
+                       & NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(1)
+                     derivativeIdx=1
 
-                       CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,bif_idx,EQUATIONS% &
-                         & INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                       CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-                         & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                     !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
+                     ! Constant material parameters (components 1-8)
+                     MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(1,NO_PART_DERIV)
+                     RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(2,NO_PART_DERIV)
+                     Bs=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(4,NO_PART_DERIV)
+                     As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(5,NO_PART_DERIV)
+                     Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(6,NO_PART_DERIV)
+                     Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(7,NO_PART_DERIV)
+                     St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                       & VALUES(8,NO_PART_DERIV)
 
-                       !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
-                       MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(1,NO_PART_DERIV)
-                       RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(2,NO_PART_DERIV)
-                       Bs=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(4,NO_PART_DERIV)
-                       As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(5,NO_PART_DERIV)
-                       Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(6,NO_PART_DERIV)
-                       Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(7,NO_PART_DERIV)
-                       St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(8,NO_PART_DERIV)
+                     ! Element-based material parameters
+                     materialIdx=9
+                     !Get the element based parameter for the current element
+                     CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & elementNumber,materialIdx,,err,error,*999)                
 
-                       !!!-- C H A R A C T E R I S T I C S   E X T R A P O L A T I O N --!!! 
-                       !Current Materials Parameters at the Bifurcation Nodes
-                       CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-                       A0_PARAM(1)=BIF_VALUES(8+en)
-                       A0_PARAM(2)=BIF_VALUES(8+en+1)
-                       A0_PARAM(3)=BIF_VALUES(8+en+2)
-                       Beta(1)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en)
-                       Beta(2)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+1)
-                       Beta(3)=BIF_VALUES(8+TOTAL_NUMBER_OF_ELEMENTS+en+2)
-                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
 
+                     DO versionIdx=1,numberOfVersions
+                       local_ny=fieldVariable%COMPONENTS(materialIdx)%PARAM_TO_DOF_MAP% &
+                        & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       A0_PARAM(versionIdx)=materialsParameters(local_ny)
+                     ENDDO
+                     DO versionIdx=1,numberOfVersions
+                       materialIdx=materialIdx+1
+                       local_ny=fieldVariable%COMPONENTS(materialIdx)%PARAM_TO_DOF_MAP% &
+                        & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       Beta(versionIdx)=materialsParameters(local_ny)
+                     ENDDO
+                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,materialsParameters, &
+                       & ERR,ERROR,*999)
+
+                     IF(numberOfVersions==2) THEN
+                       ! This could be a coupled boundary with no downstream element- interpolate Q and A
+                       ! at current element. These values may be altered by the coupling routine.
+                       ! Characteristic Extrapolation       
+                       XI(1)=1.0
+                       CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,EQUATIONS% &
+                         & INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                       CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                         & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                       DO versionIdx=1,numberOfVersions                       
+                         Q_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(1,NO_PART_DERIV)
+                         A_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(2,NO_PART_DERIV)
+                       ENDDO
+                     ELSE
+                       !Branching vessel
                        !Parent Vessel Characteristic Extrapolation       
                        XI(1)=0.8
-                       CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en,EQUATIONS%INTERPOLATION% &
-                         & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                       versionIdx=1
+                       CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,EQUATIONS% &
+                         & INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
                          & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                       Q_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                       Q_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
                          & PTR%VALUES(1,NO_PART_DERIV)
-                       A_EX(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                       A_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
                          & PTR%VALUES(2,NO_PART_DERIV)
-                       !1st Branch Vessel Characteristic Extrapolation       
+                       !Daughter Vessels Characteristic Extrapolation       
                        XI(1)=0.2
-                       CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en+1,EQUATIONS%INTERPOLATION% &
-                         & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                       CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                         & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                       Q_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                         & PTR%VALUES(1,NO_PART_DERIV)
-                       A_EX(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                         & PTR%VALUES(2,NO_PART_DERIV)
-                       !2nd Branch Vessel Characteristic Extrapolation       
-                       XI(1)=0.2
-                       CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,en+2,EQUATIONS%INTERPOLATION% &
-                         & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                       CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                         & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                       Q_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                         & PTR%VALUES(1,NO_PART_DERIV)
-                       A_EX(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                         & PTR%VALUES(2,NO_PART_DERIV)
+                       DO versionIdx=2,numberOfVersions                       
+                         ! NOTE: This currently depends on the daughter vessels being the next numbered elements from their
+                         ! parent- should try to think of a way to generalize this 
+                         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber+versionIdx, &
+                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                           & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                         Q_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(1,NO_PART_DERIV)
+                         A_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                           & PTR%VALUES(2,NO_PART_DERIV)
+                       ENDDO
+                     ENDIF
 
-                       !Riemann Invariants Values at the Bifurcation Element
-                       W(1)=((Q_EX(1)/A_EX(1))+4.0_DP*((Fr*(Beta(1)/Bs))**(0.5_DP))*(A_EX(1)**(0.25_DP)))
-                       W(2)=((Q_EX(2)/A_EX(2))-4.0_DP*((Fr*(Beta(2)/Bs))**(0.5_DP))*(A_EX(2)**(0.25_DP)))
-                       W(3)=((Q_EX(3)/A_EX(3))-4.0_DP*((Fr*(Beta(3)/Bs))**(0.5_DP))*(A_EX(3)**(0.25_DP)))
+                     !Riemann Invariants Values at the Bifurcation Element
+                     ! NOTE: currently assumes 1 inlet, arbitrary # of outlets- should think of a way to generalize
+                     DO versionIdx=1,numberOfVersions
+                       IF(versionIdx==1) THEN
+                         waveDirection=1.0_DP
+                       ELSE
+                         waveDirection=-1.0_DP
+                       ENDIF
+                       W(versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+waveDirection*4.0_DP* &
+                        & ((Fr*(Beta(versionIdx)/Bs))**(0.5_DP))*(A_EX(versionIdx)**(0.25_DP)))
+                     ENDDO
 
-                       !Previous Q and A Values at the Bifurcation Nodes
-                       CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                         & BIF_VALUES,ERR,ERROR,*999)
-                       Q_PRE(1)=BIF_VALUES(dof_idx)
-                       Q_PRE(2)=BIF_VALUES(dof_idx+1)
-                       Q_PRE(3)=BIF_VALUES(dof_idx+2)
-                       A_PRE(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
-                       A_PRE(2)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+1)
-                        A_PRE(3)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx+2)
-                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_PREVIOUS_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-                        !Storing Riemann Invariants in the Independent Field
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,dof_idx-1,W(1),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_VALUES_SET_TYPE,dof_idx+3,W(2),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,dof_idx+5,W(3),ERR,ERROR,*999)
-                        !Storing Previous Q and A Values in the Independent Field
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,dof_idx,Q_PRE(1),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,dof_idx+1,Q_PRE(2),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,dof_idx+2,Q_PRE(3),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,TOTAL_NUMBER_OF_DOFS+dof_idx,A_PRE(1),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,TOTAL_NUMBER_OF_DOFS+dof_idx+1,A_PRE(2),ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,TOTAL_NUMBER_OF_DOFS+dof_idx+2,A_PRE(3),ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
-                  ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF
-                ELSE
-                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
+                     !Previous Q and A Values at the Bifurcation Nodes
+                     CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                       & dependentParameters,ERR,ERROR,*999)
+                     dependentParameterIdx=1 ! W is parameter 1
+                     dependentParameterIdx=dependentParameterIdx+1 ! Q is parameter 2
+                     DO versionIdx=1,numberOfVersions
+                       local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
+                        & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       Q_PRE(versionIdx)=dependentParameters(local_ny)
+                     ENDDO
+                     dependentParameterIdx=dependentParameterIdx+1 ! A is parameter 3
+                     DO versionIdx=1,numberOfVersions
+                       local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
+                        & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       A_PRE(versionIdx)=dependentParameters(local_ny)
+                     ENDDO
+                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                       & dependentParameters,ERR,ERROR,*999)
+
+                     independentParameterIdx=0
+                     derivativeIdx=1
+                     !Storing Riemann Invariants in the Independent Field
+                     independentParameterIdx=independentParameterIdx+1
+                     DO versionIdx=1,numberOfVersions
+                       local_ny=FIELD_VARIABLE%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
+                         & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                         & FIELD_VALUES_SET_TYPE,local_ny,W(versionIdx),ERR,ERROR,*999)
+                     ENDDO
+                     ! Storing Q_PRE
+                     independentParameterIdx=independentParameterIdx+1
+                     DO versionIdx=1,numberOfVersions
+                       local_ny=FIELD_VARIABLE%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
+                         & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                         & FIELD_VALUES_SET_TYPE,local_ny,Q_PRE(versionIdx),ERR,ERROR,*999)
+                     ENDDO
+                     ! Storing A_PRE
+                     independentParameterIdx=independentParameterIdx+1
+                     DO versionIdx=1,numberOfVersions
+                       independentParameterIdx=independentParameterIdx+1
+                       local_ny=FIELD_VARIABLE%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
+                         & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                         & FIELD_VALUES_SET_TYPE,local_ny,A_PRE(versionIdx),ERR,ERROR,*999)
+                     ENDDO
+                   ENDDO ! loop over nodes
+                 ELSE
+                   CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                 END IF
+               ELSE
+                 CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+               ENDIF
+             ELSE
                 CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
               END IF
             ENDIF
