@@ -3566,23 +3566,6 @@ CONTAINS
             CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
           ENDIF
 
-          ! ! Loop over nodes to find which node this DOF is on (as there is one Nodal Element Matrix entry per DOF)
-          ! ! this gives number of versions for this node (maybe there is a less intensive way to do this?)
-          ! DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
-          !   nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-          !    & TOPOLOGY%ELEMENTS%ELEMENTS(nodalElementNumber)%ELEMENT_NODES(nodeIdx)
-          !   !Loop over the derivatives
-          !   DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
-          !     !Loop over versions
-          !     DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-          !       dofIdx=dofIdx+1
-          !       IF(dofIdx==nodalElementNumber) THEN
-          !         numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-          !       ENDIF
-          !     ENDDO ! loop versions
-          !   ENDDO ! loop derivatives
-          ! ENDDO ! loop nodes
-
           nodeNumber=nodalElementNumber
           numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
 
@@ -4422,9 +4405,6 @@ CONTAINS
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
               & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
-            en=ELEMENT_NUMBER
-            bif_idx=0
-            dof_idx=0
             nodalElementNumber = ELEMENT_NUMBER
             dofIdx=nodalElementNumber
                 
@@ -4438,23 +4418,6 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
             ENDIF
-
-            ! ! Loop over nodes to find which node this DOF is on (as there is one Nodal Element Matrix entry per DOF)
-            ! ! this gives number of versions for this node (maybe there is a less intensive way to do this?)
-            ! DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
-            !   nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-            !    & TOPOLOGY%ELEMENTS%ELEMENTS(nodalElementNumber)%ELEMENT_NODES(nodeIdx)
-            !   !Loop over the derivatives
-            !   DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
-            !     !Loop over versions
-            !     DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-            !       dofIdx=dofIdx+1
-            !       IF(dofIdx==nodalElementNumber) THEN
-            !         numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-            !       ENDIF
-            !     ENDDO ! loop versions
-            !   ENDDO ! loop derivatives
-            ! ENDDO ! loop nodes
 
             nodeNumber=nodalElementNumber
             numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
@@ -5411,23 +5374,6 @@ CONTAINS
                      ! (do nothing for normal nodes)
                      IF(numberOfVersions>1) THEN
 
-                       !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
-                       ! Constant material parameters (components 1-8)
-                       MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(1,NO_PART_DERIV)
-                       RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(2,NO_PART_DERIV)
-                       Bs=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(4,NO_PART_DERIV)
-                       As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(5,NO_PART_DERIV)
-                       Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(6,NO_PART_DERIV)
-                       Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(7,NO_PART_DERIV)
-                       St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & VALUES(8,NO_PART_DERIV)
-
                        ! Element-based material parameters
                        derivativeIdx=1
 
@@ -5522,6 +5468,29 @@ CONTAINS
 
                        !Riemann Invariants Values at the Bifurcation Element
                        DO versionIdx=1,numberOfVersions
+
+                         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,versionElementNumber(versionIdx), &
+                           & EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                         CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
+                           & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+
+                         !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
+                         ! Constant material parameters (components 1-8)
+                         MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(1,NO_PART_DERIV)
+                         RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(2,NO_PART_DERIV)
+                         Bs=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(4,NO_PART_DERIV)
+                         As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(5,NO_PART_DERIV)
+                         Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(6,NO_PART_DERIV)
+                         Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(7,NO_PART_DERIV)
+                         St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & VALUES(8,NO_PART_DERIV)
+
                          W(versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+normalWave(versionIdx)*4.0_DP* &
                           & ((Fr*(Beta(versionIdx)/Bs))**(0.5_DP))*(A_EX(versionIdx)**(0.25_DP)))
                        ENDDO
@@ -5535,7 +5504,7 @@ CONTAINS
                           & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                          Q_PRE(versionIdx)=dependentParameters(local_ny)
                        ENDDO
-                       dependentParameterIdx=dependentParameterIdx+1 ! A is parameter 2
+                       dependentParameterIdx=2 ! A is parameter 2
                        DO versionIdx=1,numberOfVersions
                          local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
                           & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -5545,10 +5514,9 @@ CONTAINS
                          & dependentParameters,ERR,ERROR,*999)
 
                        ! Store values in the Independent Field (node-based)
-                       independentParameterIdx=0
                        derivativeIdx=1
                        !Storing Riemann Invariants in the Independent Field
-                       independentParameterIdx=independentParameterIdx+1
+                       independentParameterIdx=1
                        fieldVariableIndependent=>INDEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR
                        DO versionIdx=1,numberOfVersions
                          local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
@@ -5557,7 +5525,7 @@ CONTAINS
                            & FIELD_VALUES_SET_TYPE,local_ny,W(versionIdx),ERR,ERROR,*999)
                        ENDDO
                        ! Storing Q_PRE
-                       independentParameterIdx=independentParameterIdx+1
+                       independentParameterIdx=2
                        DO versionIdx=1,numberOfVersions
                          local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
                            & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -5565,9 +5533,8 @@ CONTAINS
                            & FIELD_VALUES_SET_TYPE,local_ny,Q_PRE(versionIdx),ERR,ERROR,*999)
                        ENDDO
                        ! Storing A_PRE
-                       independentParameterIdx=independentParameterIdx+1
+                       independentParameterIdx=3
                        DO versionIdx=1,numberOfVersions
-                         independentParameterIdx=independentParameterIdx+1
                          local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
                            & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -5581,7 +5548,7 @@ CONTAINS
                ELSE
                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                ENDIF
-             ELSE
+              ELSE
                 CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
               END IF
             ENDIF
