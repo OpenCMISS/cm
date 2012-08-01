@@ -1641,10 +1641,11 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: node_idx,version_idx,element_idx,ne,NUMBER_OF_TIMES
-    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+    INTEGER(INTG) :: nodeIdx,nodalElement
+    REAL(SP) :: NODE_USER_ELAPSED,NODE_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODAL_MAPPING
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
@@ -1662,13 +1663,12 @@ CONTAINS
               CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
             ENDIF
-             !Initialise the matrices and rhs vector
+            !Initialise the matrices and rhs vector
             CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_NONLINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
-            !Assemble the elements
-            !Allocate the element matrices 
+            !Allocate the nodal matrices 
             CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & MAPPINGS%ELEMENTS
+            NODAL_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%NODES
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
@@ -1679,33 +1679,26 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              ELEMENT_USER_ELAPSED=0.0_SP
-              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+              NODE_USER_ELAPSED=0.0_SP
+              NODE_SYSTEM_ELAPSED=0.0_SP
             ENDIF
             NUMBER_OF_TIMES=0
-
-            !Loop over the nodes
-            ne=0
-            DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                       & TOTAL_NUMBER_OF_NODES
-              version_idx=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-                         & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              IF(version_idx>1) THEN
-              ne=ne+1
+            !Loop over the internal nodes
+            DO nodeIdx=NODAL_MAPPING%INTERNAL_START,NODAL_MAPPING%INTERNAL_FINISH
+              nodalElement=NODAL_MAPPING%DOMAIN_LIST(nodeIdx)
               NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-              CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
-              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+              CALL EquationsSet_NodalResidualEvaluate(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-              ENDIF
-            ENDDO  
+            ENDDO !nodeIdx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
               SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
-              ELEMENT_USER_ELAPSED=USER_ELAPSED
-              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              NODE_USER_ELAPSED=USER_ELAPSED
+              NODE_SYSTEM_ELAPSED=SYSTEM_ELAPSED
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
@@ -1723,7 +1716,34 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)              
             ENDIF
-            !Finalise the element matrices
+            !Loop over the boundary and ghost nodes
+            DO nodeIdx=NODAL_MAPPING%BOUNDARY_START,NODAL_MAPPING%GHOST_FINISH
+              nodalElement=NODAL_MAPPING%DOMAIN_LIST(nodeIdx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+              CALL EquationsSet_NodalResidualEvaluate(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !nodeIdx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              NODE_USER_ELAPSED=NODE_USER_ELAPSED+USER_ELAPSED
+              NODE_SYSTEM_ELAPSED=NODE_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average node user time for equations assembly = ", &
+                  & NODE_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average node system time for equations assembly = ", &
+                  & NODE_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the nodal matrices
             CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
             !Output equations matrices and RHS vector if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN
@@ -3151,6 +3171,120 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Evaluates the nodal Jacobian for the given node number for a nodal equations set.
+  SUBROUTINE EquationsSet_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: nodeNumber !<The element number to evaluate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: matrixIdx
+    TYPE(ELEMENT_MATRIX_TYPE), POINTER :: nodalMatrix
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("EquationsSet_NodalJacobianEvaluate",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%EQUATIONS
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%EQUATIONS_MATRICES
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+          IF(ASSOCIATED(nonlinearMatrices)) THEN
+            DO matrixIdx=1,nonlinearMatrices%NUMBER_OF_JACOBIANS
+              SELECT CASE(nonlinearMatrices%JACOBIANS(matrixIdx)%PTR%JACOBIAN_CALCULATION_TYPE)
+              CASE(EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED)
+                ! None of these routines currently support calculating off diagonal terms for coupled problems,
+                ! but when one does we will have to pass through the matrixIdx parameter
+                IF(matrixIdx>1) THEN
+                  CALL FLAG_ERROR("Analytic off-diagonal Jacobian calculation not implemented.",err,error,*999)
+                END IF
+                SELECT CASE(equationsSet%CLASS)
+                CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+                  CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+                  CALL FluidMechanics_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
+                CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+                  CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+                  CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+                  CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CASE(EQUATIONS_SET_MODAL_CLASS)
+                  CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+                  CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CASE DEFAULT
+                  localError="Equations set class "//TRIM(NUMBER_TO_VSTRING(equationsSet%CLASS,"*",err,error))//" is not valid."
+                  CALL FLAG_ERROR(localError,err,error,*999)
+                END SELECT
+              CASE(EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED)
+                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+              CASE DEFAULT
+                localError="Jacobian calculation type "//TRIM(NUMBER_TO_VSTRING(nonlinearMatrices%JACOBIANS(matrixIdx)%PTR% &
+                  & JACOBIAN_CALCULATION_TYPE,"*",err,error))//" is not valid."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              END SELECT
+            END DO
+          ELSE
+            CALL FLAG_ERROR("Equations nonlinear matrices is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("Equations matrices is not associated.",err,error,*999)
+        END IF
+        IF(equations%OUTPUT_TYPE>=EQUATIONS_ELEMENT_MATRIX_OUTPUT) THEN
+          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",err,error,*999)
+          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Nodal Jacobian matrix:",err,error,*999)
+          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Node number = ",nodeNumber,err,error,*999)
+          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Nodal Jacobian:",err,error,*999)
+          DO matrixIdx=1,nonlinearMatrices%NUMBER_OF_JACOBIANS
+            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Jacobian number = ",matrixIdx,err,error,*999)
+            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update Jacobian = ",nonlinearMatrices%JACOBIANS(matrixIdx)%PTR% &
+              & UPDATE_JACOBIAN,err,error,*999)
+            IF(nonlinearMatrices%JACOBIANS(matrixIdx)%PTR%UPDATE_JACOBIAN) THEN
+              nodalMatrix=>nonlinearMatrices%JACOBIANS(matrixIdx)%PTR%ELEMENT_JACOBIAN
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",nodalMatrix%NUMBER_OF_ROWS,err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",nodalMatrix%NUMBER_OF_COLUMNS, &
+                & err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",nodalMatrix%MAX_NUMBER_OF_ROWS, &
+                & err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",nodalMatrix% &
+                & MAX_NUMBER_OF_COLUMNS,err,error,*999)
+              CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalMatrix%NUMBER_OF_ROWS,8,8,nodalMatrix%ROW_DOFS, &
+                & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+              CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalMatrix%NUMBER_OF_COLUMNS,8,8,nodalMatrix% &
+                & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+              CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,nodalMatrix%NUMBER_OF_ROWS,1,1,nodalMatrix% &
+                & NUMBER_OF_COLUMNS,8,8,nodalMatrix%MATRIX(1:nodalMatrix%NUMBER_OF_ROWS,1:nodalMatrix% &
+                & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                & '(16X,8(X,E13.6))',err,error,*999)
+            END IF
+          END DO
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_NodalJacobianEvaluate")
+    RETURN
+999 CALL ERRORS("EquationsSet_NodalJacobianEvaluate",err,error)
+    CALL EXITS("EquationsSet_NodalJacobianEvaluate")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_NodalJacobianEvaluate
+
+  !
+  !================================================================================================================================
+  !
+
   !>Evaluates the element Jacobian matrix entries using finite differencing for a general finite element equations set.
   SUBROUTINE EquationsSet_FiniteElementJacobianEvaluateFD(equationsSet,elementNumber,jacobianNumber,err,error,*)
 
@@ -3417,6 +3551,156 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the element residual and rhs vector for the given node number for a nodal equations set.
+  SUBROUTINE EquationsSet_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: nodeNumber !<The element number to evaluate the residual for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: matrixIdx
+    TYPE(ELEMENT_MATRIX_TYPE), POINTER :: nodalMatrix
+    TYPE(ELEMENT_VECTOR_TYPE), POINTER :: nodalVector
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: linearMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: sourceVector
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("EquationsSet_NodalResidualEvaluate",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%CLASS)
+      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+        CALL FluidMechanics_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*999)
+      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_MODAL_CLASS)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE DEFAULT
+        localError="Equations set class "//TRIM(NUMBER_TO_VSTRING(equationsSet%CLASS,"*",err,error))//" is not valid."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT
+      equations=>equationsSet%EQUATIONS
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%EQUATIONS_MATRICES
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+          IF(ASSOCIATED(nonlinearMatrices)) THEN
+            nonlinearMatrices%ELEMENT_RESIDUAL_CALCULATED=nodeNumber
+            IF(equations%OUTPUT_TYPE>=EQUATIONS_ELEMENT_MATRIX_OUTPUT) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",err,error,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Nodal residual matrices and vectors:",err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Node number = ",nodeNumber,err,error,*999)
+              linearMatrices=>equationsMatrices%LINEAR_MATRICES
+              IF(ASSOCIATED(linearMatrices)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Linear matrices:",err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of node matrices = ",linearMatrices% &
+                  & NUMBER_OF_LINEAR_MATRICES,err,error,*999)
+                DO matrixIdx=1,linearMatrices%NUMBER_OF_LINEAR_MATRICES
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Node matrix : ",matrixIdx,err,error,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update matrix = ",linearMatrices%MATRICES(matrixIdx)%PTR% &
+                    & UPDATE_MATRIX,err,error,*999)
+                  IF(linearMatrices%MATRICES(matrixIdx)%PTR%UPDATE_MATRIX) THEN
+                    nodalMatrix=>linearMatrices%MATRICES(matrixIdx)%PTR%ELEMENT_MATRIX
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",nodalMatrix%NUMBER_OF_ROWS,err,error,*999)
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",nodalMatrix%NUMBER_OF_COLUMNS, &
+                      & err,error,*999)
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",nodalMatrix%MAX_NUMBER_OF_ROWS, &
+                      & err,error,*999)
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",nodalMatrix% &
+                      & MAX_NUMBER_OF_COLUMNS,err,error,*999)
+                    CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalMatrix%NUMBER_OF_ROWS,8,8,nodalMatrix%ROW_DOFS, &
+                      & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+                    CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalMatrix%NUMBER_OF_COLUMNS,8,8,nodalMatrix% &
+                      & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+                    CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,nodalMatrix%NUMBER_OF_ROWS,1,1,nodalMatrix% &
+                      & NUMBER_OF_COLUMNS,8,8,nodalMatrix%MATRIX(1:nodalMatrix%NUMBER_OF_ROWS,1:nodalMatrix% &
+                      & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                      & '(16X,8(X,E13.6))',err,error,*999)
+                  ENDIF
+                ENDDO !matrixIdx
+              ENDIF
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Node residual vector:",err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",nonlinearMatrices%UPDATE_RESIDUAL,err,error,*999)
+              IF(nonlinearMatrices%UPDATE_RESIDUAL) THEN
+                nodalVector=>nonlinearMatrices%ELEMENT_RESIDUAL
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",nodalVector%NUMBER_OF_ROWS,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",nodalVector%MAX_NUMBER_OF_ROWS, &
+                  & err,error,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalVector%NUMBER_OF_ROWS,8,8,nodalVector%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalVector%NUMBER_OF_ROWS,8,8,nodalVector%VECTOR, &
+                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',err,error,*999)
+              ENDIF
+              rhsVector=>equationsMatrices%RHS_VECTOR
+              IF(ASSOCIATED(rhsVector)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Node RHS vector :",err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",rhsVector%UPDATE_VECTOR,err,error,*999)
+                IF(rhsVector%UPDATE_VECTOR) THEN
+                  nodalVector=>rhsVector%ELEMENT_VECTOR
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",nodalVector%NUMBER_OF_ROWS,err,error,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",nodalVector%MAX_NUMBER_OF_ROWS, &
+                    & err,error,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalVector%NUMBER_OF_ROWS,8,8,nodalVector%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalVector%NUMBER_OF_ROWS,8,8,nodalVector%VECTOR, &
+                    & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',err,error,*999)
+                ENDIF
+              ENDIF
+              sourceVector=>equationsMatrices%SOURCE_VECTOR
+              IF(ASSOCIATED(sourceVector)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Node source vector :",err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",sourceVector%UPDATE_VECTOR,err,error,*999)
+                IF(sourceVector%UPDATE_VECTOR) THEN
+                  nodalVector=>sourceVector%ELEMENT_VECTOR
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",nodalVector%NUMBER_OF_ROWS,err,error,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",nodalVector%MAX_NUMBER_OF_ROWS, &
+                    & err,error,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalVector%NUMBER_OF_ROWS,8,8,nodalVector%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',err,error,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,nodalVector%NUMBER_OF_ROWS,8,8,nodalVector%VECTOR, &
+                    & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',err,error,*999)
+                ENDIF
+              ENDIF
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equation nonlinear matrices not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equation matrices is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    ENDIF    
+       
+    CALL EXITS("EquationsSet_NodalResidualEvaluate")
+    RETURN
+999 CALL ERRORS("EquationsSet_NodalResidualEvaluate",err,error)
+    CALL EXITS("EquationsSet_NodalResidualEvaluate")
+    RETURN 1
+    
+  END SUBROUTINE EquationsSet_NodalResidualEvaluate
 
   !
   !================================================================================================================================
@@ -4882,11 +5166,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx,numberOfVersions,versionIdx,nodalElement
-    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx,numberOfVersions
+    INTEGER(INTG) :: nodeIdx,nodalElement
+    REAL(SP) :: NODE_USER_ELAPSED,NODE_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODAL_MAPPING
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
@@ -4904,14 +5189,13 @@ CONTAINS
               CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
             ENDIF
-!!Do we need to transfer parameter sets???
             !Initialise the matrices and rhs vector
             CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_JACOBIAN_ONLY,0.0_DP,ERR,ERROR,*999)
-            !Assemble the elements
-            !Allocate the element matrices 
+            !Assemble the nodes
+            !Allocate the nodal matrices 
             CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & MAPPINGS%ELEMENTS
+            NODAL_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%NODES
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
@@ -4922,32 +5206,26 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              ELEMENT_USER_ELAPSED=0.0_SP
-              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+              NODE_USER_ELAPSED=0.0_SP
+              NODE_SYSTEM_ELAPSED=0.0_SP
             ENDIF
             NUMBER_OF_TIMES=0
-            !Loop over the nodes
-            nodalElement=0
-            DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-              & TOTAL_NUMBER_OF_NODES
-            !  numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-            !   & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-            !  DO versionIdx=1,numberOfVersions
-                nodalElement = nodalElement + 1
-                NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-                CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
-                CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            !  ENDDO
-            ENDDO  
+            !Loop over the internal nodes
+            DO nodeIdx=NODAL_MAPPING%INTERNAL_START,NODAL_MAPPING%INTERNAL_FINISH
+              nodalElement=NODAL_MAPPING%DOMAIN_LIST(nodeIdx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+              CALL EquationsSet_NodalJacobianEvaluate(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !nodeIdx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
               SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
-              ELEMENT_USER_ELAPSED=USER_ELAPSED
-              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              NODE_USER_ELAPSED=USER_ELAPSED
+              NODE_SYSTEM_ELAPSED=SYSTEM_ELAPSED
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
@@ -4965,7 +5243,34 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)              
             ENDIF
-            !Finalise the element matrices
+            !Loop over the boundary and ghost nodes
+            DO nodeIdx=NODAL_MAPPING%BOUNDARY_START,NODAL_MAPPING%GHOST_FINISH
+              nodalElement=NODAL_MAPPING%DOMAIN_LIST(nodeIdx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+              CALL EquationsSet_NodalJacobianEvaluate(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !nodeIdx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              NODE_USER_ELAPSED=NODE_USER_ELAPSED+USER_ELAPSED
+              NODE_SYSTEM_ELAPSED=NODE_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average node user time for equations assembly = ", &
+                  & NODE_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average node system time for equations assembly = ", &
+                  & NODE_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the nodal matrices
             CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
             !Output equations matrices and RHS vector if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN
@@ -5611,7 +5916,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the residual for an static equations set using the finite element method
+  !>Evaluates the residual for an static equations set using the nodal method
   SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE_STATIC_NODAL(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -5619,11 +5924,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx,numberOfVersions,versionIdx,nodalElement
-    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES,node_idx,version_idx,numberOfVersions
+    INTEGER(INTG) :: nodeIdx,nodalElement
+    REAL(SP) :: NODE_USER_ELAPSED,NODE_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODAL_MAPPING
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
@@ -5642,14 +5948,12 @@ CONTAINS
               CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
             ENDIF
-            !!Do we need to transfer parameter sets???
             !Initialise the matrices and rhs vector
             CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_NONLINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
-            !Assemble the elements
-            !Allocate the element matrices 
+            !Allocate the nodal matrices 
             CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & MAPPINGS%ELEMENTS
+            NODAL_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%NODES
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
@@ -5660,32 +5964,26 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              ELEMENT_USER_ELAPSED=0.0_SP
-              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+              NODE_USER_ELAPSED=0.0_SP
+              NODE_SYSTEM_ELAPSED=0.0_SP
             ENDIF
             NUMBER_OF_TIMES=0
-            !Loop over the nodes
-            nodalElement=0
-            DO node_idx=1,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-              & TOTAL_NUMBER_OF_NODES
-           !   numberOfVersions=EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
-           !    & NODES(node_idx)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-           !   DO versionIdx=1,numberOfVersions
-                nodalElement = nodalElement + 1
-                NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-                CALL EQUATIONS_MATRICES_NODAL_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
-                CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-           !   ENDDO
-            ENDDO  
+            !Loop over the internal nodes
+            DO nodeIdx=NODAL_MAPPING%INTERNAL_START,NODAL_MAPPING%INTERNAL_FINISH
+              nodalElement=NODAL_MAPPING%DOMAIN_LIST(nodeIdx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+              CALL EquationsSet_NodalResidualEvaluate(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !nodeIdx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
               SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
-              ELEMENT_USER_ELAPSED=USER_ELAPSED
-              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              NODE_USER_ELAPSED=USER_ELAPSED
+              NODE_SYSTEM_ELAPSED=SYSTEM_ELAPSED
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
@@ -5703,7 +6001,34 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)              
             ENDIF
-            !Finalise the element matrices
+            !Loop over the boundary and ghost nodes
+            DO nodeIdx=NODAL_MAPPING%BOUNDARY_START,NODAL_MAPPING%GHOST_FINISH
+              nodalElement=NODAL_MAPPING%DOMAIN_LIST(nodeIdx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,nodalElement,ERR,ERROR,*999)
+              CALL EquationsSet_NodalResidualEvaluate(EQUATIONS_SET,nodalElement,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !nodeIdx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              NODE_USER_ELAPSED=NODE_USER_ELAPSED+USER_ELAPSED
+              NODE_SYSTEM_ELAPSED=NODE_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average node user time for equations assembly = ", &
+                  & NODE_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average node system time for equations assembly = ", &
+                  & NODE_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the nodal matrices
             CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
             !Output equations matrices and RHS vector if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN

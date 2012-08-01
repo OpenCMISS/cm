@@ -31,7 +31,7 @@
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
 !> the University of Oxford. All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): David Ladd
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -51,6 +51,7 @@ MODULE FLUID_MECHANICS_ROUTINES
 
   USE BASE_ROUTINES
   USE BURGERS_EQUATION_ROUTINES
+  USE CHARACTERISTIC_EQUATION_ROUTINES
   USE CONTROL_LOOP_ROUTINES
   USE DARCY_EQUATIONS_ROUTINES
   USE DARCY_PRESSURE_EQUATIONS_ROUTINES
@@ -81,6 +82,7 @@ MODULE FLUID_MECHANICS_ROUTINES
   PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET,FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET
 
   PUBLIC FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE,FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+  PUBLIC FluidMechanics_NodalJacobianEvaluate,FluidMechanics_NodalResidualEvaluate
 
   PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET,FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE, &
     & FLUID_MECHANICS_EQUATIONS_SET_SETUP,FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET, &
@@ -136,6 +138,8 @@ CONTAINS
         CALL BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE,ANALYTIC_FUNCTION_TYPE,POSITION, &
           & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS, &
           & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."
@@ -221,6 +225,8 @@ CONTAINS
         CALL POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL Characteristic_EquationsSet_SubtypeSet(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."
@@ -268,6 +274,8 @@ CONTAINS
         CALL POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL FLAG_ERROR("There are no finite element matrices to be calculated for Burgers equation.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL FLAG_ERROR("There are no finite element matrices to be calculated for Characteristic equations.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -315,6 +323,8 @@ CONTAINS
         CALL FLAG_ERROR("There is no Jacobian to be evaluated for Poiseuille.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -362,6 +372,8 @@ CONTAINS
         CALL FLAG_ERROR("There is no residual to be evaluated for Poiseuille.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -377,6 +389,104 @@ CONTAINS
     CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE")
     RETURN 1
   END SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the nodal Jacobian matrix for the given node number for a fluid mechanics class nodal equation set.
+  SUBROUTINE FluidMechanics_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: nodeNumber !<The element number to evaluate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("FluidMechanics_NodalJacobianEvaluate",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%TYPE)
+      CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL Characteristic_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*999)
+      CASE DEFAULT
+        localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+    ENDIF
+       
+    CALL EXITS("FluidMechanics_NodalJacobianEvaluate")
+    RETURN
+999 CALL ERRORS("FluidMechanics_NodalJacobianEvaluate",err,error)
+    CALL EXITS("FluidMechanics_NodalJacobianEvaluate")
+    RETURN 1
+  END SUBROUTINE FluidMechanics_NodalJacobianEvaluate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the nodal residual and rhs vectors for the given node number for a fluid mechanics class nodal equation set.
+  SUBROUTINE FluidMechanics_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: nodeNumber !<The element number to evaluate the residual for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("FluidMechanics_NodalResidualEvaluate",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%TYPE)
+      CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL Characteristic_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
+      CASE DEFAULT
+        localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+    ENDIF
+       
+    CALL EXITS("FluidMechanics_NodalResidualEvaluate")
+    RETURN
+999 CALL ERRORS("FluidMechanics_NodalResidualEvaluate",err,error)
+    CALL EXITS("FluidMechanics_NodalResidualEvaluate")
+    RETURN 1
+  END SUBROUTINE FluidMechanics_NodalResidualEvaluate
 
   !
   !================================================================================================================================
@@ -409,6 +519,8 @@ CONTAINS
         CALL POISEUILLE_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL Characteristic_EquationsSet_Setup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -457,6 +569,8 @@ CONTAINS
         CALL POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL Characteristic_EquationsSet_SolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechancis equations set class."
@@ -504,6 +618,8 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
         CALL POISEUILLE_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."

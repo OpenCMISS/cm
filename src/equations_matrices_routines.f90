@@ -1155,7 +1155,7 @@ CONTAINS
                 numberOfDerivatives=ROWS_FIELD_VARIABLE%components(component_idx)%domain%topology%nodes%nodes(nodeIdx)% &
                   & NUMBER_OF_DERIVATIVES
                 DO derivativeIdx=1,numberOfDerivatives
-                  numberOfVersions=COLS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                  numberOfVersions=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)% &
                     & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
                   DO versionIdx=1,numberOfVersions
                     local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
@@ -1248,7 +1248,7 @@ CONTAINS
                 numberOfDerivatives=ROWS_FIELD_VARIABLE%components(component_idx)%domain%topology%nodes%nodes(nodeIdx)% &
                   & NUMBER_OF_DERIVATIVES
                 DO derivativeIdx=1,numberOfDerivatives
-                  numberOfVersions=COLS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                  numberOfVersions=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)% &
                     & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
                   DO versionIdx=1,numberOfVersions
                     local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
