@@ -106,30 +106,6 @@
 %#define array_is_fortran(a)    (PyArray_ISFORTRAN(a))
 }
 
-/* Added for OpenCMISS */
-%define APPEND_TO_RESULT(new_result)
-  if ((!$result) || ($result == Py_None)) {
-    /* If there isn't already a result, just return this */
-    $result = new_result;
-  } else {
-    PyObject *previous_result;
-    PyObject *new_output_tuple;
-    if (!PyTuple_Check($result)) {
-      /* If the previous result isn't a tuple, create a tuple containing the result */
-      previous_result = $result;
-      $result = PyTuple_New(1);
-      PyTuple_SetItem($result,0,previous_result);
-    }
-    /* Add result from this argument to the tuple */
-    new_output_tuple = PyTuple_New(1);
-    PyTuple_SetItem(new_output_tuple,0,new_result);
-    previous_result = $result; /* previous tuple result */
-    $result = PySequence_Concat(previous_result,new_output_tuple);
-    Py_DECREF(previous_result);
-    Py_DECREF(new_output_tuple);
-  }
-%enddef
-
 /**********************************************************************/
 
 %fragment("NumPy_Utilities", "header")
@@ -838,7 +814,7 @@
   (PyArrayObject* array=NULL, int is_new_object=0)
 {
   npy_intp size[2] = { -1, -1 };
-  array = obj_to_array_contiguous_allow_conversion($input, DATA_TYPECODE,
+  array = obj_to_array_fortran_allow_conversion($input, DATA_TYPECODE,
                                                    &is_new_object);
   if (!array || !require_dimensions(array, 2) ||
       !require_size(array, size, 2) || !require_fortran(array)) SWIG_fail;
@@ -1541,7 +1517,8 @@
   $3 = (DIM_TYPE) PyInt_AsLong(tupleItem);
 
   npy_intp dims[2] = { $2, $3 };
-  array = PyArray_SimpleNew(2, dims, DATA_TYPECODE);
+  /* Last parameter means Fortran ordering */
+  array = PyArray_EMPTY(2, dims, DATA_TYPECODE, 1);
   if (!array) SWIG_fail;
   $1 = ($1_ltype) array_data(array);
 }
@@ -1550,8 +1527,6 @@
   (PyArrayObject * arrayObj)
 {
   arrayObj = obj_to_array_no_conversion(array$argnum, DATA_TYPECODE);
-  /* Set Fortran ordering flag */
-  arrayObj->flags = NPY_FARRAY;
   /*$result = SWIG_Python_AppendOutput($result,array$argnum);*/
   APPEND_TO_RESULT(array$argnum)
 }
@@ -1596,7 +1571,8 @@
   $2 = (DIM_TYPE) PyInt_AsLong(tupleItem);
 
   npy_intp dims[2] = { $1, $2 };
-  array = PyArray_SimpleNew(2, dims, DATA_TYPECODE);
+  /* Last parameter means Fortran ordering */
+  array = PyArray_EMPTY(2, dims, DATA_TYPECODE, 1);
   if (!array) SWIG_fail;
   $3 = ($3_ltype) array_data(array);
 }
@@ -1605,8 +1581,6 @@
   (PyArrayObject * arrayObj)
 {
   arrayObj = obj_to_array_no_conversion(array$argnum, DATA_TYPECODE);
-  /* Set Fortran ordering flag */
-  arrayObj->flags = NPY_FARRAY;
   /*$result = SWIG_Python_AppendOutput($result,array$argnum);*/
   APPEND_TO_RESULT(array$argnum)
 }
