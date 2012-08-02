@@ -7,6 +7,7 @@
      (DIM_TYPE DIM1, DIM_TYPE DIM2, DATA_TYPE* ARGOUT_ARRAY2)
      (DATA_TYPE* ARGOUT_FARRAY2, DIM_TYPE DIM1, DIM_TYPE DIM2)
      (DIM_TYPE DIM1, DIM_TYPE DIM2, DATA_TYPE* ARGOUT_FARRAY2)
+     (DIM_TYPE* DIM1, DATA_TYPE** ARGINOUTVIEW_ARRAY1)
 
    The IN_ARRAY arguments have also all been modified to be const parameters
 
@@ -1821,6 +1822,65 @@
   /*$result = SWIG_Python_AppendOutput($result,obj);*/
   APPEND_TO_RESULT(obj)
 }
+
+/* Typemap suite for (DIM_TYPE* DIM1, DATA_TYPE** ARGINOUTVIEW_ARRAY1)
+ *
+ * This typemap is for cases where a pointer to an array is required
+ * as an input and is also an output. This is used when the
+ * input pointer points to memory allocated internally and is modified,
+ * eg. for CMISSField_ParameterSetDataRestore where the pointer is null
+ * on output.
+ * Using it with data allocated from the Python side can result
+ * in memory leaks.
+ * The input typemap requires a NumPy array, it can't be any
+ * Python iterable as we need to modify the data and dimensions
+ * on return.
+ */
+
+%typemap(in,numinputs=1)
+  (DIM_TYPE* DIM1, DATA_TYPE** ARGINOUTVIEW_ARRAY1)
+  (DIM_TYPE dim1_temp, DATA_TYPE* data_temp, PyArrayObject * tempArray)
+{
+  /* Check input is an array */
+  if (!is_array($input)) {
+    const char* typestring = pytype_string($input);
+    PyErr_Format(PyExc_TypeError,
+                 "NumPy array expected.  '%s' given.",
+                 typestring);
+    SWIG_fail;
+  }
+  tempArray = (PyArrayObject*) $input;
+  /* Check input array dimension and data type */
+  int numdim = array_numdims(tempArray);
+  if (numdim != 1) {
+    PyErr_Format(PyExc_ValueError,
+                 "1D array expected.  Array with %d dimensions given.",
+                 numdim);
+    SWIG_fail;
+  }
+  if (!PyArray_EquivTypenums(array_type(tempArray), DATA_TYPECODE)) {
+    const char* desired_type = typecode_string(DATA_TYPECODE);
+    const char* actual_type = typecode_string(array_type($input));
+    PyErr_Format(PyExc_TypeError,
+                 "Array with data type '%s' expected.  '%s' array given.",
+                 desired_type, actual_type);
+    SWIG_fail;
+  }
+
+  dim1_temp = (DIM_TYPE) array_size(tempArray, 0);
+  data_temp = (DATA_TYPE *) array_data(tempArray);
+
+  $1 = &dim1_temp;
+  $2 = &data_temp;
+}
+%typemap(argout)
+  (DIM_TYPE* DIM1, DATA_TYPE** ARGINOUTVIEW_ARRAY1)
+{
+  /* Update the input NumPy array data and size */
+  PyArray_DIMS(tempArray$argnum)[0] = dim1_temp$argnum;
+  PyArray_BYTES(tempArray$argnum) = (char *)data_temp$argnum;
+}
+
 
 %enddef    /* %numpy_typemaps() macro */
 /* *************************************************************** */

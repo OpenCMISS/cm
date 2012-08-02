@@ -91,8 +91,9 @@ def parameter_swig_lines(parameter):
             apply_to = ('int *%(name)sSize, %(type)s **%(name)s' %
                 properties)
         elif parameter.intent == 'INOUT':
-            # Not yet implemented.
-            pass
+            typemap = 'int *DIM1, %(type)s **ARGINOUTVIEW_ARRAY1' % properties
+            apply_to = ('int *%(name)sSize, %(type)s **%(name)s' %
+                properties)
     elif parameter.intent == 'OUT':
         if parameter.array_dims == parameter.required_sizes == 1:
             if parameter.var_type == Parameter.CHARACTER:

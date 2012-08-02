@@ -256,9 +256,9 @@ def check_parameter(parameter):
         raise UnsupportedParameterError("Python bindings don't support "
             "arrays with dimensions > 2.")
     if (parameter.array_dims > 0 and parameter.pointer and
-            parameter.intent != 'OUT'):
+            parameter.intent == 'IN'):
         raise UnsupportedParameterError("Python bindings don't support "
-            "passing arrays by pointer with intent other than OUT.")
+            "passing arrays by pointer with intent IN.")
 
 
 def parameters_docstring(parameters):
