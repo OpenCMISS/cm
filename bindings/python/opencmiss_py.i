@@ -91,10 +91,10 @@
 /**** Scalars ****/
 
 /* Integer output */
-%typemap(in,numinputs=0) (int *DummyOutputInt)(int temp) {
+%typemap(in,numinputs=0) (int *DummyOutputScalar)(int temp) {
   $1 = &temp;
 }
-%typemap(argout) (int *DummyOutputInt) {
+%typemap(argout) (int *DummyOutputScalar) {
   PyObject *output_int;
 
   output_int = PyInt_FromLong((long) *$1);
@@ -102,20 +102,20 @@
 }
 
 /* Float output */
-%typemap(in,numinputs=0) (double *DummyOutputDouble)(double temp) {
+%typemap(in,numinputs=0) (double *DummyOutputScalar)(double temp) {
   $1 = &temp;
 }
-%typemap(argout) (double *DummyOutputDouble) {
+%typemap(argout) (double *DummyOutputScalar) {
   PyObject *output_double;
 
   output_double = PyFloat_FromDouble((double) *$1);
   APPEND_TO_RESULT(output_double)
 }
 
-%typemap(in,numinputs=0) (float *DummyOutputFloat)(float temp) {
+%typemap(in,numinputs=0) (float *DummyOutputScalar)(float temp) {
   $1 = &temp;
 }
-%typemap(argout) (float *DummyOutputFloat) {
+%typemap(argout) (float *DummyOutputScalar) {
   PyObject *output_double;
 
   output_double = PyFloat_FromDouble((double) *$1);
@@ -123,15 +123,15 @@
 }
 
 /* Boolean input */
-%typemap(in) (const int DummyInputBool) {
+%typemap(in) (const CMISSBool DummyInputBool) {
   $1 = PyObject_IsTrue($input);
 }
 
 /* Boolean output */
-%typemap(in,numinputs=0) (int *DummyOutputBool)(int temp) {
+%typemap(in,numinputs=0) (CMISSBool *DummyOutputScalar)(int temp) {
   $1 = &temp;
 }
-%typemap(argout) (int *DummyOutputBool) {
+%typemap(argout) (CMISSBool *DummyOutputScalar) {
   PyObject *output_bool;
 
   output_bool = PyBool_FromLong((long) *$1);
