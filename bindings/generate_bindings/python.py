@@ -73,6 +73,12 @@ def generate(cm_path, args):
                 module.write("%s = %d\n" % (c.name[5:], c.value))
         module.write('\n')
 
+    # Add any extra Python code
+    extra_content_path = os.sep.join((cm_path, 'bindings', 'python',
+        'extra_content.py'))
+    with open(extra_content_path, 'r') as extra_content:
+        module.write(extra_content.read())
+
     module.write(INITIALISE)
     module.close()
 
