@@ -660,32 +660,40 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE 
-                !Check the user specified field
+                !Check the user specified field- Characteristic equations
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,3,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
                   & ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                !calculate number of components (Q,A)
+                !calculate number of components (Q,A) for U and dUdN
                 DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=2
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                   & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                ! 1 component (W) for V
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & 1,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                   CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
                       & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                      & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,1, &
                       & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1031,18 +1039,18 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT 
               ELSE
-                !Check the user specified field
+                !Check the user specified field- Characteristic equation
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                  & 1,ERR,ERROR,*999)
               ENDIF    
             !Specify finish action
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -2676,10 +2684,11 @@ CONTAINS
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     REAL(DP) :: normalWave(3)
+    REAL(DP) :: momentum,continuity
     INTEGER(INTG) :: nodalElementNumber,nodeNumber
     INTEGER(INTG) :: numberOfVersions,local_ny,variable_type,elementNumber,independentParameterIdx
     INTEGER(INTG) :: dofIdx,nodeIdx,derivativeIdx,versionIdx,materialIdx,rowIdx,dependentParameterIdx,elementIdx
-
+    INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,firstNode,lastNode,variableType,parameterIdx
 
 !\todo: Check whether or not too much time is spent with the different matrix types
 
@@ -3378,87 +3387,76 @@ CONTAINS
           !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
             IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-              INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
 
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                & INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-                & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              numberOfElementNodes=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS%NUMBER_OF_NODES
+              numberOfParameters=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
+              firstNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
+              lastNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(numberOfElementNodes)
+              derivativeIdx=1
 
-              NULLIFY(BIF_VALUES)
-              TOTAL_NUMBER_OF_DOFS=EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION% &
-                & DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
-              
-              
-              mn=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
-              !Number of Element First Node
-              node1=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
-              !Number of Element Last Node
-              node3=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(3)
-              !Element First Node Number of Versions
-              nv1=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              !Element Last Node Number of Versions
-              nv3=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              !Parent Vessel (if the last node has versions)
-              ! NOTE: Should try to generalize this so that doesn't depend on element node ordering
-              IF(nv3>1)THEN
-                !Version Number of the First Node
-                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,3)
-                !DOF Number of the First Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(vn)
-                !Current Q and A Values at the Last Node
-                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & BIF_VALUES,ERR,ERROR,*999)
-                Q_BIF(1)=BIF_VALUES(dof_idx)
-                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
-                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                  & BIF_VALUES,ERR,ERROR,*999)
-                !Previous Q and A Values at the Last Node
-                Q_PRE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                        & VALUES(dof_idx,NO_PART_DERIV)
-                A_PRE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                        & VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx,NO_PART_DERIV)
+              DO nodeIdx=1,numberOfElementNodes
+                numberOfVersions=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                  & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                IF(numberOfVersions>1) THEN
+                  nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
+                  versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
+                    & ELEMENT_DERIVATIVES(2,derivativeIdx,nodeIdx)
 
-                !Momentum Equation
-                SUM=((K*((Q_PRE(1)**2)/A_PRE(1))+ & 
-                   & (((2.0_DP/3.0_DP)*(A_PRE(1)**(1.5_DP)))*Fr)) &
-                   & -(K*((Q_BIF(1)**2)/A_BIF(1))+ & 
-                   & (((2.0_DP/3.0_DP)*(A_BIF(1)**(1.5_DP)))*Fr)))
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mn)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mn)+SUM
-                !Continuity Equation
-                SUM=(Q_PRE(1)-Q_BIF(1))/St
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2*mn)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2*mn)+SUM
+                  ! Get current Q and A values
+                  CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & dependentParameters,err,error,*999)
+                  variableType=dependentField%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
+                  parameterIdx=1  
+                  local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
+                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                  Q_BIF(1)=dependentParameters(local_ny)
+                  parameterIdx=2
+                  local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
+                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                  A_BIF(versionIdx)=dependentParameters(local_ny)
+                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & dependentParameters,err,error,*999)
 
-              !Branch Vessel (if the first node has versions)
-              ELSEIF(nv1>1) THEN
-                !Version Number of the First Node
-                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,1)
-                !DOF Number of the Last Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(vn)
-                !Current Q and A Values at the First Node             
-                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & BIF_VALUES,ERR,ERROR,*999)
-                Q_BIF(1)=BIF_VALUES(dof_idx)
-                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
-                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                  & BIF_VALUES,ERR,ERROR,*999)
-                !Previous Q and A Values at the First Node
-                Q_PRE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                        & VALUES(dof_idx,NO_PART_DERIV)
-                A_PRE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                        & VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx,NO_PART_DERIV)
+                  ! Get previous Q and A values
+                  CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                    & dependentParameters,err,error,*999)
+                  variableType=dependentField%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
+                  parameterIdx=1  
+                  local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
+                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                  Q_PRE(1)=dependentParameters(local_ny)
+                  parameterIdx=2
+                  local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
+                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                  A_PRE(versionIdx)=dependentParameters(local_ny)
+                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                    & dependentParameters,err,error,*999)
 
-                !Momentum Equation
-                SUM=((K*((Q_PRE(1)**2)/A_PRE(1))+ & 
-                   & ((2.0_DP/3.0_DP)*(A_PRE(1)**(1.5_DP)))*Fr) &
-                   & -(K*((Q_BIF(1)**2)/A_BIF(1))+ & 
-                   & ((2.0_DP/3.0_DP)*(A_BIF(1)**(1.5_DP)))*Fr))
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)+SUM
-                !Continuity Equation
-                SUM=(Q_PRE(1)-Q_BIF(1))/St
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1+mn)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1+mn)+SUM
-   
-              ENDIF
+                  !Momentum Equation
+                  momentum=((K*((Q_PRE(1)**2)/A_PRE(1))+ & 
+                     & (((2.0_DP/3.0_DP)*(A_PRE(1)**(1.5_DP)))*Fr)) &
+                     & -(K*((Q_BIF(1)**2)/A_BIF(1))+ & 
+                     & (((2.0_DP/3.0_DP)*(A_BIF(1)**(1.5_DP)))*Fr)))
+                  !Continuity Equation
+                  continuity=(Q_PRE(1)-Q_BIF(1))/St
+
+                  ! Add momentum/continuity contributions to first/last node accordingly
+                  IF(nodeNumber==firstNode) THEN
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)= &
+                      & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)+momentum
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters+1)= &
+                      & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters+1)+continuity
+                  ELSE IF(nodeNumber==lastNode) THEN
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters)= &
+                      & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters)+momentum
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters*2)= &
+                      & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters*2)+continuity
+                  ENDIF
+                ENDIF !version>1
+              ENDDO !loop nodes
+
             ENDIF
           ENDIF
 
@@ -4803,8 +4801,8 @@ CONTAINS
     REAL(DP), POINTER :: materialsParameters(:)
     REAL(DP) :: normalWave(3)
     INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,materialIdx,elementIdx,elementNumber,versionElementNumber(3)
-    INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion
-    INTEGER(INTG) :: independentParameterIdx,dependentParameterIdx,numberOfVersions
+    INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,variableType
+    INTEGER(INTG) :: parameterIdx,numberOfVersions
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx,dof_idx
 !    INTEGER(INTG) :: component_idx,node_idx,NUMBER_OF_DIMENSIONS,variable_type
@@ -5369,65 +5367,99 @@ CONTAINS
                      !DOF Number of the Bifurcation Nodes
                      dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
                        & DERIVATIVES(1)%DOF_INDEX(1)
+                     derivativeIdx=1
 
                      ! Check whether a normal node or a coupled/branching node
                      ! (do nothing for normal nodes)
                      IF(numberOfVersions>1) THEN
-
-                       ! Element-based material parameters
                        derivativeIdx=1
 
-                       ! This gets the elements converging on the node and associates them 
-                       ! with their specific version number: versionElementNumber(version)
+                       !!!--  M A T E R I A L S   P A R A M E T E R S  --!!!
+                       !Material Values at the node - material field variable 1, components 1-12, type U
+                       ! First 8 components constant, 9-12 element-based (so will vary with version#)
 
-                       !Loop over the elements surrounding the current node
-                       DO elementIdx=1,DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-                         & NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
-                         ! get the user number for the current element
+                       ! Element-based material parameters for coupled problems
+                       IF(DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
+                          & NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
                          elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-                          & NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(elementIdx)
-                         ! loop over the nodes on this (surrounding) element
-                         DO elementNodeIdx=1,EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                           & PTR%ELEMENTS%ELEMENTS(elementNumber)%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                           !get the node number for this node
-                           elementNodeNumber=EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                             & PTR%ELEMENTS%ELEMENTS(elementNumber)%MESH_ELEMENT_NODES(elementNodeIdx)
-                           ! check that this node is the same as the global node
-                           IF(elementNodeNumber==nodeIdx) THEN
-                             ! Loop over the versions to find the element index that matches the version
-                             DO versionIdx=1,numberOfVersions
-                               ! the version number for the local element node
-                               elementNodeVersion=EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                                 & PTR%ELEMENTS%ELEMENTS(elementNumber)% &
-                                 & USER_ELEMENT_NODE_VERSIONS(derivativeIdx,elementNodeIdx)
-                               IF(elementNodeVersion==versionIdx) THEN
-                                 !Get the element based material parameters for the surrounding elements
-                                 versionElementNumber(versionIdx)=elementNumber
-                                 materialIdx=9
-                                 CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                  & elementNumber,materialIdx,A0_PARAM(versionIdx),err,error,*999)                
-                                 materialIdx=10
-                                 CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                  & elementNumber,materialIdx,Beta(versionIdx),err,error,*999)                
-                               ENDIF
-                             ENDDO
-                           ENDIF
+                          & NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(1)
+                         DO versionIdx=1,numberOfVersions
+                           materialIdx=9
+                           CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & elementNumber,materialIdx,A0_PARAM(versionIdx),err,error,*999)                
+                           materialIdx=10
+                           CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & elementNumber,materialIdx,Beta(versionIdx),err,error,*999)                
                          ENDDO
-                       ENDDO
+                       ELSE
+                         ! For branching flows, this gets the elements converging on the node and associates them 
+                         ! with their specific version number: versionElementNumber(version)
+                         !Loop over the elements surrounding the current node
+                         DO elementIdx=1,DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
+                           & NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                           ! get the user number for the current element
+                           elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
+                            & NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(elementIdx)
+                           ! loop over the nodes on this (surrounding) element
+                           DO elementNodeIdx=1,EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
+                             & PTR%ELEMENTS%ELEMENTS(elementNumber)%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                             !get the node number for this node
+                             elementNodeNumber=EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
+                               & PTR%ELEMENTS%ELEMENTS(elementNumber)%MESH_ELEMENT_NODES(elementNodeIdx)
+                             ! check that this node is the same as the current iterative node
+                             IF(elementNodeNumber==nodeIdx) THEN
+                               ! Loop over the versions to find the element index that matches the version
+                               DO versionIdx=1,numberOfVersions
+                                 ! the version number for the local element node
+                                 elementNodeVersion=EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
+                                   & PTR%ELEMENTS%ELEMENTS(elementNumber)% &
+                                   & USER_ELEMENT_NODE_VERSIONS(derivativeIdx,elementNodeIdx)
+                                 IF(elementNodeVersion==versionIdx) THEN
+                                   !Get the element based material parameters for the surrounding elements
+                                   versionElementNumber(versionIdx)=elementNumber
+                                   materialIdx=9
+                                   CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,elementNumber,materialIdx,A0_PARAM(versionIdx),err,error,*999)                
+                                   materialIdx=10
+                                   CALL FIELD_PARAMETER_SET_GET_ELEMENT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,elementNumber,materialIdx,Beta(versionIdx),err,error,*999)                
+                                 ENDIF
+                               ENDDO
+                             ENDIF
+                           ENDDO
+                         ENDDO
+                       ENDIF
 
-                       ! get the normal directions for the characteristic components
+                       CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                         & materialsParameters,err,error,*999)
+                       variableType=MATERIALS_FIELD%VARIABLES(1)%VARIABLE_TYPE ! variables U
+                       fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+                       ! Constant material parameters
+                       local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+                       Bs=materialsParameters(local_ny)
+                       local_ny=fieldVariable%COMPONENTS(5)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+                       As=materialsParameters(local_ny)
+                       local_ny=fieldVariable%COMPONENTS(7)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+                       Fr=materialsParameters(local_ny)
+                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                         & materialsParameters,err,error,*999)
+
+                       !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
                        CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                         & independentParameters,ERR,ERROR,*999)
-                       fieldVariableIndependent=>INDEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR
+                         & independentParameters,err,error,*999)
+                       ! Relative to node, +/- 1, stored in independent field variable 1, component 1, type U
+                       variableType=INDEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE
+                       fieldVariable=>INDEPENDENT_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+                       parameterIdx=1
                        DO versionIdx=1,numberOfVersions
-                         independentParameterIdx=4
-                         local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
+                         local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
                           & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                          normalWave(versionIdx)=independentParameters(local_ny)
                        ENDDO
                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                         & independentParameters,ERR,ERROR,*999)
+                         & independentParameters,err,error,*999)
 
+                       !!!-- E x t r a p o l a t e    Q    a n d   A    a t    e l e m e n t s --!!!
                        ! check for boundary node (coupled 1D-0D or coupled 3D-1D)
                        IF(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%DOMAIN%TOPOLOGY%NODES% &
                           & NODES(nodeIdx)%BOUNDARY_NODE .AND. DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
@@ -5468,78 +5500,22 @@ CONTAINS
 
                        !Riemann Invariants Values at the Bifurcation Element
                        DO versionIdx=1,numberOfVersions
-
-                         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,versionElementNumber(versionIdx), &
-                           & EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                         CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,1,1,EQUATIONS%INTERPOLATION% &
-                           & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-
-                         !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
-                         ! Constant material parameters (components 1-8)
-                         MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(1,NO_PART_DERIV)
-                         RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(2,NO_PART_DERIV)
-                         Bs=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(4,NO_PART_DERIV)
-                         As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(5,NO_PART_DERIV)
-                         Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(6,NO_PART_DERIV)
-                         Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(7,NO_PART_DERIV)
-                         St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                           & VALUES(8,NO_PART_DERIV)
-
                          W(versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+normalWave(versionIdx)*4.0_DP* &
                           & ((Fr*(Beta(versionIdx)/Bs))**(0.5_DP))*(A_EX(versionIdx)**(0.25_DP)))
                        ENDDO
 
-                       ! Get previous Q and A Values at the Bifurcation Nodes from the Dependent Field
-                       CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                         & dependentParameters,ERR,ERROR,*999)
-                       dependentParameterIdx=1 ! Q is parameter 1
-                       DO versionIdx=1,numberOfVersions
-                         local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
-                          & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                         Q_PRE(versionIdx)=dependentParameters(local_ny)
-                       ENDDO
-                       dependentParameterIdx=2 ! A is parameter 2
-                       DO versionIdx=1,numberOfVersions
-                         local_ny=fieldVariable%COMPONENTS(dependentParameterIdx)%PARAM_TO_DOF_MAP% &
-                          & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                         A_PRE(versionIdx)=dependentParameters(local_ny)
-                       ENDDO
-                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                         & dependentParameters,ERR,ERROR,*999)
-
-                       ! Store values in the Independent Field (node-based)
-                       derivativeIdx=1
+                       ! Store values in the Dependent Field (node-based)
                        !Storing Riemann Invariants in the Independent Field
-                       independentParameterIdx=1
-                       fieldVariableIndependent=>INDEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR
+                       parameterIdx=1
+                       variableType=DEPENDENT_FIELD%VARIABLES(3)%VARIABLE_TYPE
+                       fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
                        DO versionIdx=1,numberOfVersions
-                         local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
+                         local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
                            & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                            & FIELD_VALUES_SET_TYPE,local_ny,W(versionIdx),ERR,ERROR,*999)
                        ENDDO
-                       ! Storing Q_PRE
-                       independentParameterIdx=2
-                       DO versionIdx=1,numberOfVersions
-                         local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
-                           & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                           & FIELD_VALUES_SET_TYPE,local_ny,Q_PRE(versionIdx),ERR,ERROR,*999)
-                       ENDDO
-                       ! Storing A_PRE
-                       independentParameterIdx=3
-                       DO versionIdx=1,numberOfVersions
-                         local_ny=fieldVariableIndependent%COMPONENTS(independentParameterIdx)%PARAM_TO_DOF_MAP% &
-                           & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                           & FIELD_VALUES_SET_TYPE,local_ny,A_PRE(versionIdx),ERR,ERROR,*999)
-                       ENDDO
+
                      ENDIF !check for normal or coupled/branching node
                    ENDDO ! loop over nodes
                  ELSE
