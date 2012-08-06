@@ -674,9 +674,9 @@ CONTAINS
                   CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(equationsMatrices, & 
                     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,err,error,*999)
                   CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(equationsMatrices, & 
-                    & [EQUATIONS_MATRIX_FEM_STRUCTURE],err,error,*999)
+                    & [EquationsMatrix_NodalStructure],err,error,*999)
                   CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(equationsMatrices, & 
-                    & EQUATIONS_MATRIX_FEM_STRUCTURE,err,error,*999)
+                    & EquationsMatrix_NodalStructure,err,error,*999)
                 CASE DEFAULT
                   localError="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(equations%SPARSITY_TYPE,"*",err,error))//" is invalid."
