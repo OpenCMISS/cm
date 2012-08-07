@@ -6651,7 +6651,11 @@ endif
 
     IF(ASSOCIATED(SOLVER)) THEN
       NULLIFY(NONLINEAR_SOLVER)
-      NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+      IF(ASSOCIATED(SOLVER%DYNAMIC_SOLVER)) THEN
+        NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
+      ELSE
+        NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+      ENDIF
       IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
         NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
@@ -12459,8 +12463,26 @@ endif
           ELSE
             CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
+        ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
+          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+              IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+                CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
+                  & CALL FLAG_ERROR("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Dynamic nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The Dynamic nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
