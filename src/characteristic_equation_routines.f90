@@ -829,8 +829,8 @@ CONTAINS
       linearMapping=>equationsMapping%LINEAR_MAPPING
       nonlinearMapping=>equationsMapping%NONLINEAR_MAPPING
       !Default matrix/vector to 0 and check if update called for
-      stiffnessMatrix%NODAL_MATRIX%MATRIX=0.0_DP
-      nonlinearMatrices%NODAL_RESIDUAL%VECTOR=0.0_DP
+      stiffnessMatrix%NodalMatrix%matrix=0.0_DP
+      nonlinearMatrices%NodalResidual%vector=0.0_DP
       IF(ASSOCIATED(stiffnessMatrix)) updateStiffnessMatrix=stiffnessMatrix%UPDATE_MATRIX
       IF(ASSOCIATED(nonlinearMatrices)) updateNonlinearResidual=nonlinearMatrices%UPDATE_RESIDUAL
       ! Get the number of versions at this node
@@ -966,7 +966,7 @@ CONTAINS
           !Conservation of Mass
           rowIdx=numberOfVersions+1
           DO versionIdx=1,numberOfVersions
-            stiffnessMatrix%NODAL_MATRIX%MATRIX(rowIdx,versionIdx)=normalWave(versionIdx)
+            stiffnessMatrix%NodalMatrix%matrix(rowIdx,versionIdx)=normalWave(versionIdx)
           ENDDO
         END IF
 
@@ -976,7 +976,7 @@ CONTAINS
           !Characteristics Equations
           DO versionIdx=1,numberOfVersions
             rowIdx=rowIdx + 1
-            nonlinearMatrices%NODAL_RESIDUAL%VECTOR(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
+            nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
               & + normalWave(versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**0.5_DP)*(A_BIF(versionIdx)**0.25_DP)- &
               & W(versionIdx)
           ENDDO
@@ -984,7 +984,7 @@ CONTAINS
           DO versionIdx=1,numberOfVersions
             rowIdx=rowIdx + 1
             ! will be 0 when versionIdx = 1
-            nonlinearMatrices%NODAL_RESIDUAL%VECTOR(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+            nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
               & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
               & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(Bs/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
               & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
@@ -1101,7 +1101,7 @@ CONTAINS
       linearMapping=>equationsMapping%LINEAR_MAPPING
       jacobianMatrix=>nonlinearMatrices%JACOBIANS(1)%PTR
       !Default matrix/vector to 0 and check if update called for
-      jacobianMatrix%NODAL_JACOBIAN%MATRIX=0.0_DP
+      jacobianMatrix%NodalJacobian%matrix=0.0_DP
       IF(ASSOCIATED(jacobianMatrix)) updateJacobianMatrix=jacobianMatrix%UPDATE_JACOBIAN
       ! Set derivative to 1 and get the number of versions at this node
       derivativeIdx=1
@@ -1240,17 +1240,17 @@ CONTAINS
           columnIdx=0
           DO versionIdx=1,numberOfVersions
             columnIdx=columnIdx+1
-            jacobianMatrix%NODAL_JACOBIAN%MATRIX(versionIdx,columnIdx)=1.0_DP/A_BIF(versionIdx)                
+            jacobianMatrix%NodalJacobian%matrix(versionIdx,columnIdx)=1.0_DP/A_BIF(versionIdx)                
           ENDDO
           DO versionIdx=1,numberOfVersions
             columnIdx=columnIdx+1
-            jacobianMatrix%NODAL_JACOBIAN%MATRIX(versionIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
+            jacobianMatrix%NodalJacobian%matrix(versionIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
              & +normalWave(versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**(0.5_DP))* &
              & (0.25_DP*(A_BIF(versionIdx)**(-(0.75_DP))))
           ENDDO
           rowIdx=numberOfVersions+1
           ! TODO: check this matrix construction against the theory again
-          jacobianMatrix%NODAL_JACOBIAN%MATRIX(rowIdx,:)=0.0_DP !4
+          jacobianMatrix%NodalJacobian%matrix(rowIdx,:)=0.0_DP !4
 
           DO baseIdx=2,numberOfVersions ! 2,3
             rowIdx=baseIdx+numberOfVersions ! 5,6
@@ -1258,23 +1258,23 @@ CONTAINS
               columnIdx=versionIdx+numberOfVersions 
               IF(versionIdx==1 .OR. versionIdx==baseIdx) THEN
                 !Continuity of Total Pressure (dU/dQ)
-                jacobianMatrix%NODAL_JACOBIAN%MATRIX(rowIdx,versionIdx)=(Bs/(Fr*Beta(1)))*0.25_DP* &
+                jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=(Bs/(Fr*Beta(1)))*0.25_DP* &
                  & (normalWave(versionIdx)*2.0_DP*Q_BIF(versionIdx)/(A_BIF(1)**2))
 
                 !columnIdx=versionIdx+numberOfVersions ! 5,4;5,5;6,4;6,6
                 !Continuity of Total Pressure (dU/dA) 
                 IF(versionIdx==1) THEN
-                  jacobianMatrix%NODAL_JACOBIAN%MATRIX(rowIdx,columnIdx)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
+                  jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
                     & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
                 ELSE
-                  jacobianMatrix%NODAL_JACOBIAN%MATRIX(rowIdx,columnIdx)=(-(Beta(versionIdx)/Beta(1))* &
+                  jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-(Beta(versionIdx)/Beta(1))* &
                     & (0.5_DP*A_BIF(versionIdx)**(-(0.5_DP))))+((Bs/(Fr*Beta(1)))*0.25_DP* &
                     & (-2.0_DP*normalWave(versionIdx)*(Q_BIF(versionIdx)**2)/(A_BIF(versionIdx)**3)))
                 ENDIF
 
               ELSE
-                jacobianMatrix%NODAL_JACOBIAN%MATRIX(rowIdx,versionIdx)=0.0_DP
-                jacobianMatrix%NODAL_JACOBIAN%MATRIX(rowIdx,columnIdx)=0.0_DP
+                jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP
+                jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=0.0_DP
               ENDIF
             ENDDO !versionIdx
           ENDDO !baseidx
