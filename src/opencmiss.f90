@@ -63,6 +63,7 @@ MODULE OPENCMISS
   USE COORDINATE_ROUTINES
   USE DATA_POINT_ROUTINES
   USE DATA_PROJECTION_ROUTINES
+  USE DISTRIBUTED_MATRIX_VECTOR
   USE EQUATIONS_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
@@ -217,6 +218,19 @@ MODULE OPENCMISS
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY
   END TYPE CMISSInterfaceMeshConnectivityType
 
+  !>A matrix that may be distributed across multiple computational nodes
+  !>and may use sparse or full storage.
+  TYPE CMISSMatrixType
+    PRIVATE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: matrix
+  END TYPE CMISSMatrixType
+
+  !>A vector that may be distributed across multiple computational nodes
+  TYPE CMISSVectorType
+    PRIVATE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: vector
+  END TYPE CMISSVectorType
+
   !>Contains information on a mesh defined on a region.
   TYPE CMISSMeshType
     PRIVATE
@@ -340,6 +354,10 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivity_Finalise, &
      & CMISSInterfaceMeshConnectivity_Initialise
+
+  PUBLIC CMISSMatrixType,CMISSVectorType
+
+  PUBLIC CMISSMatrix_Initialise,CMISSVector_Initialise
 
   PUBLIC CMISSMeshType,CMISSMesh_Finalise,CMISSMesh_Initialise
 
@@ -4435,6 +4453,106 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMesh_SurroundingElementsCalculateSet
 
+!!==================================================================================================================================
+!!
+!! DISTRIBUTED_MATRIX_VECTOR
+!!
+!!==================================================================================================================================
+
+  !> \addtogroup OPENCMISS_MatrixVectorConstants OPENCMISS::MatrixVector::Constants
+  !> \brief Distributed matrix and vector function constants.
+  !>@{
+  !> \addtogroup OPENCMISS_MatrixStorageTypes OPENCMISS::MatrixVector::MatrixStorageTypes
+  !> \brief Type of matrix storage.
+  !> \see OPENCMISS::MatrixVectorConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_BLOCK_STORAGE_TYPE=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE !<Distributed matrix block storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_DIAGONAL_STORAGE_TYPE=DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE !<Distributed matrix diagonal storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COLUMN_MAJOR_STORAGE_TYPE=DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE !<Distributed matrix column major storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_ROW_MAJOR_STORAGE_TYPE=DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE !<Distributed matrix row major storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COMPRESSED_ROW_STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE !<Distributed matrix compressed row storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE !<Distributed matrix compressed column storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_ROW_COLUMN_STORAGE_TYPE=DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE !<Distributed matrix row-column storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_MatrixVectorDataTypes OPENCMISS::MatrixVector::DataTypes
+  !> \brief Type of data stored in matrices and vectors.
+  !> \see OPENCMISS::MatrixVectorConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_INTG_TYPE=DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_SP_TYPE=DISTRIBUTED_MATRIX_VECTOR_SP_TYPE !<Single precision real distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_DP_TYPE=DISTRIBUTED_MATRIX_VECTOR_DP_TYPE !<Double precision real distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_L_TYPE=DISTRIBUTED_MATRIX_VECTOR_L_TYPE !<Logical distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  !>@}
+  !>@}
+
+  PUBLIC CMISS_MATRIX_BLOCK_STORAGE_TYPE,CMISS_MATRIX_DIAGONAL_STORAGE_TYPE,CMISS_MATRIX_COLUMN_MAJOR_STORAGE_TYPE, &
+    & CMISS_MATRIX_ROW_MAJOR_STORAGE_TYPE,CMISS_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,CMISS_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE, &
+    & CMISS_MATRIX_ROW_COLUMN_STORAGE_TYPE
+
+  PUBLIC CMISS_MATRIX_VECTOR_INTG_TYPE,CMISS_MATRIX_VECTOR_SP_TYPE,CMISS_MATRIX_VECTOR_DP_TYPE,CMISS_MATRIX_VECTOR_L_TYPE
+
+  !Note that currently we don't have any user number based routines for distributed matrices
+  !as if we can't use a pointer to a CMISS object, a pointer to matrix data isn't going to
+  !be much use either. It's also more awkward when matrices and vectors themselves don't have
+  !user numbers and there are multiple ways to access them through user numbers, eg. solver equations
+  !matrices or equations set matrices
+
+  !>Get the storage type for a distributed matrix
+  INTERFACE CMISSMatrix_StorageTypeGet
+    MODULE PROCEDURE CMISSMatrix_StorageTypeGetObj
+  END INTERFACE !CMISSMatrix_StorageTypeGet
+
+  !>Get the data type for a distributed matrix
+  INTERFACE CMISSMatrix_DataTypeGet
+    MODULE PROCEDURE CMISSMatrix_DataTypeGetObj
+  END INTERFACE !CMISSMatrix_DataTypeGet
+
+  !>Get the row indices and column indices for a sparse matrix
+  INTERFACE CMISSMatrix_StorageLocationsGet
+    MODULE PROCEDURE CMISSMatrix_StorageLocationsGetObj
+  END INTERFACE !CMISSMatrix_StorageLocationsGet
+
+  !>Get the data array for this matrix on this computational node
+  INTERFACE CMISSMatrix_DataGet
+    MODULE PROCEDURE CMISSMatrix_DataGetIntgObj
+    MODULE PROCEDURE CMISSMatrix_DataGetDPObj
+    MODULE PROCEDURE CMISSMatrix_DataGetSPObj
+    MODULE PROCEDURE CMISSMatrix_DataGetLObj
+  END INTERFACE !CMISSMatrix_DataGet
+
+  !>Restore the data array for this matrix once it has finished being used
+  INTERFACE CMISSMatrix_DataRestore
+    MODULE PROCEDURE CMISSMatrix_DataRestoreIntgObj
+    MODULE PROCEDURE CMISSMatrix_DataRestoreDPObj
+    MODULE PROCEDURE CMISSMatrix_DataRestoreSPObj
+    MODULE PROCEDURE CMISSMatrix_DataRestoreLObj
+  END INTERFACE !CMISSMatrix_DataRestore
+
+  !>Get the data type for a distributed vector
+  INTERFACE CMISSVector_DataTypeGet
+    MODULE PROCEDURE CMISSVector_DataTypeGetObj
+  END INTERFACE !CMISSVector_DataTypeGet
+
+  !>Get the data array for this vector on this computational node
+  INTERFACE CMISSVector_DataGet
+    MODULE PROCEDURE CMISSVector_DataGetIntgObj
+    MODULE PROCEDURE CMISSVector_DataGetDPObj
+    MODULE PROCEDURE CMISSVector_DataGetSPObj
+    MODULE PROCEDURE CMISSVector_DataGetLObj
+  END INTERFACE !CMISSVector_DataGet
+
+  !>Restore the data array for this vector once it has finished being used
+  INTERFACE CMISSVector_DataRestore
+    MODULE PROCEDURE CMISSVector_DataRestoreIntgObj
+    MODULE PROCEDURE CMISSVector_DataRestoreDPObj
+    MODULE PROCEDURE CMISSVector_DataRestoreSPObj
+    MODULE PROCEDURE CMISSVector_DataRestoreLObj
+  END INTERFACE !CMISSVector_DataRestore
+
+  PUBLIC CMISSMatrix_StorageTypeGet,CMISSMatrix_DataTypeGet,CMISSMatrix_StorageLocationsGet
+  PUBLIC CMISSMatrix_DataGet,CMISSMatrix_DataRestore
+  PUBLIC CMISSVector_DataTypeGet
+  PUBLIC CMISSVector_DataGet,CMISSVector_DataRestore
 
 !!==================================================================================================================================
 !!
@@ -7174,6 +7292,56 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSHistory_Initialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSMatrixType object.
+  SUBROUTINE CMISSMatrix_Initialise(CMISSMatrix,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(OUT) :: CMISSMatrix !<The CMISSMatrixType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSMatrix_Initialise",err,error,*999)
+
+    NULLIFY(CMISSMatrix%matrix)
+
+    CALL EXITS("CMISSMatrix_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSMatrix_Initialise",err,error)
+    CALL EXITS("CMISSMatrix_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_Initialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSVectorType object.
+  SUBROUTINE CMISSVector_Initialise(CMISSVector,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(OUT) :: CMISSVector !<The CMISSVectorType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSVector_Initialise",err,error,*999)
+
+    NULLIFY(CMISSVector%vector)
+
+    CALL EXITS("CMISSVector_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSVector_Initialise",err,error)
+    CALL EXITS("CMISSVector_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_Initialise
 
   !
   !================================================================================================================================
@@ -37647,6 +37815,529 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMesh_ElementExistsObj
+
+!!==================================================================================================================================
+!!
+!! DISTRIBUTED_MATRIX_VECTOR
+!!
+!!==================================================================================================================================
+
+  !>Get the storage type for a distributed matrix
+  SUBROUTINE CMISSMatrix_StorageTypeGetObj(matrix,storageType,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the storage type for
+    INTEGER(INTG), INTENT(OUT) :: storageType !<On return, the matrix storage type. \see OPENCMISS_MatrixStorageTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_StorageTypeGetObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(matrix%matrix,storageType,err,error,*999)
+
+    CALL exits("CMISSMatrix_StorageTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_StorageTypeGetObj",err,error)
+    CALL exits("CMISSMatrix_StorageTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_StorageTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data type of a distributed matrix
+  SUBROUTINE CMISSMatrix_DataTypeGetObj(matrix,dataType,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the matrix data type. \see OPENCMISS_MatrixVectorDataTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataTypeGetObj",err,error,*999)
+
+    CALL DistributedMatrix_DataTypeGet(matrix%matrix,dataType,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataTypeGetObj",err,error)
+    CALL exits("CMISSMatrix_DataTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the row indices and column indices for a sparse matrix
+  SUBROUTINE CMISSMatrix_StorageLocationsGetObj(matrix,rowIndices,columnIndices,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the storage locations for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: rowIndices(:) !<On return, the matrix storage row indices
+    INTEGER(INTG), POINTER, INTENT(OUT) :: columnIndices(:) !<On return, the matrix storage column indices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_StorageLocationsGetObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(matrix%matrix,rowIndices,columnIndices,err,error,*999)
+
+    CALL exits("CMISSMatrix_StorageLocationsGetObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_StorageLocationsGetObj",err,error)
+    CALL exits("CMISSMatrix_StorageLocationsGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_StorageLocationsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSMatrix_DataGetIntgObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataGetIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataGetIntgObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataGetIntgObj",err,error)
+    CALL exits("CMISSMatrix_DataGetIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataGetIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSMatrix_DataRestoreIntgObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    INTEGER(INTG), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataRestoreIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataRestoreIntgObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataRestoreIntgObj",err,error)
+    CALL exits("CMISSMatrix_DataRestoreIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataRestoreIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSMatrix_DataGetDPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    REAL(DP), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataGetDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataGetDPObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataGetDPObj",err,error)
+    CALL exits("CMISSMatrix_DataGetDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataGetDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSMatrix_DataRestoreDPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    REAL(DP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataRestoreDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataRestoreDPObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataRestoreDPObj",err,error)
+    CALL exits("CMISSMatrix_DataRestoreDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataRestoreDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSMatrix_DataGetSPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    REAL(SP), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataGetSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataGetSPObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataGetSPObj",err,error)
+    CALL exits("CMISSMatrix_DataGetSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataGetSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSMatrix_DataRestoreSPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    REAL(SP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataRestoreSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataRestoreSPObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataRestoreSPObj",err,error)
+    CALL exits("CMISSMatrix_DataRestoreSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataRestoreSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSMatrix_DataGetLObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    LOGICAL, POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataGetLObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataGetLObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataGetLObj",err,error)
+    CALL exits("CMISSMatrix_DataGetLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataGetLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSMatrix_DataRestoreLObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    LOGICAL, POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DataRestoreLObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%matrix,data,err,error,*999)
+
+    CALL exits("CMISSMatrix_DataRestoreLObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DataRestoreLObj",err,error)
+    CALL exits("CMISSMatrix_DataRestoreLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DataRestoreLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data type of a distributed vector
+  SUBROUTINE CMISSVector_DataTypeGetObj(vector,dataType,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the vector data type. \see OPENCMISS_MatrixVectorDataTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataTypeGetObj",err,error,*999)
+
+    CALL DistributedVector_DataTypeGet(vector%vector,dataType,err,error,*999)
+
+    CALL exits("CMISSVector_DataTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataTypeGetObj",err,error)
+    CALL exits("CMISSVector_DataTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSVector_DataGetIntgObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataGetIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataGetIntgObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataGetIntgObj",err,error)
+    CALL exits("CMISSVector_DataGetIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataGetIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSVector_DataRestoreIntgObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    INTEGER(INTG), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataRestoreIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataRestoreIntgObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataRestoreIntgObj",err,error)
+    CALL exits("CMISSVector_DataRestoreIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataRestoreIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSVector_DataGetDPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    REAL(DP), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataGetDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataGetDPObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataGetDPObj",err,error)
+    CALL exits("CMISSVector_DataGetDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataGetDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSVector_DataRestoreDPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    REAL(DP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataRestoreDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataRestoreDPObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataRestoreDPObj",err,error)
+    CALL exits("CMISSVector_DataRestoreDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataRestoreDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSVector_DataGetSPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    REAL(SP), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataGetSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataGetSPObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataGetSPObj",err,error)
+    CALL exits("CMISSVector_DataGetSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataGetSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSVector_DataRestoreSPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    REAL(SP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataRestoreSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataRestoreSPObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataRestoreSPObj",err,error)
+    CALL exits("CMISSVector_DataRestoreSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataRestoreSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSVector_DataGetLObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    LOGICAL, POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataGetLObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataGetLObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataGetLObj",err,error)
+    CALL exits("CMISSVector_DataGetLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataGetLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSVector_DataRestoreLObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    LOGICAL, POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSVector_DataRestoreLObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%vector,data,err,error,*999)
+
+    CALL exits("CMISSVector_DataRestoreLObj")
+
+    RETURN
+999 CALL errors("CMISSVector_DataRestoreLObj",err,error)
+    CALL exits("CMISSVector_DataRestoreLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSVector_DataRestoreLObj
 
 !!==================================================================================================================================
 !!

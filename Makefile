@@ -1443,6 +1443,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \

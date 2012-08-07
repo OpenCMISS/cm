@@ -208,3 +208,53 @@ Field.ParameterSetAddNode = Field_ParameterSetAddNode
 
 Field.ParameterSetGetGuassPoint = Field_ParameterSetGetGuassPoint
 Field.ParameterSetInterpolateGauss = Field_ParameterSetInterpolateGauss
+
+
+def Matrix_DataGet(self, *args):
+    routines = {
+        MatrixVectorDataTypes.INTG: self.DataGetIntg,
+        MatrixVectorDataTypes.SP: self.DataGetSP,
+        MatrixVectorDataTypes.DP: self.DataGetDP,
+        MatrixVectorDataTypes.L: self.DataGetL,
+    }
+    data_type = self.DataTypeGet()
+    return routines[data_type](*args)
+
+
+def Matrix_DataRestore(self, *args):
+    routines = {
+        MatrixVectorDataTypes.INTG: self.DataRestoreIntg,
+        MatrixVectorDataTypes.SP: self.DataRestoreSP,
+        MatrixVectorDataTypes.DP: self.DataRestoreDP,
+        MatrixVectorDataTypes.L: self.DataRestoreL,
+    }
+    data_type = self.DataTypeGet()
+    return routines[data_type](*args)
+
+
+def Vector_DataGet(self, *args):
+    routines = {
+        MatrixVectorDataTypes.INTG: self.DataGetIntg,
+        MatrixVectorDataTypes.SP: self.DataGetSP,
+        MatrixVectorDataTypes.DP: self.DataGetDP,
+        MatrixVectorDataTypes.L: self.DataGetL,
+    }
+    data_type = self.DataTypeGet()
+    return routines[data_type](*args)
+
+
+def Vector_DataRestore(self, *args):
+    routines = {
+        MatrixVectorDataTypes.INTG: self.DataRestoreIntg,
+        MatrixVectorDataTypes.SP: self.DataRestoreSP,
+        MatrixVectorDataTypes.DP: self.DataRestoreDP,
+        MatrixVectorDataTypes.L: self.DataRestoreL,
+    }
+    data_type = self.DataTypeGet()
+    return routines[data_type](*args)
+
+
+Matrix.DataGet = Matrix_DataGet
+Matrix.DataRestore = Matrix_DataRestore
+Vector.DataGet = Vector_DataGet
+Vector.DataRestore = Vector_DataRestore

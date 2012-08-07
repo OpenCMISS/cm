@@ -254,7 +254,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DISTRIBUTED_MATRIX_DATA_GET,DISTRIBUTED_MATRIX_DATA_RESTORE
 
-  PUBLIC DISTRIBUTED_MATRIX_DATA_TYPE_SET
+  PUBLIC DistributedMatrix_DataTypeGet, DISTRIBUTED_MATRIX_DATA_TYPE_SET
 
   PUBLIC DISTRIBUTED_MATRIX_DESTROY
 
@@ -298,7 +298,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DISTRIBUTED_VECTOR_DATA_GET,DISTRIBUTED_VECTOR_DATA_RESTORE
 
-  PUBLIC DISTRIBUTED_VECTOR_DATA_TYPE_SET
+  PUBLIC DistributedVector_DataTypeGet, DISTRIBUTED_VECTOR_DATA_TYPE_SET
 
   PUBLIC DISTRIBUTED_VECTOR_DESTROY
 
@@ -1171,6 +1171,38 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_DATA_RESTORE_L
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the data type of a distributed matrix.
+  SUBROUTINE DistributedMatrix_DataTypeGet(matrix,dataType,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: matrix !<A pointer to the distributed matrix
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the data type of the matrix. \see DISTRIBUTED_MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("DistributedMatrix_DataTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(matrix)) THEN
+      IF(.NOT.matrix%matrix_finished) THEN
+        CALL flag_error("The matrix has not been finished.",err,error,*999)
+      ELSE
+        dataType=matrix%data_type
+      END IF
+    ELSE
+      CALL flag_error("Distributed matrix is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("DistributedMatrix_DataTypeGet")
+    RETURN
+999 CALL errors("DistributedMatrix_DataTypeGet",err,error)
+    CALL exits("DistributedMatrix_DataTypeGet")
+    RETURN 1
+  END SUBROUTINE DistributedMatrix_DataTypeGet
+
   !
   !================================================================================================================================
   !
@@ -6009,6 +6041,38 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_VECTOR_CREATE_START")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_VECTOR_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the data type of a distributed vector.
+  SUBROUTINE DistributedVector_DataTypeGet(vector,dataType,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: vector !<A pointer to the distributed vector
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the data type of the vector. \see DISTRIBUTED_MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("DistributedVector_DataTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(vector)) THEN
+      IF(.NOT.vector%vector_finished) THEN
+        CALL flag_error("The vector has not been finished.",err,error,*999)
+      ELSE
+        dataType=vector%data_type
+      END IF
+    ELSE
+      CALL flag_error("Distributed vector is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("DistributedVector_DataTypeGet")
+    RETURN
+999 CALL errors("DistributedVector_DataTypeGet",err,error)
+    CALL exits("DistributedVector_DataTypeGet")
+    RETURN 1
+  END SUBROUTINE DistributedVector_DataTypeGet
 
   !
   !================================================================================================================================
