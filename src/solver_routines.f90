@@ -464,6 +464,16 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET
 
+  PUBLIC SolverEquations_NumberOfMatricesGet
+
+  PUBLIC SolverEquations_MatrixGet
+
+  PUBLIC SolverEquations_VectorGet
+
+  PUBLIC SolverEquations_ResidualVectorGet
+
+  PUBLIC SolverEquations_RhsVectorGet
+
   PUBLIC SOLVER_LABEL_GET,SOLVER_LABEL_SET
   
   PUBLIC SOLVER_LIBRARY_TYPE_GET,SOLVER_LIBRARY_TYPE_SET
@@ -6582,6 +6592,242 @@ CONTAINS
    
   END SUBROUTINE SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET
         
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of solver matrices for the solver equations
+  SUBROUTINE SolverEquations_NumberOfMatricesGet(solverEquations,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !<The solver equations to get the number of matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<The number of matrices for the solver equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
+
+    CALL ENTERS("SolverEquations_NumberOfMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(solverEquations)) THEN
+      solverMatrices=>solverEquations%SOLVER_MATRICES
+      IF(ASSOCIATED(solverMatrices)) THEN
+        numberOfMatrices = solverMatrices%NUMBER_OF_MATRICES
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("SolverEquations_NumberOfMatricesGet")
+    RETURN
+999 CALL ERRORS("SolverEquations_NumberOfMatricesGet",err,error)
+    CALL EXITS("SolverEquations_NumberOfMatricesGet")
+    RETURN
+
+  END SUBROUTINE SolverEquations_NumberOfMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a solver matrix from the solver equations matrices
+  SUBROUTINE SolverEquations_MatrixGet(solverEquations,matrixIndex,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !<The solver equations to get the matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested solver matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: numberOfMatrices
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: solverMatrix
+
+    CALL ENTERS("SolverEquations_MatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(solverEquations)) THEN
+      solverMatrices=>solverEquations%SOLVER_MATRICES
+      IF(ASSOCIATED(solverMatrices)) THEN
+        IF(.NOT.ASSOCIATED(matrix)) THEN
+          numberOfMatrices=solverMatrices%NUMBER_OF_MATRICES
+          IF(matrixIndex>0.AND.matrixIndex<=numberOfMatrices) THEN
+            solverMatrix=>solverMatrices%matrices(matrixIndex)%ptr
+            IF(ASSOCIATED(solverMatrix)) THEN
+              matrix=>solverMatrix%matrix
+            ELSE
+              CALL FLAG_ERROR("Solver matrices solver matrix is not associated",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+              & TRIM(NUMBER_TO_VSTRING(numberOfMatrices,"*",err,error))//".",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The matrix is already associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("SolverEquations_MatrixGet")
+    RETURN
+999 CALL ERRORS("SolverEquations_MatrixGet",err,error)
+    CALL EXITS("SolverEquations_MatrixGet")
+    RETURN
+
+  END SUBROUTINE SolverEquations_MatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the vector assiciated with a solver matrix from the solver equations matrices
+  SUBROUTINE SolverEquations_VectorGet(solverEquations,matrixIndex,vector,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !< The solver equations to get the vector for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !< The solver matrix index to get the vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !< On return, the requested solver matrix vector
+    INTEGER(INTG), INTENT(OUT) :: err !< The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: numberOfMatrices
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: solverMatrix
+
+    CALL ENTERS("SolverEquations_VectorGet",err,error,*999)
+
+    IF(ASSOCIATED(solverEquations)) THEN
+      solverMatrices=>solverEquations%SOLVER_MATRICES
+      IF(ASSOCIATED(solverMatrices)) THEN
+        IF(.NOT.ASSOCIATED(vector)) THEN
+          numberOfMatrices=solverMatrices%NUMBER_OF_MATRICES
+          IF(matrixIndex>0.AND.matrixIndex<=numberOfMatrices) THEN
+            solverMatrix=>solverMatrices%matrices(matrixIndex)%ptr
+            IF(ASSOCIATED(solverMatrix)) THEN
+              IF(ASSOCIATED(solverMatrix%solver_vector)) THEN
+                vector=>solverMatrix%solver_vector
+              ELSE
+                CALL FLAG_ERROR("There is no vector associated with this solve matrix.",err,error,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Solver matrices solver matrix is not associated",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+              & TRIM(NUMBER_TO_VSTRING(numberOfMatrices,"*",err,error))//".",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The vector is already associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("SolverEquations_VectorGet")
+    RETURN
+999 CALL ERRORS("SolverEquations_VectorGet",err,error)
+    CALL EXITS("SolverEquations_VectorGet")
+    RETURN
+
+  END SUBROUTINE SolverEquations_VectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the residual vector from the solver equations for nonlinear problems
+  SUBROUTINE SolverEquations_ResidualVectorGet(solverEquations,residualVector,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !< The solver equations to get the residual vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: residualVector !< On return, the solver residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !< The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
+
+    CALL ENTERS("SolverEquations_ResidualVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(solverEquations)) THEN
+      solverMatrices=>solverEquations%SOLVER_MATRICES
+      IF(ASSOCIATED(solverMatrices)) THEN
+        IF(.NOT.ASSOCIATED(residualVector)) THEN
+          IF(ASSOCIATED(solverMatrices%residual)) THEN
+            residualVector=>solverMatrices%residual
+          ELSE
+            CALL FLAG_ERROR("The solver matrices residual vector is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The residual vector is already associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("SolverEquations_ResidualVectorGet")
+    RETURN
+999 CALL ERRORS("SolverEquations_ResidualVectorGet",err,error)
+    CALL EXITS("SolverEquations_ResidualVectorGet")
+    RETURN
+
+  END SUBROUTINE SolverEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector from the solver equations
+  SUBROUTINE SolverEquations_RhsVectorGet(solverEquations,rhsVector,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !< The solver equations to get the right hand side vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: rhsVector !< On return, the solver right hand side vector
+    INTEGER(INTG), INTENT(OUT) :: err !< The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
+
+    CALL ENTERS("SolverEquations_RhsVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(solverEquations)) THEN
+      solverMatrices=>solverEquations%SOLVER_MATRICES
+      IF(ASSOCIATED(solverMatrices)) THEN
+        IF(.NOT.ASSOCIATED(rhsVector)) THEN
+          IF(ASSOCIATED(solverMatrices%rhs_vector)) THEN
+            rhsVector=>solverMatrices%rhs_vector
+          ELSE
+            CALL FLAG_ERROR("The solver matrices right hand side vector is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The right hand side vector is already associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("SolverEquations_RhsVectorGet")
+    RETURN
+999 CALL ERRORS("SolverEquations_RhsVectorGet",err,error)
+    CALL EXITS("SolverEquations_RhsVectorGet")
+    RETURN
+
+  END SUBROUTINE SolverEquations_RhsVectorGet
+
   !
   !================================================================================================================================
   !

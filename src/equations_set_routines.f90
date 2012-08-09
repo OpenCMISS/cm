@@ -139,7 +139,21 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_LOAD_INCREMENT_APPLY
   
   PUBLIC EQUATIONS_SET_ANALYTIC_USER_PARAM_SET,EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
-  
+
+  PUBLIC EquationsSet_NumberOfLinearMatricesGet
+
+  PUBLIC EquationsSet_NumberOfNonlinearMatricesGet
+
+  PUBLIC EquationsSet_NumberOfDynamicMatricesGet
+
+  PUBLIC EquationsSet_LinearMatrixGet
+
+  PUBLIC EquationsSet_NonlinearMatrixGet
+
+  PUBLIC EquationsSet_DynamicMatrixGet
+
+  PUBLIC EquationsSet_RhsVectorGet
+
 CONTAINS
 
   !
@@ -6276,5 +6290,389 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Get the number of linear matrices for an equations set
+  SUBROUTINE EquationsSet_NumberOfLinearMatricesGet(equationsSet,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the number of linear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of linear matrices
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: linearMatrices
+
+    CALL ENTERS("EquationsSet_NumberOfLinearMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          linearMatrices=>equationsMatrices%LINEAR_MATRICES
+          IF(ASSOCIATED(linearMatrices)) THEN
+            numberOfMatrices=linearMatrices%number_of_linear_matrices
+          ELSE
+            numberOfMatrices=0
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_NumberOfLinearMatricesGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_NumberOfLinearMatricesGet",err,error)
+    CALL EXITS("EquationsSet_NumberOfLinearMatricesGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_NumberOfLinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of nonlinear matrices for an equations set
+  SUBROUTINE EquationsSet_NumberOfNonlinearMatricesGet(equationsSet,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the number of nonlinear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of nonlinear matrices
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+
+    CALL ENTERS("EquationsSet_NumberOfNonlinearMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+          IF(ASSOCIATED(nonlinearMatrices)) THEN
+            numberOfMatrices=nonlinearMatrices%number_of_jacobians
+          ELSE
+            numberOfMatrices=0
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_NumberOfNonlinearMatricesGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_NumberOfNonlinearMatricesGet",err,error)
+    CALL EXITS("EquationsSet_NumberOfNonlinearMatricesGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_NumberOfNonlinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of dynamic matrices for an equations set
+  SUBROUTINE EquationsSet_NumberOfDynamicMatricesGet(equationsSet,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the number of dynamic matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of dynamic matrices
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+
+    CALL ENTERS("EquationsSet_NumberOfDynamicMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          dynamicMatrices=>equationsMatrices%DYNAMIC_MATRICES
+          IF(ASSOCIATED(dynamicMatrices)) THEN
+            numberOfMatrices=dynamicMatrices%number_of_dynamic_matrices
+          ELSE
+            numberOfMatrices=0
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_NumberOfDynamicMatricesGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_NumberOfDynamicMatricesGet",err,error)
+    CALL EXITS("EquationsSet_NumberOfDynamicMatricesGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_NumberOfDynamicMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a linear equations matrix from an equations set
+  SUBROUTINE EquationsSet_LinearMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the linear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The index of the linear matrix to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the linear matrix requested
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: linearMatrices
+
+    CALL ENTERS("EquationsSet_LinearMatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          linearMatrices=>equationsMatrices%LINEAR_MATRICES
+          IF(ASSOCIATED(linearMatrices)) THEN
+            IF(matrixIndex>0.AND.matrixIndex<=linearMatrices%number_of_linear_matrices) THEN
+              IF(.NOT.ASSOCIATED(matrix)) THEN
+                equationsMatrix=>linearMatrices%matrices(matrixIndex)%ptr
+                IF(ASSOCIATED(equationsMatrix)) THEN
+                  matrix=>equationsMatrix%matrix
+                ELSE
+                  CALL FLAG_ERROR("The equations matrix is not associated.",err,error,*999)
+                END IF
+              ELSE
+                CALL FLAG_ERROR("The matrix is already associated.",err,error,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+                & TRIM(NUMBER_TO_VSTRING(linearMatrices%number_of_linear_matrices,"*",err,error))//".",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set linear matrices are not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_LinearMatrixGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_LinearMatrixGet",err,error)
+    CALL EXITS("EquationsSet_LinearMatrixGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_LinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a nonlinear equations matrix from an equations set
+  SUBROUTINE EquationsSet_NonlinearMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the nonlinear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the nonlinear matrix to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested nonlinear matrix
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+
+    CALL ENTERS("EquationsSet_NonlinearMatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+          IF(ASSOCIATED(nonlinearMatrices)) THEN
+            IF(matrixIndex>0.AND.matrixIndex<=nonlinearMatrices%number_of_jacobians) THEN
+              IF(.NOT.ASSOCIATED(matrix)) THEN
+                equationsMatrix=>nonlinearMatrices%jacobians(matrixIndex)%ptr
+                IF(ASSOCIATED(equationsMatrix)) THEN
+                  matrix=>equationsMatrix%jacobian
+                ELSE
+                  CALL FLAG_ERROR("The equations Jacobian matrix is not associated.",err,error,*999)
+                END IF
+              ELSE
+                CALL FLAG_ERROR("The matrix is already associated.",err,error,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+                & TRIM(NUMBER_TO_VSTRING(nonlinearMatrices%number_of_jacobians,"*",err,error))//".",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set nonlinear matrices are not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_NonlinearMatrixGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_NonlinearMatrixGet",err,error)
+    CALL EXITS("EquationsSet_NonlinearMatrixGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_NonlinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from an equations set
+  SUBROUTINE EquationsSet_DynamicMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+
+    CALL ENTERS("EquationsSet_DynamicMatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          dynamicMatrices=>equationsMatrices%DYNAMIC_MATRICES
+          IF(ASSOCIATED(dynamicMatrices)) THEN
+            IF(matrixIndex>0.AND.matrixIndex<=dynamicMatrices%number_of_dynamic_matrices) THEN
+              IF(.NOT.ASSOCIATED(matrix)) THEN
+                equationsMatrix=>dynamicMatrices%matrices(matrixIndex)%ptr
+                IF(ASSOCIATED(equationsMatrix)) THEN
+                  matrix=>equationsMatrix%matrix
+                ELSE
+                  CALL FLAG_ERROR("The equations matrix is not associated.",err,error,*999)
+                END IF
+              ELSE
+                CALL FLAG_ERROR("The matrix is already associated.",err,error,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+                & TRIM(NUMBER_TO_VSTRING(dynamicMatrices%number_of_dynamic_matrices,"*",err,error))//".",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set dynamic matrices are not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_DynamicMatrixGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_DynamicMatrixGet",err,error)
+    CALL EXITS("EquationsSet_DynamicMatrixGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_DynamicMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector for an equations set
+  SUBROUTINE EquationsSet_RhsVectorGet(equationsSet,vector,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the right hand side vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the right hand side vector for the equations set
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+
+    CALL ENTERS("EquationsSet_RhsVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          rhsVector=>equationsMatrices%rhs_vector
+          IF(ASSOCIATED(rhsVector)) THEN
+            IF(.NOT.ASSOCIATED(vector)) THEN
+              vector=>rhsVector%vector
+            ELSE
+              CALL FLAG_ERROR("The vector is already associated.",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set matrices right hand side vector is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_RhsVectorGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_RhsVectorGet",err,error)
+    CALL EXITS("EquationsSet_RhsVectorGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_RhsVectorGet
 
 END MODULE EQUATIONS_SET_ROUTINES

@@ -256,6 +256,8 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DistributedMatrix_DataTypeGet, DISTRIBUTED_MATRIX_DATA_TYPE_SET
 
+  PUBLIC DistributedMatrix_DimensionsGet
+
   PUBLIC DISTRIBUTED_MATRIX_DESTROY
 
   PUBLIC DISTRIBUTED_MATRIX_DUPLICATE
@@ -1262,6 +1264,68 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_MATRIX_DATA_TYPE_SET")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_DATA_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the dimensions of a matrix on this computational node.
+  SUBROUTINE DistributedMatrix_DimensionsGet(distributedMatrix,m,n,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: distributedMatrix !<A pointer to the distributed matrix to get dimensions for
+    INTEGER(INTG), INTENT(OUT) :: m !<On return, the number of rows in the matrix for this domain
+    INTEGER(INTG), INTENT(OUT) :: n !<On return, the number of columns in the matrix for this domain
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(MATRIX_TYPE), POINTER :: matrix
+    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: petscMatrix
+    TYPE(VARYING_STRING) :: localError
+
+    CALL enters("DistributedMatrix_DimensionsGet",err,error,*999)
+
+    IF(ASSOCIATED(distributedMatrix)) THEN
+      SELECT CASE(distributedMatrix%library_type)
+      CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+        IF(ASSOCIATED(distributedMatrix%cmiss)) THEN
+          matrix=>distributedMatrix%cmiss%matrix
+          IF(ASSOCIATED(matrix)) THEN
+            IF(.NOT.matrix%matrix_finished) THEN
+              CALL flag_error("The matrix has not been finished.",err,error,*999)
+            ELSE
+              m=matrix%m
+              n=matrix%n
+            END IF
+          ELSE
+            CALL flag_error("Distributed matrix CMISS matrix is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL flag_error("Distributed matrix CMISS is not associated.",err,error,*999)
+        END IF
+      CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+        petscMatrix=>distributedMatrix%petsc
+        IF(ASSOCIATED(petscMatrix)) THEN
+          m=petscMatrix%m
+          n=petscMatrix%n
+        ELSE
+          CALL flag_error("Distributed matrix PETSc is not associated.",err,error,*999)
+        END IF
+      CASE DEFAULT
+        localError="The distributed matrix library type of "// &
+          & TRIM(number_to_vstring(distributedMatrix%library_type,"*",err,error))//" is invalid."
+        CALL flag_error(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL flag_error("Distributed matrix is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("DistributedMatrix_DimensionsGet")
+    RETURN
+999 CALL errors("DistributedMatrix_DimensionsGet",err,error)
+    CALL exits("DistributedMatrix_DimensionsGet")
+    RETURN 1
+  END SUBROUTINE DistributedMatrix_DimensionsGet
 
   !
   !================================================================================================================================

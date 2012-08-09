@@ -2889,6 +2889,19 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
 
+  PUBLIC CMISSEquationsSet_NumberOfLinearMatricesGet
+
+  PUBLIC CMISSEquationsSet_NumberOfNonlinearMatricesGet
+
+  PUBLIC CMISSEquationsSet_NumberOfDynamicMatricesGet
+
+  PUBLIC CMISSEquationsSet_LinearMatrixGet
+
+  PUBLIC CMISSEquationsSet_NonlinearMatrixGet
+
+  PUBLIC CMISSEquationsSet_DynamicMatrixGet
+
+  PUBLIC CMISSEquationsSet_RhsVectorGet
 
 !!==================================================================================================================================
 !!
@@ -4507,6 +4520,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMatrix_DataTypeGetObj
   END INTERFACE !CMISSMatrix_DataTypeGet
 
+  !>Get the dimensions for a distributed matrix on this computational node
+  INTERFACE CMISSMatrix_DimensionsGet
+    MODULE PROCEDURE CMISSMatrix_DimensionsGetObj
+  END INTERFACE !CMISSMatrix_DimensionsGet
+
   !>Get the row indices and column indices for a sparse matrix
   INTERFACE CMISSMatrix_StorageLocationsGet
     MODULE PROCEDURE CMISSMatrix_StorageLocationsGetObj
@@ -4549,7 +4567,8 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSVector_DataRestoreLObj
   END INTERFACE !CMISSVector_DataRestore
 
-  PUBLIC CMISSMatrix_StorageTypeGet,CMISSMatrix_DataTypeGet,CMISSMatrix_StorageLocationsGet
+  PUBLIC CMISSMatrix_StorageTypeGet,CMISSMatrix_StorageLocationsGet
+  PUBLIC CMISSMatrix_DataTypeGet,CMISSMatrix_DimensionsGet
   PUBLIC CMISSMatrix_DataGet,CMISSMatrix_DataRestore
   PUBLIC CMISSVector_DataTypeGet
   PUBLIC CMISSVector_DataGet,CMISSVector_DataRestore
@@ -5951,6 +5970,16 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverEquations_BoundaryConditionsCreateFinish,CMISSSolverEquations_BoundaryConditionsCreateStart
 
   PUBLIC CMISSSolverEquations_BoundaryConditionsGet
+
+  PUBLIC CMISSSolverEquations_NumberOfMatricesGet
+
+  PUBLIC CMISSSolverEquations_MatrixGet
+
+  PUBLIC CMISSSolverEquations_VectorGet
+
+  PUBLIC CMISSSolverEquations_ResidualVectorGet
+
+  PUBLIC CMISSSolverEquations_RhsVectorGet
 
   PUBLIC CMISSBioelectricsFiniteElasticity_UpdateGeometricField
   
@@ -22761,6 +22790,184 @@ CONTAINS
 
   END SUBROUTINE CMISSEquationsSet_SpecificationSetObj
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of linear matrices for an equations set
+  SUBROUTINE CMISSEquationsSet_NumberOfLinearMatricesGet(equationsSet,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the number of linear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of linear matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error,*999)
+
+    CALL EquationsSet_NumberOfLinearMatricesGet(equationsSet%EQUATIONS_SET,numberOfMatrices,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_NumberOfLinearMatricesGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error)
+    CALL EXITS("CMISSEquationsSet_NumberOfLinearMatricesGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_NumberOfLinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of nonlinear matrices for an equations set
+  SUBROUTINE CMISSEquationsSet_NumberOfNonlinearMatricesGet(equationsSet,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the number of nonlinear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of nonlinear matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error,*999)
+
+    CALL EquationsSet_NumberOfNonlinearMatricesGet(equationsSet%EQUATIONS_SET,numberOfMatrices,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_NumberOfNonlinearMatricesGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_NumberOfNonlinearMatricesGet",err,error)
+    CALL EXITS("CMISSEquationsSet_NumberOfNonlinearMatricesGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_NumberOfNonlinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of dynamic matrices for an equations set
+  SUBROUTINE CMISSEquationsSet_NumberOfDynamicMatricesGet(equationsSet,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the number of dynamic matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of dynamic matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_NumberOfDynamicMatricesGet",err,error,*999)
+
+    CALL EquationsSet_NumberOfDynamicMatricesGet(equationsSet%EQUATIONS_SET,numberOfMatrices,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_NumberOfDynamicMatricesGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_NumberOfDynamicMatricesGet",err,error)
+    CALL EXITS("CMISSEquationsSet_NumberOfDynamicMatricesGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_NumberOfDynamicMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a linear equations matrix from an equations set
+  SUBROUTINE CMISSEquationsSet_LinearMatrixGet(equationsSet,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the linear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the linear matrix to get
+    TYPE(CMISSMatrixType), INTENT(INOUT) :: matrix !<On return, the requested linear matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_LinearMatrixGet",err,error,*999)
+
+    CALL EquationsSet_LinearMatrixGet(equationsSet%EQUATIONS_SET,matrixIndex,matrix%matrix,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_LinearMatrixGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_LinearMatrixGet",err,error)
+    CALL EXITS("CMISSEquationsSet_LinearMatrixGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_LinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a nonlinear equations matrix from an equations set
+  SUBROUTINE CMISSEquationsSet_NonlinearMatrixGet(equationsSet,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the nonlinear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the nonlinear matrix to get
+    TYPE(CMISSMatrixType), INTENT(INOUT) :: matrix !<On return, the requested nonlinear matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_NonlinearMatrixGet",err,error,*999)
+
+    CALL EquationsSet_NonlinearMatrixGet(equationsSet%EQUATIONS_SET,matrixIndex,matrix%matrix,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_NonlinearMatrixGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_NonlinearMatrixGet",err,error)
+    CALL EXITS("CMISSEquationsSet_NonlinearMatrixGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_NonlinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from an equations set
+  SUBROUTINE CMISSEquationsSet_DynamicMatrixGet(equationsSet,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    TYPE(CMISSMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_DynamicMatrixGet",err,error,*999)
+
+    CALL EquationsSet_DynamicMatrixGet(equationsSet%EQUATIONS_SET,matrixIndex,matrix%matrix,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DynamicMatrixGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DynamicMatrixGet",err,error)
+    CALL EXITS("CMISSEquationsSet_DynamicMatrixGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DynamicMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector for an equations set
+  SUBROUTINE CMISSEquationsSet_RhsVectorGet(equationsSet,rhsVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to
+    TYPE(CMISSVectorType), INTENT(INOUT) :: rhsVector !<On return, the right hand side vector for the equations set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSEquationsSet_RhsVectorGet",err,error,*999)
+
+    CALL EquationsSet_RhsVectorGet(equationsSet%EQUATIONS_SET,rhsVector%vector,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_RhsVectorGet")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_RhsVectorGet",err,error)
+    CALL EXITS("CMISSEquationsSet_RhsVectorGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_RhsVectorGet
+
 !!==================================================================================================================================
 !!
 !! FIELD_ROUTINES
@@ -37874,6 +38081,33 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the dimensions of a distributed matrix on this computational node
+  SUBROUTINE CMISSMatrix_DimensionsGetObj(matrix,m,n,err)
+
+    !Argument variables
+    TYPE(CMISSMatrixType), INTENT(IN) :: matrix !<The matrix to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: m !<On return, the number of rows for this computational node
+    INTEGER(INTG), INTENT(OUT) :: n !<On return, the number of columns
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSMatrix_DimensionsGetObj",err,error,*999)
+
+    CALL DistributedMatrix_DimensionsGet(matrix%matrix,m,n,err,error,*999)
+
+    CALL exits("CMISSMatrix_DimensionsGetObj")
+
+    RETURN
+999 CALL errors("CMISSMatrix_DimensionsGetObj",err,error)
+    CALL exits("CMISSMatrix_DimensionsGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMatrix_DimensionsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get the row indices and column indices for a sparse matrix
   SUBROUTINE CMISSMatrix_StorageLocationsGetObj(matrix,rowIndices,columnIndices,err)
 
@@ -47732,6 +47966,133 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_BoundaryConditionsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of solver matrices for the solver equations
+  SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet(solverEquations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the number of matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<The number of matrices for the solver equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSSolverEquations_NumberOfMatricesGet",err,error,*999)
+
+    CALL SolverEquations_NumberOfMatricesGet(solverEquations%SOLVER_EQUATIONS,numberOfMatrices,err,error,*999)
+
+    CALL EXITS("CMISSSolverEquations_NumberOfMatricesGet")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquations_NumberOfMatricesGet",err,error)
+    CALL EXITS("CMISSSolverEquations_NumberOfMatricesGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a solver matrix from the solver equations matrices
+  SUBROUTINE CMISSSolverEquations_MatrixGet(solverEquations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get
+    TYPE(CMISSMatrixType), INTENT(INOUT) :: matrix !<On return, the requested solver matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSSolverEquations_MatrixGet",err,error,*999)
+
+    CALL SolverEquations_MatrixGet(solverEquations%SOLVER_EQUATIONS,matrixIndex,matrix%matrix,err,error,*999)
+
+    CALL EXITS("CMISSSolverEquations_MatrixGet")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquations_MatrixGet",err,error)
+    CALL EXITS("CMISSSolverEquations_MatrixGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_MatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the vector assiciated with a solver matrix from the solver equations matrices
+  SUBROUTINE CMISSSolverEquations_VectorGet(solverEquations,matrixIndex,vector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the vector for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get the vector for
+    TYPE(CMISSVectorType), INTENT(INOUT) :: vector !<On return, the requested solver matrix vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSSolverEquations_VectorGet",err,error,*999)
+
+    CALL SolverEquations_VectorGet(solverEquations%SOLVER_EQUATIONS,matrixIndex,vector%vector,err,error,*999)
+
+    CALL EXITS("CMISSSolverEquations_VectorGet")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquations_VectorGet",err,error)
+    CALL EXITS("CMISSSolverEquations_VectorGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_VectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the residual vector from the solver equations for nonlinear problems
+  SUBROUTINE CMISSSolverEquations_ResidualVectorGet(solverEquations,residualVector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the residual vector for
+    TYPE(CMISSVectorType), INTENT(INOUT) :: residualVector !<On return, the solver residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSSolverEquations_ResidualVectorGet",err,error,*999)
+
+    CALL SolverEquations_ResidualVectorGet(solverEquations%SOLVER_EQUATIONS,residualVector%vector,err,error,*999)
+
+    CALL EXITS("CMISSSolverEquations_ResidualVectorGet")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquations_ResidualVectorGet",err,error)
+    CALL EXITS("CMISSSolverEquations_ResidualVectorGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector from the solver equations
+  SUBROUTINE CMISSSolverEquations_RhsVectorGet(solverEquations,rhsVector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the right hand side vector for
+    TYPE(CMISSVectorType), INTENT(INOUT) :: rhsVector !<On return, the solver right hand side vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL ENTERS("CMISSSolverEquations_RhsVectorGet",err,error,*999)
+
+    CALL SolverEquations_RhsVectorGet(solverEquations%SOLVER_EQUATIONS,rhsVector%vector,err,error,*999)
+
+    CALL EXITS("CMISSSolverEquations_RhsVectorGet")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquations_RhsVectorGet",err,error)
+    CALL EXITS("CMISSSolverEquations_RhsVectorGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_RhsVectorGet
 
   !
   !================================================================================================================================
