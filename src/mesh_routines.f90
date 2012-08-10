@@ -8208,12 +8208,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculates the data points in the given decomposition topology.
+  !>Calculates the data points in the given mesh topology.
   SUBROUTINE MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(MESH,DATA_PROJECTION,ERR,ERROR,*)
   
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh topology to calcualte the data projection for
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !A pointer to the data projection
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -8256,10 +8256,9 @@ CONTAINS
             DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=0
           ENDDO
         ENDDO     
-        !Record the indecies of the data that projected on the elements 
+        !Record the indices of the data that projected on the elements 
         global_count_idx=0
-        DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
-          !The last projection is hard-coded to be the interface mesh projection
+        DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS 
           DATA_PROJECTION_RESULT=>DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)
           ELEMENT_NUMBER=DATA_PROJECTION_RESULT%ELEMENT_NUMBER
           DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
@@ -8271,7 +8270,7 @@ CONTAINS
                 count_idx=count_idx+1
               ENDDO
               DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=data_point_idx
-              DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=global_count_idx
+              DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=data_point_idx!global_count_idx (used this if only projected data are taken into account)
               DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA=DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA+1
             ENDIF             
           ENDDO !element_idx

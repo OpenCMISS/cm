@@ -288,7 +288,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data projection.
     LOGICAL :: DATA_PROJECTION_FINISHED !<Is .TRUE. if the data projection has finished being created, .FALSE. if not.
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<The pointer to the data points for this data projection.
-    !TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The pointer to the geometric field for this data projection.
+    TYPE(FIELD_TYPE), POINTER :: PROJECTION_FIELD !<The pointer to the geometric/dependent field for this data projection.
     INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSIONS !<The coordinate system dimension of this data projection.
     REAL(DP) :: MAXIMUM_ITERATION_UPDATE !<The maximum xi update allowed at each newton iteration, analogous to maximum trust region size in the trust region model approach.
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
@@ -438,7 +438,7 @@ MODULE TYPES
   !>Contains information on the projected data points on an element
   TYPE MESH_ELEMENT_DATA_POINTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
-    INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The mesh element number (element index and element number can be different)
     TYPE(MESH_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
   END TYPE MESH_ELEMENT_DATA_POINTS_TYPE
   
@@ -724,7 +724,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information on the projected data points on an element
   TYPE DOMAIN_ELEMENT_DATA_POINTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
-    INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The local number of this element (element index and element number can be different)
     TYPE(DOMAIN_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
   END TYPE DOMAIN_ELEMENT_DATA_POINTS_TYPE       
   
@@ -1047,14 +1047,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
     INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
-    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES(:)
+    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
   END TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
   
   !>Contains data point decompostion topology   
   TYPE DECOMPOSITION_DATA_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this faces topology information.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in the interface mesh
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this data points topology information.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data in this decomposition topology.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in mesh
     INTEGER(INTG), ALLOCATABLE :: DATA_INDICES_LIST(:) !<List of data_points indices, sorting in asceding order
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_MAP(:) !<Corresponding element numbers in the DATA_INDICES_LIST order
     TYPE(DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements for decomposition of data points

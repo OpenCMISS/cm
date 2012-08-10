@@ -477,7 +477,7 @@ CONTAINS
         !Destroy all the interface condition components
         CALL INTERFACE_FINALISE(INTERFACE,ERR,ERROR,*999)
         
-        !Remove the interface condition from the list of interface conditions
+        !Remove the interface from the list of interfaces
         IF(INTERFACES%NUMBER_OF_INTERFACES>1) THEN
           ALLOCATE(NEW_INTERFACES(INTERFACES%NUMBER_OF_INTERFACES-1),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new interface conditions.",ERR,ERROR,*999)
