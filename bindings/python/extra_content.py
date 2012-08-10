@@ -258,3 +258,88 @@ Matrix.DataGet = Matrix_DataGet
 Matrix.DataRestore = Matrix_DataRestore
 Vector.DataGet = Vector_DataGet
 Vector.DataRestore = Vector_DataRestore
+
+
+def Matrix_ToSciPy(self):
+    """Return a SciPy matrix representation of this matrix
+
+    This works with sparse and full matrices and uses a view
+    of the matrix data so there is no copying.
+    Once finished with the matrix you should call the
+    SciPyRestore method.
+    """
+
+    # Import scipy here as we don't want to require it unless
+    # people are actually going to use it
+    import numpy
+    from scipy import sparse
+
+    storageType = self.StorageTypeGet()
+    dimensions = self.DimensionsGet()
+    data = self.DataGet()
+
+    if storageType == MatrixStorageTypes.BLOCK:
+        # Not sparse, so just reshape the data
+        matrix = data.reshape(dimensions, order='F')
+    elif storageType == MatrixStorageTypes.DIAGONAL:
+        offsets = numpy.array([0])
+        matrix = sparse.dia_matrix((data, offsets), shape=dimensions)
+    elif storageType == MatrixStorageTypes.COMPRESSED_ROW:
+        # OpenCMISS has two types of distributed matrices, ones used internally
+        # and ones used by PETSc. The PETSc ones use zero based arrays but the
+        # internal ones use one based arrays. So for these to work with SciPy
+        # we need to subtract one from the row and column index arrays.
+        # This requires allocating a new array but it will take much less space
+        # than the data array so this souldn't be an issue.
+        # As the first row index is always zero, we can check if it is one instead
+        rowIndices, columnIndices = self.StorageLocationsGet()
+        if rowIndices[0] == 1:
+            rowIndices = rowIndices - 1
+            columnIndices = columnIndices - 1
+        else:
+            # Still copy these so that we're not hanging on do
+            # data allocated within OpenCMISS, it's not that expensive
+            rowIndices = rowIndices.copy()
+            columnIndices = columnIndices.copy()
+        matrix = sparse.csr_matrix(
+                (data, columnIndices, rowIndices), shape=dimensions)
+    elif storageType == MatrixStorageTypes.COMPRESSED_COLUMN:
+        rowIndices, columnIndices = self.StorageLocationsGet()
+        # As the first column index is always zero, we can check if it is one instead
+        if columnIndices[0] == 1:
+            rowIndices = rowIndices - 1
+            columnIndices = columnIndices - 1
+        else:
+            rowIndices = rowIndices.copy()
+            columnIndices = columnIndices.copy()
+        matrix = sparse.csc_matrix(
+                (data, rowIndices, columnIndices), shape=dimensions)
+    else:
+        self.DataRestore(data)
+        raise ValueError("The storage type for this matrix is not "
+            "supported by SciPy")
+    return matrix
+
+
+def Matrix_SciPyRestore(self, matrix):
+    """Restores the data pointers used when creating a SciPy matrix
+
+    Trying to use the SciPy matrix after this will not work
+    """
+
+    import numpy
+
+    dimensions = self.DimensionsGet()
+    if isinstance(matrix, numpy.ndarray):
+        # For full matrices
+        # This doesn't actually copy data if the
+        # order='F' is used:
+        matrix = numpy.reshape(matrix, -1, order='F')
+        self.DataRestore(matrix)
+    else:
+        # For sparse matrices
+        self.DataRestore(matrix.data)
+
+
+Matrix.ToSciPy = Matrix_ToSciPy
+Matrix.SciPyRestore = Matrix_SciPyRestore
