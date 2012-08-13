@@ -50,6 +50,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   USE COMP_ENVIRONMENT
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
+  USE ISO_C_BINDING
   USE KINDS
   USE MATRIX_VECTOR
   USE MPI
@@ -876,8 +877,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    REAL(DP), POINTER :: petscData(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+
     CALL ENTERS("DISTRIBUTED_MATRIX_DATA_GET_DP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
@@ -896,10 +898,35 @@ CONTAINS
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
               IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
-                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,DATA,ERR,ERROR,*999)
+                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,petscData,ERR,ERROR,*999)
               ELSE
-                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,DATA,ERR,ERROR,*999)
+                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,petscData,ERR,ERROR,*999)
               ENDIF
+              ! Convert 2D array from PETSc to 1D array
+              ! Using C_F_POINTER(C_LOC(... is a bit ugly but transfer doesn't work with pointers
+              SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
+              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                CALL C_F_POINTER(C_LOC(petscData(1,1)),DATA,[DISTRIBUTED_MATRIX%PETSC%M*DISTRIBUTED_MATRIX%PETSC%N])
+              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !PETSc returns an m * n matrix rather than number non-zeros by 1, so the returned
+                !2D array actually contains junk data outside of the actual matrix.
+                !This is a bug in PETSc but we can get the correct 1D data here
+                CALL C_F_POINTER(C_LOC(petscData(1,1)),DATA,[DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS])
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING( &
+                  & DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             ELSE
               CALL FLAG_ERROR("Distributed matris PETSc is not associated.",ERR,ERROR,*999)
             ENDIF
