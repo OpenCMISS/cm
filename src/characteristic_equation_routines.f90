@@ -1259,7 +1259,7 @@ CONTAINS
               IF(versionIdx==1 .OR. versionIdx==baseIdx) THEN
                 !Continuity of Total Pressure (dU/dQ)
                 jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=(Bs/(Fr*Beta(1)))*0.25_DP* &
-                 & (normalWave(versionIdx)*2.0_DP*Q_BIF(versionIdx)/(A_BIF(1)**2))
+                 & (normalWave(versionIdx)*2.0_DP*Q_BIF(versionIdx)/(A_BIF(versionIdx)**2))
 
                 !columnIdx=versionIdx+numberOfVersions ! 5,4;5,5;6,4;6,6
                 !Continuity of Total Pressure (dU/dA) 
