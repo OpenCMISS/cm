@@ -468,6 +468,8 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SolverEquations_MatrixGet
 
+  PUBLIC SolverEquations_JacobianMatrixGet
+
   PUBLIC SolverEquations_VectorGet
 
   PUBLIC SolverEquations_ResidualVectorGet
@@ -6681,6 +6683,39 @@ CONTAINS
     RETURN
 
   END SUBROUTINE SolverEquations_MatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the Jacobian matrix from the solver equations matrices for nonlinear solver equations
+  SUBROUTINE SolverEquations_JacobianMatrixGet(solverEquations,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !<The solver equations to get the Jacobian matrix for
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the solver equations Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("SolverEquations_JacobianMatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(solverEquations)) THEN
+      IF(solverEquations%linearity==SOLVER_EQUATIONS_NONLINEAR) THEN
+        CALL SolverEquations_MatrixGet(solverEquations,1,matrix,err,error,*999)
+      ELSE
+        CALL flag_error("Solver equations linearity is not nonlinear.",err,error,*999)
+      END IF
+    ELSE
+      CALL flag_error("Solver equations are not associated.",err,error,*999)
+    END IF
+
+    CALL exits("SolverEquations_JacobianMatrixGet")
+    RETURN
+999 CALL errors("SolverEquations_JacobianMatrixGet",err,error)
+    CALL exits("SolverEquations_JacobianMatrixGet")
+    RETURN
+
+  END SUBROUTINE SolverEquations_JacobianMatrixGet
 
   !
   !================================================================================================================================

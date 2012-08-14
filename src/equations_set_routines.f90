@@ -142,17 +142,25 @@ MODULE EQUATIONS_SET_ROUTINES
 
   PUBLIC EquationsSet_NumberOfLinearMatricesGet
 
-  PUBLIC EquationsSet_NumberOfNonlinearMatricesGet
+  PUBLIC EquationsSet_NumberOfJacobianMatricesGet
 
   PUBLIC EquationsSet_NumberOfDynamicMatricesGet
 
   PUBLIC EquationsSet_LinearMatrixGet
 
-  PUBLIC EquationsSet_NonlinearMatrixGet
+  PUBLIC EquationsSet_JacobianMatrixGet
 
   PUBLIC EquationsSet_DynamicMatrixGet
 
+  PUBLIC EquationsSet_DynamicMatrixGetByType
+
+  PUBLIC EquationsSet_DynamicMatrixTypeGet
+
   PUBLIC EquationsSet_RhsVectorGet
+
+  PUBLIC EquationsSet_ResidualVectorGet
+
+  PUBLIC EquationsSet_SourceVectorGet
 
 CONTAINS
 
@@ -6339,12 +6347,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Get the number of nonlinear matrices for an equations set
-  SUBROUTINE EquationsSet_NumberOfNonlinearMatricesGet(equationsSet,numberOfMatrices,err,error,*)
+  !>Get the number of Jacobian matrices for an equations set
+  SUBROUTINE EquationsSet_NumberOfJacobianMatricesGet(equationsSet,numberOfMatrices,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the number of nonlinear matrices for
-    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of nonlinear matrices
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the number of Jacobian matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of Jacobian matrices
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
@@ -6352,7 +6360,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
 
-    CALL ENTERS("EquationsSet_NumberOfNonlinearMatricesGet",err,error,*999)
+    CALL ENTERS("EquationsSet_NumberOfJacobianMatricesGet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       equations=>equationsSet%equations
@@ -6375,13 +6383,13 @@ CONTAINS
       CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
     END IF
 
-    CALL EXITS("EquationsSet_NumberOfNonlinearMatricesGet")
+    CALL EXITS("EquationsSet_NumberOfJacobianMatricesGet")
     RETURN
-999 CALL ERRORS("EquationsSet_NumberOfNonlinearMatricesGet",err,error)
-    CALL EXITS("EquationsSet_NumberOfNonlinearMatricesGet")
+999 CALL ERRORS("EquationsSet_NumberOfJacobianMatricesGet",err,error)
+    CALL EXITS("EquationsSet_NumberOfJacobianMatricesGet")
     RETURN 1
 
-  END SUBROUTINE EquationsSet_NumberOfNonlinearMatricesGet
+  END SUBROUTINE EquationsSet_NumberOfJacobianMatricesGet
 
   !
   !================================================================================================================================
@@ -6499,13 +6507,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Get a nonlinear equations matrix from an equations set
-  SUBROUTINE EquationsSet_NonlinearMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
+  !>Get a Jacobian matrix from an equations set
+  SUBROUTINE EquationsSet_JacobianMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the nonlinear matrix for
-    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the nonlinear matrix to get
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested nonlinear matrix
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the Jacobian matrix to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
@@ -6514,7 +6522,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
 
-    CALL ENTERS("EquationsSet_NonlinearMatrixGet",err,error,*999)
+    CALL ENTERS("EquationsSet_JacobianMatrixGet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       equations=>equationsSet%equations
@@ -6551,19 +6559,19 @@ CONTAINS
       CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
     END IF
 
-    CALL EXITS("EquationsSet_NonlinearMatrixGet")
+    CALL EXITS("EquationsSet_JacobianMatrixGet")
     RETURN
-999 CALL ERRORS("EquationsSet_NonlinearMatrixGet",err,error)
-    CALL EXITS("EquationsSet_NonlinearMatrixGet")
+999 CALL ERRORS("EquationsSet_JacobianMatrixGet",err,error)
+    CALL EXITS("EquationsSet_JacobianMatrixGet")
     RETURN 1
 
-  END SUBROUTINE EquationsSet_NonlinearMatrixGet
+  END SUBROUTINE EquationsSet_JacobianMatrixGet
 
   !
   !================================================================================================================================
   !
 
-  !>Get a dynamic equations matrix from an equations set
+  !>Get a dynamic equations matrix from an equations set using the dynamic matrix index
   SUBROUTINE EquationsSet_DynamicMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
 
     !Argument variables
@@ -6627,6 +6635,158 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get a dynamic equations matrix from an equations set using the dynamic matrix type
+  SUBROUTINE EquationsSet_DynamicMatrixGetByType(equationsSet,matrixType,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixType !<The type of the dynamic matrix to get. \see EQUATIONS_MATRICES_ROUTINES_DynamicMatrixTypes,EQUATIONS_MATRICES_ROUTINES
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    INTEGER(INTG) :: matrixIndex
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: dynamicMapping
+
+    CALL ENTERS("EquationsSet_DynamicMatrixGetByType",err,error,*999)
+
+    !Check all pointer associations
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          dynamicMatrices=>equationsMatrices%DYNAMIC_MATRICES
+          IF(.NOT.ASSOCIATED(dynamicMatrices)) THEN
+            CALL FLAG_ERROR("The equations set dynamic matrices are not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+        equationsMapping=>equations%equations_mapping
+        IF(ASSOCIATED(equationsMapping)) THEN
+          dynamicMapping=>equationsMapping%DYNAMIC_MAPPING
+          IF(.NOT.ASSOCIATED(dynamicMapping)) THEN
+            CALL FLAG_ERROR("The equations set dynamic mapping is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+    IF(ASSOCIATED(matrix)) THEN
+      CALL FlagError("The matrix is already associated.",err,error,*999)
+    END IF
+
+    !Now get the dynamic matrix
+    !Find matrix index using the equations mapping
+    SELECT CASE(matrixType)
+    CASE(EQUATIONS_MATRIX_STIFFNESS)
+      matrixIndex=dynamicMapping%stiffness_matrix_number
+    CASE(EQUATIONS_MATRIX_DAMPING)
+      matrixIndex=dynamicMapping%damping_matrix_number
+    CASE(EQUATIONS_MATRIX_MASS)
+      matrixIndex=dynamicMapping%mass_matrix_number
+    CASE DEFAULT
+      CALL FlagError("Invalid dynamic matrix type "//TRIM(NumberToVstring(matrixType,"*",err,error))// &
+        & " specified.",err,error,*999)
+    END SELECT
+    IF(matrixIndex==0) THEN
+      CALL FlagError("The equations dynamic matrices do not have a matrix with the specified type of "// &
+        & TRIM(NumberToVstring(matrixType,"*",err,error))//".",err,error,*999)
+    ELSE
+      equationsMatrix=>dynamicMatrices%matrices(matrixIndex)%ptr
+      IF(ASSOCIATED(equationsMatrix)) THEN
+        matrix=>equationsMatrix%matrix
+      ELSE
+        CALL FlagError("The equations dynamic matrix for index "// &
+          & TRIM(NumberToVstring(matrixIndex,"*",err,error))//" is not associated.",err,error,*999)
+      END IF
+    END IF
+
+    CALL EXITS("EquationsSet_DynamicMatrixGetByType")
+    RETURN
+999 CALL ERRORS("EquationsSet_DynamicMatrixGetByType",err,error)
+    CALL EXITS("EquationsSet_DynamicMatrixGetByType")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_DynamicMatrixGetByType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the type of a dynamic matrix, eg. stiffness, damping or mass
+  SUBROUTINE EquationsSet_DynamicMatrixTypeGet(equationsSet,matrixIndex,matrixType,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    INTEGER(INTG), INTENT(INOUT) :: matrixType !<On return, the type of the dynamic matrix. \see EQUATIONS_MATRICES_ROUTINES_DynamicMatrixTypes,EQUATIONS_MATRICES_ROUTINES
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: dynamicMapping
+
+    CALL ENTERS("EquationsSet_DynamicMatrixTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMapping=>equations%equations_mapping
+        IF(ASSOCIATED(equationsMapping)) THEN
+          dynamicMapping=>equationsMapping%DYNAMIC_MAPPING
+          IF(ASSOCIATED(dynamicMapping)) THEN
+            IF(matrixIndex>0.AND.matrixIndex<=dynamicMapping%number_of_dynamic_equations_matrices) THEN
+              IF(matrixIndex==dynamicMapping%stiffness_matrix_number) THEN
+                matrixType=EQUATIONS_MATRIX_STIFFNESS
+              ELSE IF(matrixIndex==dynamicMapping%damping_matrix_number) THEN
+                matrixType=EQUATIONS_MATRIX_DAMPING
+              ELSE IF(matrixIndex==dynamicMapping%mass_matrix_number) THEN
+                matrixType=EQUATIONS_MATRIX_MASS
+              ELSE
+                CALL FLAG_ERROR("Could not find dynamic matrix type.",err,error,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+                & TRIM(NUMBER_TO_VSTRING(dynamicMapping%number_of_dynamic_equations_matrices,"*",err,error))//".",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set dynamic mapping is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_DynamicMatrixTypeGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_DynamicMatrixTypeGet",err,error)
+    CALL EXITS("EquationsSet_DynamicMatrixTypeGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_DynamicMatrixTypeGet
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get the right hand side vector for an equations set
   SUBROUTINE EquationsSet_RhsVectorGet(equationsSet,vector,err,error,*)
 
@@ -6674,5 +6834,109 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE EquationsSet_RhsVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the residual vector for a nonlinear equations set
+  SUBROUTINE EquationsSet_ResidualVectorGet(equationsSet,vector,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the residual vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the residual vector for the equations set
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+
+    CALL ENTERS("EquationsSet_ResidualVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          nonlinearMatrices=>equationsMatrices%nonlinear_matrices
+          IF(ASSOCIATED(nonlinearMatrices)) THEN
+            IF(.NOT.ASSOCIATED(vector)) THEN
+              vector=>nonlinearMatrices%residual
+            ELSE
+              CALL FLAG_ERROR("The vector is already associated.",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set matrices nonlinear matrices are not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_ResidualVectorGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_ResidualVectorGet",err,error)
+    CALL EXITS("EquationsSet_ResidualVectorGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the source vector for an equations set
+  SUBROUTINE EquationsSet_SourceVectorGet(equationsSet,vector,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the source vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the source vector for the equations set
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: matricesSource
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+
+    CALL ENTERS("EquationsSet_SourceVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%equations
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%equations_matrices
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          matricesSource=>equationsMatrices%source_vector
+          IF(ASSOCIATED(matricesSource)) THEN
+            IF(.NOT.ASSOCIATED(vector)) THEN
+              vector=>matricesSource%vector
+            ELSE
+              CALL FLAG_ERROR("The vector is already associated.",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The equations set matrices source vector is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("The equations set matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("The equations set equations are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_SourceVectorGet")
+    RETURN
+999 CALL ERRORS("EquationsSet_SourceVectorGet",err,error)
+    CALL EXITS("EquationsSet_SourceVectorGet")
+    RETURN 1
+
+  END SUBROUTINE EquationsSet_SourceVectorGet
 
 END MODULE EQUATIONS_SET_ROUTINES
