@@ -281,7 +281,7 @@ Returning to the general case, the mass matrix $\matr{M}$ will take the form:
 \end{equation}
 Without using mass-lumping, the damping matrix $\matr{C}$:
 \begin{equation}
-  [C^{\alpha\beta}_{mn}]={\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}}
+  [C^{\alpha\beta}_{mn}]={\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}
   \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}
 \end{equation}
@@ -297,7 +297,7 @@ The element stiffness matrix $\matr{K}$ will contain the linear components of th
        \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
      \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n\le{N{\cdot}{N_{dim}}}$},\\
 
-   [B^{\alpha\beta}_{mn}] = \idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
+   [B^{\alpha\beta}_{mn}] = \idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
      \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
      \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
     \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n>{N{\cdot}{N_{dim}}}$}.
@@ -380,7 +380,7 @@ Equation \ref{eqn:NSEPGFEM1} then becomes after integration and simplification:
   \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
  %P-G term
   -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
-   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}\\
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
     \pbrac{\frac{(\alpha){L(\vect{\xi})}}{2}{\frac{u_j}{\abs{u_j}}}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
      \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
   \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
@@ -396,7 +396,7 @@ Equation \ref{eqn:NSEPGFEM1} then becomes after integration and simplification:
 % %boundary terms
   =\dsum_{f=1}^{F}\fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{m}{\alpha}\idxgsf{i}{o}{\gamma}
    \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
-    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}\\
 \end{multline}
 
 Notice the integration by parts is done only to the standard Galerkin weights- this is because the artificial diffusion added by the Petrov-Galerkin terms should only contribute within the elements
