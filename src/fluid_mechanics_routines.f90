@@ -422,7 +422,7 @@ CONTAINS
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL Characteristic_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*999)
+        CALL Characteristic_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
       CASE DEFAULT
         localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -471,7 +471,7 @@ CONTAINS
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL Characteristic_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
+        CALL Characteristic_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*999)
       CASE DEFAULT
         localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
           & " is not valid for a fluid mechanics equation set class."
