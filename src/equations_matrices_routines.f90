@@ -158,7 +158,7 @@ MODULE EQUATIONS_MATRICES_ROUTINES
     & EquationsMatrices_NodalVectorCalculate,EquationsMatrices_NodalInitialise,EquationsMatrices_NodalFinalise, &
     & EquationsMatrices_NodalMatrixSetup,EquationsMatrices_NodalVectorSetup,EquationsMatrices_NodalMatrixFinalise, &
     & EquationsMatrices_NodalVectorFinalise,EquationsMatrices_NodalMatrixInitialise, &
-    & EquationsMatrices_NodalVectorInitialise
+    & EquationsMatrices_NodalVectorInitialise,EquationsMatrices_JacobianNodeAdd
 
   PUBLIC EQUATIONS_MATRICES_ALL,EQUATIONS_MATRICES_LINEAR_ONLY,EQUATIONS_MATRICES_NONLINEAR_ONLY,EQUATIONS_MATRICES_JACOBIAN_ONLY, &
     & EQUATIONS_MATRICES_RESIDUAL_ONLY,EQUATIONS_MATRICES_RHS_ONLY,EQUATIONS_MATRICES_SOURCE_ONLY, &
@@ -2427,6 +2427,65 @@ CONTAINS
 
     RETURN 1
   END SUBROUTINE EquationsMatrices_NodalVectorFinalise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds the Jacobian matrices into the equations Jacobian.
+  SUBROUTINE EquationsMatrices_JacobianNodeAdd(equationsMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices !<A pointer to the equations matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: jacobianMatrixIdx
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: jacobianMatrix
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(VARYING_STRING) :: localError
+    
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START("EquationsMatrices_JacobianNodeAdd()")
+#endif
+
+    CALL ENTERS("EquationsMatrices_JacobianNodeAdd",err,error,*999)
+
+    IF(ASSOCIATED(equationsMatrices)) THEN
+      nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+      IF(ASSOCIATED(nonlinearMatrices)) THEN
+        DO jacobianMatrixIdx=1,nonlinearMatrices%NUMBER_OF_JACOBIANS
+          jacobianMatrix=>nonlinearMatrices%JACOBIANS(jacobianMatrixIdx)%PTR
+          IF(ASSOCIATED(jacobianMatrix)) THEN
+            IF(jacobianMatrix%UPDATE_JACOBIAN) THEN
+              !Add in Jacobian element matrices
+              CALL DISTRIBUTED_MATRIX_VALUES_ADD(jacobianMatrix%jacobian,jacobianMatrix%NodalJacobian%rowDofs(1: &
+                & jacobianMatrix%NodalJacobian%numberOfRows),jacobianMatrix%NodalJacobian%columnDofs(1: &
+                & jacobianMatrix%NodalJacobian%numberOfColumns),jacobianMatrix%NodalJacobian%matrix(1: &
+                & jacobianMatrix%NodalJacobian%numberOfRows,1:jacobianMatrix%NodalJacobian%numberOfColumns), &
+                & err,error,*999)
+            ENDIF
+          ELSE
+            localError="Jacobian matrix for Jacobian matrix index "// &
+              & TRIM(NUMBER_TO_VSTRING(jacobianMatrixIdx,"*",err,error))//" is not associated."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        ENDDO !jacobianMatrixIdx
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations matrices is not allocated.",err,error,*999)
+    ENDIF
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP("EquationsMatrices_JacobianNodeAdd()")
+#endif
+    
+    CALL EXITS("EquationsMatrices_JacobianNodeAdd")
+    RETURN
+999 CALL ERRORS("EquationsMatrices_JacobianNodeAdd",err,error)
+    CALL EXITS("EquationsMatrices_JacobianNodeAdd")
+    RETURN 1
+  END SUBROUTINE EquationsMatrices_JacobianNodeAdd
 
   !
   !================================================================================================================================

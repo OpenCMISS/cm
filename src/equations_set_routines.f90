@@ -6759,7 +6759,7 @@ CONTAINS
               numberOfTimes=numberOfTimes+1
               CALL EquationsMatrices_NodalCalculate(equationsMatrices,nodeNumber,err,error,*999)
               CALL EquationsSet_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
-              CALL EquationsMatrices_NodeAdd(equationsMatrices,err,error,*999)
+              CALL EquationsMatrices_JacobianNodeAdd(equationsMatrices,err,error,*999)
             ENDDO !nodeIdx
             !Output timing information if required
             IF(equations%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
@@ -6792,7 +6792,7 @@ CONTAINS
               numberOfTimes=numberOfTimes+1
               CALL EquationsMatrices_NodalCalculate(equationsMatrices,nodeNumber,err,error,*999)
               CALL EquationsSet_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
-              CALL EquationsMatrices_NodeAdd(equationsMatrices,err,error,*999)
+              CALL EquationsMatrices_JacobianNodeAdd(equationsMatrices,err,error,*999)
             ENDDO !nodeIdx
             !Output timing information if required
             IF(equations%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
