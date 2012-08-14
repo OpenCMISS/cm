@@ -3881,10 +3881,12 @@ CONTAINS
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     REAL(DP) :: normalWave(3)
+    REAL(DP) :: momentum1,momentum2,continuity
     INTEGER(INTG) :: nodalElementNumber,nodeNumber
     INTEGER(INTG) :: numberOfVersions,elementIdx,elementNumber,independentParameterIdx
     INTEGER(INTG) :: dofIdx,nodeIdx,derivativeIdx,versionIdx,materialIdx,rowIdx,dependentParameterIdx,baseIdx,columnIdx
     INTEGER(INTG) :: local_ny
+    INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,firstNode,lastNode,variableType,parameterIdx
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -4294,67 +4296,63 @@ CONTAINS
               END IF
             ENDDO !ng
 
-            !!!--  B I F U R C A T I O N   F L U X   U P W I N D I N G  --!!!
+            !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-              TOTAL_NUMBER_OF_DOFS=EQUATIONS%EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR% &
-                & TOPOLOGY%DOFS%NUMBER_OF_DOFS
-              !Max Node in an Element
-              mn=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
-              !Number of Element First Node
-              node1=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
-              !Number of Element Last Node
-              node3=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(3)
-              !Element First Node Number of Versions
-              nv1=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              !Element Last Node Number of Versions
-              nv3=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%NUMBER_OF_VERSIONS
-              !Parent Vessel (if the last node has versions)
-              IF(nv3>1)THEN
-                !Version Number of the First Node
-                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,3)
-                !DOF Number of the First Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node3)%DERIVATIVES(1)%DOF_INDEX(vn)
-                !Current Values of Q and A at the Last Node
-                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & BIF_VALUES,ERR,ERROR,*999)
-                Q_BIF(1)=BIF_VALUES(dof_idx)
-                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
-                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                  & BIF_VALUES,ERR,ERROR,*999)
 
-                !Momentum Equation (dU/dQ - dU/dA)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,mn)+ &
-                  & (-K*2.0_DP*Q_BIF(1)/A_BIF(1))
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,2*mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mn,2*mn)+ &
-                  & ((K*((Q_BIF(1)/A_BIF(1))**2))-((A_BIF(1)**(0.5_DP))*Fr))
-                !Continuity Equation (dU/dQ)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*mn,mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*mn,mn)+ &
-                  & (-1.0_DP/St)
+              numberOfElementNodes=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS%NUMBER_OF_NODES
+              numberOfParameters=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
+              firstNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
+              lastNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(numberOfElementNodes)
+              derivativeIdx=1
 
-              !Branch Vessel (if the first node has versions)
-              ELSEIF(nv1>1) THEN
-                !Version Number of the First Node
-                vn=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,1)
-                !DOF Number of the Last Node
-                dof_idx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(node1)%DERIVATIVES(1)%DOF_INDEX(vn)
-                !Current Values of Q and A at the First Node
-                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & BIF_VALUES,ERR,ERROR,*999)
-                Q_BIF(1)=BIF_VALUES(dof_idx)
-                A_BIF(1)=BIF_VALUES(TOTAL_NUMBER_OF_DOFS+dof_idx)
-                CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                  & BIF_VALUES,ERR,ERROR,*999)
+              DO nodeIdx=1,numberOfElementNodes
+                numberOfVersions=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                  & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                IF(numberOfVersions>1) THEN
+                  nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
+                  versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
+                    & ELEMENT_DERIVATIVES(2,derivativeIdx,nodeIdx)
 
-                !Momentum Equation (dU/dQ - dU/dA)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)+ &
-                  & (-K*2.0_DP*Q_BIF(1)/A_BIF(1))
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1+mn)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1+mn)+ &
-                  & ((K*((Q_BIF(1)/A_BIF(1))**2))-((A_BIF(1)**(0.5_DP))*Fr))
-                !Continuity Equation (dU/dQ)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1+mn,1)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1+mn,1)+ &
-                  & (-1.0_DP/St)
+                  ! Get current Q and A values
+                  CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & dependentParameters,err,error,*999)
+                  variableType=dependentField%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
+                  parameterIdx=1  
+                  local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
+                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                  Q_BIF(1)=dependentParameters(local_ny)
+                  parameterIdx=2
+                  local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
+                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                  A_BIF(versionIdx)=dependentParameters(local_ny)
+                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & dependentParameters,err,error,*999)
 
-              ENDIF
+                  !Momentum Equation
+                  momentum1 = -K*2.0_DP*Q_BIF(1)/A_BIF(1)
+                  momentum2 = (K*((Q_BIF(1)/A_BIF(1))**2))-((A_BIF(1)**(0.5_DP))*Fr)
+                  !Continuity Equation
+                  continuity=-1.0_DP/St
+
+                  ! Add momentum/continuity contributions to first/last node accordingly
+                  IF(nodeNumber==firstNode) THEN
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)= &
+                     & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,1)+momentum1
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,numberOfParameters+1)= & 
+                     & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1,numberOfParameters+1)+momentum2
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(numberOfParameters+1,1)= & 
+                     & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(numberOfParameters+1,1)+continuity
+                  ELSE IF(nodeNumber==lastNode) THEN
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(numberOfParameters,numberOfParameters)= &
+                     & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(numberOfParameters,numberOfParameters)+momentum1
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(numberOfParameters,2*numberOfParameters)= &
+                     & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(numberOfParameters,2*numberOfParameters)+momentum2
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*numberOfParameters,numberOfParameters)= & 
+                     & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*numberOfParameters,numberOfParameters)+continuity
+                  ENDIF
+                ENDIF !version>1
+              ENDDO !loop nodes
             ENDIF
 
             !!!--   A S S E M B L E   M A T R I C E S  &  V E C T O R S   --!!!
