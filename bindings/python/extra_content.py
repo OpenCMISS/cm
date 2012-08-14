@@ -210,7 +210,7 @@ Field.ParameterSetGetGuassPoint = Field_ParameterSetGetGuassPoint
 Field.ParameterSetInterpolateGauss = Field_ParameterSetInterpolateGauss
 
 
-def Matrix_DataGet(self, *args):
+def DistributedMatrix_DataGet(self, *args):
     routines = {
         MatrixVectorDataTypes.INTG: self.DataGetIntg,
         MatrixVectorDataTypes.SP: self.DataGetSP,
@@ -221,7 +221,7 @@ def Matrix_DataGet(self, *args):
     return routines[data_type](*args)
 
 
-def Matrix_DataRestore(self, *args):
+def DistributedMatrix_DataRestore(self, *args):
     routines = {
         MatrixVectorDataTypes.INTG: self.DataRestoreIntg,
         MatrixVectorDataTypes.SP: self.DataRestoreSP,
@@ -232,7 +232,7 @@ def Matrix_DataRestore(self, *args):
     return routines[data_type](*args)
 
 
-def Vector_DataGet(self, *args):
+def DistributedVector_DataGet(self, *args):
     routines = {
         MatrixVectorDataTypes.INTG: self.DataGetIntg,
         MatrixVectorDataTypes.SP: self.DataGetSP,
@@ -243,7 +243,7 @@ def Vector_DataGet(self, *args):
     return routines[data_type](*args)
 
 
-def Vector_DataRestore(self, *args):
+def DistributedVector_DataRestore(self, *args):
     routines = {
         MatrixVectorDataTypes.INTG: self.DataRestoreIntg,
         MatrixVectorDataTypes.SP: self.DataRestoreSP,
@@ -254,13 +254,13 @@ def Vector_DataRestore(self, *args):
     return routines[data_type](*args)
 
 
-Matrix.DataGet = Matrix_DataGet
-Matrix.DataRestore = Matrix_DataRestore
-Vector.DataGet = Vector_DataGet
-Vector.DataRestore = Vector_DataRestore
+DistributedMatrix.DataGet = DistributedMatrix_DataGet
+DistributedMatrix.DataRestore = DistributedMatrix_DataRestore
+DistributedVector.DataGet = DistributedVector_DataGet
+DistributedVector.DataRestore = DistributedVector_DataRestore
 
 
-def Matrix_ToSciPy(self):
+def DistributedMatrix_ToSciPy(self):
     """Return a SciPy matrix representation of this matrix
 
     This works with sparse and full matrices and uses a view
@@ -321,7 +321,7 @@ def Matrix_ToSciPy(self):
     return matrix
 
 
-def Matrix_SciPyRestore(self, matrix):
+def DistributedMatrix_SciPyRestore(self, matrix):
     """Restores the data pointers used when creating a SciPy matrix
 
     Trying to use the SciPy matrix after this will not work
@@ -341,5 +341,5 @@ def Matrix_SciPyRestore(self, matrix):
         self.DataRestore(matrix.data)
 
 
-Matrix.ToSciPy = Matrix_ToSciPy
-Matrix.SciPyRestore = Matrix_SciPyRestore
+DistributedMatrix.ToSciPy = DistributedMatrix_ToSciPy
+DistributedMatrix.SciPyRestore = DistributedMatrix_SciPyRestore
