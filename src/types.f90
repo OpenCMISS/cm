@@ -1043,21 +1043,30 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the decomposition local element number to the decomposition user element number.
   END TYPE DECOMPOSITION_ELEMENTS_TYPE
   
+  !>Contains data point information
+  TYPE DECOMPOSITION_ELEMENT_DATA_POINT_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<User number of the projected data point
+    INTEGER(INTG) :: GLOBAL_NUMBER !<Global number of the data point, sequence is according to element number sequence  
+    INTEGER(INTG) :: LOCAL_NUMBER !<local number of the data point
+  END TYPE DECOMPOSITION_ELEMENT_DATA_POINT_TYPE
+  
   !>Contains information on the projected data points on an element, for decomposition since data points on elements go with the elements
   TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
     INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
-    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
+    TYPE(DECOMPOSITION_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global,local and user number of this data point
+!    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES(:) !<The global, local and user number of this data point
   END TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
   
   !>Contains data point decompostion topology   
   TYPE DECOMPOSITION_DATA_TYPE
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this data points topology information.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data in this decomposition topology.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in mesh
-    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES_LIST(:) !<List of data_points indices, sorting in asceding order
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_MAP(:) !<Corresponding element numbers in the DATA_INDICES_LIST order
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in this decomposition topology
+!    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES_LIST(:) !<List of data_points indices, sorting in asceding order
+!    INTEGER(INTG), ALLOCATABLE :: ELEMENT_MAP(:) !<Corresponding element numbers in the DATA_INDICES_LIST order
     TYPE(DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements for decomposition of data points
+    TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<A tree mapping the domain local number to the region data point user number.
   END TYPE DECOMPOSITION_DATA_TYPE
 
    !>Contains the topology information for a decomposition
