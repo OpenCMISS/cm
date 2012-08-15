@@ -22823,15 +22823,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of linear matrices
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error,*999)
 
-    CALL EquationsSet_NumberOfLinearMatricesGet(equationsSet%EQUATIONS_SET,numberOfMatrices,err,error,*999)
+    CALL EquationsSet_NumberOfLinearMatricesGet(equationsSet%equations_set,numberOfMatrices,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_NumberOfLinearMatricesGet")
+    CALL Exits("CMISSEquationsSet_NumberOfLinearMatricesGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error)
-    CALL EXITS("CMISSEquationsSet_NumberOfLinearMatricesGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error)
+    CALL Exits("CMISSEquationsSet_NumberOfLinearMatricesGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_NumberOfLinearMatricesGet
@@ -22848,15 +22848,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of Jacobian matrices
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_NumberOfLinearMatricesGet",err,error,*999)
 
-    CALL EquationsSet_NumberOfJacobianMatricesGet(equationsSet%EQUATIONS_SET,numberOfMatrices,err,error,*999)
+    CALL EquationsSet_NumberOfJacobianMatricesGet(equationsSet%equations_set,numberOfMatrices,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_NumberOfJacobianMatricesGet")
+    CALL Exits("CMISSEquationsSet_NumberOfJacobianMatricesGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_NumberOfJacobianMatricesGet",err,error)
-    CALL EXITS("CMISSEquationsSet_NumberOfJacobianMatricesGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_NumberOfJacobianMatricesGet",err,error)
+    CALL Exits("CMISSEquationsSet_NumberOfJacobianMatricesGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_NumberOfJacobianMatricesGet
@@ -22873,15 +22873,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of dynamic matrices
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_NumberOfDynamicMatricesGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_NumberOfDynamicMatricesGet",err,error,*999)
 
-    CALL EquationsSet_NumberOfDynamicMatricesGet(equationsSet%EQUATIONS_SET,numberOfMatrices,err,error,*999)
+    CALL EquationsSet_NumberOfDynamicMatricesGet(equationsSet%equations_set,numberOfMatrices,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_NumberOfDynamicMatricesGet")
+    CALL Exits("CMISSEquationsSet_NumberOfDynamicMatricesGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_NumberOfDynamicMatricesGet",err,error)
-    CALL EXITS("CMISSEquationsSet_NumberOfDynamicMatricesGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_NumberOfDynamicMatricesGet",err,error)
+    CALL Exits("CMISSEquationsSet_NumberOfDynamicMatricesGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_NumberOfDynamicMatricesGet
@@ -22899,15 +22899,15 @@ CONTAINS
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested linear matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_LinearMatrixGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_LinearMatrixGet",err,error,*999)
 
-    CALL EquationsSet_LinearMatrixGet(equationsSet%EQUATIONS_SET,matrixIndex,matrix%distributedMatrix,err,error,*999)
+    CALL EquationsSet_LinearMatrixGet(equationsSet%equations_set,matrixIndex,matrix%distributedMatrix,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_LinearMatrixGet")
+    CALL Exits("CMISSEquationsSet_LinearMatrixGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_LinearMatrixGet",err,error)
-    CALL EXITS("CMISSEquationsSet_LinearMatrixGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_LinearMatrixGet",err,error)
+    CALL Exits("CMISSEquationsSet_LinearMatrixGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_LinearMatrixGet
@@ -22925,15 +22925,15 @@ CONTAINS
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_JacobianMatrixGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_JacobianMatrixGet",err,error,*999)
 
-    CALL EquationsSet_JacobianMatrixGet(equationsSet%EQUATIONS_SET,matrixIndex,matrix%distributedMatrix,err,error,*999)
+    CALL EquationsSet_JacobianMatrixGet(equationsSet%equations_set,matrixIndex,matrix%distributedMatrix,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_JacobianMatrixGet")
+    CALL Exits("CMISSEquationsSet_JacobianMatrixGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_JacobianMatrixGet",err,error)
-    CALL EXITS("CMISSEquationsSet_JacobianMatrixGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_JacobianMatrixGet",err,error)
+    CALL Exits("CMISSEquationsSet_JacobianMatrixGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_JacobianMatrixGet
@@ -22951,15 +22951,15 @@ CONTAINS
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_DynamicMatrixGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_DynamicMatrixGet",err,error,*999)
 
-    CALL EquationsSet_DynamicMatrixGet(equationsSet%EQUATIONS_SET,matrixIndex,matrix%distributedMatrix,err,error,*999)
+    CALL EquationsSet_DynamicMatrixGet(equationsSet%equations_set,matrixIndex,matrix%distributedMatrix,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_DynamicMatrixGet")
+    CALL Exits("CMISSEquationsSet_DynamicMatrixGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_DynamicMatrixGet",err,error)
-    CALL EXITS("CMISSEquationsSet_DynamicMatrixGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_DynamicMatrixGet",err,error)
+    CALL Exits("CMISSEquationsSet_DynamicMatrixGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_DynamicMatrixGet
@@ -22977,15 +22977,15 @@ CONTAINS
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_DynamicMatrixGetByType",err,error,*999)
+    CALL Enters("CMISSEquationsSet_DynamicMatrixGetByType",err,error,*999)
 
-    CALL EquationsSet_DynamicMatrixGetByType(equationsSet%EQUATIONS_SET,matrixType,matrix%distributedMatrix,err,error,*999)
+    CALL EquationsSet_DynamicMatrixGetByType(equationsSet%equations_set,matrixType,matrix%distributedMatrix,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_DynamicMatrixGetByType")
+    CALL Exits("CMISSEquationsSet_DynamicMatrixGetByType")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_DynamicMatrixGetByType",err,error)
-    CALL EXITS("CMISSEquationsSet_DynamicMatrixGetByType")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_DynamicMatrixGetByType",err,error)
+    CALL Exits("CMISSEquationsSet_DynamicMatrixGetByType")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_DynamicMatrixGetByType
@@ -23003,15 +23003,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: matrixType !<On return, the dynamic matrix type. \see OPENCMISS_EquationsSetDynamicMatrixTypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_DynamicMatrixTypeGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_DynamicMatrixTypeGet",err,error,*999)
 
-    CALL EquationsSet_DynamicMatrixTypeGet(equationsSet%EQUATIONS_SET,matrixIndex,matrixType,err,error,*999)
+    CALL EquationsSet_DynamicMatrixTypeGet(equationsSet%equations_set,matrixIndex,matrixType,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_DynamicMatrixTypeGet")
+    CALL Exits("CMISSEquationsSet_DynamicMatrixTypeGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_DynamicMatrixTypeGet",err,error)
-    CALL EXITS("CMISSEquationsSet_DynamicMatrixTypeGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_DynamicMatrixTypeGet",err,error)
+    CALL Exits("CMISSEquationsSet_DynamicMatrixTypeGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_DynamicMatrixTypeGet
@@ -23028,15 +23028,15 @@ CONTAINS
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: rhsVector !<On return, the right hand side vector for the equations set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_RhsVectorGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_RhsVectorGet",err,error,*999)
 
-    CALL EquationsSet_RhsVectorGet(equationsSet%EQUATIONS_SET,rhsVector%distributedVector,err,error,*999)
+    CALL EquationsSet_RhsVectorGet(equationsSet%equations_set,rhsVector%distributedVector,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_RhsVectorGet")
+    CALL Exits("CMISSEquationsSet_RhsVectorGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_RhsVectorGet",err,error)
-    CALL EXITS("CMISSEquationsSet_RhsVectorGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_RhsVectorGet",err,error)
+    CALL Exits("CMISSEquationsSet_RhsVectorGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_RhsVectorGet
@@ -23053,15 +23053,15 @@ CONTAINS
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: sourceVector !<On return, the source vector for the equations set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_SourceVectorGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_SourceVectorGet",err,error,*999)
 
-    CALL EquationsSet_SourceVectorGet(equationsSet%EQUATIONS_SET,sourceVector%distributedVector,err,error,*999)
+    CALL EquationsSet_SourceVectorGet(equationsSet%equations_set,sourceVector%distributedVector,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_SourceVectorGet")
+    CALL Exits("CMISSEquationsSet_SourceVectorGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_SourceVectorGet",err,error)
-    CALL EXITS("CMISSEquationsSet_SourceVectorGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_SourceVectorGet",err,error)
+    CALL Exits("CMISSEquationsSet_SourceVectorGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_SourceVectorGet
@@ -23078,15 +23078,15 @@ CONTAINS
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the residual vector for the equations set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSEquationsSet_ResidualVectorGet",err,error,*999)
+    CALL Enters("CMISSEquationsSet_ResidualVectorGet",err,error,*999)
 
-    CALL EquationsSet_ResidualVectorGet(equationsSet%EQUATIONS_SET,residualVector%distributedVector,err,error,*999)
+    CALL EquationsSet_ResidualVectorGet(equationsSet%equations_set,residualVector%distributedVector,err,error,*999)
 
-    CALL EXITS("CMISSEquationsSet_ResidualVectorGet")
+    CALL Exits("CMISSEquationsSet_ResidualVectorGet")
     RETURN
-999 CALL ERRORS("CMISSEquationsSet_ResidualVectorGet",err,error)
-    CALL EXITS("CMISSEquationsSet_ResidualVectorGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSEquationsSet_ResidualVectorGet",err,error)
+    CALL Exits("CMISSEquationsSet_ResidualVectorGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_ResidualVectorGet
@@ -48102,15 +48102,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<The number of matrices for the solver equations
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSSolverEquations_NumberOfMatricesGet",err,error,*999)
+    CALL Enters("CMISSSolverEquations_NumberOfMatricesGet",err,error,*999)
 
-    CALL SolverEquations_NumberOfMatricesGet(solverEquations%SOLVER_EQUATIONS,numberOfMatrices,err,error,*999)
+    CALL SolverEquations_NumberOfMatricesGet(solverEquations%solver_equations,numberOfMatrices,err,error,*999)
 
-    CALL EXITS("CMISSSolverEquations_NumberOfMatricesGet")
+    CALL Exits("CMISSSolverEquations_NumberOfMatricesGet")
     RETURN
-999 CALL ERRORS("CMISSSolverEquations_NumberOfMatricesGet",err,error)
-    CALL EXITS("CMISSSolverEquations_NumberOfMatricesGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSSolverEquations_NumberOfMatricesGet",err,error)
+    CALL Exits("CMISSSolverEquations_NumberOfMatricesGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet
@@ -48128,15 +48128,15 @@ CONTAINS
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested solver matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSSolverEquations_MatrixGet",err,error,*999)
+    CALL Enters("CMISSSolverEquations_MatrixGet",err,error,*999)
 
-    CALL SolverEquations_MatrixGet(solverEquations%SOLVER_EQUATIONS,matrixIndex,matrix%distributedMatrix,err,error,*999)
+    CALL SolverEquations_MatrixGet(solverEquations%solver_equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
 
-    CALL EXITS("CMISSSolverEquations_MatrixGet")
+    CALL Exits("CMISSSolverEquations_MatrixGet")
     RETURN
-999 CALL ERRORS("CMISSSolverEquations_MatrixGet",err,error)
-    CALL EXITS("CMISSSolverEquations_MatrixGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSSolverEquations_MatrixGet",err,error)
+    CALL Exits("CMISSSolverEquations_MatrixGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_MatrixGet
@@ -48153,15 +48153,15 @@ CONTAINS
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the solver equations Jacobian matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSSolverEquations_JacobianMatrixGet",err,error,*999)
+    CALL Enters("CMISSSolverEquations_JacobianMatrixGet",err,error,*999)
 
-    CALL SolverEquations_JacobianMatrixGet(solverEquations%SOLVER_EQUATIONS,matrix%distributedMatrix,err,error,*999)
+    CALL SolverEquations_JacobianMatrixGet(solverEquations%solver_equations,matrix%distributedMatrix,err,error,*999)
 
-    CALL EXITS("CMISSSolverEquations_JacobianMatrixGet")
+    CALL Exits("CMISSSolverEquations_JacobianMatrixGet")
     RETURN
-999 CALL ERRORS("CMISSSolverEquations_JacobianMatrixGet",err,error)
-    CALL EXITS("CMISSSolverEquations_JacobianMatrixGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSSolverEquations_JacobianMatrixGet",err,error)
+    CALL Exits("CMISSSolverEquations_JacobianMatrixGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_JacobianMatrixGet
@@ -48179,15 +48179,15 @@ CONTAINS
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: vector !<On return, the requested solver matrix vector
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSSolverEquations_VectorGet",err,error,*999)
+    CALL Enters("CMISSSolverEquations_VectorGet",err,error,*999)
 
-    CALL SolverEquations_VectorGet(solverEquations%SOLVER_EQUATIONS,matrixIndex,vector%distributedVector,err,error,*999)
+    CALL SolverEquations_VectorGet(solverEquations%solver_equations,matrixIndex,vector%distributedVector,err,error,*999)
 
-    CALL EXITS("CMISSSolverEquations_VectorGet")
+    CALL Exits("CMISSSolverEquations_VectorGet")
     RETURN
-999 CALL ERRORS("CMISSSolverEquations_VectorGet",err,error)
-    CALL EXITS("CMISSSolverEquations_VectorGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSSolverEquations_VectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_VectorGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_VectorGet
@@ -48204,15 +48204,15 @@ CONTAINS
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the solver residual vector
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSSolverEquations_ResidualVectorGet",err,error,*999)
+    CALL Enters("CMISSSolverEquations_ResidualVectorGet",err,error,*999)
 
-    CALL SolverEquations_ResidualVectorGet(solverEquations%SOLVER_EQUATIONS,residualVector%distributedVector,err,error,*999)
+    CALL SolverEquations_ResidualVectorGet(solverEquations%solver_equations,residualVector%distributedVector,err,error,*999)
 
-    CALL EXITS("CMISSSolverEquations_ResidualVectorGet")
+    CALL Exits("CMISSSolverEquations_ResidualVectorGet")
     RETURN
-999 CALL ERRORS("CMISSSolverEquations_ResidualVectorGet",err,error)
-    CALL EXITS("CMISSSolverEquations_ResidualVectorGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSSolverEquations_ResidualVectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_ResidualVectorGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_ResidualVectorGet
@@ -48229,15 +48229,15 @@ CONTAINS
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: rhsVector !<On return, the solver right hand side vector
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-    CALL ENTERS("CMISSSolverEquations_RhsVectorGet",err,error,*999)
+    CALL Enters("CMISSSolverEquations_RhsVectorGet",err,error,*999)
 
-    CALL SolverEquations_RhsVectorGet(solverEquations%SOLVER_EQUATIONS,rhsVector%distributedVector,err,error,*999)
+    CALL SolverEquations_RhsVectorGet(solverEquations%solver_equations,rhsVector%distributedVector,err,error,*999)
 
-    CALL EXITS("CMISSSolverEquations_RhsVectorGet")
+    CALL Exits("CMISSSolverEquations_RhsVectorGet")
     RETURN
-999 CALL ERRORS("CMISSSolverEquations_RhsVectorGet",err,error)
-    CALL EXITS("CMISSSolverEquations_RhsVectorGet")
-    CALL CMISS_HANDLE_ERROR(err,error)
+999 CALL Errors("CMISSSolverEquations_RhsVectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_RhsVectorGet")
+    CALL CMISSHandleError(err,error)
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_RhsVectorGet
