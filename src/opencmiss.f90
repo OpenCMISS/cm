@@ -4532,22 +4532,22 @@ MODULE OPENCMISS
   !>Get the storage type for a distributed matrix
   INTERFACE CMISSDistributedMatrix_StorageTypeGet
     MODULE PROCEDURE CMISSDistributedMatrix_StorageTypeGetObj
-  END INTERFACE !CMISSDistributedMatrix_StorageTypeGet
+  END INTERFACE CMISSDistributedMatrix_StorageTypeGet
 
   !>Get the data type for a distributed matrix
   INTERFACE CMISSDistributedMatrix_DataTypeGet
     MODULE PROCEDURE CMISSDistributedMatrix_DataTypeGetObj
-  END INTERFACE !CMISSDistributedMatrix_DataTypeGet
+  END INTERFACE CMISSDistributedMatrix_DataTypeGet
 
   !>Get the dimensions for a distributed matrix on this computational node
   INTERFACE CMISSDistributedMatrix_DimensionsGet
     MODULE PROCEDURE CMISSDistributedMatrix_DimensionsGetObj
-  END INTERFACE !CMISSDistributedMatrix_DimensionsGet
+  END INTERFACE CMISSDistributedMatrix_DimensionsGet
 
   !>Get the row indices and column indices for a sparse matrix
   INTERFACE CMISSDistributedMatrix_StorageLocationsGet
     MODULE PROCEDURE CMISSDistributedMatrix_StorageLocationsGetObj
-  END INTERFACE !CMISSDistributedMatrix_StorageLocationsGet
+  END INTERFACE CMISSDistributedMatrix_StorageLocationsGet
 
   !>Get the data array for this matrix on this computational node
   INTERFACE CMISSDistributedMatrix_DataGet
@@ -4555,7 +4555,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDistributedMatrix_DataGetDPObj
     MODULE PROCEDURE CMISSDistributedMatrix_DataGetSPObj
     MODULE PROCEDURE CMISSDistributedMatrix_DataGetLObj
-  END INTERFACE !CMISSDistributedMatrix_DataGet
+  END INTERFACE CMISSDistributedMatrix_DataGet
 
   !>Restore the data array for this matrix once it has finished being used
   INTERFACE CMISSDistributedMatrix_DataRestore
@@ -4563,12 +4563,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreDPObj
     MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreSPObj
     MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreLObj
-  END INTERFACE !CMISSDistributedMatrix_DataRestore
+  END INTERFACE CMISSDistributedMatrix_DataRestore
 
   !>Get the data type for a distributed vector
   INTERFACE CMISSDistributedVector_DataTypeGet
     MODULE PROCEDURE CMISSDistributedVector_DataTypeGetObj
-  END INTERFACE !CMISSDistributedVector_DataTypeGet
+  END INTERFACE CMISSDistributedVector_DataTypeGet
 
   !>Get the data array for this vector on this computational node
   INTERFACE CMISSDistributedVector_DataGet
@@ -4576,7 +4576,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDistributedVector_DataGetDPObj
     MODULE PROCEDURE CMISSDistributedVector_DataGetSPObj
     MODULE PROCEDURE CMISSDistributedVector_DataGetLObj
-  END INTERFACE !CMISSDistributedVector_DataGet
+  END INTERFACE CMISSDistributedVector_DataGet
 
   !>Restore the data array for this vector once it has finished being used
   INTERFACE CMISSDistributedVector_DataRestore
@@ -4584,7 +4584,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDistributedVector_DataRestoreDPObj
     MODULE PROCEDURE CMISSDistributedVector_DataRestoreSPObj
     MODULE PROCEDURE CMISSDistributedVector_DataRestoreLObj
-  END INTERFACE !CMISSDistributedVector_DataRestore
+  END INTERFACE CMISSDistributedVector_DataRestore
 
   PUBLIC CMISSDistributedMatrix_StorageTypeGet,CMISSDistributedMatrix_StorageLocationsGet
   PUBLIC CMISSDistributedMatrix_DataTypeGet,CMISSDistributedMatrix_DimensionsGet
