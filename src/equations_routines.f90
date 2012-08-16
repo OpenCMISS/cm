@@ -135,6 +135,10 @@ MODULE EQUATIONS_ROUTINES
 
   PUBLIC Equations_ResidualVectorGet
 
+  PUBLIC Equations_ResidualNumberOfVariablesGet
+
+  PUBLIC Equations_ResidualVariablesGet
+
   PUBLIC Equations_SourceVectorGet
 
 CONTAINS
@@ -1481,6 +1485,111 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE Equations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of field variables that contribute to the residual vector
+  SUBROUTINE Equations_ResidualNumberOfVariablesGet(equations,residualIndex,numberOfVariables,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the residual vector number of variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the number of variables for
+    INTEGER(INTG), INTENT(OUT) :: numberOfVariables !<On return, the number of variables that contribute to the residual vector
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+
+    CALL Enters("Equations_ResidualNumberOfVariablesGet",err,error,*999)
+
+    !Check for pointer associations
+    IF(ASSOCIATED(equations)) THEN
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        nonlinearMapping=>equationsMapping%nonlinear_mapping
+        IF(.NOT.ASSOCIATED(nonlinearMapping)) THEN
+          CALL FlagError("The equations nonlinear mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    IF(residualIndex==1) THEN
+      numberOfVariables=nonlinearMapping%number_of_residual_variables
+    ELSE
+      CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_ResidualNumberOfVariablesGet")
+    RETURN
+999 CALL Errors("Equations_ResidualNumberOfVariablesGet",err,error)
+    CALL Exits("Equations_ResidualNumberOfVariablesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_ResidualNumberOfVariablesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the field variables that contribute to the residual vector
+  SUBROUTINE Equations_ResidualVariablesGet(equations,residualIndex,residualVariables,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the residual vector variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the variables for
+    INTEGER(INTG), INTENT(OUT) :: residualVariables(:) !<residualVariables(varIdx). On return, the field variable type for the varIdx'th residual variable
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    INTEGER(INTG) :: numberOfVariables,variableIdx
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+
+    CALL Enters("Equations_ResidualVariablesGet",err,error,*999)
+
+    !Check for pointer associations
+    IF(ASSOCIATED(equations)) THEN
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        nonlinearMapping=>equationsMapping%nonlinear_mapping
+        IF(.NOT.ASSOCIATED(nonlinearMapping)) THEN
+          CALL FlagError("The equations nonlinear mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    IF(residualIndex==1) THEN
+      numberOfVariables=nonlinearMapping%number_of_residual_variables
+      IF(SIZE(residualVariables,1)>=numberOfVariables) THEN
+        DO variableIdx=1,numberOfVariables
+          residualVariables(variableIdx)=nonlinearMapping%residual_variables(variableIdx)%ptr%variable_type
+        END DO
+      ELSE
+        CALL FlagError("residualVariables array must have size of at least "// &
+          & TRIM(numberToVstring(numberOfVariables,"*",err,error))//".",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_ResidualVariablesGet")
+    RETURN
+999 CALL Errors("Equations_ResidualVariablesGet",err,error)
+    CALL Exits("Equations_ResidualVariablesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_ResidualVariablesGet
 
   !
   !================================================================================================================================

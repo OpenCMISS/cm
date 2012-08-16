@@ -2034,6 +2034,10 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquations_ResidualVectorGet
 
+  PUBLIC CMISSEquations_ResidualNumberOfVariablesGet
+
+  PUBLIC CMISSEquations_ResidualVariablesGet
+
   PUBLIC CMISSEquations_SourceVectorGet
 
 !!==================================================================================================================================
@@ -20888,6 +20892,58 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of field variables that contribute to the residual vector
+  SUBROUTINE CMISSEquations_ResidualNumberOfVariablesGet(equations,residualIndex,numberOfVariables,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector number of variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the number of variables for
+    INTEGER(INTG), INTENT(OUT) :: numberOfVariables !<On return, the number of variables that contribute to the residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualNumberOfVariablesGet",err,error,*999)
+
+    CALL Equations_ResidualNumberOfVariablesGet(equations%equations,residualIndex,numberOfVariables,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualNumberOfVariablesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualNumberOfVariablesGet",err,error)
+    CALL Exits("CMISSEquations_ResidualNumberOfVariablesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualNumberOfVariablesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the field variables that contribute to the residual vector
+  SUBROUTINE CMISSEquations_ResidualVariablesGet(equations,residualIndex,residualVariables,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the variables for
+    INTEGER(INTG), INTENT(OUT) :: residualVariables(:) !<residualVariables(varIdx). On return, the field variable type for the varIdx'th residual variable. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualVariablesGet",err,error,*999)
+
+    CALL Equations_ResidualVariablesGet(equations%equations,residualIndex,residualVariables,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualVariablesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualVariablesGet",err,error)
+    CALL Exits("CMISSEquations_ResidualVariablesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualVariablesGet
 
 !!==================================================================================================================================
 !!
