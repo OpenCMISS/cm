@@ -22917,17 +22917,19 @@ CONTAINS
   !
 
   !>Get a Jacobian matrix from an equations set
-  SUBROUTINE CMISSEquationsSet_JacobianMatrixGet(equationsSet,matrixIndex,matrix,err)
+  SUBROUTINE CMISSEquationsSet_JacobianMatrixGet(equationsSet,residualIndex,variableType,matrix,err)
 
     !Argument variables
     TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the Jacobian matrix for
-    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the Jacobian matrix to get
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type that the residual is differentiated with respect to for this Jacobian. \see OPENCMISS_FieldVariableTypes
     TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
     CALL Enters("CMISSEquationsSet_JacobianMatrixGet",err,error,*999)
 
-    CALL EquationsSet_JacobianMatrixGet(equationsSet%equations_set,matrixIndex,matrix%distributedMatrix,err,error,*999)
+    CALL EquationsSet_JacobianMatrixGet(equationsSet%equations_set, &
+      & residualIndex,variableType,matrix%distributedMatrix,err,error,*999)
 
     CALL Exits("CMISSEquationsSet_JacobianMatrixGet")
     RETURN
@@ -23071,16 +23073,17 @@ CONTAINS
   !
 
   !>Get the residual vector for an equations set
-  SUBROUTINE CMISSEquationsSet_ResidualVectorGet(equationsSet,residualVector,err)
+  SUBROUTINE CMISSEquationsSet_ResidualVectorGet(equationsSet,residualIndex,residualVector,err)
 
     !Argument variables
     TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get
     TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the residual vector for the equations set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
     CALL Enters("CMISSEquationsSet_ResidualVectorGet",err,error,*999)
 
-    CALL EquationsSet_ResidualVectorGet(equationsSet%equations_set,residualVector%distributedVector,err,error,*999)
+    CALL EquationsSet_ResidualVectorGet(equationsSet%equations_set,residualIndex,residualVector%distributedVector,err,error,*999)
 
     CALL Exits("CMISSEquationsSet_ResidualVectorGet")
     RETURN

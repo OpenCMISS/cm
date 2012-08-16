@@ -6508,55 +6508,70 @@ CONTAINS
   !
 
   !>Get a Jacobian matrix from an equations set
-  SUBROUTINE EquationsSet_JacobianMatrixGet(equationsSet,matrixIndex,matrix,err,error,*)
+  SUBROUTINE EquationsSet_JacobianMatrixGet(equationsSet,residualIndex,variableType,matrix,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the Jacobian matrix for
-    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the Jacobian matrix to get
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type that the residual is differentiated with respect to for this Jacobian
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
+    INTEGER(INTG) :: matrixIndex,variableIndex
     TYPE(EQUATIONS_TYPE), POINTER :: equations
-    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: equationsMatrix
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: equationsJacobian
 
     CALL Enters("EquationsSet_JacobianMatrixGet",err,error,*999)
 
+    !Check for pointer associations
     IF(ASSOCIATED(equationsSet)) THEN
       equations=>equationsSet%equations
       IF(ASSOCIATED(equations)) THEN
-        equationsMatrices=>equations%equations_matrices
-        IF(ASSOCIATED(equationsMatrices)) THEN
-          nonlinearMatrices=>equationsMatrices%nonlinear_matrices
-          IF(ASSOCIATED(nonlinearMatrices)) THEN
-            IF(matrixIndex>0.AND.matrixIndex<=nonlinearMatrices%number_of_jacobians) THEN
-              IF(.NOT.ASSOCIATED(matrix)) THEN
-                equationsMatrix=>nonlinearMatrices%jacobians(matrixIndex)%ptr
-                IF(ASSOCIATED(equationsMatrix)) THEN
-                  matrix=>equationsMatrix%jacobian
-                ELSE
-                  CALL FlagError("The equations Jacobian matrix is not associated.",err,error,*999)
-                END IF
-              ELSE
-                CALL FlagError("The matrix is already associated.",err,error,*999)
-              END IF
-            ELSE
-              CALL FlagError("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
-                & TRIM(NumberToVstring(nonlinearMatrices%number_of_jacobians,"*",err,error))//".",err,error,*999)
-            END IF
-          ELSE
-            CALL FlagError("The equations set nonlinear matrices are not associated.",err,error,*999)
+        equationsMapping=>equations%equations_mapping
+        IF(ASSOCIATED(equationsMapping)) THEN
+          nonlinearMapping=>equationsMapping%nonlinear_mapping
+          IF(.NOT.ASSOCIATED(nonlinearMapping)) THEN
+            CALL FlagError("The equations nonlinear mapping is not associated.",err,error,*999)
           END IF
         ELSE
-          CALL FlagError("The equations set matrices are not associated.",err,error,*999)
+          CALL FlagError("The equations mapping is not associated.",err,error,*999)
         END IF
       ELSE
-        CALL FlagError("The equations set equations are not associated.",err,error,*999)
+        CALL FlagError("The equations are not associated.",err,error,*999)
       END IF
     ELSE
       CALL FlagError("The equations set is not associated.",err,error,*999)
+    END IF
+    IF(ASSOCIATED(matrix)) THEN
+      CALL FlagError("The matrix is already associated.",err,error,*999)
+    END IF
+
+    IF(residualIndex/=1) THEN
+      CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+    END IF
+
+    !Find Jacobian matrix index using the nonlinear equations mapping
+    matrixIndex=0
+    DO variableIndex=1,nonlinearMapping%number_of_residual_variables
+      IF(nonlinearMapping%residual_variables(variableIndex)%ptr%variable_type==variableType) THEN
+        matrixIndex=nonlinearMapping%var_to_jacobian_map(variableIndex)%jacobian_number
+      END IF
+    END DO
+    IF(matrixIndex==0) THEN
+      CALL FlagError("Equations do not have a Jacobian matrix for residual index "// &
+        & TRIM(NumberToVstring(residualIndex,"*",err,error))//" and variable type "// &
+        & TRIM(NumberToVstring(variableType,"*",err,error))//".",err,error,*999)
+    END IF
+
+    !Now get Jacobian matrix using the matrix index
+    equationsJacobian=>nonlinearMapping%jacobian_to_var_map(matrixIndex)%jacobian
+    IF(ASSOCIATED(equationsJacobian)) THEN
+      matrix=>equationsJacobian%jacobian
+    ELSE
+      CALL FlagError("The equations Jacobian matrix is not associated.",err,error,*999)
     END IF
 
     CALL Exits("EquationsSet_JacobianMatrixGet")
@@ -6840,10 +6855,11 @@ CONTAINS
   !
 
   !>Get the residual vector for a nonlinear equations set
-  SUBROUTINE EquationsSet_ResidualVectorGet(equationsSet,vector,err,error,*)
+  SUBROUTINE EquationsSet_ResidualVectorGet(equationsSet,residualIndex,vector,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<The equations set to get the residual vector for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the residual vector for the equations set
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
@@ -6862,7 +6878,11 @@ CONTAINS
           nonlinearMatrices=>equationsMatrices%nonlinear_matrices
           IF(ASSOCIATED(nonlinearMatrices)) THEN
             IF(.NOT.ASSOCIATED(vector)) THEN
-              vector=>nonlinearMatrices%residual
+              IF(residualIndex==1) THEN
+                vector=>nonlinearMatrices%residual
+              ELSE
+                CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+              END IF
             ELSE
               CALL FlagError("The vector is already associated.",err,error,*999)
             END IF
