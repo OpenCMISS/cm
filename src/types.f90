@@ -438,7 +438,7 @@ MODULE TYPES
   !>Contains information on the projected data points on an element
   TYPE MESH_ELEMENT_DATA_POINTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
-    INTEGER(INTG) :: ELEMENT_NUMBER !<The mesh element number (element index and element number can be different)
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The mesh global element number 
     TYPE(MESH_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global and user number of this data point
   END TYPE MESH_ELEMENT_DATA_POINTS_TYPE
   
@@ -446,7 +446,7 @@ MODULE TYPES
   TYPE MESH_DATA_POINT_TYPE 
     INTEGER(INTG) :: USER_NUMBER !<User number of the projected data point
     INTEGER(INTG) :: GLOBAL_NUMBER !<Global number of the data point, sequence is according to element number sequence 
-    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number which the data point is projected on 
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The global element number which the data point is projected on 
   END TYPE MESH_DATA_POINT_TYPE 
   
   !<Contains the information for the data points of a mesh
@@ -1053,7 +1053,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information on the projected data points on an element, for decomposition since data points on elements go with the elements
   TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
-    INTEGER(INTG) :: ELEMENT_NUMBER !<The number of this element (element index and element number can be different)
+    INTEGER(INTG) :: GlOBAL_ELEMENT_NUMBER !<The global number of this element (element index is local number and element number is global number)
     TYPE(DECOMPOSITION_ELEMENT_DATA_POINT_TYPE), ALLOCATABLE :: DATA_INDICES(:) !<The global,local and user number of this data point
 !    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES(:) !<The global, local and user number of this data point
   END TYPE DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE
@@ -1213,7 +1213,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: NODE_DOF2PARAM_MAP(:,:) !<NODE_DOF2PARAM_MAP(i=1..4,nyy). The mapping from node based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the version number (version_idx) of the field parameter. When i=2 the DOF2PARAM_MAP gives the derivative number (derivative_idx) of the field parameter. When i=3 the DOF2PARAM_MAP gives the node number (node_idx) of the field parameter. When i=4 the DOF2PARAM_MAP gives the component number (component_idx) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
     INTEGER(INTG), ALLOCATABLE :: GRID_POINT_DOF2PARAM_MAP(:,:) !<GRID_POINT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from grid point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the grid point number (nq) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
     INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_DOF2PARAM_MAP(:,:) !<GAUSS_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from Gauss point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the Gauss point number (ng) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
-    INTEGER(INTG), ALLOCATABLE :: DATA_POINT_DOF2PARAM_MAP(:,:)!<DATA_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from data point based field dofs to field parameters for the nyy'th data point field dof. When i=1 the DOF2PARAM_MAP gives the data point number (ng) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
+    INTEGER(INTG), ALLOCATABLE :: DATA_POINT_DOF2PARAM_MAP(:,:)!<DATA_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from data point based field dofs to field parameters for the nyy'th data point field dof. When i=1 the DOF2PARAM_MAP gives the data point number (np) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
   END TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
 
   !>A type to hold the mapping from a field node derivative's versions to field dof numbers for a particular field variable component.
