@@ -1468,7 +1468,12 @@ CONTAINS
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
-            IF(OUTPUT_FREQUENCY>0) TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
+            IF(OUTPUT_FREQUENCY>=0) THEN
+              TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
+            ELSE
+              CALL FLAG_ERROR("Invalid output frequency. The frequency should be greater than or equal to zero, but is "// &
+                & TRIM(NUMBER_TO_VSTRING(OUTPUT_FREQUENCY,"*",ERR,ERROR))//".",ERR,ERROR,*999)
+            END IF
           ELSE
             CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
