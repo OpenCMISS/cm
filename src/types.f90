@@ -1061,8 +1061,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains data point decompostion topology   
   TYPE DECOMPOSITION_DATA_TYPE
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this data points topology information.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data in this decomposition topology.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in this decomposition topology
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points excluding ghost data points in this decomposition topology.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DATA_POINTS !<Number of projected data in this decomposition topology.
 !    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES_LIST(:) !<List of data_points indices, sorting in asceding order
 !    INTEGER(INTG), ALLOCATABLE :: ELEMENT_MAP(:) !<Corresponding element numbers in the DATA_INDICES_LIST order
     TYPE(DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements for decomposition of data points
