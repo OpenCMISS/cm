@@ -1172,13 +1172,13 @@ CONTAINS
                   decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA= &
                     & meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA
                   decompositionData%elementDataPoint(localElement)%GLOBAL_ELEMENT_NUMBER=globalElement
-                  CALL MPI_ALLGATHER(meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA, &
-                    & 1,MPI_INTEGER,decompositionData%elementDataPointsNumber(globalElement),1,MPI_INTEGER, &
-                    & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
-                  CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
                   IF(localElement<elementsMapping%GHOST_START) THEN
                     decompositionData%numberOfDataPoints=decompositionData%numberOfDataPoints+ &
                       & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
+                    CALL MPI_ALLGATHER(meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA, &
+                      & 1,MPI_INTEGER,decompositionData%elementDataPointsNumber(globalElement),1,MPI_INTEGER, &
+                      & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                    CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
                   ENDIF               
                   decompositionData%totalNumberOfDataPoints=decompositionData%totalNumberOfDataPoints+ &
                     & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
