@@ -1104,7 +1104,7 @@ CONTAINS
       ENDIF
       !Default the first mesh topology to contain the data points
       IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%DATA_POINTS%DATA_POINTS)) THEN
-          CALL DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
+          CALL DecompositionTopology_DataPointsCalculate(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF   
     ELSE
       CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
@@ -1122,7 +1122,7 @@ CONTAINS
   !
 
   !>Calculates the decomposition element topology.
-  SUBROUTINE DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
+  SUBROUTINE DecompositionTopology_DataPointsCalculate(TOPOLOGY,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to calculate the elements for
@@ -1130,59 +1130,82 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: localElement,globalElement,dataPointIdx,localData
-    INTEGER(INTG) :: INSERT_STATUS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: DECOMPOSITION_ELEMENTS
-    TYPE(DECOMPOSITION_DATA_TYPE), POINTER :: DECOMPOSITION_DATA
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    INTEGER(INTG) :: INSERT_STATUS,MPI_IERROR,NUMBER_OF_COMPUTATIONAL_NODES,MY_COMPUTATIONAL_NODE_NUMBER,NUMBER_OF_GHOST_DATA
+!    INTEGER(INTG), ALLOCATABLE :: 
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: decompositionElements
+    TYPE(DECOMPOSITION_DATA_TYPE), POINTER :: decompositionData
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: elementsMapping
 
-    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: MESH_DATA
+    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: meshData
 
-    CALL ENTERS("DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE",ERR,ERROR,*999)
+    CALL ENTERS("DecompositionTopology_DataPointsCalculate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
-      DECOMPOSITION_DATA=>TOPOLOGY%DATA_POINTS
-      IF(ASSOCIATED(DECOMPOSITION_DATA)) THEN
-        DECOMPOSITION=>DECOMPOSITION_DATA%DECOMPOSITION
-        IF(ASSOCIATED(DECOMPOSITION)) THEN
-         DECOMPOSITION_ELEMENTS=>TOPOLOGY%ELEMENTS
-         IF(ASSOCIATED(DECOMPOSITION_ELEMENTS)) THEN
-           ELEMENTS_MAPPING=>DECOMPOSITION%DOMAIN(DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
-           IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
+      decompositionData=>TOPOLOGY%DATA_POINTS
+      IF(ASSOCIATED(decompositionData)) THEN
+        decomposition=>decompositionData%DECOMPOSITION
+        IF(ASSOCIATED(decomposition)) THEN
+         decompositionElements=>TOPOLOGY%ELEMENTS
+         IF(ASSOCIATED(decompositionElements)) THEN
+           elementsMapping=>decomposition%DOMAIN(decomposition%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
+           IF(ASSOCIATED(elementsMapping)) THEN
               !By default the data point topology is associated with the first mesh topology
-              MESH_DATA=>DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%DATA_POINTS
-              IF(ASSOCIATED(MESH_DATA)) THEN
-                ALLOCATE(DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
+              meshData=>decomposition%MESH%TOPOLOGY(1)%PTR%DATA_POINTS
+              IF(ASSOCIATED(meshData)) THEN
+                NUMBER_OF_COMPUTATIONAL_NODES=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+                IF(ERR/=0) GOTO 999
+                MY_COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+                IF(ERR/=0) GOTO 999
+                ALLOCATE(decompositionData%numberOfDomainLocal(0:NUMBER_OF_COMPUTATIONAL_NODES-1),STAT=ERR)
+                ALLOCATE(decompositionData%numberOfDomainGhost(0:NUMBER_OF_COMPUTATIONAL_NODES-1),STAT=ERR)
+                ALLOCATE(decompositionData%elementDataPointsNumber(decompositionElements%NUMBER_OF_GLOBAL_ELEMENTS),STAT=ERR)
+                ALLOCATE(decompositionData%elementDataPoint(decompositionElements%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition element data points.",ERR,ERROR,*999)
-                CALL TREE_CREATE_START(DECOMPOSITION_DATA%DATA_POINTS_TREE,ERR,ERROR,*999)
-                CALL TREE_INSERT_TYPE_SET(DECOMPOSITION_DATA%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-                CALL TREE_CREATE_FINISH(DECOMPOSITION_DATA%DATA_POINTS_TREE,ERR,ERROR,*999)
+                CALL TREE_CREATE_START(decompositionData%DATA_POINTS_TREE,ERR,ERROR,*999)
+                CALL TREE_INSERT_TYPE_SET(decompositionData%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+                CALL TREE_CREATE_FINISH(decompositionData%DATA_POINTS_TREE,ERR,ERROR,*999)
+                decompositionData%numberOfGlobalDataPoints=meshData%TOTAL_NUMBER_OF_PROJECTED_DATA 
                 localData=0;
-                DO localElement=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                  globalElement=DECOMPOSITION_ELEMENTS%ELEMENTS(localElement)%GLOBAL_NUMBER
-                  DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%NUMBER_OF_PROJECTED_DATA= &
-                    & MESH_DATA%ELEMENT_DATA_POINTS(globalElement)%NUMBER_OF_PROJECTED_DATA
-                  DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%GLOBAL_ELEMENT_NUMBER=globalElement
-                  IF(localElement<ELEMENTS_MAPPING%GHOST_START) THEN
-                    DECOMPOSITION_DATA%NUMBER_OF_DATA_POINTS=DECOMPOSITION_DATA%NUMBER_OF_DATA_POINTS+ &
-                      & DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%NUMBER_OF_PROJECTED_DATA
+                DO localElement=1,decompositionElements%TOTAL_NUMBER_OF_ELEMENTS
+                  globalElement=decompositionElements%ELEMENTS(localElement)%GLOBAL_NUMBER
+                  decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA= &
+                    & meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA
+                  decompositionData%elementDataPoint(localElement)%GLOBAL_ELEMENT_NUMBER=globalElement
+                  CALL MPI_ALLGATHER(meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA, &
+                    & 1,MPI_INTEGER,decompositionData%elementDataPointsNumber(globalElement),1,MPI_INTEGER, &
+                    & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                  CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
+                  IF(localElement<elementsMapping%GHOST_START) THEN
+                    decompositionData%numberOfDataPoints=decompositionData%numberOfDataPoints+ &
+                      & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
                   ENDIF               
-                  DECOMPOSITION_DATA%TOTAL_NUMBER_OF_DATA_POINTS=DECOMPOSITION_DATA%TOTAL_NUMBER_OF_DATA_POINTS+ &
-                    & DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%NUMBER_OF_PROJECTED_DATA
-                  ALLOCATE(DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%DATA_INDICES(DECOMPOSITION_DATA% &
-                    & ELEMENT_DATA_POINTS(localElement)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-                  DO dataPointIdx=1,DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%NUMBER_OF_PROJECTED_DATA
-                    DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER= &
-                      & MESH_DATA%ELEMENT_DATA_POINTS(globalElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER
-                    DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%DATA_INDICES(dataPointIdx)%GLOBAL_NUMBER= &
-                      & MESH_DATA%ELEMENT_DATA_POINTS(globalElement)%DATA_INDICES(dataPointIdx)%GLOBAL_NUMBER
+                  decompositionData%totalNumberOfDataPoints=decompositionData%totalNumberOfDataPoints+ &
+                    & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
+                  ALLOCATE(decompositionData%elementDataPoint(localElement)%DATA_INDICES(decompositionData% &
+                    & elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
+                  DO dataPointIdx=1,decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
+                    decompositionData%elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER= &
+                      & meshData%elementDataPoint(globalElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER
+                    decompositionData%elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%GLOBAL_NUMBER= &
+                      & meshData%elementDataPoint(globalElement)%DATA_INDICES(dataPointIdx)%GLOBAL_NUMBER
                     localData=localData+1
-                    DECOMPOSITION_DATA%ELEMENT_DATA_POINTS(localElement)%DATA_INDICES(dataPointIdx)%LOCAL_NUMBER=localData
-                    CALL TREE_ITEM_INSERT(DECOMPOSITION_DATA%DATA_POINTS_TREE,DECOMPOSITION_DATA% &
-                      & ELEMENT_DATA_POINTS(localElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER,localData, &
+                    decompositionData%elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%LOCAL_NUMBER=localData
+                    CALL TREE_ITEM_INSERT(decompositionData%DATA_POINTS_TREE,decompositionData% &
+                      & elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER,localData, &
                       & INSERT_STATUS,ERR,ERROR,*999)
                   ENDDO !dataPointIdx
-                ENDDO !localElement           
+                ENDDO !localElement   
+                !Calculate number of ghost data points on the current computational domain
+                NUMBER_OF_GHOST_DATA=decompositionData%totalNumberOfDataPoints-decompositionData%numberOfDataPoints
+                !Gather number of local data points on all computational nodes
+                CALL MPI_ALLGATHER(decompositionData%numberOfDataPoints,1,MPI_INTEGER,decompositionData% &
+                  & numberOfDomainLocal,1,MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
+                !Gather number of ghost data points on all computational nodes
+                CALL MPI_ALLGATHER(NUMBER_OF_GHOST_DATA,1,MPI_INTEGER,decompositionData% &
+                  & numberOfDomainGhost,1,MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("Mesh data points topology is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -1202,12 +1225,12 @@ CONTAINS
       CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE")
+    CALL EXITS("DecompositionTopology_DataPointsCalculate")
     RETURN
-999 CALL ERRORS("DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE",ERR,ERROR)
-    CALL EXITS("DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE")
+999 CALL ERRORS("DecompositionTopology_DataPointsCalculate",ERR,ERROR)
+    CALL EXITS("DecompositionTopology_DataPointsCalculate")
     RETURN 1
-  END SUBROUTINE DECOMPOSITION_TOPOLOGY_DATA_POINTS_CALCULATE
+  END SUBROUTINE DecompositionTopology_DataPointsCalculate
   
   !
   !================================================================================================================================
@@ -2575,8 +2598,9 @@ CONTAINS
       ELSE
         ALLOCATE(TOPOLOGY%DATA_POINTS,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology data points.",ERR,ERROR,*999)
-        TOPOLOGY%DATA_POINTS%NUMBER_OF_DATA_POINTS=0
-        TOPOLOGY%DATA_POINTS%TOTAL_NUMBER_OF_DATA_POINTS=0
+        TOPOLOGY%DATA_POINTS%numberOfDataPoints=0
+        TOPOLOGY%DATA_POINTS%totalNumberOfDataPoints=0
+        TOPOLOGY%DATA_POINTS%numberOfGlobalDataPoints=0
         NULLIFY(TOPOLOGY%DATA_POINTS%DATA_POINTS_TREE)
         TOPOLOGY%DATA_POINTS%DECOMPOSITION=>TOPOLOGY%DECOMPOSITION      
       ENDIF
@@ -3948,9 +3972,9 @@ CONTAINS
                 CALL LIST_REMOVE_DUPLICATES(ADJACENT_DOMAINS_LIST,ERR,ERROR,*999)
                 CALL LIST_DETACH_AND_DESTROY(ADJACENT_DOMAINS_LIST,NUMBER_OF_DOMAINS,DOMAINS,ERR,ERROR,*999)
                 DEALLOCATE(DOMAINS)
-                DO data_point_idx=1,DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(ne)%NUMBER_OF_PROJECTED_DATA
+                DO data_point_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(ne)%NUMBER_OF_PROJECTED_DATA
                   LOCAL_DATA_POINT_NUMBERS(domain_no)=LOCAL_DATA_POINT_NUMBERS(domain_no)+1
-                  DATA_POINT_GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(ne)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
+                  DATA_POINT_GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(ne)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
                   CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP &
                     & (DATA_POINT_GLOBAL_NUMBER),ERR,ERROR,*999)
                   ALLOCATE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_NUMBER(NUMBER_OF_DOMAINS), &
@@ -3983,9 +4007,9 @@ CONTAINS
                 DO no_adjacent_element=1,NUMBER_OF_ADJACENT_ELEMENTS
                   adjacent_element=ADJACENT_ELEMENTS(no_adjacent_element)
                   LOCAL_ELEMENT_NUMBERS(domain_idx)=LOCAL_ELEMENT_NUMBERS(domain_idx)+1            
-                  DO data_point_idx=1,DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(adjacent_element)%NUMBER_OF_PROJECTED_DATA
+                  DO data_point_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(adjacent_element)%NUMBER_OF_PROJECTED_DATA
                     LOCAL_DATA_POINT_NUMBERS(domain_idx)=LOCAL_DATA_POINT_NUMBERS(domain_idx)+1
-                    DATA_POINT_GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(adjacent_element)% &
+                    DATA_POINT_GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(adjacent_element)% &
                       & DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
                     !local_domain_idx is the last domian in the list
                     local_domain_idx=DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%NUMBER_OF_DOMAINS+1                 
@@ -4923,7 +4947,7 @@ CONTAINS
               DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL
               DOMAIN_DOFS%NUMBER_OF_GLOBAL_DOFS=DOMAIN%MAPPINGS%DOFS%NUMBER_OF_GLOBAL
               IF(ALLOCATED(DOMAIN%MESH%TOPOLOGY(DOMAIN%MESH_COMPONENT_NUMBER)%PTR%DATA_POINTS%DATA_POINTS)) THEN
-                ALLOCATE(DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
+                ALLOCATE(DOMAIN_DATA_POINTS%elementDataPoint(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain data points dof index.",ERR,ERROR,*999)
                 DOMAIN_DATA_POINTS%NUMBER_OF_DATA_POINTS=DOMAIN%MAPPINGS%DATA_POINTS%NUMBER_OF_LOCAL
                 DOMAIN_DATA_POINTS%TOTAL_NUMBER_OF_DATA_POINTS=DOMAIN%MAPPINGS%DATA_POINTS%TOTAL_NUMBER_OF_LOCAL
@@ -5014,21 +5038,21 @@ CONTAINS
                 CALL TREE_CREATE_FINISH(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
                 DO local_element=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                   global_element=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(local_element)    
-                  DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%NUMBER_OF_PROJECTED_DATA=MESH_DATA_POINTS% &
-                    & ELEMENT_DATA_POINTS(global_element)%NUMBER_OF_PROJECTED_DATA
-                  DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%ELEMENT_NUMBER=MESH_DATA_POINTS% &
-                    & ELEMENT_DATA_POINTS(global_element)%ELEMENT_NUMBER
-                  ALLOCATE(DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%DATA_INDICES(DOMAIN_DATA_POINTS% &
-                    & ELEMENT_DATA_POINTS(local_element)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-                  DO data_point_idx=1,DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%NUMBER_OF_PROJECTED_DATA
-                    DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%DATA_INDICES(data_point_idx)%USER_NUMBER= &
-                      & MESH_DATA_POINTS%ELEMENT_DATA_POINTS(global_element)%DATA_INDICES(data_point_idx)%USER_NUMBER
-                    DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER= &
-                      & MESH_DATA_POINTS%ELEMENT_DATA_POINTS(global_element)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
+                  DOMAIN_DATA_POINTS%elementDataPoint(local_element)%NUMBER_OF_PROJECTED_DATA=MESH_DATA_POINTS% &
+                    & elementDataPoint(global_element)%NUMBER_OF_PROJECTED_DATA
+                  DOMAIN_DATA_POINTS%elementDataPoint(local_element)%ELEMENT_NUMBER=MESH_DATA_POINTS% &
+                    & elementDataPoint(global_element)%ELEMENT_NUMBER
+                  ALLOCATE(DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(DOMAIN_DATA_POINTS% &
+                    & elementDataPoint(local_element)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
+                  DO data_point_idx=1,DOMAIN_DATA_POINTS%elementDataPoint(local_element)%NUMBER_OF_PROJECTED_DATA
+                    DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%USER_NUMBER= &
+                      & MESH_DATA_POINTS%elementDataPoint(global_element)%DATA_INDICES(data_point_idx)%USER_NUMBER
+                    DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER= &
+                      & MESH_DATA_POINTS%elementDataPoint(global_element)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
                     LOCAL_NUMBER=LOCAL_NUMBER+1
-                    DOMAIN_DATA_POINTS%ELEMENT_DATA_POINTS(local_element)%DATA_INDICES(data_point_idx)%LOCAL_NUMBER=LOCAL_NUMBER
+                    DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%LOCAL_NUMBER=LOCAL_NUMBER
                     CALL TREE_ITEM_INSERT(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,DOMAIN_DATA_POINTS% &
-                      & ELEMENT_DATA_POINTS(local_element)%DATA_INDICES(data_point_idx)%USER_NUMBER,LOCAL_NUMBER, &
+                      & elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%USER_NUMBER,LOCAL_NUMBER, &
                       & INSERT_STATUS,ERR,ERROR,*999)
                   ENDDO !data_point_idx
                 ENDDO !local_element
@@ -8331,30 +8355,30 @@ CONTAINS
         PROJECTION_NUMBER=DATA_PROJECTION%GLOBAL_NUMBER
         !Hard code the first mesh component since element topology is the same for all mesh components
         ELEMENTS=>MESH%TOPOLOGY(1)%PTR%ELEMENTS
-        ALLOCATE(DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(ELEMENTS%NUMBER_OF_ELEMENTS),STAT=ERR)     
+        ALLOCATE(DATA_POINTS_TOPOLOGY%elementDataPoint(ELEMENTS%NUMBER_OF_ELEMENTS),STAT=ERR)     
         DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS=ELEMENTS%NUMBER_OF_ELEMENTS
         DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-          DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%ELEMENT_NUMBER=ELEMENTS%ELEMENTS(element_idx)%GLOBAL_NUMBER
-          DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%NUMBER_OF_PROJECTED_DATA=0
+          DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%ELEMENT_NUMBER=ELEMENTS%ELEMENTS(element_idx)%GLOBAL_NUMBER
+          DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA=0
         ENDDO        
         !Calculate number of projected data points on an element
         DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
           DATA_PROJECTION_RESULT=>DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)
           ELEMENT_NUMBER=DATA_PROJECTION_RESULT%ELEMENT_NUMBER
           DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-            IF(DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%ELEMENT_NUMBER==ELEMENT_NUMBER) THEN
-              DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%NUMBER_OF_PROJECTED_DATA= &
-                & DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%NUMBER_OF_PROJECTED_DATA+1;
+            IF(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%ELEMENT_NUMBER==ELEMENT_NUMBER) THEN
+              DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA= &
+                & DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA+1;
             ENDIF
           ENDDO !element_idx
         ENDDO       
         !Allocate memory to store data indices and initialise them to be zero   
         DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-          ALLOCATE(DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(DATA_POINTS_TOPOLOGY% &
-            & ELEMENT_DATA_POINTS(element_idx)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-          DO count_idx=1,DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%NUMBER_OF_PROJECTED_DATA
-            DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=0
-            DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=0
+          ALLOCATE(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(DATA_POINTS_TOPOLOGY% &
+            & elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
+          DO count_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA
+            DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=0
+            DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=0
           ENDDO
         ENDDO     
         !Record the indices of the data that projected on the elements 
@@ -8364,14 +8388,14 @@ CONTAINS
           ELEMENT_NUMBER=DATA_PROJECTION_RESULT%ELEMENT_NUMBER
           DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
             count_idx=1         
-            IF(DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%ELEMENT_NUMBER==ELEMENT_NUMBER) THEN
+            IF(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%ELEMENT_NUMBER==ELEMENT_NUMBER) THEN
               global_count_idx=global_count_idx+1
               !Find the next data point index in this element
-              DO WHILE(DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER/=0)
+              DO WHILE(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER/=0)
                 count_idx=count_idx+1
               ENDDO
-              DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=data_point_idx
-              DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=data_point_idx!global_count_idx (used this if only projected data are taken into account)
+              DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=data_point_idx
+              DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=data_point_idx!global_count_idx (used this if only projected data are taken into account)
               DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA=DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA+1
             ENDIF             
           ENDDO !element_idx
@@ -8382,12 +8406,12 @@ CONTAINS
         !The global number for the data points will be looping through elements.
         count_idx=1  
         DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-          DO data_point_idx=1,DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)%NUMBER_OF_PROJECTED_DATA
-            DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%USER_NUMBER=DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)% &
+          DO data_point_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA
+            DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%USER_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)% &
               & DATA_INDICES(data_point_idx)%USER_NUMBER
-             DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)% &
+             DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)% &
               & DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
-             DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%ELEMENT_NUMBER=DATA_POINTS_TOPOLOGY%ELEMENT_DATA_POINTS(element_idx)% &
+             DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%ELEMENT_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)% &
                & ELEMENT_NUMBER
              count_idx=count_idx+1
           ENDDO !data_point_idx

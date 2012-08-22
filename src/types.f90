@@ -455,7 +455,7 @@ MODULE TYPES
     INTEGER(INTG) :: TOTAL_NUMBER_OF_PROJECTED_DATA !<Number of projected data on this element
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<Number of element in the mesh where data points are attached to.
     TYPE(MESH_DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<Information of the projected data points
-    TYPE(MESH_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements 
+    TYPE(MESH_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: elementDataPoint(:) !<Information of the projected data on the elements 
   END TYPE MESH_DATA_POINTS_TYPE
 
   !>Contains information on the (global) topology of a mesh.
@@ -734,7 +734,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points (excluding ghost data points) in this domain topology.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DATA_POINTS !<The total number of data points (including ghost data points) in this domain topology.
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_DATA_POINTS !<The number of global data points in this domain topology.
-    TYPE(DOMAIN_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements 
+    TYPE(DOMAIN_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: elementDataPoint(:) !<Information of the projected data on the elements 
     TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<A tree mapping the domain local number to the region data point user number.
   END TYPE DOMAIN_DATA_POINTS_TYPE
 
@@ -1061,11 +1061,15 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains data point decompostion topology   
   TYPE DECOMPOSITION_DATA_TYPE
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this data points topology information.
-    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points excluding ghost data points in this decomposition topology.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_DATA_POINTS !<Number of projected data in this decomposition topology.
+    INTEGER(INTG) :: numberOfDataPoints !<The number of data points excluding ghost data points in this decomposition topology.
+    INTEGER(INTG) :: totalNumberOfDataPoints !<Number of projected data in this decomposition topology.
+    INTEGER(INTG) :: numberOfGlobalDataPoints !<Number of global projected data 
+    INTEGER(INTG), ALLOCATABLE :: numberOfDomainLocal(:) !<Number of local data points in each computational domain 
+    INTEGER(INTG), ALLOCATABLE :: numberOfDomainGhost(:) !<Number of ghost data points in each computational domain 
+    INTEGER(INTG), ALLOCATABLE :: elementDataPointsNumber(:) !<Number of data points in each global element
 !    INTEGER(INTG), ALLOCATABLE :: DATA_INDICES_LIST(:) !<List of data_points indices, sorting in asceding order
 !    INTEGER(INTG), ALLOCATABLE :: ELEMENT_MAP(:) !<Corresponding element numbers in the DATA_INDICES_LIST order
-    TYPE(DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: ELEMENT_DATA_POINTS(:) !<Information of the projected data on the elements for decomposition of data points
+    TYPE(DECOMPOSITION_ELEMENT_DATA_POINTS_TYPE), ALLOCATABLE :: elementDataPoint(:) !<Information of the projected data on the elements for decomposition of data points
     TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<A tree mapping the domain local number to the region data point user number.
   END TYPE DECOMPOSITION_DATA_TYPE
 
