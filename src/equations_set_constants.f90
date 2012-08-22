@@ -149,6 +149,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE=6
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE=8
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE=7
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE=9
   !  Darcy equation
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STANDARD_DARCY_SUBTYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE=2
@@ -333,7 +334,15 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<The equations are a second order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_TIME_STEPPING=5 !<The equations are for time stepping. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   !>@}
-  
+
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_DynamicMatrixTypes EQUATIONS_SET_CONSTANTS:DynamicMatrixTypes
+  !> \brief Type of matrix in a dynamic equations set
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_STIFFNESS=1 !<A stiffness matrix (multiplies displacement values)
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_DAMPING=2 !<A damping matrix (multiplies velocity values)
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_MASS=3 !<A mass matrix (multiplies acceleration values)
+  !>@}
+
   !> \addtogroup EQUATIONS_SET_CONSTANTS_AnalyticFunctionTypes EQUATIONS_SET_CONSTANTS::AnalyticFunctionTypes
   !> \brief The analytic function types
   !> \see 
@@ -368,17 +377,6 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1=4 !<u=ln(6/(x+y+z+1^2))
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2=5 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3=6 !<u=tbd
-  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN=7 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_DIRICHLET=8 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN_WITHOUT_SOURCE=9 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_1=10 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_2=11 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_3=12 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_4=13 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_5=14 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_6=15 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_7=16 !<Test case setup to test Neumann Boundary Conditions with Poisson example
-  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN_CUBIC=17 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1=18 !<u=tbd, Pressure Poisson Equation (PPE) analytic
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2=19 !<u=tbd, Pressure Poisson Equation (PPE) without input data
 
@@ -444,6 +442,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4=9 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5=10 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1=11 !<u=tbd
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE=12 !< fully developed 2D channel flow (parabolic), u=u_max(1-y^2/H^2)
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN=13 !< 2D dynamic nonlinear Taylor-Green vortex decay
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DarcyAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DarcyAnalyticFunctionTypes
   !> \brief The analytic function types for a Darcy equation

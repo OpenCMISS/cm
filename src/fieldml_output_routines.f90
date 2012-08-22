@@ -49,6 +49,7 @@ MODULE FIELDML_OUTPUT_ROUTINES
   USE BASIS_ROUTINES
   USE COORDINATE_ROUTINES
   USE CONSTANTS
+  USE COMP_ENVIRONMENT
   USE FIELD_ROUTINES
   USE FIELDML_API
   USE FIELDML_TYPES
@@ -584,7 +585,7 @@ CONTAINS
     IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not import interpolator "//char(INTERPOLATOR_NAME)//".", ERR, ERROR, *999 )
 
     PARAMETERS_HANDLE = FIELDML_OUTPUT_IMPORT_FML( FML_HANDLE, PARAMETER_NAME, ERR, ERROR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not import parameter type "//char(INTERPOLATOR_NAME)//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not import parameter type "//char(PARAMETER_NAME)//".", ERR, ERROR, *999 )
     
     IF( EVALUATOR_HANDLE == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Cannot get a handle for basis evaluator "//char(INTERPOLATOR_NAME)//".", ERR, ERROR, *999 )
@@ -601,6 +602,99 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FIELDML_OUTPUT_GET_TP_BASIS_EVALUATOR
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get an evaluator from the built-in library that corresponds to the given OpenCMISS simplex basis. Currently does not support collapsed bases
+  SUBROUTINE FieldmlOutputGetSimplexBasisEvaluator( fmlHandle, xiInterpolations, evaluatorHandle, &
+    & parametersHandle, err, error, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: fmlHandle !<The FieldML session handle
+    INTEGER(INTG), INTENT(IN) :: xiInterpolations(:) !<The per-xi interpolations used by the basis.
+    INTEGER(INTG), INTENT(OUT) :: evaluatorHandle !<The evaluator handle for the basis.
+    INTEGER(INTG), INTENT(OUT) :: parametersHandle !<The basis parameters argument evaluator.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string.
+
+    !Locals
+    INTEGER(INTG) :: xiCount, firstInterpolation, i
+    TYPE(VARYING_STRING) :: interpolatorName, parameterName
+
+    CALL Enters( "FieldmlOutputGetSimplexBasisEvaluator", err, error, *999 )
+    
+    xiCount = SIZE( xiInterpolations )
+  
+    DO i = 1, xiCount
+      IF( i == 1 ) THEN
+        firstInterpolation = xiInterpolations(i)
+      ELSE IF( xiInterpolations(i) /= firstInterpolation ) THEN
+        !Do not yet support inhomogeneous simplex bases
+        CALL Flag_Error( "Translation of inhomogeneous tensor-product basis not yet supported.", err, error, *999 )
+      ENDIF
+    ENDDO
+   
+    evaluatorHandle = FML_INVALID_HANDLE
+    parametersHandle = FML_INVALID_HANDLE
+      
+    IF( firstInterpolation == BASIS_QUADRATIC_SIMPLEX_INTERPOLATION ) THEN
+      IF( xiCount == 1 ) THEN
+        interpolatorName = "interpolator.1d.unit.quadraticSimplex"
+        parameterName = "parameters.1d.unit.quadraticLagrange"
+      ELSE IF( xiCount == 2 ) THEN
+        interpolatorName = "interpolator.2d.unit.biquadraticSimplex.vtk"
+        parameterName = "parameters.2d.unit.biquadraticSimplex.vtk"
+      ELSE IF( xiCount == 3 ) THEN
+        interpolatorName = "interpolator.3d.unit.triquadraticSimplex.zienkiewicz"
+        parameterName = "parameters.3d.unit.triquadraticSimplex.zienkiewicz"
+      ELSE
+        !Do not yet support dimensions higher than 3.
+        CALL Flag_Error( var_str("Quadratic simplex interpolation not supported for ")//xiCount//" dimensions.", &
+          & err, error, *999 )
+      ENDIF
+    ELSE IF( firstInterpolation == BASIS_LINEAR_SIMPLEX_INTERPOLATION ) THEN
+      IF( xiCount == 1 ) THEN
+        interpolatorName = "interpolator.1d.unit.linearSimplex"
+        parameterName = "parameters.1d.unit.linearLagrange"
+      ELSE IF( xiCount == 2 ) THEN
+        interpolatorName = "interpolator.2d.unit.bilinearSimplex"
+        parameterName = "parameters.2d.unit.bilinearSimplex"
+      ELSE IF( xiCount == 3 ) THEN
+        interpolatorName = "interpolator.3d.unit.trilinearSimplex"
+        parameterName = "parameters.3d.unit.trilinearSimplex"
+      ELSE
+        !Do not yet support dimensions higher than 3.
+        CALL Flag_Error( var_str("Linear simplex interpolation not supported for ")//xiCount//" dimensions.", &
+          & err, error, *999 )
+      ENDIF
+    ELSE
+      CALL Flag_Error( var_str("FieldML translation not yet supported for interpolation type ")//firstInterpolation//".", &
+        & err, error, *999 )
+    ENDIF
+
+    evaluatorHandle = FIELDML_OUTPUT_IMPORT_FML( fmlHandle, interpolatorName, err, error )
+    IF( err /= 0 ) CALL Flag_Error( "Could not import interpolator "//char(interpolatorName)//".", err, error, *999 )
+
+    parametersHandle = FIELDML_OUTPUT_IMPORT_FML( fmlHandle, parameterName, err, error )
+    IF( err /= 0 ) CALL Flag_Error( "Could not import parameter type "//char(parameterName)//".", err, error, *999 )
+    
+    IF( evaluatorHandle == FML_INVALID_HANDLE ) THEN
+      CALL Flag_Error( "Cannot get a handle for basis evaluator "//char(interpolatorName)//".", err, error, *999 )
+    ENDIF
+
+    IF( parametersHandle == FML_INVALID_HANDLE ) THEN
+      CALL Flag_Error( "Cannot get a handle for basis parameters "//char(parameterName)//".", err, error, *999 )
+    ENDIF
+    
+    CALL Exits( "FieldmlOutputGetSimplexBasisEvaluator" )
+    RETURN
+999 CALL Errors( "FieldmlOutputGetSimplexBasisEvaluator", err, error )
+    CALL Exits( "FieldmlOutputGetSimplexBasisEvaluator" )
+    RETURN 1
+    
+  END SUBROUTINE FieldmlOutputGetSimplexBasisEvaluator
 
   !
   !================================================================================================================================
@@ -688,6 +782,85 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Return the FieldML connectivity ensemble corresponding to the given simplex basis info.
+  SUBROUTINE FieldmlOutputGetSimplexConnectivityType( fieldmlHandle, xiInterpolations, doImport, typeHandle, err, error, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: fieldmlHandle !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: xiInterpolations(:) !<The per-xi interpolation of the given TP basis.
+    LOGICAL, INTENT(IN) :: doImport !<If true, import the connectivity ensemble.
+    INTEGER(INTG), INTENT(OUT) :: typeHandle !<The FieldML ensemble handle.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Locals
+    INTEGER(INTG) :: xiCount, firstInterpolation, i, importIndex, temp
+    TYPE(VARYING_STRING) :: layoutName
+    
+    CALL Enters( "FieldmlOutputGetSimplexConnectivityType", err, error, *999 )
+
+    xiCount = SIZE( xiInterpolations )
+  
+    importIndex = Fieldml_AddImportSource( fieldmlHandle, &
+      & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//C_NULL_CHAR, "library"//C_NULL_CHAR )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot access built-in FieldML library.", fieldmlHandle, err, error, *999 )
+
+    firstInterpolation = xiInterpolations(1)
+    DO i = 2, xiCount
+      IF( xiInterpolations(i) /= firstInterpolation ) THEN
+        !Do not yet support inhomogeneous TP bases
+        CALL Flag_Error( "FieldML translation of inhomogeneous simplex bases are not yet supported.", &
+          & err, error, *999 )
+      ENDIF
+    ENDDO
+
+    IF( firstInterpolation == BASIS_QUADRATIC_SIMPLEX_INTERPOLATION ) THEN
+      IF( xiCount == 1 ) THEN
+        layoutName = "localNodes.1d.line3"
+      ELSE IF( xiCount == 2 ) THEN
+        layoutName = "localNodes.2d.triangle6.vtk"
+      ELSE IF( xiCount == 3 ) THEN
+        layoutName = "localNodes.3d.tetrahedron10.zienkiewicz"
+      ELSE
+        !Do not yet support dimensions higher than 3.
+        CALL Flag_Error( var_str("Quadratic Simplex interpolation not supported for ")//xiCount//" dimensions.", &
+          & err, error, *999 )
+      ENDIF
+    ELSE IF( firstInterpolation == BASIS_LINEAR_SIMPLEX_INTERPOLATION ) THEN
+      IF( xiCount == 1 ) THEN
+        layoutName = "localNodes.1d.line2"
+      ELSE IF( xiCount == 2 ) THEN
+        layoutName = "localNodes.2d.triangle3"
+      ELSE IF( xiCount == 3 ) THEN
+        layoutName = "localNodes.3d.tetrahedron4"
+      ELSE
+        !Do not yet support dimensions higher than 3.
+        CALL Flag_Error( var_str("Linear Simplex interpolation not supported for ")//xiCount//" dimensions.", &
+          & err, error, *999 )
+      ENDIF
+    ELSE
+      CALL Flag_Error( var_str("FieldML translation not yet supported for interpolation type ")//firstInterpolation//".", &
+        & err, error, *999 )
+    ENDIF
+
+    IF( doImport ) THEN
+      temp = FIELDML_OUTPUT_IMPORT_FML( fieldmlHandle, layoutName, err, error )
+      IF(err/=0) GOTO 999
+    ENDIF
+    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, cchar(layoutName) )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get local nodes type "//layoutName//".", fieldmlHandle, err, error, *999 )
+    
+    CALL Exits( "FieldmlOutputGetSimplexConnectivityType" )
+    RETURN
+999 CALL Errors( "FieldmlOutputGetSimplexConnectivityType", err, error )
+    CALL Exits( "FieldmlOutputGetSimplexConnectivityType" )
+    RETURN 1
+
+  END SUBROUTINE FieldmlOutputGetSimplexConnectivityType
+
+  !
+  !================================================================================================================================
+  !
 
   !>Get the connectivity ensemble for the given basis. Currently, only tensor-product bases are supported.
   SUBROUTINE FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE( FIELDML_HANDLE, BASIS, TYPE_HANDLE, ERR, ERROR, * )
@@ -699,9 +872,10 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Locals
-    INTEGER(INTG) :: BASISTYPE, XI_COUNT
+    INTEGER(INTG) :: BASISTYPE, XI_COUNT,FIRST_INTERPOLATION,TEMP, I
     INTEGER(INTG), ALLOCATABLE :: XI_INTERPOLATIONS(:), COLLAPSE_INFO(:)
-    
+    TYPE(VARYING_STRING) :: LAYOUT_NAME
+
     CALL ENTERS( "FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE", ERR, ERROR, *999 )
 
     TYPE_HANDLE = FML_INVALID_HANDLE
@@ -722,6 +896,15 @@ CONTAINS
       
       DEALLOCATE( XI_INTERPOLATIONS )
       DEALLOCATE( COLLAPSE_INFO )
+    ELSE IF( BASISTYPE == BASIS_SIMPLEX_TYPE ) THEN
+      ALLOCATE( XI_INTERPOLATIONS( XI_COUNT ), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate xi interpolations array.", ERR, ERROR, *999 )
+      CALL BASIS_INTERPOLATION_XI_GET( BASIS, XI_INTERPOLATIONS, ERR, ERROR, *999 )
+
+      CALL FieldmlOutputGetSimplexConnectivityType( FIELDML_HANDLE, XI_INTERPOLATIONS, .TRUE., TYPE_HANDLE, &
+        & ERR, ERROR, *999 )
+
+      DEALLOCATE( XI_INTERPOLATIONS )
     ELSE
       CALL FLAG_ERROR( "Only translation of tensor product bases are currently supported", ERR, ERROR, *999 )
     ENDIF
@@ -964,6 +1147,68 @@ CONTAINS
         & AGGREGATE_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot bind parameters to basis evaluator "//REFERENCE_NAME//".", &
         & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+
+    ELSE IF( BASIS_TYPE == BASIS_SIMPLEX_TYPE ) THEN
+      ALLOCATE( XI_INTERPOLATIONS( XI_COUNT ), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate xi interpolation array.", ERR, ERROR, *999 )
+
+      CALL BASIS_INTERPOLATION_XI_GET( BASIS_INFO%BASIS, XI_INTERPOLATIONS, ERR, ERROR, *999 )
+      
+      CALL FieldmlOutputGetSimplexBasisEvaluator( FIELDML_INFO%FML_HANDLE, XI_INTERPOLATIONS, EVALUATOR_HANDLE, &
+        & INTERPOLATION_PARAMETERS_HANDLE, ERR, ERROR, *999 )
+      DEALLOCATE( XI_INTERPOLATIONS )
+
+      CALL FIELDML_OUTPUT_GET_SIMPLE_BASIS_NAME( FIELDML_INFO%FML_HANDLE, EVALUATOR_HANDLE, NAME, ERR, ERROR, *999 )
+      
+      REFERENCE_NAME = BASE_NAME//NAME//"_"//TRIM(NUMBER_TO_VSTRING(BASIS_INFO%BASIS%USER_NUMBER,"*",ERR,ERROR))// &
+        & ".parameters"
+      
+      AGGREGATE_HANDLE = Fieldml_CreateAggregateEvaluator( FIELDML_INFO%FML_HANDLE, cchar(REFERENCE_NAME), &
+        & INTERPOLATION_PARAMETERS_HANDLE )
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot create dofs for basis connectivity for "//NAME//".", &
+        & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+
+      INDEX_EVALUATOR_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, BASIS_INFO%LAYOUT_HANDLE, .TRUE., &
+        & ERR, ERROR )
+      IF(ERR/=0) GOTO 999
+
+      FML_ERR = Fieldml_SetIndexEvaluator( FIELDML_INFO%FML_HANDLE, AGGREGATE_HANDLE, 1, INDEX_EVALUATOR_HANDLE )
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set field component index evaluator for "//REFERENCE_NAME//".", &
+        & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+      
+      FML_ERR = Fieldml_SetDefaultEvaluator( FIELDML_INFO%FML_HANDLE, AGGREGATE_HANDLE, FIELDML_INFO%NODE_DOFS_HANDLE )
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set nodal field dofs for "//REFERENCE_NAME//".", &
+        & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+
+      HANDLE = Fieldml_GetValueType( FIELDML_INFO%FML_HANDLE, BASIS_INFO%CONNECTIVITY_HANDLE )
+      VARIABLE_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, HANDLE, .FALSE., ERR, ERROR )
+      IF(ERR/=0) GOTO 999
+      FML_ERR = Fieldml_SetBind( FIELDML_INFO%FML_HANDLE, AGGREGATE_HANDLE, VARIABLE_HANDLE, BASIS_INFO%CONNECTIVITY_HANDLE )
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set bind for basis dofs for"//REFERENCE_NAME//".", &
+        & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+      
+      REFERENCE_NAME = BASE_NAME//NAME//"_"//TRIM(NUMBER_TO_VSTRING(BASIS_INFO%BASIS%USER_NUMBER,"*",ERR,ERROR))// &
+        & ".evaluator"
+
+      BASIS_INFO%REFERENCE_HANDLE = Fieldml_CreateReferenceEvaluator( FIELDML_INFO%FML_HANDLE, cchar(REFERENCE_NAME), &
+        & EVALUATOR_HANDLE )
+
+      CALL FIELDML_OUTPUT_GET_XI_TYPE( FIELDML_INFO%FML_HANDLE, XI_COUNT, .TRUE., HANDLE, ERR, ERROR, *999 )
+      VARIABLE_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, HANDLE, .TRUE., ERR, ERROR )
+      IF(ERR/=0) GOTO 999
+      FML_ERR = Fieldml_SetBind( FIELDML_INFO%FML_HANDLE, BASIS_INFO%REFERENCE_HANDLE, VARIABLE_HANDLE, &
+        & FIELDML_INFO%XI_ARGUMENT_HANDLE )
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot bind xi to basis evaluator "//REFERENCE_NAME//".", &
+        & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+
+      VARIABLE_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, INTERPOLATION_PARAMETERS_HANDLE, .TRUE.,&
+        & ERR, ERROR )
+      IF(ERR/=0) GOTO 999
+      FML_ERR = Fieldml_SetBind( FIELDML_INFO%FML_HANDLE, BASIS_INFO%REFERENCE_HANDLE, VARIABLE_HANDLE, &
+        & AGGREGATE_HANDLE )
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot bind parameters to basis evaluator "//REFERENCE_NAME//".", &
+        & FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
+
     ELSE
       BASIS_INFO%REFERENCE_HANDLE = FML_INVALID_HANDLE
       CALL FLAG_ERROR( "FieldML export code can currently only translate tensor-product bases.", ERR, ERROR, *999 )
@@ -1274,6 +1519,7 @@ CONTAINS
     LOGICAL, ALLOCATABLE :: IS_NODE_BASED(:)
     TYPE(C_PTR) :: SIZE_POINTER
     TYPE(VARYING_STRING) :: ARRAY_LOCATION
+    INTEGER(INTG) :: myComputationalNodeNumber,nodeDomain,meshComponentNumber
 
     CALL ENTERS( "FIELDML_OUTPUT_ADD_FIELD_NODE_DOFS", ERR, ERROR, *999 )
     
@@ -1369,8 +1615,15 @@ CONTAINS
           IF( NODE_EXISTS ) THEN
             !Default to version 1 of each node derivative (value hardcoded in loop)
             VERSION_NUMBER = 1
-            CALL FIELD_PARAMETER_SET_GET_NODE( FIELD, VARIABLE_TYPE, SET_TYPE, VERSION_NUMBER, &
-              & NO_GLOBAL_DERIV, I, FIELD_COMPONENT_NUMBERS(J), DVALUE, ERR, ERROR, *999 )
+
+            myComputationalNodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
+            CALL DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(FIELD%DECOMPOSITION,meshComponentNumber,err,error,*999)
+            CALL DECOMPOSITION_NODE_DOMAIN_GET(FIELD%DECOMPOSITION,I,meshComponentNumber,nodeDomain,err,error,*999)
+            IF(nodeDomain==myComputationalNodeNumber) THEN
+              CALL FIELD_PARAMETER_SET_GET_NODE( FIELD, VARIABLE_TYPE, SET_TYPE, VERSION_NUMBER, &
+                & NO_GLOBAL_DERIV, I, FIELD_COMPONENT_NUMBERS(J), DVALUE, ERR, ERROR, *999 )
+            ENDIF
+
           ENDIF
         ENDIF
         DBUFFER( J ) = DVALUE
@@ -1722,6 +1975,7 @@ CONTAINS
     INTEGER(INTG) :: COMPONENT_COUNT, I, NODE_COUNT, ELEMENT_COUNT, DIMENSIONS
     INTEGER(INTG) :: REAL_1D_HANDLE, XI_COMPONENT_HANDLE, FML_ERR, SHAPE_HANDLE
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
     TYPE(NODES_TYPE), POINTER :: NODES
     TYPE(VARYING_STRING) :: SHAPE_NAME
 
@@ -1811,6 +2065,7 @@ CONTAINS
       CALL MESH_TOPOLOGY_ELEMENTS_GET( MESH, I, MESH_ELEMENTS, ERR, ERROR, *999 )
       CALL FIELDML_OUTPUT_ADD_MESH_COMPONENT( FIELDML_INFO, BASE_NAME, CONNECTIVITY_FORMAT, I, MESH_ELEMENTS, &
         & ERR, ERROR, *999 )
+      BASIS =>MESH_ELEMENTS%ELEMENTS( 1 )%BASIS
     ENDDO
 
     
@@ -1818,9 +2073,19 @@ CONTAINS
     IF( DIMENSIONS == 1 ) THEN
       SHAPE_NAME = "shape.unit.line"
     ELSE IF( DIMENSIONS == 2 ) THEN
-      SHAPE_NAME = "shape.unit.square"
+      SELECT CASE(BASIS%TYPE)
+      CASE(BASIS_SIMPLEX_TYPE)
+        SHAPE_NAME = "shape.unit.triangle"
+      CASE DEFAULT
+        SHAPE_NAME = "shape.unit.square"
+      END SELECT
     ELSE
-      SHAPE_NAME = "shape.unit.cube"
+      SELECT CASE(BASIS%TYPE)
+      CASE(BASIS_SIMPLEX_TYPE)
+        SHAPE_NAME = "shape.unit.tetrahedron"
+      CASE DEFAULT
+        SHAPE_NAME = "shape.unit.cube"
+      END SELECT
     ENDIF
 
     SHAPE_HANDLE = FIELDML_OUTPUT_IMPORT( FIELDML_INFO, SHAPE_NAME, ERR, ERROR )

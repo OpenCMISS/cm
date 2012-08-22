@@ -235,6 +235,7 @@ MODULE FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE=32 !<The parameter set corresponding to the NEGATIVE mesh velocity values for ALE \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE=33 !<The parameter set corresponding to the previous iteration field values (at iteration n) \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE=34 !<The parameter set corresponding to the impermeable flag field values \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_INTEGRATED_NEUMANN_SET_TYPE=35 !<Stores integrated Neumann values calculated from Neumann point values \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_ScalingTypes FIELD_ROUTINES::ScalingTypes
@@ -544,7 +545,7 @@ MODULE FIELD_ROUTINES
     & FIELD_PREVIOUS_PRESSURE_SET_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE, FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE, &
     & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
     & FIELD_INPUT_VEL1_SET_TYPE,FIELD_INPUT_VEL2_SET_TYPE,FIELD_INPUT_VEL3_SET_TYPE,FIELD_INPUT_LABEL_SET_TYPE, &
-    & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE
+    & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,FIELD_INTEGRATED_NEUMANN_SET_TYPE
 
 
   PUBLIC FIELD_NO_SCALING,FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_HARMONIC_MEAN_SCALING,FIELD_ARITHMETIC_MEAN_SCALING, &
@@ -7830,7 +7831,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,mk,nn)
                   nv=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -7956,7 +7957,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=LINES_TOPOLOGY%LINES(LINE_NUMBER)%DERIVATIVES_IN_LINE(1,mk,nn)
                   nv=LINES_TOPOLOGY%LINES(LINE_NUMBER)%DERIVATIVES_IN_LINE(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -8082,7 +8083,7 @@ CONTAINS
                 DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                   nk=FACES_TOPOLOGY%FACES(FACE_NUMBER)%DERIVATIVES_IN_FACE(1,mk,nn)
                   nv=FACES_TOPOLOGY%FACES(FACE_NUMBER)%DERIVATIVES_IN_FACE(2,mk,nn)
-                  ns=BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)
+                  ns=BASIS%ELEMENT_PARAMETER_INDEX(mk,nn)
                   ny=NODES_TOPOLOGY%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(nv)
                   INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,component_idx)=SCALE_FACTORS(ny)
                 ENDDO !mk
@@ -22959,7 +22960,7 @@ CONTAINS
                         nu1=PART_DERIV_S1
                         ni2=3
                         nu2=PART_DERIV_S3
-                      ELSE IF(partial_derivative_idx==PART_DERIV_S1_S2) THEN
+                      ELSE IF(partial_derivative_idx==PART_DERIV_S2_S3) THEN
                         ni1=2
                         nu1=PART_DERIV_S2
                         ni2=3

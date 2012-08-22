@@ -628,7 +628,7 @@ MODULE CMISS_PETSC
     
     SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
       Mat A
-      PetscScalar, POINTER :: mat_data(:)
+      PetscScalar, POINTER :: mat_data(:,:)
       PetscInt ierr
     END SUBROUTINE MatGetArrayF90
     
@@ -3045,7 +3045,7 @@ CONTAINS
 
     !Argument Variables
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
-    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the matrix array
+    REAL(DP), POINTER :: ARRAY(:,:) !<On exit, a pointer to the matrix array
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
