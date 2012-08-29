@@ -125,9 +125,7 @@ MODULE MESH_ROUTINES
 
   PUBLIC DECOMPOSITION_CALCULATE_LINES_SET,DECOMPOSITION_CALCULATE_FACES_SET
 
-  PUBLIC DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS,DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS
-  
-  PUBLIC DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE
+  PUBLIC DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS
   
   PUBLIC MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS,MESH_TOPOLOGY_NODE_CHECK_EXISTS
   
@@ -1130,8 +1128,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: localElement,globalElement,dataPointIdx,localData
-    INTEGER(INTG) :: INSERT_STATUS,MPI_IERROR,NUMBER_OF_COMPUTATIONAL_NODES,MY_COMPUTATIONAL_NODE_NUMBER,NUMBER_OF_GHOST_DATA
-!    INTEGER(INTG), ALLOCATABLE :: 
+    INTEGER(INTG) :: INSERT_STATUS,MPI_IERROR,NUMBER_OF_COMPUTATIONAL_NODES,MY_COMPUTATIONAL_NODE_NUMBER,NUMBER_OF_GHOST_DATA, &
+      & NUMBER_OF_LOCAL_DATA
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: decompositionElements
     TYPE(DECOMPOSITION_DATA_TYPE), POINTER :: decompositionData
@@ -1159,13 +1157,17 @@ CONTAINS
                 IF(ERR/=0) GOTO 999
                 ALLOCATE(decompositionData%numberOfDomainLocal(0:NUMBER_OF_COMPUTATIONAL_NODES-1),STAT=ERR)
                 ALLOCATE(decompositionData%numberOfDomainGhost(0:NUMBER_OF_COMPUTATIONAL_NODES-1),STAT=ERR)
-                ALLOCATE(decompositionData%elementDataPointsNumber(decompositionElements%NUMBER_OF_GLOBAL_ELEMENTS),STAT=ERR)
+                ALLOCATE(decompositionData%numberOfElementDataPoints(decompositionElements%NUMBER_OF_GLOBAL_ELEMENTS),STAT=ERR)
                 ALLOCATE(decompositionData%elementDataPoint(decompositionElements%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition element data points.",ERR,ERROR,*999)
                 CALL TREE_CREATE_START(decompositionData%DATA_POINTS_TREE,ERR,ERROR,*999)
                 CALL TREE_INSERT_TYPE_SET(decompositionData%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
                 CALL TREE_CREATE_FINISH(decompositionData%DATA_POINTS_TREE,ERR,ERROR,*999)
                 decompositionData%numberOfGlobalDataPoints=meshData%TOTAL_NUMBER_OF_PROJECTED_DATA 
+                DO globalElement=1,decompositionElements%NUMBER_OF_GLOBAL_ELEMENTS
+                  decompositionData%numberOfElementDataPoints(globalElement)= &
+                    & meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA
+                ENDDO !globalElement
                 localData=0;
                 DO localElement=1,decompositionElements%TOTAL_NUMBER_OF_ELEMENTS
                   globalElement=decompositionElements%ELEMENTS(localElement)%GLOBAL_NUMBER
@@ -1175,10 +1177,6 @@ CONTAINS
                   IF(localElement<elementsMapping%GHOST_START) THEN
                     decompositionData%numberOfDataPoints=decompositionData%numberOfDataPoints+ &
                       & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
-                    CALL MPI_ALLGATHER(meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA, &
-                      & 1,MPI_INTEGER,decompositionData%elementDataPointsNumber(globalElement),1,MPI_INTEGER, &
-                      & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
-                    CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
                   ENDIF               
                   decompositionData%totalNumberOfDataPoints=decompositionData%totalNumberOfDataPoints+ &
                     & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
@@ -1197,9 +1195,10 @@ CONTAINS
                   ENDDO !dataPointIdx
                 ENDDO !localElement   
                 !Calculate number of ghost data points on the current computational domain
+                NUMBER_OF_LOCAL_DATA=decompositionData%numberOfDataPoints
                 NUMBER_OF_GHOST_DATA=decompositionData%totalNumberOfDataPoints-decompositionData%numberOfDataPoints
                 !Gather number of local data points on all computational nodes
-                CALL MPI_ALLGATHER(decompositionData%numberOfDataPoints,1,MPI_INTEGER,decompositionData% &
+                CALL MPI_ALLGATHER(NUMBER_OF_LOCAL_DATA,1,MPI_INTEGER,decompositionData% &
                   & numberOfDomainLocal,1,MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                 CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
                 !Gather number of ghost data points on all computational nodes
@@ -3897,174 +3896,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DOMAIN_MAPPINGS_ELEMENTS_CALCULATE
   
-    !
-  !================================================================================================================================
-  !
-
-  !>Calculates the local/global element mappings for a domain decomposition.
-  SUBROUTINE DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE(DOMAIN,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to calculate the element mappings for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,no_adjacent_element,adjacent_element,domain_no,domain_idx,ne,nn,np,NUMBER_OF_DOMAINS, &
-      & NUMBER_OF_ADJACENT_ELEMENTS,my_computational_node_number,component_idx, data_point_idx,DATA_POINT_GLOBAL_NUMBER, &
-      & local_domain_idx
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:),DOMAINS(:),LOCAL_ELEMENT_NUMBERS(:),LOCAL_DATA_POINT_NUMBERS(:)
-    TYPE(LIST_TYPE), POINTER :: ADJACENT_DOMAINS_LIST
-    TYPE(LIST_PTR_TYPE), ALLOCATABLE :: ADJACENT_ELEMENTS_LIST(:)
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DATA_POINTS_MAPPING
-    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: DATA_POINTS_TOPOLOGY
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
-
-    CALL ENTERS("DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(DOMAIN)) THEN
-      IF(ASSOCIATED(DOMAIN%MAPPINGS)) THEN
-        IF(ASSOCIATED(DOMAIN%MAPPINGS%DATA_POINTS)) THEN
-          DATA_POINTS_MAPPING=>DOMAIN%MAPPINGS%DATA_POINTS
-          IF(ASSOCIATED(DOMAIN%DECOMPOSITION)) THEN
-            DECOMPOSITION=>DOMAIN%DECOMPOSITION
-            IF(ASSOCIATED(DOMAIN%MESH)) THEN
-              MESH=>DOMAIN%MESH
-              component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-              my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
-              DATA_POINTS_TOPOLOGY=>MESH%TOPOLOGY(component_idx)%PTR%DATA_POINTS
-              IF(ERR/=0) GOTO 999           
-              !Calculate the local and global numbers and set up the mappings
-              ALLOCATE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element mapping global to local map.",ERR,ERROR,*999)
-              DATA_POINTS_MAPPING%NUMBER_OF_GLOBAL=DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA
-              !Loop over the global elements and calculate local numbers
-              ALLOCATE(LOCAL_ELEMENT_NUMBERS(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local element numbers.",ERR,ERROR,*999)
-              LOCAL_ELEMENT_NUMBERS=0
-              !Loop over the global elements and calculate data point numbers
-              ALLOCATE(LOCAL_DATA_POINT_NUMBERS(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local element numbers.",ERR,ERROR,*999)
-              LOCAL_DATA_POINT_NUMBERS=0
-              ALLOCATE(ADJACENT_ELEMENTS_LIST(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent elements list.",ERR,ERROR,*999)
-              DO domain_idx=0,DECOMPOSITION%NUMBER_OF_DOMAINS-1
-                NULLIFY(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR)
-                CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,ERR,ERROR,*999)
-                CALL LIST_DATA_TYPE_SET(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
-                CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,MAX(INT(MESH%NUMBER_OF_ELEMENTS/2),1), &
-                  & ERR,ERROR,*999)
-                CALL LIST_CREATE_FINISH(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,ERR,ERROR,*999)
-              ENDDO !domain_idx             
-              DO ne=1,MESH%NUMBER_OF_ELEMENTS
-                !Calculate the local numbers
-                domain_no=DECOMPOSITION%ELEMENT_DOMAIN(ne)
-                LOCAL_ELEMENT_NUMBERS(domain_no)=LOCAL_ELEMENT_NUMBERS(domain_no)+1
-                !Calculate the adjacent elements to the computational domains and the adjacent domain numbers themselves
-                BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
-                NULLIFY(ADJACENT_DOMAINS_LIST)
-                CALL LIST_CREATE_START(ADJACENT_DOMAINS_LIST,ERR,ERROR,*999)
-                CALL LIST_DATA_TYPE_SET(ADJACENT_DOMAINS_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
-                CALL LIST_INITIAL_SIZE_SET(ADJACENT_DOMAINS_LIST,DECOMPOSITION%NUMBER_OF_DOMAINS,ERR,ERROR,*999)
-                CALL LIST_CREATE_FINISH(ADJACENT_DOMAINS_LIST,ERR,ERROR,*999)
-                CALL LIST_ITEM_ADD(ADJACENT_DOMAINS_LIST,domain_no,ERR,ERROR,*999)
-                DO nn=1,BASIS%NUMBER_OF_NODES
-                  np=MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)
-                  DO no_adjacent_element=1,MESH%TOPOLOGY(component_idx)%PTR%NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-                    adjacent_element=MESH%TOPOLOGY(component_idx)%PTR%NODES%NODES(np)%SURROUNDING_ELEMENTS(no_adjacent_element)
-                    IF(DECOMPOSITION%ELEMENT_DOMAIN(adjacent_element)/=domain_no) THEN
-                      CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(domain_no)%PTR,adjacent_element,ERR,ERROR,*999)
-                      CALL LIST_ITEM_ADD(ADJACENT_DOMAINS_LIST,DECOMPOSITION%ELEMENT_DOMAIN(adjacent_element),ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !no_adjacent_element
-                ENDDO !nn
-                CALL LIST_REMOVE_DUPLICATES(ADJACENT_DOMAINS_LIST,ERR,ERROR,*999)
-                CALL LIST_DETACH_AND_DESTROY(ADJACENT_DOMAINS_LIST,NUMBER_OF_DOMAINS,DOMAINS,ERR,ERROR,*999)
-                DEALLOCATE(DOMAINS)
-                DO data_point_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(ne)%NUMBER_OF_PROJECTED_DATA
-                  LOCAL_DATA_POINT_NUMBERS(domain_no)=LOCAL_DATA_POINT_NUMBERS(domain_no)+1
-                  DATA_POINT_GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(ne)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
-                  CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP &
-                    & (DATA_POINT_GLOBAL_NUMBER),ERR,ERROR,*999)
-                  ALLOCATE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_NUMBER(NUMBER_OF_DOMAINS), &
-                    & STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data point global to local map local number.",ERR,ERROR,*999)
-                  ALLOCATE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%DOMAIN_NUMBER(NUMBER_OF_DOMAINS),&
-                    & STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data point global to local map domain number.",ERR,ERROR,*999)
-                  ALLOCATE(DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_TYPE(NUMBER_OF_DOMAINS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data point global to local map local type.",ERR,ERROR,*999)
-                  DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%NUMBER_OF_DOMAINS=1
-                  DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_NUMBER(1)= &
-                    & LOCAL_DATA_POINT_NUMBERS(domain_no)
-                  DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%DOMAIN_NUMBER(1)= &
-                    & DECOMPOSITION%ELEMENT_DOMAIN(ne) 
-                  IF(NUMBER_OF_DOMAINS==1) THEN
-                  !Element is an internal element
-                  DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
-                  ELSE
-                    !Element is on the boundary of computational domains
-                    DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
-                  ENDIF
-                ENDDO !data_point_idx
-              ENDDO !ne                         
-              !Compute ghost element mappings
-              DO domain_idx=0,DECOMPOSITION%NUMBER_OF_DOMAINS-1
-                CALL LIST_REMOVE_DUPLICATES(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,ERR,ERROR,*999)
-                CALL LIST_DETACH_AND_DESTROY(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,NUMBER_OF_ADJACENT_ELEMENTS, &
-                  & ADJACENT_ELEMENTS,ERR,ERROR,*999)
-                DO no_adjacent_element=1,NUMBER_OF_ADJACENT_ELEMENTS
-                  adjacent_element=ADJACENT_ELEMENTS(no_adjacent_element)
-                  LOCAL_ELEMENT_NUMBERS(domain_idx)=LOCAL_ELEMENT_NUMBERS(domain_idx)+1            
-                  DO data_point_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(adjacent_element)%NUMBER_OF_PROJECTED_DATA
-                    LOCAL_DATA_POINT_NUMBERS(domain_idx)=LOCAL_DATA_POINT_NUMBERS(domain_idx)+1
-                    DATA_POINT_GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(adjacent_element)% &
-                      & DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
-                    !local_domain_idx is the last domian in the list
-                    local_domain_idx=DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%NUMBER_OF_DOMAINS+1                 
-                    DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%NUMBER_OF_DOMAINS=local_domain_idx
-                    DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_NUMBER(local_domain_idx)= &
-                      & LOCAL_DATA_POINT_NUMBERS(domain_idx)
-                    DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%DOMAIN_NUMBER(local_domain_idx)=domain_idx
-                    DATA_POINTS_MAPPING%GLOBAL_TO_LOCAL_MAP(DATA_POINT_GLOBAL_NUMBER)%LOCAL_TYPE(local_domain_idx)= &
-                      & DOMAIN_LOCAL_GHOST
-                  ENDDO !data_point_idx
-                ENDDO !no_adjacent_element
-                IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
-              ENDDO !domain_idx              
-              DEALLOCATE(ADJACENT_ELEMENTS_LIST)
-              DEALLOCATE(LOCAL_ELEMENT_NUMBERS)
-              DEALLOCATE(LOCAL_DATA_POINT_NUMBERS)             
-              !Calculate element local to global maps from global to local map, and internal/boundary/ghost start/finish etc.
-              CALL DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(DATA_POINTS_MAPPING,ERR,ERROR,*999)                         
-            ELSE
-              CALL FLAG_ERROR("Domain mesh is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Domain decomposition is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Domain mappings elements is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*998)
-    ENDIF
-    
-    CALL EXITS("DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE")
-    RETURN
-999 IF(ALLOCATED(DOMAINS)) DEALLOCATE(DOMAINS)
-    IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)    
-    IF(ASSOCIATED(DOMAIN%MAPPINGS%ELEMENTS)) CALL DOMAIN_MAPPINGS_ELEMENTS_FINALISE(DOMAIN%MAPPINGS,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE",ERR,ERROR)
-    CALL EXITS("DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE")
-    RETURN 1
-  END SUBROUTINE DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE
-  
   !
   !================================================================================================================================
   !
@@ -4168,42 +3999,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialises the element mapping in the given domain mapping.
-  SUBROUTINE DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mappings to initialise the elements for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    
-    CALL ENTERS("DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-      IF(ASSOCIATED(DOMAIN_MAPPINGS%DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Domain data points mappings are already associated.",ERR,ERROR,*999)
-      ELSE
-        ALLOCATE(DOMAIN_MAPPINGS%DATA_POINTS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings data points.",ERR,ERROR,*999)
-        CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(DOMAIN_MAPPINGS%DATA_POINTS,DOMAIN_MAPPINGS%DOMAIN%DECOMPOSITION% &
-          & NUMBER_OF_DOMAINS,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
-    ENDIF
- 
-    CALL EXITS("DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE")
-    RETURN
-999 CALL ERRORS("DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE",ERR,ERROR)
-    CALL EXITS("DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE")
-    RETURN 1
-   
-  END SUBROUTINE DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE
-
-  !
-  !================================================================================================================================
-  !
-
   !>Initialises the mappings for a domain decomposition. \todo finalise on error.
   SUBROUTINE DOMAIN_MAPPINGS_INITIALISE(DOMAIN,ERR,ERROR,*)
 
@@ -4225,17 +4020,12 @@ CONTAINS
         NULLIFY(DOMAIN%MAPPINGS%ELEMENTS)
         NULLIFY(DOMAIN%MAPPINGS%NODES)
         NULLIFY(DOMAIN%MAPPINGS%DOFS)
-        NULLIFY(DOMAIN%MAPPINGS%DATA_POINTS)
         !Calculate the node and element mappings
         CALL DOMAIN_MAPPINGS_ELEMENTS_INITIALISE(DOMAIN%MAPPINGS,ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_NODES_INITIALISE(DOMAIN%MAPPINGS,ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_DOFS_INITIALISE(DOMAIN%MAPPINGS,ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_ELEMENTS_CALCULATE(DOMAIN,ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_NODES_DOFS_CALCULATE(DOMAIN,ERR,ERROR,*999)
-        IF(ALLOCATED(DOMAIN%MESH%TOPOLOGY(DOMAIN%MESH_COMPONENT_NUMBER)%PTR%DATA_POINTS%DATA_POINTS)) THEN
-          CALL DOMAIN_MAPPINGS_DATA_POINTS_INITIALISE(DOMAIN%MAPPINGS,ERR,ERROR,*999)
-          CALL DOMAIN_MAPPINGS_DATA_POINTS_CALCULATE(DOMAIN,ERR,ERROR,*999)
-        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
@@ -4855,56 +4645,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Checks that a user data point number exists in a domain data points topolgoy. 
-  SUBROUTINE DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_DATA_POINT_NUMBER,DATA_POINT_EXISTS, &
-      & DOMAIN_LOCAL_DATA_POINT_NUMBER,GHOST_DATA_POINT,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY !<A pointer to the domain topology to check the data point exists on
-    INTEGER(INTG), INTENT(IN) :: USER_DATA_POINT_NUMBER !<The user data point number to check if it exists
-    LOGICAL, INTENT(OUT) :: DATA_POINT_EXISTS !<On exit, is .TRUE. if the data point user number exists in the domain data points topolgoy (even if it is a ghost data point), .FALSE. if not
-    INTEGER(INTG), INTENT(OUT) :: DOMAIN_LOCAL_DATA_POINT_NUMBER !<On exit, if the data point exists the local number corresponding to the user data point number. If the data point does not exist then global number will be 0.
-    LOGICAL, INTENT(OUT) :: GHOST_DATA_POINT !<On exit, is .TRUE. if the local data point (if it exists) is a ghost data point, .FALSE. if not. 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DOMAIN_DATA_POINTS_TYPE), POINTER :: DOMAIN_DATA_POINTS
-    TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
-    
-    CALL ENTERS("DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS",ERR,ERROR,*999)
-
-    DATA_POINT_EXISTS=.FALSE.
-    DOMAIN_LOCAL_DATA_POINT_NUMBER=0
-    GHOST_DATA_POINT=.FALSE.
-    IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
-      DOMAIN_DATA_POINTS=>DOMAIN_TOPOLOGY%DATA_POINTS
-      IF(ASSOCIATED(DOMAIN_DATA_POINTS)) THEN
-        NULLIFY(TREE_NODE)
-        CALL TREE_SEARCH(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,USER_DATA_POINT_NUMBER,TREE_NODE,ERR,ERROR,*999)
-        IF(ASSOCIATED(TREE_NODE)) THEN
-          CALL TREE_NODE_VALUE_GET(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,TREE_NODE,DOMAIN_LOCAL_DATA_POINT_NUMBER,ERR,ERROR,*999)
-          DATA_POINT_EXISTS=.TRUE.
-          GHOST_DATA_POINT=DOMAIN_LOCAL_DATA_POINT_NUMBER>DOMAIN_DATA_POINTS%NUMBER_OF_DATA_POINTS
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Domain topology data points is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS")
-    RETURN
-999 CALL ERRORS("DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS",ERR,ERROR)
-    CALL EXITS("DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS")
-    RETURN 1
-    
-  END SUBROUTINE DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS
-  
-  !
-  !================================================================================================================================
-  !
-
   !>Initialises the local domain topology from the mesh topology.
   SUBROUTINE DOMAIN_TOPOLOGY_INITIALISE_FROM_MESH(DOMAIN,ERR,ERROR,*)
 
@@ -4914,7 +4654,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: local_element,global_element,local_node,global_node,version_idx,derivative_idx,node_idx,dof_idx, &
-      & component_idx,data_point_idx
+      & component_idx
     INTEGER(INTG) :: ne,nn,nkk,INSERT_STATUS,LOCAL_NUMBER
     LOGICAL :: FOUND
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -4923,9 +4663,7 @@ CONTAINS
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(MESH_NODES_TYPE), POINTER :: MESH_NODES
-    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: MESH_DATA_POINTS
     TYPE(DOMAIN_DOFS_TYPE), POINTER :: DOMAIN_DOFS
-    TYPE(DOMAIN_DATA_POINTS_TYPE), POINTER :: DOMAIN_DATA_POINTS 
 
     CALL ENTERS("DOMAIN_TOPOLOGY_INITIALISE_FROM_MESH",ERR,ERROR,*999)
     
@@ -4941,7 +4679,6 @@ CONTAINS
               MESH_NODES=>MESH%TOPOLOGY(component_idx)%PTR%NODES
               DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
               DOMAIN_DOFS=>DOMAIN%TOPOLOGY%DOFS
-              DOMAIN_DATA_POINTS=>DOMAIN%TOPOLOGY%DATA_POINTS
               ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(DOMAIN%MAPPINGS%ELEMENTS%TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements elements.",ERR,ERROR,*999)
               DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS=DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_LOCAL
@@ -4957,13 +4694,6 @@ CONTAINS
               DOMAIN_DOFS%NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%NUMBER_OF_LOCAL
               DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL
               DOMAIN_DOFS%NUMBER_OF_GLOBAL_DOFS=DOMAIN%MAPPINGS%DOFS%NUMBER_OF_GLOBAL
-              IF(ALLOCATED(DOMAIN%MESH%TOPOLOGY(DOMAIN%MESH_COMPONENT_NUMBER)%PTR%DATA_POINTS%DATA_POINTS)) THEN
-                ALLOCATE(DOMAIN_DATA_POINTS%elementDataPoint(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain data points dof index.",ERR,ERROR,*999)
-                DOMAIN_DATA_POINTS%NUMBER_OF_DATA_POINTS=DOMAIN%MAPPINGS%DATA_POINTS%NUMBER_OF_LOCAL
-                DOMAIN_DATA_POINTS%TOTAL_NUMBER_OF_DATA_POINTS=DOMAIN%MAPPINGS%DATA_POINTS%TOTAL_NUMBER_OF_LOCAL
-                DOMAIN_DATA_POINTS%NUMBER_OF_GLOBAL_DATA_POINTS=DOMAIN%MAPPINGS%DATA_POINTS%NUMBER_OF_GLOBAL
-              ENDIF
               !Loop over the domain nodes and calculate the parameters from the mesh nodes
               CALL TREE_CREATE_START(DOMAIN_NODES%NODES_TREE,ERR,ERROR,*999)
               CALL TREE_INSERT_TYPE_SET(DOMAIN_NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
@@ -5041,33 +4771,6 @@ CONTAINS
                   ENDDO !derivative_idx
                 ENDDO !nn
               ENDDO !local_element                       
-              IF(ALLOCATED(DOMAIN%MESH%TOPOLOGY(DOMAIN%MESH_COMPONENT_NUMBER)%PTR%DATA_POINTS%DATA_POINTS)) THEN
-                LOCAL_NUMBER=0
-                MESH_DATA_POINTS=>DOMAIN%MESH%TOPOLOGY(component_idx)%PTR%DATA_POINTS
-                CALL TREE_CREATE_START(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
-                CALL TREE_INSERT_TYPE_SET(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-                CALL TREE_CREATE_FINISH(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
-                DO local_element=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                  global_element=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(local_element)    
-                  DOMAIN_DATA_POINTS%elementDataPoint(local_element)%NUMBER_OF_PROJECTED_DATA=MESH_DATA_POINTS% &
-                    & elementDataPoint(global_element)%NUMBER_OF_PROJECTED_DATA
-                  DOMAIN_DATA_POINTS%elementDataPoint(local_element)%ELEMENT_NUMBER=MESH_DATA_POINTS% &
-                    & elementDataPoint(global_element)%ELEMENT_NUMBER
-                  ALLOCATE(DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(DOMAIN_DATA_POINTS% &
-                    & elementDataPoint(local_element)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-                  DO data_point_idx=1,DOMAIN_DATA_POINTS%elementDataPoint(local_element)%NUMBER_OF_PROJECTED_DATA
-                    DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%USER_NUMBER= &
-                      & MESH_DATA_POINTS%elementDataPoint(global_element)%DATA_INDICES(data_point_idx)%USER_NUMBER
-                    DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER= &
-                      & MESH_DATA_POINTS%elementDataPoint(global_element)%DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
-                    LOCAL_NUMBER=LOCAL_NUMBER+1
-                    DOMAIN_DATA_POINTS%elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%LOCAL_NUMBER=LOCAL_NUMBER
-                    CALL TREE_ITEM_INSERT(DOMAIN_DATA_POINTS%DATA_POINTS_TREE,DOMAIN_DATA_POINTS% &
-                      & elementDataPoint(local_element)%DATA_INDICES(data_point_idx)%USER_NUMBER,LOCAL_NUMBER, &
-                      & INSERT_STATUS,ERR,ERROR,*999)
-                  ENDDO !data_point_idx
-                ENDDO !local_element
-              ENDIF
             ELSE
               CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
             ENDIF
@@ -5353,43 +5056,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DOMAIN_TOPOLOGY_ELEMENTS_INITIALISE
   
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialises the element data structures for a domain topology. \todo finalise on error
-  SUBROUTINE DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE(TOPOLOGY,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the elements for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TOPOLOGY)) THEN
-      IF(ASSOCIATED(TOPOLOGY%DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Decomposition already has topology data points associated",ERR,ERROR,*999)
-      ELSE
-        ALLOCATE(TOPOLOGY%DATA_POINTS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology data points",ERR,ERROR,*999)
-        TOPOLOGY%DATA_POINTS%NUMBER_OF_DATA_POINTS=0
-        TOPOLOGY%DATA_POINTS%TOTAL_NUMBER_OF_DATA_POINTS=0
-        TOPOLOGY%DATA_POINTS%NUMBER_OF_GLOBAL_DATA_POINTS=0
-        NULLIFY(TOPOLOGY%DATA_POINTS%DATA_POINTS_TREE)
-        TOPOLOGY%DATA_POINTS%DOMAIN=>TOPOLOGY%DOMAIN
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE")
-    RETURN
-999 CALL ERRORS("DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE",ERR,ERROR)
-    CALL EXITS("DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE")
-    RETURN 1
-  END SUBROUTINE DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE
   
   !
   !================================================================================================================================
@@ -5453,16 +5119,12 @@ CONTAINS
         NULLIFY(DOMAIN%TOPOLOGY%DOFS)
         NULLIFY(DOMAIN%TOPOLOGY%LINES)
         NULLIFY(DOMAIN%TOPOLOGY%FACES)
-        NULLIFY(DOMAIN%TOPOLOGY%DATA_POINTS)
         !Initialise the topology components
         CALL DOMAIN_TOPOLOGY_ELEMENTS_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_NODES_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_DOFS_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_LINES_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_FACES_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
-        IF(ALLOCATED(DOMAIN%MESH%TOPOLOGY(DOMAIN%MESH_COMPONENT_NUMBER)%PTR%DATA_POINTS%DATA_POINTS)) THEN
-          CALL DOMAIN_TOPOLOGY_DATA_POINTS_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
-        ENDIF 
         !Initialise the domain topology from the domain mappings and the mesh it came from
         CALL DOMAIN_TOPOLOGY_INITIALISE_FROM_MESH(DOMAIN,ERR,ERROR,*999)
         !Calculate the topological information.
@@ -8357,7 +8019,7 @@ CONTAINS
     TYPE(MESH_DATA_POINTS_TYPE), POINTER :: DATA_POINTS_TOPOLOGY
     TYPE(DATA_PROJECTION_RESULT_TYPE), POINTER :: DATA_PROJECTION_RESULT
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    INTEGER(INTG) :: data_projection_idx,data_point_idx,ELEMENT_NUMBER,element_idx,count_idx,PROJECTION_NUMBER,global_count_idx
+    INTEGER(INTG) :: data_point_idx,ELEMENT_NUMBER,element_idx,count_idx,PROJECTION_NUMBER,global_count_idx
        
     IF(ASSOCIATED(MESH)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN 

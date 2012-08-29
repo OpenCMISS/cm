@@ -1145,8 +1145,9 @@ CONTAINS
                 DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                 IF(ASSOCIATED(DOMAIN)) THEN
                   DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
-                  CALL DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_DATA_POINT_NUMBER,USER_DATA_POINT_EXISTS, &
-                    & DOMAIN_LOCAL_DATA_POINT_NUMBER,GHOST_DATA_POINT,ERR,ERROR,*999)
+                  USER_DATA_POINT_EXISTS=.TRUE.
+!                  CALL DOMAIN_TOPOLOGY_DATA_POINT_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_DATA_POINT_NUMBER,USER_DATA_POINT_EXISTS, &
+!                    & DOMAIN_LOCAL_DATA_POINT_NUMBER,GHOST_DATA_POINT,ERR,ERROR,*999)
                   IF(USER_DATA_POINT_EXISTS) THEN
                     IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
                       LOCAL_DOF=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
@@ -3609,7 +3610,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP
+    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP,globalElementNumber
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION    
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -3694,10 +3695,11 @@ CONTAINS
               CASE(FIELD_DATA_POINT_BASED_INTERPOLATION) 
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=-1
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                  IF(DOMAIN%TOPOLOGY%DATA_POINTS%elementDataPoint(ne)%NUMBER_OF_PROJECTED_DATA> &
+                  globalElementNumber=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
+                  IF(DECOMPOSITION%TOPOLOGY%DATA_POINTS%numberOfElementDataPoints(globalElementNumber)> &
                       & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS) THEN
                     FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS= &
-                      & DOMAIN%TOPOLOGY%DATA_POINTS%elementDataPoint(ne)%NUMBER_OF_PROJECTED_DATA
+                      &  DECOMPOSITION%TOPOLOGY%DATA_POINTS%numberOfElementDataPoints(globalElementNumber)
                   ENDIF
                 ENDDO
               CASE DEFAULT
@@ -8909,7 +8911,7 @@ CONTAINS
                   !Looping through global elements and data points in the elements
                   variable_global_ny=VARIABLE_GLOBAL_DOFS_OFFSET
                   DO elementIdx=1,elementsMapping%NUMBER_OF_GLOBAL
-                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%elementDataPointsNumber(elementIdx)
+                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%numberOfelementDataPoints(elementIdx)
                       IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
                         variable_global_ny=variable_global_ny+1
                         CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_VARIABLE_DOFS_MAPPING% &
@@ -8959,7 +8961,7 @@ CONTAINS
                   !Looping through global elements and data points in the elements
                   variable_global_ny=VARIABLE_GLOBAL_DOFS_OFFSET
                   DO elementIdx=1,elementsMapping%NUMBER_OF_GLOBAL
-                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%elementDataPointsNumber(elementIdx)
+                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%numberOfelementDataPoints(elementIdx)
                       IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
                         variable_global_ny=variable_global_ny+1
                         NUMBER_OF_DOMAINS=elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%NUMBER_OF_DOMAINS
@@ -8986,7 +8988,7 @@ CONTAINS
                   !Handle local dofs domain mapping
                   dataPointNumber=0
                   DO elementIdx=start_idx,stop_idx
-                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%elementDataPointsNumber(elementIdx)
+                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%numberOfelementDataPoints(elementIdx)
                       variable_local_ny=variable_local_ny+1 !reinitialise for every field variable, field variable dof idx
                       data_point_nyy=data_point_nyy+1 !reinitialise for every field variable, field variable data point dof idx
                       dataPointNumber=dataPointNumber+1
