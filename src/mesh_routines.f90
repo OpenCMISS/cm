@@ -115,7 +115,7 @@ MODULE MESH_ROUTINES
   
   PUBLIC DECOMPOSITION_NUMBER_OF_DOMAINS_GET,DECOMPOSITION_NUMBER_OF_DOMAINS_SET
   
-  PUBLIC DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS
+  PUBLIC DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS,DecompositionTopology_DataPointCheckExists
   
   PUBLIC DECOMPOSITION_TYPE_GET,DECOMPOSITION_TYPE_SET
   
@@ -1230,6 +1230,56 @@ CONTAINS
     CALL EXITS("DecompositionTopology_DataPointsCalculate")
     RETURN 1
   END SUBROUTINE DecompositionTopology_DataPointsCalculate
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks that a user element number exists in a decomposition. 
+  SUBROUTINE DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber,userDataPointExists, &
+        & decompositionLocalDataPointNumber,ghostDataPoint,err,error,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology !<A pointer to the decomposition topology to check the data point exists on
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber !<The user data point number to check if it exists
+    LOGICAL, INTENT(OUT) :: userDataPointExists !<On exit, is .TRUE. if the data point user number exists in the decomposition topology, .FALSE. if not
+    INTEGER(INTG), INTENT(OUT) :: decompositionLocalDataPointNumber !<On exit, if the data point exists the local number corresponding to the user data point number. If the data point does not exist then local number will be 0.
+    LOGICAL, INTENT(OUT) :: ghostDataPoint !<On exit, is .TRUE. if the local data point (if it exists) is a ghost data point, .FALSE. if not.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(DecompositionDataType), POINTER :: decompositionData
+    TYPE(TREE_NODE_TYPE), POINTER :: treeNode
+    
+    CALL ENTERS("DecompositionTopology_DataPointCheckExists",ERR,error,*999)
+
+    userDataPointExists=.FALSE.
+    decompositionLocalDataPointNumber=0
+    ghostDataPoint=.FALSE.
+    IF(ASSOCIATED(decompositionTopology)) THEN
+      decompositionData=>decompositionTopology%dataPoints
+      IF(ASSOCIATED(decompositionData)) THEN
+        NULLIFY(treeNode)
+        CALL TREE_SEARCH(decompositionData%dataPointsTree,userDataPointNumber,treeNode,err,error,*999)
+        IF(ASSOCIATED(treeNode)) THEN
+          CALL TREE_NODE_VALUE_GET(decompositionData%dataPointsTree,treeNode,decompositionLocalDataPointNumber,err,error,*999)
+          userDataPointExists=.TRUE.
+          ghostDataPoint=decompositionLocalDataPointNumber>decompositionData%numberOfDataPoints
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Decomposition data point topology is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DecompositionTopology_DataPointCheckExists")
+    RETURN
+999 CALL ERRORS("DecompositionTopology_DataPointCheckExists",err,error)
+    CALL EXITS("DecompositionTopology_DataPointCheckExists")
+    RETURN 1
+    
+  END SUBROUTINE DecompositionTopology_DataPointCheckExists
   
   !
   !================================================================================================================================
@@ -4655,7 +4705,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: local_element,global_element,local_node,global_node,version_idx,derivative_idx,node_idx,dof_idx, &
       & component_idx
-    INTEGER(INTG) :: ne,nn,nkk,INSERT_STATUS,LOCAL_NUMBER
+    INTEGER(INTG) :: ne,nn,nkk,INSERT_STATUS
     LOGICAL :: FOUND
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
@@ -8077,7 +8127,6 @@ CONTAINS
         ENDDO !dataPointIdx
         !Allocate memory to store total data indices in ascending order and element map
         ALLOCATE(dataPointsTopology%dataPoints(dataPointsTopology%totalNumberOfProjectedData),STAT=ERR)
-        !Record the global number, user number and corresponding element for each data point
         !The global number for the data points will be looping through elements.
         countIdx=1  
         DO elementIdx=1,dataPointsTopology%numberOfElements
