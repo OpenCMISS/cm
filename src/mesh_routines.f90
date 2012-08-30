@@ -1101,7 +1101,7 @@ CONTAINS
         CALL DECOMPOSITION_TOPOLOGY_FACES_CALCULATE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       ENDIF
       !Default the first mesh topology to contain the data points
-      IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%DATA_POINTS%DATA_POINTS)) THEN
+      IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%dataPoints%dataPoints)) THEN
           CALL DecompositionTopology_DataPointsCalculate(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF   
     ELSE
@@ -1132,15 +1132,15 @@ CONTAINS
       & NUMBER_OF_LOCAL_DATA
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: decompositionElements
-    TYPE(DECOMPOSITION_DATA_TYPE), POINTER :: decompositionData
+    TYPE(decompositionDataType), POINTER :: decompositionData
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: elementsMapping
 
-    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: meshData
+    TYPE(MeshDataPointsType), POINTER :: meshData
 
     CALL ENTERS("DecompositionTopology_DataPointsCalculate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
-      decompositionData=>TOPOLOGY%DATA_POINTS
+      decompositionData=>TOPOLOGY%dataPoints
       IF(ASSOCIATED(decompositionData)) THEN
         decomposition=>decompositionData%DECOMPOSITION
         IF(ASSOCIATED(decomposition)) THEN
@@ -1149,7 +1149,7 @@ CONTAINS
            elementsMapping=>decomposition%DOMAIN(decomposition%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
            IF(ASSOCIATED(elementsMapping)) THEN
               !By default the data point topology is associated with the first mesh topology
-              meshData=>decomposition%MESH%TOPOLOGY(1)%PTR%DATA_POINTS
+              meshData=>decomposition%MESH%TOPOLOGY(1)%PTR%dataPoints
               IF(ASSOCIATED(meshData)) THEN
                 NUMBER_OF_COMPUTATIONAL_NODES=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
                 IF(ERR/=0) GOTO 999
@@ -1160,37 +1160,37 @@ CONTAINS
                 ALLOCATE(decompositionData%numberOfElementDataPoints(decompositionElements%NUMBER_OF_GLOBAL_ELEMENTS),STAT=ERR)
                 ALLOCATE(decompositionData%elementDataPoint(decompositionElements%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition element data points.",ERR,ERROR,*999)
-                CALL TREE_CREATE_START(decompositionData%DATA_POINTS_TREE,ERR,ERROR,*999)
-                CALL TREE_INSERT_TYPE_SET(decompositionData%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-                CALL TREE_CREATE_FINISH(decompositionData%DATA_POINTS_TREE,ERR,ERROR,*999)
-                decompositionData%numberOfGlobalDataPoints=meshData%TOTAL_NUMBER_OF_PROJECTED_DATA 
+                CALL TREE_CREATE_START(decompositionData%dataPointsTree,ERR,ERROR,*999)
+                CALL TREE_INSERT_TYPE_SET(decompositionData%dataPointsTree,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+                CALL TREE_CREATE_FINISH(decompositionData%dataPointsTree,ERR,ERROR,*999)
+                decompositionData%numberOfGlobalDataPoints=meshData%totalNumberOfProjectedData 
                 DO globalElement=1,decompositionElements%NUMBER_OF_GLOBAL_ELEMENTS
                   decompositionData%numberOfElementDataPoints(globalElement)= &
-                    & meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA
+                    & meshData%elementDataPoint(globalElement)%numberOfProjectedData
                 ENDDO !globalElement
                 localData=0;
                 DO localElement=1,decompositionElements%TOTAL_NUMBER_OF_ELEMENTS
                   globalElement=decompositionElements%ELEMENTS(localElement)%GLOBAL_NUMBER
-                  decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA= &
-                    & meshData%elementDataPoint(globalElement)%NUMBER_OF_PROJECTED_DATA
-                  decompositionData%elementDataPoint(localElement)%GLOBAL_ELEMENT_NUMBER=globalElement
+                  decompositionData%elementDataPoint(localElement)%numberOfProjectedData= &
+                    & meshData%elementDataPoint(globalElement)%numberOfProjectedData
+                  decompositionData%elementDataPoint(localElement)%globalElementNumber=globalElement
                   IF(localElement<elementsMapping%GHOST_START) THEN
                     decompositionData%numberOfDataPoints=decompositionData%numberOfDataPoints+ &
-                      & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
+                      & decompositionData%elementDataPoint(localElement)%numberOfProjectedData
                   ENDIF               
                   decompositionData%totalNumberOfDataPoints=decompositionData%totalNumberOfDataPoints+ &
-                    & decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
-                  ALLOCATE(decompositionData%elementDataPoint(localElement)%DATA_INDICES(decompositionData% &
-                    & elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-                  DO dataPointIdx=1,decompositionData%elementDataPoint(localElement)%NUMBER_OF_PROJECTED_DATA
-                    decompositionData%elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER= &
-                      & meshData%elementDataPoint(globalElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER
-                    decompositionData%elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%GLOBAL_NUMBER= &
-                      & meshData%elementDataPoint(globalElement)%DATA_INDICES(dataPointIdx)%GLOBAL_NUMBER
+                    & decompositionData%elementDataPoint(localElement)%numberOfProjectedData
+                  ALLOCATE(decompositionData%elementDataPoint(localElement)%dataIndices(decompositionData% &
+                    & elementDataPoint(localElement)%numberOfProjectedData),STAT=ERR)
+                  DO dataPointIdx=1,decompositionData%elementDataPoint(localElement)%numberOfProjectedData
+                    decompositionData%elementDataPoint(localElement)%dataIndices(dataPointIdx)%userNumber= &
+                      & meshData%elementDataPoint(globalElement)%dataIndices(dataPointIdx)%userNumber
+                    decompositionData%elementDataPoint(localElement)%dataIndices(dataPointIdx)%globalNumber= &
+                      & meshData%elementDataPoint(globalElement)%dataIndices(dataPointIdx)%globalNumber
                     localData=localData+1
-                    decompositionData%elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%LOCAL_NUMBER=localData
-                    CALL TREE_ITEM_INSERT(decompositionData%DATA_POINTS_TREE,decompositionData% &
-                      & elementDataPoint(localElement)%DATA_INDICES(dataPointIdx)%USER_NUMBER,localData, &
+                    decompositionData%elementDataPoint(localElement)%dataIndices(dataPointIdx)%localNumber=localData
+                    CALL TREE_ITEM_INSERT(decompositionData%dataPointsTree,decompositionData% &
+                      & elementDataPoint(localElement)%dataIndices(dataPointIdx)%userNumber,localData, &
                       & INSERT_STATUS,ERR,ERROR,*999)
                   ENDDO !dataPointIdx
                 ENDDO !localElement   
@@ -1936,7 +1936,7 @@ CONTAINS
         NULLIFY(DECOMPOSITION%TOPOLOGY%ELEMENTS)
         NULLIFY(DECOMPOSITION%TOPOLOGY%LINES)
         NULLIFY(DECOMPOSITION%TOPOLOGY%FACES)
-        NULLIFY(DECOMPOSITION%TOPOLOGY%DATA_POINTS)
+        NULLIFY(DECOMPOSITION%TOPOLOGY%dataPoints)
         !Initialise the topology components
         CALL DECOMPOSITION_TOPOLOGY_ELEMENTS_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         IF(DECOMPOSITION%CALCULATE_LINES) THEN !Default is currently true
@@ -1946,7 +1946,7 @@ CONTAINS
           CALL DECOMPOSITION_TOPOLOGY_FACES_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF      
         !Default the first mesh topology to contain the data points
-        IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%DATA_POINTS%DATA_POINTS)) THEN
+        IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%dataPoints%dataPoints)) THEN
           CALL DECOMPOSITION_TOPOLOGY_DATA_POINTS_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF   
       ENDIF
@@ -2592,16 +2592,16 @@ CONTAINS
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_DATA_POINTS_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
-      IF(ASSOCIATED(TOPOLOGY%DATA_POINTS)) THEN
+      IF(ASSOCIATED(TOPOLOGY%dataPoints)) THEN
         CALL FLAG_ERROR("Decomposition already has topology data points associated.",ERR,ERROR,*999)
       ELSE
-        ALLOCATE(TOPOLOGY%DATA_POINTS,STAT=ERR)
+        ALLOCATE(TOPOLOGY%dataPoints,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology data points.",ERR,ERROR,*999)
-        TOPOLOGY%DATA_POINTS%numberOfDataPoints=0
-        TOPOLOGY%DATA_POINTS%totalNumberOfDataPoints=0
-        TOPOLOGY%DATA_POINTS%numberOfGlobalDataPoints=0
-        NULLIFY(TOPOLOGY%DATA_POINTS%DATA_POINTS_TREE)
-        TOPOLOGY%DATA_POINTS%DECOMPOSITION=>TOPOLOGY%DECOMPOSITION      
+        TOPOLOGY%dataPoints%numberOfDataPoints=0
+        TOPOLOGY%dataPoints%totalNumberOfDataPoints=0
+        TOPOLOGY%dataPoints%numberOfGlobalDataPoints=0
+        NULLIFY(TOPOLOGY%dataPoints%dataPointsTree)
+        TOPOLOGY%dataPoints%DECOMPOSITION=>TOPOLOGY%DECOMPOSITION      
       ENDIF
     ELSE
       CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
@@ -6353,7 +6353,7 @@ CONTAINS
                 NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%ELEMENTS)
                 NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%NODES)
                 NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%DOFS)
-                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%DATA_POINTS)
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%dataPoints)
                 !Initialise the topology components
                 CALL MESH_TOPOLOGY_ELEMENTS_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
                 CALL MESH_TOPOLOGY_NODES_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
@@ -7837,14 +7837,14 @@ CONTAINS
     CALL ENTERS("MESH_TOPOLOGY_DATA_POINTS_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
-      IF(ASSOCIATED(TOPOLOGY%DATA_POINTS)) THEN
+      IF(ASSOCIATED(TOPOLOGY%dataPoints)) THEN
         CALL FLAG_ERROR("Mesh already has topology data points associated",ERR,ERROR,*999)
       ELSE
-        ALLOCATE(TOPOLOGY%DATA_POINTS,STAT=ERR)
+        ALLOCATE(TOPOLOGY%dataPoints,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology data points",ERR,ERROR,*999)
-        TOPOLOGY%DATA_POINTS%TOTAL_NUMBER_OF_PROJECTED_DATA=0
-        TOPOLOGY%DATA_POINTS%NUMBER_OF_ELEMENTS=0
-        TOPOLOGY%DATA_POINTS%MESH=>TOPOLOGY%MESH
+        TOPOLOGY%dataPoints%totalNumberOfProjectedData=0
+        TOPOLOGY%dataPoints%numberOfElements=0
+        TOPOLOGY%dataPoints%mesh=>TOPOLOGY%MESH
       ENDIF
     ELSE
       CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
@@ -8007,90 +8007,90 @@ CONTAINS
   !
 
   !>Calculates the data points in the given mesh topology.
-  SUBROUTINE MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(MESH,DATA_PROJECTION,ERR,ERROR,*)
+  SUBROUTINE MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(MESH,dataProjection,ERR,ERROR,*)
   
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh topology to calcualte the data projection for
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection
+    TYPE(MESH_TYPE), POINTER :: mesh !<A pointer to the mesh topology to calcualte the data projection for
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points
-    TYPE(MESH_DATA_POINTS_TYPE), POINTER :: DATA_POINTS_TOPOLOGY
-    TYPE(DATA_PROJECTION_RESULT_TYPE), POINTER :: DATA_PROJECTION_RESULT
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    INTEGER(INTG) :: data_point_idx,ELEMENT_NUMBER,element_idx,count_idx,PROJECTION_NUMBER,global_count_idx
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints !<A pointer to the data points
+    TYPE(MeshDataPointsType), POINTER :: dataPointsTopology
+    TYPE(DATA_PROJECTION_RESULT_TYPE), POINTER :: dataProjectionResult
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: elements
+    INTEGER(INTG) :: dataPointIdx,elementIdx,countIdx,projectionNumber,globalCountIdx,elementNumber
        
-    IF(ASSOCIATED(MESH)) THEN
-      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN 
-        DATA_POINTS=>DATA_PROJECTION%DATA_POINTS
+    IF(ASSOCIATED(mesh)) THEN
+      IF(dataProjection%DATA_PROJECTION_FINISHED) THEN 
+        dataPoints=>dataProjection%DATA_POINTS
         !Default the first mesh topology to contain data points 
-        DATA_POINTS_TOPOLOGY=>MESH%TOPOLOGY(1)%PTR%DATA_POINTS
+        dataPointsTopology=>mesh%TOPOLOGY(1)%PTR%dataPoints
         !Extract the global number of the data projection 
-        PROJECTION_NUMBER=DATA_PROJECTION%GLOBAL_NUMBER
+        projectionNumber=dataProjection%GLOBAL_NUMBER
         !Hard code the first mesh component since element topology is the same for all mesh components
-        ELEMENTS=>MESH%TOPOLOGY(1)%PTR%ELEMENTS
-        ALLOCATE(DATA_POINTS_TOPOLOGY%elementDataPoint(ELEMENTS%NUMBER_OF_ELEMENTS),STAT=ERR)     
-        DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS=ELEMENTS%NUMBER_OF_ELEMENTS
-        DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-          DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%ELEMENT_NUMBER=ELEMENTS%ELEMENTS(element_idx)%GLOBAL_NUMBER
-          DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA=0
+        elements=>mesh%TOPOLOGY(1)%PTR%ELEMENTS
+        ALLOCATE(dataPointsTopology%elementDataPoint(elements%NUMBER_OF_ELEMENTS),STAT=ERR)     
+        dataPointsTopology%numberOfElements=elements%NUMBER_OF_ELEMENTS
+        DO elementIdx=1,dataPointsTopology%numberOfElements
+          dataPointsTopology%elementDataPoint(elementIdx)%elementNumber=elements%ELEMENTS(elementIdx)%GLOBAL_NUMBER
+          dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData=0
         ENDDO        
         !Calculate number of projected data points on an element
-        DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
-          DATA_PROJECTION_RESULT=>DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)
-          ELEMENT_NUMBER=DATA_PROJECTION_RESULT%ELEMENT_NUMBER
-          DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-            IF(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%ELEMENT_NUMBER==ELEMENT_NUMBER) THEN
-              DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA= &
-                & DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA+1;
+        DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
+          dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
+          elementNumber=dataProjectionResult%ELEMENT_NUMBER
+          DO elementIdx=1,dataPointsTopology%numberOfElements
+            IF(dataPointsTopology%elementDataPoint(elementIdx)%elementNumber==elementNumber) THEN
+              dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData= &
+                & dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData+1;
             ENDIF
-          ENDDO !element_idx
+          ENDDO !elementIdx
         ENDDO       
         !Allocate memory to store data indices and initialise them to be zero   
-        DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-          ALLOCATE(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(DATA_POINTS_TOPOLOGY% &
-            & elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA),STAT=ERR)
-          DO count_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA
-            DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=0
-            DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=0
+        DO elementIdx=1,dataPointsTopology%numberOfElements
+          ALLOCATE(dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(dataPointsTopology% &
+            & elementDataPoint(elementIdx)%numberOfProjectedData),STAT=ERR)
+          DO countIdx=1,dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData
+            dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%userNumber=0
+            dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%globalNumber=0
           ENDDO
         ENDDO     
         !Record the indices of the data that projected on the elements 
-        global_count_idx=0
-        DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS 
-          DATA_PROJECTION_RESULT=>DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)
-          ELEMENT_NUMBER=DATA_PROJECTION_RESULT%ELEMENT_NUMBER
-          DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-            count_idx=1         
-            IF(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%ELEMENT_NUMBER==ELEMENT_NUMBER) THEN
-              global_count_idx=global_count_idx+1
+        globalCountIdx=0
+        DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS 
+          dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
+          elementNumber=dataProjectionResult%ELEMENT_NUMBER
+          DO elementIdx=1,dataPointsTopology%numberOfElements
+            countIdx=1         
+            IF(dataPointsTopology%elementDataPoint(elementIdx)%elementNumber==elementNumber) THEN
+              globalCountIdx=globalCountIdx+1
               !Find the next data point index in this element
-              DO WHILE(DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER/=0)
-                count_idx=count_idx+1
+              DO WHILE(dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%globalNumber/=0)
+                countIdx=countIdx+1
               ENDDO
-              DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%USER_NUMBER=data_point_idx
-              DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%DATA_INDICES(count_idx)%GLOBAL_NUMBER=data_point_idx!global_count_idx (used this if only projected data are taken into account)
-              DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA=DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA+1
+              dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%userNumber=dataPointIdx
+              dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%globalNumber=dataPointIdx!globalCountIdx (used this if only projected data are taken into account)
+              dataPointsTopology%totalNumberOfProjectedData=dataPointsTopology%totalNumberOfProjectedData+1
             ENDIF             
-          ENDDO !element_idx
-        ENDDO !data_point_idx
+          ENDDO !elementIdx
+        ENDDO !dataPointIdx
         !Allocate memory to store total data indices in ascending order and element map
-        ALLOCATE(DATA_POINTS_TOPOLOGY%DATA_POINTS(DATA_POINTS_TOPOLOGY%TOTAL_NUMBER_OF_PROJECTED_DATA),STAT=ERR)
+        ALLOCATE(dataPointsTopology%dataPoints(dataPointsTopology%totalNumberOfProjectedData),STAT=ERR)
         !Record the global number, user number and corresponding element for each data point
         !The global number for the data points will be looping through elements.
-        count_idx=1  
-        DO element_idx=1,DATA_POINTS_TOPOLOGY%NUMBER_OF_ELEMENTS
-          DO data_point_idx=1,DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)%NUMBER_OF_PROJECTED_DATA
-            DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%USER_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)% &
-              & DATA_INDICES(data_point_idx)%USER_NUMBER
-             DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%GLOBAL_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)% &
-              & DATA_INDICES(data_point_idx)%GLOBAL_NUMBER
-             DATA_POINTS_TOPOLOGY%DATA_POINTS(count_idx)%ELEMENT_NUMBER=DATA_POINTS_TOPOLOGY%elementDataPoint(element_idx)% &
-               & ELEMENT_NUMBER
-             count_idx=count_idx+1
-          ENDDO !data_point_idx
-        ENDDO !element_idx                      
+        countIdx=1  
+        DO elementIdx=1,dataPointsTopology%numberOfElements
+          DO dataPointIdx=1,dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData
+            dataPointsTopology%dataPoints(countIdx)%userNumber=dataPointsTopology%elementDataPoint(elementIdx)% &
+              & dataIndices(dataPointIdx)%userNumber
+             dataPointsTopology%dataPoints(countIdx)%globalNumber=dataPointsTopology%elementDataPoint(elementIdx)% &
+              & dataIndices(dataPointIdx)%globalNumber
+             dataPointsTopology%dataPoints(countIdx)%elementNumber=dataPointsTopology%elementDataPoint(elementIdx)% &
+               & elementNumber
+             countIdx=countIdx+1
+          ENDDO !dataPointIdx
+        ENDDO !elementIdx                      
       ELSE
         CALL FLAG_ERROR("Data projection is not finished.",ERR,ERROR,*999)
       ENDIF     
@@ -8171,7 +8171,7 @@ CONTAINS
           NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS)
           NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%NODES)
           NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%DOFS)
-          NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%DATA_POINTS)
+          NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%dataPoints)
           !Initialise the topology components
           CALL MESH_TOPOLOGY_ELEMENTS_INITIALISE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
           CALL MESH_TOPOLOGY_NODES_INITIALISE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)

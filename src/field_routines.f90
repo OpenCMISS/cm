@@ -2588,12 +2588,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP
+    INTEGER(INTG) :: elementIdx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP, &
+      & dataPointIdx,localDataPointNumber
     REAL(DP), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DecompositionDataType), POINTER :: decompositionData
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2631,11 +2633,11 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                           DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                           IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
-                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                            DO elementIdx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                               field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                & ELEMENT_PARAM2DOF_MAP%ELEMENTS(element_idx)
+                                & ELEMENT_PARAM2DOF_MAP%ELEMENTS(elementIdx)
                               FIELD_PARAMETERS(field_dof)=VALUE
-                            ENDDO !element_idx
+                            ENDDO !elementIdx
                           ELSE
                             CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -2710,16 +2712,47 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                           DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                           IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN 
-                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)=variable_local_ny
+                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,elementIdx)=variable_local_ny
                             MAX_NGP=SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                               & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
-                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                            DO elementIdx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                               DO gauss_point_idx=1,MAX_NGP ! could be just element's gauss_point_idx
                                 field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)
+                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,elementIdx)
                                 FIELD_PARAMETERS(field_dof)=VALUE
                               ENDDO !gauss_point_idx
-                            ENDDO !element_idx
+                            ENDDO !elementIdx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      COMPONENT_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      IF(ASSOCIATED(COMPONENT_DOMAIN)) THEN
+                        DOMAIN_TOPOLOGY=>COMPONENT_DOMAIN%TOPOLOGY
+                        IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                          DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                            decompositionData=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN%DECOMPOSITION%TOPOLOGY%dataPoints
+                            IF(ASSOCIATED(decompositionData)) THEN
+                              DO elementIdx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                DO dataPointIdx=1,decompositionData%elementDataPoint(elementIdx)%numberOfProjectedData
+                                  localDataPointNumber=decompositionData%elementDataPoint(elementIdx)%dataIndices(dataPointIdx)% &
+                                    & localNumber
+                                  field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                    & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(localDataPointNumber)
+                                  FIELD_PARAMETERS(field_dof)=VALUE
+                                ENDDO !dataPointIdx                             
+                              ENDDO !elementIdx
+                            ELSE
+                              CALL FLAG_ERROR("Decomposition data point topology is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                            
                           ELSE
                             CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -3696,10 +3729,10 @@ CONTAINS
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=-1
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                   globalElementNumber=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
-                  IF(DECOMPOSITION%TOPOLOGY%DATA_POINTS%numberOfElementDataPoints(globalElementNumber)> &
+                  IF(DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)> &
                       & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS) THEN
                     FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS= &
-                      &  DECOMPOSITION%TOPOLOGY%DATA_POINTS%numberOfElementDataPoints(globalElementNumber)
+                      &  DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)
                   ENDIF
                 ENDDO
               CASE DEFAULT
@@ -8359,7 +8392,7 @@ CONTAINS
       & Gauss_point_nyy,version_idx,derivative_idx,ny,NUMBER_OF_COMPUTATIONAL_NODES, &
       & my_computational_node_number,domain_type_stop,start_idx,stop_idx,element_idx,node_idx,NUMBER_OF_LOCAL, NGP, MAX_NGP, &
       & gp,MPI_IERROR,NUMBER_OF_GLOBAL_DOFS,gauss_point_idx,NUMBER_OF_DATA_POINT_DOFS,data_point_nyy,dataPointIdx,elementIdx, &
-      & GLOBAL_ELEMENT_NUMBER,element_idx_loop,domain_element_idx,DATA_COUNT,dataPointNumber
+      & GLOBAL_ELEMENT_NUMBER,element_idx_loop,domain_element_idx,DATA_COUNT,localDataNumber,globalElementNumber
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_LOCAL_DOFS_OFFSETS(:),VARIABLE_GHOST_DOFS_OFFSETS(:)
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
@@ -8431,11 +8464,11 @@ CONTAINS
           CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
             ! Data points do not have domain topology or mappings, since they're the same across all mesh components
             decompositionTopology=>FIELD%DECOMPOSITION%TOPOLOGY
-            NUMBER_OF_DATA_POINT_DOFS=NUMBER_OF_DATA_POINT_DOFS+decompositionTopology%DATA_POINTS%totalNumberOfDataPoints
-            NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+decompositionTopology%DATA_POINTS%numberOfDataPoints
+            NUMBER_OF_DATA_POINT_DOFS=NUMBER_OF_DATA_POINT_DOFS+decompositionTopology%dataPoints%totalNumberOfDataPoints
+            NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+decompositionTopology%dataPoints%numberOfDataPoints
             TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+decompositionTopology% &
-              & DATA_POINTS%totalNumberOfDataPoints  
-            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+decompositionTopology%DATA_POINTS% &
+              & dataPoints%totalNumberOfDataPoints  
+            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+decompositionTopology%dataPoints% &
               & numberOfGlobalDataPoints
           CASE DEFAULT
             LOCAL_ERROR="The interpolation type of "// &
@@ -8903,15 +8936,15 @@ CONTAINS
                   !Allocate parameter to dof map for this field variable component
                   !including both local and ghost data points on this computational domain.
                   ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(decompositionTopology% &
-                    & DATA_POINTS%totalNumberOfDataPoints),STAT=ERR)
+                    & dataPoints%totalNumberOfDataPoints),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field component parameter to dof data point map.",ERR,ERROR,*999)
                   ! Number of data points
                   FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%NUMBER_OF_DATA_POINT_PARAMETERS= &
-                    & decompositionTopology%DATA_POINTS%totalNumberOfDataPoints 
+                    & decompositionTopology%dataPoints%totalNumberOfDataPoints 
                   !Looping through global elements and data points in the elements
                   variable_global_ny=VARIABLE_GLOBAL_DOFS_OFFSET
                   DO elementIdx=1,elementsMapping%NUMBER_OF_GLOBAL
-                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%numberOfelementDataPoints(elementIdx)
+                    DO dataPointIdx=1,decompositionTopology%dataPoints%numberOfelementDataPoints(elementIdx)
                       IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
                         variable_global_ny=variable_global_ny+1
                         CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_VARIABLE_DOFS_MAPPING% &
@@ -8947,21 +8980,21 @@ CONTAINS
                   stop_idx=elementsMapping%NUMBER_OF_LOCAL !the end idx for local elements
                   !Adjust the local and ghost offsets
                   IF(component_idx>1) THEN
-                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+decompositionTopology%DATA_POINTS%numberOfDomainLocal
+                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+decompositionTopology%dataPoints%numberOfDomainLocal
                   ENDIF
                   VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+ &
-                    & decompositionTopology%DATA_POINTS%numberOfDomainLocal+decompositionTopology%DATA_POINTS%numberOfDomainGhost
+                    & decompositionTopology%dataPoints%numberOfDomainLocal+decompositionTopology%dataPoints%numberOfDomainGhost
                 ELSE  ! domain_type_idx == 2 -> ghosts
                   !Handle global dofs domain mapping. For the second pass adjust the local dof numbers to ensure that the ghost
                   !dofs are at the end of the local dofs.
                   !Adjust the ghost offsets
                   IF(component_idx>1) THEN
-                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-decompositionTopology%DATA_POINTS%numberOfDomainLocal
+                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-decompositionTopology%dataPoints%numberOfDomainLocal
                   ENDIF
                   !Looping through global elements and data points in the elements
                   variable_global_ny=VARIABLE_GLOBAL_DOFS_OFFSET
                   DO elementIdx=1,elementsMapping%NUMBER_OF_GLOBAL
-                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%numberOfelementDataPoints(elementIdx)
+                    DO dataPointIdx=1,decompositionTopology%dataPoints%numberOfelementDataPoints(elementIdx)
                       IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
                         variable_global_ny=variable_global_ny+1
                         NUMBER_OF_DOMAINS=elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%NUMBER_OF_DOMAINS
@@ -8981,31 +9014,32 @@ CONTAINS
                       ENDIF
                     ENDDO !dataPointIdx
                   ENDDO !elementIdx 
+                  !Adjust the local offsets
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-decompositionTopology%dataPoints%numberOfDomainGhost
                   start_idx=elementsMapping%NUMBER_OF_LOCAL+1 !The start index for ghost elements
                   stop_idx=elementsMapping%TOTAL_NUMBER_OF_LOCAL !The end index for local elements
-                  !Adjust the local offsets
-                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-decompositionTopology%DATA_POINTS%numberOfDomainGhost
-                  !Handle local dofs domain mapping
-                  dataPointNumber=0
-                  DO elementIdx=start_idx,stop_idx
-                    DO dataPointIdx=1,decompositionTopology%DATA_POINTS%numberOfelementDataPoints(elementIdx)
-                      variable_local_ny=variable_local_ny+1 !reinitialise for every field variable, field variable dof idx
-                      data_point_nyy=data_point_nyy+1 !reinitialise for every field variable, field variable data point dof idx
-                      dataPointNumber=dataPointNumber+1
-                      !Setup dof to parameter map
-                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_DATA_POINT_DOF_TYPE
-                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=data_point_nyy
-                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=dataPointNumber
-                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=elementIdx
-                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,data_point_nyy)=component_idx
-                      !Setup reverse parameter to dof map
-                      FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointIdx)=variable_local_ny
-                    ENDDO !dataPointIdx
-                  ENDDO !elementIdx 
                 ENDIF 
                 !Adjust the global offset
-                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+decompositionTopology%DATA_POINTS%&
-                  & numberOfGlobalDataPoints           
+                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+decompositionTopology%dataPoints%&
+                  & numberOfGlobalDataPoints  
+                !Handle local dofs domain mapping
+                DO elementIdx=start_idx,stop_idx
+                  globalElementNumber=elementsMapping%LOCAL_TO_GLOBAL_MAP(elementIdx)
+                  DO dataPointIdx=1,decompositionTopology%dataPoints%numberOfelementDataPoints(globalElementNumber)
+                    variable_local_ny=variable_local_ny+1 !reinitialise for every field variable, field variable dof idx
+                    data_point_nyy=data_point_nyy+1 !reinitialise for every field variable, field variable data point dof idx
+                    localDataNumber=decompositionTopology%dataPoints%elementDataPoint(elementIdx)%dataIndices(dataPointIdx)% &
+                      & localNumber
+                    !Setup dof to parameter map
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_DATA_POINT_DOF_TYPE
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=data_point_nyy
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=localDataNumber
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=elementIdx
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,data_point_nyy)=component_idx
+                    !Setup reverse parameter to dof map
+                    FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(localDataNumber)=variable_local_ny
+                  ENDDO !dataPointIdx
+                ENDDO !elementIdx          
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
