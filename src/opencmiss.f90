@@ -37456,6 +37456,10 @@ CONTAINS
 
   END SUBROUTINE CMISSMesh_NumberOfElementsSetObj
   
+  !
+  !================================================================================================================================
+  !
+  
   !>Sets whether faces should be calculated
   SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber(regionUserNumber,MeshUserNumber, &
       & DataProjection,Err)
@@ -37479,7 +37483,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
       IF(ASSOCIATED(MESH)) THEN
-        CALL MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+        CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))//"."
@@ -37531,7 +37535,7 @@ CONTAINS
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL MESH_USER_NUMBER_FIND(MeshUserNumber,INTERFACE,MESH,Err,ERROR,*999)
         IF(ASSOCIATED(MESH)) THEN
-          CALL MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
+          CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
         ELSE
           LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
             & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber, &
@@ -37574,7 +37578,7 @@ CONTAINS
   
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
     
-    CALL MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+    CALL Mesh_TopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
  
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
     RETURN

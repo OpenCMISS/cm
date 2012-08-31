@@ -151,7 +151,7 @@ MODULE MESH_ROUTINES
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET
   
-  PUBLIC MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION
+  PUBLIC Mesh_TopologyDataPointsCalculateProjection
 
   PUBLIC MESH_USER_NUMBER_FIND, MESH_USER_NUMBER_TO_MESH
   
@@ -1132,7 +1132,7 @@ CONTAINS
       & NUMBER_OF_LOCAL_DATA
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: decompositionElements
-    TYPE(decompositionDataType), POINTER :: decompositionData
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: elementsMapping
 
     TYPE(MeshDataPointsType), POINTER :: meshData
@@ -1248,7 +1248,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(DecompositionDataType), POINTER :: decompositionData
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
     TYPE(TREE_NODE_TYPE), POINTER :: treeNode
     
     CALL ENTERS("DecompositionTopology_DataPointCheckExists",ERR,error,*999)
@@ -7893,7 +7893,6 @@ CONTAINS
         ALLOCATE(TOPOLOGY%dataPoints,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology data points",ERR,ERROR,*999)
         TOPOLOGY%dataPoints%totalNumberOfProjectedData=0
-        TOPOLOGY%dataPoints%numberOfElements=0
         TOPOLOGY%dataPoints%mesh=>TOPOLOGY%MESH
       ENDIF
     ELSE
@@ -8057,7 +8056,7 @@ CONTAINS
   !
 
   !>Calculates the data points in the given mesh topology.
-  SUBROUTINE MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION(MESH,dataProjection,ERR,ERROR,*)
+  SUBROUTINE Mesh_TopologyDataPointsCalculateProjection(mesh,dataProjection,err,error,*)
   
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: mesh !<A pointer to the mesh topology to calcualte the data projection for
@@ -8081,8 +8080,7 @@ CONTAINS
         !Hard code the first mesh component since element topology is the same for all mesh components
         elements=>mesh%TOPOLOGY(1)%PTR%ELEMENTS
         ALLOCATE(dataPointsTopology%elementDataPoint(elements%NUMBER_OF_ELEMENTS),STAT=ERR)     
-        dataPointsTopology%numberOfElements=elements%NUMBER_OF_ELEMENTS
-        DO elementIdx=1,dataPointsTopology%numberOfElements
+        DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           dataPointsTopology%elementDataPoint(elementIdx)%elementNumber=elements%ELEMENTS(elementIdx)%GLOBAL_NUMBER
           dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData=0
         ENDDO        
@@ -8090,7 +8088,7 @@ CONTAINS
         DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
           dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
           elementNumber=dataProjectionResult%ELEMENT_NUMBER
-          DO elementIdx=1,dataPointsTopology%numberOfElements
+          DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
             IF(dataPointsTopology%elementDataPoint(elementIdx)%elementNumber==elementNumber) THEN
               dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData= &
                 & dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData+1;
@@ -8098,7 +8096,7 @@ CONTAINS
           ENDDO !elementIdx
         ENDDO       
         !Allocate memory to store data indices and initialise them to be zero   
-        DO elementIdx=1,dataPointsTopology%numberOfElements
+        DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           ALLOCATE(dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(dataPointsTopology% &
             & elementDataPoint(elementIdx)%numberOfProjectedData),STAT=ERR)
           DO countIdx=1,dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData
@@ -8111,7 +8109,7 @@ CONTAINS
         DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS 
           dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
           elementNumber=dataProjectionResult%ELEMENT_NUMBER
-          DO elementIdx=1,dataPointsTopology%numberOfElements
+          DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
             countIdx=1         
             IF(dataPointsTopology%elementDataPoint(elementIdx)%elementNumber==elementNumber) THEN
               globalCountIdx=globalCountIdx+1
@@ -8129,7 +8127,7 @@ CONTAINS
         ALLOCATE(dataPointsTopology%dataPoints(dataPointsTopology%totalNumberOfProjectedData),STAT=ERR)
         !The global number for the data points will be looping through elements.
         countIdx=1  
-        DO elementIdx=1,dataPointsTopology%numberOfElements
+        DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           DO dataPointIdx=1,dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData
             dataPointsTopology%dataPoints(countIdx)%userNumber=dataPointsTopology%elementDataPoint(elementIdx)% &
               & dataIndices(dataPointIdx)%userNumber
@@ -8141,18 +8139,18 @@ CONTAINS
           ENDDO !dataPointIdx
         ENDDO !elementIdx                      
       ELSE
-        CALL FLAG_ERROR("Data projection is not finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data projection is not finished.",err,error,*999)
       ENDIF     
     ELSE
-      CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh is not associated.",err,error,*999)
     ENDIF
     
-  CALL EXITS("MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION")
+  CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
     RETURN
-999 CALL ERRORS("MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION",ERR,ERROR)
-    CALL EXITS("MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION")
+999 CALL ERRORS("Mesh_TopologyDataPointsCalculateProjection",err,error)
+    CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
     RETURN 1
-  END SUBROUTINE MESH_TOPOLOGY_DATA_POINTS_CALCULATE_PROJECTION
+  END SUBROUTINE Mesh_TopologyDataPointsCalculateProjection
 
   !
   !================================================================================================================================

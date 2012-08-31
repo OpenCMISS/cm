@@ -431,17 +431,17 @@ MODULE TYPES
     TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the mesh global number to the region nodes global number.
   END TYPE MESH_NODES_TYPE
   
-  TYPE meshElementDataPointType
+  TYPE MeshElementDataPointType
     INTEGER(INTG) :: userNumber !<User number of the projected data point
     INTEGER(INTG) :: globalNumber !<Global number of the data point, sequence is according to element number sequence  
-  END TYPE meshElementDataPointType
+  END TYPE MeshElementDataPointType
   
   !>Contains information on the projected data points on an element
-  TYPE meshElementDataPointsType
-    INTEGER(INTG) :: NumberOfProjectedData !<Number of projected data on this element
+  TYPE MeshElementDataPointsType
+    INTEGER(INTG) :: numberOfProjectedData !<Number of projected data on this element
     INTEGER(INTG) :: elementNumber !<The mesh global element number 
-    TYPE(meshElementDataPointType), ALLOCATABLE :: dataIndices(:) !<The global and user number of this data point
-  END TYPE meshElementDataPointsType
+    TYPE(MeshElementDataPointType), ALLOCATABLE :: dataIndices(:) !<dataIndices(elementDatePointIdx). The global and user number of this data point
+  END TYPE MeshElementDataPointsType
   
   !>Contains information of the projected data point 
   TYPE MeshDataPointType 
@@ -454,9 +454,8 @@ MODULE TYPES
   TYPE MeshDataPointsType
     TYPE(MESH_TYPE), POINTER :: mesh !<The pointer to the mesh for this data points information.
     INTEGER(INTG) :: totalNumberOfProjectedData !<Number of projected data on this element
-    INTEGER(INTG) :: numberOfElements !<Number of element in the mesh where data points are attached to.
-    TYPE(MeshDataPointType), ALLOCATABLE :: dataPoints(:) !<Information of the projected data points
-    TYPE(meshElementDataPointsType), ALLOCATABLE :: elementDataPoint(:) !<Information of the projected data on the elements 
+    TYPE(MeshDataPointType), ALLOCATABLE :: dataPoints(:) !<dataPoints(dataPointIdx). Information of the projected data points
+    TYPE(MeshElementDataPointsType), ALLOCATABLE :: elementDataPoint(:) !<elementDataPoint(elementIdx). Information of the projected data on the elements 
   END TYPE MeshDataPointsType
 
   !>Contains information on the (global) topology of a mesh.
@@ -1029,21 +1028,21 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE DecompositionElementDataPointsType
     INTEGER(INTG) :: numberOfProjectedData !<Number of projected data on this element
     INTEGER(INTG) :: globalElementNumber !<The global number of this element (element index is local number and element number is global number)
-    TYPE(DecompositionElementDataPointType), ALLOCATABLE :: dataIndices(:) !<The global,local and user number of this data point
+    TYPE(DecompositionElementDataPointType), ALLOCATABLE :: dataIndices(:) !<dataIndices(dataPointIdx). The global,local and user number of this data point
   END TYPE DecompositionElementDataPointsType
   
   !>Contains data point decompostion topology   
-  TYPE DecompositionDataType
+  TYPE DecompositionDataPointsType
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this data points topology information.
     INTEGER(INTG) :: numberOfDataPoints !<The number of data points excluding ghost data points in this decomposition topology.
     INTEGER(INTG) :: totalNumberOfDataPoints !<Number of projected data in this decomposition topology.
     INTEGER(INTG) :: numberOfGlobalDataPoints !<Number of global projected data 
-    INTEGER(INTG), ALLOCATABLE :: numberOfDomainLocal(:) !<Number of local data points in each computational domain 
-    INTEGER(INTG), ALLOCATABLE :: numberOfDomainGhost(:) !<Number of ghost data points in each computational domain 
-    INTEGER(INTG), ALLOCATABLE :: numberOfElementDataPoints(:) !<Number of data points in each global element
-    TYPE(DecompositionElementDataPointsType), ALLOCATABLE :: elementDataPoint(:) !<Information of the projected data on the elements for decomposition of data points
+    INTEGER(INTG), ALLOCATABLE :: numberOfDomainLocal(:) !<numberOfDomainLocal(compDomainIdx). Number of local data points in each computational domain 
+    INTEGER(INTG), ALLOCATABLE :: numberOfDomainGhost(:) !<numberOfDomainGhost(compDomainIdx). Number of ghost data points in each computational domain 
+    INTEGER(INTG), ALLOCATABLE :: numberOfElementDataPoints(:) !<numberOfElementDataPoints(elementIdx). Number of data points in each global element
+    TYPE(DecompositionElementDataPointsType), ALLOCATABLE :: elementDataPoint(:) !<elementDataPoint(elementIdx). Information of the projected data on the elements for decomposition of data points
     TYPE(TREE_TYPE), POINTER :: dataPointsTree !<A tree mapping the domain local number to the region data point user number.
-  END TYPE DecompositionDataType
+  END TYPE DecompositionDataPointsType
 
    !>Contains the topology information for a decomposition
   TYPE DECOMPOSITION_TOPOLOGY_TYPE
@@ -1051,7 +1050,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
     TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
     TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
-    TYPE(DecompositionDataType), POINTER :: dataPoints !<The pointer to the topology information for the data of this decomposition.
+    TYPE(DecompositionDataPointsType), POINTER :: dataPoints !<The pointer to the topology information for the data of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
   !>Contains information on the mesh decomposition. \see OPENCMISS::CMISSDecompositionType
