@@ -24854,7 +24854,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) ::  CHILD_COMPONENT  !<Component of the child  field, must be nodally based
 
     !Local variables
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: E,GP,B, NGP,version
@@ -24905,9 +24905,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR              !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR     !<The error string
   
-   
     !Local variables
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: GP
 

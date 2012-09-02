@@ -394,13 +394,13 @@ MODULE TYPES
   END TYPE MESH_ELEMENT_TYPE
 
   !>Contains the information for the elements of a mesh.
-  TYPE MESH_ELEMENTS_TYPE
+  TYPE MeshComponentElementsType
     TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for the elements information.
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !< The number of elements in the mesh.
     LOGICAL :: ELEMENTS_FINISHED !<Is .TRUE. if the mesh elements have finished being created, .FALSE. if not.
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of information for the elements of this mesh. ELEMENTS(ne) contains the information for the ne'th global element of the mesh. \todo Should this be allocatable.
     TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the mesh global element number to the mesh user element number.
-  END TYPE MESH_ELEMENTS_TYPE
+  END TYPE MeshComponentElementsType
 
   !>Contains the information for a node derivative of a mesh.
   TYPE MESH_NODE_DERIVATIVE_TYPE
@@ -463,7 +463,7 @@ MODULE TYPES
     TYPE(MESH_TYPE), POINTER :: MESH !<Pointer to the parent mesh.
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number for this mesh topology.
     TYPE(MESH_NODES_TYPE), POINTER :: NODES !<Pointer to the nodes within the mesh topology.
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
+    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
     TYPE(MESH_DOFS_TYPE), POINTER :: DOFS !<Pointer to the dofs within the mesh topology.
     TYPE(MeshDataPointsType), POINTER :: dataPoints !<Pointer to the data points within the mesh topology
   END TYPE MESH_TOPOLOGY_TYPE
