@@ -459,18 +459,18 @@ MODULE TYPES
   END TYPE MeshDataPointsType
 
   !>Contains information on the (global) topology of a mesh.
-  TYPE MESH_TOPOLOGY_TYPE
+  TYPE MeshComponentTopologyType
     TYPE(MESH_TYPE), POINTER :: MESH !<Pointer to the parent mesh.
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number for this mesh topology.
     TYPE(MESH_NODES_TYPE), POINTER :: NODES !<Pointer to the nodes within the mesh topology.
     TYPE(MeshComponentElementsType), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
     TYPE(MESH_DOFS_TYPE), POINTER :: DOFS !<Pointer to the dofs within the mesh topology.
     TYPE(MeshDataPointsType), POINTER :: dataPoints !<Pointer to the data points within the mesh topology
-  END TYPE MESH_TOPOLOGY_TYPE
+  END TYPE MeshComponentTopologyType
 
   !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
   TYPE MESH_TOPOLOGY_PTR_TYPE
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
+    TYPE(MeshComponentTopologyType), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
 
   !>Embedded mesh types
