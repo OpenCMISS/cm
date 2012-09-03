@@ -468,10 +468,10 @@ MODULE TYPES
     TYPE(MeshDataPointsType), POINTER :: dataPoints !<Pointer to the data points within the mesh topology
   END TYPE MeshComponentTopologyType
 
-  !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
-  TYPE MESH_TOPOLOGY_PTR_TYPE
+  !>A buffer type to allow for an array of pointers to a MeshComponentTopologyType.
+  TYPE MeshComponentTopologyPtrType
     TYPE(MeshComponentTopologyType), POINTER :: PTR !<The pointer to the mesh topology.
-  END TYPE MESH_TOPOLOGY_PTR_TYPE
+  END TYPE MeshComponentTopologyPtrType
 
   !>Embedded mesh types
   TYPE EMBEDDING_XI_TYPE
@@ -509,7 +509,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
     TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS
-    TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
+    TYPE(MeshComponentTopologyPtrType), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
     TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
     LOGICAL :: SURROUNDING_ELEMENTS_CALCULATE !<Boolean flag to determine whether surrounding elements should be calculated.
   END TYPE MESH_TYPE

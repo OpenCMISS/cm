@@ -1086,6 +1086,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: meshComponentNumber
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_CALCULATE",ERR,ERROR,*999)
 
@@ -1100,8 +1101,8 @@ CONTAINS
       IF(DECOMPOSITION%CALCULATE_FACES) THEN
         CALL DECOMPOSITION_TOPOLOGY_FACES_CALCULATE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       ENDIF
-      !Default the first mesh topology to contain the data points
-      IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%dataPoints%dataPoints)) THEN
+      meshComponentNumber=DECOMPOSITION%MESH_COMPONENT_NUMBER
+      IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(meshComponentNumber)%PTR%dataPoints%dataPoints)) THEN
           CALL DecompositionTopology_DataPointsCalculate(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF   
     ELSE
@@ -1127,14 +1128,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: localElement,globalElement,dataPointIdx,localData
+    INTEGER(INTG) :: localElement,globalElement,dataPointIdx,localData,meshComponentNumber
     INTEGER(INTG) :: INSERT_STATUS,MPI_IERROR,NUMBER_OF_COMPUTATIONAL_NODES,MY_COMPUTATIONAL_NODE_NUMBER,NUMBER_OF_GHOST_DATA, &
       & NUMBER_OF_LOCAL_DATA
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: decompositionElements
     TYPE(DecompositionDataPointsType), POINTER :: decompositionData
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: elementsMapping
-
     TYPE(MeshDataPointsType), POINTER :: meshData
 
     CALL ENTERS("DecompositionTopology_DataPointsCalculate",ERR,ERROR,*999)
@@ -1148,8 +1148,8 @@ CONTAINS
          IF(ASSOCIATED(decompositionElements)) THEN
            elementsMapping=>decomposition%DOMAIN(decomposition%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
            IF(ASSOCIATED(elementsMapping)) THEN
-              !By default the data point topology is associated with the first mesh topology
-              meshData=>decomposition%MESH%TOPOLOGY(1)%PTR%dataPoints
+              meshComponentNumber=decomposition%MESH_COMPONENT_NUMBER
+              meshData=>decomposition%MESH%TOPOLOGY(meshComponentNumber)%PTR%dataPoints
               IF(ASSOCIATED(meshData)) THEN
                 NUMBER_OF_COMPUTATIONAL_NODES=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
                 IF(ERR/=0) GOTO 999
@@ -1972,6 +1972,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: meshComponentNumber
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_INITIALISE",ERR,ERROR,*999)
 
@@ -1995,8 +1996,8 @@ CONTAINS
         IF(DECOMPOSITION%CALCULATE_FACES) THEN !Default is currently false
           CALL DECOMPOSITION_TOPOLOGY_FACES_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF      
-        !Default the first mesh topology to contain the data points
-        IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(1)%PTR%dataPoints%dataPoints)) THEN
+        meshComponentNumber=DECOMPOSITION%MESH_COMPONENT_NUMBER
+        IF(ALLOCATED(DECOMPOSITION%MESH%TOPOLOGY(meshComponentNumber)%PTR%dataPoints%dataPoints)) THEN
           CALL DECOMPOSITION_TOPOLOGY_DATA_POINTS_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         ENDIF   
       ENDIF
@@ -6372,7 +6373,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: NEW_TOPOLOGY(:)
+    TYPE(MeshComponentTopologyPtrType), POINTER :: NEW_TOPOLOGY(:)
 
     NULLIFY(NEW_TOPOLOGY)
     
@@ -8073,7 +8074,7 @@ CONTAINS
     IF(ASSOCIATED(mesh)) THEN
       IF(dataProjection%DATA_PROJECTION_FINISHED) THEN 
         dataPoints=>dataProjection%DATA_POINTS
-        !Default the first mesh topology to contain data points 
+        !Default the first mesh component topology to contain data points 
         dataPointsTopology=>mesh%TOPOLOGY(1)%PTR%dataPoints
         !Extract the global number of the data projection 
         projectionNumber=dataProjection%GLOBAL_NUMBER
