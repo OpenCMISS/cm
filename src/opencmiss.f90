@@ -37460,7 +37460,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Sets whether faces should be calculated
+  !>Calculate mesh data points topology in a region identified by a user number based on projection
   SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber(regionUserNumber,MeshUserNumber, &
       & DataProjection,Err)
   
@@ -37508,7 +37508,7 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Sets whether faces should be calculated
+  !>Calculate mesh data points topology in an interface identified by a user number based on projection
   SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber(parentRegionUserNumber,interfaceUserNumber, &
       & MeshUserNumber,DataProjection,Err)
   
@@ -37566,6 +37566,7 @@ CONTAINS
   !================================================================================================================================
   !  
   
+  !>Calculate mesh data points topology identified by object based on projection
   SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionObj(Mesh,DataProjection,Err)
   
   !Argument variables
