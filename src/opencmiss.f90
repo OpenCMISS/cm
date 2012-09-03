@@ -3998,6 +3998,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_DestroyObj
   END INTERFACE !CMISSInterfaceMeshConnectivity_Destroy
   
+  !>Finishes the creation of an interface points connectivity.
+  INTERFACE CMISSInterfacePointsConnectivity_CreateFinish
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateFinishNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateFinishObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_CreateFinish
+  
   !>Starts the creation of an interface points connectivity.
   INTERFACE CMISSInterfacePointsConnectivity_CreateStart
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateStartNumber
@@ -4032,7 +4038,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterfaceMeshConnectivity_ElementNumberSet, CMISSInterfaceMeshConnectivity_ElementXiSet
   
-  PUBLIC CMISSInterfacePointsConnectivity_CreateStart
+  PUBLIC CMISSInterfacePointsConnectivity_CreateFinish,CMISSInterfacePointsConnectivity_CreateStart
   
   PUBLIC CMISSInterfacePointsConnectivity_ElementNumberSet,CMISSInterfacePointsConnectivity_PointXiSet
 
@@ -34153,6 +34159,76 @@ CONTAINS
   
   !  
   !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface coupled mesh points connectivity identified by a user number.
+  SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishNumber(regionUserNumber,interfaceUserNumber,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to finish the interface points connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to finish creating the points connectivity.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL interface_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL InterfacePointsConnectivity_CreateFinish(interface%pointsConnectivity,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_CreateFinishNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface meshes connectivity identified by an object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishObj(interfacePointsConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface points connectivity to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_CreateFinish(InterfacePointsConnectivity%pointsConnectivity,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishObj
+  
+  !  
+  !================================================================================================================================
   !   
   
   !>Starts the creation of an interface points connectivity identified by a user number.
@@ -34256,32 +34332,32 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
-    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,ERROR,*999)
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,error,*999)
  
     NULLIFY(region)
     NULLIFY(interface)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,ERROR,*999)
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL InterfacePointsConnectivity_ElementNumberSet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,ERROR,*999)
+         & coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,error,*999)
       ELSE
-        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,ERROR))// &
-          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,ERROR))//"."
-        CALL FLAG_ERROR(localError,err,ERROR,*999)
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
       ENDIF
     ELSE
-      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,ERROR))// &
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
         & " does not exist."
-      CALL FLAG_ERROR(localError,err,ERROR,*999)
+      CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,ERROR)
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,error)
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetNumber
@@ -34303,16 +34379,16 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,ERROR,*999)
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,error,*999)
  
     CALL InterfacePointsConnectivity_ElementNumberSet(InterfacePointsConnectivity%pointsConnectivity, &
-      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,ERROR,*999)
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,error,*999)
 
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetObj")
     RETURN
-999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,ERROR)
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,error)
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetObj
@@ -34339,32 +34415,32 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: localError
     
-    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,ERROR,*999)
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,error,*999)
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,ERROR,*999)
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL InterfacePointsConnectivity_PointXiSet(INTERFACE%pointsConnectivity,interfaceDataPointIndexNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,xi,err,ERROR,*999)
+         & coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,xi,err,error,*999)
       ELSE
-        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,ERROR))// &
-          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,ERROR))//"."
-        CALL FLAG_ERROR(localError,err,ERROR,*999)
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
       ENDIF
     ELSE
-      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,ERROR))// &
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
         & " does not exist."
-      CALL FLAG_ERROR(localError,err,ERROR,*999)
+      CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,ERROR)
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,error)
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetNumber
@@ -34387,16 +34463,16 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,ERROR,*999)
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error,*999)
  
     CALL InterfacePointsConnectivity_PointXiSet(InterfacePointsConnectivity%pointsConnectivity, &
-      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,xi,err,ERROR,*999)
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,xi,err,error,*999)
 
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
     RETURN
-999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,ERROR)
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error)
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetObj
