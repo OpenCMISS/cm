@@ -1120,6 +1120,7 @@ $(OBJECT_DIR)/history_routines.o	:	$(SOURCE_DIR)/history_routines.f90 \
 
 $(OBJECT_DIR)/interface_routines.o	:	$(SOURCE_DIR)/interface_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+        $(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
