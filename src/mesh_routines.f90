@@ -8069,16 +8069,17 @@ CONTAINS
     TYPE(MeshDataPointsType), POINTER :: dataPointsTopology
     TYPE(DATA_PROJECTION_RESULT_TYPE), POINTER :: dataProjectionResult
     TYPE(MeshComponentElementsType), POINTER :: elements
-    INTEGER(INTG) :: dataPointIdx,elementIdx,countIdx,projectionNumber,globalCountIdx,elementNumber
+    INTEGER(INTG) :: dataPointIdx,elementIdx,countIdx,projectionNumber,globalCountIdx,elementNumber,meshComponentNumber
        
     IF(ASSOCIATED(mesh)) THEN
       IF(dataProjection%DATA_PROJECTION_FINISHED) THEN 
         dataPoints=>dataProjection%DATA_POINTS
-        !Default the first mesh component topology to contain data points 
+        !Default the first mesh component topology to contain data points ! TODO: need to be changed once the data points topology is moved under meshTopologyType.
         dataPointsTopology=>mesh%TOPOLOGY(1)%PTR%dataPoints
         !Extract the global number of the data projection 
         projectionNumber=dataProjection%GLOBAL_NUMBER
         !Hard code the first mesh component since element topology is the same for all mesh components
+        !TODO: need to be changed once the elements topology is moved under meshTopologyType.
         elements=>mesh%TOPOLOGY(1)%PTR%ELEMENTS
         ALLOCATE(dataPointsTopology%elementDataPoint(elements%NUMBER_OF_ELEMENTS),STAT=ERR)     
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
