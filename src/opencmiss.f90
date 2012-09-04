@@ -4074,6 +4074,13 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR = &
     & INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR !<Solid fluid normal operator, i.e., lambda(v_f.n_f-du_s/dt.n_s). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_InterfaceConditionIntegrationType OPENCMISS::InterfaceConditions::IntegrationType
+  !> \brief Interface condition integration types.
+  !> \see OPENCMISS::InterfaceConditions,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_GAUSS_INTEGRATION=INTERFACE_CONDITION_GAUSS_INTEGRATION !<Gauss points integration type, i.e. Loop over element Gauss points and sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationType,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_DATA_POINTS_INTEGRATION=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION !< Data points integration type i.e. Loop over data points and  sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationType,OPENCMISS
+  !>@}
   !>@}
 
   !Module types
@@ -4123,6 +4130,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceCondition_EquationsDestroyNumber
     MODULE PROCEDURE CMISSInterfaceCondition_EquationsDestroyObj
   END INTERFACE !CMISSInterfaceCondition_EquationsDestroy
+  
+  !>Sets/changes the integration type for an interface condition.
+  INTERFACE CMISSInterfaceCondition_IntegrationTypeGet
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeGetNumber
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeGetObj
+  END INTERFACE !CMISSInterfaceCondition_IntegrationTypeGet
+  
+  !>Sets/changes the integration type for an interface condition.
+  INTERFACE CMISSInterfaceCondition_IntegrationTypeSet
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeSetNumber
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeSetObj
+  END INTERFACE !CMISSInterfaceCondition_IntegrationTypeSet
 
   !>Finishes the creation of a Lagrange multipliers field for an interface condition. \see OPENCMISS::CMISSInterfaceCondition_LagrangeFieldCreateStart
   INTERFACE CMISSInterfaceCondition_LagrangeFieldCreateFinish
@@ -4189,6 +4208,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR,CMISS_INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR, &
     & CMISS_INTERFACE_CONDITION_SOLID_FLUID_OPERATOR,CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR
+    
+  PUBLIC CMISS_INTERFACE_CONDITION_GAUSS_INTEGRATION,CMISS_INTERFACE_CONDITION_DATA_POINTS_INTEGRATION
 
   PUBLIC CMISSInterfaceCondition_CreateFinish,CMISSInterfaceCondition_CreateStart
 
@@ -4199,6 +4220,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceCondition_EquationsCreateFinish,CMISSInterfaceCondition_EquationsCreateStart
 
   PUBLIC CMISSInterfaceCondition_EquationsDestroy
+  
+  PUBLIC CMISSInterfaceCondition_IntegrationTypeGet,CMISSInterfaceCondition_IntegrationTypeSet
 
   PUBLIC CMISSInterfaceCondition_LagrangeFieldCreateFinish,CMISSInterfaceCondition_LagrangeFieldCreateStart
 
@@ -35100,6 +35123,178 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterfaceCondition_EquationsDestroyObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the integration type for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetNumber(regionUserNumber,interfaceUserNumber,interfaceConditionUserNumber, &
+    & interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface containing the interface condition to get the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to get the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionUserNumber !<The user number of the interface condition to get the method for.
+    INTEGER(INTG), INTENT(OUT) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(interface)
+    NULLIFY(interfaceCondition)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(interfaceConditionUserNumber,interface,interfaceCondition,err,error,*999)
+        IF(ASSOCIATED(interfaceCondition)) THEN
+          CALL InterfaceCondition_IntegrationTypeGet(interfaceCondition,interfaceConditionIntegrationType,err,error,*999)
+        ELSE
+          localError="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceConditionUserNumber,"*",err,error))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeGetNumber",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the integration type for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetObj(interfaceCondition,interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to get the method for.
+    INTEGER(INTG), INTENT(OUT) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeGetObj",err,error,*999)
+
+    CALL InterfaceCondition_IntegrationTypeGet(interfaceCondition%INTERFACE_CONDITION,interfaceConditionIntegrationType, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeGetObj",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the integration type for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetNumber(regionUserNumber,interfaceUserNumber,interfaceConditionUserNumber, &
+    & interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface containing the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionUserNumber !<The user number of the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeSetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(interface)
+    NULLIFY(interfaceCondition)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(interfaceConditionUserNumber,interface,interfaceCondition,err,error,*999)
+        IF(ASSOCIATED(interfaceCondition)) THEN
+          CALL InterfaceCondition_IntegrationTypeSet(interfaceCondition,interfaceConditionIntegrationType,err,error,*999)
+        ELSE
+          localError="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceConditionUserNumber,"*",err,error))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeSetNumber",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the integration type for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetObj(interfaceCondition,interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceCondition_MethodSetObj",err,error,*999)
+
+    CALL InterfaceCondition_IntegrationTypeSet(interfaceCondition%INTERFACE_CONDITION,interfaceConditionIntegrationType, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeSetObj",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetObj
 
   !
   !================================================================================================================================
