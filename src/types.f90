@@ -319,7 +319,7 @@ MODULE TYPES
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data point. 
     INTEGER(INTG) :: USER_NUMBER !<The user defined number of data point. 
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
-    REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
+    REAL(DP), ALLOCATABLE :: position(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
 !    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTIONS_RESULT(:)
   END TYPE DATA_POINT_TYPE
