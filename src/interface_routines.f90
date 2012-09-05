@@ -1267,7 +1267,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalise interface points connectivity
+  !>Finalise interface point connectivity
   SUBROUTINE InterfacePointsConnectivity_PointsFinalise(interfacePointsConnectivity,err,error,*) 
 
     !Argument variables
@@ -1280,7 +1280,7 @@ CONTAINS
     CALL ENTERS("InterfacePointsConnectivity_PointsFinalise",err,error,*999)
     
     DO coupledMeshIdx=1,size(interfacePointsConnectivity%pointsConnectivity,2)
-      DO dataPointIdx=1,size(interfacePointsConnectivity%pointsConnectivity,1)
+      DO dataPointIdx=1,size(interfacePointsConnectivity%pointsConnectivity,1) !Deallocate memory for each data point
         interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%coupledMeshElementNumber=0
         interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%localLineFaceNumber=0
         IF(ALLOCATED(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%xi)) THEN

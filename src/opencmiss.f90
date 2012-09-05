@@ -7364,7 +7364,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Initialises a CMISSInterfaceMeshConnectivityType object.
+  !>Finalise a CMISSInterfaceMeshConnectivityType object.
   SUBROUTINE CMISSInterfacePointsConnectivity_Finalise(CMISSInterfacePointsConnectivity,Err)
    
     !Argument variables
