@@ -87,7 +87,7 @@ MODULE INTERFACE_ROUTINES
   
   PUBLIC INTERFACE_DATA_POINTS_GET
 
-  PUBLIC INTERFACE_DESTROY, INTERFACE_MESH_CONNECTIVITY_DESTROY
+  PUBLIC INTERFACE_DESTROY, INTERFACE_MESH_CONNECTIVITY_DESTROY, InterfacePointsConnectivity_Destroy
 
   PUBLIC INTERFACE_LABEL_GET,INTERFACE_LABEL_SET
 
@@ -538,6 +538,7 @@ CONTAINS
     IF(ASSOCIATED(INTERFACE)) THEN
       IF(ASSOCIATED(INTERFACE%COUPLED_MESHES)) DEALLOCATE(INTERFACE%COUPLED_MESHES)
       CALL INTERFACE_MESH_CONNECTIVITY_FINALISE(INTERFACE%MESH_CONNECTIVITY,ERR,ERROR,*999)
+      CALL InterfacePointsConnectivity_Finalise(INTERFACE%pointsConnectivity,ERR,ERROR,*999)
       IF(ASSOCIATED(INTERFACE%NODES)) CALL NODES_DESTROY(INTERFACE%NODES,ERR,ERROR,*999)
       CALL MESHES_FINALISE(INTERFACE%MESHES,ERR,ERROR,*999)
       CALL FIELDS_FINALISE(INTERFACE%FIELDS,ERR,ERROR,*999)
@@ -1145,6 +1146,35 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Destroy interface points connectivity
+  SUBROUTINE InterfacePointsConnectivity_Destroy(interfacePointsConnectivity,err,error,*) 
+
+    !Argument variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity !<A pointer to interface points connectivity to be destroyed
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("InterfacePointsConnectivity_Destroy",err,error,*999)
+
+    IF(ASSOCIATED(interfacePointsConnectivity)) THEN
+      CALL InterfacePointsConnectivity_Finalise(interfacePointsConnectivity,err,error,*999) 
+    ELSE
+      CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfacePointsConnectivity_Destroy")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_Destroy",err,error)
+    CALL EXITS("InterfacePointsConnectivity_Destroy")
+    RETURN 1
+    
+  END SUBROUTINE InterfacePointsConnectivity_Destroy
+  
+  !
+  !================================================================================================================================
+  !
   
   !>Sets the number of coupled mesh elements which are linked to a specific interface element.
   SUBROUTINE InterfacePointsConnectivity_ElementNumberSet(pointsConnectivity,dataPointUserNumber,coupledMeshIndexNumber, &
@@ -1205,6 +1235,70 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE InterfacePointsConnectivity_ElementNumberSet
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise interface points connectivity
+  SUBROUTINE InterfacePointsConnectivity_Finalise(interfacePointsConnectivity,err,error,*) 
+
+    !Argument variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity !<A pointer to interface points connectivity to be finalised
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("InterfacePointsConnectivity_Finalise",err,error,*999)
+    
+    CALL InterfacePointsConnectivity_PointsFinalise(interfacePointsConnectivity,err,error,*999) 
+    NULLIFY(interfacePointsConnectivity%interface)
+    NULLIFY(interfacePointsConnectivity%interfaceMesh)    
+    
+    CALL EXITS("InterfacePointsConnectivity_Finalise")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_Finalise",err,error)
+    CALL EXITS("InterfacePointsConnectivity_Finalise")
+    RETURN 1
+    
+  END SUBROUTINE InterfacePointsConnectivity_Finalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise interface points connectivity
+  SUBROUTINE InterfacePointsConnectivity_PointsFinalise(interfacePointsConnectivity,err,error,*) 
+
+    !Argument variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity !<A pointer to interface points connectivity to be finalised
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: coupledMeshIdx,dataPointIdx
+
+    CALL ENTERS("InterfacePointsConnectivity_PointsFinalise",err,error,*999)
+    
+    DO coupledMeshIdx=1,size(interfacePointsConnectivity%pointsConnectivity,2)
+      DO dataPointIdx=1,size(interfacePointsConnectivity%pointsConnectivity,1)
+        interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%coupledMeshElementNumber=0
+        interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%localLineFaceNumber=0
+        IF(ALLOCATED(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%xi)) THEN
+          DEALLOCATE(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%xi)
+        ENDIF
+        IF(ALLOCATED(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi)) THEN
+          DEALLOCATE(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi)
+        ENDIF
+      ENDDO
+    ENDDO   
+    
+    CALL EXITS("InterfacePointsConnectivity_PointsFinalise")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_PointsFinalise",err,error)
+    CALL EXITS("InterfacePointsConnectivity_PointsFinalise")
+    RETURN 1
+    
+  END SUBROUTINE InterfacePointsConnectivity_PointsFinalise
   
   !
   !================================================================================================================================

@@ -361,7 +361,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivity_Finalise, &
     & CMISSInterfaceMeshConnectivity_Initialise
   
-  PUBLIC CMISSInterfacePointsConnectivityType,CMISSInterfacePointsConnectivity_Initialise
+  PUBLIC CMISSInterfacePointsConnectivityType,CMISSInterfacePointsConnectivity_Initialise, &
+    & CMISSInterfacePointsConnectivity_Finalise
 
   PUBLIC CMISSDistributedMatrixType,CMISSDistributedVectorType
 
@@ -4041,6 +4042,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetObj
   END INTERFACE !CMISSInterfacePointsConnectivity_PointXiSet 
   
+  !!>Update points connectivity with projection results
   INTERFACE CMISSInterfacePointsConnectivity_ProjectionResultsUpdate
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber
@@ -7357,6 +7359,33 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterfaceEquations_Initialise
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Initialises a CMISSInterfaceMeshConnectivityType object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_Finalise(CMISSInterfacePointsConnectivity,Err)
+   
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(OUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfacePointsConnectivity_Finalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSInterfacePointsConnectivity%pointsConnectivity)) THEN
+      CALL InterfacePointsConnectivity_Destroy(CMISSInterfacePointsConnectivity%pointsConnectivity,err,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("CMISSInterfacePointsConnectivity_Finalise")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_Finalise",Err,ERROR)
+    CALL EXITS("CMISSInterfacePointsConnectivity_Finalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+     
+  END SUBROUTINE CMISSInterfacePointsConnectivity_Finalise
   
   !
   !================================================================================================================================

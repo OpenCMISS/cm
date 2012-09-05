@@ -1340,6 +1340,7 @@ CONTAINS
           dataPoints=>dataProjection%DATA_POINTS
           IF(ASSOCIATED(dataPoints)) THEN
             NULLIFY(interpolatedPoints)
+            NULLIFY(interpolationParameters)
             CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(field,interpolationParameters,err,error,*999)
             CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999)
             interpolatedPoint=>interpolatedPoints(fieldVariableType)%PTR
