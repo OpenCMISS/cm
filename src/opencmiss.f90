@@ -1781,6 +1781,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_DestroyNumber
     MODULE PROCEDURE CMISSDataProjection_DestroyObj
   END INTERFACE !CMISSDataProjection_Destroy
+  
+  !>Evaluate the data points position in a field based on data projection
+  INTERFACE CMISSDataProjection_DataPointsPositionEvaluate
+    MODULE PROCEDURE CMISSDataProjection_DataPointsPositionEvaluateRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_DataPointsPositionEvaluateObj
+  END INTERFACE !CMISSDataProjection_DataPointsPositionEvaluate
 
   !>Starts the evluation of data projection on the geometric field.
   INTERFACE CMISSDataProjection_ProjectionEvaluate
@@ -1823,6 +1830,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_NumberOfClosestElementsSetNumber
     MODULE PROCEDURE CMISSDataProjection_NumberOfClosestElementsSetObj
   END INTERFACE !CMISSDataProjection_NumberOfClosestElementsSet
+  
+  !>Set the candidate element numbers and their local face/line numbers
+  INTERFACE CMISSDataProjection_ProjectionCandidatesSet
+    MODULE PROCEDURE CMISSDataProjection_ProjectionCandidatesSetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_ProjectionCandidatesSetObj
+  END INTERFACE !CMISSDataProjection_ProjectionCandidatesSet
 
   !>Returns the projection type for a data projection.
   INTERFACE CMISSDataProjection_ProjectionTypeGet
@@ -1883,6 +1897,10 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjection_CreateFinish,CMISSDataProjection_CreateStart
 
   PUBLIC CMISSDataProjection_Destroy
+  
+  PUBLIC CMISSDataProjection_DataPointsPositionEvaluate
+  
+  PUBLIC CMISSDataProjection_ProjectionCandidatesSet
 
   PUBLIC CMISSDataProjection_ProjectionEvaluate
 
@@ -2984,6 +3002,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_FIBRE_TYPE = FIELD_FIBRE_TYPE !<Fibre field \see OPENCMISS_FieldTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_GENERAL_TYPE = FIELD_GENERAL_TYPE !<General field \see OPENCMISS_FieldTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_MATERIAL_TYPE = FIELD_MATERIAL_TYPE !<Material field \see OPENCMISS_FieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GEOMETRIC_GENERAL_TYPE = FIELD_GEOMETRIC_GENERAL_TYPE !<Geometric general field \see OPENCMISS_FieldTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldInterpolationTypes OPENCMISS::Field::InterpolationTypes
   !> \brief Field interpolation parameters.
@@ -19186,6 +19205,291 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_DestroyObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in a region, identified by user number
+  SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateRegionNumber(dataProjectionUserNumber,regionUserNumber, &
+    & fieldUserNumber,fieldVariableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection and field
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number of the field to be interpolated
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints) 
+    NULLIFY(field)   
+    NULLIFY(region)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL REGION_DATA_POINTS_GET(region,dataPoints,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+        & err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,ERROR,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL DataProjection_DataPointsPositionEvaluate(dataProjection,field,fieldVariableType,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,ERROR,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in an interface, identified by user number
+  SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber(dataProjectionUserNumber, &
+      & parentRegionUserNumber,interfaceUserNumber,fieldUserNumber,fieldVariableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The parent region number of the interface for the data projection 
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The interface number for the data projection
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number of the field to be interpolated
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: parentRegion
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints) 
+    NULLIFY(field)   
+    NULLIFY(parentRegion)
+    NULLIFY(interface)  
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,parentRegion,Err,ERROR,*999)
+    IF(ASSOCIATED(parentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,parentRegion,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(interface,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,ERROR,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL DataProjection_DataPointsPositionEvaluate(dataProjection,field,fieldVariableType,err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(localError,err,ERROR,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection, identified by object
+  SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateObj(dataProjection,field,fieldVariableType,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection used to evaluate data points position
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to interpolate
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables 
+
+    CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateObj",err,error,*999)
+    
+    CALL DataProjection_DataPointsPositionEvaluate(dataProjection%DATA_PROJECTION,field%FIELD,fieldVariableType,err,error,*999)
+    
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateObj",err,error)
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in a region, identified by user number
+  SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetRegionNumber(dataProjectionUserNumber,regionUserNumber, &
+    & candidateElements,localFaceLineNumbers,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection and field
+    INTEGER(INTG), INTENT(IN) :: candidateElements(:) !<The candidate element for the projection
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<The local face/line number for the candidate elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints) 
+    NULLIFY(region)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL REGION_DATA_POINTS_GET(region,dataPoints,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+        & err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+      CALL DataProjection_ProjectionCandidatesSet(dataProjection,candidateElements,localFaceLineNumbers,err,error,*999)
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in an interface, identified by user number
+  SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber(dataProjectionUserNumber, &
+      & parentRegionUserNumber,interfaceUserNumber,candidateElements,localFaceLineNumbers,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The parent region number of the interface for the data projection 
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The interface number for the data projection
+    INTEGER(INTG), INTENT(IN) :: candidateElements(:) !<The candidate element for the projection
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<The local face/line number for the candidate elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(REGION_TYPE), POINTER :: parentRegion
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints)  
+    NULLIFY(parentRegion)
+    NULLIFY(interface)  
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,parentRegion,Err,ERROR,*999)
+    IF(ASSOCIATED(parentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,parentRegion,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(interface,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL DataProjection_ProjectionCandidatesSet(dataProjection,candidateElements,localFaceLineNumbers,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection, identified by object
+  SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetObj(dataProjection,candidateElements,localFaceLineNumbers,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection used to evaluate data points position
+    INTEGER(INTG), INTENT(IN) :: candidateElements(:) !<The candidate element for the projection
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<The local face/line number for the candidate elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables 
+
+    CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetObj",err,error,*999)
+    
+    CALL DataProjection_ProjectionCandidatesSet(dataProjection%DATA_PROJECTION,candidateElements,localFaceLineNumbers, &
+      & err,error,*999)
+    
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetObj
 
   !
   !================================================================================================================================

@@ -300,6 +300,8 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
     REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
+    INTEGER(INTG), ALLOCATABLE :: candidateElementNumbers(:) !<candidateElementNumbers(candidateElementIdx). The user specified global candidate element numbers
+    INTEGER(INTG), ALLOCATABLE :: localFaceLineNumbers(:) !<localFaceLineNumbers(candidateElementIdx). The user specified corresponding element face/line numbers for the candidate elements
     LOGICAL :: DATA_PROJECTION_PROJECTED !<Is .TRUE. if the data projection have been projected, .FALSE. if not.
     TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTION_RESULTS(:)
   END TYPE DATA_PROJECTION_TYPE

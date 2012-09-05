@@ -53,6 +53,7 @@ MODULE DATA_PROJECTION_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
+  USE MESH_ROUTINES
   USE MPI
   USE SORTING
   USE STRINGS
@@ -90,11 +91,15 @@ MODULE DATA_PROJECTION_ROUTINES
   
   PUBLIC DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE
   
+  PUBLIC DataProjection_DataPointsPositionEvaluate
+  
   PUBLIC DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET,DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_SET
   
   PUBLIC DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET,DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_SET
   
   PUBLIC DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_GET,DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET
+  
+  PUBLIC DataProjection_ProjectionCandidatesSet
   
   PUBLIC DATA_PROJECTION_PROJECTION_TYPE_GET,DATA_PROJECTION_PROJECTION_TYPE_SET
   
@@ -1248,6 +1253,71 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Evaluate the data points position in a field based on data projection
+  SUBROUTINE DataProjection_DataPointsPositionEvaluate(dataProjection,field,fieldVariableType,err,error,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<Data projection to give the xi locations and element number for the data points
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to be interpolated
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: dataPointIdx,elementNumber,coordIdx
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    
+    CALL ENTERS("DataProjection_DataPointsPositionEvaluate",err,error,*999)
+    
+    IF(ASSOCIATED(field)) THEN 
+      IF (FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR.FIELD%TYPE==FIELD_GEOMETRIC_GENERAL_TYPE) THEN
+        IF(ASSOCIATED(dataProjection)) THEN
+          dataPoints=>dataProjection%DATA_POINTS
+          IF(ASSOCIATED(dataPoints)) THEN
+            NULLIFY(interpolatedPoints)
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(field,interpolationParameters,err,error,*999)
+            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999)
+            interpolatedPoint=>interpolatedPoints(fieldVariableType)%PTR
+            !Loop through data points 
+             DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
+               elementNumber=dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)%ELEMENT_NUMBER
+               CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber, &
+                 & interpolationParameters(fieldVariableType)%PTR,err,error,*999)
+               CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)%XI, &
+                 & interpolatedPoint,err,error,*999)
+               DO coordIdx=1,SIZE(dataPoints%DATA_POINTS(dataPointIdx)%position)
+                 dataPoints%DATA_POINTS(dataPointIdx)%position(coordIdx)=interpolatedPoint%VALUES(coordIdx,NO_PART_DERIV)
+               ENDDO !coordIdx     
+             ENDDO !dataPointIdx
+           ELSE
+             CALL FLAG_ERROR("Data points is not associated.",err,error,*999)
+           ENDIF
+         ELSE
+           CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+         ENDIF
+       ELSE
+         CALL FLAG_ERROR("Cannot evaluate data points position on field other than geometric or geometric general type.", &
+           & err,error,*999)
+       ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DataProjection_DataPointsPositionEvaluate")
+    RETURN
+999 CALL ERRORS("DataProjection_DataPointsPositionEvaluate",err,error)    
+    CALL EXITS("DataProjection_DataPointsPositionEvaluate")
+    RETURN 1
+
+  END SUBROUTINE DataProjection_DataPointsPositionEvaluate
   
   !
   !================================================================================================================================
@@ -2504,6 +2574,56 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets the projection type for a data projection.
+  SUBROUTINE DataProjection_ProjectionCandidatesSet(dataProjection,elementUserNumber,localFaceLineNumbers,err,error,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection to set the projection type for
+    INTEGER(INTG), INTENT(IN) :: elementUserNumber(:) !<the projection candidate user element numbers
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<the projection candidate element face/line numbers
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: elementIdx,elementGlobalNumber
+    INTEGER(INTG) :: meshComponentNumber=1 !<TODO:mesh component is harded coded to be 1, need to be removed once MeshComponentsElementsType is moved under MeshTopologyType
+    LOGICAL :: elementExists
+    
+    CALL ENTERS("DataProjection_ProjectionCandidatesSet",err,error,*999)
+
+    IF(ASSOCIATED(dataProjection)) THEN
+      IF(SIZE(elementUserNumber,1)==SIZE(localFaceLineNumbers,1)) THEN
+        ALLOCATE(dataProjection%candidateElementNumbers(SIZE(elementUserNumber,1)),STAT=ERR)
+        ALLOCATE(dataProjection%localFaceLineNumbers(SIZE(localFaceLineNumbers,1)),STAT=ERR)
+        DO elementIdx=1,SIZE(elementUserNumber,1)
+          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(dataProjection%MESH,meshComponentNumber,elementUserNumber(elementIdx), &
+            & elementExists,elementGlobalNumber,err,error,*999)       
+          IF(elementExists) THEN
+            dataProjection%candidateElementNumbers(elementIdx)=elementGlobalNumber
+            dataProjection%localFaceLineNumbers(elementIdx)=localFaceLineNumbers(elementIdx)
+          ELSE
+            CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
+              & (elementUserNumber(elementIdx),"*",err,ERROR))//") does not exist.",err,error,*999)
+          ENDIF
+        ENDDO !elementIdx
+      ELSE
+        CALL FLAG_ERROR("Input user element numbers and face numbers sizes do not match.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DataProjection_ProjectionCandidatesSet")
+    RETURN
+999 CALL ERRORS("DataProjection_ProjectionCandidatesSet",err,error)    
+    CALL EXITS("DataProjection_ProjectionCandidatesSet")
+    RETURN 1
+
+  END SUBROUTINE DataProjection_ProjectionCandidatesSet
   
   !
   !================================================================================================================================
