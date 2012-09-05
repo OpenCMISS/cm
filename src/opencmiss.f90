@@ -34943,7 +34943,7 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Update points connectivity with projection results, data projection identified by interface user number
+  !>Update points connectivity with projection results, data projection identified by object
   SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj(pointsConnectivity,dataProjection, &
       & meshComponentNumber,coupledMeshIndex,err)
   
