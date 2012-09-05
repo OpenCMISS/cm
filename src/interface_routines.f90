@@ -1175,7 +1175,7 @@ CONTAINS
               & (coupledMeshIndexNumber>0)) THEN
             IF (ALLOCATED(pointsConnectivity%pointsConnectivity)) THEN
               CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
-                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementGlobalNumber,err,error,*999)       
+                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementGlobalNumber,err,error,*999) !Make sure user element exists       
               IF(elementExists) THEN
                 pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%coupledMeshElementNumber= &
                   & elementGlobalNumber
@@ -1312,7 +1312,7 @@ CONTAINS
 
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity !<A pointer to the interface points connectivity to initliase for
-    TYPE(MESH_TYPE), POINTER :: interfaceMesh !
+    TYPE(MESH_TYPE), POINTER :: interfaceMesh !<A pointer to the interface mesh to initialise points connectivity with
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1461,7 +1461,7 @@ CONTAINS
   
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: InterfacePointsConnectivity !<A pointer to the interface points connectivity to finish creating
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<The data projection that points connectivity update with
     INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the points connectivity to be updated
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The mesh index of the the points connectivity to be updated
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
