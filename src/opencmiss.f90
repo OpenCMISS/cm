@@ -3997,7 +3997,7 @@ MODULE OPENCMISS
   INTERFACE CMISSInterfaceMeshConnectivity_ElementXiSet
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementXiSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementXiSetObj
-  END INTERFACE !CMISSInterfaceMeshConnectivity_ElementXiSet <<>>
+  END INTERFACE !CMISSInterfaceMeshConnectivity_ElementXiSet 
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivity_ElementNumberSet
@@ -4040,6 +4040,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetNumber
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetObj
   END INTERFACE !CMISSInterfacePointsConnectivity_PointXiSet 
+  
+  INTERFACE CMISSInterfacePointsConnectivity_ProjectionResultsUpdate
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_ProjectionResultsUpdate
 
   PUBLIC CMISSInterface_MeshAdd
 
@@ -4060,6 +4066,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfacePointsConnectivity_CreateFinish,CMISSInterfacePointsConnectivity_CreateStart
   
   PUBLIC CMISSInterfacePointsConnectivity_ElementNumberSet,CMISSInterfacePointsConnectivity_PointXiSet
+  
+  PUBLIC CMISSInterfacePointsConnectivity_ProjectionResultsUpdate
 
 !!==================================================================================================================================
 !!
@@ -34803,7 +34811,163 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetObj
+  
+  !  
+  !================================================================================================================================
+  !  
 
+  !>Update points connectivity with projection results, data projection identified by region user number
+  SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber(regionUserNumber,interfaceUserNumber, &
+      & dataProjectionUserNumber,dataPointsRegionUserNumber,meshComponentNumber,coupledMeshIndex,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to update points connectivity with
+    INTEGER(INTG), INTENT(IN) :: dataPointsRegionUserNumber !<The region number of the data points which the data projection is associated with
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to set the points connectivity xi location for 
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: dataProjectionGlobalNumber
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: ParentRegion,dataPointsRegion
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber",err,error,*999)
+ 
+    NULLIFY(ParentRegion)
+    NULLIFY(dataPointsRegion)
+    NULLIFY(interface)
+    NULLIFY(dataPoints)
+    NULLIFY(dataProjection)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,ParentRegion,err,error,*999)
+    IF(ASSOCIATED(ParentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,ParentRegion,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL REGION_USER_NUMBER_FIND(dataPointsRegionUserNumber,dataPointsRegion,err,error,*999)
+        CALL REGION_DATA_POINTS_GET(dataPointsRegion,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,DataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL InterfacePointsConnectivity_ProjectionResultsUpdate(Interface%PointsConnectivity, &
+          & dataProjection,meshComponentNumber,coupledMeshIndex,err,error,*999) 
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateRNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Update points connectivity with projection results, data projection identified by interface user number
+  SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber(regionUserNumber,interfaceUserNumber, &
+      & dataProjectionUserNumber,dataPointsRegionUserNumber,dataPointsInterfaceUserNumber,meshComponentNumber,coupledMeshIndex,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to update points connectivity with
+    INTEGER(INTG), INTENT(IN) :: dataPointsRegionUserNumber !<The parent region number of the interface for the data points which the data projection is associated with
+    INTEGER(INTG), INTENT(IN) :: dataPointsInterfaceUserNumber !<The interface number of the data points which the data projection is associated with
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to set the points connectivity xi location for 
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: dataProjectionGlobalNumber
+    TYPE(INTERFACE_TYPE), POINTER :: interface,dataPointsInterface
+    TYPE(REGION_TYPE), POINTER :: ParentRegion,dataPointsRegion
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber",err,error,*999)
+ 
+    NULLIFY(ParentRegion)
+    NULLIFY(dataPointsRegion)
+    NULLIFY(interface)
+    NULLIFY(dataPointsInterface)
+    NULLIFY(dataPoints)
+    NULLIFY(dataProjection)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,ParentRegion,err,error,*999)
+    IF(ASSOCIATED(ParentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,ParentRegion,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL REGION_USER_NUMBER_FIND(dataPointsRegionUserNumber,dataPointsRegion,err,error,*999)
+        CALL INTERFACE_USER_NUMBER_FIND(dataPointsInterfaceUserNumber,dataPointsRegion,dataPointsInterface,err,error,*999)
+        CALL INTERFACE_DATA_POINTS_GET(dataPointsInterface,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,DataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL InterfacePointsConnectivity_ProjectionResultsUpdate(Interface%PointsConnectivity, &
+          & dataProjection,meshComponentNumber,coupledMeshIndex,err,error,*999) 
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateINumber
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Update points connectivity with projection results, data projection identified by interface user number
+  SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj(pointsConnectivity,dataProjection, &
+      & meshComponentNumber,coupledMeshIndex,err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: pointsConnectivity !<A pointer to the interface points connectivity to finish creating
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to update points connectivity with
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the points connectivity to be updated
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The mesh index of the the points connectivity to be updated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_ProjectionResultsUpdate(pointsConnectivity%pointsConnectivity, &
+      & dataProjection%DATA_PROJECTION,meshComponentNumber,coupledMeshIndex,err,error,*999) 
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ProjectionResultsUpdateObj
 
 !!==================================================================================================================================
 !!

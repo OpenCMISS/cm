@@ -107,6 +107,8 @@ MODULE INTERFACE_ROUTINES
   
   PUBLIC InterfacePointsConnectivity_PointXiSet
   
+  PUBLIC InterfacePointsConnectivity_ProjectionResultsUpdate
+  
 CONTAINS
 
   !
@@ -1084,7 +1086,7 @@ CONTAINS
     
     CALL EXITS("InterfacePointsConnectivity_CreateFinish")
     RETURN
-999 CALL ERRORS("InterfacePointsConnectivity_CreateFinish",err,ERROR)
+999 CALL ERRORS("InterfacePointsConnectivity_CreateFinish",err,error)
     CALL EXITS("InterfacePointsConnectivity_CreateFinish")
     RETURN 1
   END SUBROUTINE InterfacePointsConnectivity_CreateFinish
@@ -1146,7 +1148,7 @@ CONTAINS
   
   !>Sets the number of coupled mesh elements which are linked to a specific interface element.
   SUBROUTINE InterfacePointsConnectivity_ElementNumberSet(pointsConnectivity,dataPointUserNumber,coupledMeshIndexNumber, &
-      & coupledMeshUserElementNumber,meshComponentNumber,err,ERROR,*)
+      & coupledMeshUserElementNumber,meshComponentNumber,err,error,*)
       
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to interface points connectivity to set the element number of elements for.
@@ -1179,7 +1181,7 @@ CONTAINS
                   & elementGlobalNumber
               ELSE
                 CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
-                  & (coupledMeshUserElementNumber,"*",err,ERROR))//") does not exist.",err,error,*999)
+                  & (coupledMeshUserElementNumber,"*",err,error))//") does not exist.",err,error,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Interface points connectivity array not allocated.",err,error,*999)
@@ -1189,7 +1191,7 @@ CONTAINS
           ENDIF
         ELSE
           CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
-              & (dataPointUserNumber,"*",err,ERROR))//") does not exist.",err,error,*999)
+              & (dataPointUserNumber,"*",err,error))//") does not exist.",err,error,*999)
         ENDIF
       ENDIF  
     ELSE
@@ -1198,11 +1200,108 @@ CONTAINS
     
     CALL EXITS("InterfacePointsConnectivity_ElementNumberSet")
     RETURN
-999 CALL ERRORS("InterfacePointsConnectivity_ElementNumberSet",err,ERROR)
+999 CALL ERRORS("InterfacePointsConnectivity_ElementNumberSet",err,error)
     CALL EXITS("InterfacePointsConnectivity_ElementNumberSet")
     RETURN 1
     
   END SUBROUTINE InterfacePointsConnectivity_ElementNumberSet
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate full xi locations in points connectivity from reduced xi
+  SUBROUTINE InterfacePointsConnectivity_FullXiCalculate(InterfacePointsConnectivity,meshComponentNumber,coupledMeshIdx,err,error,*) 
+
+    !Argument variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: InterfacePointsConnectivity !<A pointer to the interface points connectivity to finish creating
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<Coupled mesh component number to calculate the full xi location for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIdx !<Coupled mesh index to calculate the full xi location for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dataPointIdx,meshComponentIdx,xiIdx,interfaceMeshDimensions,coupledMeshDimensions
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(InterfacePointConnectivityType), POINTER :: pointConnectivity
+  
+    CALL ENTERS("InterfacePointsConnectivity_FullXiCalculate",err,error,*999)
+
+     IF(ASSOCIATED(InterfacePointsConnectivity)) THEN
+       interface=>InterfacePointsConnectivity%interface
+       interfaceMeshDimensions=InterfacePointsConnectivity%interfaceMesh%NUMBER_OF_DIMENSIONS
+       IF(ASSOCIATED(interface)) THEN
+         coupledMeshDimensions=interface%COUPLED_MESHES(coupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
+         IF(interfaceMeshDimensions==coupledMeshDimensions) THEN !e.g. If 1D-2D, 2D-3D coupling, interface dimension is 1D and 2D respectively for 1st body
+           DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
+             InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%xi(:,meshComponentIdx)= &
+               & InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi(:,meshComponentIdx)
+           ENDDO !dataPointIdx
+         ELSE
+           !Update full xi location from reduced xi and element face/line number
+           SELECT CASE(coupledMeshDimensions)
+           CASE(2)
+             DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
+               pointConnectivity=>InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)
+               SELECT CASE(pointConnectivity%localLineFaceNumber)
+               CASE(1)
+                 pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(2,meshComponentNumber)=0.0_DP
+               CASE(2)
+                 pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(2,meshComponentNumber)=1.0_DP
+               CASE(3)
+                 pointConnectivity%xi(1,meshComponentNumber)=0.0_DP
+                 pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+               CASE(4)
+                 pointConnectivity%xi(1,meshComponentNumber)=1.0_DP
+                 pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+               END SELECT
+             ENDDO !dataPointIdx
+           CASE(3)
+             DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
+               pointConnectivity=>InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)
+               SELECT CASE(pointConnectivity%localLineFaceNumber)
+               CASE(1)
+                 pointConnectivity%xi(1,meshComponentNumber)=1.0_DP
+                 pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(3,meshComponentNumber)=pointConnectivity%reducedXi(2,meshComponentNumber)
+               CASE(2)
+                 pointConnectivity%xi(1,meshComponentNumber)=0.0_DP
+                 pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(3,meshComponentNumber)=pointConnectivity%reducedXi(2,meshComponentNumber)
+               CASE(3)
+                 pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(2,meshComponentNumber)=1.0_DP
+                 pointConnectivity%xi(3,meshComponentNumber)=pointConnectivity%reducedXi(2,meshComponentNumber)
+               CASE(4)
+                 pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(2,meshComponentNumber)=0.0_DP
+                 pointConnectivity%xi(3,meshComponentNumber)=pointConnectivity%reducedXi(2,meshComponentNumber)
+               CASE(5)
+                 pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(2,meshComponentNumber)
+                 pointConnectivity%xi(3,meshComponentNumber)=1.0_DP
+               CASE(6)
+                 pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
+                 pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(2,meshComponentNumber)
+                 pointConnectivity%xi(3,meshComponentNumber)=0.0_DP
+               END SELECT
+             ENDDO !dataPointIdx
+           END SELECT
+         ENDIF
+       ELSE
+         CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+       ENDIF
+     ELSE
+       CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+     ENDIF
+    
+    CALL EXITS("InterfacePointsConnectivity_FullXiCalculate")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_FullXiCalculate",err,error)
+    CALL EXITS("InterfacePointsConnectivity_FullXiCalculate")
+    RETURN 1
+  END SUBROUTINE InterfacePointsConnectivity_FullXiCalculate
   
   !
   !================================================================================================================================
@@ -1267,7 +1366,7 @@ CONTAINS
 
     CALL EXITS("InterfacePointsConnectivity_PointsInitialise")
     RETURN
-999 CALL ERRORS("InterfacePointsConnectivity_PointsInitialise",err,ERROR)
+999 CALL ERRORS("InterfacePointsConnectivity_PointsInitialise",err,error)
     CALL EXITS("InterfacePointsConnectivity_PointsInitialise")
     RETURN 1
   END SUBROUTINE InterfacePointsConnectivity_PointsInitialise
@@ -1329,12 +1428,12 @@ CONTAINS
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
-                  & (coupledMeshUserElementNumber,"*",err,ERROR))//") does not exist.",err,error,*999)
+                  & (coupledMeshUserElementNumber,"*",err,error))//") does not exist.",err,error,*999)
               ENDIF
             ENDIF
           ELSE
             CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
-                & (dataPointUserNumber,"*",err,ERROR))//") does not exist.",err,error,*999)
+                & (dataPointUserNumber,"*",err,error))//") does not exist.",err,error,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("Interface elements connectivity array not allocated.",err,error,*999)
@@ -1346,7 +1445,7 @@ CONTAINS
 
     CALL EXITS("InterfacePointsConnectivity_PointXiSet")
     RETURN
-999 CALL ERRORS("InterfacePointsConnectivity_PointXiSet",err,ERROR)
+999 CALL ERRORS("InterfacePointsConnectivity_PointXiSet",err,error)
     CALL EXITS("InterfacePointsConnectivity_PointXiSet")
     RETURN 1
     
@@ -1355,14 +1454,70 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Update points connectivity with projection results
+  SUBROUTINE InterfacePointsConnectivity_ProjectionResultsUpdate(InterfacePointsConnectivity,dataProjection,meshComponentNumber, &
+      & coupledMeshIndex,err,error,*) 
+  
+    !Argument variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: InterfacePointsConnectivity !<A pointer to the interface points connectivity to finish creating
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the points connectivity to be updated
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The mesh index of the the points connectivity to be updated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dataPointIdx
+    TYPE(DATA_PROJECTION_RESULT_TYPE), POINTER :: dataProjectionResult
+    
+    CALL ENTERS("InterfacePointsConnectivity_ProjectionResultsUpdate",err,error,*999)
+    
+    IF(ASSOCIATED(InterfacePointsConnectivity)) THEN
+      IF(ASSOCIATED(dataProjection)) THEN
+        IF(dataProjection%DATA_PROJECTION_FINISHED) THEN
+          DO dataPointIdx=1,SIZE(dataProjection%DATA_PROJECTION_RESULTS,1) !Update reduced xi location and element face/line number with projection result
+            dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
+            InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%reducedXi(:,meshComponentNumber)= &
+              & dataProjectionResult%XI
+            IF(dataProjectionResult%ELEMENT_LINE_NUMBER/=0) THEN
+              InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%localLineFaceNumber= &
+                & dataProjectionResult%ELEMENT_LINE_NUMBER
+            ELSEIF(dataProjectionResult%ELEMENT_FACE_NUMBER/=0) THEN
+              InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%localLineFaceNumber= &
+                & dataProjectionResult%ELEMENT_FACE_NUMBER
+            ENDIF
+          ENDDO
+          CALL InterfacePointsConnectivity_FullXiCalculate(InterfacePointsConnectivity,meshComponentNumber,coupledMeshIndex, &
+            & err,error,*999) 
+        ELSE
+          CALL FLAG_ERROR("Data projection is not finished.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+    ENDIF
+     
+    CALL EXITS("InterfacePointsConnectivity_ProjectionResultsUpdate")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_ProjectionResultsUpdate",err,error)
+    CALL EXITS("InterfacePointsConnectivity_ProjectionResultsUpdate")
+    RETURN 1
+    
+  END SUBROUTINE InterfacePointsConnectivity_ProjectionResultsUpdate
+  
+  !
+  !================================================================================================================================
+  !
 
-  !>Finish create interface points connectivity
+  !>Calculate reduced xi locations in points connectivity from full xi
   SUBROUTINE InterfacePointsConnectivity_ReducedXiCalculate(InterfacePointsConnectivity,err,error,*) 
 
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: InterfacePointsConnectivity !<A pointer to the interface points connectivity to finish creating
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     INTEGER(INTG) :: meshIdx,dataPointIdx,meshComponentIdx,xiIdx,interfaceMeshDimensions,coupledMeshDimensions
     TYPE(INTERFACE_TYPE), POINTER :: interface
@@ -1381,8 +1536,8 @@ CONTAINS
              IF(interfaceMeshDimensions==coupledMeshDimensions) THEN !e.g. If 1D-2D, 2D-3D coupling, interface dimension is 1D and 2D respectively for 1st body
                DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
                  DO meshComponentIdx=1,InterfacePointsConnectivity%interfaceMesh%NUMBER_OF_COMPONENTS
-                   InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%reducedXi= &
-                     & InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi
+                   InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%reducedXi(:,meshComponentIdx)= &
+                     & InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(:,meshComponentIdx)
                    InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=1 !The only local face/line for the body with lower dimension 
                  ENDDO !meshComponentIdx
                ENDDO !dataPointIdx
@@ -1453,7 +1608,7 @@ CONTAINS
     
     CALL EXITS("InterfacePointsConnectivity_ReducedXiCalculate")
     RETURN
-999 CALL ERRORS("InterfacePointsConnectivity_ReducedXiCalculate",err,ERROR)
+999 CALL ERRORS("InterfacePointsConnectivity_ReducedXiCalculate",err,error)
     CALL EXITS("InterfacePointsConnectivity_ReducedXiCalculate")
     RETURN 1
   END SUBROUTINE InterfacePointsConnectivity_ReducedXiCalculate
