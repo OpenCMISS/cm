@@ -199,6 +199,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
 	$(OBJECT_DIR)/interface_mapping_routines.o \
 	$(OBJECT_DIR)/interface_matrices_routines.o \
+	$(OBJECT_DIR)/interface_operators_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
@@ -1121,7 +1122,7 @@ $(OBJECT_DIR)/history_routines.o	:	$(SOURCE_DIR)/history_routines.f90 \
 
 $(OBJECT_DIR)/interface_routines.o	:	$(SOURCE_DIR)/interface_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
-        $(OBJECT_DIR)/data_point_routines.o \
+  $(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
@@ -1145,6 +1146,7 @@ $(OBJECT_DIR)/interface_conditions_routines.o	:	$(SOURCE_DIR)/interface_conditio
 	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
 	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_operators_routines.o \
 	$(OBJECT_DIR)/interface_matrices_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1185,6 +1187,22 @@ $(OBJECT_DIR)/interface_matrices_routines.o	:	$(SOURCE_DIR)/interface_matrices_r
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+	
+$(OBJECT_DIR)/interface_operators_routines.o	:	$(SOURCE_DIR)/interface_operators_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_conditions_constants.o \
+	$(OBJECT_DIR)/interface_equations_routines.o \
+	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_matrices_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/iso_varying_string.o	:	$(SOURCE_DIR)/iso_varying_string.f90
