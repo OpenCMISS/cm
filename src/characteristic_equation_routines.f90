@@ -208,7 +208,7 @@ CONTAINS
     INTEGER(INTG) :: numberOfDimensions,componentIdx
     INTEGER(INTG) :: geometricScalingType,geometricMeshComponent,geometricComponentNumber    
     INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents
-    INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables,numberComponentsV
+    INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables,numberComponentsV,numberComponentsU1
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsField1DNumberOfComponents,materialsFieldCoupledNumberOfComponents
     TYPE(VARYING_STRING) :: localError
 
@@ -291,18 +291,20 @@ CONTAINS
                 !point new field to geometric field
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,equationsSet%GEOMETRY% &
                   & GEOMETRIC_FIELD,err,error,*999)
-                !set number of variables to 3 (U,DELUDELN,V)=>(Q,A;dQ,dA;W,pCellML)
-                dependentFieldNumberOfVariables=3
+                !set number of variables to 4 (U,DELUDELN,V)=>(Q,A;dQ,dA;W(1,2);pCellML)
+                dependentFieldNumberOfVariables=4
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & dependentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],err,error,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE],err,error,*999)
                 ! set dimension
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 ! set data type
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -311,32 +313,39 @@ CONTAINS
                   & FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,err,error,*999)
                 ! number of components for U,DELUDELN=2 (Q,A)
                 dependentFieldNumberOfComponents=2
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_U_VARIABLE_TYPE,dependentFieldNumberOfComponents,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_DELUDELN_VARIABLE_TYPE,dependentFieldNumberOfComponents,err,error,*999)
-                IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
-                  numberComponentsV=2
-                ELSE
-                  numberComponentsV=1
-                ENDIF
-                ! number of components for V=1 (W)
+!                IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
+                numberComponentsV=2
+                numberComponentsU1=1
+!                ENDIF
+                ! set number of components for V
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                  & FIELD_V_VARIABLE_TYPE,numberComponentsV,err,error,*999)
-                ! CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                !   & 1,geometricMeshComponent,err,error,*999)
-                ! !Default to the geometric interpolation setup for U,dUdN
-                ! DO componentIdx=1,dependentFieldNumberOfComponents
-                !   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
-                !     & FIELD_U_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
-                !   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
-                !     & FIELD_DELUDELN_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
-                ! END DO
-                ! !Default to the geometric interpolation setup for V
-                ! CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
-                !   & FIELD_V_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                 & FIELD_U1_VARIABLE_TYPE,numberComponentsU1,err,error,*999)
+
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & 1,geometricMeshComponent,err,error,*999)
+                !Default to the geometric interpolation setup for U,dUdN
+                DO componentIdx=1,dependentFieldNumberOfComponents
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
+                    & FIELD_U_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                    & FIELD_DELUDELN_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
+                END DO
+                !Default to the geometric interpolation setup for V
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
+                  & FIELD_V_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
+                  & FIELD_U1_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
+
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 !Specify nodal solution method
                 CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
@@ -347,10 +356,14 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_DELUDELN_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   END DO
-                  ! V; 2 components (W,pCellML)
+                  ! V; 2 components (W1,W2 )
                   DO componentIdx=1,numberComponentsV
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_V_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                  ENDDO
+                  DO componentIdx=1,numberComponentsU1
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                      & FIELD_U1_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   ENDDO
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, &
                     & err,error,*999)
@@ -389,9 +402,9 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & dependentFieldNumberOfComponents,err,error,*999)
                 IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
-                  numberComponentsV=2
+                  numberComponentsV=3
                 ELSE
-                  numberComponentsV=1
+                  numberComponentsV=2
                 ENDIF
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, &
                   & numberComponentsV,err,error,*999)
@@ -436,7 +449,7 @@ CONTAINS
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              independentFieldNumberOfComponents=1 ! normalDirection for wave relative to node
+              independentFieldNumberOfComponents=2 ! normalDirection for wave relative to node for W1,W2
               IF(equationsSet%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                 !Create the auto created independent field
                 !start field creation with name 'INDEPENDENT_FIELD'
@@ -689,8 +702,6 @@ CONTAINS
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(equations,equationsMapping,err,error,*999)
                 IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN                   
-                  CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET(equationsMapping,1,err,error,*999)
-                  CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(equationsMapping,[FIELD_V_VARIABLE_TYPE],err,error,*999)
                   CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(equationsMapping,1,err,error,*999)
                   CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(equationsMapping,[FIELD_U_VARIABLE_TYPE],err,error,*999)
                   CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(equationsMapping,FIELD_DELUDELN_VARIABLE_TYPE, & 
@@ -818,10 +829,10 @@ CONTAINS
     REAL(DP), POINTER :: materialsParameters(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType
-    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx
+    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,versionIdx2,componentIdx,columnIdx,componentIdx2
     INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(3)
-    REAL(DP) :: Q_BIF(3),A_BIF(3),A0_PARAM(3),Beta(3),W(3),normalWave(3)
-    REAL(DP) :: Bs,As,Fr
+    REAL(DP) :: Q_BIF(3),A_BIF(3),A0_PARAM(3),Beta(3),W(2,3),normalWave(2,3)
+    REAL(DP) :: Bs,As,Fr,sum
     LOGICAL :: updateStiffnessMatrix, updateRhsVector,updateNonlinearResidual
     TYPE(VARYING_STRING) :: localError
 
@@ -893,10 +904,25 @@ CONTAINS
       derivativeIdx=1
       numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
 
-      ! Check if this is a standard node or a branching/coupled node (branch/coupled has >1 version)
-      ! (if standard, the returned nodal element vector from this routine will be 0)
-      IF(numberOfVersions>1) THEN
+      !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
+      normalWave=0.0_DP
+      CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        & independentParameters,err,error,*999)
+      ! Relative to node, +/- 1, stored in independent field variable 1, components 1&2 , type U
+      variableType=independentField%VARIABLES(1)%VARIABLE_TYPE
+      fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+      DO componentIdx=1,2
+        DO versionIdx=1,numberOfVersions
+          local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          normalWave(componentIdx,versionIdx)=independentParameters(local_ny)
+        ENDDO
+      ENDDO
+      CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        & independentParameters,err,error,*999)
 
+      ! Check whether a normal node or a coupled/branching node
+      IF (ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1)) >0) THEN
 
         !!!--  M A T E R I A L S   P A R A M E T E R S  --!!!
         !Material Values at the node - material field variable 1, components 1-12, type U
@@ -993,36 +1019,32 @@ CONTAINS
         ! characteristic waves stored in dependent variable 3, component 1, type V
         variableType=dependentField%VARIABLES(3)%VARIABLE_TYPE
         fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
-        parameterIdx=1
-        DO versionIdx=1,numberOfVersions
-          local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-          W(versionIdx)=dependentParameters(local_ny)
+        DO componentIdx=1,2
+          DO versionIdx=1,numberOfVersions
+            local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            W(componentIdx,versionIdx)=dependentParameters(local_ny)
+          ENDDO
         ENDDO
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & dependentParameters,err,error,*999)
 
-        !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
-        CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & independentParameters,err,error,*999)
-        ! Relative to node, +/- 1, stored in independent field variable 1, component 1, type U
-        variableType=independentField%VARIABLES(1)%VARIABLE_TYPE
-        fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
-        parameterIdx=1
-        DO versionIdx=1,numberOfVersions
-          local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-          normalWave(versionIdx)=independentParameters(local_ny)
-        ENDDO
-        CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & independentParameters,err,error,*999)
-
         !!!-- S T I F F N E S S  M A T R I X  --!!!
         IF(updateStiffnessMatrix) THEN
           !Conservation of Mass
-          rowIdx=numberOfVersions+1
-          DO versionIdx=1,numberOfVersions
-            stiffnessMatrix%NodalMatrix%matrix(rowIdx,versionIdx)=normalWave(versionIdx)
+          IF(numberOfVersions==1) THEN
+            rowIdx=3
+          ELSE
+            rowIdx=numberOfVersions+1
+          ENDIF
+          columnIdx=0
+          DO componentIdx=1,2
+            DO versionIdx=1,numberOfVersions
+              IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                columnIdx=columnIdx + 1
+                stiffnessMatrix%NodalMatrix%matrix(rowIdx,columnIdx)=normalWave(componentIdx,versionIdx)
+              ENDIF
+            ENDDO
           ENDDO
         END IF
 
@@ -1030,22 +1052,40 @@ CONTAINS
         IF(updateNonlinearResidual) THEN
           rowIdx=0
           !Characteristics Equations
-          DO versionIdx=1,numberOfVersions
-            rowIdx=rowIdx + 1
-            nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
-              & + normalWave(versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**0.5_DP)*(A_BIF(versionIdx)**0.25_DP)- &
-              & W(versionIdx)
+          DO componentIdx=1,2
+            DO versionIdx=1,numberOfVersions
+              IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                rowIdx=rowIdx + 1
+                nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
+                 & + normalWave(componentIdx,versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**0.5_DP)* &
+                 & (A_BIF(versionIdx)**0.25_DP)- W(componentIdx,versionIdx)
+              ENDIF
+            ENDDO
           ENDDO
           !Continuity of Total Pressure (relative to the first component)
-          DO versionIdx=1,numberOfVersions
-            rowIdx=rowIdx + 1
-            ! will be 0 when versionIdx = 1
-            nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-              & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-              & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(Bs/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
-              & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
+          DO componentIdx=1,2
+            DO versionIdx=1,numberOfVersions
+              IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                rowIdx=rowIdx + 1
+                IF(versionIdx == 1) THEN
+                  sum=0.0_DP
+                  DO componentIdx2=1,2
+                    DO versionIdx2=1,numberOfVersions
+                      sum=sum + normalWave(componentIdx2,versionIdx2)*Q_BIF(versionIdx2)
+                    ENDDO
+                  ENDDO
+                  nonlinearMatrices%NodalResidual%vector(rowIdx)=sum
+                ELSE
+                  nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+                    & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+                    & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(Bs/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
+                    & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
+                ENDIF
+              ENDIF
+            ENDDO
           ENDDO
         ENDIF
+
       ENDIF !check for normal node or coupled/branching
 
     CASE DEFAULT
@@ -1093,8 +1133,9 @@ CONTAINS
     REAL(DP), POINTER :: materialsParameters(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType
-    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,baseIdx,columnIdx
-    REAL(DP) :: Q_BIF(3),A_BIF(3),A0_PARAM(3),Beta(3),W(3),normalWave(3)
+    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,baseIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
+    INTEGER(INTG) :: startColumn2
+    REAL(DP) :: Q_BIF(3),A_BIF(3),A0_PARAM(3),Beta(3),W(2,3),normalWave(2,3)
     INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(3)
     REAL(DP) :: Bs,As,Fr
     LOGICAL :: updateJacobianMatrix
@@ -1164,8 +1205,26 @@ CONTAINS
       numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
       ! Check if this is a standard node or a branching/coupled node (branch/coupled has >1 version)
       ! (if standard, the returned nodal nodal vector from this routine will be 0)
-      IF(numberOfVersions>1) THEN
 
+      !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
+      normalWave=0.0_DP
+      CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        & independentParameters,err,error,*999)
+      ! Relative to node, +/- 1, stored in independent field variable 1, components 1&2 , type U
+      variableType=independentField%VARIABLES(1)%VARIABLE_TYPE
+      fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+      DO componentIdx=1,2
+        DO versionIdx=1,numberOfVersions
+          local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+          normalWave(componentIdx,versionIdx)=independentParameters(local_ny)
+        ENDDO
+      ENDDO
+      CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        & independentParameters,err,error,*999)
+
+      ! Check whether a normal node or a coupled/branching node
+      IF (ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1)) >0) THEN
 
         !!!--  M A T E R I A L S   P A R A M E T E R S  --!!!
         !Material Values at the node - material field variable 1, components 1-12, type U
@@ -1257,84 +1316,91 @@ CONTAINS
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & dependentParameters,err,error,*999)
 
-
         !!!-- E X T R A P O L A T E D   C H A R A C T E R I S T I C S  ( W )  --!!!
         CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & dependentParameters,err,error,*999)
         ! characteristic waves stored in dependent variable 3, component 1, type V
         variableType=dependentField%VARIABLES(3)%VARIABLE_TYPE
         fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
-        parameterIdx=1
-        DO versionIdx=1,numberOfVersions
-          local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-          W(versionIdx)=dependentParameters(local_ny)
+        DO componentIdx=1,2
+          DO versionIdx=1,numberOfVersions
+            local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            W(componentIdx,versionIdx)=dependentParameters(local_ny)
+          ENDDO
         ENDDO
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & dependentParameters,err,error,*999)
 
-
-        !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
-        CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & independentParameters,err,error,*999)
-        ! Relative to node, +/- 1, stored in independent field variable 1, component 1, type U
-        variableType=independentField%VARIABLES(1)%VARIABLE_TYPE
-        fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
-        parameterIdx=1
-        DO versionIdx=1,numberOfVersions
-          local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-           & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-          normalWave(versionIdx)=independentParameters(local_ny)
-        ENDDO
-        CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & independentParameters,err,error,*999)
-
-
         !!!--  J A C O B I A N   M A T R I X  --!!!
         IF(updateJacobianMatrix) THEN
-          ! Characteristic equations
+          ! Characteristic equations dW/dU
           columnIdx=0
-          DO versionIdx=1,numberOfVersions
-            columnIdx=columnIdx+1
-            jacobianMatrix%NodalJacobian%matrix(versionIdx,columnIdx)=1.0_DP/A_BIF(versionIdx)                
-          ENDDO
-          DO versionIdx=1,numberOfVersions
-            columnIdx=columnIdx+1
-            jacobianMatrix%NodalJacobian%matrix(versionIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
-             & +normalWave(versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**(0.5_DP))* &
-             & (0.25_DP*(A_BIF(versionIdx)**(-(0.75_DP))))
-          ENDDO
-          rowIdx=numberOfVersions+1
-          ! TODO: check this matrix construction against the theory again
-          jacobianMatrix%NodalJacobian%matrix(rowIdx,:)=0.0_DP !4
-
-          DO baseIdx=2,numberOfVersions ! 2,3
-            rowIdx=baseIdx+numberOfVersions ! 5,6
-            DO versionIdx=1,numberOfVersions ! 1,2,3
-              columnIdx=versionIdx+numberOfVersions 
-              IF(versionIdx==1 .OR. versionIdx==baseIdx) THEN
-                !Continuity of Total Pressure (dU/dQ)
-                jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=(Bs/(Fr*Beta(1)))*0.25_DP* &
-                 & (normalWave(versionIdx)*2.0_DP*Q_BIF(versionIdx)/(A_BIF(versionIdx)**2))
-
-                !columnIdx=versionIdx+numberOfVersions ! 5,4;5,5;6,4;6,6
-                !Continuity of Total Pressure (dU/dA) 
-                IF(versionIdx==1) THEN
-                  jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(0.5_DP*A_BIF(1)**(-(0.5_DP)))+ &
-                    & ((Bs/(Fr*Beta(1)))*0.25_DP*(-2.0_DP*(Q_BIF(1)**2)/(A_BIF(1)**3)))
-                ELSE
-                  jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-(Beta(versionIdx)/Beta(1))* &
-                    & (0.5_DP*A_BIF(versionIdx)**(-(0.5_DP))))+((Bs/(Fr*Beta(1)))*0.25_DP* &
-                    & (-2.0_DP*normalWave(versionIdx)*(Q_BIF(versionIdx)**2)/(A_BIF(versionIdx)**3)))
-                ENDIF
-
-              ELSE
-                jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP
-                jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=0.0_DP
+          rowIdx=0
+          DO componentIdx=1,2
+            DO versionIdx=1,numberOfVersions
+              IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                columnIdx=columnIdx+1
+                rowIdx=rowIdx+1
+                jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=1.0_DP/A_BIF(versionIdx)                
               ENDIF
-            ENDDO !versionIdx
-          ENDDO !baseidx
+            ENDDO
+          ENDDO
+          rowIdx=0
+          DO componentIdx=1,2
+            DO versionIdx=1,numberOfVersions
+              IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                columnIdx=columnIdx+1
+                rowIdx=rowIdx+1
+                jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
+                 & +normalWave(componentIdx,versionIdx)*SQRT((Fr*(Beta(versionIdx)/Bs)))* &
+                 & ((A_BIF(versionIdx)**(-0.75_DP)))
+              ENDIF
+            ENDDO
+          ENDDO
+
+          !Continuity of Total Pressure (dP/dU)
+          IF(numberOfVersions==1) THEN
+            startRow= 4
+            endRow = 4
+            startColumn2 = 3
+          ELSE
+            startRow=numberOfVersions+2
+            endRow=numberOfVersions*2
+            startColumn2= numberOfVersions+1
+          ENDIF 
+          DO rowIdx=startRow,endRow
+            columnIdx=1
+            columnIdx2=startColumn2
+            DO componentIdx=1,2
+              DO versionIdx=1,numberOfVersions 
+                IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                  IF(columnIdx==1) THEN
+                    ! dP/dQ
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(Bs/(2.0_DP*Fr*Beta(1)))*(Q_BIF(1)/(A_BIF(1)**2.0_DP))
+                    ! dP/dA
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1/(2.0_DP*SQRT(A_BIF(1))) - (Bs/(2.0_DP*Fr*Beta(1)))* &
+                      & ((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
+                  ELSE IF(columnIdx2==rowIdx) THEN
+                    ! dP/dQ
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Bs/(2.0_DP*Fr*Beta(1)))* &
+                      & (Q_BIF(versionIdx)/(A_BIF(versionIdx)**2.0_DP))
+                    ! dP/dA
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=-Beta(versionIdx)/Beta(1)* &
+                     & (1/(2.0_DP*SQRT(A_BIF(versionIdx)))) + (Bs/(2.0_DP*Fr*Beta(1)))* &
+                     & (Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP)
+                  ELSE
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=0.0_DP
+                  ENDIF
+                  columnIdx=columnIdx+1
+                  columnIdx2=columnIdx2+1
+                ENDIF
+              ENDDO !versionIdx
+            ENDDO !componentidx
+          ENDDO !rowIdx
         ENDIF !update jacobian
+
       ENDIF !check for normal or coupled/branch node
     CASE DEFAULT
       localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
