@@ -2107,13 +2107,19 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP), ALLOCATABLE :: reducedXi(:,:) !<reducedXi(xiIdx,meshComponentNumber). The reduced (face/line) xi location the data point is connected to in this coupled mesh
   END TYPE InterfacePointConnectivityType
   
+  !Contains information on coupled mesh elements that are connected to each interface element.
+  TYPE InterfaceCoupledElementsType
+    INTEGER(INTG) :: numberOfCoupledElements
+    INTEGER(INTG), ALLOCATABLE :: elementNumbers(:) !<elementNumbers(elementIdx). The global numbers of the coupled mesh elements that are connected to this interface element.
+  END TYPE InterfaceCoupledElementsType
+  
   !>Contains information on the data point coupling/points connectivity between meshes in the an interface
   TYPE InterfacePointsConnectivityType
     TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer back to the interface for the coupled mesh connectivity
     TYPE(MESH_TYPE), POINTER :: interfaceMesh !<A pointer to the interface mesh where the xi locations of data points are defined
     LOGICAL :: pointsConnectivityFinished !<Is .TRUE. if the data points connectivity has finished being created, .FALSE. if not.
     TYPE(InterfacePointConnectivityType), ALLOCATABLE :: pointsConnectivity(:,:) !<pointsConnectivity(dataPointIndex,coupledMeshIdx). The points connectivity information for each data point in each coupled mesh. 
-    !TYPE(INTERFACE_POINTS_CONNECTIVITY_COUPLED_ELEMENTS_TYPE), ALLOCATABLE :: COUPLED_MESH_ELEMENTS(:,:) !<COUPLED_MESH_ELEMENTS(interface_element_idx,coupled_mesh_idx)
+    TYPE(InterfaceCoupledElementsType), ALLOCATABLE :: coupledElements(:,:) !<coupledElements(interfaceElementIdx,coupledMeshIdx). The coupled mesh elements that are connected to each interface element.
   END TYPE InterfacePointsConnectivityType
  
   !>Contains information for the interface data.

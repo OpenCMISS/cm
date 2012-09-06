@@ -1128,6 +1128,7 @@ $(OBJECT_DIR)/interface_routines.o	:	$(SOURCE_DIR)/interface_routines.f90 \
 	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
