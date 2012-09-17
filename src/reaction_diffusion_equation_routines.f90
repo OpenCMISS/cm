@@ -93,6 +93,8 @@ MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
 
   PUBLIC REACTION_DIFFUSION_POST_SOLVE
 
+  PUBLIC REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP
+
 
 
 CONTAINS
@@ -865,15 +867,19 @@ CONTAINS
                           SUM=SUM+DIFFUSIVITY(ni,nj)*DPHIDX(ni,mhs)*DPHIDX(nj,nhs)
                        ENDDO !nj
                       ENDDO !ni
-                      STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+                      STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+(SUM*RWG)
                     ENDIF
                     IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
                       DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
                         & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
                         & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*STORAGE_COEFFICIENT*RWG
                     ENDIF
+                    !WRITE(*,*) 'Element ', ELEMENT_NUMBER, 'Gauss Point ', ng
+                    !WRITE(*,*) 'Stiffness Term: ',mhs,nhs,STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)
+                    !WRITE(*,*) 'Damping Term: ',mhs,nhs,DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)
                   ENDDO !ns
                 ENDDO !nh
+
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
               ENDDO !ms
             ENDDO !mh
@@ -1329,7 +1335,7 @@ CONTAINS
               CASE(2)
                 !Do nothing
               CASE(3)
-                CALL SOLVER_DAE_TIMES_SET(SOLVER,CURRENT_TIME+TIME_INCREMENT/2.0_DP,CURRENT_TIME+TIME_INCREMENT, &
+                CALL SOLVER_DAE_TIMES_SET(SOLVER,CURRENT_TIME,CURRENT_TIME+TIME_INCREMENT/2.0_DP, &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
@@ -1379,19 +1385,35 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(SOLVER_TYPE), POINTER :: PDE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("REACTION_DIFFUSION_POST_SOLVE",ERR,ERROR,*999)
-    NULLIFY(SOLVER2)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE)
-              !OUTPUT SOLUTIONS AT EACH TIME STEP
-              CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              SELECT CASE(SOLVER%GLOBAL_NUMBER)
+                CASE(1)
+                !do nothing
+                CASE(2)
+                !do nothing
+                CASE(3)
+                  !OUTPUT SOLUTIONS AT EACH TIME STEP - should probably change this bit below to output 
+                  !mesh solutions directly from the 3rd solver itself rather than by getting the 2nd solver.
+                  !I just don't know how to work with cellml_equations to do this.
+                  SOLVERS=>SOLVER%SOLVERS
+                  NULLIFY(PDE_SOLVER)
+                  !CALL SOLVERS_SOLVER_GET(SOLVERS,2,PDE_SOLVER,ERR,ERROR,*999)
+                  !CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,PDE_SOLVER,ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for a Strang split reaction-diffusion problem."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             CASE (PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE)
               !do nothing - time output not implemented
             CASE (PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE)
@@ -1536,4 +1558,83 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  SUBROUTINE REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the solvers
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,STIFFNESS_MATRIX
+    
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+    NULLIFY(SOLVER)
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      PROBLEM=>CONTROL_LOOP%PROBLEM
+      IF(ASSOCIATED(PROBLEM)) THEN
+        SELECT CASE(PROBLEM%SUBTYPE)
+        CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE)
+          WRITE(*,*) 'HELLO FROM INSIDE REAC DIFF CONTROL LOOP POST LOOP'
+          SOLVERS=>CONTROL_LOOP%SOLVERS
+          IF(ASSOCIATED(SOLVERS)) THEN
+            CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                  EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                    DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                    STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
+                    DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
+                    STIFFNESS_MATRIX%UPDATE_MATRIX = .FALSE.
+                    DAMPING_MATRIX%UPDATE_MATRIX = .FALSE.
+                  ELSE
+                    CALL FLAG_ERROR("Equations not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations Set not associated.",ERR,ERROR,*999)
+                ENDIF
+      
+              ELSE
+                CALL FLAG_ERROR("Solver Mapping not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver Equations not associated.", ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solvers is not associated.", ERR,ERROR,*999)
+          ENDIF
+
+
+        CASE DEFAULT
+          !do nothing
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control Loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP")
+    RETURN
+999 CALL ERRORS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
+    CALL EXITS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP")
+    RETURN 1
+  END SUBROUTINE REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP
 END MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
