@@ -342,7 +342,15 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<The equations are a second order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_TIME_STEPPING=5 !<The equations are for time stepping. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   !>@}
-  
+
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_DynamicMatrixTypes EQUATIONS_SET_CONSTANTS:DynamicMatrixTypes
+  !> \brief Type of matrix in a dynamic equations set
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_STIFFNESS=1 !<A stiffness matrix (multiplies displacement values)
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_DAMPING=2 !<A damping matrix (multiplies velocity values)
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_MASS=3 !<A mass matrix (multiplies acceleration values)
+  !>@}
+
   !> \addtogroup EQUATIONS_SET_CONSTANTS_AnalyticFunctionTypes EQUATIONS_SET_CONSTANTS::AnalyticFunctionTypes
   !> \brief The analytic function types
   !> \see 
