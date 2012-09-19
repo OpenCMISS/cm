@@ -63,6 +63,7 @@ MODULE OPENCMISS
   USE COORDINATE_ROUTINES
   USE DATA_POINT_ROUTINES
   USE DATA_PROJECTION_ROUTINES
+  USE DISTRIBUTED_MATRIX_VECTOR
   USE EQUATIONS_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
@@ -217,6 +218,19 @@ MODULE OPENCMISS
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY
   END TYPE CMISSInterfaceMeshConnectivityType
 
+  !>A matrix that may be distributed across multiple computational nodes
+  !>and may use sparse or full storage.
+  TYPE CMISSDistributedMatrixType
+    PRIVATE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: distributedMatrix
+  END TYPE CMISSDistributedMatrixType
+
+  !>A vector that may be distributed across multiple computational nodes
+  TYPE CMISSDistributedVectorType
+    PRIVATE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: distributedVector
+  END TYPE CMISSDistributedVectorType
+
   !>Contains information on a mesh defined on a region.
   TYPE CMISSMeshType
     PRIVATE
@@ -226,7 +240,7 @@ MODULE OPENCMISS
   !>Contains information on a mesh elements defined in a mesh
   TYPE CMISSMeshElementsType
     PRIVATE
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
   END TYPE CMISSMeshElementsType
 
   !>Contains information on an embedded mesh
@@ -340,6 +354,10 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivity_Finalise, &
      & CMISSInterfaceMeshConnectivity_Initialise
+
+  PUBLIC CMISSDistributedMatrixType,CMISSDistributedVectorType
+
+  PUBLIC CMISSDistributedMatrix_Initialise,CMISSDistributedVector_Initialise
 
   PUBLIC CMISSMeshType,CMISSMesh_Finalise,CMISSMesh_Initialise
 
@@ -1800,6 +1818,20 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_StartingXiSetNumber
     MODULE PROCEDURE CMISSDataProjection_StartingXiSetObj
   END INTERFACE !CMISSDataProjection_StartingXiSet
+  
+  !>Sets/changes the xi position for a data point projection.
+  INTERFACE CMISSDataProjection_XiSet
+    MODULE PROCEDURE CMISSDataProjection_XiSetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_XiSetInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_XiSetObj
+  END INTERFACE !CMISSDataProjection_XiSet
+  
+  !>Sets/changes the element number for a data point projection.
+  INTERFACE CMISSDataProjection_ElementSet
+    MODULE PROCEDURE CMISSDataProjection_ElementSetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_ElementSetInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_ElementSetObj
+  END INTERFACE !CMISSDataProjection_ElementSet
 
   !>Returns the projection distance for a data point identified by a given user number.
   INTERFACE CMISSDataProjection_ResultDistanceGet
@@ -1866,6 +1898,8 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjection_ResultElementFaceNumberGet,CMISSDataProjection_ResultElementLineNumberGet
 
   PUBLIC CMISSDataProjection_ResultExitTagGet,CMISSDataProjection_ResultXiGet  
+
+  PUBLIC CMISSDataProjection_XiSet,CMISSDataProjection_ElementSet
 
 !!==================================================================================================================================
 !!
@@ -2004,6 +2038,32 @@ MODULE OPENCMISS
   PUBLIC CMISSEquations_SparsityTypeGet,CMISSEquations_SparsityTypeSet
 
   PUBLIC CMISSEquations_TimeDependenceTypeGet
+
+  PUBLIC CMISSEquations_NumberOfLinearMatricesGet
+
+  PUBLIC CMISSEquations_NumberOfJacobianMatricesGet
+
+  PUBLIC CMISSEquations_NumberOfDynamicMatricesGet
+
+  PUBLIC CMISSEquations_LinearMatrixGet
+
+  PUBLIC CMISSEquations_JacobianMatrixGet
+
+  PUBLIC CMISSEquations_DynamicMatrixGet
+
+  PUBLIC CMISSEquations_DynamicMatrixGetByType
+
+  PUBLIC CMISSEquations_DynamicMatrixTypeGet
+
+  PUBLIC CMISSEquations_RhsVectorGet
+
+  PUBLIC CMISSEquations_ResidualVectorGet
+
+  PUBLIC CMISSEquations_ResidualNumberOfVariablesGet
+
+  PUBLIC CMISSEquations_ResidualVariablesGet
+
+  PUBLIC CMISSEquations_SourceVectorGet
 
 !!==================================================================================================================================
 !!
@@ -2298,6 +2358,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD = EQUATIONS_SET_GFD_SOLUTION_METHOD !<Grid-based Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD = EQUATIONS_SET_GFV_SOLUTION_METHOD !<Grid-based Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   !>@}
+
+  !> \addtogroup OPENCMISS_EquationsSetDynamicMatrixTypes OPENCMISS::EquationsSet::DynamicMatrixTypes
+  !> \brief Type of matrix in a dynamic equations set
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_STIFFNESS=EQUATIONS_MATRIX_STIFFNESS !<A stiffness matrix (multiplies displacement values)
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_DAMPING=EQUATIONS_MATRIX_DAMPING !<A damping matrix (multiplies velocity values)
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_MASS=EQUATIONS_MATRIX_MASS !<A mass matrix (multiplies acceleration values)
+  !>@}
+
   !> \addtogroup OPENCMISS_EquationsSetAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes
   !> \brief The analytic function types.
   !> \see OPENCMISS::EquationsSet,OPENCMISS
@@ -2587,6 +2656,8 @@ MODULE OPENCMISS
   PUBLIC CMISS_EQUATIONS_SET_FEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_BEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_FD_SOLUTION_METHOD, &
     & CMISS_EQUATIONS_SET_FV_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD, &
     & CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD
+
+  PUBLIC CMISS_EQUATIONS_MATRIX_STIFFNESS,CMISS_EQUATIONS_MATRIX_DAMPING,CMISS_EQUATIONS_MATRIX_MASS
 
   PUBLIC CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2, &
     & CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2
@@ -2880,7 +2951,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
 
-
 !!==================================================================================================================================
 !!
 !! FIELD_ROUTINES
@@ -2925,6 +2995,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_NODE_BASED_INTERPOLATION = FIELD_NODE_BASED_INTERPOLATION !<Node based interpolation. Parameters are nodal based and a basis function is used \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION = FIELD_GRID_POINT_BASED_INTERPOLATION !<Grid point based interpolation. Parameters are different at each grid point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION = FIELD_GAUSS_POINT_BASED_INTERPOLATION !<Gauss point based interpolation. Parameters are different at each Gauss point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DATA_POINT_BASED_INTERPOLATION = FIELD_DATA_POINT_BASED_INTERPOLATION !<Data point based interpolation. Parameters are different at each data point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldVariableTypes OPENCMISS::Field::VariableTypes
   !> \brief Field variable type parameters.
@@ -3473,7 +3544,8 @@ MODULE OPENCMISS
   PUBLIC CMISS_FIELD_GEOMETRIC_TYPE,CMISS_FIELD_FIBRE_TYPE,CMISS_FIELD_GENERAL_TYPE,CMISS_FIELD_MATERIAL_TYPE
 
   PUBLIC CMISS_FIELD_CONSTANT_INTERPOLATION,CMISS_FIELD_ELEMENT_BASED_INTERPOLATION,CMISS_FIELD_NODE_BASED_INTERPOLATION, &
-    & CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION,CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION
+    & CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION,CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION, &
+    & CMISS_FIELD_DATA_POINT_BASED_INTERPOLATION
 
   PUBLIC CMISS_FIELD_NUMBER_OF_VARIABLE_SUBTYPES
 
@@ -4362,6 +4434,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMesh_SurroundingElementsCalculateSetNumber
     MODULE PROCEDURE CMISSMesh_SurroundingElementsCalculateSetObj
   END INTERFACE !CMISSMesh_SurroundingElementsCalculateSet
+  
+  !>Sets/changes whether data points topology should be calculated for the decomposition.
+  INTERFACE CMISSMesh_TopologyDataPointsCalculateProjection
+    MODULE PROCEDURE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber
+    MODULE PROCEDURE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber
+    MODULE PROCEDURE CMISSMesh_TopologyDataPointsCalculateProjectionObj
+  END INTERFACE !CMISSMesh_TopologyDataPointsCalculateProjection
 
   !>Returns the basis for an element in a mesh.
   INTERFACE CMISSMeshElements_BasisGet
@@ -4487,7 +4566,115 @@ MODULE OPENCMISS
   PUBLIC CMISSDecomposition_NodeDomainGet,CMISSMeshElements_UserNodeVersionSet, CMISSMeshElements_LocalElementNodeVersionSet
 
   PUBLIC CMISSMesh_SurroundingElementsCalculateSet
+  
+  PUBLIC CMISSMesh_TopologyDataPointsCalculateProjection
 
+!!==================================================================================================================================
+!!
+!! DISTRIBUTED_MATRIX_VECTOR
+!!
+!!==================================================================================================================================
+
+  !> \addtogroup OPENCMISS_MatrixVectorConstants OPENCMISS::MatrixVector::Constants
+  !> \brief Distributed matrix and vector function constants.
+  !>@{
+  !> \addtogroup OPENCMISS_MatrixStorageTypes OPENCMISS::MatrixVector::MatrixStorageTypes
+  !> \brief Type of matrix storage.
+  !> \see OPENCMISS::MatrixVectorConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_BLOCK_STORAGE_TYPE=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE !<Distributed matrix block storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_DIAGONAL_STORAGE_TYPE=DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE !<Distributed matrix diagonal storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COLUMN_MAJOR_STORAGE_TYPE=DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE !<Distributed matrix column major storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_ROW_MAJOR_STORAGE_TYPE=DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE !<Distributed matrix row major storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COMPRESSED_ROW_STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE !<Distributed matrix compressed row storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE !<Distributed matrix compressed column storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_ROW_COLUMN_STORAGE_TYPE=DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE !<Distributed matrix row-column storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_MatrixVectorDataTypes OPENCMISS::MatrixVector::DataTypes
+  !> \brief Type of data stored in matrices and vectors.
+  !> \see OPENCMISS::MatrixVectorConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_INTG_TYPE=DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_SP_TYPE=DISTRIBUTED_MATRIX_VECTOR_SP_TYPE !<Single precision real distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_DP_TYPE=DISTRIBUTED_MATRIX_VECTOR_DP_TYPE !<Double precision real distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_L_TYPE=DISTRIBUTED_MATRIX_VECTOR_L_TYPE !<Logical distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  !>@}
+  !>@}
+
+  PUBLIC CMISS_MATRIX_BLOCK_STORAGE_TYPE,CMISS_MATRIX_DIAGONAL_STORAGE_TYPE,CMISS_MATRIX_COLUMN_MAJOR_STORAGE_TYPE, &
+    & CMISS_MATRIX_ROW_MAJOR_STORAGE_TYPE,CMISS_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,CMISS_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE, &
+    & CMISS_MATRIX_ROW_COLUMN_STORAGE_TYPE
+
+  PUBLIC CMISS_MATRIX_VECTOR_INTG_TYPE,CMISS_MATRIX_VECTOR_SP_TYPE,CMISS_MATRIX_VECTOR_DP_TYPE,CMISS_MATRIX_VECTOR_L_TYPE
+
+  !Note that currently we don't have any user number based routines for distributed matrices
+  !as if we can't use a pointer to a CMISS object, a pointer to matrix data isn't going to
+  !be much use either. It's also more awkward when matrices and vectors themselves don't have
+  !user numbers and there are multiple ways to access them through user numbers, eg. solver equations
+  !matrices or equations set matrices
+
+  !>Get the storage type for a distributed matrix
+  INTERFACE CMISSDistributedMatrix_StorageTypeGet
+    MODULE PROCEDURE CMISSDistributedMatrix_StorageTypeGetObj
+  END INTERFACE CMISSDistributedMatrix_StorageTypeGet
+
+  !>Get the data type for a distributed matrix
+  INTERFACE CMISSDistributedMatrix_DataTypeGet
+    MODULE PROCEDURE CMISSDistributedMatrix_DataTypeGetObj
+  END INTERFACE CMISSDistributedMatrix_DataTypeGet
+
+  !>Get the dimensions for a distributed matrix on this computational node
+  INTERFACE CMISSDistributedMatrix_DimensionsGet
+    MODULE PROCEDURE CMISSDistributedMatrix_DimensionsGetObj
+  END INTERFACE CMISSDistributedMatrix_DimensionsGet
+
+  !>Get the row indices and column indices for a sparse matrix
+  INTERFACE CMISSDistributedMatrix_StorageLocationsGet
+    MODULE PROCEDURE CMISSDistributedMatrix_StorageLocationsGetObj
+  END INTERFACE CMISSDistributedMatrix_StorageLocationsGet
+
+  !>Get the data array for this matrix on this computational node
+  INTERFACE CMISSDistributedMatrix_DataGet
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetIntgObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetDPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetSPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetLObj
+  END INTERFACE CMISSDistributedMatrix_DataGet
+
+  !>Restore the data array for this matrix once it has finished being used
+  INTERFACE CMISSDistributedMatrix_DataRestore
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreIntgObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreDPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreSPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreLObj
+  END INTERFACE CMISSDistributedMatrix_DataRestore
+
+  !>Get the data type for a distributed vector
+  INTERFACE CMISSDistributedVector_DataTypeGet
+    MODULE PROCEDURE CMISSDistributedVector_DataTypeGetObj
+  END INTERFACE CMISSDistributedVector_DataTypeGet
+
+  !>Get the data array for this vector on this computational node
+  INTERFACE CMISSDistributedVector_DataGet
+    MODULE PROCEDURE CMISSDistributedVector_DataGetIntgObj
+    MODULE PROCEDURE CMISSDistributedVector_DataGetDPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataGetSPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataGetLObj
+  END INTERFACE CMISSDistributedVector_DataGet
+
+  !>Restore the data array for this vector once it has finished being used
+  INTERFACE CMISSDistributedVector_DataRestore
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreIntgObj
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreDPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreSPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreLObj
+  END INTERFACE CMISSDistributedVector_DataRestore
+
+  PUBLIC CMISSDistributedMatrix_StorageTypeGet,CMISSDistributedMatrix_StorageLocationsGet
+  PUBLIC CMISSDistributedMatrix_DataTypeGet,CMISSDistributedMatrix_DimensionsGet
+  PUBLIC CMISSDistributedMatrix_DataGet,CMISSDistributedMatrix_DataRestore
+  PUBLIC CMISSDistributedVector_DataTypeGet
+  PUBLIC CMISSDistributedVector_DataGet,CMISSDistributedVector_DataRestore
 
 !!==================================================================================================================================
 !!
@@ -5887,6 +6074,18 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverEquations_BoundaryConditionsGet
 
+  PUBLIC CMISSSolverEquations_NumberOfMatricesGet
+
+  PUBLIC CMISSSolverEquations_MatrixGet
+
+  PUBLIC CMISSSolverEquations_JacobianMatrixGet
+
+  PUBLIC CMISSSolverEquations_VectorGet
+
+  PUBLIC CMISSSolverEquations_ResidualVectorGet
+
+  PUBLIC CMISSSolverEquations_RhsVectorGet
+
   PUBLIC CMISSBioelectricsFiniteElasticity_UpdateGeometricField
   
 !!==================================================================================================================================
@@ -7227,6 +7426,56 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSHistory_Initialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSDistributedMatrixType object.
+  SUBROUTINE CMISSDistributedMatrix_Initialise(CMISSDistributedMatrix,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(OUT) :: CMISSDistributedMatrix !<The CMISSDistributedMatrixType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDistributedMatrix_Initialise",err,error,*999)
+
+    NULLIFY(CMISSDistributedMatrix%distributedMatrix)
+
+    CALL EXITS("CMISSDistributedMatrix_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSDistributedMatrix_Initialise",err,error)
+    CALL EXITS("CMISSDistributedMatrix_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_Initialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSDistributedVectorType object.
+  SUBROUTINE CMISSDistributedVector_Initialise(CMISSDistributedVector,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(OUT) :: CMISSDistributedVector !<The CMISSDistributedVectorType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDistributedVector_Initialise",err,error,*999)
+
+    NULLIFY(CMISSDistributedVector%distributedVector)
+
+    CALL EXITS("CMISSDistributedVector_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSDistributedVector_Initialise",err,error)
+    CALL EXITS("CMISSDistributedVector_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_Initialise
 
   !
   !================================================================================================================================
@@ -17781,6 +18030,422 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the projection distance for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPoints_ProjectionDistanceGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointProjectionDistance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), INTENT(OUT) :: dataPointProjectionDistance !<On return, the projection distance for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPoints_ProjectionDistanceGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      !CALL DATA_POINTS_PROJECTION_DISTANCE_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionDistance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionDistanceGetNumber",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionDistanceGetNumber
+
+
+   !
+   !================================================================================================================================
+   !
+
+  !>Returns the projection distance for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPoints_ProjectionDistanceGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionDistance,err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), INTENT(OUT) :: dataPointProjectionDistance !<On return, the projection distance for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPoints_ProjectionDistanceGetObj",err,error,*999)
+
+    !CALL DATA_POINTS_PROJECTION_DISTANCE_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionDistance, &
+    !  & err,error,*999)
+
+    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionDistanceGetObj",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionDistanceGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetNumber(regionUserNumber,dataPointGlobalNumber, &
+    & dataPointProjectionElementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementNumber !<On return, the projection element number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPoints_ProjectionElementNumberGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      !CALL DATA_POINTS_PROJECTION_ELEMENT_NUMBER_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementNumber, &
+      !  & err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionElementNumberGetNumber",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionElementNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementNumber !<On return, the projection element number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPoints_ProjectionElementNumberGetObj",err,error,*999)
+
+    !CALL DATA_POINTS_PROJECTION_ELEMENT_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementNumber, &
+    !  & err,error,*999)
+
+    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionElementNumberGetObj",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element face number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetNumber(regionUserNumber,dataPointGlobalNumber, &
+    & dataPointProjectionElementFaceNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementFaceNumber !<On return, the projection element face number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      !CALL DATA_POINTS_PROJECTION_ELEMENT_FACE_NUMBER_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementFaceNumber, &
+      !  & err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element face number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetObj(dataPoints,dataPointGlobalNumber, &
+    & dataPointProjectionElementFaceNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementFaceNumber !<On return, the projection element face number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPoints_ProjectionElementFaceNumberGetObj",err,error,*999)
+
+    !CALL DATA_POINTS_PROJECTION_ELEMENT_FACE_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber, &
+    !  & dataPointProjectionElementFaceNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionElementFaceNumberGetObj",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element line number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetNumber(regionUserNumber,dataPointGlobalNumber, &
+    & dataPointProjectionElementLineNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementLineNumber !<On return, the projection element line number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPoints_ProjectionElementLineNumberGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      !CALL DATA_POINTS_PROJECTION_ELEMENT_LINE_NUMBER_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementLineNumber, &
+      !  & err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionElementLineNumberGetNumber",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element line number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetObj(dataPoints,dataPointGlobalNumber, &
+    & dataPointProjectionElementLineNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementLineNumber !<On return, the projection element line number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPoints_ProjectionElementLineNumberGetObj",err,error,*999)
+
+    !CALL DATA_POINTS_PROJECTION_ELEMENT_LINE_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber, &
+    !  & dataPointProjectionElementLineNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionElementLineNumberGetObj",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection exit tag for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPoints_ProjectionExitTagGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointProjectionExitTag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionExitTag !<On return, the projection exit tag for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPoints_ProjectionExitTagGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      !CALL DATA_POINTS_PROJECTION_EXIT_TAG_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionExitTag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionExitTagGetNumber",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionExitTagGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection exit tag for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPoints_ProjectionExitTagGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionExitTag,err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionExitTag !<On return, the projection exit tag for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPoints_ProjectionExitTagGetObj",err,error,*999)
+
+    !CALL DATA_POINTS_PROJECTION_EXIT_TAG_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionExitTag, &
+    !  & err,error,*999)
+
+    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionExitTagGetObj",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionExitTagGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection xi for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPoints_ProjectionXiGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointProjectionXi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), INTENT(OUT) :: dataPointProjectionXi(:) !<On return, the projection xi for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPoints_ProjectionXiGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      !CALL DATA_POINTS_PROJECTION_XI_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionXi,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataPoints_ProjectionXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionXiGetNumber",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection xi for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPoints_ProjectionXiGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionXi,err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), INTENT(OUT) :: dataPointProjectionXi(:) !<On return, the projection xi for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPoints_ProjectionXiGetObj",err,error,*999)
+
+    !CALL DATA_POINTS_PROJECTION_XI_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionXi,err,error,*999)
+
+    CALL EXITS("CMISSDataPoints_ProjectionXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPoints_ProjectionXiGetObj",err,error)
+    CALL EXITS("CMISSDataPoints_ProjectionXiGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataPoints_ProjectionXiGetObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the user number for a data point in a set of data points identified by user number.
   SUBROUTINE CMISSDataPoints_UserNumberGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointUserNumber,err)
 
@@ -19997,6 +20662,266 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_StartingXiSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_ElementSetInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+      & dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_ElementSetInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(INTERFACE,DATA_POINTS,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+        CALL DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_ElementSetInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementSetInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ElementSetInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementSetInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_ElementSetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_ElementSetRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+      CALL DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_ElementSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementSetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ElementSetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementSetRegionNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified an object.
+  SUBROUTINE CMISSDataProjection_ElementSetObj(dataProjection,dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ElementSetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_ELEMENT_SET(dataProjection%DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ElementSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementSetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ElementSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_XiSetInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+      & dataPointNumber,xi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    REAL(DP), INTENT(IN) :: xi(:) !<the xi position to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_XiSetInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(INTERFACE,DATA_POINTS,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+        CALL DATA_PROJECTION_XI_SET(DATA_PROJECTION,dataPointNumber,xi,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_XiSetInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_XiSetInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_XiSetInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_XiSetInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_XiSetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,xi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    REAL(DP), INTENT(IN) :: xi(:) !<the xi position to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_XiSetRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+      CALL DATA_PROJECTION_XI_SET(DATA_PROJECTION,dataPointNumber,xi,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_XiSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_XiSetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_XiSetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_XiSetRegionNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified an object.
+  SUBROUTINE CMISSDataProjection_XiSetObj(dataProjection,dataPointNumber,xi,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    REAL(DP), INTENT(IN) :: xi(:) !<the xi position to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_XiSetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_XI_SET(dataProjection%DATA_PROJECTION,dataPointNumber,xi,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_XiSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_XiSetObj",err,error)
+    CALL EXITS("CMISSDataProjection_XiSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_XiSetObj
 
 !!==================================================================================================================================
 !!
@@ -20664,6 +21589,340 @@ CONTAINS
 
   END SUBROUTINE CMISSEquations_TimeDependenceTypeGetObj
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of linear matrices in the equations
+  SUBROUTINE CMISSEquations_NumberOfLinearMatricesGet(equations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the number of linear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of linear matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_NumberOfLinearMatricesGet",err,error,*999)
+
+    CALL Equations_NumberOfLinearMatricesGet(equations%equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSEquations_NumberOfLinearMatricesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_NumberOfLinearMatricesGet",err,error)
+    CALL Exits("CMISSEquations_NumberOfLinearMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_NumberOfLinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of Jacobian matrices in the equations
+  SUBROUTINE CMISSEquations_NumberOfJacobianMatricesGet(equations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the number of Jacobian matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of Jacobian matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_NumberOfLinearMatricesGet",err,error,*999)
+
+    CALL Equations_NumberOfJacobianMatricesGet(equations%equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSEquations_NumberOfJacobianMatricesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_NumberOfJacobianMatricesGet",err,error)
+    CALL Exits("CMISSEquations_NumberOfJacobianMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_NumberOfJacobianMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of dynamic matrices in the equations
+  SUBROUTINE CMISSEquations_NumberOfDynamicMatricesGet(equations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the number of dynamic matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of dynamic matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_NumberOfDynamicMatricesGet",err,error,*999)
+
+    CALL Equations_NumberOfDynamicMatricesGet(equations%equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSEquations_NumberOfDynamicMatricesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_NumberOfDynamicMatricesGet",err,error)
+    CALL Exits("CMISSEquations_NumberOfDynamicMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_NumberOfDynamicMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a linear equations matrix from the equations
+  SUBROUTINE CMISSEquations_LinearMatrixGet(equations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the linear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the linear matrix to get
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested linear matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_LinearMatrixGet",err,error,*999)
+
+    CALL Equations_LinearMatrixGet(equations%equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_LinearMatrixGet")
+    RETURN
+999 CALL Errors("CMISSEquations_LinearMatrixGet",err,error)
+    CALL Exits("CMISSEquations_LinearMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_LinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a Jacobian matrix from the equations
+  SUBROUTINE CMISSEquations_JacobianMatrixGet(equations,residualIndex,variableType,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type that the residual is differentiated with respect to for this Jacobian. \see OPENCMISS_FieldVariableTypes
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_JacobianMatrixGet",err,error,*999)
+
+    CALL Equations_JacobianMatrixGet(equations%equations, &
+      & residualIndex,variableType,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_JacobianMatrixGet")
+    RETURN
+999 CALL Errors("CMISSEquations_JacobianMatrixGet",err,error)
+    CALL Exits("CMISSEquations_JacobianMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_JacobianMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from equations using the dynamic matrix index
+  SUBROUTINE CMISSEquations_DynamicMatrixGet(equations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_DynamicMatrixGet",err,error,*999)
+
+    CALL Equations_DynamicMatrixGet(equations%equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_DynamicMatrixGet")
+    RETURN
+999 CALL Errors("CMISSEquations_DynamicMatrixGet",err,error)
+    CALL Exits("CMISSEquations_DynamicMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_DynamicMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from equations using the dynamic matrix type
+  SUBROUTINE CMISSEquations_DynamicMatrixGetByType(equations,matrixType,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixType !<The type of the dynamic matrix to get. \see OPENCMISS_EquationsSetDynamicMatrixTypes
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_DynamicMatrixGetByType",err,error,*999)
+
+    CALL Equations_DynamicMatrixGetByType(equations%equations,matrixType,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_DynamicMatrixGetByType")
+    RETURN
+999 CALL Errors("CMISSEquations_DynamicMatrixGetByType",err,error)
+    CALL Exits("CMISSEquations_DynamicMatrixGetByType")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_DynamicMatrixGetByType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the type of a dynamic matrix from equations set equations
+  SUBROUTINE CMISSEquations_DynamicMatrixTypeGet(equations,matrixIndex,matrixType,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the dynamic matrix type from
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get the type of
+    INTEGER(INTG), INTENT(OUT) :: matrixType !<On return, the dynamic matrix type. \see OPENCMISS_EquationsSetDynamicMatrixTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_DynamicMatrixTypeGet",err,error,*999)
+
+    CALL Equations_DynamicMatrixTypeGet(equations%equations,matrixIndex,matrixType,err,error,*999)
+
+    CALL Exits("CMISSEquations_DynamicMatrixTypeGet")
+    RETURN
+999 CALL Errors("CMISSEquations_DynamicMatrixTypeGet",err,error)
+    CALL Exits("CMISSEquations_DynamicMatrixTypeGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_DynamicMatrixTypeGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector for equations
+  SUBROUTINE CMISSEquations_RhsVectorGet(equations,rhsVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the right hand side vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: rhsVector !<On return, the right hand side vector for the equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_RhsVectorGet",err,error,*999)
+
+    CALL Equations_RhsVectorGet(equations%equations,rhsVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSEquations_RhsVectorGet")
+    RETURN
+999 CALL Errors("CMISSEquations_RhsVectorGet",err,error)
+    CALL Exits("CMISSEquations_RhsVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_RhsVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the source vector for equations
+  SUBROUTINE CMISSEquations_SourceVectorGet(equations,sourceVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the source vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: sourceVector !<On return, the source vector for the equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_SourceVectorGet",err,error,*999)
+
+    CALL Equations_SourceVectorGet(equations%equations,sourceVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSEquations_SourceVectorGet")
+    RETURN
+999 CALL Errors("CMISSEquations_SourceVectorGet",err,error)
+    CALL Exits("CMISSEquations_SourceVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_SourceVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a residual vector for equations
+  SUBROUTINE CMISSEquations_ResidualVectorGet(equations,residualIndex,residualVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the residual vector for the equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualVectorGet",err,error,*999)
+
+    CALL Equations_ResidualVectorGet(equations%equations,residualIndex,residualVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualVectorGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualVectorGet",err,error)
+    CALL Exits("CMISSEquations_ResidualVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of field variables that contribute to the residual vector
+  SUBROUTINE CMISSEquations_ResidualNumberOfVariablesGet(equations,residualIndex,numberOfVariables,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector number of variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the number of variables for
+    INTEGER(INTG), INTENT(OUT) :: numberOfVariables !<On return, the number of variables that contribute to the residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualNumberOfVariablesGet",err,error,*999)
+
+    CALL Equations_ResidualNumberOfVariablesGet(equations%equations,residualIndex,numberOfVariables,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualNumberOfVariablesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualNumberOfVariablesGet",err,error)
+    CALL Exits("CMISSEquations_ResidualNumberOfVariablesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualNumberOfVariablesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the field variables that contribute to the residual vector
+  SUBROUTINE CMISSEquations_ResidualVariablesGet(equations,residualIndex,residualVariables,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the variables for
+    INTEGER(INTG), INTENT(OUT) :: residualVariables(:) !<residualVariables(varIdx). On return, the field variable type for the varIdx'th residual variable. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualVariablesGet",err,error,*999)
+
+    CALL Equations_ResidualVariablesGet(equations%equations,residualIndex,residualVariables,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualVariablesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualVariablesGet",err,error)
+    CALL Exits("CMISSEquations_ResidualVariablesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualVariablesGet
 
 !!==================================================================================================================================
 !!
@@ -26919,7 +28178,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(DP), INTENT(OUT), POINTER :: parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -27023,7 +28282,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    INTEGER(INTG), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -27069,7 +28328,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    INTEGER(INTG), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -27098,7 +28357,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    REAL(SP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -27144,7 +28403,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(SP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -27173,7 +28432,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    REAL(DP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -27219,7 +28478,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(DP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -27248,7 +28507,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    LOGICAL, INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -27294,7 +28553,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    LOGICAL, INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -37229,6 +38488,140 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMesh_NumberOfElementsSetObj
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Calculate mesh data points topology in a region identified by a user number based on projection
+  SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber(regionUserNumber,MeshUserNumber, &
+      & DataProjection,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    
+    CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR)
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Calculate mesh data points topology in an interface identified by a user number based on projection
+  SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber(parentRegionUserNumber,interfaceUserNumber, &
+      & MeshUserNumber,DataProjection,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentregionUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    
+    CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(parentregionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL MESH_USER_NUMBER_FIND(MeshUserNumber,INTERFACE,MESH,Err,ERROR,*999)
+        IF(ASSOCIATED(MESH)) THEN
+          CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
+        ELSE
+          LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber, &
+            & "*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR)
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+  
+  !>Calculate mesh data points topology identified by object based on projection
+  SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionObj(Mesh,DataProjection,Err)
+  
+  !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to calculate data points topology for
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+  
+    CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
+    
+    CALL Mesh_TopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+ 
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
+    RETURN
+999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR)
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionObj
 
   !
   !================================================================================================================================
@@ -37244,7 +38637,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37320,7 +38713,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37487,7 +38880,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37578,7 +38971,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37665,7 +39058,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37744,7 +39137,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37827,7 +39220,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: localelementnode
@@ -37945,7 +39338,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -38033,7 +39426,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -38113,7 +39506,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -38347,6 +39740,556 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMesh_ElementExistsObj
+
+!!==================================================================================================================================
+!!
+!! DISTRIBUTED_MATRIX_VECTOR
+!!
+!!==================================================================================================================================
+
+  !>Get the storage type for a distributed matrix
+  SUBROUTINE CMISSDistributedMatrix_StorageTypeGetObj(matrix,storageType,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the storage type for
+    INTEGER(INTG), INTENT(OUT) :: storageType !<On return, the matrix storage type. \see OPENCMISS_MatrixStorageTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_StorageTypeGetObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(matrix%distributedMatrix,storageType,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_StorageTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_StorageTypeGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_StorageTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_StorageTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data type of a distributed matrix
+  SUBROUTINE CMISSDistributedMatrix_DataTypeGetObj(matrix,dataType,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the matrix data type. \see OPENCMISS_MatrixVectorDataTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataTypeGetObj",err,error,*999)
+
+    CALL DistributedMatrix_DataTypeGet(matrix%distributedMatrix,dataType,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataTypeGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the dimensions of a distributed matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DimensionsGetObj(matrix,m,n,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: m !<On return, the number of rows for this computational node
+    INTEGER(INTG), INTENT(OUT) :: n !<On return, the number of columns
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DimensionsGetObj",err,error,*999)
+
+    CALL DistributedMatrix_DimensionsGet(matrix%distributedMatrix,m,n,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DimensionsGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DimensionsGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DimensionsGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DimensionsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the row indices and column indices for a sparse matrix
+  SUBROUTINE CMISSDistributedMatrix_StorageLocationsGetObj(matrix,rowIndices,columnIndices,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the storage locations for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: rowIndices(:) !<On return, the matrix storage row indices
+    INTEGER(INTG), POINTER, INTENT(OUT) :: columnIndices(:) !<On return, the matrix storage column indices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_StorageLocationsGetObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(matrix%distributedMatrix,rowIndices,columnIndices,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_StorageLocationsGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_StorageLocationsGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_StorageLocationsGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_StorageLocationsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetIntgObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetIntgObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreIntgObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    INTEGER(INTG), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreIntgObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetDPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    REAL(DP), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetDPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreDPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    REAL(DP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreDPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetSPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    REAL(SP), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetSPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreSPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    REAL(SP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreSPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetLObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    LOGICAL, POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetLObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetLObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreLObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    LOGICAL, POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreLObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreLObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data type of a distributed vector
+  SUBROUTINE CMISSDistributedVector_DataTypeGetObj(vector,dataType,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the vector data type. \see OPENCMISS_MatrixVectorDataTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataTypeGetObj",err,error,*999)
+
+    CALL DistributedVector_DataTypeGet(vector%distributedVector,dataType,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataTypeGetObj",err,error)
+    CALL exits("CMISSDistributedVector_DataTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetIntgObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetIntgObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreIntgObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    INTEGER(INTG), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreIntgObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetDPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    REAL(DP), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetDPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreDPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    REAL(DP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreDPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetSPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    REAL(SP), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetSPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreSPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    REAL(SP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreSPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetLObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    LOGICAL, POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetLObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetLObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreLObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    LOGICAL, POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreLObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreLObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreLObj
 
 !!==================================================================================================================================
 !!
@@ -47741,6 +49684,158 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_BoundaryConditionsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of solver matrices for the solver equations
+  SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet(solverEquations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the number of matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of matrices for the solver equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_NumberOfMatricesGet",err,error,*999)
+
+    CALL SolverEquations_NumberOfMatricesGet(solverEquations%solver_equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_NumberOfMatricesGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_NumberOfMatricesGet",err,error)
+    CALL Exits("CMISSSolverEquations_NumberOfMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a solver matrix from the solver equations matrices
+  SUBROUTINE CMISSSolverEquations_MatrixGet(solverEquations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested solver matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_MatrixGet",err,error,*999)
+
+    CALL SolverEquations_MatrixGet(solverEquations%solver_equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_MatrixGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_MatrixGet",err,error)
+    CALL Exits("CMISSSolverEquations_MatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_MatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the Jacobian matrix from the solver equations matrices for nonlinear solver equations
+  SUBROUTINE CMISSSolverEquations_JacobianMatrixGet(solverEquations,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the Jacobian matrix for
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the solver equations Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_JacobianMatrixGet",err,error,*999)
+
+    CALL SolverEquations_JacobianMatrixGet(solverEquations%solver_equations,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_JacobianMatrixGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_JacobianMatrixGet",err,error)
+    CALL Exits("CMISSSolverEquations_JacobianMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_JacobianMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the vector assiciated with a solver matrix from the solver equations matrices
+  SUBROUTINE CMISSSolverEquations_VectorGet(solverEquations,matrixIndex,vector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the vector for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get the vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: vector !<On return, the requested solver matrix vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_VectorGet",err,error,*999)
+
+    CALL SolverEquations_VectorGet(solverEquations%solver_equations,matrixIndex,vector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_VectorGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_VectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_VectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_VectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the residual vector from the solver equations for nonlinear problems
+  SUBROUTINE CMISSSolverEquations_ResidualVectorGet(solverEquations,residualVector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the residual vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the solver residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_ResidualVectorGet",err,error,*999)
+
+    CALL SolverEquations_ResidualVectorGet(solverEquations%solver_equations,residualVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_ResidualVectorGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_ResidualVectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_ResidualVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector from the solver equations
+  SUBROUTINE CMISSSolverEquations_RhsVectorGet(solverEquations,rhsVector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the right hand side vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: rhsVector !<On return, the solver right hand side vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_RhsVectorGet",err,error,*999)
+
+    CALL SolverEquations_RhsVectorGet(solverEquations%solver_equations,rhsVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_RhsVectorGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_RhsVectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_RhsVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_RhsVectorGet
 
   !
   !================================================================================================================================

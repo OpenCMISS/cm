@@ -369,12 +369,40 @@ def parameter_conversion(parameter):
                 ','.join([':'] * parameter.array_dims)))
         if parameter.pointer == True and c_intent(parameter) == 'OUT':
             # we are setting the value of a pointer
+            # Note: here and below only work for 1D arrays
             pre_call.append('NULLIFY(%s)' % parameter.name)
             post_call.extend(('%sPtr = C_LOC(%s(1))' % (parameter.name,
                 parameter.name),
                 '%sSize = SIZE(%s,1)' % (parameter.name, parameter.name),
                 'IF(.NOT.C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
                 '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                'ENDIF'))
+        elif parameter.pointer == True and c_intent(parameter) == 'INOUT':
+            # we are getting the value from a pointer and then setting
+            # it on return
+            pre_call.extend(('IF(C_ASSOCIATED(%s)) THEN' % c_f90_name,
+                'CALL C_F_POINTER(%s,%s,[%s])' % (c_f90_name, parameter.name,
+                ','.join(size_list)),
+                'IF(ASSOCIATED(%s)) THEN' % parameter.name))
+
+            # On return, the Fortran pointer may or may not be associated
+            post_call.extend((
+                'IF(ASSOCIATED(%s)) THEN' % parameter.name,
+                '%sPtr = C_LOC(%s(1))' % (parameter.name, parameter.name),
+                '%sSize = SIZE(%s,1)' % (parameter.name, parameter.name),
+                'IF(.NOT.C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
+                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                'ENDIF',
+                'ELSE',
+                '%sPtr = C_NULL_PTR' % parameter.name,
+                '%sSize = 0' % parameter.name,
+                'ENDIF',
+                ))
+            post_call.extend(('ELSE',
+                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                'ENDIF',
+                'ELSE',
+                '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
                 'ENDIF'))
         else:
             # pointer is pointing to allocated memory that is being set
@@ -428,8 +456,8 @@ def parameter_c_f90_declaration(parameter):
         value = ''
 
     # possible size parameter
-    if parameter.pointer == True and param_cintent == 'OUT':
-        size_type = 'INTEGER(C_INT), INTENT(OUT)'
+    if parameter.pointer == True and param_cintent != 'IN':
+        size_type = 'INTEGER(C_INT), INTENT(%s)' % param_cintent
     else:
         size_type = 'INTEGER(C_INT), VALUE, INTENT(IN)'
     output.extend([size_type + ' :: ' + size_name
@@ -465,11 +493,13 @@ def parameter_to_c(parameter):
     """
 
     param = parameter.name
-    # pointer argument?
-    if (parameter.array_dims > 0 or parameter.var_type == Parameter.CHARACTER
+    # array or pointer argument?
+    if (parameter.array_dims == 1 and parameter.required_sizes == 0):
+        param = param + '[' + parameter.array_spec[0] + ']'
+    elif (parameter.array_dims > 0 or parameter.var_type == Parameter.CHARACTER
             or c_intent(parameter) == 'OUT'):
         param = '*' + param
-    if c_intent(parameter) == 'OUT' and parameter.pointer == True:
+    if parameter.pointer == True:
         # add another * as we need a pointer to a pointer,
         # to modify the pointer value
         param = '*' + param
@@ -485,8 +515,9 @@ def parameter_to_c(parameter):
         param = 'const ' + param
 
     # size?
-    if parameter.pointer == True and c_intent(parameter) == 'OUT':
-        # Size is an output
+    if parameter.pointer == True and c_intent(parameter) != 'IN':
+        # Size is an output, or possibly an input and an output if
+        # intent is INOUT
         size_type = 'int *'
     else:
         size_type = 'const int '
