@@ -76,6 +76,8 @@ MODULE INTERFACE_CONDITIONS_ROUTINES
   PUBLIC INTERFACE_CONDITION_EQUATIONS_CREATE_FINISH,INTERFACE_CONDITION_EQUATIONS_CREATE_START
 
   PUBLIC INTERFACE_CONDITION_EQUATIONS_DESTROY
+  
+  PUBLIC InterfaceCondition_IntegrationTypeGet,InterfaceCondition_IntegrationTypeSet
 
   PUBLIC INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_FINISH,INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_START
 
@@ -1119,9 +1121,81 @@ CONTAINS
     RETURN 1
   END SUBROUTINE INTERFACE_CONDITION_FINALISE
 
+!
+  !================================================================================================================================
+  !
+
+  !>Returns the interface condition integration type 
+  SUBROUTINE InterfaceCondition_IntegrationTypeGet(interfaceCondition,InterfaceConditionIntegrationType,err,error,*)
+
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition to get the operator for
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionIntegrationType !<On return, the interface condition integration type. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("InterfaceCondition_IntegrationTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(interfaceCondition)) THEN
+      IF(interfaceCondition%INTERFACE_CONDITION_FINISHED) THEN
+        InterfaceConditionIntegrationType=interfaceCondition%integrationType
+      ELSE
+        CALL FLAG_ERROR("Interface condition has not been finished.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfaceCondition_IntegrationTypeGet")
+    RETURN
+999 CALL ERRORS("InterfaceCondition_IntegrationTypeGet",err,ERROR)
+    CALL EXITS("InterfaceCondition_IntegrationTypeGet")
+    RETURN 1
+  END SUBROUTINE InterfaceCondition_IntegrationTypeGet
+  
   !
   !================================================================================================================================
   !
+
+  !>Sets/changes the interface condition integration type 
+  SUBROUTINE InterfaceCondition_IntegrationTypeSet(interfaceCondition,InterfaceConditionIntegrationType,err,error,*)
+
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition to set the operator for
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionIntegrationType !<The interface condition integration type to set. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("InterfaceCondition_IntegrationTypeSet",err,error,*999)
+
+    IF(ASSOCIATED(interfaceCondition)) THEN
+      IF(interfaceCondition%INTERFACE_CONDITION_FINISHED) THEN
+        CALL FLAG_ERROR("Interface condition has been finished.",err,error,*999)
+      ELSE
+        SELECT CASE(InterfaceConditionIntegrationType)
+        CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
+          interfaceCondition%integrationType=INTERFACE_CONDITION_GAUSS_INTEGRATION
+        CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
+          interfaceCondition%integrationType=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION
+        CASE DEFAULT
+          localError="The specified interface condition operator of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionIntegrationType,"*",err,ERROR))//" is not valid."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfaceCondition_IntegrationTypeSet")
+    RETURN
+999 CALL ERRORS("InterfaceCondition_IntegrationTypeSet",err,ERROR)
+    CALL EXITS("InterfaceCondition_IntegrationTypeSet")
+    RETURN 1
+  END SUBROUTINE InterfaceCondition_IntegrationTypeSet
 
 
   !
@@ -1181,7 +1255,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE INTERFACE_CONDITION_GEOMETRY_INITIALISE
 
-   !
+  !
   !================================================================================================================================
   !
 

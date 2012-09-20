@@ -94,5 +94,12 @@ MODULE INTERFACE_CONDITIONS_CONSTANTS
   INTEGER(INTG), PARAMETER :: INTERFACE_CONDITION_TIME_STEPPING=5 !<The interface conditions are for time stepping. \see INTERFACE_CONDITIONS_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   !>@}
   
+  !> \addtogroup INTERFACE_CONDITIONS_IntegrationType INTERFACE_CONDITIONS_CONSTANTS::IntegrationType
+  !> \brief Interface condition IntegrationType.
+  !> \see INTERFACE_CONDITIONS_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: INTERFACE_CONDITION_GAUSS_INTEGRATION=1 !<Gauss points integration type, i.e. Loop over element Gauss points and sum up their contribution. \see INTERFACE_CONDITIONS_CONSTANTS_IntegrationType,INTERFACE_CONDITIONS_CONSTANTS 
+  INTEGER(INTG), PARAMETER :: INTERFACE_CONDITION_DATA_POINTS_INTEGRATION=2 !< Data points integration type i.e. Loop over data points and  sum up their contribution.\see INTERFACE_CONDITIONS_CONSTANTS_IntegrationType,INTERFACE_CONDITIONS_CONSTANTS 
+  !>@}
 
 END MODULE INTERFACE_CONDITIONS_CONSTANTS

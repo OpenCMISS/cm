@@ -300,6 +300,8 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
     REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
+    INTEGER(INTG), ALLOCATABLE :: candidateElementNumbers(:) !<candidateElementNumbers(candidateElementIdx). The user specified USER (get convert to local element number in PROJECTION_EVALUATE routines) candidate element numbers
+    INTEGER(INTG), ALLOCATABLE :: localFaceLineNumbers(:) !<localFaceLineNumbers(candidateElementIdx). The user specified corresponding element face/line numbers for the candidate elements
     LOGICAL :: DATA_PROJECTION_PROJECTED !<Is .TRUE. if the data projection have been projected, .FALSE. if not.
     TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTION_RESULTS(:)
   END TYPE DATA_PROJECTION_TYPE
@@ -320,7 +322,7 @@ MODULE TYPES
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data point. 
     INTEGER(INTG) :: USER_NUMBER !<The user defined number of data point. 
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
-    REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
+    REAL(DP), ALLOCATABLE :: position(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
   END TYPE DATA_POINT_TYPE
 
@@ -453,7 +455,7 @@ MODULE TYPES
   !<Contains the information for the data points of a mesh
   TYPE MeshDataPointsType
     TYPE(MESH_TYPE), POINTER :: mesh !<The pointer to the mesh for this data points information.
-    INTEGER(INTG) :: totalNumberOfProjectedData !<Number of projected data on this element
+    INTEGER(INTG) :: totalNumberOfProjectedData !<Number of projected data in this mesh
     TYPE(MeshDataPointType), ALLOCATABLE :: dataPoints(:) !<dataPoints(dataPointIdx). Information of the projected data points
     TYPE(MeshElementDataPointsType), ALLOCATABLE :: elementDataPoint(:) !<elementDataPoint(elementIdx). Information of the projected data on the elements 
   END TYPE MeshDataPointsType
@@ -2074,7 +2076,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(INTERFACE_CONDITIONS_TYPE), POINTER :: INTERFACE_CONDITIONS !<A pointer back to the interface conditions.
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface.
     INTEGER(INTG) :: METHOD !<An integer which denotes the interface condition method. \see INTERFACE_CONDITIONS_Methods,INTERFACE_CONDITIONS
-    INTEGER(INTG) :: OPERATOR !<An integer which denotes whether type of interface operator. \see INTERFACE_CONDITIONS_Operator,INTERFACE_CONDITIONS
+    INTEGER(INTG) :: OPERATOR !<An integer which denotes the type of interface operator. \see INTERFACE_CONDITIONS_Operator,INTERFACE_CONDITIONS
+    INTEGER(INTG) :: integrationType !<An integer which denotes the integration type. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS
     TYPE(INTERFACE_GEOMETRY_TYPE) :: GEOMETRY !<The geometry information for the interface condition.
     TYPE(INTERFACE_PENALTY_TYPE), POINTER :: PENALTY !<A pointer to the interface condition penalty information if there are any for this interface condition.
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE !<A pointer to the interface condition Lagrange multipler information if there are any for this interface condition.
@@ -2113,6 +2116,29 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface
     TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENT_CONNECTIVITY(:,:) !<ELEMENT_CONNECTIVITY(element_idx,coupled_mesh_idx) !<The mesh connectivity for a given interface mesh element
   END TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
+  
+  !>Contains information on a data connectivity point 
+  TYPE InterfacePointConnectivityType
+    INTEGER(INTG) :: coupledMeshElementNumber !<The element number this point is connected to in the coupled mesh
+    INTEGER(INTG) :: localLineFaceNumber !<The local connected face/line number in the coupled mesh
+    REAL(DP), ALLOCATABLE :: xi(:,:) !<xi(xiIdx,meshComponentNumber). The full xi location the data point is connected to in this coupled mesh
+    REAL(DP), ALLOCATABLE :: reducedXi(:,:) !<reducedXi(xiIdx,meshComponentNumber). The reduced (face/line) xi location the data point is connected to in this coupled mesh
+  END TYPE InterfacePointConnectivityType
+  
+  !Contains information on coupled mesh elements that are connected to each interface element.
+  TYPE InterfaceCoupledElementsType
+    INTEGER(INTG) :: numberOfCoupledElements
+    INTEGER(INTG), ALLOCATABLE :: elementNumbers(:) !<elementNumbers(elementIdx). The global numbers of the coupled mesh elements that are connected to this interface element.
+  END TYPE InterfaceCoupledElementsType
+  
+  !>Contains information on the data point coupling/points connectivity between meshes in the an interface
+  TYPE InterfacePointsConnectivityType
+    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer back to the interface for the coupled mesh connectivity
+    TYPE(MESH_TYPE), POINTER :: interfaceMesh !<A pointer to the interface mesh where the xi locations of data points are defined
+    LOGICAL :: pointsConnectivityFinished !<Is .TRUE. if the data points connectivity has finished being created, .FALSE. if not.
+    TYPE(InterfacePointConnectivityType), ALLOCATABLE :: pointsConnectivity(:,:) !<pointsConnectivity(dataPointIndex,coupledMeshIdx). The points connectivity information for each data point in each coupled mesh. 
+    TYPE(InterfaceCoupledElementsType), ALLOCATABLE :: coupledElements(:,:) !<coupledElements(interfaceElementIdx,coupledMeshIdx). The coupled mesh elements that are connected to each interface element.
+  END TYPE InterfacePointsConnectivityType
  
   !>Contains information for the interface data.
   TYPE INTERFACE_TYPE
@@ -2126,6 +2152,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
     TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY !<A pointer to the meshes connectivity the interface.
+    TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the points connectivity the interface.
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<A pointer to the data points defined in an interface.
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
