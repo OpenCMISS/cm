@@ -277,13 +277,13 @@ MODULE MATRIX_VECTOR
   PUBLIC MATRIX_BLOCK_STORAGE_TYPE,MATRIX_DIAGONAL_STORAGE_TYPE,MATRIX_COLUMN_MAJOR_STORAGE_TYPE,MATRIX_ROW_MAJOR_STORAGE_TYPE, &
     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE
 
-  PUBLIC MATRIX_CREATE_FINISH,MATRIX_CREATE_START,MATRIX_DATA_GET,MATRIX_DATA_TYPE_SET,MATRIX_DESTROY, &
+  PUBLIC MATRIX_CREATE_FINISH,MATRIX_CREATE_START,MATRIX_DATA_GET,Matrix_DataTypeGet,MATRIX_DATA_TYPE_SET,MATRIX_DESTROY, &
     & MATRIX_DUPLICATE,MATRIX_MAX_COLUMNS_PER_ROW_GET,MATRIX_NUMBER_NON_ZEROS_SET,MATRIX_NUMBER_NON_ZEROS_GET,MATRIX_MAX_SIZE_SET, &
     & MATRIX_OUTPUT,MATRIX_SIZE_SET,MATRIX_STORAGE_LOCATION_FIND,MATRIX_STORAGE_LOCATIONS_SET,MATRIX_STORAGE_TYPE_GET, &
     & MATRIX_STORAGE_TYPE_SET,MATRIX_VALUES_ADD,MATRIX_VALUES_GET,MATRIX_VALUES_SET
 
-  PUBLIC VECTOR_ALL_VALUES_SET,VECTOR_CREATE_FINISH,VECTOR_CREATE_START,VECTOR_DATA_GET,VECTOR_DATA_TYPE_SET,VECTOR_DESTROY, &
-    & VECTOR_DUPLICATE,VECTOR_SIZE_SET,VECTOR_VALUES_GET,VECTOR_VALUES_SET
+  PUBLIC VECTOR_ALL_VALUES_SET,VECTOR_CREATE_FINISH,VECTOR_CREATE_START,VECTOR_DATA_GET,Vector_DataTypeGet,VECTOR_DATA_TYPE_SET, &
+    & VECTOR_DESTROY,VECTOR_DUPLICATE,VECTOR_SIZE_SET,VECTOR_VALUES_GET,VECTOR_VALUES_SET
 
   PUBLIC MATRIX_LINKLIST_SET,MATRIX_LINKLIST_GET
 CONTAINS
@@ -796,6 +796,38 @@ CONTAINS
     CALL EXITS("MATRIX_DATA_GET_L")
     RETURN 1
   END SUBROUTINE MATRIX_DATA_GET_L
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the data type of a matrix.
+  SUBROUTINE Matrix_DataTypeGet(matrix,dataType,err,error,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: matrix !<A pointer to the matrix
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the data type of the matrix. \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("Matrix_DataTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(matrix)) THEN
+      IF(.NOT.matrix%matrix_finished) THEN
+        CALL flag_error("The matrix has not been finished.",err,error,*999)
+      ELSE
+        dataType=matrix%data_type
+      END IF
+    ELSE
+      CALL flag_error("Matrix is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("Matrix_DataTypeGet")
+    RETURN
+999 CALL errors("Matrix_DataTypeGet",err,error)
+    CALL exits("Matrix_DataTypeGet")
+    RETURN 1
+  END SUBROUTINE Matrix_DataTypeGet
 
   !
   !================================================================================================================================
@@ -4543,6 +4575,38 @@ CONTAINS
     CALL EXITS("VECTOR_DATA_GET_L")
     RETURN 1
   END SUBROUTINE VECTOR_DATA_GET_L
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the data type of a vector.
+  SUBROUTINE Vector_DataTypeGet(vector,dataType,err,error,*)
+
+    !Argument variables
+    TYPE(VECTOR_TYPE), POINTER :: vector !<A pointer to the vector
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the data type of the vector. \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("Vector_DataTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(vector)) THEN
+      IF(.NOT.vector%vector_finished) THEN
+        CALL flag_error("The vector has not been finished.",err,error,*999)
+      ELSE
+        dataType=vector%data_type
+      END IF
+    ELSE
+      CALL flag_error("Vector is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("Vector_DataTypeGet")
+    RETURN
+999 CALL errors("Vector_DataTypeGet",err,error)
+    CALL exits("Vector_DataTypeGet")
+    RETURN 1
+  END SUBROUTINE Vector_DataTypeGet
 
   !
   !================================================================================================================================
