@@ -631,9 +631,9 @@ CONTAINS
                     DO dataPointIdx=1,decompositionData%elementDataPoint(colElementNumber)%numberOfProjectedData
                       localDataPointNumber=decompositionData%elementDataPoint(colElementNumber)% &
                         & dataIndices(dataPointIdx)%localNumber
-                      local_ny=COLS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
+                      local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
                         & DATA_POINTS(localDataPointNumber)
-                      global_ny=COLS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                      global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
                       ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
                       ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
                       ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
@@ -699,9 +699,9 @@ CONTAINS
                     DO dataPointIdx=1,decompositionData%elementDataPoint(colElementNumber)%numberOfProjectedData
                       localDataPointNumber=decompositionData%elementDataPoint(colElementNumber)% &
                         & dataIndices(dataPointIdx)%localNumber
-                      local_ny=COLS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
+                      local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
                         & DATA_POINTS(localDataPointNumber)
-                      global_ny=COLS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                      global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
                       ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
                       ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
                     ENDDO
@@ -938,9 +938,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version
+    INTEGER(INTG) :: component_idx,derivative,derivative_idx,local_ny,node,node_idx,version,dataPointIdx,localDataPointNumber
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE",ERR,ERROR,*999)
@@ -979,6 +980,16 @@ CONTAINS
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+              decompositionData=>ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%DECOMPOSITION%TOPOLOGY%dataPoints
+              DO dataPointIdx=1,decompositionData%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
+                localDataPointNumber=decompositionData%elementDataPoint(ELEMENT_NUMBER)% &
+                  & dataIndices(dataPointIdx)%localNumber
+                local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
+                  & DATA_POINTS(localDataPointNumber)
+                ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+              ENDDO
             CASE DEFAULT
               LOCAL_ERROR="The interpolation type of "// &
                 & TRIM(NUMBER_TO_VSTRING(ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
