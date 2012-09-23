@@ -327,7 +327,7 @@ CONTAINS
               CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
                 meshConnectivity=>interface%MESH_CONNECTIVITY
                 IF(ASSOCIATED(meshConnectivity)) THEN
-                  IF(ALLOCATED(meshConnectivity%ELEMENTS_CONNECTIVITY)) THEN
+                  IF(ALLOCATED(meshConnectivity%ELEMENT_CONNECTIVITY)) THEN
                     !Calculate the row and columns for the interface equations matrices
                     DO matrixIdx=1,interfaceMatrices%NUMBER_OF_INTERFACE_MATRICES
                       interfaceMatrix=>interfaceMatrices%MATRICES(matrixIdx)%PTR
@@ -335,7 +335,7 @@ CONTAINS
                         rowsFieldVariable=>interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%VARIABLE
                         colsFieldVariable=>interfaceMapping%LAGRANGE_VARIABLE !\todo: TEMPORARY: Needs generalising
                         rowsMeshIdx=interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%MESH_INDEX
-                        rowsElementNumber=meshConnectivity%ELEMENTS_CONNECTIVITY(InterfaceElementNumber,rowsMeshIdx)% &
+                        rowsElementNumber=meshConnectivity%ELEMENT_CONNECTIVITY(InterfaceElementNumber,rowsMeshIdx)% &
                           & COUPLED_MESH_ELEMENT_NUMBER
                         CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE(interfaceMatrix%ELEMENT_MATRIX, &
                           & interfaceMatrix%UPDATE_MATRIX,[rowsElementNumber],[InterfaceElementNumber],rowsFieldVariable, &
