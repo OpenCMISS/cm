@@ -869,12 +869,15 @@ CONTAINS
   !
 
   !>Sets up the element matrix for the row and column field variables.
-  SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(ELEMENT_MATRIX,ROWS_FIELD_VARIABLE,COLS_FIELD_VARIABLE,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(ELEMENT_MATRIX,ROWS_FIELD_VARIABLE,COLS_FIELD_VARIABLE, &
+      & rowsNumberOfElements,colsNumberOfElements,ERR,ERROR,*)
 
     !Argument variables
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix to setup
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROWS_FIELD_VARIABLE !<A pointer to the field variable associated with the rows
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: COLS_FIELD_VARIABLE !<A pointer to the field variable associated with the columns
+    INTEGER(INTG), INTENT(IN)  :: rowsNumberOfElements !Number of elements in the row variables whose dofs are present in this element matrix
+    INTEGER(INTG), INTENT(IN)  :: colsNumberOfElements !Number of elements in the col variables whose dofs are present in this element matrix
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -886,9 +889,9 @@ CONTAINS
     IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
       IF(ASSOCIATED(COLS_FIELD_VARIABLE)) THEN
         ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS*rowsNumberOfElements
         ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=COLS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & COLS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          & COLS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS*colsNumberOfElements
         IF(ALLOCATED(ELEMENT_MATRIX%ROW_DOFS)) THEN
           CALL FLAG_ERROR("Element matrix row dofs already allocated.",ERR,ERROR,*999)
         ELSE
@@ -1533,6 +1536,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: matrix_idx
+    INTEGER(INTG) :: rowsNumberOfElements,colsNumberOfElements !Number of elements in the row and col variables whose dofs are present in the element matrix
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -1551,6 +1555,8 @@ CONTAINS
     CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+      rowsNumberOfElements=1
+      colsNumberOfElements=1
       EQUATIONS_MAPPING=>EQUATIONS_MATRICES%EQUATIONS_MAPPING
       IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
         DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
@@ -1563,7 +1569,7 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
                 FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx)%VARIABLE
                 CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(EQUATIONS_MATRIX%ELEMENT_MATRIX,FIELD_VARIABLE,FIELD_VARIABLE, &
-                  & ERR,ERROR,*999)
+                  & rowsNumberOfElements,colsNumberOfElements,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="Equations dynamic matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
                   & " is not associated."
@@ -1584,7 +1590,7 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
                 FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx)%VARIABLE
                 CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(EQUATIONS_MATRIX%ELEMENT_MATRIX,FIELD_VARIABLE,FIELD_VARIABLE, &
-                  & ERR,ERROR,*999)
+                  & rowsNumberOfElements,colsNumberOfElements,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="Equations linear matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
                   & " is not associated."
@@ -1606,7 +1612,7 @@ CONTAINS
               IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
                 COL_FIELD_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE
                 CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(JACOBIAN_MATRIX%ELEMENT_JACOBIAN,FIELD_VARIABLE,COL_FIELD_VARIABLE, &
-                  & ERR,ERROR,*999)
+                  & rowsNumberOfElements,colsNumberOfElements,ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
               ENDIF

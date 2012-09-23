@@ -196,13 +196,13 @@ CONTAINS
               !Assemble the elements
               !Allocate the element matrices 
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_START("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_START("InterfaceMatrices_ElementInitialise()")
 #endif
-              CALL INTERFACE_MATRICES_ELEMENT_INITIALISE(INTERFACE_MATRICES,ERR,ERROR,*999)
+              CALL InterfaceMatrices_ElementInitialise(INTERFACE_MATRICES,ERR,ERROR,*999)
               ELEMENTS_MAPPING=>LAGRANGE_FIELD%DECOMPOSITION%DOMAIN(LAGRANGE_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
                 & MAPPINGS%ELEMENTS
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_STOP("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_STOP("InterfaceMatrices_ElementInitialise()")
 #endif
               !Output timing information if required
               IF(INTERFACE_EQUATIONS%OUTPUT_TYPE>=INTERFACE_EQUATIONS_TIMING_OUTPUT) THEN
@@ -1859,13 +1859,13 @@ CONTAINS
               !Assemble the elements
               !Allocate the element matrices 
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_START("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_START("InterfaceMatrices_ElementInitialise()")
 #endif
-              CALL INTERFACE_MATRICES_ELEMENT_INITIALISE(INTERFACE_MATRICES,ERR,ERROR,*999)
+              CALL InterfaceMatrices_ElementInitialise(INTERFACE_MATRICES,ERR,ERROR,*999)
               ELEMENTS_MAPPING=>LAGRANGE_FIELD%DECOMPOSITION%DOMAIN(LAGRANGE_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
                 & MAPPINGS%ELEMENTS
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_STOP("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_STOP("InterfaceMatrices_ElementInitialise()")
 #endif
               !Output timing information if required
               IF(INTERFACE_EQUATIONS%OUTPUT_TYPE>=INTERFACE_EQUATIONS_TIMING_OUTPUT) THEN
