@@ -1502,7 +1502,7 @@ CONTAINS
     DO coupledMeshIdx=1,size(interfacePointsConnectivity%pointsConnectivity,2)
       DO dataPointIdx=1,size(interfacePointsConnectivity%pointsConnectivity,1) !Deallocate memory for each data point
         interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%coupledMeshElementNumber=0
-        interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%localLineFaceNumber=0
+        interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%elementLineFaceNumber=0
         IF(ALLOCATED(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%xi)) THEN
           DEALLOCATE(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%xi)
         ENDIF
@@ -1558,7 +1558,7 @@ CONTAINS
            CASE(2)
              DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
                pointConnectivity=>InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)
-               SELECT CASE(pointConnectivity%localLineFaceNumber)
+               SELECT CASE(pointConnectivity%elementLineFaceNumber)
                CASE(1)
                  pointConnectivity%xi(1,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
                  pointConnectivity%xi(2,meshComponentNumber)=0.0_DP
@@ -1573,14 +1573,14 @@ CONTAINS
                  pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
                CASE DEFAULT
                  localError="Invalid local line number "// &
-                   & TRIM(NUMBER_TO_VSTRING(pointConnectivity%localLineFaceNumber,"*",err,error))//" ."
+                   & TRIM(NUMBER_TO_VSTRING(pointConnectivity%elementLineFaceNumber,"*",err,error))//" ."
                  CALL FLAG_ERROR(localError,err,error,*999)
                END SELECT
              ENDDO !dataPointIdx
            CASE(3)
              DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
                pointConnectivity=>InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)
-               SELECT CASE(pointConnectivity%localLineFaceNumber)
+               SELECT CASE(pointConnectivity%elementLineFaceNumber)
                CASE(1)
                  pointConnectivity%xi(1,meshComponentNumber)=1.0_DP
                  pointConnectivity%xi(2,meshComponentNumber)=pointConnectivity%reducedXi(1,meshComponentNumber)
@@ -1607,13 +1607,13 @@ CONTAINS
                  pointConnectivity%xi(3,meshComponentNumber)=0.0_DP
                CASE DEFAULT
                  localError="Invalid local face number "// &
-                   & TRIM(NUMBER_TO_VSTRING(pointConnectivity%localLineFaceNumber,"*",err,error))//" ."
+                   & TRIM(NUMBER_TO_VSTRING(pointConnectivity%elementLineFaceNumber,"*",err,error))//" ."
                  CALL FLAG_ERROR(localError,err,error,*999)
                END SELECT
              ENDDO !dataPointIdx
            CASE DEFAULT
              localError="Invalid coupled mesh dimension "// &
-               & TRIM(NUMBER_TO_VSTRING(pointConnectivity%localLineFaceNumber,"*",err,error))//" ."
+               & TRIM(NUMBER_TO_VSTRING(pointConnectivity%elementLineFaceNumber,"*",err,error))//" ."
              CALL FLAG_ERROR(localError,err,error,*999)
            END SELECT
          ENDIF
@@ -1710,7 +1710,7 @@ CONTAINS
                 DO meshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
                   coupledMeshDimension=interface%COUPLED_MESHES(meshIdx)%PTR%NUMBER_OF_DIMENSIONS
                   interfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%coupledMeshElementNumber=0
-                  interfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=0
+                  interfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=0
                   !Allocate memory for coupled mesh full and reduced xi location
                   ALLOCATE(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
                     & xi(coupledMeshDimension,numberOfMeshComponents),STAT=ERR)
@@ -1908,10 +1908,10 @@ CONTAINS
             InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%coupledMeshElementNumber= &
               & dataProjectionResult%ELEMENT_NUMBER
             IF(dataProjectionResult%ELEMENT_LINE_NUMBER/=0) THEN
-              InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%localLineFaceNumber= &
+              InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%elementLineFaceNumber= &
                 & dataProjectionResult%ELEMENT_LINE_NUMBER
             ELSEIF(dataProjectionResult%ELEMENT_FACE_NUMBER/=0) THEN
-              InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%localLineFaceNumber= &
+              InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%elementLineFaceNumber= &
                 & dataProjectionResult%ELEMENT_FACE_NUMBER
             ENDIF
           ENDDO
@@ -1968,7 +1968,7 @@ CONTAINS
                  DO meshComponentIdx=1,InterfacePointsConnectivity%interfaceMesh%NUMBER_OF_COMPONENTS
                    InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%reducedXi(:,meshComponentIdx)= &
                      & InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(:,meshComponentIdx)
-                   InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=1 !The only local face/line for the body with lower dimension 
+                   InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=1 !The only local face/line for the body with lower dimension 
                  ENDDO !meshComponentIdx
                ENDDO !dataPointIdx
              ELSE
@@ -1979,11 +1979,11 @@ CONTAINS
                      DO xiIdx=1,coupledMeshDimensions
                        IF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
                            & xi(xiIdx,meshComponentIdx)==0.0_DP) THEN
-                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=4-(xiIdx-1)*2 !Calculate line number
+                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=4-(xiIdx-1)*2 !Calculate line number
                          EXIT
                        ELSEIF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
                            & xi(xiIdx,meshComponentIdx)==1.0_DP) THEN
-                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=3-(xiIdx-1)*2 !Calculate line number
+                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=3-(xiIdx-1)*2 !Calculate line number
                          EXIT
                        ENDIF
                      ENDDO !xiIdx
@@ -1998,11 +1998,11 @@ CONTAINS
                      DO xiIdx=1,coupledMeshDimensions
                        IF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
                            & xi(xiIdx,meshComponentIdx)==0.0_DP) THEN
-                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=(xiIdx-1)*2+2 !Calculate face number
+                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=(xiIdx-1)*2+2 !Calculate face number
                          EXIT
                        ELSEIF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
                            & xi(xiIdx,meshComponentIdx)==1.0_DP) THEN
-                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%localLineFaceNumber=(xiIdx-1)*2+1 !Calculate face number
+                         InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=(xiIdx-1)*2+1 !Calculate face number
                          EXIT
                        ENDIF
                      ENDDO !xiIdx
