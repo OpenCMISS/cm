@@ -68,6 +68,8 @@ MODULE INTERFACE_OPERATORS_ROUTINES
   !Interfaces
 
   PUBLIC FieldContinuity_FiniteElementCalculate
+  
+  PUBLIC FrictionlessContact_FiniteElementCalculate
 
 CONTAINS
 
@@ -224,6 +226,179 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FieldContinuity_FiniteElementCalculate
+  
+    !
+  !================================================================================================================================
+  !
+
+  !>Calculates the element stiffness matries for the given element number for frictionless contact operator
+  SUBROUTINE FrictionlessContact_FiniteElementCalculate(interfaceCondition,interfaceElementNumber,err,error,*)
+
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface element number to calcualte the interface element matrix for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: interfaceEquations !<A pointer to the interface equations
+    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface 
+    TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the interface points connectivity
+    TYPE(DecompositionElementDataPointsType), POINTER :: decompositionElementData !<A pointer to the decomposition data point topology
+    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: interpolatedPointsMetrics(:)
+    INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp
+    INTEGER(INTG) :: dataPointIdx,coupledMeshIdx,xiIdx
+    INTEGER(INTG) :: matrixCoefficients(2)
+    REAL(DP) :: positionPoint(3),normalPoint(3),tangentsPoint(3,3)
+    REAL(DP), ALLOCATABLE :: gaps(:),gapsComponents(:,:),normals(:,:)
+    LOGICAL, ALLOCATABLE :: orthogonallyProjected(:)
+    
+    
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("FrictionlessContact_FiniteElementCalculate",err,error,*999)
+    
+    IF(ASSOCIATED(interfaceCondition)) THEN
+      interfaceEquations=>interfaceCondition%INTERFACE_EQUATIONS
+      IF(ASSOCIATED(interfaceEquations)) THEN
+        interface=>interfaceCondition%INTERFACE
+        IF(ASSOCIATED(interface)) THEN
+          SELECT CASE(interfaceCondition%METHOD)
+          CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+            SELECT CASE(interfaceCondition%integrationType)
+            CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
+              CALL FLAG_ERROR("Mesh connectivity is not implemented for frictionless contact.",err,error,*999)
+            CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
+              matrixCoefficients(1)=1; !\todo: Change to interface mapping matrix coefficients
+              matrixCoefficients(2)=-1;
+              pointsConnectivity=>interface%pointsConnectivity
+              IF(ASSOCIATED(pointsConnectivity)) THEN
+                decompositionElementData=>interfaceCondition%LAGRANGE%LAGRANGE_FIELD%DECOMPOSITION%TOPOLOGY%dataPoints% &
+                  & elementDataPoint(interfaceElementNumber)
+                !###################################################################################################################
+                
+                !Test for orthogonal projected
+                ALLOCATE(orthogonallyProjected(decompositionElementData%numberOfProjectedData),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate orthogonal projected logicals.",err,error,*999)
+                orthogonallyProjected=.TRUE. !Initialise orthogonal projected logicals
+                DO coupledMeshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
+                  coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
+                    & DEPENDENT%DEPENDENT_FIELD
+                  !mesh component number is the same for all geometric components in elasticity problems
+                  meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%COMPONENTS(1)%MESH_COMPONENT_NUMBER 
+                  DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                    DO xiIdx=1,SIZE(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi,1)
+                      IF(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi(xiIdx,meshComponentNumber) &
+                          & == 0.0_DP) THEN
+                        orthogonallyProjected(dataPointIdx)=.FALSE.
+                      ENDIF
+                    ENDDO !xiIdx
+                  ENDDO !dataPointIdx
+                ENDDO !coupledMeshIdx
+                
+                !###################################################################################################################
+                
+                !Allocate memory for local allocatable variables
+                ALLOCATE(gaps(decompositionElementData%numberOfProjectedData),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate gaps.",err,error,*999)
+                gaps=0.0_DP !Initialise gap functions
+                ALLOCATE(gapsComponents(3,decompositionElementData%numberOfProjectedData),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate component gaps.",err,error,*999)
+                gapsComponents=0.0_DP !Initialise gap functions
+                ALLOCATE(normals(3,decompositionElementData%numberOfProjectedData),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate normals.",err,error,*999)
+                normals=0.0_DP !Initialise gap functions
+                
+                !Calculate Gap for each data point 
+                DO coupledMeshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
+                  coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
+                    & DEPENDENT%DEPENDENT_FIELD
+                  NULLIFY(interpolatedPoints)
+                  NULLIFY(interpolationParameters)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(coupledMeshDependentField,interpolationParameters,err,error,*999)
+                  CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999)
+                  interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
+                  !mesh component number is the same for all geometric components in elasticity problems
+                  meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+                  numberOfCoupledMeshGeoComp=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%NUMBER_OF_COMPONENTS
+                  DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                    !Only interpolate if orthogonally projected
+                    IF(orthogonallyProjected(dataPointIdx)) THEN
+                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,pointsConnectivity% &
+                        & pointsConnectivity(dataPointIdx,coupledMeshIdx)%coupledMeshElementNumber, &
+                        & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                      CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
+                        & coupledMeshIdx)%xi(:,meshComponentNumber),interpolatedPoint,err,error,*999) !Interpolate contact data points on each surface
+                      gapsComponents(1:numberOfCoupledMeshGeoComp,dataPointIdx)=gapsComponents(1:numberOfCoupledMeshGeoComp, &
+                        & dataPointIdx)+interpolatedPoint%VALUES(1:numberOfCoupledMeshGeoComp,NO_PART_DERIV)* &
+                        & matrixCoefficients(coupledMeshIdx) !Calculate 3 components gap function for each contact point
+                      !Calculate surface normal (use 1st coupled mesh surface normal)
+                      IF (coupledMeshIdx==1) THEN
+                        CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(interpolatedPoints,interpolatedPointsMetrics, &
+                          & err,error,*999)
+                        CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(numberOfCoupledMeshGeoComp,interpolatedPointsMetrics &
+                          & (FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                        CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC(interpolatedPointsMetrics &
+                          & (FIELD_U_VARIABLE_TYPE)%PTR,positionPoint,normalPoint,tangentsPoint,err,error,*999)
+                        normals(1:numberOfCoupledMeshGeoComp,dataPointIdx)=normalPoint(1:numberOfCoupledMeshGeoComp)
+                        CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(interpolatedPointsMetrics,err,error,*999)
+                      ENDIF !coupledMeshIdx==1
+                    ENDIF !orthogonallyProjected(dataPointIdx)
+                  ENDDO !dataPointIdx
+                ENDDO !coupledMeshIdx
+                
+                !###################################################################################################################
+                
+                
+                
+                !###################################################################################################################
+                
+                !Calculate PGSMI
+                !###################################################################################################################
+                
+                !Deallocate memory
+                IF(ALLOCATED(orthogonallyProjected)) DEALLOCATE(orthogonallyProjected)
+                IF(ALLOCATED(gapsComponents)) DEALLOCATE(gapsComponents)
+                IF(ALLOCATED(gaps)) DEALLOCATE(gaps)
+              ELSE
+                CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+              ENDIF
+            CASE DEFAULT
+              localError="Interface condition integration type "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType, &
+                & "*",err,error))// " is not valid."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT !interfaceCondition%integrationType
+          CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE DEFAULT
+            localError="Interface condition method "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%METHOD,"*",err,error))// &
+              & " is not valid."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END SELECT !interfaceCondition%METHOD
+        ELSE
+          CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface equations is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("FrictionlessContact_FiniteElementCalculate")
+    RETURN
+999 CALL ERRORS("FrictionlessContact_FiniteElementCalculate",err,error)
+    CALL EXITS("FrictionlessContact_FiniteElementCalculate")
+    RETURN 1
+    
+  END SUBROUTINE FrictionlessContact_FiniteElementCalculate
   
   !
   !================================================================================================================================
