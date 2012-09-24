@@ -6272,6 +6272,10 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !
+  !================================================================================================================================
+  !
+
   !>Computes the geometric position, normal and tangent vectors at a interpolated point metrics in a field. 
   SUBROUTINE FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC(INTERPOLATED_POINT_METRICS, &
     & POSITION,NORMAL,TANGENTS,ERR,ERROR,*)
@@ -6298,6 +6302,19 @@ CONTAINS
               INTERPOLATED_POINT=>INTERPOLATED_POINT_METRICS%INTERPOLATED_POINT
               IF(ASSOCIATED(INTERPOLATED_POINT)) THEN
                 POSITION=INTERPOLATED_POINT%VALUES(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,NO_PART_DERIV)
+                SELECT CASE(INTERPOLATED_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS)
+                CASE(1) !For lines
+                  NORMAL=0.0_DP
+                  DO dimension_idx=1,INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS
+                    TANGENTS(dimension_idx,1)=INTERPOLATED_POINT_METRICS%DX_DXI &
+                      & (dimension_idx,1)
+                  ENDDO !dimension_idx 
+                  TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,1)= &
+                    & NORMALISE(TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,1),ERR,ERROR)
+                  NORMAL(1)=TANGENTS(2,1)
+                  NORMAL(2)=TANGENTS(1,1)
+                  IF(ERR/=0) GOTO 999     
+                CASE(2) !For faces
                 NORMAL=0.0_DP
                 DO xi_idx=1,INTERPOLATED_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS
                   DO dimension_idx=1,INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS
@@ -6307,6 +6324,13 @@ CONTAINS
                     & NORMALISE(TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,xi_idx),ERR,ERROR)
                   IF(ERR/=0) GOTO 999
                 ENDDO !xi_idx
+                CALL CROSS_PRODUCT(TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,1), &
+                  & TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,2),NORMAL,ERR,ERROR,*999)     
+                CASE DEFAULT
+                  LOCAL_ERROR="The interpolated metrics must be for lines/faces, dimension of " &
+                    & //TRIM(NUMBER_TO_VSTRING(INTERPOLATED_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)    
+                END SELECT
               ELSE
                 CALL FLAG_ERROR("Interpolated point metrics interpolated point is not associted.",ERR,ERROR,*999)
               ENDIF
