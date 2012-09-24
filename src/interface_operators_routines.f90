@@ -392,30 +392,33 @@ CONTAINS
                     meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%COMPONENTS(1)% &
                       & MESH_COMPONENT_NUMBER
                     DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
-                      localElementNumber=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%coupledMeshElementNumber
-                      !Calculate the element index (non-conforming element) for this interface matrix
-                      matrixElementIdx=1
-                      DO WHILE (localElementNumber/=pointsConnectivity%coupledElements(interfaceElementNumber,coupledMeshIdx)% &
-                          & elementNumbers(matrixElementIdx))
-                        matrixElementIdx=matrixElementIdx+1
-                      ENDDO   
-                      xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
-                        & xi(1:numberOfCoupledMeshXi,meshComponentNumber)
-                      !Calculate PGSMI for each data point component
-                      coupledMeshDependentBasis=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
-                        & TOPOLOGY%ELEMENTS%ELEMENTS(localElementNumber)%BASIS
-                      DO rowComponentIdx=1,numberOfCoupledMeshGeoComp
-                        DO rowParameterIdx=1,coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS   
-                          PGMSI=BASIS_EVALUATE_XI(coupledMeshDependentBasis,rowParameterIdx,NO_PART_DERIV, &
-                            & xi(1:numberOfCoupledMeshXi),ERR,ERROR)*normals(rowComponentIdx,dataPointIdx)* &
-                            & matrixCoefficients(coupledMeshIdx)
-                          rowIdx=coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*numberOfMatrixCoupledElements* &
-                            & (rowComponentIdx-1)+coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS* &
-                            & (matrixElementIdx-1)+rowParameterIdx
-                          colIdx=dataPointIdx
-                          interfaceElementMatrix%MATRIX(rowIdx,colIdx)=PGMSI !Update interface element matrix with contact point contribution
-                        ENDDO !rowParameterIdx
-                      ENDDO !rowComponentIdx
+                      IF(gaps(dataPointIdx)>0.0_dp) THEN !Only add contact point contribution if the gap is a penetration
+                        localElementNumber=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
+                          & coupledMeshElementNumber
+                        !Calculate the element index (non-conforming element) for this interface matrix
+                        matrixElementIdx=1
+                        DO WHILE (localElementNumber/=pointsConnectivity%coupledElements(interfaceElementNumber,coupledMeshIdx)% &
+                            & elementNumbers(matrixElementIdx))
+                          matrixElementIdx=matrixElementIdx+1
+                        ENDDO   
+                        xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
+                          & xi(1:numberOfCoupledMeshXi,meshComponentNumber)
+                        !Calculate PGSMI for each data point component
+                        coupledMeshDependentBasis=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(localElementNumber)%BASIS
+                        DO rowComponentIdx=1,numberOfCoupledMeshGeoComp
+                          DO rowParameterIdx=1,coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS   
+                            PGMSI=BASIS_EVALUATE_XI(coupledMeshDependentBasis,rowParameterIdx,NO_PART_DERIV, &
+                              & xi(1:numberOfCoupledMeshXi),ERR,ERROR)*normals(rowComponentIdx,dataPointIdx)* &
+                              & matrixCoefficients(coupledMeshIdx)
+                            rowIdx=coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*numberOfMatrixCoupledElements* &
+                              & (rowComponentIdx-1)+coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS* &
+                              & (matrixElementIdx-1)+rowParameterIdx
+                            colIdx=dataPointIdx
+                            interfaceElementMatrix%MATRIX(rowIdx,colIdx)=PGMSI !Update interface element matrix with contact point contribution
+                          ENDDO !rowParameterIdx
+                        ENDDO !rowComponentIdx
+                      ENDIF !gaps(dataPointIdx)>0.0_dp
                     ENDDO !dataPointIdx
                     !scale factor update
                     IF(coupledMeshDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
