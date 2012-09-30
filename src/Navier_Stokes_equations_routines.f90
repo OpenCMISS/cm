@@ -6336,16 +6336,14 @@ CONTAINS
                               & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                              BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
                               & CONDITION_TYPES(local_ny)
-                             IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE_INLET .OR. &
-                              & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                             IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
                                inletNode=.TRUE.
-                             ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE_OUTLET .OR. &
-                               &  BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_OUTLET) THEN
+                             ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_OUTLET) THEN
                                outletNode=.TRUE.
                              ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
                                fixedNode=.TRUE.
                              ELSE
-                               CALL FLAG_ERROR("Please set 1D-0D coupled boundary as free inlet or outlet.",ERR,ERROR,*999)
+                               CALL FLAG_ERROR("Please set 1D-0D coupled boundary as inlet or outlet.",ERR,ERROR,*999)
                              ENDIF
                            ELSE
                              CALL FLAG_ERROR("Please set a boundary condition at the coupled node.",ERR,ERROR,*999)
@@ -9925,14 +9923,12 @@ CONTAINS
                  & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                 boundaryConditionCheckVariable=boundaryConditionsVariable% &
                  & CONDITION_TYPES(local_ny)
-                IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FREE_INLET .OR. &
-                   boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
                   inletNode=.TRUE.
                   returnComponent=1
                   oneDComponent=2
                   boundaryIdx=boundaryIdx+1
-                ELSE IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FREE_OUTLET .OR. &
-                     &  boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_OUTLET) THEN
+                ELSE IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_OUTLET) THEN
                   outletNode=.TRUE.
                   oneDComponent=1
                   returnComponent=2
