@@ -2121,8 +2121,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE InterfacePointConnectivityType
     INTEGER(INTG) :: coupledMeshElementNumber !<The element number this point is connected to in the coupled mesh
     INTEGER(INTG) :: elementLineFaceNumber !<The local connected face/line number in the coupled mesh
-    REAL(DP), ALLOCATABLE :: xi(:,:) !<xi(xiIdx,meshComponentNumber). The full xi location the data point is connected to in this coupled mesh
-    REAL(DP), ALLOCATABLE :: reducedXi(:,:) !<reducedXi(xiIdx,meshComponentNumber). The reduced (face/line) xi location the data point is connected to in this coupled mesh
+    REAL(DP), ALLOCATABLE :: xi(:) !<xi(xiIdx). The full xi location the data point is connected to in this coupled mesh
+    REAL(DP), ALLOCATABLE :: reducedXi(:) !<reducedXi(xiIdx). The reduced (face/line) xi location the data point is connected to in this coupled mesh
   END TYPE InterfacePointConnectivityType
   
   !Contains information on coupled mesh elements that are connected to each interface element.
