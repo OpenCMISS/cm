@@ -492,7 +492,7 @@ CONTAINS
                   NULLIFY(interpolatedPoints)
                   NULLIFY(interpolationParameters)
                   CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(coupledMeshDependentField,interpolationParameters,err,error,*999)
-                  CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999)
+                  CALL Field_InterpolatedPointsGeometryInitialise(interpolationParameters,interpolatedPoints,err,error,*999)
                   interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
                   !mesh component number is the same for all geometric components in elasticity problems
                   numberOfCoupledMeshGeoComp=interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR%GEOMETRY% &
@@ -511,7 +511,7 @@ CONTAINS
                         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,localFaceLineNumber, &
                           & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
                       END SELECT
-                      CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
+                      CALL Field_interpolateGeometryXi(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
                         & coupledMeshIdx)%reducedXi(:),interpolatedPoint,err,error,*999) !Interpolate contact data points on each surface
                       gapsComponents(1:numberOfCoupledMeshGeoComp,dataPointIdx)=gapsComponents(1:numberOfCoupledMeshGeoComp, &
                         & dataPointIdx)+interpolatedPoint%VALUES(1:numberOfCoupledMeshGeoComp,NO_PART_DERIV)* &
