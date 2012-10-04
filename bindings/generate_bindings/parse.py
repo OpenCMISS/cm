@@ -136,7 +136,7 @@ class LibrarySource(object):
             """Run through file once, getting everything we'll need"""
 
             source_lines = _join_lines(
-                open(self.file_path, 'r').read()).splitlines(True)
+                open(self.file_path, 'r').read()).splitlines()
             if not params_only:
                 # only keep the source_lines if we need them
                 self.source_lines = source_lines
@@ -484,6 +484,9 @@ class Subroutine(CodeObject):
                 r'([A-Z0-9_]+)\(([A-Z0-9_,\*\s]*)\)',
                 self.lines[0],
                 re.IGNORECASE)
+        if not match:
+            raise ValueError(
+                "Could not read subroutine line:\n  %s" % self.lines[0])
         parameters = [p.strip() for p in match.group(3).split(',')]
         try:
             parameters.remove('Err')
@@ -716,4 +719,4 @@ class UnsupportedParameterError(Exception):
 def _join_lines(source):
     """Remove Fortran line continuations"""
 
-    return re.sub(r'[\t ]*&[\t ]*\n[\t ]*&[\t ]*', ' ', source)
+    return re.sub(r'[\t ]*&[\t ]*[\r\n]+[\t ]*&[\t ]*', ' ', source)
