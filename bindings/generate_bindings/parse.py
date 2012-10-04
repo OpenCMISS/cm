@@ -126,10 +126,10 @@ class LibrarySource(object):
             self.file_path = source_file
             self.public = []
             self.doxygen_groupings = []
-            self.interfaces = {}
-            self.subroutines = {}
-            self.constants = {}
-            self.types = {}
+            self.interfaces = IdentifierDict()
+            self.subroutines = IdentifierDict()
+            self.constants = IdentifierDict()
+            self.types = IdentifierDict()
             self.parse_file(params_only)
 
         def parse_file(self, params_only=False):
@@ -720,3 +720,20 @@ def _join_lines(source):
     """Remove Fortran line continuations"""
 
     return re.sub(r'[\t ]*&[\t ]*[\r\n]+[\t ]*&[\t ]*', ' ', source)
+
+
+class IdentifierDict(dict):
+    """Dictionary used to store Fortran identifiers, to allow
+    getting items with case insensitivity"""
+
+    def __getitem__(self, key):
+        try:
+            val = dict.__getitem__(self, key)
+        except KeyError:
+            for ikey in self:
+                if ikey.lower() == key.lower():
+                    val = dict.__getitem__(self, ikey)
+                    break
+            else:
+                raise
+        return val
