@@ -84,7 +84,7 @@ class LibrarySource(object):
 
             def add(self, match, line_number):
                 for symbol in match.group(1).split(','):
-                    self.source_file.public.append(symbol.strip())
+                    self.source_file.public.add(symbol.strip())
 
         class ConstantFinder(LineFinder):
             line_re = re.compile(
@@ -124,7 +124,7 @@ class LibrarySource(object):
             """
 
             self.file_path = source_file
-            self.public = []
+            self.public = IdentifierSet()
             self.doxygen_groupings = []
             self.interfaces = IdentifierDict()
             self.subroutines = IdentifierDict()
@@ -250,8 +250,8 @@ class LibrarySource(object):
     def resolve_constants(self):
         """Go through all public constants and work out their actual values"""
 
-        for pub in self.lib_source.public:
-            if pub in self.lib_source.constants:
+        for pub in self.lib_source.constants:
+            if pub in self.lib_source.public:
                 self.get_constant_value(pub)
 
     def get_constant_value(self, constant):
@@ -737,3 +737,14 @@ class IdentifierDict(dict):
             else:
                 raise
         return val
+
+
+class IdentifierSet(set):
+    """Set used to store Fortran identifiers, to allow
+    checking for items with case insensitivity"""
+
+    def add(self, val):
+        set.add(self, val.lower())
+
+    def __contains__(self, val):
+        return set.__contains__(self, val.lower())
