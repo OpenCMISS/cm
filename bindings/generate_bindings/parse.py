@@ -84,7 +84,7 @@ class LibrarySource(object):
 
             def add(self, match, line_number):
                 for symbol in match.group(1).split(','):
-                    self.source_file.public.append(symbol.strip())
+                    self.source_file.public.add(symbol.strip())
 
         class ConstantFinder(LineFinder):
             line_re = re.compile(
@@ -124,19 +124,19 @@ class LibrarySource(object):
             """
 
             self.file_path = source_file
-            self.public = []
+            self.public = IdentifierSet()
             self.doxygen_groupings = []
-            self.interfaces = {}
-            self.subroutines = {}
-            self.constants = {}
-            self.types = {}
+            self.interfaces = IdentifierDict()
+            self.subroutines = IdentifierDict()
+            self.constants = IdentifierDict()
+            self.types = IdentifierDict()
             self.parse_file(params_only)
 
         def parse_file(self, params_only=False):
             """Run through file once, getting everything we'll need"""
 
             source_lines = _join_lines(
-                open(self.file_path, 'r').read()).splitlines(True)
+                open(self.file_path, 'r').read()).splitlines()
             if not params_only:
                 # only keep the source_lines if we need them
                 self.source_lines = source_lines
@@ -250,8 +250,8 @@ class LibrarySource(object):
     def resolve_constants(self):
         """Go through all public constants and work out their actual values"""
 
-        for pub in self.lib_source.public:
-            if pub in self.lib_source.constants:
+        for pub in self.lib_source.constants:
+            if pub in self.lib_source.public:
                 self.get_constant_value(pub)
 
     def get_constant_value(self, constant):
@@ -484,6 +484,9 @@ class Subroutine(CodeObject):
                 r'([A-Z0-9_]+)\(([A-Z0-9_,\*\s]*)\)',
                 self.lines[0],
                 re.IGNORECASE)
+        if not match:
+            raise ValueError(
+                "Could not read subroutine line:\n  %s" % self.lines[0])
         parameters = [p.strip() for p in match.group(3).split(',')]
         try:
             parameters.remove('Err')
@@ -716,4 +719,32 @@ class UnsupportedParameterError(Exception):
 def _join_lines(source):
     """Remove Fortran line continuations"""
 
-    return re.sub(r'[\t ]*&[\t ]*\n[\t ]*&[\t ]*', ' ', source)
+    return re.sub(r'[\t ]*&[\t ]*[\r\n]+[\t ]*&[\t ]*', ' ', source)
+
+
+class IdentifierDict(dict):
+    """Dictionary used to store Fortran identifiers, to allow
+    getting items with case insensitivity"""
+
+    def __getitem__(self, key):
+        try:
+            val = dict.__getitem__(self, key)
+        except KeyError:
+            for ikey in self:
+                if ikey.lower() == key.lower():
+                    val = dict.__getitem__(self, ikey)
+                    break
+            else:
+                raise
+        return val
+
+
+class IdentifierSet(set):
+    """Set used to store Fortran identifiers, to allow
+    checking for items with case insensitivity"""
+
+    def add(self, val):
+        set.add(self, val.lower())
+
+    def __contains__(self, val):
+        return set.__contains__(self, val.lower())
