@@ -643,8 +643,6 @@ CONTAINS
               ENDDO !xi_idx              
               DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
               DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP
-              !Return the pointer
-              !DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR=>DATA_PROJECTION
               IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS>0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
@@ -657,6 +655,7 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("The number of data projections is < 0.",ERR,ERROR,*999)
               ENDIF
+              !Return the pointer
               NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1)%PTR=>DATA_PROJECTION
               CALL MOVE_ALLOC(NEW_DATA_PROJECTIONS_PTR,DATA_POINTS%DATA_PROJECTIONS)
               DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS=DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1
@@ -2649,7 +2648,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Sets the projection type for a data projection.
+  !>Sets the candidates element numbers and local line/face numbers for a data projection.
   SUBROUTINE DataProjection_ProjectionCandidatesSet(dataProjection,elementUserNumber,localFaceLineNumbers,err,error,*)
 
     !Argument variables
@@ -2668,7 +2667,9 @@ CONTAINS
     IF(ASSOCIATED(dataProjection)) THEN
       IF(SIZE(elementUserNumber,1)==SIZE(localFaceLineNumbers,1)) THEN
         ALLOCATE(dataProjection%candidateElementNumbers(SIZE(elementUserNumber,1)),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidiate element numbers.",ERR,ERROR,*999)
         ALLOCATE(dataProjection%localFaceLineNumbers(SIZE(localFaceLineNumbers,1)),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidiate local face/line numbers.",ERR,ERROR,*999)
         DO elementIdx=1,SIZE(elementUserNumber,1)
           CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(dataProjection%MESH,meshComponentNumber,elementUserNumber(elementIdx), &
             & elementExists,elementGlobalNumber,err,error,*999)       
