@@ -26,7 +26,7 @@ class SWIGTestClass(unittest.TestCase):
         # Output integer
         result = parameter_swig_lines(m.output_integer)
         expected = typemap_apply(
-                "int *DummyOutputInt",
+                "int *DummyOutputScalar",
                 "int *test")
         self.assertEqual(result[0], expected)
 
@@ -38,7 +38,7 @@ class SWIGTestClass(unittest.TestCase):
         # Output real
         result = parameter_swig_lines(m.output_real)
         expected = typemap_apply(
-                "double *DummyOutputDouble",
+                "double *DummyOutputScalar",
                 "double *test")
         self.assertEqual(result[0], expected)
 
@@ -48,44 +48,37 @@ class SWIGTestClass(unittest.TestCase):
         # Input 1D array
         result = parameter_swig_lines(m.input_array)
         expected = typemap_apply(
-                "const int ArraySize, const int *DummyInputArray",
+                "const int DIM1, const int *IN_ARRAY1",
                 "const int testSize, const int *test")
         self.assertEqual(result[0], expected)
 
         # Input 2D array
         result = parameter_swig_lines(m.input_array_2d)
         expected = typemap_apply(
-                "const int ArraySize1, const int ArraySize2, "
-                    "const int *DummyInputArray",
+                "const int DIM1, const int DIM2, "
+                    "const int *IN_FARRAY2",
                 "const int testSize1, const int testSize2, const int *test")
         self.assertEqual(result[0], expected)
 
         # Input array of known size
         result = parameter_swig_lines(m.output_array_known_size)
         expected = typemap_apply(
-                "double *DummyOutputArraySize2",
-                "double *test")
+                "double ARGOUT_ARRAY1[ANY]",
+                "double test[2]")
         self.assertEqual(result[0], expected)
 
         # Output array
         result = parameter_swig_lines(m.output_array)
         expected = typemap_apply(
-                "const int ArraySize, int *DummyOutputArray",
+                "const int DIM1, int *ARGOUT_ARRAY1",
                 "const int testSize, int *test")
-        self.assertEqual(result[0], expected)
-
-        # Input array pointer
-        result = parameter_swig_lines(m.input_array_pointer)
-        expected = typemap_apply(
-                "const int ArraySize, const int *DummyInputArray",
-                "const int testSize, const int *test")
         self.assertEqual(result[0], expected)
 
         # Output array pointer
         result = parameter_swig_lines(m.output_array_pointer)
         expected = typemap_apply(
-                "const int ArraySize, int *DummyOutputArray",
-                "const int testSize, int *test")
+                "int *DIM1, int **ARGOUTVIEW_ARRAY1",
+                "int *testSize, int **test")
         self.assertEqual(result[0], expected)
 
     def test_string_parameters(self):
