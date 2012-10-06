@@ -37467,7 +37467,7 @@ CONTAINS
         END DO !localelementnode
         IF(FOUND) THEN
           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(globalElementNumber,MESH_ELEMENTS,versionNumber,derivativeNumber, &
-            & userNodeNumber,err,error,*999)
+            & localelementnode,err,error,*999)
         ELSE
           LOCAL_ERROR="User node number "//TRIM(NUMBER_TO_VSTRING(userNodeNumber,"*",err,error))// &
             & " does not exist in element number "//TRIM(NUMBER_TO_VSTRING(globalElementNumber,"*",err,error))//"."
@@ -37524,7 +37524,7 @@ CONTAINS
     END DO !localelementnode
     IF(FOUND) THEN
       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(globalElementNumber,meshElements%MESH_ELEMENTS,versionNumber, &
-         & derivativeNumber,userNodeNumber,err,error,*999)
+         & derivativeNumber,localelementnode,err,error,*999)
     ELSE
       LOCAL_ERROR="User node number "//TRIM(NUMBER_TO_VSTRING(userNodeNumber,"*",err,error))// &
         & " does not exist in element number "//TRIM(NUMBER_TO_VSTRING(globalElementNumber,"*",err,error))//"."
