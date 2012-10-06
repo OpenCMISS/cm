@@ -461,15 +461,10 @@ CONTAINS
                 DO coupledMeshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
                   coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
                     & DEPENDENT%DEPENDENT_FIELD
-                  !mesh component number is the same for all geometric components in elasticity problems
-                  meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%COMPONENTS(1)%MESH_COMPONENT_NUMBER 
                   DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
-                    DO xiIdx=1,SIZE(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi,1)
-                      IF(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi(xiIdx,meshComponentNumber) &
-                          & == 0.0_DP) THEN
-                        orthogonallyProjected(dataPointIdx)=.FALSE.
-                      ENDIF
-                    ENDDO !xiIdx
+                    IF(ALL(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi == 0.0_DP)) THEN
+                      orthogonallyProjected(dataPointIdx)=.FALSE.
+                    ENDIF
                   ENDDO !dataPointIdx
                 ENDDO !coupledMeshIdx
                 
@@ -495,8 +490,6 @@ CONTAINS
                   CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(coupledMeshDependentField,interpolationParameters,err,error,*999)
                   CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999)
                   interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
-                  !mesh component number is the same for all geometric components in elasticity problems
-                  meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%COMPONENTS(1)%MESH_COMPONENT_NUMBER
                   numberOfCoupledMeshGeoComp=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)%NUMBER_OF_COMPONENTS
                   DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
                     !Only interpolate if orthogonally projected
@@ -513,7 +506,7 @@ CONTAINS
                           & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
                       END SELECT
                       CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
-                        & coupledMeshIdx)%reducedXi(:,meshComponentNumber),interpolatedPoint,err,error,*999) !Interpolate contact data points on each surface
+                        & coupledMeshIdx)%reducedXi(:),interpolatedPoint,err,error,*999) !Interpolate contact data points on each surface
                       gapsComponents(1:numberOfCoupledMeshGeoComp,dataPointIdx)=gapsComponents(1:numberOfCoupledMeshGeoComp, &
                         & dataPointIdx)+interpolatedPoint%VALUES(1:numberOfCoupledMeshGeoComp,NO_PART_DERIV)* &
                         & matrixCoefficients(coupledMeshIdx) !Calculate 3 components gap function for each contact point
@@ -568,7 +561,7 @@ CONTAINS
                           matrixElementIdx=matrixElementIdx+1
                         ENDDO   
                         xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
-                          & xi(1:numberOfCoupledMeshXi,meshComponentNumber)
+                          & xi(1:numberOfCoupledMeshXi)
                         !Calculate PGSMI for each data point component
                         coupledMeshDependentBasis=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
                           & TOPOLOGY%ELEMENTS%ELEMENTS(localElementNumber)%BASIS
