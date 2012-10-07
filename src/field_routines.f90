@@ -104,6 +104,7 @@ MODULE FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_NODE_BASED_INTERPOLATION=3 !<Node based interpolation. Parameters are nodal based and a basis function is used \see FIELD_ROUTINES_InterpolationTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_GRID_POINT_BASED_INTERPOLATION=4 !<Grid point based interpolation. Parameters are different at each grid point \see FIELD_ROUTINES_InterpolationTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_GAUSS_POINT_BASED_INTERPOLATION=5 !<Gauss point based interpolation. Parameters are different at each Gauss point \see FIELD_ROUTINES_InterpolationTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DATA_POINT_BASED_INTERPOLATION=6 !<data point based interpolation. Parameters are different at each data point \see FIELD_ROUTINES_InterpolationTypes,FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_VariableTypes FIELD_ROUTINES::VariableTypes
@@ -172,6 +173,7 @@ MODULE FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_NODE_DOF_TYPE=3 !<The dof is from a field variable component with node based interpolation \see FIELD_ROUTINES_DofTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_GRID_POINT_DOF_TYPE=4 !<The dof is from a field variable component with grid point based interpolation \see FIELD_ROUTINES_DofTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_GAUSS_POINT_DOF_TYPE=5 !<The dof is from a field variable component with Gauss point based interpolation \see FIELD_ROUTINES_DofTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DATA_POINT_DOF_TYPE=6 !<The dof is from a field variable component with Gauss point based interpolation \see FIELD_ROUTINES_DofTypes,FIELD_ROUTINES
   !>@}
    
   !> \addtogroup FIELD_ROUTINES_DataTypes FIELD_ROUTINES::DataTypes
@@ -512,9 +514,10 @@ MODULE FIELD_ROUTINES
   PUBLIC FIELD_GEOMETRIC_TYPE,FIELD_FIBRE_TYPE,FIELD_GENERAL_TYPE,FIELD_MATERIAL_TYPE
 
   PUBLIC FIELD_CONSTANT_INTERPOLATION,FIELD_ELEMENT_BASED_INTERPOLATION,FIELD_NODE_BASED_INTERPOLATION, &
-    & FIELD_GRID_POINT_BASED_INTERPOLATION,FIELD_GAUSS_POINT_BASED_INTERPOLATION
+    & FIELD_GRID_POINT_BASED_INTERPOLATION,FIELD_GAUSS_POINT_BASED_INTERPOLATION,FIELD_DATA_POINT_BASED_INTERPOLATION
 
-  PUBLIC FIELD_CONSTANT_DOF_TYPE,FIELD_ELEMENT_DOF_TYPE,FIELD_NODE_DOF_TYPE,FIELD_GRID_POINT_DOF_TYPE,FIELD_GAUSS_POINT_DOF_TYPE
+  PUBLIC FIELD_CONSTANT_DOF_TYPE,FIELD_ELEMENT_DOF_TYPE,FIELD_NODE_DOF_TYPE,FIELD_GRID_POINT_DOF_TYPE,FIELD_GAUSS_POINT_DOF_TYPE, &
+    & FIELD_DATA_POINT_DOF_TYPE
 
   PUBLIC FIELD_NUMBER_OF_VARIABLE_TYPES,FIELD_NUMBER_OF_VARIABLE_SUBTYPES,FIELD_NUMBER_OF_SET_TYPES, &
     & FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DELUDELT_VARIABLE_TYPE, &
@@ -554,7 +557,8 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_COORDINATE_SYSTEM_GET
 
-  PUBLIC FIELD_COMPONENT_DOF_GET_CONSTANT,FIELD_COMPONENT_DOF_GET_USER_ELEMENT,FIELD_COMPONENT_DOF_GET_USER_NODE
+  PUBLIC FIELD_COMPONENT_DOF_GET_CONSTANT,FIELD_COMPONENT_DOF_GET_USER_ELEMENT,FIELD_COMPONENT_DOF_GET_USER_NODE, &
+    & Field_componentDofGetUserDataPoint
 
   PUBLIC FIELD_COMPONENT_INTERPOLATION_CHECK,FIELD_COMPONENT_INTERPOLATION_GET,FIELD_COMPONENT_INTERPOLATION_SET, &
     & FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK
@@ -728,6 +732,16 @@ CONTAINS
                     & " which is not Gauss point based interpolation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                IF(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE/=FIELD_DATA_POINT_BASED_INTERPOLATION) THEN
+                  LOCAL_ERROR="Invalid interpolation type. The interpolation type for component number "// &
+                    & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                    & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                    & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is "// &
+                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                    & " which is not data point based interpolation."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="The specified interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
@@ -876,6 +890,8 @@ CONTAINS
                     FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(COMPONENT_NUMBER,VARIABLE_TYPE)=INTERPOLATION_TYPE
                   CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                     FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(COMPONENT_NUMBER,VARIABLE_TYPE)=INTERPOLATION_TYPE
+                  CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                    FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(COMPONENT_NUMBER,VARIABLE_TYPE)=INTERPOLATION_TYPE
                   CASE DEFAULT
                     LOCAL_ERROR="The specified interpolation type of "// &
                       & TRIM(NUMBER_TO_VSTRING(INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -1018,6 +1034,12 @@ CONTAINS
                   & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                   & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)  
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                LOCAL_ERROR="Can not get the dof by constant for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -1061,6 +1083,140 @@ CONTAINS
     CALL EXITS("FIELD_COMPONENT_DOF_GET_CONSTANT")
     RETURN 1
   END SUBROUTINE FIELD_COMPONENT_DOF_GET_CONSTANT
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the dof numbers for a field component that corresponds to the specified user data point.
+  SUBROUTINE Field_componentDofGetUserDataPoint(field,variableType,userDataPointNumber,componentNumber,localDof, &
+    & globalDof,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to get the dof for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the dof for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber !<The user data point number to get the dof for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The field component number to get the dof for
+    INTEGER(INTG), INTENT(OUT) :: localDof !<On exit, the local dof corresponding to the user data point
+    INTEGER(INTG), INTENT(OUT) :: globalDof !<On exit, the global dof corresponding to the user data point
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    LOGICAL :: ghostDataPoint,userDataPointExists
+    INTEGER(INTG) :: decompositionLocalDataPointNumber
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("Field_componentDofGetUserDataPoint",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        IF(variableType>=1.AND.variableType<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          fieldVariable=>FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+          IF(ASSOCIATED(fieldVariable)) THEN
+            IF(componentNumber>=1.AND.componentNumber<=fieldVariable%NUMBER_OF_COMPONENTS) THEN
+              SELECT CASE(fieldVariable%COMPONENTS(componentNumber)%INTERPOLATION_TYPE)
+              CASE(FIELD_CONSTANT_INTERPOLATION)
+                localError="Can not get the dof by user data point for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//" which has constant interpolation."
+                CALL FLAG_error(localError,err,error,*999)
+              CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                localError="Can not get the dof by user data point for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//" which has element based interpolation."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              CASE(FIELD_NODE_BASED_INTERPOLATION)
+                localError="Can not get the dof by user data point for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//" which has node based interpolation."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                localError="Can not get the dof by user data point for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//" which has grid point based interpolation."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                localError="Can not get the dof by user data point for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//" which has Gauss point based interpolation."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                decomposition=>fieldVariable%COMPONENTS(componentNumber)%DOMAIN%DECOMPOSITION
+                IF(ASSOCIATED(decomposition)) THEN
+                  decompositionTopology=>decomposition%TOPOLOGY
+                  userDataPointExists=.TRUE.
+                  IF(ASSOCIATED(decompositionTopology)) THEN
+                    CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber,userDataPointExists, &
+                      & decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
+                    IF(userDataPointExists) THEN
+                      localDof=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
+                        & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(decompositionLocalDataPointNumber)
+                      globalDof=fieldVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
+                    ELSE
+                      localError="The specified user data point number of "// &
+                        & TRIM(NUMBER_TO_VSTRING(userDataPointNumber,"*",err,error))// &
+                        & " does not exist in the domain for field component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))//" of field variable "// &
+                        & TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//"."
+                      CALL FLAG_ERROR(localError,err,error,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Decomposition is not associated.",err,error,*999)
+                ENDIF
+              CASE DEFAULT
+                localError="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(fieldVariable% &
+                  & COMPONENTS(componentNumber)%INTERPOLATION_TYPE,"*",err,error))// &
+                  & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))// &
+                  & " of variable type "//TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))// &
+                  & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//"."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              END SELECT
+            ELSE
+              localError="Component number "//TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,error))// &
+                & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))// &
+                & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//" which has "// &
+                & TRIM(NUMBER_TO_VSTRING(fieldVariable%NUMBER_OF_COMPONENTS,"*",err,error))// &
+                & " components."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            ENDIF
+          ELSE
+            localError="The specified field variable type of "//TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))// &
+              & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//"."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="The specified variable type of "//TRIM(NUMBER_TO_VSTRING(variableType,"*",err,error))// &
+            & " is invalid. The variable type must be between 1 and  "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))// &
+          & " has not been finished."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Field_componentDofGetUserDataPoint")
+    RETURN
+999 CALL ERRORS("Field_componentDofGetUserDataPoint",err,error)
+    CALL EXITS("Field_componentDofGetUserDataPoint")
+    RETURN 1
+  END SUBROUTINE Field_componentDofGetUserDataPoint
 
   !
   !================================================================================================================================
@@ -1145,6 +1301,12 @@ CONTAINS
                   & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                   & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                LOCAL_ERROR="Can not get the dof by user element for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -1289,6 +1451,12 @@ CONTAINS
                   & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                   & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                LOCAL_ERROR="Can not get the dof by user node for component number "// &
+                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -1868,7 +2036,7 @@ CONTAINS
 !                          & " which has constant interpolation."
 !                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       CASE(FIELD_ELEMENT_BASED_INTERPOLATION,FIELD_NODE_BASED_INTERPOLATION,FIELD_GRID_POINT_BASED_INTERPOLATION, &
-                        & FIELD_GAUSS_POINT_BASED_INTERPOLATION, FIELD_CONSTANT_INTERPOLATION)
+                        & FIELD_GAUSS_POINT_BASED_INTERPOLATION, FIELD_CONSTANT_INTERPOLATION,FIELD_DATA_POINT_BASED_INTERPOLATION)
                         IF(MESH_COMPONENT_NUMBER>0.AND.MESH_COMPONENT_NUMBER<=MESH%NUMBER_OF_COMPONENTS) THEN
                           FIELD%CREATE_VALUES_CACHE%MESH_COMPONENT_NUMBER(COMPONENT_NUMBER,VARIABLE_TYPE)=MESH_COMPONENT_NUMBER
                         ELSE
@@ -1985,7 +2153,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP
+    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP, &
+      & data_point_idx
     INTEGER(INTG), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
@@ -2126,6 +2295,8 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -2426,12 +2597,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP
+    INTEGER(INTG) :: elementIdx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP, &
+      & dataPointIdx,localDataPointNumber
     REAL(DP), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2469,11 +2642,11 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                           DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                           IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
-                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                            DO elementIdx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                               field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                & ELEMENT_PARAM2DOF_MAP%ELEMENTS(element_idx)
+                                & ELEMENT_PARAM2DOF_MAP%ELEMENTS(elementIdx)
                               FIELD_PARAMETERS(field_dof)=VALUE
-                            ENDDO !element_idx
+                            ENDDO !elementIdx
                           ELSE
                             CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -2548,16 +2721,47 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                           DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                           IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN 
-                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)=variable_local_ny
+                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,elementIdx)=variable_local_ny
                             MAX_NGP=SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                               & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
-                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                            DO elementIdx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                               DO gauss_point_idx=1,MAX_NGP ! could be just element's gauss_point_idx
                                 field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)
+                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,elementIdx)
                                 FIELD_PARAMETERS(field_dof)=VALUE
                               ENDDO !gauss_point_idx
-                            ENDDO !element_idx
+                            ENDDO !elementIdx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      COMPONENT_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      IF(ASSOCIATED(COMPONENT_DOMAIN)) THEN
+                        DOMAIN_TOPOLOGY=>COMPONENT_DOMAIN%TOPOLOGY
+                        IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                          DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                            decompositionData=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN%DECOMPOSITION%TOPOLOGY%dataPoints
+                            IF(ASSOCIATED(decompositionData)) THEN
+                              DO elementIdx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                DO dataPointIdx=1,decompositionData%elementDataPoint(elementIdx)%numberOfProjectedData
+                                  localDataPointNumber=decompositionData%elementDataPoint(elementIdx)%dataIndices(dataPointIdx)% &
+                                    & localNumber
+                                  field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                    & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(localDataPointNumber)
+                                  FIELD_PARAMETERS(field_dof)=VALUE
+                                ENDDO !dataPointIdx                             
+                              ENDDO !elementIdx
+                            ELSE
+                              CALL FLAG_ERROR("Decomposition data point topology is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                            
                           ELSE
                             CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -2762,6 +2966,8 @@ CONTAINS
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -3446,7 +3652,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP
+    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP,globalElementNumber
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION    
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -3519,7 +3725,7 @@ CONTAINS
                     & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 ENDDO !ne
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)             
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION) ! ?
                 MAXINTERP = -1
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
@@ -3528,6 +3734,16 @@ CONTAINS
                   IF(NGP > MAXINTERP) MAXINTERP = NGP
                 ENDDO
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS = MAXINTERP
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION) 
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=-1
+                DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                  globalElementNumber=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
+                  IF(DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)> &
+                      & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS) THEN
+                    FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS= &
+                      &  DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)
+                  ENDIF
+                ENDDO
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                   & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -3588,11 +3804,14 @@ CONTAINS
       & DEALLOCATE(FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GRID_POINT_PARAM2DOF_MAP%GRID_POINTS)
     IF(ALLOCATED(FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS))  &
       & DEALLOCATE(FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS)
+    IF(ALLOCATED(FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS))  &
+      & DEALLOCATE(FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS)
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NUMBER_OF_CONSTANT_PARAMETERS=0
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%NUMBER_OF_ELEMENT_PARAMETERS=0
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NUMBER_OF_NODE_PARAMETERS=0
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GRID_POINT_PARAM2DOF_MAP%NUMBER_OF_GRID_POINT_PARAMETERS=0
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS=0
+    FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%NUMBER_OF_DATA_POINT_PARAMETERS=0
 
     CALL EXITS("FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_FINALISE")
     RETURN
@@ -3621,6 +3840,7 @@ CONTAINS
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%NUMBER_OF_ELEMENT_PARAMETERS=0
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GRID_POINT_PARAM2DOF_MAP%NUMBER_OF_GRID_POINT_PARAMETERS=0
     FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS=0
+    FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%NUMBER_OF_DATA_POINT_PARAMETERS=0
 
     CALL EXITS("FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_INITIALISE")
     RETURN
@@ -5212,6 +5432,8 @@ CONTAINS
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                           CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The field component interpolation type of "// &
                                               & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)% &
@@ -5257,6 +5479,8 @@ CONTAINS
                                           CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                           CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The field component interpolation type of "// &
@@ -5308,6 +5532,8 @@ CONTAINS
                                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                     CASE DEFAULT
                                       LOCAL_ERROR="The field component interpolation type of "// &
@@ -5484,6 +5710,8 @@ CONTAINS
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                             CASE DEFAULT
                                               LOCAL_ERROR="The field component interpolation type of "// &
                                                 & TRIM(NUMBER_TO_VSTRING(INTERP_VARIABLE%COMPONENTS(component_idx)% &
@@ -5529,6 +5757,8 @@ CONTAINS
                                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                             CASE DEFAULT
                                               LOCAL_ERROR="The field component interpolation type of "// &
@@ -5580,6 +5810,8 @@ CONTAINS
                                       CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                       CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                       CASE DEFAULT
                                         LOCAL_ERROR="The field component interpolation type of "// &
@@ -5703,6 +5935,8 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
                   & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -5767,6 +6001,8 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
                   & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -5814,6 +6050,8 @@ CONTAINS
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
@@ -5891,6 +6129,8 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
                   & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -5948,6 +6188,8 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
                   & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -5992,6 +6234,8 @@ CONTAINS
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
@@ -6415,6 +6659,13 @@ CONTAINS
                                       & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
                                       & " which has Gauss point based interpolation."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                                    LOCAL_ERROR="Cannot compute the normal at a node for component number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" for variable type "// &
+                                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                                      & " which has data point based interpolation."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING &
                                       & (FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -6646,8 +6897,10 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interpolated points",ERR,ERROR,*999)
         DO var_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
           NULLIFY(INTERPOLATED_POINTS(var_type_idx)%PTR)
-          IF(ASSOCIATED(INTERPOLATION_PARAMETERS(var_type_idx)%PTR)) CALL FIELD_INTERPOLATED_POINT_INITIALISE( &
+          IF(ASSOCIATED(INTERPOLATION_PARAMETERS(var_type_idx)%PTR)) THEN
+            CALL FIELD_INTERPOLATED_POINT_INITIALISE( &
             & INTERPOLATION_PARAMETERS(var_type_idx)%PTR,INTERPOLATED_POINTS(var_type_idx)%PTR,ERR,ERROR,*999)
+          ENDIF
         ENDDO !var_type_idx
       ENDIF
     ELSE
@@ -6687,7 +6940,7 @@ CONTAINS
       INTERPOLATION_PARAMETERS=>INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
       INTERPOLATED_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS=INTERPOLATION_PARAMETERS%NUMBER_OF_XI
       FIELD=>INTERPOLATION_PARAMETERS%FIELD
-      IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR.FIELD%TYPE==FIELD_FIBRE_TYPE) THEN
+      IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR.FIELD%TYPE==FIELD_FIBRE_TYPE.OR.FIELD%TYPE==FIELD_GENERAL_TYPE) THEN
         NULLIFY(COORDINATE_SYSTEM)
         CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
         CALL COORDINATE_METRICS_CALCULATE(COORDINATE_SYSTEM,JACOBIAN_TYPE,INTERPOLATED_POINT_METRICS,ERR,ERROR,*999)
@@ -7088,6 +7341,8 @@ CONTAINS
                   END SELECT
                 CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
                     & COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -7335,6 +7590,8 @@ CONTAINS
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
                     & COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -7502,6 +7759,8 @@ CONTAINS
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
                     & COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -7629,6 +7888,9 @@ CONTAINS
             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
               INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
               INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
+            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+              INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
+              INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
             CASE DEFAULT
               LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
               & COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -7752,6 +8014,9 @@ CONTAINS
             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
               INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
               INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
+            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+              INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
+              INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
             CASE DEFAULT
               LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
               & COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -7873,6 +8138,9 @@ CONTAINS
               INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
               INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+              INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
+              INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
+            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
               INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(component_idx)=1
               INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)=1.0_DP
             CASE DEFAULT
@@ -8132,11 +8400,14 @@ CONTAINS
       & variable_local_ny,domain_idx,domain_no,constant_nyy,element_ny,element_nyy,node_ny,node_nyy,grid_point_nyy, &
       & Gauss_point_nyy,version_idx,derivative_idx,ny,NUMBER_OF_COMPUTATIONAL_NODES, &
       & my_computational_node_number,domain_type_stop,start_idx,stop_idx,element_idx,node_idx,NUMBER_OF_LOCAL, NGP, MAX_NGP, &
-      & gp,MPI_IERROR,NUMBER_OF_GLOBAL_DOFS,gauss_point_idx
-    INTEGER(INTG), ALLOCATABLE :: VARIABLE_LOCAL_DOFS_OFFSETS(:),VARIABLE_GHOST_DOFS_OFFSETS(:)
+      & gp,MPI_IERROR,NUMBER_OF_GLOBAL_DOFS,gauss_point_idx,NUMBER_OF_DATA_POINT_DOFS,data_point_nyy,dataPointIdx,elementIdx, &
+      & GLOBAL_ELEMENT_NUMBER,element_idx_loop,domain_element_idx,localDataNumber,globalElementNumber,localDof,globalDof
+    INTEGER(INTG), ALLOCATABLE :: VARIABLE_LOCAL_DOFS_OFFSETS(:),VARIABLE_GHOST_DOFS_OFFSETS(:), &
+      & localDataParamCount(:),ghostDataParamCount(:)
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING,DOFS_MAPPING,FIELD_VARIABLE_DOFS_MAPPING
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(DOMAIN_TYPE), POINTER :: domain
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: elementsMapping,DOFS_MAPPING,FIELD_VARIABLE_DOFS_MAPPING
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: FIELD_COMPONENT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -8157,6 +8428,7 @@ CONTAINS
         NUMBER_OF_NODE_DOFS=0
         NUMBER_OF_GRID_POINT_DOFS=0
         NUMBER_OF_GAUSS_POINT_DOFS=0
+        NUMBER_OF_DATA_POINT_DOFS=0
         NUMBER_OF_LOCAL_VARIABLE_DOFS=0
         TOTAL_NUMBER_OF_VARIABLE_DOFS=0
         NUMBER_OF_GLOBAL_VARIABLE_DOFS=0
@@ -8199,6 +8471,15 @@ CONTAINS
             NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS*MAX_NGP
             TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS*MAX_NGP
             NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_GLOBAL_ELEMENTS*MAX_NGP
+          CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+            ! Data points do not have domain topology or mappings, since they're the same across all mesh components
+            decompositionTopology=>FIELD%DECOMPOSITION%TOPOLOGY
+            NUMBER_OF_DATA_POINT_DOFS=NUMBER_OF_DATA_POINT_DOFS+decompositionTopology%dataPoints%totalNumberOfDataPoints
+            NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+decompositionTopology%dataPoints%numberOfDataPoints
+            TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+decompositionTopology% &
+              & dataPoints%totalNumberOfDataPoints  
+            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+decompositionTopology%dataPoints% &
+              & numberOfGlobalDataPoints
           CASE DEFAULT
             LOCAL_ERROR="The interpolation type of "// &
               & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
@@ -8239,6 +8520,11 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof to parameter Gauss point map.",ERR,ERROR,*999)
           FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_GAUSS_POINT_DOFS=NUMBER_OF_GAUSS_POINT_DOFS
         ENDIF
+        IF(NUMBER_OF_DATA_POINT_DOFS>0) THEN
+          ALLOCATE(FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,NUMBER_OF_DATA_POINT_DOFS),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof to parameter Gauss point map.",ERR,ERROR,*999)
+          FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS=NUMBER_OF_DATA_POINT_DOFS
+        ENDIF
       ENDDO !variable_idx
       !Allocate the mapping arrays
       DECOMPOSITION=>FIELD%DECOMPOSITION
@@ -8260,6 +8546,7 @@ CONTAINS
         node_nyy=0
         grid_point_nyy=0
         Gauss_point_nyy=0
+        data_point_nyy=0
         variable_local_ny=0
         FIELD_VARIABLE_DOFS_MAPPING=>FIELD%VARIABLES(variable_idx)%DOMAIN_MAPPING
         IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
@@ -8332,7 +8619,7 @@ CONTAINS
               CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
-                ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
+                elementsMapping=>DOMAIN%MAPPINGS%ELEMENTS
                 IF(domain_type_idx==1) THEN
                   !Allocate parameter to dof map for this field variable component
                   DOFS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
@@ -8342,7 +8629,7 @@ CONTAINS
                   FIELD_COMPONENT%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%NUMBER_OF_ELEMENT_PARAMETERS= &
                     & DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                   !Handle global dofs domain mapping
-                  DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+                  DO ny=1,elementsMapping%NUMBER_OF_GLOBAL
                     !Handle field variable mappings
                     IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
                       variable_global_ny=ny+VARIABLE_GLOBAL_DOFS_OFFSET
@@ -8374,19 +8661,19 @@ CONTAINS
                     ENDIF
                   ENDDO !ny
                   start_idx=1
-                  stop_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL
+                  stop_idx=elementsMapping%NUMBER_OF_LOCAL
                   !Adjust the local and ghost offsets
                   IF(component_idx>1) &
-                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL
+                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+elementsMapping%NUMBER_OF_DOMAIN_LOCAL
                   VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+ &
-                    & ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL+ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_GHOST
+                    & elementsMapping%NUMBER_OF_DOMAIN_LOCAL+elementsMapping%NUMBER_OF_DOMAIN_GHOST
                 ELSE
                   !Handle global dofs domain mapping. For the second pass adjust the local dof numbers to ensure that the ghost
                   !dofs are at the end of the local dofs.
                   !Adjust the ghost offsets
                   IF(component_idx>1) &
-                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL
-                  DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-elementsMapping%NUMBER_OF_DOMAIN_LOCAL
+                  DO ny=1,elementsMapping%NUMBER_OF_GLOBAL
                     !Adjust variable mapping local numbers
                     IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
                       variable_global_ny=ny+VARIABLE_GLOBAL_DOFS_OFFSET
@@ -8406,13 +8693,13 @@ CONTAINS
                       ENDDO !domain_idx
                     ENDIF
                   ENDDO !ny (global)
-                  start_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL+1
-                  stop_idx=ELEMENTS_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                  start_idx=elementsMapping%NUMBER_OF_LOCAL+1
+                  stop_idx=elementsMapping%TOTAL_NUMBER_OF_LOCAL
                   !Adjust the local offsets
-                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_GHOST
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-elementsMapping%NUMBER_OF_DOMAIN_GHOST
                 ENDIF
                 !Adjust the global offset
-                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+elementsMapping%NUMBER_OF_GLOBAL
                 !Handle local dofs domain mapping
                 DO element_idx=start_idx,stop_idx
                   variable_local_ny=variable_local_ny+1
@@ -8545,7 +8832,7 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
-                ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
+                elementsMapping=>DOMAIN%MAPPINGS%ELEMENTS
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
                 IF(domain_type_idx==1) THEN ! domain_type_idx==1 --> non ghosts
                   !Allocate parameter to dof map for this field variable component
@@ -8558,14 +8845,127 @@ CONTAINS
                   FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS= &
                   &  DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS*MAX_NGP
                   !Handle global dofs domain mapping
-                  DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
-                    DO gp=1,MAX_NGP
-                      !Handle field variable mappings
+                  DO ny=1,elementsMapping%NUMBER_OF_GLOBAL
+                   DO gp=1,MAX_NGP !
+                    !Handle field variable mappings
+                    IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
+                      variable_global_ny= (ny-1) * MAX_NGP + gp + VARIABLE_GLOBAL_DOFS_OFFSET
+                      CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_VARIABLE_DOFS_MAPPING% &
+                        & GLOBAL_TO_LOCAL_MAP(variable_global_ny),ERR,ERROR,*999)
+                      NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                        & LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local number.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                        & DOMAIN_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(NUMBER_OF_DOMAINS), &
+                        & STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
+                        & ERR,ERROR,*999)
+                      FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
+                      DO domain_idx=1,NUMBER_OF_DOMAINS
+                        domain_no=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+                        ! elt local number = 1 -> gp local = 1..max_ngp, etc
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                          & (DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx) - 1) * MAX_NGP + gp  &
+                          & + VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+                        ! domain and type same as element
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)
+                      ENDDO !domain_idx
+                    ENDIF
+                   ENDDO ! gp
+                  ENDDO !ny
+                  start_idx=1
+                  stop_idx=elementsMapping%NUMBER_OF_LOCAL
+                  !Adjust the local and ghost offsets
+                  IF(component_idx>1) &
+                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+elementsMapping%NUMBER_OF_DOMAIN_LOCAL*MAX_NGP
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+ &
+                    & (elementsMapping%NUMBER_OF_DOMAIN_LOCAL+elementsMapping%NUMBER_OF_DOMAIN_GHOST)*MAX_NGP
+                ELSE !domain_type_idx==2 --> ghosts
+                  !Handle global dofs domain mapping. For the second pass adjust the local dof numbers to ensure that the ghost
+                  !dofs are at the end of the local dofs.
+                  !Adjust the ghost offsets
+                  IF(component_idx>1) &
+                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-elementsMapping%NUMBER_OF_DOMAIN_LOCAL*MAX_NGP
+                  DO ny=1,elementsMapping%NUMBER_OF_GLOBAL
+                   DO gp=1,MAX_NGP !
+                    !Adjust variable mapping local numbers
+                    IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
+                      variable_global_ny= (ny-1) * MAX_NGP + gp + VARIABLE_GLOBAL_DOFS_OFFSET
+                      NUMBER_OF_DOMAINS=FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS
+                      DO domain_idx=1,NUMBER_OF_DOMAINS
+                        domain_no=FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)
+                        IF(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)== &
+                          & DOMAIN_LOCAL_GHOST) THEN
+                          FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                            & FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)+ &
+                            & VARIABLE_GHOST_DOFS_OFFSETS(domain_no)
+                        ELSE
+                          FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                            & FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)+ &
+                            & VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+                        ENDIF
+                      ENDDO !domain_idx
+                    ENDIF
+                   ENDDO ! gp
+                  ENDDO !ny (global)
+                  start_idx=elementsMapping%NUMBER_OF_LOCAL+1
+                  stop_idx=elementsMapping%TOTAL_NUMBER_OF_LOCAL
+                  !Adjust the local offsets
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-elementsMapping%NUMBER_OF_DOMAIN_GHOST*MAX_NGP
+                ENDIF ! 2 passes for normal, ghost 
+                !Adjust the global offset
+                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+elementsMapping%NUMBER_OF_GLOBAL*MAX_NGP
+                !Handle local dofs domain mapping
+                DO element_idx=start_idx,stop_idx
+                 DO gp=1,MAX_NGP !
+                  variable_local_ny= variable_local_ny+1
+                  Gauss_point_nyy  = Gauss_point_nyy+1
+                   !Setup dof to parameter map
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_GAUSS_POINT_DOF_TYPE
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=Gauss_point_nyy
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,Gauss_point_nyy)=gp
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(2,Gauss_point_nyy)=element_idx
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(3,Gauss_point_nyy)=component_idx
+                  !Setup reverse parameter to dof map
+                  FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gp,element_idx)=variable_local_ny
+                 ENDDO !gp
+                ENDDO !element_idx                       
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                domain=>FIELD_COMPONENT%DOMAIN
+                elementsMapping=>domain%MAPPINGS%ELEMENTS
+                decompositionTopology=>domain%DECOMPOSITION%TOPOLOGY                
+                IF(domain_type_idx==1) THEN ! domain_type_idx==1 -> non ghosts
+                  !Allocate parameter to dof map for this field variable component
+                  !including both local and ghost data points on this computational domain.
+                  ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(decompositionTopology% &
+                    & dataPoints%totalNumberOfDataPoints),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field component parameter to dof data point map.",ERR,ERROR,*999)
+                  ! Number of data points
+                  FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%NUMBER_OF_DATA_POINT_PARAMETERS= &
+                    & decompositionTopology%dataPoints%totalNumberOfDataPoints 
+                  ALLOCATE(localDataParamCount(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data point parameter local count.",ERR,ERROR,*999)
+                  ALLOCATE(ghostDataParamCount(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data point parameter ghost count.",ERR,ERROR,*999)
+                  localDataParamCount=0
+                  ghostDataParamCount=decompositionTopology%dataPoints%numberOfDomainLocal
+                  !Looping through global elements and data points in the elements
+                  variable_global_ny=VARIABLE_GLOBAL_DOFS_OFFSET
+                  DO elementIdx=1,elementsMapping%NUMBER_OF_GLOBAL
+                    DO dataPointIdx=1,decompositionTopology%dataPoints%numberOfelementDataPoints(elementIdx)
                       IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
-                        variable_global_ny=(ny-1)*MAX_NGP+gp+VARIABLE_GLOBAL_DOFS_OFFSET
+                        variable_global_ny=variable_global_ny+1
                         CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_VARIABLE_DOFS_MAPPING% &
                           & GLOBAL_TO_LOCAL_MAP(variable_global_ny),ERR,ERROR,*999)
-                        NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
+                        NUMBER_OF_DOMAINS=elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%NUMBER_OF_DOMAINS
                         ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
                           & LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local number.", &
@@ -8574,47 +8974,57 @@ CONTAINS
                           & DOMAIN_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
                           & ERR,ERROR,*999)
-                        ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(NUMBER_OF_DOMAINS),&
-                          & STAT=ERR)
+                        ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                          & LOCAL_TYPE(NUMBER_OF_DOMAINS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local type.", &
                           & ERR,ERROR,*999)
                         FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
                         DO domain_idx=1,NUMBER_OF_DOMAINS
-                          domain_no=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
-                          !elt local number = 1 -> gp local = 1..max_ngp, etc
-                          FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
-                            & (DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)-1)*MAX_NGP+gp+ &
-                            & VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
-                          !domain and type same as element
+                          domain_no=elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%DOMAIN_NUMBER(domain_idx)
+                          IF(elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%LOCAL_TYPE(domain_idx)== &
+                            & DOMAIN_LOCAL_GHOST) THEN
+                            ghostDataParamCount(domain_no)=ghostDataParamCount(domain_no)+1
+                            FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                            & ghostDataParamCount(domain_no)+VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+                          ELSE
+                            localDataParamCount(domain_no)=localDataParamCount(domain_no)+1
+                            FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                            & localDataParamCount(domain_no)+VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+                          ENDIF
                           FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)= &
-                            & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+                            & elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%DOMAIN_NUMBER(domain_idx)
                           FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)= &
-                            & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)
+                            & elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%LOCAL_TYPE(domain_idx)
                         ENDDO !domain_idx
                       ENDIF
-                    ENDDO !gp
-                  ENDDO !ny
-                  start_idx=1
-                  stop_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL
+                    ENDDO !dataPointIdx
+                  ENDDO !elementIdx 
+                  IF(ALLOCATED(localDataParamCount)) DEALLOCATE(localDataParamCount)
+                  IF(ALLOCATED(ghostDataParamCount)) DEALLOCATE(ghostDataParamCount)
+                  start_idx=1 !the start idx for the elements
+                  stop_idx=elementsMapping%NUMBER_OF_LOCAL !the end idx for local elements
                   !Adjust the local and ghost offsets
-                  IF(component_idx>1) &
-                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL*MAX_NGP
+                  IF(component_idx>1) THEN
+                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS+decompositionTopology%dataPoints%numberOfDomainLocal
+                  ENDIF
                   VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+ &
-                    & (ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL+ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_GHOST)*MAX_NGP
-                ELSE !domain_type_idx==2 --> ghosts
+                    & decompositionTopology%dataPoints%numberOfDomainLocal+decompositionTopology%dataPoints%numberOfDomainGhost
+                ELSE  ! domain_type_idx == 2 -> ghosts
                   !Handle global dofs domain mapping. For the second pass adjust the local dof numbers to ensure that the ghost
                   !dofs are at the end of the local dofs.
                   !Adjust the ghost offsets
-                  IF(component_idx>1) &
-                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL*MAX_NGP
-                  DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
-                    DO gp=1,MAX_NGP
-                      !Adjust variable mapping local numbers
+                  IF(component_idx>1) THEN
+                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-decompositionTopology%dataPoints%numberOfDomainLocal
+                  ENDIF
+                  !Looping through global elements and data points in the elements
+                  variable_global_ny=VARIABLE_GLOBAL_DOFS_OFFSET
+                  DO elementIdx=1,elementsMapping%NUMBER_OF_GLOBAL
+                    DO dataPointIdx=1,decompositionTopology%dataPoints%numberOfelementDataPoints(elementIdx)
                       IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
-                        variable_global_ny=(ny-1)*MAX_NGP+gp+VARIABLE_GLOBAL_DOFS_OFFSET
-                        NUMBER_OF_DOMAINS=FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS
+                        variable_global_ny=variable_global_ny+1
+                        NUMBER_OF_DOMAINS=elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%NUMBER_OF_DOMAINS
                         DO domain_idx=1,NUMBER_OF_DOMAINS
-                          domain_no=FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)
+                          domain_no=elementsMapping%GLOBAL_TO_LOCAL_MAP(elementIdx)%DOMAIN_NUMBER(domain_idx)
                           IF(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)== &
                             & DOMAIN_LOCAL_GHOST) THEN
                             FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
@@ -8625,32 +9035,36 @@ CONTAINS
                               & FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)+ &
                               & VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
                           ENDIF
-                        ENDDO !domain_idx
+                        ENDDO
                       ENDIF
-                    ENDDO !gp
-                  ENDDO !ny (global)
-                  start_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL+1
-                  stop_idx=ELEMENTS_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                    ENDDO !dataPointIdx
+                  ENDDO !elementIdx 
                   !Adjust the local offsets
-                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_GHOST*MAX_NGP
-                ENDIF ! 2 passes for normal, ghost 
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS-decompositionTopology%dataPoints%numberOfDomainGhost
+                  start_idx=elementsMapping%NUMBER_OF_LOCAL+1 !The start index for ghost elements
+                  stop_idx=elementsMapping%TOTAL_NUMBER_OF_LOCAL !The end index for local elements
+                ENDIF 
                 !Adjust the global offset
-                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+ELEMENTS_MAPPING%NUMBER_OF_GLOBAL*MAX_NGP
+                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+decompositionTopology%dataPoints%&
+                  & numberOfGlobalDataPoints  
                 !Handle local dofs domain mapping
-                DO element_idx=start_idx,stop_idx
-                  DO gp=1,MAX_NGP
-                    variable_local_ny=variable_local_ny+1
-                    Gauss_point_nyy=Gauss_point_nyy+1
+                DO elementIdx=start_idx,stop_idx
+                  globalElementNumber=elementsMapping%LOCAL_TO_GLOBAL_MAP(elementIdx)
+                  DO dataPointIdx=1,decompositionTopology%dataPoints%numberOfelementDataPoints(globalElementNumber)
+                    variable_local_ny=variable_local_ny+1 !reinitialise for every field variable, field variable dof idx
+                    data_point_nyy=data_point_nyy+1 !reinitialise for every field variable, field variable data point dof idx
+                    localDataNumber=decompositionTopology%dataPoints%elementDataPoint(elementIdx)%dataIndices(dataPointIdx)% &
+                      & localNumber
                     !Setup dof to parameter map
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_GAUSS_POINT_DOF_TYPE
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=Gauss_point_nyy
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,Gauss_point_nyy)=gp
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(2,Gauss_point_nyy)=element_idx
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(3,Gauss_point_nyy)=component_idx
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_DATA_POINT_DOF_TYPE
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=data_point_nyy
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=localDataNumber
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=elementIdx
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,data_point_nyy)=component_idx
                     !Setup reverse parameter to dof map
-                    FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gp,element_idx)=variable_local_ny
-                  ENDDO !gp
-                ENDDO !element_idx
+                    FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(localDataNumber)=variable_local_ny
+                  ENDDO !dataPointIdx
+                ENDDO !elementIdx 
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
@@ -8726,7 +9140,7 @@ CONTAINS
               ENDDO !component_idx
               !Handle global dofs domain mapping
               element_ny=0
-              DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL ! ELEMENTS_MAPPING has not been associated for this case !?!
+              DO ny=1,elementsMapping%NUMBER_OF_GLOBAL ! elementsMapping has not been associated for this case !?!
                 DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
                   FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
                   DOMAIN=>FIELD_COMPONENT%DOMAIN
@@ -8767,10 +9181,10 @@ CONTAINS
               DO domain_type_idx=1,domain_type_stop
                 IF(domain_type_idx==1) THEN
                   start_idx=1
-                  stop_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL
+                  stop_idx=elementsMapping%NUMBER_OF_LOCAL
                 ELSE
-                  start_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL+1
-                  stop_idx=ELEMENTS_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                  start_idx=elementsMapping%NUMBER_OF_LOCAL+1
+                  stop_idx=elementsMapping%TOTAL_NUMBER_OF_LOCAL
                 ENDIF
                 !Handle local dofs domain mapping
                 element_ny=0
@@ -8791,10 +9205,10 @@ CONTAINS
                 ENDDO !element_idx
                 !Adjust the offsets
                 VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS* &
-                  & ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL
+                  & elementsMapping%NUMBER_OF_DOMAIN_LOCAL
                 IF(domain_type_idx==1) THEN
                   VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS* &
-                    & ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+                    & elementsMapping%NUMBER_OF_GLOBAL
                 ENDIF
               ENDDO !domain_type_idx
             CASE(FIELD_NODE_BASED_INTERPOLATION)
@@ -9005,6 +9419,8 @@ CONTAINS
                     & DOFS_MAPPING%NUMBER_OF_GLOBAL*MAX_NGP
                 ENDIF
               ENDDO !domain_type_idx
+            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The interpolation type of "// &
                 & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
@@ -9025,7 +9441,6 @@ CONTAINS
           CALL DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(FIELD_VARIABLE_DOFS_MAPPING,ERR,ERROR,*999)
         ENDIF
       ENDDO !variable_idx
-
       IF(ALLOCATED(VARIABLE_LOCAL_DOFS_OFFSETS)) DEALLOCATE(VARIABLE_LOCAL_DOFS_OFFSETS)
       IF(ALLOCATED(VARIABLE_GHOST_DOFS_OFFSETS)) DEALLOCATE(VARIABLE_GHOST_DOFS_OFFSETS)
  
@@ -9101,6 +9516,17 @@ CONTAINS
                 & ERR,ERROR,*999)
             ENDDO !node_nyy
           ENDIF
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of data point DOFs = ",FIELD%VARIABLES(variable_idx)% &
+            & DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS,ERR,ERROR,*999)
+          IF(FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS>0) THEN
+            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"      data point DOFs:",ERR,ERROR,*999)
+            DO data_point_nyy=1,FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        data point DOF : ",data_point_nyy,ERR,ERROR,*999)
+              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,3,FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP% &
+                & DATA_POINT_DOF2PARAM_MAP(:,data_point_nyy),'("          DOF 2 Parameters :",3(X,I8))','(28X,3(X,I8))', &
+                & ERR,ERROR,*999)
+            ENDDO !node_nyy
+          ENDIF
           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Parameter to DOF map:",ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of components = ",FIELD%VARIABLES(variable_idx)% &
             & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
@@ -9147,6 +9573,10 @@ CONTAINS
               & FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS,ERR,ERROR,*999)
             IF(FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS>0) THEN
             ENDIF
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of data point parameters = ", &
+              & FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%NUMBER_OF_DATA_POINT_PARAMETERS,ERR,ERROR,*999)
+            IF(FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%NUMBER_OF_DATA_POINT_PARAMETERS>0) THEN
+            ENDIF
           ENDDO !component_idx
         ENDDO !variable_idx
       ENDIF
@@ -9185,12 +9615,14 @@ CONTAINS
     IF(ALLOCATED(DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP)) DEALLOCATE(DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP)
     IF(ALLOCATED(DOF_TO_PARAM_MAP%GRID_POINT_DOF2PARAM_MAP)) DEALLOCATE(DOF_TO_PARAM_MAP%GRID_POINT_DOF2PARAM_MAP)
     IF(ALLOCATED(DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP)) DEALLOCATE(DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP)
+    IF(ALLOCATED(DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP)) DEALLOCATE(DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP)
     DOF_TO_PARAM_MAP%NUMBER_OF_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_CONSTANT_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_ELEMENT_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_NODE_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_GRID_POINT_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_GAUSS_POINT_DOFS=0
+    DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS=0
 
     CALL EXITS("FIELD_DOF_TO_PARAM_MAP_FINALISE")
     RETURN
@@ -9220,6 +9652,7 @@ CONTAINS
     DOF_TO_PARAM_MAP%NUMBER_OF_NODE_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_GRID_POINT_DOFS=0
     DOF_TO_PARAM_MAP%NUMBER_OF_GAUSS_POINT_DOFS=0
+    DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS=0
 
     CALL EXITS("FIELD_DOF_TO_PARAM_MAP_INITIALISE")
     RETURN
@@ -9414,9 +9847,9 @@ CONTAINS
           IF(FIELD%DECOMPOSITION%CALCULATE_LINES) THEN
             CALL FIELD_GEOMETRIC_PARAMETERS_LINE_LENGTHS_CALCULATE(FIELD,ERR,ERROR,*999)
           ENDIF
-! AB      IF(FIELD%DECOMPOSITION%CALCULATE_FACES) THEN 
-! AB        CALL FIELD_GEOMETRIC_PARAMETERS_FACE_AREAS_CALCULATE(FIELD,ERR,ERROR,*999) !Temporary commented out
-! AB      ENDIF
+!          IF(FIELD%DECOMPOSITION%CALCULATE_FACES) THEN !temporarily commented out
+!            CALL FIELD_GEOMETRIC_PARAMETERS_FACE_AREAS_CALCULATE(FIELD,ERR,ERROR,*999) 
+!          ENDIF
         ELSE
           LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -9461,7 +9894,7 @@ CONTAINS
       ENDDO !field_idx
       IF(ASSOCIATED(GEOMETRIC_PARAMETERS%FIELDS_USING)) DEALLOCATE(GEOMETRIC_PARAMETERS%FIELDS_USING)
       IF(ALLOCATED(GEOMETRIC_PARAMETERS%LENGTHS)) DEALLOCATE(GEOMETRIC_PARAMETERS%LENGTHS)
-! AB      IF(ALLOCATED(GEOMETRIC_PARAMETERS%AREAS)) DEALLOCATE(GEOMETRIC_PARAMETERS%AREAS) !Temporary commented out
+!      IF(ALLOCATED(GEOMETRIC_PARAMETERS%AREAS)) DEALLOCATE(GEOMETRIC_PARAMETERS%AREAS) !temporarily commented out
       IF(ALLOCATED(GEOMETRIC_PARAMETERS%VOLUMES)) DEALLOCATE(GEOMETRIC_PARAMETERS%VOLUMES)
       DEALLOCATE(GEOMETRIC_PARAMETERS)
     ENDIF
@@ -9503,12 +9936,12 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate lengths.",ERR,ERROR,*999)
           FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS=0.0_DP
         ENDIF
-! AB      IF(FIELD%DECOMPOSITION%CALCULATE_FACES) THEN
-! AB        FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_AREAS=FIELD%DECOMPOSITION%TOPOLOGY%FACES%NUMBER_OF_FACES  !Temporary commented out
-! AB        ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS%AREAS(FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_AREAS),STAT=ERR) !Temporary commented out
-! AB        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate areas.",ERR,ERROR,*999) !Temporary commented out
-! AB        FIELD%GEOMETRIC_FIELD_PARAMETERS%AREAS=0.0_DP !Temporary commented out
-! AB      ENDIF
+!        IF(FIELD%DECOMPOSITION%CALCULATE_FACES) THEN !temporarily commented out
+!          FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_AREAS=FIELD%DECOMPOSITION%TOPOLOGY%FACES%NUMBER_OF_FACES
+!          ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS%AREAS(FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_AREAS),STAT=ERR)
+!          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate areas.",ERR,ERROR,*999)
+!          FIELD%GEOMETRIC_FIELD_PARAMETERS%AREAS=0.0_DP
+!        ENDIF
         FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_VOLUMES=0
 
         !The field is a geometric field so it must use itself initiallly
@@ -9855,7 +10288,7 @@ CONTAINS
     CALL EXITS("FIELD_GEOMETRIC_PARAMETERS_SCALE_FACTORS_UPDATE")
     RETURN 1
   END SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_SCALE_FACTORS_UPDATE
-
+  
   !
   !================================================================================================================================
   !
@@ -11440,6 +11873,8 @@ CONTAINS
                                     CALL FLAG_ERROR("From domain topology is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ! / gp based
+                                CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                 CASE DEFAULT
                                   LOCAL_ERROR="The from field variable component interpolation type of "// &
                                     & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
@@ -11601,6 +12036,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add constant for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -11728,6 +12169,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add constant for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -11857,6 +12304,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add constant for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -11984,6 +12437,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add constant for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -12515,6 +12974,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -12664,6 +13129,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -12816,6 +13287,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -12966,6 +13443,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -13099,6 +13582,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -13234,6 +13723,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -13368,6 +13863,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -13501,6 +14002,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -13672,6 +14179,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -13845,7 +14358,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -14016,6 +14534,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -14188,6 +14712,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -14338,6 +14868,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -14486,6 +15022,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -14636,6 +15178,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
                         & COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
@@ -14784,6 +15332,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS( &
@@ -15950,6 +16504,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -16077,6 +16637,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -16207,6 +16773,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -16334,6 +16906,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -16481,6 +17059,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -16626,6 +17210,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -16769,6 +17359,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -16911,6 +17507,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -17414,6 +18016,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -17581,6 +18189,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -17745,6 +18359,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -17913,6 +18533,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -18069,6 +18695,12 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
                       ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -18294,6 +18926,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -18423,6 +19061,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -18551,6 +19195,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -18678,6 +19328,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -19170,6 +19826,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -19318,6 +19980,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -19468,6 +20136,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -19617,6 +20291,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -19751,6 +20431,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -19883,6 +20569,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -20017,6 +20709,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -20149,6 +20847,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -20391,6 +21095,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -20563,6 +21273,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -20733,6 +21449,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -20905,6 +21627,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not add element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -21055,6 +21783,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by node for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -21203,6 +21937,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by node for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -21353,6 +22093,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by node for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -21502,6 +22248,12 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by node for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
@@ -21664,6 +22416,12 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
                       ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -24201,7 +24959,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) ::  CHILD_COMPONENT  !<Component of the child  field, must be nodally based
 
     !Local variables
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: E,GP,B, NGP,version
@@ -24252,9 +25010,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR              !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR     !<The error string
   
-   
     !Local variables
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: GP
 

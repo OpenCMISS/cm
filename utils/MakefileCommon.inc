@@ -941,7 +941,8 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     else
       ifeq ($(MPI),openmpi)
         MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
+        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil -lpthread
         MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
       else
         ifeq ($(MPI),mvapich2)
