@@ -4432,6 +4432,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElements_BasisSetObj
   END INTERFACE !CMISSMeshElements_BasisSet
 
+  !>Returns the adjacent elements for a given element and adjacent xi direction for an element in a mesh.
+  INTERFACE CMISSMeshElements_AdjacentElementGet
+    MODULE PROCEDURE CMISSMeshElements_AdjacentElementGetNumber
+    MODULE PROCEDURE CMISSMeshElements_AdjacentElementGetObj
+  END INTERFACE !CMISSMeshElements_AdjacentElementGet
+
   !>Finishes the creation of a mesh elements for a mesh component. \see OPENCMISS::CMISSMeshElements_CreateStart
   INTERFACE CMISSMeshElements_CreateFinish
     MODULE PROCEDURE CMISSMeshElements_CreateFinishNumber
@@ -4521,6 +4527,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDecomposition_TypeGet,CMISSDecomposition_TypeSet
 
+  PUBLIC CMISSDecomposition_NodeDomainGet
+
   PUBLIC CMISSMesh_CreateFinish,CMISSMesh_CreateStart
 
   PUBLIC CMISSMesh_Destroy
@@ -4531,17 +4539,19 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshElements_BasisGet,CMISSMeshElements_BasisSet
 
-  PUBLIC CMISSMeshElements_CreateFinish,CMISSMeshElements_CreateStart
+  PUBLIC CMISSMeshElements_AdjacentElementGet
 
-  PUBLIC CMISSMesh_ElementsGet
+  PUBLIC CMISSMeshElements_UserNodeVersionSet, CMISSMeshElements_LocalElementNodeVersionSet
+
+  PUBLIC CMISSMeshElements_CreateFinish,CMISSMeshElements_CreateStart
 
   PUBLIC CMISSMeshElements_NodesGet,CMISSMeshElements_NodesSet
 
   PUBLIC CMISSMeshElements_UserNumberGet,CMISSMeshElements_UserNumberSet
 
-  PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
+  PUBLIC CMISSMesh_ElementsGet
 
-  PUBLIC CMISSDecomposition_NodeDomainGet,CMISSMeshElements_UserNodeVersionSet, CMISSMeshElements_LocalElementNodeVersionSet
+  PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
 
   PUBLIC CMISSMesh_SurroundingElementsCalculateSet
   
@@ -38564,6 +38574,89 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMeshElements_BasisSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the adjacent element number of a mesh identified by a user number
+  SUBROUTINE CMISSMeshElements_AdjacentElementGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,globalElementNumber, &
+    & adjacentElementXi,adjacentElement,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh from which to get the adjacent element from.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh from which to get the adjacent element from.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number from which to get adjacent element number from.
+    INTEGER(INTG), INTENT(IN) :: globalElementNumber !<The global element number to get the adjacent element number for. !\todo this should be a user number
+    INTEGER(INTG), INTENT(IN) :: adjacentElementXi !<The xi coordinate direction to get the adjacent element for. Note that -xiCoordinateDirection gives the adjacent element before the element in the xiCoordinateDirection'th direction and +xiCoordinateDirection gives the adjacent element after the element in the xiCoordinateDirection'th direction. The xiCoordinateDirection=0 index will give the information on the current element.
+    INTEGER(INTG), INTENT(OUT) :: adjacentElement !<On return, the adjacent element number in the specified xi coordinate direction. Return 0 if the specified element has no adjacent elements in the specified xi coordinate direction.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSMeshElements_AdjacentElementGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(MESH_ELEMENTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,REGION,MESH,err,error,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,meshComponentNumber,MESH_ELEMENTS,err,error,*999)
+        CALL MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET(globalElementNumber,MESH_ELEMENTS,adjacentElementXi,adjacentElement, &
+          & err,error,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElements_AdjacentElementGetNumber",err,error)
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshElements_AdjacentElementGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the adjacent element number of a mesh identified by an object.
+  SUBROUTINE CMISSMeshElements_AdjacentElementGetObj(meshElements,globalElementNumber,adjacentElementXi,adjacentElement,err)
+
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(IN) :: meshElements !<The mesh elements from which to get the adjacent element for.
+    INTEGER(INTG), INTENT(IN) :: globalElementNumber !<The global element number to get the adjacent element for !\todo this should be a user number
+    INTEGER(INTG), INTENT(IN) :: adjacentElementXi !<The xi coordinate direction to get the adjacent element for  Note that -xiCoordinateDirection gives the adjacent element before the element in the xiCoordinateDirection'th direction and +xiCoordinateDirection gives the adjacent element after the element in the xiCoordinateDirection'th direction. The xiCoordinateDirection=0 index will give the information on the current element.
+    INTEGER(INTG), INTENT(OUT) :: adjacentElement !<On return, the adjacent element number in the specified xi coordinate direction. Return 0 if the specified element has no adjacent elements in the specified xi coordinate direction.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSMeshElements_AdjacentElementGetObj",err,error,*999)
+
+    CALL MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET(globalElementNumber,meshElements%MESH_ELEMENTS,adjacentElementXi, &
+      & adjacentElement,err,error,*999)
+
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElements_AdjacentElementGetObj",err,error)
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshElements_AdjacentElementGetObj
 
   !
   !================================================================================================================================
