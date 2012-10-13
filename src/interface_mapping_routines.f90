@@ -209,7 +209,7 @@ CONTAINS
                 !The pointers below have been checked for association above.
                 SELECT CASE(INTERFACE_CONDITION%METHOD)
                 CASE(INTERFACE_CONDITION_PENALTY_METHOD)
-                  !Sets up the Lagrange-Lagrange (Penalty) interface matrix mapping and calculate the row mappings
+                  !Sets up the Lagrange-(Penalty) interface matrix mapping and calculate the row mappings
                   matrix_idx = INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES !last of the interface matrices
                   !Initialise and setup the interface matrix
                   CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
