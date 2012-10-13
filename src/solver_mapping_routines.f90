@@ -943,7 +943,7 @@ CONTAINS
                   IF(rank==myrank) THEN
                     !Set up the solver row <-> interface column mappings
                     SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
-                      & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(local_column)%NUMBER_OF_SOLVER_ROWS=1
+                      & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(local_column)%NUMBER_OF_SOLVER_ROWS=0
                     SELECT CASE(INTERFACE_CONDITION%METHOD)
                     CASE(INTERFACE_CONDITION_PENALTY_METHOD)
                       !Set up the solver row <-> interface row mappings
