@@ -46,6 +46,7 @@ MODULE INTERFACE_ROUTINES
 
   USE BASE_ROUTINES
   USE DATA_POINT_ROUTINES
+  USE DATA_PROJECTION_ROUTINES
   USE FIELD_ROUTINES
   USE GENERATED_MESH_ROUTINES
   USE INPUT_OUTPUT
@@ -105,6 +106,8 @@ MODULE INTERFACE_ROUTINES
   PUBLIC INTERFACE_MESH_CONNECTIVITY_BASIS_SET
   
   PUBLIC InterfacePointsConnectivity_CreateStart,InterfacePointsConnectivity_CreateFinish
+  
+  PUBLIC InterfacePointsConnectivity_DataReprojection
   
   PUBLIC InterfacePointsConnectivity_ElementNumberGet,InterfacePointsConnectivity_ElementNumberSet
   
@@ -1484,6 +1487,104 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE InterfacePointsConnectivity_CreateStart
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Reproject data points for points connectivity
+  SUBROUTINE InterfacePointsConnectivity_DataReprojection(interface,interfaceCondition,err,error,*) 
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface where data reprojection is performed
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface where data reprojection is performed
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity
+    TYPE(FIELD_TYPE), POINTER :: dependentFieldFixed,dependentFieldProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    INTEGER(INTG) :: fixedBodyIdx,projectionBodyIdx,dataPointIdx,coordIdx
+    INTEGER(INTG) :: elementNumber,numberOfGeometricComponents
+  
+    CALL ENTERS("InterfacePointsConnectivity_DataReprojection",err,error,*999)
+    
+    NULLIFY(interpolatedPoints)
+    NULLIFY(interpolationParameters)
+    fixedBodyIdx=1 !\todo: need to generalise
+    projectionBodyIdx=2
+
+    IF(ASSOCIATED(interface)) THEN
+      IF(ASSOCIATED(interfaceCondition)) THEN
+        interfacePointsConnectivity=>interface%pointsConnectivity
+        IF(ASSOCIATED(interfacePointsConnectivity)) THEN
+          dataPoints=>interface%DATA_POINTS
+          IF(ASSOCIATED(dataPoints)) THEN
+            !######################################################################################################################
+            !Evaluate data points positions
+            dependentFieldFixed=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(fixedBodyIdx)%PTR%FIELD
+            IF(ASSOCIATED(dependentFieldFixed)) THEN 
+              !Temporarily change field variable to only have number of geometric components
+              numberOfGeometricComponents=dependentFieldFixed%GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
+              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(dependentFieldFixed,interpolationParameters,err,error,*999, &
+                & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999, &
+                & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+              interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
+              DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
+                elementNumber=interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
+                  & coupledMeshElementNumber
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber, &
+                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
+                  & xi,interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+                DO coordIdx=1,numberOfGeometricComponents
+                  dataPoints%DATA_POINTS(dataPointIdx)%position(coordIdx)=interpolatedPoint%VALUES(coordIdx,NO_PART_DERIV)
+                ENDDO !coordIdx
+              ENDDO !dataPointIdx
+            ELSE
+              CALL FLAG_ERROR("Fixed dependent field is not associated.",err,error,*999)
+            ENDIF          
+            
+            !######################################################################################################################
+            !Data reprojection and update points connectivity information with the projection results
+            dataProjection=>dataPoints%DATA_PROJECTIONS(projectionBodyIdx+1)%PTR 
+            IF(ASSOCIATED(dataProjection)) THEN
+              dependentFieldProjection=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(projectionBodyIdx)%PTR%FIELD
+              IF(ASSOCIATED(dependentFieldProjection)) THEN
+                !Projection the data points (with know spatial positions) on the projection dependent field 
+                CALL DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE(dataProjection,dependentFieldProjection,err,error,*999)
+                CALL InterfacePointsConnectivity_UpdateFromProjection(InterfacePointsConnectivity,dataProjection, &
+                  & projectionBodyIdx,err,error,*999) 
+              ELSE
+                CALL FLAG_ERROR("Projection dependent field is not associated.",err,error,*999)
+              ENDIF       
+            ELSE
+              CALL FLAG_ERROR("Interface data projection is not associated.",err,error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface data points is not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfacePointsConnectivity_DataReprojection")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_DataReprojection",err,error)
+    CALL EXITS("InterfacePointsConnectivity_DataReprojection")
+    RETURN 1
+  END SUBROUTINE InterfacePointsConnectivity_DataReprojection
   
   !
   !================================================================================================================================

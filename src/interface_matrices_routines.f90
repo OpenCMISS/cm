@@ -358,13 +358,23 @@ CONTAINS
                   IF(ALLOCATED(pointsConnectivity%coupledElements)) THEN
                     DO matrixIdx=1,interfaceMatrices%NUMBER_OF_INTERFACE_MATRICES
                       interfaceMatrix=>interfaceMatrices%MATRICES(matrixIdx)%PTR
-                      IF(ASSOCIATED(interfaceMatrix)) THEN !\todo: Need to separate the case for penalty matrix
-                        rowsFieldVariable=>interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%VARIABLE
-                        colsFieldVariable=>interfaceMapping%LAGRANGE_VARIABLE !\todo: TEMPORARY: Needs generalising
-                        rowsMeshIdx=interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%MESH_INDEX
-                        CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE(interfaceMatrix%ELEMENT_MATRIX, &
-                          & interfaceMatrix%UPDATE_MATRIX,pointsConnectivity%coupledElements(InterfaceElementNumber,rowsMeshIdx)% &
-                          & elementNumbers,[InterfaceElementNumber],rowsFieldVariable,colsFieldVariable,err,error,*999)
+                      IF(ASSOCIATED(interfaceMatrix)) THEN 
+                        IF(interfaceCondition%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
+                            matrixIdx==interfaceMatrices%NUMBER_OF_INTERFACE_MATRICES) THEN
+                          rowsFieldVariable=>interfaceMapping%LAGRANGE_VARIABLE
+                          colsFieldVariable=>interfaceMapping%LAGRANGE_VARIABLE
+                          CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE(interfaceMatrix%ELEMENT_MATRIX, &
+                            & interfaceMatrix%UPDATE_MATRIX,[InterfaceElementNumber],[InterfaceElementNumber], &
+                            & rowsFieldVariable,colsFieldVariable,err,error,*999)
+                        ELSE
+                          rowsFieldVariable=>interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%VARIABLE
+                          colsFieldVariable=>interfaceMapping%LAGRANGE_VARIABLE !\todo: TEMPORARY: Needs generalising
+                          rowsMeshIdx=interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%MESH_INDEX
+                          CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE(interfaceMatrix%ELEMENT_MATRIX, &
+                            & interfaceMatrix%UPDATE_MATRIX,pointsConnectivity%coupledElements(InterfaceElementNumber, &
+                            & rowsMeshIdx)%elementNumbers,[InterfaceElementNumber],rowsFieldVariable,colsFieldVariable, &
+                            & err,error,*999)
+                        ENDIF
                       ELSE
                         localError="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrixIdx,"*",err,error))// &
                           & " is not associated."

@@ -88,6 +88,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_OPTIMISER_TYPE=6 !<An optimiser solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_CELLML_EVALUATOR_TYPE=7 !<A CellML evaluation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_STATE_ITERATION_TYPE=8 !<An state iteration solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_GEOMETRIC_TRANSFORMATION_TYPE=9 !<An geometric transformation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
@@ -349,7 +350,7 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_NUMBER_OF_SOLVER_TYPES
   
   PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE, &
-    & SOLVER_OPTIMISER_TYPE,SOLVER_CELLML_EVALUATOR_TYPE
+    & SOLVER_OPTIMISER_TYPE,SOLVER_CELLML_EVALUATOR_TYPE,SOLVER_GEOMETRIC_TRANSFORMATION_TYPE
 
   PUBLIC SOLVER_CMISS_LIBRARY,SOLVER_PETSC_LIBRARY,SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_SPOOLES_LIBRARY, &
     & SOLVER_UMFPACK_LIBRARY,SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY,SOLVER_LAPACK_LIBRARY,SOLVER_TAO_LIBRARY, &
@@ -499,6 +500,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET
 
   PUBLIC SOLVER_LINEAR_ITERATIVE_TYPE_SET
+  
+  PUBLIC Solver_GeometricTransformationFieldSet, Solver_GeometricTransformationTranslationSet
 
   PUBLIC SOLVER_MATRICES_DYNAMIC_ASSEMBLE,SOLVER_MATRICES_STATIC_ASSEMBLE
 
@@ -6887,6 +6890,7 @@ CONTAINS
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
+      CALL Solver_GeometricTransformationFinalise(SOLVER%geometricTransformationSolver,ERR,ERROR,*999)
       IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
         & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
       IF(ALLOCATED(SOLVER%LINKED_SOLVER_TYPE_MAP)) DEALLOCATE(SOLVER%LINKED_SOLVER_TYPE_MAP)
@@ -6901,6 +6905,187 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_FINALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Set the field and field variable type for geometric transformation solver 
+  SUBROUTINE Solver_GeometricTransformationFieldSet(solver,field,variableType,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the field for
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to transformed
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to be transformed
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricFieldVariable
+    INTEGER(INTG) :: numberOfGeoemtricComponents
+
+    CALL ENTERS("Solver_GeometricTransformationFieldSet",err,error,*998)
+    
+    IF(ASSOCIATED(solver)) THEN
+      IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
+        IF(ASSOCIATED(field)) THEN
+          fieldVariable=>field%VARIABLE_TYPE_MAP(variableType)%PTR
+          IF(ASSOCIATED(fieldVariable)) THEN
+            IF(ASSOCIATED(field%GEOMETRIC_FIELD)) THEN
+              geometricFieldVariable=>field%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(1)%PTR !only 1 variable for geometric field
+              IF(ASSOCIATED(geometricFieldVariable)) THEN
+                numberOfGeoemtricComponents=geometricFieldVariable%NUMBER_OF_COMPONENTS
+                ALLOCATE(solver%geometricTransformationSolver%translation(numberOfGeoemtricComponents),STAT=err)
+                IF(err/=0) CALL FLAG_ERROR("Could not allocate translation for geometric transformation sovler",err,error,*999)
+                ALLOCATE(solver%geometricTransformationSolver%rotation(numberOfGeoemtricComponents, &
+                  & numberOfGeoemtricComponents),STAT=err)
+                IF(err/=0) CALL FLAG_ERROR("Could not allocate rotation for geometric transformation sovler",err,error,*999)
+                solver%geometricTransformationSolver%translation=0.0_DP
+                solver%geometricTransformationSolver%rotation=0.0_DP
+                solver%geometricTransformationSolver%field=>field
+                solver%geometricTransformationSolver%fieldVariableType=variableType
+              ELSE
+                CALL FLAG_ERROR("Field's geometric field variable is not associated.",err,error,*998)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Field's geometric field is not associated.",err,error,*998)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Field variable to be transformed is not associated.",err,error,*998)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Field is not associated.",err,error,*998)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*998)
+    ENDIF
+        
+    CALL EXITS("Solver_GeometricTransformationFieldSet")
+    RETURN
+    
+999 IF(ALLOCATED(solver%geometricTransformationSolver%translation)) DEALLOCATE(solver%geometricTransformationSolver%translation)
+    IF(ALLOCATED(solver%geometricTransformationSolver%rotation)) DEALLOCATE(solver%geometricTransformationSolver%rotation)
+998 CALL ERRORS("Solver_GeometricTransformationFieldSet",err,error)
+    CALL EXITS("Solver_GeometricTransformationFieldSet")
+    RETURN 1
+   
+  END SUBROUTINE Solver_GeometricTransformationFieldSet
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Set the translation for a geometric transformation 
+  SUBROUTINE Solver_GeometricTransformationTranslationSet(solver,translation,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the field for
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation vector to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Solver_GeometricTransformationTranslationSet",err,error,*999)
+    
+    IF(ASSOCIATED(solver)) THEN
+      IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
+        IF(SIZE(translation,1)==SIZE(solver%geometricTransformationSolver%translation)) THEN
+          solver%geometricTransformationSolver%translation=translation
+        ELSE
+          CALL FLAG_ERROR("Number of components for translation vector does not match the number of geometric components.", &
+            & err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Solver_GeometricTransformationTranslationSet")
+    RETURN
+
+999 CALL ERRORS("Solver_GeometricTransformationTranslationSet",err,error)
+    CALL EXITS("Solver_GeometricTransformationTranslationSet")
+    RETURN 1
+   
+  END SUBROUTINE Solver_GeometricTransformationTranslationSet
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a geometric transformation solver for a solver.
+  SUBROUTINE Solver_GeometricTransformationFinalise(geometricTransformationSolver,err,error,*)
+
+    !Argument variables
+    TYPE(GeometricTransformationSolverType), POINTER :: geometricTransformationSolver !<A pointer the linear solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Solver_GeometricTransformationFinalise",err,error,*999)
+
+    IF(ASSOCIATED(geometricTransformationSolver)) THEN   
+      NULLIFY(geometricTransformationSolver%solver)
+      IF(ASSOCIATED(geometricTransformationSolver%field)) NULLIFY(geometricTransformationSolver%field)
+      geometricTransformationSolver%fieldVariableType=0
+      IF(ALLOCATED(geometricTransformationSolver%translation))  &
+        & DEALLOCATE(geometricTransformationSolver%translation)
+      IF(ALLOCATED(geometricTransformationSolver%rotation)) DEALLOCATE(geometricTransformationSolver%rotation)
+      DEALLOCATE(geometricTransformationSolver)
+    ENDIF
+        
+    CALL EXITS("Solver_GeometricTransformationFinalise")
+    RETURN
+999 CALL ERRORS("Solver_GeometricTransformationFinalise",ERR,ERROR)
+    CALL EXITS("Solver_GeometricTransformationFinalise")
+    RETURN 1
+   
+  END SUBROUTINE Solver_GeometricTransformationFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a geometric transformation solver for a solver.
+  SUBROUTINE Solver_GeometricTransformationInitialise(solver,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to initialise the geometric transformation solver for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dummyErr
+    TYPE(VARYING_STRING) :: dummyError
+
+    CALL ENTERS("Solver_GeometricTransformationInitialise",err,error,*998)
+
+    IF(ASSOCIATED(solver)) THEN
+      IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
+        CALL FLAG_ERROR("Geometric transformation solver is already associated for this solver.",err,error,*998)
+      ELSE
+        !Allocate and initialise a geometric transformation solver
+        ALLOCATE(solver%geometricTransformationSolver,STAT=err)
+        IF(err/=0) CALL FLAG_ERROR("Could not allocate solver geometric transformation solver.",err,error,*999)
+        solver%geometricTransformationSolver%solver=>solver
+        NULLIFY(solver%geometricTransformationSolver%field)
+        solver%geometricTransformationSolver%fieldVariableType=0
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*998)
+    ENDIF
+        
+    CALL EXITS("Solver_GeometricTransformationInitialise")
+    RETURN
+999 CALL Solver_GeometricTransformationFinalise(solver%geometricTransformationSolver,dummyErr,dummyError,*998)
+998 CALL ERRORS("Solver_GeometricTransformationInitialise",err,error)
+    CALL EXITS("Solver_GeometricTransformationInitialise")
+    RETURN 1
+   
+  END SUBROUTINE Solver_GeometricTransformationInitialise
 
   !
   !================================================================================================================================
@@ -7044,6 +7229,7 @@ CONTAINS
       NULLIFY(SOLVER%CELLML_EVALUATOR_SOLVER)
       NULLIFY(SOLVER%SOLVER_EQUATIONS)
       NULLIFY(SOLVER%CELLML_EQUATIONS)
+      NULLIFY(SOLVER%geometricTransformationSolver)
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -12999,7 +13185,7 @@ CONTAINS
     EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC
     EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
     EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
-    EXTERNAL :: SOLVER_NONLINEAR_MONITOR_PETSC
+    EXTERNAL :: Problem_SolverNonlinearMonitorPETSC
     INTEGER(INTG) :: equations_matrix_idx,equations_set_idx,interface_condition_idx,interface_matrix_idx
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
@@ -13296,7 +13482,7 @@ CONTAINS
                     IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                       !Set the monitor
                       !Pass the linesearch solver object rather than the temporary solver
-                      CALL PETSC_SNESMONITORSET(LINESEARCH_SOLVER%SNES,SOLVER_NONLINEAR_MONITOR_PETSC, &
+                      CALL PETSC_SNESMONITORSET(LINESEARCH_SOLVER%SNES,Problem_SolverNonlinearMonitorPETSC, &
                         & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                     ENDIF
                     !Set the line search type
@@ -15896,6 +16082,8 @@ CONTAINS
               CALL SOLVER_OPTIMISER_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_CELLML_EVALUATOR_TYPE)
               CALL SOLVER_CELLML_EVALUATOR_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_GEOMETRIC_TRANSFORMATION_TYPE)
+              CALL Solver_GeometricTransformationInitialise(SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -15916,6 +16104,8 @@ CONTAINS
               CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_CELLML_EVALUATOR_TYPE)
               CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_GEOMETRIC_TRANSFORMATION_TYPE)
+              CALL Solver_GeometricTransformationFinalise(SOLVER%geometricTransformationSolver,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -15944,6 +16134,8 @@ CONTAINS
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     CASE(SOLVER_OPTIMISER_TYPE)
       CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+    CASE(SOLVER_GEOMETRIC_TRANSFORMATION_TYPE)
+      CALL Solver_GeometricTransformationFinalise(SOLVER%geometricTransformationSolver,ERR,ERROR,*999)
     END SELECT
 998 CALL ERRORS("SOLVER_TYPE_SET",ERR,ERROR)
     CALL EXITS("SOLVER_TYPE_SET")

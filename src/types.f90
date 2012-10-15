@@ -2600,6 +2600,15 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment for the solver
     REAL(DP) :: CURRENT_TIME !<The current time value for the evaluator solver
   END TYPE CELLML_EVALUATOR_SOLVER_TYPE
+  
+  !>Contains information for a geometric transformation solver
+  TYPE GeometricTransformationSolverType
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to the problem_solver
+    REAL(DP), ALLOCATABLE :: translation(:) !<translations(spatialCoordIdx), the translation vector for this geometric transformation
+    REAL(DP), ALLOCATABLE :: rotation(:,:) !<rotations(spatialCoordIdx,spatialCoordIdx), the rotation matrix for this geometric transformation
+    TYPE(FIELD_TYPE), POINTER :: field !<fields to which the geometric transformations are applied 
+    INTEGER(INTG) :: fieldVariableType !<The field variable type index to transform
+  END TYPE GeometricTransformationSolverType
 
    !>A buffer type to allow for an array of pointers to a SOLVER_TYPE \see TYPES::SOLVER_TYPE
   TYPE SOLVER_PTR_TYPE
@@ -2628,7 +2637,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
     TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer to the optimiser solver information
     TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the CellML solver information
-
+    TYPE(GeometricTransformationSolverType), POINTER :: geometricTransformationSolver !<A pointer to the geometric transformation solver information
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
     TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer to the CellML equations
     

@@ -410,19 +410,21 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface 
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the interface points connectivity
     TYPE(DecompositionElementDataPointsType), POINTER :: decompositionElementData !<A pointer to the decomposition data point topology
-    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField
+    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField,penaltyField
+    TYPE(INTERFACE_PENALTY_TYPE), POINTER :: interfacePenalty
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: interpolatedPointsMetrics(:)
     TYPE(BASIS_TYPE), POINTER :: coupledMeshDependentBasis
     TYPE(ELEMENT_MATRIX_TYPE), POINTER :: interfaceElementMatrix
+    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: penaltyMatrix
     INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp,numberOfInterfaceMeshXi,numberOfCoupledMeshXi, &
-      & numberOfMatrixCoupledElements
+      & numberOfMatrixCoupledElements,localDof,globalDof
     INTEGER(INTG) :: dataPointIdx,coupledMeshIdx,xiIdx,localElementNumber,localFaceLineNumber,matrixElementIdx,rowComponentIdx, &
-      & rowParameterIdx,rowIdx,colIdx
+      & rowParameterIdx,rowIdx,colIdx,componentIdx
     INTEGER(INTG) :: matrixCoefficients(2)
-    REAL(DP) :: PGMSI
+    REAL(DP) :: PGMSI,contactStiffness
     REAL(DP) :: positionPoint(3),normalPoint(3),tangentsPoint(3,3),xi(3)
     REAL(DP), ALLOCATABLE :: gaps(:),gapsComponents(:,:),normals(:,:)
     LOGICAL, ALLOCATABLE :: orthogonallyProjected(:)
@@ -440,7 +442,7 @@ CONTAINS
           SELECT CASE(interfaceCondition%METHOD)
           CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
             CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+          CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
             SELECT CASE(interfaceCondition%integrationType)
             CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
               CALL FLAG_ERROR("Mesh connectivity is not implemented for frictionless contact.",err,error,*999)
@@ -487,16 +489,16 @@ CONTAINS
                 
                 !Calculate Gap for each data point 
                 DO coupledMeshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
-                  coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
-                    & DEPENDENT%DEPENDENT_FIELD
+                  coupledMeshDependentField=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(coupledMeshIdx)%PTR%FIELD
+                  numberOfCoupledMeshGeoComp=coupledMeshDependentField%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
+                    & PTR%NUMBER_OF_COMPONENTS
                   NULLIFY(interpolatedPoints)
                   NULLIFY(interpolationParameters)
-                  CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(coupledMeshDependentField,interpolationParameters,err,error,*999)
-                  CALL Field_InterpolatedPointsGeometryInitialise(interpolationParameters,interpolatedPoints,err,error,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(coupledMeshDependentField,interpolationParameters,err,error, &
+                    & *999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+                  CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999, &
+                    & FIELD_GEOMETRIC_COMPONENTS_TYPE)
                   interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
-                  !mesh component number is the same for all geometric components in elasticity problems
-                  numberOfCoupledMeshGeoComp=interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR%GEOMETRY% &
-                   & GEOMETRIC_FIELD%VARIABLES(FIELD_U_VARIABLE_TYPE)%NUMBER_OF_COMPONENTS
                   DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
                     !Only interpolate if orthogonally projected
                     IF(orthogonallyProjected(dataPointIdx)) THEN
@@ -506,13 +508,13 @@ CONTAINS
                       SELECT CASE(numberOfInterfaceMeshXi) !Use face/line interpolation parameters for normal calculation
                       CASE(1)
                         CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,localFaceLineNumber, &
-                          & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                          & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                       CASE(2)
                         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,localFaceLineNumber, &
-                          & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                          & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                       END SELECT
-                      CALL Field_interpolateGeometryXi(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
-                        & coupledMeshIdx)%reducedXi(:),interpolatedPoint,err,error,*999) !Interpolate contact data points on each surface
+                      CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
+                        & coupledMeshIdx)%reducedXi(:),interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE) !Interpolate contact data points on each surface
                       gapsComponents(1:numberOfCoupledMeshGeoComp,dataPointIdx)=gapsComponents(1:numberOfCoupledMeshGeoComp, &
                         & dataPointIdx)+interpolatedPoint%VALUES(1:numberOfCoupledMeshGeoComp,NO_PART_DERIV)* &
                         & matrixCoefficients(coupledMeshIdx) !Calculate 3 components gap function for each contact point
@@ -550,7 +552,7 @@ CONTAINS
                       & numberOfCoupledElements
                     numberOfCoupledMeshXi=interface%COUPLED_MESHES(coupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
                     numberOfCoupledMeshGeoComp=interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR%GEOMETRY% &
-                      & GEOMETRIC_FIELD%VARIABLES(FIELD_U_VARIABLE_TYPE)%NUMBER_OF_COMPONENTS
+                      & GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_COMPONENTS
                     coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
                       & DEPENDENT%DEPENDENT_FIELD
                     interfaceElementMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%ELEMENT_MATRIX
@@ -567,7 +569,7 @@ CONTAINS
                         xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
                           & xi(1:numberOfCoupledMeshXi)                  
                         DO rowComponentIdx=1,numberOfCoupledMeshGeoComp
-                          meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)% &
+                          meshComponentNumber=coupledMeshDependentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
                             & COMPONENTS(rowComponentIdx)%MESH_COMPONENT_NUMBER
                           !Calculate PGSMI for each data point component
                           coupledMeshDependentBasis=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
@@ -589,7 +591,7 @@ CONTAINS
                     IF(coupledMeshDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
                       rowIdx=0
                       DO rowComponentIdx=1,numberOfCoupledMeshGeoComp
-                        meshComponentNumber=coupledMeshDependentField%VARIABLES(FIELD_U_VARIABLE_TYPE)% &
+                        meshComponentNumber=coupledMeshDependentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
                             & COMPONENTS(rowComponentIdx)%MESH_COMPONENT_NUMBER
                         DO matrixElementIdx=1,numberOfMatrixCoupledElements
                           localElementNumber=pointsConnectivity%coupledElements(interfaceElementNumber,coupledMeshIdx)% &
@@ -612,6 +614,8 @@ CONTAINS
                         ENDDO !coupledMeshElementIdx
                       ENDDO !rowComponentIdx
                     ENDIF !.NOT. FIELD_NO_SCALING
+                    IF(interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%FIRST_ASSEMBLY) &
+                      & interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%FIRST_ASSEMBLY=.FALSE.
                   ENDIF !UPDATE_MATRIX
                 ENDDO !coupledMeshIdx
                 
@@ -621,6 +625,66 @@ CONTAINS
                 IF(ALLOCATED(orthogonallyProjected)) DEALLOCATE(orthogonallyProjected)
                 IF(ALLOCATED(gapsComponents)) DEALLOCATE(gapsComponents)
                 IF(ALLOCATED(gaps)) DEALLOCATE(gaps)
+                
+                !###################################################################################################################
+                
+                !Calculate penalty matrix if required
+                IF(interfaceCondition%METHOD==INTERFACE_CONDITION_PENALTY_METHOD) THEN
+                  interfacePenalty=>interfaceCondition%PENALTY
+                  IF(ASSOCIATED(interfacePenalty)) THEN
+                    penaltyField=>interfacePenalty%PENALTY_FIELD
+                    IF(ASSOCIATED(penaltyField)) THEN
+                      penaltyMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(interfaceEquations% &
+                        & INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES)%PTR
+                      IF(ASSOCIATED(penaltyMatrix)) THEN
+                        IF(penaltyMatrix%FIRST_ASSEMBLY .AND. penaltyMatrix%UPDATE_MATRIX) THEN
+                          DO componentIdx=1,penaltyField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_COMPONENTS
+                            SELECT CASE(penaltyField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
+                              & COMPONENTS(componentIdx)%INTERPOLATION_TYPE)
+                            CASE(FIELD_CONSTANT_INTERPOLATION)
+                              CALL FIELD_PARAMETER_SET_GET_CONSTANT(penaltyField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & componentIdx,contactStiffness,err,error,*999)
+                              DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                                penaltyMatrix%ELEMENT_MATRIX%MATRIX(dataPointIdx,dataPointIdx)=-(1.0_DP/contactStiffness)
+                              ENDDO !dataPointIdx
+                            CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                              localDof=penaltyField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%COMPONENTS(componentIdx)% &
+                                & PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(interfaceElementNumber)
+                              CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(penaltyField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & localDof,contactStiffness,err,error,*999)
+                              DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                                penaltyMatrix%ELEMENT_MATRIX%MATRIX(dataPointIdx,dataPointIdx)=-(1.0_DP/contactStiffness)
+                              ENDDO !dataPointIdx
+                            CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                              DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                                localDof=penaltyField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%COMPONENTS(componentIdx)% &
+                                  & PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointIdx)
+                                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(penaltyField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                  & localDof,contactStiffness,err,error,*999)
+                                penaltyMatrix%ELEMENT_MATRIX%MATRIX(dataPointIdx,dataPointIdx)=-(1.0_DP/contactStiffness)
+                              ENDDO !dataPointIdx
+                            CASE DEFAULT
+                              localError="The interpolation type for component number "// &
+                                & TRIM(NUMBER_TO_VSTRING(componentIdx,"*",err,error))// &
+                                & " of variable type "//TRIM(NUMBER_TO_VSTRING(FIELD_U_VARIABLE_TYPE,"*",err,error))// &
+                                & " of field number "//TRIM(NUMBER_TO_VSTRING(penaltyField%USER_NUMBER,"*",err,error))//" is "// &
+                                & TRIM(NUMBER_TO_VSTRING(penaltyField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%COMPONENTS &
+                                & (componentIdx)%INTERPOLATION_TYPE,"*", err,error))// " which is invalid for penalty field."
+                              CALL FLAG_ERROR(localError,err,error,*999)
+                            END SELECT
+                          ENDDO !componentIdx
+!                          penaltyMatrix%FIRST_ASSEMBLY=.FALSE.
+                        ENDIF              
+                      ELSE
+                        CALL FLAG_ERROR("Interface penalty matrix is not associated.",err,error,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Interface penalty field is not associated.",err,error,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Interface penalty is not associated.",err,error,*999)
+                  ENDIF
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
               ENDIF
@@ -630,8 +694,6 @@ CONTAINS
               CALL FLAG_ERROR(localError,err,error,*999)
             END SELECT !interfaceCondition%integrationType
           CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE(INTERFACE_CONDITION_PENALTY_METHOD)
             CALL FLAG_ERROR("Not implemented.",err,error,*999)
           CASE DEFAULT
             localError="Interface condition method "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%METHOD,"*",err,error))// &

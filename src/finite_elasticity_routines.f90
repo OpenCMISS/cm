@@ -59,6 +59,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
   USE EQUATIONS_MATRICES_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FIELD_ROUTINES
+  USE FIELD_IO_ROUTINES
   USE FLUID_MECHANICS_IO_ROUTINES
   USE GENERATED_MESH_ROUTINES
   USE INPUT_OUTPUT
@@ -109,8 +110,9 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SETUP,FINITE_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SETUP, &
+    & FiniteElasticity_ContactProblemSubtypeSet,FiniteElasticity_ContactProblemSetup, & 
     & FINITE_ELASTICITY_POST_SOLVE,FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA, &
-    & FINITE_ELASTICITY_PRE_SOLVE,FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP, &
+    & FINITE_ELASTICITY_PRE_SOLVE,FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP,FiniteElasticity_ControlLoadIncrementLoopPostLoop, &
     & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS, &
     & FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR,FINITE_ELASTICITY_LOAD_INCREMENT_APPLY, &
     & FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE, &
@@ -5114,6 +5116,145 @@ CONTAINS
     CALL EXITS("FINITE_ELASTICITY_PROBLEM_SETUP")
     RETURN 1
   END SUBROUTINE FINITE_ELASTICITY_PROBLEM_SETUP
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets up the finite elasticity problem.
+  SUBROUTINE FiniteElasticity_ContactProblemSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem set to setup a Laplace equation on.
+    TYPE(PROBLEM_SETUP_TYPE), INTENT(INOUT) :: PROBLEM_SETUP !<The problem setup information
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
+    TYPE(SOLVER_TYPE), POINTER :: nonlinearSolver,transformationSolver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FINITE_ELASTICITY_PROBLEM_SETUP",ERR,ERROR,*999)
+
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(nonlinearSolver)
+    NULLIFY(transformationSolver)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(SOLVERS)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      SELECT CASE(PROBLEM%SUBTYPE)
+      CASE(PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE,PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE,PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE)
+        SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
+        CASE(PROBLEM_SETUP_INITIAL_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+          CASE(PROBLEM_SETUP_START_ACTION)
+            !Do nothing????
+          CASE(PROBLEM_SETUP_FINISH_ACTION)
+            !Do nothing????
+          CASE DEFAULT
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a finite elasticity problem."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(PROBLEM_SETUP_CONTROL_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+          CASE(PROBLEM_SETUP_START_ACTION)
+            !Set up a simple control loop: default is load increment type now
+            CALL CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*999)
+            CALL CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE,ERR,ERROR,*999)
+          CASE(PROBLEM_SETUP_FINISH_ACTION)
+            !Finish the control loops
+            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+            CALL CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP,ERR,ERROR,*999)            
+          CASE DEFAULT
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a finite elasticity problem."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(PROBLEM_SETUP_SOLVERS_TYPE)
+          !Get the control loop
+          CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+          CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+          CASE(PROBLEM_SETUP_START_ACTION)
+            !Start the solvers creation
+            CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+            CALL SOLVERS_NUMBER_SET(SOLVERS,2,ERR,ERROR,*999)
+            !Set the first solver to be a geometric transformation solver
+            CALL SOLVERS_SOLVER_GET(SOLVERS,1,transformationSolver,ERR,ERROR,*999)
+            CALL SOLVER_TYPE_SET(transformationSolver,SOLVER_GEOMETRIC_TRANSFORMATION_TYPE,ERR,ERROR,*999)
+            !Set the second solver to be a nonlinear solver
+            CALL SOLVERS_SOLVER_GET(SOLVERS,2,nonlinearSolver,ERR,ERROR,*999)
+            CALL SOLVER_TYPE_SET(nonlinearSolver,SOLVER_NONLINEAR_TYPE,ERR,ERROR,*999)
+            !Set solver defaults
+            CALL SOLVER_LIBRARY_TYPE_SET(nonlinearSolver,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+          CASE(PROBLEM_SETUP_FINISH_ACTION)
+            !Get the solvers
+            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+            !Finish the solvers creation
+            CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a finite elasticity problem."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+          CASE(PROBLEM_SETUP_START_ACTION)
+            !Get the control loop
+            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+            !Get the solver
+            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+            CALL SOLVERS_SOLVER_GET(SOLVERS,2,nonlinearSolver,ERR,ERROR,*999)
+            !Create the solver equatgions
+            CALL SOLVER_EQUATIONS_CREATE_START(nonlinearSolver,SOLVER_EQUATIONS,ERR,ERROR,*999)
+            CALL SOLVER_EQUATIONS_LINEARITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_NONLINEAR,ERR,ERROR,*999)
+            CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_STATIC,ERR,ERROR,*999)
+            CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_SPARSE_MATRICES,ERR,ERROR,*999)
+          CASE(PROBLEM_SETUP_FINISH_ACTION)
+            !Get the control loop
+            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+            !Get the solver equations
+            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+            CALL SOLVERS_SOLVER_GET(SOLVERS,2,nonlinearSolver,ERR,ERROR,*999)
+            CALL SOLVER_SOLVER_EQUATIONS_GET(nonlinearSolver,SOLVER_EQUATIONS,ERR,ERROR,*999)
+            !Finish the solver equations creation
+            CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)             
+          CASE DEFAULT
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a finite elasticity problem."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a finite elasticity problem."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+          & " is not valid for a finite elasticity contact type of an elasticity problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FiniteElasticity_ContactProblemSetup")
+    RETURN
+999 CALL ERRORS("FiniteElasticity_ContactProblemSetup",ERR,ERROR)
+    CALL EXITS("FiniteElasticity_ContactProblemSetup")
+    RETURN 1
+  END SUBROUTINE FiniteElasticity_ContactProblemSetup
 
   !
   !================================================================================================================================
@@ -5161,6 +5302,57 @@ CONTAINS
     CALL EXITS("FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET")
     RETURN 1
   END SUBROUTINE FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the problem subtype for a finite elasticity contact type .
+  SUBROUTINE FiniteElasticity_ContactProblemSubtypeSet(problem,problemSubtype,err,error,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem subtype for
+    INTEGER(INTG), INTENT(IN) :: problemSubtype !<The problem subtype to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("FiniteElasticity_ContactProblemSubtypeSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      SELECT CASE(problemSubtype)
+      CASE(PROBLEM_NO_SUBTYPE) !Normal finite elasticity problem subject to contact constraint, no extra solvers required        
+        problem%CLASS=PROBLEM_ELASTICITY_CLASS
+        problem%TYPE=PROBLEM_FINITE_ELASTICITY_TYPE
+        problem%SUBTYPE=PROBLEM_NO_SUBTYPE      
+      CASE(PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE)        
+        problem%CLASS=PROBLEM_ELASTICITY_CLASS
+        problem%TYPE=PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE
+        problem%SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE
+      CASE(PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE)        
+        problem%CLASS=PROBLEM_ELASTICITY_CLASS
+        problem%TYPE=PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE
+        problem%SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE
+      CASE(PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE)        
+        problem%CLASS=PROBLEM_ELASTICITY_CLASS
+        problem%TYPE=PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE
+        problem%SUBTYPE=PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE  
+      CASE DEFAULT
+        localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(problemSubtype,"*",err,error))// &
+          & " is not valid for a finite elasticity contact type of an elasticity problem class."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("FiniteElasticity_ContactProblemSubtypeSet")
+    RETURN
+999 CALL ERRORS("FiniteElasticity_ContactProblemSubtypeSet",err,error)
+    CALL EXITS("FiniteElasticity_ContactProblemSubtypeSet")
+    RETURN 1
+  END SUBROUTINE FiniteElasticity_ContactProblemSubtypeSet
 
   !
   !================================================================================================================================
@@ -5445,6 +5637,77 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Executes after each loop of a control loop for finite elasticity problems, i.e., after each load increment in a load increment loop
+  SUBROUTINE FiniteElasticity_ControlLoadIncrementLoopPostLoop(controlLoop,err,error,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop !<A pointer to the control loop 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(SOLVERS_TYPE), POINTER :: solvers
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELDS_TYPE), POINTER :: fields
+    INTEGER(INTG) :: solverIdx,equationsSetIdx,incrementIdx
+    LOGICAL :: dirExist
+    TYPE(VARYING_STRING) :: fileName,method,directory
+
+    CALL ENTERS("FiniteElasticity_ControlLoadIncrementLoopPostLoop",err,error,*999)
+
+    IF(ASSOCIATED(controlLoop)) THEN
+      IF(controlLoop%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
+        incrementIdx=controlLoop%LOAD_INCREMENT_LOOP%ITERATION_NUMBER
+        solvers=>controlLoop%SOLVERS
+        IF(ASSOCIATED(solvers)) THEN
+          DO solverIdx=1,solvers%NUMBER_OF_SOLVERS
+            solver=>solvers%SOLVERS(solverIdx)%PTR
+            IF(ASSOCIATED(solver)) THEN
+              solverEquations=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(solverEquations)) THEN
+                solverMapping=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(solverMapping)) THEN
+                  DO equationsSetIdx=1,solverMapping%NUMBER_OF_EQUATIONS_SETS
+                    region=>solverMapping%EQUATIONS_SETS(equationsSetIdx)%PTR%REGION
+                    NULLIFY(fields)
+                    fields=>region%FIELDS
+                    directory="results_load/"
+                    INQUIRE(FILE=CHAR(directory),EXIST=dirExist)
+                    IF(.NOT.dirExist) THEN
+                      CALL SYSTEM(CHAR("mkdir "//directory))
+                    ENDIF
+                    fileName=directory//"mesh"//TRIM(NUMBER_TO_VSTRING(equationsSetIdx,"*",err,error))// &
+                      & "_load"//TRIM(NUMBER_TO_VSTRING(incrementIdx,"*",err,error))
+                    method="FORTRAN"
+                    CALL FIELD_IO_ELEMENTS_EXPORT(fields,fileName,method,err,error,*999)
+                    CALL FIELD_IO_NODES_EXPORT(fields,fileName,method,err,error,*999)
+                  ENDDO !equationsSetIdx
+                ENDIF
+              ENDIF
+            ENDIF
+          ENDDO !solverIdx
+        ELSE
+          CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("FiniteElasticity_ControlLoadIncrementLoopPostLoop")
+    RETURN
+999 CALL ERRORS("FiniteElasticity_ControlLoadIncrementLoopPostLoop",err,error)
+    CALL EXITS("FiniteElasticity_ControlLoadIncrementLoopPostLoop")
+    RETURN 1
+    
+  END SUBROUTINE FiniteElasticity_ControlLoadIncrementLoopPostLoop
 
   !
   !================================================================================================================================

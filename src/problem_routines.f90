@@ -53,11 +53,14 @@ MODULE PROBLEM_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
+  USE FIELD_IO_ROUTINES
   USE FINITE_ELASTICITY_ROUTINES
   USE FITTING_ROUTINES
   USE FLUID_MECHANICS_ROUTINES
   USE INPUT_OUTPUT
+  USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_CONDITIONS_ROUTINES
+  USE INTERFACE_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
   USE MULTI_PHYSICS_ROUTINES
@@ -129,6 +132,8 @@ MODULE PROBLEM_ROUTINES
   PUBLIC PROBLEM_SOLVER_JACOBIAN_EVALUATE,PROBLEM_SOLVER_RESIDUAL_EVALUATE
   
   PUBLIC PROBLEM_SOLVER_GET
+  
+  PUBLIC Problem_SolverNonlinearMonitor
   
   PUBLIC PROBLEM_SOLVE
   
@@ -565,12 +570,12 @@ CONTAINS
                     DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                       SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                       IF(ASSOCIATED(SOLVER)) THEN
-                        !Apply incremented boundary conditions here => 
-                        CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
-                          & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
-                        
+                        IF(ASSOCIATED(SOLVER%SOLVER_EQUATIONS)) THEN
+                          !Apply incremented boundary conditions here => 
+                          CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
+                            & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+                        ENDIF
                         CALL PROBLEM_SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-                        
                       ELSE
                         CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
                       ENDIF
@@ -1264,8 +1269,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,solver_matrix_idx
+    INTEGER(INTG) :: equations_set_idx,interfaceConditionIdx,solver_matrix_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_equations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -1328,6 +1334,13 @@ CONTAINS
                   !Assemble the equations for linear problems
                   CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                 ENDDO !equations_set_idx
+                !Update interface matrices
+!                DO interfaceConditionIdx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+!                  interfaceCondition=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interfaceConditionIdx)%PTR
+!                  !Assemble the interface condition for the Jacobian LHS
+!                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"********************Jacobian evaluation******************",ERR,ERROR,*999)
+!                  CALL INTERFACE_CONDITION_ASSEMBLE(interfaceCondition,err,error,*999)
+!                ENDDO
                 !Assemble the static nonlinear solver matrices
                 CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)
               END IF       
@@ -1366,9 +1379,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,interface_condition_idx,solver_matrix_idx
+    INTEGER(INTG) :: equations_set_idx,interfaceConditionIdx,solver_matrix_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
     TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER,LINKING_SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -1463,6 +1476,13 @@ CONTAINS
                   END SELECT
                 ENDDO !equations_set_idx
                 !Note that the linear interface matrices are not required to be updated since these matrices do not change
+                !Update interface matrices
+!                DO interfaceConditionIdx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+!                  interfaceCondition=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interfaceConditionIdx)%PTR
+!                  !Assemble the interface condition for the Jacobian LHS
+!                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"********************Residual evaluation******************",ERR,ERROR,*999)
+!                  CALL INTERFACE_CONDITION_ASSEMBLE(interfaceCondition,err,error,*999)
+!                ENDDO
                 !Assemble the solver matrices
                 CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
               END IF
@@ -1970,7 +1990,7 @@ CONTAINS
       IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
         SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
         CASE(PROBLEM_ELASTICITY_CLASS)
-          !Do nothing
+          CALL Elasticity_ControlLoopPostLoop(CONTROL_LOOP,ERR,ERROR,*999)
         CASE(PROBLEM_BIOELECTRICS_CLASS)
           CALL BIOELECTRIC_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
         CASE(PROBLEM_FLUID_MECHANICS_CLASS)
@@ -2757,6 +2777,8 @@ CONTAINS
         IF(ASSOCIATED(SOLVER%CELLML_EQUATIONS)) THEN
           !A solver with CellML equations.
           CALL PROBLEM_CELLML_EQUATIONS_SOLVE(SOLVER%CELLML_EQUATIONS,ERR,ERROR,*999)
+        ELSEIF(SOLVER%SOLVE_TYPE==SOLVER_GEOMETRIC_TRANSFORMATION_TYPE) THEN
+          CALL Problem_SolverGeometricTransformationSolve(SOLVER%geometricTransformationSolver,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Solver does not have any equations associated.",ERR,ERROR,*999)
         ENDIF
@@ -2982,6 +3004,69 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVER_EQUATIONS_DESTROY")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DESTROY
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Solves geometric transformation for a field 
+  SUBROUTINE Problem_SolverGeometricTransformationSolve(geometricTransformationSolver,err,error,*) !\todo: Add rotation operations.
+    
+   !Argument variables
+    TYPE(GeometricTransformationSolverType), POINTER :: GeometricTransformationSolver !<A pointer to the geometric transformation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    INTEGER(INTG) :: componentIdx,versionIdx,derivativeIdx,nodeIdx,solverIdx
+    INTEGER(INTG) :: localNodeNumber
+    TYPE(DOMAIN_TYPE), POINTER :: domain
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
+    TYPE(LOGICAL) :: transformBC=.FALSE.
+    
+    CALL ENTERS("Problem_SolverGeometricTransformationSolve",err,error,*999) 
+    
+    IF(ASSOCIATED(geometricTransformationSolver)) THEN
+      IF(ASSOCIATED(geometricTransformationSolver%field)) THEN
+        fieldVariable=>geometricTransformationSolver%field%VARIABLE_TYPE_MAP(geometricTransformationSolver%fieldVariableType)%PTR
+        IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) transformBC=.TRUE.
+        DO componentIdx=1,SIZE(geometricTransformationSolver%translation,1)
+          domain=>fieldVariable%COMPONENTS(componentIdx)%DOMAIN
+          IF(ASSOCIATED(domain)) THEN
+            domainNodes=>domain%TOPOLOGY%NODES
+            derivativeIdx=1 !For translation only the coordinates are modified
+            DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
+              localNodeNumber=domainNodes%NODES(nodeIdx)%LOCAL_NUMBER
+              DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                !Translate nodal parameters
+                CALL FIELD_PARAMETER_SET_ADD_LOCAL_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                  & fieldVariableType,FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,localNodeNumber,componentIdx, &
+                  & geometricTransformationSolver%translation(componentIdx),err,error,*999)
+                !Translate boundary conditions if requried
+                IF(transformBC) THEN
+                  CALL FIELD_PARAMETER_SET_ADD_LOCAL_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                    & fieldVariableType,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,versionIdx,derivativeIdx,localNodeNumber,componentIdx, &
+                    & geometricTransformationSolver%translation(componentIdx),err,error,*999)
+                ENDIF
+              ENDDO !versionIdx
+            ENDDO !nodeIdx
+          ELSE
+            CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
+          ENDIF
+        ENDDO !componentIdx
+      ELSE
+        CALL FLAG_ERROR("The field of geometric transformation solver is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Geometric transformation solver is not associated.",err,error,*999)
+    ENDIF
+      
+    CALL EXITS("Problem_SolverGeometricTransformationSolve")
+    RETURN
+999 CALL ERRORS("Problem_SolverGeometricTransformationSolve",err,error)
+    CALL EXITS("Problem_SolverGeometricTransformationSolve")
+    RETURN 1
+  END SUBROUTINE Problem_SolverGeometricTransformationSolve
 
   !
   !================================================================================================================================
@@ -3068,6 +3153,196 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVER_GET_1")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVER_GET_1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Monitors the problem nonlinear solve
+  SUBROUTINE Problem_SolverNonlinearMonitor(solver,iterationNumber,residualNorm,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to the solver to monitor
+    INTEGER(INTG), INTENT(IN) :: iterationNumber !<The number of iterations
+    REAL(DP), INTENT(IN) :: residualNorm !<The residual norm
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: interfaceConditionIdx
+    TYPE(SOLVERS_TYPE), POINTER :: solvers
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("Problem_SolverNonlinearMonitor",err,error,*998)
+    
+    IF(ASSOCIATED(solver)) THEN
+      solvers=>solver%SOLVERS
+      IF(ASSOCIATED(solvers)) THEN
+        controlLoop=>solvers%CONTROL_LOOP
+        IF(ASSOCIATED(controlLoop)) THEN
+          problem=>controlLoop%PROBLEM
+          IF(ASSOCIATED(problem)) THEN
+            SELECT CASE(problem%CLASS)
+            CASE(PROBLEM_ELASTICITY_CLASS)
+              SELECT CASE(problem%TYPE)
+              CASE(PROBLEM_LINEAR_ELASTICITY_TYPE,PROBLEM_FINITE_ELASTICITY_TYPE)
+                !Do nothing???
+              CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE,PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
+                !Output meshes at iterations
+                IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+                  nonlinearSolver=>solver%NONLINEAR_SOLVER
+                  IF(ASSOCIATED(nonlinearSolver)) THEN
+                    CALL Problem_SolverNewtonFieldsOutput(solver,iterationNumber,err,error,*999)
+                  ENDIF
+                ENDIF
+                SELECT CASE(problem%SUBTYPE)
+                CASE(PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE,PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE)
+                  !Do nothing???
+                CASE(PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE,PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE, &
+                    & PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE,PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE)
+                  solverEquations=>solver%SOLVER_EQUATIONS
+                  IF(ASSOCIATED(solverEquations)) THEN
+                    solverMapping=>solverEquations%SOLVER_MAPPING
+                    IF(ASSOCIATED(solverMapping)) THEN
+                      DO interfaceConditionIdx=1,solverMapping%NUMBER_OF_INTERFACE_CONDITIONS
+                        interfaceCondition=>solverMapping%INTERFACE_CONDITIONS(interfaceConditionIdx)%PTR
+                        IF(ASSOCIATED(interfaceCondition)) THEN
+                          IF(interfaceCondition%OPERATOR==INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR .AND. &
+                              & interfaceCondition%integrationType==INTERFACE_CONDITION_DATA_POINTS_INTEGRATION) THEN
+                            interface=>interfaceCondition%INTERFACE
+                            IF(ASSOCIATED(interface)) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"**************** Reproject! ****************",ERR,ERROR,*999)
+                              CALL InterfacePointsConnectivity_DataReprojection(interface,interfaceCondition,err,error,*999)
+                              CALL INTERFACE_CONDITION_ASSEMBLE(interfaceCondition,err,error,*999)
+                            ELSE
+                              CALL FLAG_ERROR("Interface is not associated for nonlinear solver equations mapping.", &
+                                & err,error,*999)
+                            ENDIF
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Interface condition is not associated for nonlinear solver equations mapping.", &
+                            & err,error,*999)
+                        ENDIF
+                      ENDDO !interfaceConditionIdx
+                    ELSE
+                      CALL FLAG_ERROR("Nonlinear solver equations mapping is not associated.",err,error,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Nonlinear solver equations is not associated.",err,error,*999)
+                  ENDIF
+                CASE DEFAULT
+                  localError="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(problem%SUBTYPE,"*",err,error))//" &
+                    & is invalid."
+                  CALL FLAG_ERROR(localError,err,error,*999)
+                END SELECT
+              CASE DEFAULT
+                localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%TYPE,"*",err,error))//" &
+                  & is invalid."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              END SELECT
+            CASE(PROBLEM_BIOELECTRICS_CLASS,PROBLEM_FLUID_MECHANICS_CLASS,PROBLEM_ELECTROMAGNETICS_CLASS, &
+                & PROBLEM_CLASSICAL_FIELD_CLASS,PROBLEM_FITTING_CLASS,PROBLEM_MODAL_CLASS,PROBLEM_MULTI_PHYSICS_CLASS)
+              !Do nothing???
+            CASE DEFAULT
+              localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%CLASS,"*",err,error))//" &
+                & is invalid."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Problem control loop is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solvers is not associated.",err,error,*999)
+      ENDIF
+      !Nonlinear solve monitor--progress output if required
+      IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+        nonlinearSolver=>solver%NONLINEAR_SOLVER
+        IF(ASSOCIATED(nonlinearSolver)) THEN
+          CALL SOLVER_NONLINEAR_MONITOR(nonlinearSolver,iterationNumber,residualNorm,err,error,*999)
+        ELSE
+          CALL FLAG_ERROR("Nonlinear solver is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        localError="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(solver%SOLVE_TYPE,"*",err,error))// &
+          & " does not correspond to a nonlinear solver."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Problem_SolverNonlinearMonitor")
+    RETURN
+999 NULLIFY(SOLVER)
+998 CALL ERRORS("Problem_SolverNonlinearMonitor",err,error)
+    CALL EXITS("Problem_SolverNonlinearMonitor")
+    RETURN 1
+  END SUBROUTINE Problem_SolverNonlinearMonitor
+  
+  !
+  !================================================================================================================================
+  !
+
+  !> Output fields at Newton iterations
+  SUBROUTINE Problem_SolverNewtonFieldsOutput(solver,iterationNumber,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to solver to output the fields for
+    INTEGER(INTG), INTENT(IN) :: iterationNumber !<Iteration number
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equationsSetIdx,incrementIdx
+    LOGICAL :: dirExist
+    TYPE(REGION_TYPE), POINTER :: region !<A pointer to region to output the fields for
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
+    TYPE(FIELDS_TYPE), POINTER :: fields
+    TYPE(VARYING_STRING) :: fileName,method,directory
+    
+    CALL ENTERS("Problem_SolverNewtonFieldsOutput",err,error,*999)
+    
+    IF(ASSOCIATED(solver%SOLVER_EQUATIONS))THEN
+      incrementIdx=solver%SOLVERS%CONTROL_LOOP%LOAD_INCREMENT_LOOP%ITERATION_NUMBER
+      solverMapping=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING
+      DO equationsSetIdx=1,solverMapping%NUMBER_OF_EQUATIONS_SETS
+        region=>solverMapping%EQUATIONS_SETS(equationsSetIdx)%PTR%REGION
+        IF(ASSOCIATED(region))THEN
+          NULLIFY(fields)
+          fields=>region%FIELDS
+          directory="results_iter/"
+          INQUIRE(FILE=CHAR(directory),EXIST=dirExist)
+          IF(.NOT.dirExist) THEN
+            CALL SYSTEM(CHAR("mkdir "//directory))
+          ENDIF
+          fileName=directory//"mesh"//TRIM(NUMBER_TO_VSTRING(equationsSetIdx,"*",err,error))// &
+            & "_load"//TRIM(NUMBER_TO_VSTRING(incrementIdx,"*",err,error))// &
+            & "_iter"//TRIM(NUMBER_TO_VSTRING(iterationNumber,"*",err,error))
+          method="FORTRAN"
+          CALL FIELD_IO_ELEMENTS_EXPORT(fields,fileName,method,err,error,*999)
+          CALL FIELD_IO_NODES_EXPORT(fields,fileName,method,err,error,*999)
+        ELSE
+          CALL FLAG_ERROR("Region is not associated.",err,error,*999)
+        ENDIF
+      ENDDO
+    ELSE
+      CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Problem_SolverNewtonFieldsOutput")
+    RETURN
+999 CALL ERRORS("Problem_SolverNewtonFieldsOutput",err,error)
+    CALL EXITS("Problem_SolverNewtonFieldsOutput")
+    RETURN 1
+  END SUBROUTINE Problem_SolverNewtonFieldsOutput
   
   !
   !================================================================================================================================
@@ -3635,4 +3910,58 @@ SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
 995 RETURN    
 
 END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
+
+!
+!================================================================================================================================
+!
+
+!>Called from the PETSc SNES solvers to monitor a nonlinear solver
+SUBROUTINE Problem_SolverNonlinearMonitorPETSC(SNES,iterationNumber,residualNorm,context,err)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC_TYPES
+  USE DISTRIBUTED_MATRIX_VECTOR
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE STRINGS
+  USE TYPES
+
+  IMPLICIT NONE
+  
+  !Argument variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
+  INTEGER(INTG), INTENT(INOUT) :: iterationNumber !<The iteration number
+  REAL(DP), INTENT(INOUT) :: residualNorm !<The residual norm
+  TYPE(SOLVER_TYPE), POINTER :: context !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+  !Local Variables
+  TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+  TYPE(SOLVER_TYPE), POINTER :: solver
+  TYPE(VARYING_STRING) :: error,localError
+
+  IF(ASSOCIATED(context)) THEN
+    nonlinearSolver=>context%NONLINEAR_SOLVER
+    IF(ASSOCIATED(nonlinearSolver)) THEN
+      solver=>nonlinearSolver%SOLVER
+      IF(ASSOCIATED(solver)) THEN
+        CALL Problem_SolverNonlinearMonitor(solver,iterationNumber,residualNorm,err,error,*999)
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver nonlinear solver is not associated.",err,error,*999)
+    ENDIF
+  ELSE
+    CALL FLAG_ERROR("Solver context is not associated.",err,error,*999)
+  ENDIF
+  
+  RETURN
+
+999 CALL WRITE_ERROR(err,error,*998)
+998 CALL FLAG_WARNING("Error evaluating nonlinear residual.",err,error,*997)
+997 RETURN    
+
+END SUBROUTINE Problem_SolverNonlinearMonitorPETSC
+
 

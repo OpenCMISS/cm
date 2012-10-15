@@ -3409,6 +3409,22 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetGetConstantLNumber
     MODULE PROCEDURE CMISSField_ParameterSetGetConstantLObj
   END INTERFACE !CMISSField_ParameterSetGetConstant
+  
+  !>Returns from the given parameter set a value for the specified data pont of a field variable component.
+  INTERFACE CMISSField_ParameterSetGetDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointIntgNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointIntgNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointIntgObj
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointSPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointSPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointSPObj
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointDPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointDPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointDPObj
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointLNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointLNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointLObj
+  END INTERFACE !CMISSField_ParameterSetGetDataPoint
 
   !>Returns from the given parameter set a value for the specified element of a field variable component.
   INTERFACE CMISSField_ParameterSetGetElement
@@ -3662,6 +3678,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetDataGet,CMISSField_ParameterSetDataRestore
 
   PUBLIC CMISSField_ParameterSetGetConstant,CMISSField_ParameterSetGetElement,CMISSField_ParameterSetGetNode
+  
+  PUBLIC CMISSField_ParameterSetGetDataPoint
 
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
 
@@ -4897,6 +4915,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_TYPE = PROBLEM_NO_TYPE !<No problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_ELASTICITY_TYPE = PROBLEM_LINEAR_ELASTICITY_TYPE !<Linear elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_TYPE = PROBLEM_FINITE_ELASTICITY_TYPE !<Finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE = PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE !<Linear elasticity problem subject to contact contstraint type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE = PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE !<Finite elasticity problem subject to contact constraint type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STOKES_EQUATION_TYPE = PROBLEM_STOKES_EQUATION_TYPE !<Stokes equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NAVIER_STOKES_EQUATION_TYPE = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DARCY_EQUATION_TYPE = PROBLEM_DARCY_EQUATION_TYPE !<Darcy equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
@@ -5044,6 +5064,13 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE = PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE = PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE=PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments and reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE=PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+    
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments and reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
@@ -5072,6 +5099,8 @@ MODULE OPENCMISS
   PUBLIC CMISS_PROBLEM_NO_TYPE
 
   PUBLIC CMISS_PROBLEM_LINEAR_ELASTICITY_TYPE,CMISS_PROBLEM_FINITE_ELASTICITY_TYPE
+  
+  PUBLIC CMISS_PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE, CMISS_PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE
 
   PUBLIC CMISS_PROBLEM_STOKES_EQUATION_TYPE,CMISS_PROBLEM_NAVIER_STOKES_EQUATION_TYPE,CMISS_PROBLEM_DARCY_EQUATION_TYPE, &
     & CMISS_PROBLEM_POISEUILLE_EQUATION_TYPE,CMISS_PROBLEM_BURGERS_EQUATION_TYPE
@@ -5095,6 +5124,12 @@ MODULE OPENCMISS
     & CMISS_PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
 
   PUBLIC CMISS_PROBLEM_NO_SUBTYPE
+  
+  PUBLIC CMISS_PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE, CMISS_PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE, &
+    & CMISS_PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE
+    
+  PUBLIC CMISS_PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE, CMISS_PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE, &
+    & CMISS_PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STATIC_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_OPTIMISED_STOKES_SUBTYPE,CMISS_PROBLEM_ALE_STOKES_SUBTYPE,CMISS_PROBLEM_PGM_STOKES_SUBTYPE
@@ -5768,6 +5803,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_DynamicTimesSetNumber1
     MODULE PROCEDURE CMISSSolver_DynamicTimesSetObj
   END INTERFACE !CMISSSolver_DynamicTimesSet
+  
+  !Sets the field to transform
+  INTERFACE CMISSSolver_GeometricTransformationFieldSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationFieldSet
+  
+  !Sets the translation for a geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationTranslationSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationTranslationSet
 
   !>Returns the label of a solver.
   INTERFACE CMISSSolver_LabelGet
@@ -6116,6 +6163,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolver_DynamicThetaSet
 
   PUBLIC CMISSSolver_DynamicTimesSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationFieldSet,CMISSSolver_GeometricTransformationTranslationSet
 
   PUBLIC CMISSSolver_LabelGet,CMISSSolver_LabelSet
 
@@ -28834,6 +28883,583 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetGetConstantLObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a integer value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointIntgObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointIntgObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(SP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointSPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(SP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointSPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a single precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointSPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(SP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointSPObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointSPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointDPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointDPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a double precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointDPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointDPObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointDPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointLNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointLNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a logical value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointLObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointLObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointLObj
 
   !
   !================================================================================================================================
@@ -46135,6 +46761,175 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_DynamicTimesSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationFieldSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & regionUserNumber,fieldUserNumber,variableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number for the field
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the translation for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationFieldSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    NULLIFY(field)
+    NULLIFY(region)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+        IF(ASSOCIATED(region)) THEN
+          CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+          IF(ASSOCIATED(field)) THEN
+            CALL Solver_GeometricTransformationFieldSet(solver,field,variableType,err,error,*999)
+          ELSE
+            localError="A field with user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+              & " does not exist."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="A region with user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+            & " does not exist."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationFieldSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationFieldSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationFieldSetObj(solver,field,variableType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field for the solver to set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the translation for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationFieldSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationFieldSet(solver%SOLVER,field%FIELD,variableType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationFieldSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationFieldSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & translation,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationTranslationSet(solver,translation,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj(solver,translation,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj
 
   !
   !================================================================================================================================
@@ -46165,7 +46960,7 @@ CONTAINS
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+    ENDIF
 
     CALL EXITS("CMISSSolver_LabelGetCNumber0")
     RETURN
@@ -46205,7 +47000,7 @@ CONTAINS
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+    ENDIF
 
     CALL EXITS("CMISSSolver_LabelGetCNumber1")
     RETURN
