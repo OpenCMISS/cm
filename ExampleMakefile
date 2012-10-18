@@ -157,8 +157,18 @@ run : main
 callgrindrun : main
 	valgrind --tool=callgrind $(EXECUTABLE)
 
+cachegrindrun : main
+	valgrind --tool=cachegrind $(EXECUTABLE)
+
+hellgrindrun : main
+	valgrind --tool=hellgrind $(EXECUTABLE)
+
 massifrun : main
 	valgrind --tool=massif $(EXECUTABLE)
+
+memcheckrun : main
+	valgrind --tool=memcheck $(EXECUTABLE)
+
 
 
 # ----------------------------------------------------------------------------
@@ -252,12 +262,20 @@ help:
 	@echo "	run"
 	@echo "		Run the executable."
 	@echo
-	@echo "	massifrun"
-	@echo "		Run the executable with valgrid massif."
+	@echo "	cachegrindrun"
+	@echo "		Run the executable with valgrid cachegrind."
 	@echo
 	@echo "	callgrindrun"
 	@echo "		Run the executable with valgrid callgrind."
 	@echo
+	@echo "	hellgrindrun"
+	@echo "		Run the executable with valgrid hellgrind."
+	@echo
+	@echo "	massifrun"
+	@echo "		Run the executable with valgrid massif."
+	@echo
+	@echo "	memcheckrun"
+	@echo "		Run the executable with valgrid memcheck."
 	@echo
 	@echo "	test"
 	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
