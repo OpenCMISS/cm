@@ -1407,8 +1407,8 @@ CONTAINS
                   !I just don't know how to work with cellml_equations to do this.
                   SOLVERS=>SOLVER%SOLVERS
                   NULLIFY(PDE_SOLVER)
-                  !CALL SOLVERS_SOLVER_GET(SOLVERS,2,PDE_SOLVER,ERR,ERROR,*999)
-                  !CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,PDE_SOLVER,ERR,ERROR,*999)
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,2,PDE_SOLVER,ERR,ERROR,*999)
+                  CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,PDE_SOLVER,ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
                     & " is invalid for a Strang split reaction-diffusion problem."
