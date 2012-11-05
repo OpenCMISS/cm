@@ -60,8 +60,10 @@ MODULE CMISS_PETSC_TYPES
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
 #endif
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
 #include "include/finclude/petscts.h"
-
+#endif
+  
   !Module parameters
   
   !Module types
