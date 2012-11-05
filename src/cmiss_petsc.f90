@@ -662,7 +662,7 @@ MODULE CMISS_PETSC
     
     SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
       Mat A
-      PetscScalar, POINTER :: mat_data(:)
+      PetscScalar, POINTER :: mat_data(:,:)
       PetscInt ierr
     END SUBROUTINE MatGetArrayF90
     
@@ -827,6 +827,10 @@ MODULE CMISS_PETSC
       PetscChar(*) file
       PetscInt ierr
     END SUBROUTINE PetscInitialize
+
+    SUBROUTINE PetscPopSignalHandler(ierr)
+      PetscInt ierr
+    END SUBROUTINE PetscPopSignalHandler
 
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
     SUBROUTINE PetscLogView(viewer,ierr)
@@ -1602,6 +1606,14 @@ CONTAINS
         CHKERRQ(ERR)
       ENDIF
       CALL FLAG_ERROR("PETSc error in PetscInitialize",ERR,ERROR,*999)
+    ENDIF
+    ! Disable PETSc's signal handler as we have our own OpenCMISS signal handlers in cmiss_c.c
+    CALL PetscPopSignalHandler(ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PetscPopSignalHandler",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("PETSC_INITIALIZE")
@@ -3109,7 +3121,7 @@ CONTAINS
 
     !Argument Variables
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
-    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the matrix array
+    REAL(DP), POINTER :: ARRAY(:,:) !<On exit, a pointer to the matrix array
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

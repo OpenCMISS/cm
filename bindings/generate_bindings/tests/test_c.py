@@ -114,16 +114,6 @@ class CTestClass(unittest.TestCase):
         self.assertEqual(c_result, c_expected)
         self.assertEqual(cf90_result, cf90_expected)
 
-        # Input array pointer
-        c_result = parameter_to_c(m.input_array_pointer)
-        c_expected = ["const int testSize", "const int *test"]
-        cf90_result = parameter_c_f90_declaration(m.input_array_pointer)
-        cf90_expected = [
-                "INTEGER(C_INT), VALUE, INTENT(IN) :: testSize",
-                "TYPE(C_PTR), VALUE, INTENT(IN) :: testPtr"]
-        self.assertEqual(c_result, c_expected)
-        self.assertEqual(cf90_result, cf90_expected)
-
         # Output array pointer
         c_result = parameter_to_c(m.output_array_pointer)
         c_expected = ["int *testSize", "int **test"]

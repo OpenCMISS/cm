@@ -49,6 +49,7 @@ MODULE FIELDML_INPUT_ROUTINES
   USE BASIS_ROUTINES
   USE CMISS
   USE CONSTANTS
+  USE COMP_ENVIRONMENT
   USE COORDINATE_ROUTINES
   USE FIELD_ROUTINES
   USE FIELDML_API
@@ -282,6 +283,15 @@ CONTAINS
       IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.biquadraticLagrange') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.biquadraticLagrange.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      ALLOCATE( COLLAPSE(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
+      BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.2d.unit.bilinearLagrange.argument"//C_NULL_CHAR )
@@ -300,6 +310,34 @@ CONTAINS
       IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.bilinearSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_LINEAR_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.biquadraticSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.biquadraticSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.3d.unit.trilinearSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.3d.unit.trilinearSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_LINEAR_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.3d.unit.triquadraticSimplex') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.3d.unit.triquadraticSimplex.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION
+      BASISTYPE = BASIS_SIMPLEX_TYPE
     ELSE
       CALL FLAG_ERROR( "Basis "//NAME(1:LENGTH)//" cannot yet be interpreted.", ERR, ERROR, *999 )
     ENDIF
@@ -353,8 +391,13 @@ CONTAINS
 
     IF( ( INDEX( NAME, 'interpolator.3d.unit.triquadraticLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.1d.unit.linearLagrange') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.biquadraticLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') /= 1 ) .AND. &
-      & ( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') /= 1 ) ) THEN
+      & ( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.bilinearSimplex') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.biquadraticSimplex') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.3d.unit.trilinearSimplex') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.3d.unit.triquadraticSimplex') /= 1 ) ) THEN
       FIELDML_INPUT_IS_KNOWN_BASIS = .FALSE.
     ELSE
       FIELDML_INPUT_IS_KNOWN_BASIS = .TRUE.
@@ -733,7 +776,8 @@ CONTAINS
     CALL BASIS_TYPE_SET( BASIS, BASISTYPE, ERR, ERROR, *999 )
     CALL BASIS_NUMBER_OF_XI_SET( BASIS, size( BASIS_INTERPOLATIONS ), ERR, ERROR, *999 )
     CALL BASIS_INTERPOLATION_XI_SET( BASIS, BASIS_INTERPOLATIONS, ERR, ERROR, *999 )
-    IF( size( BASIS_INTERPOLATIONS ) > 1 ) THEN
+    !Note: collapse bases currently only supported for BASIS_LAGRANGE_HERMITE_TP_TYPE
+    IF( size( BASIS_INTERPOLATIONS ) > 1 .AND. ALLOCATED(COLLAPSE)) THEN
       CALL BASIS_COLLAPSED_XI_SET( BASIS, COLLAPSE, ERR, ERROR, *999 )
     ENDIF
     
@@ -906,7 +950,7 @@ CONTAINS
     TYPE(INTEGER_CINT_ALLOC_TYPE), ALLOCATABLE :: CONNECTIVITY_ORDERS(:)
     INTEGER(INTG) :: TEMP_POINTER, DATA_SOURCE, ORDER_HANDLE, TEMP_BASIS_HANDLE, FML_ERR
     TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
 
     CALL ENTERS( "FIELDML_INPUT_CREATE_MESH_COMPONENT", ERR, ERROR, *999 )
     
@@ -1224,6 +1268,7 @@ CONTAINS
     INTEGER(INTG), TARGET :: OFFSETS(2), SIZES(2)
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: BUFFER(:)
     INTEGER(INTG) :: READER
+    INTEGER(INTG) :: myComputationalNodeNumber,nodeDomain,meshComponentNumber
     
     CALL ENTERS( "FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE", ERR, ERROR, *999 )
     
@@ -1275,8 +1320,15 @@ CONTAINS
       DO COMPONENT_NUMBER = 1, FIELD_DIMENSIONS
         !Default to version 1 of each node derivative (value hardcoded in loop)
         VERSION_NUMBER = 1
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE( FIELD, VARIABLE_TYPE, SET_TYPE, VERSION_NUMBER, &
-          & NO_GLOBAL_DERIV, NODE_NUMBER, COMPONENT_NUMBER, BUFFER( COMPONENT_NUMBER ), ERR, ERROR, *999 )
+
+        myComputationalNodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
+        CALL DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(FIELD%DECOMPOSITION,meshComponentNumber,err,error,*999)
+        CALL DECOMPOSITION_NODE_DOMAIN_GET(FIELD%DECOMPOSITION,NODE_NUMBER,meshComponentNumber,nodeDomain,err,error,*999)
+        IF(nodeDomain==myComputationalNodeNumber) THEN
+          CALL FIELD_PARAMETER_SET_UPDATE_NODE( FIELD, VARIABLE_TYPE, SET_TYPE, VERSION_NUMBER, &
+            & NO_GLOBAL_DERIV, NODE_NUMBER, COMPONENT_NUMBER, BUFFER( COMPONENT_NUMBER ), ERR, ERROR, *999 )
+        ENDIF
+
       ENDDO
     ENDDO
     

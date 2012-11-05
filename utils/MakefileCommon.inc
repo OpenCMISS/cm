@@ -269,7 +269,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifdef COMPILER_VERSION
       ifeq ($(COMPILER_VERSION),4.4)
         DBGF_FLGS += -fbounds-check
+<<<<<<< HEAD
       else 
+=======
+      else
+				# For any more recent versions
+>>>>>>> 8b3f9e9726ffabb6135067681e0b6d7ff6edd410
         DBGF_FLGS += -fcheck=all
       endif
     endif
@@ -660,6 +665,7 @@ MPI_LIB_PATH =#
 MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+<<<<<<< HEAD
   MPI_LIBRARIES += $(OCE_MPILIBRARIES)
   MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
   MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINCLUDEPATH) )
@@ -667,6 +673,54 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     MPI_LIBRARIES += $(OCE_MPIEXTRALIBRARIES)
     MPI_LIB_PATH += $(addprefix -L, $(OCE_MPIEXTRALIBPATH) )
     MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIEXTRAINCLUDEPATH) )
+=======
+  ifeq ($(MPI),mpich2)
+    MPI_LIBRARIES += -lmpichf90
+    ifeq ($(MPIPROF),true)
+      MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
+    endif
+    MPL_LIB = $(call searchdirs, $(MPI_DIR)/lib/, libmpl* )
+    MPI_LIBRARIES += -lmpich
+    ifneq (,$(MPL_LIB))
+      MPI_LIBRARIES += -lmpl
+    endif
+    MPI_LIBRARIES += -lpthread -lrt
+    MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+  else
+    ifeq ($(MPI),intel)
+      ifeq ($(MPIPROF),true)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
+        MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
+        MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
+      endif
+      MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
+      ifeq ($(ABI),64)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
+        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
+      else
+        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
+        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
+      endif
+    else
+      ifeq ($(MPI),openmpi)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
+        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil -lpthread
+        MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
+      else
+        ifeq ($(MPI),mvapich2)
+          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+          MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
+        else
+          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+          MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
+        endif
+      endif
+    endif
+>>>>>>> 8b3f9e9726ffabb6135067681e0b6d7ff6edd410
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX

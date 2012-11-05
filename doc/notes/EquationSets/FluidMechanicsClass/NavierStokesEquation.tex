@@ -2,18 +2,411 @@
 
 \subsubsection{Governing equations:}
 
-The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, quasi-static) can be written as:
+The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. The equations are named for the 19th century contributions of Claude-Louis Navier and George Gabriel Stokes. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, transient) can be written using 'primitive variables' (i.e. u-velocity, p-pressure) as:
 \begin{equation}
-    \rho(\vect{u}\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
-  \label{eqn:NavierStokesequation1}
+  \label{eqn:NSE}
+    \rho\delby{\vect{u}}{t}+\rho(\vect{u}\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
+\end{equation}
+accompanied by the conservation of mass (incompressibility)
+\begin{equation}
+  \label{eqn:NSEIncompressibility}
+  \diverg{\vect{u}}=0
+\end{equation}
+where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively.The first term represents unsteady accelerative inertial contributions, the second represents the nonlinear convective acceleration terms, the $\grad{p}$ term the pressure contributions, and the last term represents viscous stresses in the system.
+% incompressibility and the LBB condition
+As with Stokes flow, the incompressibility condition $\diverg{\vect{u}}=0$ also creates restrictions on the formulation of the velocity and pressure spaces using finite elements known as the Ladyzhenkaya, Babuska, and Brezzi (LBB) or inf-sup consistency condition. Several methods have been devised to define a pressure function that is consistent with the velocity space using primitive variables. These include mixed element methods, penalty methods, generalized petrov-galerkin methods using pressure poisson correction, operator splitting, and semi-implicit pressure correction \cite{chung:2010}.
+
+Using a classic Galerkin formulation, mixed methods are perhaps conceptually the most straightforward method of satisfying LBB, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure), allowing incompressibility to be satisfied. It should be noted that our use of a mixed formulation to satisfy LBB will also be reflected in the shape functions that our weak formulation depends on. For example, using a 2D element with biquadratic velocity and linear pressure, we will have 9 DOFs and weight functions for each velocity component and 4 for the pressure. 
+% meaning of pressure in NSE.
+
+\subsubsection{Weak Formulation}
+% Galerkin formulation
+The weak form of equations \ref{eqn:NSE} and \ref{eqn:NSEIncompressibility} can be found by applying standard Galerkin test functions $\vect{w}$:
+\begin{equation}
+ \label{BasicGalerkinNSE}
+  \gint{\Omega}{}{\pbrac{\rho\delby{\vect{u}}{t}
+    +\rho\vect{u}\cdot\grad{\vect{u}}
+    -\vect{f}
+    -\mu\laplacian{\vect{u}}
+    +\grad{p}}{\vect{w}}}{\Omega} = 0
 \end{equation}
 
-accompanied by the conservation of mass
+Integrating by parts, we will get the weak form of the system of PDEs with the associated natural boundary conditions at the boundary $\Gamma_N$:
+\begin{multline}
+ \label{GalerkinNSE}
+  \gint{\Omega}{}{\rho\delby{\vect{u}}{t}{\vect{w}}}{\Omega}
+ +\gint{\Omega}{}{\rho\vect{u}\cdot\grad\vect{u}{\vect{w}}}{\Omega}
+ +\gint{\Omega}{}{p\grad{\vect{w}}}{\Omega}
+ -\gint{\Omega}{}{\mu\grad{\vect{u}}\cdot\vect{\grad{w}}}{\Omega}=\\
+ \gint{\Omega}{}{\vect{f}\vect{w}}{\Omega}
+ +\gint{\Gamma_N}{}{\mu\dotprod{\grad\vect{u}}{\vect{n}}\vect{w}}{\Gamma_N}
+ -\gint{\Gamma_N}{}{\dotprod{p}{\vect{n}}\vect{w}}{\Gamma_N}
+\end{multline}
+
+% Boundary conditions
+For more extensive discussion of this procedure, along with other weak forms of the PDEs, we refer to \cite{gresho:2000}. From this weak form, we see natural (Neumann) boundary conditions arising as a direct result of the integration. Neumann boundary conditions will consist of a pressure term and viscous stress acting normal to a given boundary. 
+\begin{gather}
+ \label{eqn:NSENeumannBC}  
+   \fnof{\vect{q}}{\vect{x},t} = \mu\dotprod{\grad{\fnof{\vect{u}}{\vect{x},t}}}{\normal}-p\cdot{\normal}  \\
+%   \fnof{\vect{q_2}}{\vect{x},t} = p\cdot{\normal} \\
+   \quad \vect{x}\in\Gamma_{N}
+\end{gather}
+Specification of Neumann boundaries will simply require the specification of the terms across element DOFs. Dirichlet boundary conditions on a boundary $\Gamma_D$ for velocity will take the form:
+\begin{gather}
+ \label{eqn:NSEDirichletBC} 
+  \fnof{\vect{u}}{\vect{x},t} = \fnof{\vect{d}}{\vect{x},t} \quad \vect{x}\in\Gamma_{D}\\
+\end{gather}
+
+\subsubsection{Tensor notation}
+Assuming no forcing terms and substituting the natural boundary as defined above, equation \ref{eqn:GalerkinNSE} in tensor notation becomes:
+\begin{multline}
+ \label{TensorNSE}
+  \gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
+ +\gint{\Omega}{}{{\rho}G^{jk}u_{j}\covarderiv{u_{i}}{k}w_{i}}{\Omega}
+ +\gint{\Omega}{}{G^{jk}{p_{i}}\covarderiv{w_{i}}{k}}{\Omega}\\
+ -\gint{\Omega}{}{{\mu}G^{jk}\covarderiv{u_{i}}{j}\covarderiv{w_{i}}{k}}{\Omega}
+ -\gint{\Gamma_N}{}{{q_{i}}{w_i}}{\Gamma_N}=\vect{0}
+\end{multline}
+or
+\begin{multline}
+ \label{Tensor2NSE}
+  \gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
+ +\gint{\Omega}{}{{\rho}G^{jk}{u_j}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{h}u_h}{w_{i}}}{\Omega}
+ +\gint{\Omega}{}{G^{jk}{p_{i}}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}\\
+ -\gint{\Omega}{}{{\mu}G^{jk}\pbrac{\partialderiv{u_{i}}{j}-\christoffel{i}{j}{h}u_h}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}
+ -\gint{\Gamma_N}{}{{q_{i}}{w_i}}{\Gamma_N}=\vect{0}
+\end{multline}
+
+
+where $G^{jk}$ is the contravariant metric tensor and
+$\christoffel{i}{j}{k}$ is the Christoffel symbol of the second kind for the spatial coordinates.
+
+\subsubsection{Finite Element Formulation}
+
+We can now discretise the domain into finite elements \ie $\Omega=\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$ with $\Gamma=\displaystyle{\bigcup_{f=1}^{F}}\Gamma_{f}$. \Eqnref{Tensor2NSE} now becomes:
+
+\begin{multline}
+ \label{FEMNSE}
+  \dsum_{e=1}^{E}\gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{{\rho}G^{jk}{u_j}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{h}u_h}{w_{i}}}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{G^{jk}{p_{i}}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}\\
+ -\dsum_{e=1}^{E}\gint{\Omega}{}{{\mu}G^{jk}\pbrac{\partialderiv{u_{i}}{j}-\christoffel{i}{j}{h}u_h}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}
+ -\dsum_{f=1}^{F}\gint{\Gamma_N}{}{{q_{i}}{w_i}}{\Gamma_N}=\vect{0}
+\end{multline} 
+or
+
+
+\begin{multline}
+ \label{FEMNSE2}
+  \dsum_{e=1}^{E}\gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{{\rho}G^{jk}{u_j}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{h}u_h}{w_{i}}}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{G^{jk}{p_{i}}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}\\
+ -\dsum_{e=1}^{E}\gint{\Omega}{}{{\mu}G^{jk}\pbrac{\partialderiv{u_{i}}{j}-\christoffel{i}{j}{h}u_h}\pbrac{\partialderiv{w_{i}}{k}-\christoffel{i}{k}{h}w_h}}{\Omega}=\\
+ \dsum_{f=1}^{F}\gint{\Gamma_N}{}{{\mu}G^{jk}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{h}u_h}{n_{i}}{w_{i}}}{\Gamma_N}
+-\dsum_{f=1}^{F}\gint{\Gamma_N}{}{G^{jk}{p}{n_i}{w_i}}{\Gamma_N}
+\end{multline} 
+
+
+We will assume that the dependent variables $\vect{u}$ and $p$ can be interpolated separately in space and time. Here we must also be careful to note again the discrepancy between the functional spaces for velocity and pressure using a mixed formulation to satisfy the LBB consistency requirement. We will therefore define two separate weighting functions: for the velocity space on $\Omega$, the test function will be $\psi_i$ and for the pressure space, $\phi_i$, giving:
+
+\begin{gather}
+  \fnof{\vect{u}}{\vect{x},t}=\gbfn{n}{}{\vect{x}}\fnof{\nodept{\vect{u}}{n}}{t}\\
+  \fnof{p}{\vect{x},t}=\phi_{n}({\vect{x}})\fnof{\nodept{p}{n}}{t}
+\end{gather}
+
+In standard interpolation notation within an element, we transform from $\vect{x}$ to $\vect{\xi}$:
+
+\begin{gather}
+  \fnof{u_{i}}{\vect{\xi},t}=\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+  \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\\
+  \fnof{p_{}}{\vect{\xi},t}=\phi_{in}^{\beta}({\vect{\xi}})
+  \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
+\end{gather}
+
+where $\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}$ are the time varying nodal degrees-of-freedom for velocity component $i$, node $n$, global derivative $\beta$, $\idxgbfn{i}{n}{\beta}{\vect{\xi}}$ are the corresponding velocity basis functions and $\idxgsf{i}{n}{\beta}$ are the scale factors. The scalar pressure DOFs, $\fnof{\idxnodedof{p}{}{n}{\beta}}{t}$ are interpolated similarly.
+
+For the natural boundary, we can separate $q_i$ into its component velocity and pressure terms as noted in \ref{eqn:NSENeumannBC} and shown in \ref{eqn:FEMNSE2}. For our current treatment, we will also assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
+
 \begin{equation}
-  \diverg{\vect{u}}=0
-  \label{eqn:NavierStokesmasequation}
+  \begin{split}
+    \fnof{q_{i}}{\vect{\xi},t} &= \idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+      \fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{o}{\gamma} \\
+    \fnof{\mu}{\vect{\xi}} &=\gbfn{r}{\delta}{\vect{\xi}}
+    \nodedof{\mu}{r}{\delta}\gsf{r}{\delta} \\
+    \fnof{\rho}{\vect{\xi}} &=\gbfn{r}{\delta}{\vect{\xi}}\nodedof{\rho}{r}{\delta}
+    \gsf{r}{\delta} \\
+  \end{split}
 \end{equation}
-where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively. Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
+
+ Using the spatial weighting functions for a Galerkin finite element formulation:
+\begin{equation}
+  \fnof{w_{i}}{\vect{\xi}}=\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+\end{equation}
+
+
+\subsubsection{Spatial Integration}
+
+Using standard integration notation, we can rewrite our Galerkin FEM formulation from \ref{eqn:NSEFEM2}:
+
+
+\begin{multline}
+ \label{NSEFEM3}
+%time dependence
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{t}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}\\
+%convective term
+  - \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}}G^{jk}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+  \fnof{\idxnodedof{u}{j}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\\
+  \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}
+      \idxgsf{i}{n}{\beta}}{x^{k}}-\christoffel{i}{k}{h}\idxgbfn{h}{m}{\alpha}{\vect{\xi}}
+    \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}\idxgsf{h}{m}{\alpha}}
+  \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%pressure
+  +\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}G^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+  \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\\
+  \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}-
+  \christoffel{i}{k}{h}\psi_{im}^{\alpha}({\vect{\xi}})\idxgsf{h}{m}{\alpha}
+    }\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%viscous stress
+  -\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\mu}{\vect{\xi}}}G^{jk}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+     \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{x^{j}}-
+      \christoffel{i}{j}{h}\idxgbfn{h}{n}{\beta}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}\idxgsf{h}{n}{\beta}} \\
+    \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}}{x^{k}}-
+      \christoffel{i}{k}{l}\idxgbfn{l}{m}{\alpha}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}
+      \idxgsf{l}{m}{\alpha}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%boundary terms
+  =\dsum_{f=1}^{F}\gint{\vect{0}}{\vect{1}}{\idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+    \fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{o}{\gamma}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+% note: alternate symbol for normal vector needed if want to expand boundary terms
+%=\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}
+%      \idxgsf{i}{n}{\beta}}{x^{k}}-\christoffel{i}{k}{h}\idxgbfn{h}{m}{\alpha}{\vect{\xi}}
+%    \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}\idxgsf{h}{m}{\alpha}}\\
+%  \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+%  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+\end{multline}
+
+Where $\fnof{\matr{J}}{\vect{\xi}}$ represents the jacobian matrix. If we assume a rectangular cartesian coordinate system, this simplifies significantly, as the contravariant $G^{jk}$ will become $\delta^{jk}$ and the Christoffel symbols $\christoffel{i}{j}{k}$ will all be zero. This gives:
+
+\begin{multline}
+ \label{NSEFEM3}
+%time dependence
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}\delby{(\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta})}{t}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}\\
+%convective term
+  - \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}}\delta^{jk}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+  \fnof{\idxnodedof{u}{j}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
+  \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}
+   \idxgsf{i}{n}{\beta}}{x^{k}}}\\
+  \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%pressure
+  +\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+  \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
+  \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%viscous stress
+  -\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\mu}{\vect{\xi}}}\delta^{jk}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+     \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{x^{j}}}
+    \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}}{x^{k}}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%boundary terms
+  =\dsum_{f=1}^{F}\gint{\vect{0}}{\vect{1}}{\idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+    \fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{o}{\gamma}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline} 
+
+or, rearranged to pull constants out of the integrals:
+
+\begin{multline}
+ \label{NSEFEM4}
+%time dependence
+  \dsum_{e=1}^{E}{\idxnodedof{\dot{u}}{i}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}
+  \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}\\
+ %convective term
+  -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+   \idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
+ %pressure
+    +\dsum_{e=1}^{E}{\fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
+    \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+    \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+ % %viscous stress
+    -\dsum_{e=1}^{E}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
+    \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
+      \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}}{x^{k}}}
+      \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
+% %boundary terms
+  =\dsum_{f=1}^{F}\fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{m}{\alpha}\idxgsf{i}{o}{\gamma}
+   \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline}
+
+
+\subsubsection{General form}
+
+We now seek to assemble this into the corresponding general form for dynamic equations, as outlined in section 2.3.2:
+
+\begin{equation}
+  \matr{M}\fnof{\ddot{\vect{d}}}{t}+\matr{C}\fnof{\dot{\vect{d}}}{t}+\matr{K}\fnof{\vect{d}}{t}+
+  \fnof{\vect{g}}{\fnof{\vect{d}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
+  \label{eqn:NSEGeneralDynamic}
+\end{equation}
+where $\dot{\vect{d}}(t)$ and $\ddot{\vect{d}}(t)$ represent the first and second derivatives (respectively) of the degrees of freedom vector $\vect{d}(t)$, which consists of the dependent variables $\vect{u}(\vect{x},t)$ and $p(x,t)$. $\matr{M}$ is the mass matrix, which provides the shape function based weights and $\matr{C}$ is the transient damping matrix. $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function that will be used to represent the convective term and $\fnof{\vect{f}}{t}$ the forcing vector.
+
+ We will assume cartesian coordinates $\vect{x}=\bbrac{x,y,z}$ and denote the corresponding velocity components $\vect{u}=\bbrac{u,v,w}$, with $N$ representing the number of velocity DOFs and $M$ the number of pressure DOFs. The vector $d$ in then becomes:
+\begin{equation}
+  \vect{d}=[u_1u_2...u_Nv_1v_2...v_Nw_1w_2...w_Np_1p_2...p_M]^T=
+  \begin{bmatrix}\vect{u}\\\vect{v}\\\vect{w}\\\vect{p}\end{bmatrix}
+\end{equation}
+
+All the components of \ref{eqn:NSEGeneralDynamic} will similarly depend on the number of dimensions,$n_{dim}$, and the size of the matrices will be: $(N{\cdot}{n_{dim}}+M)^{n_{dim}}$. 
+
+Returning to the general case, the mass matrix $\matr{M}$ will take the form:
+
+\begin{equation}
+[M^{\alpha\beta}_{mn}]=\gint{\vect{0}}{\vect{1}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+Without using mass-lumping, the damping matrix $\matr{C}$:
+\begin{equation}
+  [C^{\alpha\beta}_{mn}]={\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}
+  \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}
+\end{equation}
+
+The element stiffness matrix $\matr{K}$ will contain the linear components of the system. For the classic Galerkin formulation this includes the viscous term with the laplacian operator and the pressure gradient term. As the velocity and pressure DOFs are both included in $d$, $\matr{K}$ will be assembled so that the corresponding operators are applied to the DOFs discontinuously. 
+
+\begin{equation}
+ [K^{\alpha\beta}_{mn}]=
+ \begin{cases}
+   [A^{\alpha\beta}_{mn}] =  {\idxgsf{i}{n}{\beta}{\idxgsf{i}{m}{\alpha}}}
+    \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
+       \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}}{x^{k}}}
+       \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
+     \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n\le{N{\cdot}{N_{dim}}}$},\\
+
+   [B^{\alpha\beta}_{mn}] = \idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
+     \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+     \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+    \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n>{N{\cdot}{N_{dim}}}$}.
+ \end{cases}
+\end{equation}
+
+To attain a square matrix of the required size, we must also apply the transpose of the gradient terms acting on the pressure DOFs. For example, in a 3 dimensional example system, $\matr{K}$ will take the form: 
+\begin{equation}
+  \matr{K}=
+   \begin{bmatrix}
+     \matr{A} & \matr{0} & \matr{0} & \matr{B}_x\\
+     \matr{0} & \matr{A} & \matr{0} & \matr{B}_y\\
+     \matr{0} & \matr{0} & \matr{A} & \matr{B}_z\\
+     -\matr{B}^T_{x}& -\matr{B}^T_{y} & -\matr{B}^T_z & \matr{0}
+   \end{bmatrix}
+\end{equation}
+
+The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and for the standard Galerkin formulation:
+
+\begin{equation}
+ [g^{\alpha\beta}_{mn}]=
+ {\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+   \idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}
+\end{equation}
+
+\subsubsection{Streamline Upwind/Petrov-Galerkin (SUPG)}
+
+For convection dominated flows, it is often useful to modify the Galerkin formulation account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section \ref{sec:Convective Transport} for more details. 
+
+For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces \cite{heinrich:1999}. These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative route is to apply SUPG weights to the convective operator in elements as a function of each element's Reynolds number (referred to subsequently as the cell Reynolds number). This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
+
+ Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \ref{eqn:NSEFEM2} can be written:
+
+\begin{multline}
+ \label{NSEPGFEM1}
+  \dsum_{e=1}^{E}\gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{{\rho}{\delta}^{jk}{u_j}\pbrac{\partialderiv{u_{i}}{k}}({w_{i}+\Psi_{i}})}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{{\delta}^{jk}{p_{i}}{\partialderiv{w_{i}}{k}}}{\Omega}\\
+ -\dsum_{e=1}^{E}\gint{\Omega}{}{{\mu}{\delta}^{jk}\pbrac{\partialderiv{u_{i}}{j}}\pbrac{\partialderiv{w_{i}}{k}}}{\Omega}=
+ \dsum_{f=1}^{F}\gint{\Gamma_N}{}{{\mu}{\delta}^{jk}\pbrac{\partialderiv{u_{i}}{k}}{n_{i}}{w_{i}}}{\Gamma_N}
+-\dsum_{f=1}^{F}\gint{\Gamma_N}{}{{\delta}^{jk}{p}{n_i}{w_i}}{\Gamma_N}
+\end{multline}
+
+where $w_i$ will be the classic Galerkin weight and $\Psi_i$ will be the Petrov-Galerkin for the Navier-Stokes equations. We must also define the Peclet number, $\gamma$, for the Navier-Stokes equations to describe the ratio of the convective:viscous operators. Here, the effective Peclet number will be based on the cell Reynolds number:
+
+\begin{equation}
+ Re = \frac{\rho\bar{U}L}{\mu}  =\frac{\bar{U}L}{\nu}
+\end{equation}
+where $\bar{U}$ is the characteristic velocity and $\nu=\frac{\mu}{\rho}$ is the kinematic viscosity. $L$ will be the characteristic length scale for a given element. The effective Peclet number $\gamma$ will be:
+
+\begin{equation}
+  \gamma= \frac{Re}{2}  = \frac{\bar{u}L}{2\nu}
+\end{equation}
+
+We will retain the same value for $\alpha={\coth{\frac{\gamma}{2}} - \frac{2}{\gamma}}$ as found for the linearized advection-diffusion equation. 
+
+\begin{equation}
+ \label{PGTest}
+  \Psi_i = \pbrac{\frac{\alpha{L}}{2}{\frac{u_j}{\abs{u_j}}}}{\partialderiv{w_{i}}{k}}
+\end{equation},
+
+
+Equation \ref{eqn:NSEPGFEM1} then becomes after integration and simplification:
+
+
+\begin{multline}
+ \label{NSEFEM4}
+%time dependence
+  \dsum_{e=1}^{E}{\idxnodedof{\dot{u}}{i}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}
+  \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}\\
+ %convective term
+  -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
+ %P-G term
+  -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+    \pbrac{\frac{(\alpha){L(\vect{\xi})}}{2}{\frac{u_j}{\abs{u_j}}}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
+ %pressure
+    +\dsum_{e=1}^{E}{\fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
+    \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+    \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+ % %viscous stress
+    -\dsum_{e=1}^{E}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
+    \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
+      \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}}{x^{k}}}
+      \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
+% %boundary terms
+  =\dsum_{f=1}^{F}\fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{m}{\alpha}\idxgsf{i}{o}{\gamma}
+   \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}\\
+\end{multline}
+
+Notice the integration by parts is done only to the standard Galerkin weights- this is because the artificial diffusion added by the Petrov-Galerkin terms should only contribute within the elements
+
+The use of the Petrov-Galerkin formulation in this way allows for the stabilization of moderately convective problems. However, it also results in nonsymmetric mass matrices with the additional term, making classical mass-lumping more difficult. As a result, the use of explicit methods also becomes more difficult for time-dependent problems. 
+
+
+\subsubsection{Arbitrary Lagrangian-Eulerian (ALE) Formulation}
+%ALE form
+Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
 \begin{equation}
     \rho((\vect{u}-\vect{u}^*)\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
   \label{eqn:NavierStokesequationALE}
@@ -31,8 +424,15 @@ The following section, however, describes the reordered quasi-static formulation
   \label{eqn:NavierStokesequationALE2}
 \end{equation}
 
-\subsubsection{Weak formulation:}
+\paragraph{Weak formulation:}
 
+The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written in the general dynamic form (see section 2.3.2)
+\begin{equation}
+  \matr{M}\fnof{\ddot{\vect{u}}}{t}+\matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+
+  \fnof{\vect{g}}{\fnof{\vect{u}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
+  \label{eqn:generaldynamicnonlinear}
+\end{equation}
+where u(t) is the dependent variables vector $\vect{u}(\vect{x},t)$ and $p$ for the degrees of freedom. $\matr{M}$ is the mass matrix, which provides the shape function based weights, $\matr{C}$ is the transient damping matrix (which we will discuss further below). $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator, including the viscous terms, the conservation of mass terms, and pressure terms. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function for the convective terms and $\fnof{\vect{f}}{t}$ the forcing vector. 
 
 The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written as:
 \begin{equation}
@@ -81,179 +481,8 @@ with the stiffness matrix $\matr{K}$ derived from \eqnref{eqn:NavierStokesequati
 \end{equation}
 and $\fnof{\vect{\psi}}{\vect{\hat{u}}}=\matr{K}\vect{\hat{u}}+\fnof{\vect{\hat{g}}}{\vect{u}}+\vect{\hat{f}}$.
 
-% 
-% 
-% \subsubsection{Tensor notation:}
-% If we now consider the integrand of the left hand side of
-% \eqnref{eqn:Laplaceweightedresidualform} in tensorial form with covariant
-% derivatives then
-% \begin{equation}
-%   \tensor{\sigma}\grad\phi = \sigma^{i}_{j}\covarderiv{\phi}{i}
-% \end{equation}
-% and
-% \begin{equation}
-%   \grad w = \covarderiv{w}{i}
-% \end{equation}
-% 
-% Now, both the above equations represent vectors that are covariant and
-% therefore we must convert the first equation to a contravariant vector by 
-% multiplying by the contravariant metric tensor (from \vect{i} to \vect{x} 
-% coordinates) so that we can take the dot product. The final tensorial form is
-% \begin{equation}
-%   \dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
-% \end{equation}
-% and thus \eqnref{eqn:Laplaceweightedresidualform} becomes
-% \begin{equation}
-%   \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}=
-%   \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}w}}{\Gamma}
-%   \label{eqn:Laplaceweightedresidualtensorform}
-% \end{equation}
-% 
-% \subsubsection{Finite element formulation:}
-% We can now discretise the domain into finite elements \ie $\Omega=
-% \displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$, the left hand side of
-% \eqnref{eqn:Laplaceweightedresidualtensorform} becomes
-% \begin{equation}
-%   \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
-% \end{equation}
-% 
-% The next step is to approximate the dependent variable, $\phi$, using basis
-% functions. To simplify this for different types of basis functions an
-% \emph{interpolation notation} is adopted. This
-% interpolation is such that $\gbfn{\alpha}{u}{\vect{\xi}}$ are the appropriate
-% basis functions for the type of element (\eg \bicubicherm, Hermite-sector,
-% \etc) and dimension of the problem (one, two or \threedal). For example if
-% $\vect{\xi}=\bbrac{\xi}$ and the element is a cubic Hermite element then
-% $\gbfn{\alpha}{u}{\vect{\xi}}$ are the cubic Hermite basis functions where
-% $\alpha$ ranges from $1$ to $2$ and $u$ ranges from $0$ to $1$. If, however,
-% $\vect{\xi}=\bbrac{\xione,\xitwo}$ and the element is a \bicubicherm element
-% then $\alpha$ ranges from $1$ to $4$, $u$ ranges from $0$ to $3$ and
-% $\gbfn{\alpha}{u}{\vect{\xi}}$ is the appropriate basis function for the nodal
-% variable $\nodedof{\phi}{\alpha}{u}$. The nodal variables are defined as
-% follows: $\nodedof{\phi}{\alpha}{0}=\nodept{\phi}{\alpha}$,
-% $\nodedof{\phi}{\alpha}{1}=\delby{\nodept{\phi}{\alpha}}{s_{1}}$,
-% $\nodedof{\phi}{\alpha}{2}=\delby{\nodept{\phi}{\alpha}}{s_{2}}$,
-% $\nodedof{\phi}{\alpha}{3}=\deltwoby{\nodept{\phi}{\alpha}}{s_{1}}{s_{2}}$,
-% \etc Hence for the \bicubicherm element the interpolation function
-% $\gbfn{2}{3}{\vect{\xi}}$ multiplies the nodal variable
-% $\phi^{2}_{,3}=\deltwoby{\phi^{2}}{s_{1}}{s_{2}}$ and thus the
-% interpolation function is $\chbfn{2}{1}{\xione}\chbfn{1}{1}{\xitwo}$.  The
-% scale factors for the Hermite interpolation are handled by the introduction of
-% an interpolation scale factor $\gsf{\alpha}{u}$ defined as follows:
-% $\gsf{\alpha}{0}=1$, $\gsf{\alpha}{1}=\nsftwo{\alpha}{1}$, $\gsf{\alpha}{2}=
-% \nsftwo{\alpha}{2}$, $\gsf{\alpha}{3}=\nsftwo{\alpha}{1}\nsftwo{\alpha}{2}$,
-% \etc For Lagrangian basis functions the interpolation scale factors are all
-% one. The general form of the interpolation notation for $\phi$ is then
-% \begin{equation}
-%   \fnof{\phi}{\vect{\xi}}=\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}
-%   {\alpha}{u}\gsf{(\alpha)}{(u)}
-%   \label{eqn:phiinterpolation}
-% \end{equation}
-% 
-% \subsubsection{Spatio-temporal integration:}
-% When dealing with integrals a similar interpolation notation is adopted in
-% that $d\vect{\xi}$ is the appropriate infinitesimal for the dimension of the
-% problem. The limits of the integral are also written in bold font and indicate
-% the appropriate number of integrals for the dimension of the problem.  For
-% example if $\vect{\xi}=\bbrac{\xione,\xitwo}$ then
-% $\gint{\vect{0}}{\vect{1}}{x}
-% {\vect{\xi}}=\giint{0}{1}{0}{1}{x}{\xione}{\xitwo}$, but if $\vect{\xi}=
-% \bbrac{\xione,\xitwo,\xithree}$ then $\gint{\vect{0}}{\vect{1}}{x}
-% {\vect{\xi}}=\dintl{0}{1}\!\dintl{0}{1}\!\dintl{0}{1}\,x\,d\xione d\xitwo
-% d\xithree$.
-% 
-% In order to integrate in $\vect{\xi}$ coordinates we must convert the spatial
-% derivatives to derivatives with respect to $\vect{\xi}$. Using the tensor
-% transformation equations for a covariant vector we have
-% \begin{equation}  
-%   \covarderiv{\phi}{i}=\delby{\xi^{r}}{x^{i}}\covarderiv{\phi}{r}=\delby{\xi^{r}}{x^{i}}\delby{\phi}{\xi^{r}}
-% \end{equation}
-% and 
-% \begin{equation}
-%   \covarderiv{w}{k}=\delby{\xi^{s}}{x^{k}}\covarderiv{w}{s}=\delby{\xi^{s}}{x^{k}}\delby{w}{\xi^{s}}
-% \end{equation}
-% 
-% Now as we only know $\tensor{\sigma}^{*}$, the conductivity in the
-% $\vect{\nu}$ (fibre) coordinate system rather than $\tensor{\sigma}$, the
-% conductivity in the $\vect{x}$ (geometric) coordinate system we must transform the mixed
-% tensor ${\sigma^{*}}^{a}_{.b}$ from $\vect{\nu}$ to $\vect{x}$ coordinates. However, as the
-% fibre coordinate system is defined in terms of $\vect{\xi}$ coordinates we
-% first transform the conductivity tensor from $\vect{\nu}$ to $\vect{\xi}$
-% coordinates \ie
-% \begin{equation}
-%   \sigma^{p}_{.q}=\delby{\xi^{p}}{\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}
-% \end{equation}
-% and then transform the conductivity form $\vect{\xi}$ coordinates to
-% $\vect{x}$ coordinates \ie
-% \begin{equation}
-%   \begin{split}
-%     \sigma^{i}_{.j} &= \delby{x^{i}}{\xi^{p}}\delby{\xi^{q}}{x^{j}}{\sigma}^{p}_{.q} \\
-%     &= \delby{x^{i}}{\xi^{p}}\delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} 
-%     {\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}
-%   \end{split}
-% \end{equation}
-% 
-% Now, using an interpolated dependent variable and a Galerkin finite element
-% approach (where the weighting functions are chosen to be the interpolating
-% basis functions \ie $w=\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}$) yields
-% \begin{equation}
-%   \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{G^{jk}\delby{x^{i}}{\xi^{p}}
-%     \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
-%     \delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}
-%     \delby{\pbrac{\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}}}{\xi^{r}}
-%     \delby{\xi^{s}}{x^{k}}\delby{\pbrac{\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}}}{\xi^{s}}
-%     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
-% \end{equation}
-% where $\fnof{\matr{J}}{\vect{\xi}}$ is the \emph{Jacobian} of the
-% transformation from the integration $\vect{x}$ to $\vect{\xi}$ coordinates.
-% 
-% Taking the fixed nodal degrees-of-freedom and scale factors outside the integral we have
-% \begin{equation}
-%   \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}\gsf{(\beta)}{(v)}
-%   \gint{\vect{0}}{\vect{1}}{G^{jk}\delby{x^{i}}{\xi^{p}}
-%     \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
-%     \delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}
-%     \delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
-%     \delby{\xi^{s}}{x^{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
-%     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
-%   \label{eqn:elementalfemlhs1}
-% \end{equation}
-% or
-% \begin{equation}
-%   \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}\gsf{(\beta)}{(v)}
-%   \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}
-%     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
-%   \label{eqn:elementalfemlhs2}
-% \end{equation}
-% where
-% \begin{equation}
-%   \gamma^{rs}=G^{jk}\delby{x^{i}}{\xi^{p}}
-%     \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
-%     \delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
-% \end{equation}
-% 
-% Note that for Laplace's equation with no conductivity or fibre fields then we have
-% \begin{equation}
-%   \gamma^{rs}=G^{ik}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
-% \end{equation}
-% and that for rectangular-Cartesian coordinates systems
-% $G^{ik}=\kronecker{i}{k}$ and thus $i=k$. This now gives
-% \begin{equation}
-%   \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{i}}=g^{rs}
-%   \label{eqn:contrametrictensor}
-% \end{equation}
-% where $g^{rs}$ is the \emph{contravariant metric tensor} from $\vect{x}$ to
-% $\vect{\xi}$ coordinates. It may thus be helpful to think about $\gamma^{rs}$
-% as a scaled/transformed contravariant metric tensor.
-% 
-% \subsubsection{Coded OpenCMISS formulation:}
-% Finally, we use the Gaussian quadrature rule, usually stated as a weighted sum of function values at specified Gauss points within the domain of integration. An $n$-point Gaussian quadrature rule yields an exact result for polynomials of degree $2n-1$ or less by a suitable choice of the points $x_i$ and weights $g_i$ for $i = 1,...,n$. Consequently, the formulation implemented can be derived from Equation (\ref{eqn:elementalfemlhs2}) as: 
-% \begin{equation}
-%   \boxed{
-%   \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}
-%   \dsum_{i=1}^{n}
-%   \left(\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
-%   \delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}\abs{\fnof{\matr{J}}{\vect{\xi}}}
-%   \right)(x_i)g_i
-%   }
-% \end{equation}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "../../OpenCMISSNotes"
+%%% End: 

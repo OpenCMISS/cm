@@ -1416,7 +1416,7 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(NODES_TYPE), POINTER :: NODES
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1638,7 +1638,7 @@ CONTAINS
                                 !Triangular element
                                 !Break the grid square element into 2 triangles. The 2 triangles are
                                 !Element 1: vertices {(0,0);(1,0);(1,1)}
-                                !Element 2: vertices {(0,0);(0,1);(1,1)}
+                                !Element 2: vertices {(0,0);(1,1);(0,1)}
                                 SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
                                 CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
                                   !First sub-element
@@ -1653,8 +1653,8 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+TOTAL_NUMBER_OF_NODES_XI(1)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
                                   CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
@@ -1675,11 +1675,11 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(4)=np+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(4)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(5)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(6)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(6)=np+TOTAL_NUMBER_OF_NODES_XI(1)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
                                   CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
@@ -1704,14 +1704,14 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(4)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(5)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(6)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(7)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(8)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(4)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(5)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(6)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(7)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(8)=np+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(9)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(10)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
@@ -1728,11 +1728,11 @@ CONTAINS
                                 !Break the grid cube element into 6 tetrahedra (so that we have a break down the main diagonal of the
                                 !cube in order to allow for the middle node in quadratics to be included). The 6 tetrahedra are
                                 !Element 1: vertices {(0,0,0);(1,0,0);(1,1,0);(1,1,1)}
-                                !Element 2: vertices {(0,0,0);(0,1,0);(1,1,0);(1,1,1)}
-                                !Element 3: vertices {(0,0,0);(1,0,0);(1,0,1);(1,1,1)}
+                                !Element 2: vertices {(0,0,0);(1,1,0);(0,1,0);(1,1,1)}
+                                !Element 3: vertices {(0,0,0);(1,0,1);(1,0,0);(1,1,1)}
                                 !Element 4: vertices {(0,0,0);(0,0,1);(1,0,1);(1,1,1)}
                                 !Element 5: vertices {(0,0,0);(0,1,0);(0,1,1);(1,1,1)}
-                                !Element 6: vertices {(0,0,0);(0,0,1);(0,1,1);(1,1,1)}
+                                !Element 6: vertices {(0,0,0);(0,1,1);(0,0,1);(1,1,1)}
                                 SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
                                 CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
                                   !First sub-element
@@ -1748,9 +1748,9 @@ CONTAINS
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
-                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(1)=np
+                                  ELEMENT_NODES(2)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(4)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
@@ -1760,8 +1760,8 @@ CONTAINS
                                   !Third sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+3
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+1
-                                  ELEMENT_NODES(3)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(2)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(3)=np+1
                                   ELEMENT_NODES(4)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
@@ -1794,9 +1794,9 @@ CONTAINS
                                   !Sixth sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+6
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(3)=np+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(2)=np+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(3)=np+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(4)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
@@ -1827,18 +1827,18 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(4)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(5)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(6)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(5)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(6)=np+TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(7)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(8)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(9)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(9)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(10)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(10)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
@@ -1847,18 +1847,18 @@ CONTAINS
                                   !Third sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+3
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+2
-                                  ELEMENT_NODES(3)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(2)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(3)=np+2
                                   ELEMENT_NODES(4)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(5)=np+1
-                                  ELEMENT_NODES(6)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(5)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(6)=np+1
                                   ELEMENT_NODES(7)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(8)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(9)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(9)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(10)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(10)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
@@ -1910,21 +1910,21 @@ CONTAINS
                                   !Sixth sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+6
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(3)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(2)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(3)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(4)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(5)=np+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(6)=np+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(5)=np+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(6)=np+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(7)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(8)=np+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(9)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(10)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(10)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   CALL COMPONENT_NODES_TO_USER_NUMBERS(REGULAR_MESH%GENERATED_MESH,basis_idx,ELEMENT_NODES, &
                                       & ELEMENT_NODES_USER_NUMBERS,ERR,ERROR,*999)
@@ -1970,32 +1970,32 @@ CONTAINS
                                   !Second sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+2
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(3)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(2)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(3)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(4)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(5)=np+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(6)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(7)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(8)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(5)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(6)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(7)=np+TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(8)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                   ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(10)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(11)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(12)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(13)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(11)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(12)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)
+                                  ELEMENT_NODES(13)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(14)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(14)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(15)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(15)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(16)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(16)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(17)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
-                                  ELEMENT_NODES(18)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(18)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(19)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(19)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(20)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
@@ -2006,33 +2006,33 @@ CONTAINS
                                   !Third sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+3
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+3
-                                  ELEMENT_NODES(3)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(2)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(3)=np+3
                                   ELEMENT_NODES(4)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(5)=np+1
-                                  ELEMENT_NODES(6)=np+2
-                                  ELEMENT_NODES(7)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(8)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(5)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(6)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(7)=np+1
+                                  ELEMENT_NODES(8)=np+2
                                   ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(10)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(11)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(12)=np+3+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(13)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(11)=np+3+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(12)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(13)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(14)=np+3+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(14)=np+3+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(15)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(15)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(16)=np+3+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(16)=np+3+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(17)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(18)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(18)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(19)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(19)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(20)=np+3+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
@@ -2121,38 +2121,38 @@ CONTAINS
                                   !Sixth sub-element
                                   ne=(grid_ne-1)*ELEMENT_FACTOR+6
                                   ELEMENT_NODES(1)=np
-                                  ELEMENT_NODES(2)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(3)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(2)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(3)=np+3*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(4)=np+3+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(5)=np+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(6)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(7)=np+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(5)=np+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(8)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(6)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(7)=np+TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                                  ELEMENT_NODES(8)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(10)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(11)=np+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(11)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(12)=np+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(12)=np+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(13)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(13)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(14)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(14)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(15)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(15)=np+1+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(16)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(16)=np+2+3*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(17)=np+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(18)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(18)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
-                                  ELEMENT_NODES(19)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                  ELEMENT_NODES(19)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
                                   ELEMENT_NODES(20)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                     & TOTAL_NUMBER_OF_NODES_XI(2)
@@ -2245,7 +2245,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: APEX_ELEMENT_NODES_USER_NUMBERS(:), WALL_ELEMENT_NODES_USER_NUMBERS(:)
     INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),CORNER_NODES(:,:,:),EIDX(:,:,:)
     REAL(DP) :: DELTA(3),DELTAi(3)
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
 
     CALL ENTERS("GENERATED_MESH_ELLIPSOID_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -2498,7 +2498,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:),ELEMENT_NODES_USER_NUMBERS(:)
     INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
     REAL(DP) :: DELTA(3),DELTAi(3)
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
 
     CALL ENTERS("GENERATED_MESH_CYLINDER_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -3637,7 +3637,7 @@ CONTAINS
                     END SELECT
                     ! assign derivative
                     !Default to version 1 of each node derivative
-                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nk)%DERIVATIVES(np)% &
+                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(np)%DERIVATIVES(nk)% &
                       & VERSIONS(1)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & ny,DERIV,ERR,ERROR,*999)
@@ -4119,9 +4119,7 @@ CONTAINS
             DO k=1,SIZE(NIDX,3)
               DO j=1,SIZE(NIDX,2)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(1,j,k),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(1,j,k)
               ENDDO
             ENDDO
             NORMAL_XI=-1
@@ -4131,9 +4129,7 @@ CONTAINS
             DO k=1,SIZE(NIDX,3)
               DO j=1,SIZE(NIDX,2)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(SIZE(NIDX,1),j,k),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(SIZE(NIDX,1),j,k)
               ENDDO
             ENDDO
             NORMAL_XI=1
@@ -4143,9 +4139,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,2)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,j,SIZE(NIDX,3)),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,j,SIZE(NIDX,3))
               ENDDO
             ENDDO
             NORMAL_XI=3
@@ -4155,9 +4149,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,2)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,j,1),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,j,1)
               ENDDO
             ENDDO
             NORMAL_XI=-3
@@ -4167,9 +4159,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,3)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,1,j),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,1,j)
               ENDDO
             ENDDO
             NORMAL_XI=-2
@@ -4179,9 +4169,7 @@ CONTAINS
             DO j=1,SIZE(NIDX,3)
               DO i=1,SIZE(NIDX,1)
                 node_counter=node_counter+1
-                CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
-                    & NIDX(i,SIZE(NIDX,2),j),NODE_USER_NUMBER,ERR,ERROR,*999)
-                SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+                SURFACE_NODES(node_counter)=NIDX(i,SIZE(NIDX,2),j)
               ENDDO
             ENDDO
             NORMAL_XI=2
@@ -4190,6 +4178,22 @@ CONTAINS
               & " is invalid for a regular mesh."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+          !Now convert the component node numbering to user numbers if a mesh has multiple components
+          DO node_counter=1,SIZE(SURFACE_NODES,1)
+            SELECT CASE(REGULAR_MESH%BASES(MESH_COMPONENT)%PTR%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              CALL GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
+                  & SURFACE_NODES(node_counter),NODE_USER_NUMBER,ERR,ERROR,*999)
+              SURFACE_NODES(node_counter)=NODE_USER_NUMBER
+            CASE(BASIS_SIMPLEX_TYPE)
+              SURFACE_NODES(node_counter)=COMPONENT_NODE_TO_USER_NUMBER(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
+                  & SURFACE_NODES(node_counter),ERR,ERROR)
+              IF(ERR/=0) GOTO 999
+            CASE DEFAULT
+              CALL FLAG_ERROR("The basis type of "//TRIM(NUMBER_TO_VSTRING(REGULAR_MESH%BASES(MESH_COMPONENT)%PTR%TYPE, &
+                & "*",ERR,ERROR))//" is not implemented when getting a regular mesh surface.",ERR,ERROR,*999)
+            END SELECT
+          END DO
         ELSE
           CALL FLAG_ERROR("Output SURFACE_NODES array is already allocated.",ERR,ERROR,*999)
         ENDIF
@@ -5484,6 +5488,7 @@ CONTAINS
   !
 
   !>Retrieve the user node number for a component number in a regular generated mesh
+  !>This routine only works for Lagrange/Hermite elements
   SUBROUTINE GENERATED_MESH_REGULAR_COMPONENT_NODE_TO_USER_NUMBER(GENERATED_MESH,BASIS_INDEX, &
       & NODE_COMPONENT_NUMBER,NODE_USER_NUMBER,ERR,ERROR,*)
 

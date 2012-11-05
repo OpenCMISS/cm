@@ -388,6 +388,7 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(SOURCE_DIR)/boundary_condition_
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
@@ -681,6 +682,7 @@ $(OBJECT_DIR)/data_point_routines.o	:	$(SOURCE_DIR)/data_point_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1442,6 +1444,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
@@ -1732,6 +1735,7 @@ PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
 PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
 PYTHON_WRAPPER_OBJ = $(OBJECT_DIR)/opencmiss_wrap.o
 PYTHON_INCLUDES = $(shell python-config --includes)
+NUMPY_INCLUDE = $(shell python $(GLOBAL_CM_ROOT)/utils/numpy_include.py)
 
 python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO) python_cp
 
@@ -1744,15 +1748,21 @@ python_cp: $(PYTHON_MODULE_SO)
 $(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) SWIG $@
 
+<<<<<<< HEAD
 $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py $(SOURCE_DIR)/opencmiss.f90
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
+=======
+$(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py \
+	$(SOURCE_DIR)/opencmiss.f90 $(BINDINGS_DIR)/python/extra_content.py
+	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
+>>>>>>> 8b3f9e9726ffabb6135067681e0b6d7ff6edd410
 
-$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
+$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
 # Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
 	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm opencmiss_swig.py )
 
 $(PYTHON_WRAPPER_OBJ): $(PYTHON_WRAPPER)
-	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o $(PYTHON_WRAPPER_OBJ) )
+	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -I$(NUMPY_INCLUDE) -o $(PYTHON_WRAPPER_OBJ) )
 
 $(PYTHON_MODULE_SO): $(LIBRARY) $(PYTHON_WRAPPER_OBJ) $(OBJECTS)
 	( cd $(BINDINGS_DIR)/python && $(FC) $(PYTHON_WRAPPER_OBJ) $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )

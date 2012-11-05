@@ -170,8 +170,14 @@ MODULE MATHS
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
   END INTERFACE !SOLVE_SMALL_LINEAR_SYSTEM
 
+  !>Returns hyperbolic cotangent of argument
+  INTERFACE COTH
+    MODULE PROCEDURE COTH_SP
+    MODULE PROCEDURE COTH_DP
+  END INTERFACE !COTH
+
   PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT, &
-    & MATRIX_TRANSPOSE,NORMALISE,NORM_CROSS_PRODUCT,SOLVE_SMALL_LINEAR_SYSTEM
+    & MATRIX_TRANSPOSE,NORMALISE,NORM_CROSS_PRODUCT,SOLVE_SMALL_LINEAR_SYSTEM,COTH
   
   
 CONTAINS
@@ -1967,6 +1973,42 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !> Calculates single precision hyperbolic cotangent function
+  FUNCTION COTH_SP(A)
+
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A !<argument to perform coth() on
+    !Function variable
+    REAL(SP) :: COTH_SP
+    
+    COTH_SP=(EXP(A)+EXP(-1.0_SP*A))/(EXP(A)-EXP(-1.0_SP*A))
+
+    RETURN
+  END FUNCTION COTH_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Calculates double precision hyperbolic cotangent function
+  FUNCTION COTH_DP(A)
+
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A !<argument to perform coth() on
+    !Function variable
+    REAL(DP) :: COTH_DP
+
+    COTH_DP=(EXP(A)+EXP(-1.0_DP*A))/(EXP(A)-EXP(-1.0_DP*A))
+
+    RETURN
+  END FUNCTION COTH_DP
+
+
+  !
+  !================================================================================================================================
+  !
+
   
 END MODULE MATHS
 
