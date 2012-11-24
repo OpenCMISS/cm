@@ -2926,7 +2926,10 @@ CONTAINS
         IF(SIZE(STARTING_XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
           VALID_INPUT=.TRUE.
           DO ni=1,SIZE(STARTING_XI,1)
-            IF((STARTING_XI(ni)<=0).OR.(STARTING_XI(ni)>=1)) VALID_INPUT=.FALSE.
+            IF((STARTING_XI(ni)<0).OR.(STARTING_XI(ni)>1)) THEN
+              VALID_INPUT=.FALSE.
+              EXIT !this do
+            ENDIF
           ENDDO
           IF(VALID_INPUT) THEN
             DATA_PROJECTION%STARTING_XI=STARTING_XI
@@ -3007,7 +3010,10 @@ CONTAINS
       IF(SIZE(XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
         VALID_INPUT=.TRUE.
         DO ni=1,SIZE(XI,1)
-          IF((XI(ni)<=0).OR.(XI(ni)>=1)) VALID_INPUT=.FALSE.
+          IF((XI(ni)<0).OR.(XI(ni)>1)) THEN
+            VALID_INPUT=.FALSE.
+            EXIT !this do
+          ENDIF
         ENDDO
         IF(VALID_INPUT) THEN
           DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%XI=XI
