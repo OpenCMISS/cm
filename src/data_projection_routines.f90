@@ -26,7 +26,7 @@
 !> Auckland, the University of Oxford and King's College, London.
 !> All Rights Reserved.
 !>
-!> Contributor(s): Chris Bradley, Kumar Mithraratne, Prasad Babarenda Gamage
+!> Contributor(s): Chris Bradley, Kumar Mithraratne, Xiani (Nancy) Yan, Prasad Babarenda Gamage
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -65,15 +65,26 @@ MODULE DATA_PROJECTION_ROUTINES
   PRIVATE
 
   !Module parameters
+
+  !> \addtogroup DATA_POINT_PROJECTION_ROUTINES_DataProjectionTypes DATA_POINT_PROJECTION_ROUTINES::DataProjectionTypes
+  !> \brief Datapoint projection definition type parameters
+  !> \see DATA_POINT_PROJECTION_ROUTINES,OPENCMISS_DataProjectionTypes
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE=1 !<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE=2 !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE=3 !<The element projection type for data projection, projects to all elements in mesh. \see DATA_PROJECTION_ROUTINES 
-  
+  !>@}
+
+  !> \addtogroup DATA_POINT_PROJECTION_ROUTINES_DataProjectionExitTags DATA_POINT_PROJECTION_ROUTINES::DataProjectionExitTags
+  !> \brief Datapoint projection exit tags
+  !> \see DATA_POINT_PROJECTION_ROUTINES,OPENCMISS_DataProjectionExitTags
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_CONVERGED=1 !<Data projection exited due to it being converged \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_BOUNDS=2 !<Data projection exited due to it hitting the bound and continue to travel out of the element. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_MAX_ITERATION=3 !<Data projection exited due to it attaining maximum number of iteration specified by user. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_NO_ELEMENT=4 !<Data projection exited due to no local element found, this happens when none of the candidate elements are within this computational node, and before MPI communication with other nodes. \see DATA_PROJECTION_ROUTINES     
-    
+  !>@}
+
   !Module types
 
   !Module variables
@@ -1572,7 +1583,7 @@ CONTAINS
             & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
           XI=DATA_PROJECTION%STARTING_XI
           CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
-          DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
+          DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))       
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
@@ -1732,7 +1743,7 @@ CONTAINS
             & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
           XI=DATA_PROJECTION%STARTING_XI
           CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
-          DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
+          DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))   
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
@@ -1825,7 +1836,7 @@ CONTAINS
                 ENDIF
               ENDDO
               CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999)
-              DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
+              DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
               IF(CONVERGED) EXIT !converged: exit inner loop first
@@ -2245,7 +2256,7 @@ CONTAINS
             & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
           XI=DATA_PROJECTION%STARTING_XI
           CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
-          DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
+          DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))   
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
@@ -2458,7 +2469,7 @@ CONTAINS
             & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
           XI=DATA_PROJECTION%STARTING_XI
           CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
-          DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
+          DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))       
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
