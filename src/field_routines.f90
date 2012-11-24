@@ -22885,7 +22885,7 @@ CONTAINS
                           & ERR,ERROR,*999)
                         VALUES(:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
                       ELSE
-                        LOCAL_ERROR="The number of the xi to interpolate the field at is invalid. "// &
+                        LOCAL_ERROR="The specified xi to interpolate the field at are invalid. "// &
                           & "The supplied size is "// &
                           & TRIM(NUMBER_TO_VSTRING(SIZE(XI),"*",ERR,ERROR))//" and should be "// &
                           & TRIM(NUMBER_TO_VSTRING(DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI,"*", &
@@ -23007,7 +23007,7 @@ CONTAINS
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        LOCAL_ERROR="The number of the xi to interpolate the field at is invalid. "// &
+                        LOCAL_ERROR="The specified xi values to interpolate the field at are invalid. "// &
                           & "The supplied size is "// &
                           & TRIM(NUMBER_TO_VSTRING(SIZE(XI,1),"*",ERR,ERROR))//" and should be "// &
                           & TRIM(NUMBER_TO_VSTRING(DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI,"*", &
