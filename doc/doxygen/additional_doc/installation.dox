@@ -64,19 +64,44 @@ setenv OPENCMISSEXTRAS_ROOT <path to your OpenCMISSExtras folder>
 2. Set any additional programmer script variables. 
 \anchor step4_2
 The opencmiss_programmers script in $OPENCMISSEXTRAS_ROOT/utils/scripts will let you customise the setup by setting environment variables after the root sets and before executing the script. These variables are:
-- COMPILER : set the compiler to be used as the default. Options are gnu and intel.
 - USE_OPENCMISS_GFORTRAN : if set use the gfortran in the OpenCMISSextras repository. If not set use the system gfortran.
 - USE_OPENCMISS_CMAKE : if set use the cmake in the OpenCMISSextras repository. If not set use the system cmake.
 - USE_OPENCMISS_GIT : if set use the git in the OpenCMISSextras repository. If not set use the system git.
-- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4, 4.5 or 4.6.
+- COMPILER : set the compiler to be used as the default. Options are gnu, intel or ibm.
+- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4, 4.5, 4.6 or 4.7
 - OPENCMISSEXTRAS_RUN_CONFIG : select which configuration of the OpenCMISSextras binaries to use at runtime. Options are debug or optimised.
-- MPI : select what version of MPI to use. Options are mpich2, intel, mvapich2 or openmpi.
+- MPI : select what version of MPI to use. Options are mpich2, intel, mvapich2, openmpi, poe or cray
+- TOTALVIEW_PATH : path to your version of Totalview.
+- TOTALVIEW_VERSION : the version number of your Totalview.
+- FLEXLM_VERSION : the version number of your Flexlm for Totalview.
+- CUDA_ROOT : the path to the CUDA runtime.
+- CUDA_SDK_ROOT : the path to the CUDA Software Development Kit.
 
-The following variables are not required if you are using Intel compiler version 12 or above: 
+The following variables are not required if you are using Intel compiler version 11 or below: 
 - INTEL_COMPILER_VERSION : if using the pre 12.0 version of the intel compilers the compiler version to use e.g., 11.1
 - INTEL_COMPILER_BUILD : if using the pre 12.0 version of the intel compilers the build version to use e.g., 072
 - INTEL_TRACE_COLLECTOR_VERSION : the version of the intel trace collector to use e.g., 8.0.1.009
 - INTEL_MPI_VERSION : the version of the intel MPI to use e.g., 4.0.1.007
+
+You can also set which libraries are used during the building of OpenCMISS and OpenCMISSExtras. If you set the following variables to true that library will be included, or not included if false. The variables are
+- OPENCMISS_USE_CELLML
+- OPENCMISS_USE_CUDA
+- OPENCMISS_USE_FIELDML 
+- OPENCMISS_USE_HDF5
+- OPENCMISS_USE_HYPRE
+- OPENCMISS_USE_MUMPS
+- OPENCMISS_USE_NETCDF
+- OPENCMISS_USE_PARMETIS
+- OPENCMISS_USE_PASTIX
+- OPENCMISS_USE_PETSC
+- OPENCMISS_USE_PLAPACK
+- OPENCMISS_USE_SLEPC
+- OPENCMISS_USE_SUNDIALS
+- OPENCMISS_USE_SUPERLU
+- OPENCMISS_USE_TAO
+- OPENCMISS_USE_TAU
+
+If you are in doubt about any of the variables just leave them out of your login script and they will default to a sensible value.
 
 3. Add in the lines in the login script to run the script:
 

@@ -70,14 +70,18 @@ ifndef OPENCMISSEXTRAS_ROOT
 else
   OCE_GLOBAL_ROOT := ${OPENCMISSEXTRAS_ROOT}
 endif
-GLOBAL_ROOT := $(OCE_GLOBAL_ROOT)
 
-OCE_MAKEINC_ROOT := $(OCE_GLOBAL_ROOT)/utils
+OCE_MAKEINC_ROOT := $(OCE_GLOBAL_ROOT)/utils/make
 
 include $(OCE_MAKEINC_ROOT)/Makefile.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_Compilers.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_MPI.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_BlasLapack.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_BlacsScalapack.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_HDF5.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_NetCDF.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_PAPI.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_CUDA.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_OSOperations.inc
 
 ifndef OCE_CM_INSTALL_DIR
@@ -96,15 +100,15 @@ ifndef OCE_MPI_INSTALL_DIR
   OCE_MPI_INSTALL_DIR := $(MPI_INSTALL_DIR)
 endif
 ifndef OC_CELLML_ROOT
-  OC_CELLML_ROOT := ${GLOBAL_CM_ROOT}/../cellml
+  OC_CELLML_ROOT := ${OC_GLOBAL_ROOT}/cellml
 endif
-OC_CELLML_INSTALL_DIR := $(OC_CM_GLOBAL_ROOT)/$(ENVIRONMENT)$(BUILD_TYPE)$(NOMPI_TOOLCHAIN)
+OC_CELLML_INSTALL_DIR := $(OC_CELLML_ROOT)/$(ENVIRONMENT)$(BUILD_TYPE)$(NOMPI_TOOLCHAIN)
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-MAIN_OBJECT_DIR := $(OC_CM_GLOBAL_ROOT)/object/$(ENVIRONMENT)$(BUILD_TYPE)$(MPI_TOOLCHAIN)
-INC_DIR := $(OC_CM_GLOBAL_ROOT)/include/$(ENVIRONMENT)$(BUILD_TYPE)$(MPI_TOOLCHAIN)
-LIB_DIR := $(OC_CM_GLOBAL_ROOT)/lib/$(ENVIRONMENT)$(BUILD_TYPE)$(MPI_TOOLCHAIN)
+MAIN_OBJECT_DIR := $(OC_CM_GLOBAL_ROOT)/object/$(ENVIRONMENT)$(BUILD_TYPE)$(TOOLCHAIN)
+INC_DIR := $(OC_CM_GLOBAL_ROOT)/include/$(ENVIRONMENT)$(BUILD_TYPE)$(TOOLCHAIN)
+LIB_DIR := $(OC_CM_GLOBAL_ROOT)/lib/$(ENVIRONMENT)$(BUILD_TYPE)$(TOOLCHAIN)
 
 #----------------------------------------------------------------------------------------------------------------------------------
 # compiling commands
@@ -169,20 +173,21 @@ OPTF_FLGS =#   OPT=true flags for fortran only
 # long.
 olist_args = `cat $1`
 
-CC = $(OCE_CC)
-FC = $(OCE_F90)
+CC = $(OCE_MPICC)
+FC = $(OCE_MPIF90)
 
 #----------------------------------------------------------------------------------------------------------------------------------
 ifeq ($(OPERATING_SYSTEM),linux)
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
   # Set the flags for the various different CC compilers
-  ifeq ($(CC),gcc)# gcc
+  ifeq ($(COMPILER),gnu)
     # Position independent code is required for the Python bindings
     C_FLGS += -pipe -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
+        F_FLGS += -march=nocona
       endif
     endif
     DBGC_FLGS += -O0 -fbounds-check
@@ -190,175 +195,122 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifeq ($(PROF),false)
       ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
         OPTC_FLGS += -momit-leaf-frame-pointer
+        OPTF_FLGS += -momit-leaf-frame-pointer
       endif
     else
       C_FLGS += -g -pg -fprofile-arcs -ftest-coverage
       ELFLGS += -g -pg -fprofile-arcs -ftest-coverage
+      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
     endif
-  endif
-  ifeq ($(CC),icc)
-    # Turn on all warnings
-    C_FLGS += -Wall -m$(ABI) -fPIC
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
-          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
-            C_FLGS += -xT# Core2 Duo
-          else
-            C_FLGS += -x0# Core Duo
-          endif
-        else
-          C_FLGS += -xP# for sse3 (90nm Pentium 4 series)
-        endif
-      else
-        C_FLGS += -xW# Pentium4 compatible (?sse2)
-      endif
-    endif
-    ifeq ($(filter-out i%86,$(MACHNAME)),)
-      ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
-        C_FLGS += -xN# for Pentium 4
-      endif
-    endif
-    DBGC_FLGS += -O0
-    OPTC_FLGS = -O3 -ansi_alias
-    ifneq ($(PROF),false)
-      C_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-    ifeq ($(MPIPROF),true)
-      ifeq ($(MPI),mpich2)
-        C_FLGS += -Wl,--export-dyanmic
-        DBGC_FLGS += -Wl,--export-dyanmic
-      else
-        C_FLGS += -tcollect
-      endif
-    endif
-  endif
-  ifeq ($(filter-out xlc%,$(CC)),)# xlc* C compiler
-    CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
-    C_FLGS += -q$(ABI) -qarch=auto -qhalt=e
-    # -qinitauto for C is bytewise: 7F gives large integers.
-    DBGC_FLGS += -qfullpath -C -qflttrap=inv:en -qinitauto=7F
-    OPTC_FLGS += -O3
-    # for trailing _ on fortran symbols
-    CPPFLAGS += -Dunix
-  endif
-  ifeq ($(CC),cc)# cray cc
-    DBGC_FLGS += -O0 -g
-    OPTC_FLGS = -O3
-    ifeq ($(PROF),true)
-      C_FLGS += -g -pg
-    endif
-  endif
-
-  # Set the flags for the various different Fortran compilers
-  ifeq ($(FC),gfortran)
-    #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
-    # -fstatck-check
     F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input -fPIC
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -march=nocona
-      endif
-    endif
     DBGF_FLGS += -O0 -ffpe-trap=invalid,zero -fbacktrace
     ifdef COMPILER_VERSION
       ifeq ($(COMPILER_VERSION),4.4)
         DBGF_FLGS += -fbounds-check
-<<<<<<< HEAD
-      else 
-=======
       else
-				# For any more recent versions
->>>>>>> 8b3f9e9726ffabb6135067681e0b6d7ff6edd410
+        # For any more recent versions
         DBGF_FLGS += -fcheck=all
       endif
     endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
-    ifeq ($(PROF),false)
-      ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
-        OPTF_FLGS += -momit-leaf-frame-pointer
-      endif
-    else
-      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
-      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
-    endif
     ELFLAGS += -m$(ABI)
-  endif
-  ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003 -fPIC
-    DBGF_FLGS += -O0 -fbounds-check
-    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
-    ELFLAGS += -m$(ABI)
-    #$(error g95 not implemented)
-  endif
-  ifeq ($(FC),ifort)
-    # turn on preprocessing,
-    # turn on warnings,
-    # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all -m$(ABI) -fPIC
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
-          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
-            F_FLGS += -xT# Core2 Duo
+  else
+    ifeq ($(COMPILER),intel)
+      # Turn on all warnings
+      C_FLGS += -Wall -m$(ABI) -fPIC
+      ifeq ($(MACHNAME),x86_64)
+        ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
+          ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
+            ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
+              C_FLGS += -xSSSE3# Core2 Duo
+              F_FLGS += -xSSSE3# Core2 Duo
+            else
+              C_FLGS += -msse3# Core Duo
+              F_FLGS += -msse3# Core Duo
+            endif
           else
-            F_FLGS += -x0# Core Duo
+            C_FLGS += -xSSE3# for sse3 (90nm Pentium 4 series)
+            F_FLGS += -xSSE3# for sse3 (90nm Pentium 4 series)
           endif
         else
-          F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+          C_FLGS += -msse2# Pentium4 compatible (?sse2)
+          F_FLGS += -msse2# Pentium4 compatible (?sse2)
         endif
-      else
-        F_FLGS += -xW# Pentium4 compatible (?sse2)
       endif
-    endif
-    ifeq ($(filter-out i%86,$(MACHNAME)),)
-      ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -xN# for Pentium 4
+      ifeq ($(filter-out i%86,$(MACHNAME)),)
+        ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
+          C_FLGS += -xSSE2# for Pentium 4
+          F_FLGS += -xSSE2# for Pentium 4
+        endif
       endif
-    endif
-    DBGF_FLGS += -O0 -check all -traceback -debug all
-    OPTF_FLGS = -O3
-    ifneq ($(PROF),false)
-      F_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-    ifeq ($(MPIPROF),true)
-      ifeq ($(MPI),mpich2)
-        F_FLAS += -Wl,--export-dyanmic
-        DBGF_FLGS += -Wl,--export-dyanmic
-      else
-        F_FLGS += -tcollect
+      DBGC_FLGS += -O0
+      OPTC_FLGS = -O3 -ansi_alias
+      ifneq ($(PROF),false)
+        C_FLGS += -g -pg
+        F_FLGS += -g -pg
+        ELFLAGS += -pg
       endif
-    endif
-#    MP_FLGS = -openmp
-    ELFLAGS += -nofor_main -m$(ABI) -traceback
-  endif
-  ifeq ($(filter-out xlf%,$(FC)),)# xlf* fortran compiler
-    F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
-    ELFLAGS += -q$(ABI)
-    ifeq ($(ABI),64)
-      F_FLGS += -qwarn64
-    endif
-    ifeq ($(DEBUG),false)
-      MP_FLGS = -qsmp=omp
+      ifeq ($(MPIPROF),true)
+        ifeq ($(MPI),mpich2)
+          C_FLGS += -Wl,--export-dynamic
+          DBGC_FLGS += -Wl,--export-dynamic
+          F_FLAS += -Wl,--export-dynamic
+          DBGF_FLGS += -Wl,--export-dynamic
+        else
+          F_FLGS += -tcollect
+          C_FLGS += -tcollect
+        endif
+      endif
+      # turn on preprocessing,
+      # turn on warnings,
+      # warn about non-standard Fortran 95
+      F_FLGS += -cpp -warn all -m$(ABI) -fPIC
+      DBGF_FLGS += -O0 -check all -traceback -debug all
+      OPTF_FLGS = -O3
+#     MP_FLGS = -openmp
+      ELFLAGS += -nofor_main -m$(ABI) -traceback
     else
-      MP_FLGS = -qsmp=omp:noopt
-    endif
-    # -qinitauto for Fortran 7FF7FFFF is a large integer or NaNQ real*4 or NaNS real*8
-    DBGF_FLGS += -qfullpath -C -qflttrap=inv:en -qextchk -qinitauto=7FF7FFFF
-    OPTF_FLGS += -O3
-  endif
-  ifeq ($(FC),ftn)
-    DBGF_FLGS += -O0 -g
-    OPTF_FLGS = -O3
-    ifeq ($(PROF),true)
-      F_FLGS += -g -pg
-      ELFLAGS += -pg
+      ifeq ($(COMPILER),ibm)
+        CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
+        C_FLGS += -q$(ABI) -qarch=auto -qhalt=e
+        # -qinitauto for C is bytewise: 7F gives large integers.
+        DBGC_FLGS += -qfullpath -C -qflttrap=inv:en -qinitauto=7F
+        OPTC_FLGS += -O3
+        # for trailing _ on fortran symbols
+        CPPFLAGS += -Dunix
+        F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
+        ELFLAGS += -q$(ABI)
+        ifeq ($(ABI),64)
+          F_FLGS += -qwarn64
+        endif
+        ifeq ($(DEBUG),false)
+          MP_FLGS = -qsmp=omp
+        else
+          MP_FLGS = -qsmp=omp:noopt
+        endif
+        # -qinitauto for Fortran 7FF7FFFF is a large integer or NaNQ real*4 or NaNS real*8
+        DBGF_FLGS += -qfullpath -C -qflttrap=inv:en -qextchk -qinitauto=7FF7FFFF
+        OPTF_FLGS += -O3
+      else
+        ifeq ($(COMPILER),cray)
+          DBGC_FLGS += -O0 -g
+          OPTC_FLGS = -O3
+          ifeq ($(PROF),true)
+            C_FLGS += -g -pg
+            F_FLGS += -g -pg
+            ELFLAGS += -pg
+          endif
+          DBGF_FLGS += -O0 -g
+          OPTF_FLGS = -O3
+	else
+	  $(error COMPILER is not valid
+	endif
+      endif
     endif
   endif
 
@@ -444,17 +396,17 @@ SLEPC_INCLUDE_PATH =#
 SLEPC_LIBRARIES =#
 SLEPC_LIB_PATH =#
 ifeq (${OPENCMISS_USE_SLEPC},true)
-  SLEPC_LIBRARIES = -lslepc
-  SLEPC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  SLEPC_LIBRARIES += -lslepc
+  SLEPC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #TAO
 TAO_INCLUDE_PATH =#
 TAO_LIBRARIES =#
 TAO_LIB_PATH =#
-ifeq (${OPENCMISS_USE_TAU},true)
-  TAO_LIBRARIES = -ltao
-  TAO_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+ifeq (${OPENCMISS_USE_TAO},true)
+  TAO_LIBRARIES += -ltao
+  TAO_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #PETSc
@@ -464,40 +416,40 @@ PETSC_LIB_PATH =#
 ifeq (${OPENCMISS_USE_PETSC},true)
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/include/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/include )
     PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/conf )
-    PETSC_TSLIB = $(call searchdirs, $(OCE_CM_INSTALL_DIR)/lib/, libpetscts.a )
+    PETSC_TSLIB = $(call searchdirs, $(OCE_CM_INSTALL_DIR)/lib, libpetscts.a )
     ifeq (,$(PETSC_TSLIB))
-      PETSC_LIBRARIES = -lpetsc -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl #Prob newer version of PETSc which has rolled all the libraries into one.
+      PETSC_LIBRARIES += -lpetsc -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl #Prob newer version of PETSc which has rolled all the libraries into one.
     else
-      PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl
+      PETSC_LIBRARIES += -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl
     endif
-    PETSC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
     ifeq ($(ABI),64)
-      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
-      PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/ )
-      PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif/ )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64 )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib64 )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif )
     else
-      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
-      PETSC_LIB_PATH += $(addprefix -L, /usr/lib/ )
-      PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif )
     endif
   else
     ifeq ($(OPERATING_SYSTEM),aix)# AIX
       PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/include/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/conf/ )
-      PETSC_TSLIB = $(call searchdirs, $(OCE_CM_INSTALL_DIR)/lib/, libpetscts.a )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/include )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/conf )
+      PETSC_TSLIB = $(call searchdirs, $(OCE_CM_INSTALL_DIR)/lib, libpetscts.a )
       ifeq (,$(PETSC_TSLIB))
-        PETSC_LIBRARIES = -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
+        PETSC_LIBRARIES += -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
       else
-        PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+        PETSC_LIBRARIES += -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
       endif
-      PETSC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
-      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib )
     else# windows
-      PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-      PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
+      PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib )
+      PETSC_INCLUDE_PATH += $(addprefix -I, /home/users/local )
     endif
   endif
 endif
@@ -507,8 +459,8 @@ UMFPACK_INCLUDE_PATH =#
 UMFPACK_LIBRARIES =#
 UMFPACK_LIB_PATH =#
 ifeq (${OPENCMISS_USE_UMFPACK},true)
-  UMFPACK_LIBRARIES = -lamd -lcamd -lccolamd -lcolamd -lcholmod -lumfpack -lsparsesuiteconfig
-  UMFPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  UMFPACK_LIBRARIES += -lumfpack -lcholmod -lamd -lcamd -lccolamd -lcolamd -lsuitesparseconfig
+  UMFPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #SUNDIALS
@@ -516,8 +468,8 @@ SUNDIALS_INCLUDE_PATH =#
 SUNDIALS_LIBRARIES =#
 SUNDIALS_LIB_PATH =#
 ifeq (${OPENCMISS_USE_SUNDIALS},true)
-  SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
-  SUNDIALS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  SUNDIALS_LIBRARIES += -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
+  SUNDIALS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #HYPRE
@@ -525,8 +477,8 @@ HYPRE_INCLUDE_PATH =#
 HYPRE_LIBRARIES =#
 HYPRE_LIB_PATH =#
 ifeq (${OPENCMISS_USE_HYPRE},true)
-  HYPRE_LIBRARIES = -lHYPRE
-  HYPRE_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  HYPRE_LIBRARIES += -lHYPRE
+  HYPRE_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #PaStiX and Scotch
@@ -534,8 +486,8 @@ PASTIX_INCLUDE_PATH =#
 PASTIX_LIBRARIES =#
 PASTIX_LIB_PATH =#
 ifeq (${OPENCMISS_USE_PASTIX},true)
-  PASTIX_LIBRARIES = -lptscotch -lptscotcherr -lptscotcherrexit -lscotch -lscotcherr -lscotcherrexit -lpastix -lrt
-  PASTIX_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  PASTIX_LIBRARIES += -lpastix -lptscotch -lptscotcherr -lptscotcherrexit -lscotch -lscotcherr -lscotcherrexit -lrt
+  PASTIX_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #SuperLU_DIST and SuperLU
@@ -543,8 +495,8 @@ SUPERLU_INCLUDE_PATH =#
 SUPERLU_LIBRARIES =#
 SUPERLU_LIB_PATH =#
 ifeq (${OPENCMISS_USE_SUPERLU},true)
-  SUPERLU_LIBRARIES = -lsuperlu -lsuperlu_dist
-  SUPERLU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  SUPERLU_LIBRARIES += -lsuperlu -lsuperlu_dist
+  SUPERLU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #PLAPACK
@@ -552,8 +504,8 @@ PLAPACK_INCLUDE_PATH =#
 PLAPACK_LIBRARIES =#
 PLAPACK_LIB_PATH =#
 ifeq (${OPENCMISS_USE_PLAPACK},true)
-  PLAPACK_LIBRARIES = -lPLAPACK
-  PLAPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  PLAPACK_LIBRARIES += -lPLAPACK
+  PLAPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #MUMPS, ScaLAPACK and BLACS
@@ -561,8 +513,10 @@ MUMPS_INCLUDE_PATH =#
 MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
 ifeq (${OPENCMISS_USE_MUMPS},true)
-  MUMPS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 -lscalapack -ldmumps -lmumps_common -lpord
-  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  MUMPS_LIBRARIES += $(call convertlistlink,$(OCE_BLACSLIBS)) $(call convertlistlink,$(OCE_SCALAPACKLIBS)) -ldmumps -lmumps_common -lpord
+  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_BLACSLIBPATH) )
+  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_SCALAPACKLIBPATH) )
+  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #ParMETIS
@@ -570,8 +524,8 @@ PARMETIS_INCLUDE_PATH = #
 PARMETIS_LIBRARIES = #
 PARMETIS_LIB_PATH =#
 ifeq (${OPENCMISS_USE_PARMETIS},true)
-  PARMETIS_LIBRARIES = -lparmetis -lmetis
-  PARMETIS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  PARMETIS_LIBRARIES += -lparmetis -lmetis
+  PARMETIS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #CUBPACK
@@ -580,22 +534,28 @@ CUBPACK_LIBRARIES = #
 CUBPAK_LIB_PATH =#
 ifeq (${OPENCMISS_USE_CUBPACK},true)
   CUBPACK_LIBRARIES = -lcubpack
-  CUBPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib/ )
+  CUBPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
-#TAU/PAPI
+#TAU
 TAU_INCLUDE_PATH =#
 TAU_LIBRARIES =#
 TAU_LIB_PATH =#
 ifeq (${OPENCMISS_USE_TAU},true)
   CPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
   FPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
-  TAU_LIBRARIES += -ltau-memory-phase-papi-mpi -l:libpapi.a -l:libpfm.a
-  ifeq ($(ABI),32)
-    TAU_LIB_PATH += -L$(OCE_CM_INSTALL_DIR)/lib
-  else
-    TAU_LIB_PATH = -L$(OCE_CM_INSTALL_DIR)/lib -L$(OCE_CM_INSTALL_DIR)/lib64
-  endif
+  TAU_LIBRARIES += -lTAU_tf
+  TAU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+endif
+
+#PAPI
+PAPI_INCLUDE_PATH =#
+PAPI_LIBRARIES =#
+PAPI_LIB_PATH =#
+ifeq (${OPENCMISS_USE_PAPI},true)
+  PAPI_LIBRARIES += $(call convertlistlink,$(OCE_PAPILIBS))
+  PAPI_INCLUDE_PATH += $(addprefix -I, $(OCE_PAPIINCLUDEPATH) )
+  PAPI_LIB_PATH += $(addprefix -L, $(OCE_PAPILIBPATH) )
 endif
 
 #CELLML
@@ -606,10 +566,11 @@ ifeq (${OPENCMISS_USE_CELLML},true)
   CPPFLAGS += -DUSECELLML -DOPENCMISS_USE_CELLML
   FPPFLAGS += -DUSECELLML -DOPENCMISS_USE_CELLML
   CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2 -lz
-  CELLML_INCLUDE_PATH += $(addprefix -I, $(OCE_CELLML_INSTALL_DIR)/include/ )
-  CELLML_LIB_PATH += $(addprefix -L, $(OC_CELLML_INSTALL_DIR)/lib/ )
-  CELLML_LIB_PATH += $(addprefix -L, $(OCE_CELLML_INSTALL_DIR)/lib/ )
-  CELLML_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib/ )
+  CELLML_INCLUDE_PATH += $(addprefix -I, $(OC_CELLML_INSTALL_DIR)/include/ )
+  CELLML_INCLUDE_PATH += $(addprefix -I, $(OCE_CELLML_INSTALL_DIR)/include )
+  CELLML_LIB_PATH += $(addprefix -L, $(OC_CELLML_INSTALL_DIR)/lib )
+  CELLML_LIB_PATH += $(addprefix -L, $(OCE_CELLML_INSTALL_DIR)/lib )
+  CELLML_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib )
 endif
 
 #FIELDML
@@ -622,18 +583,19 @@ ifeq (${OPENCMISS_USE_FIELDML},true)
   FPPFLAGS += -DUSEFIELDML -DOPENCMISS_USE_FIELDML
   MOD_FIELDML_TARGET = MOD_FIELDML
   FIELDML_LIBRARIES += -lfieldml_api -lfieldml_io_api -lxml2 -lz
-  FIELDML_INCLUDE_PATH += $(addprefix -I, $(OCE_FIELDML_INSTALL_DIR)/include/ )
-  FIELDML_LIB_PATH += $(addprefix -L, $(OCE_FIELDML_INSTALL_DIR)/lib/ )
-  FIELDML_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib/ )
+  FIELDML_INCLUDE_PATH += $(addprefix -I, $(OCE_FIELDML_INSTALL_DIR)/include )
+  FIELDML_LIB_PATH += $(addprefix -L, $(OCE_FIELDML_INSTALL_DIR)/lib )
+  FIELDML_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib )
 endif
 
 #NetCDF
 NETCDF_INCLUDE_PATH =#
 NETCDF_LIBRARIES =#
 NETCDF_LIB_PATH =#
-ifeq (${OPENCMISS_USE_HDF5},true)
-  NETCDF_LIBRARIES +=  -lnetcdf_c++ -lnetcdf
-  NETCDF_LIB_PATH += $(addprefix -L, $(OCE_FIELDML_INSTALL_DIR)/lib/ )
+ifeq (${OPENCMISS_USE_NETCDF},true)
+  NETCDF_LIBRARIES += $(call convertlistlink,$(OCE_NETCDFLIBS))
+  NETCDF_LIB_PATH += $(addprefix -L, $(OCE_NETCDFLIBPATH) )
+  NETCDF_INCLUDE_PATH += $(addprefix -I, $(OCE_NETCDFINCLUDEPATH) )
 endif
 
 #HDF5
@@ -641,9 +603,9 @@ HDF5_INCLUDE_PATH =#
 HDF5_LIBRARIES =#
 HDF5_LIB_PATH =#
 ifeq (${OPENCMISS_USE_HDF5},true)
-  HDF5_LIBRARIES +=  -lhdf5_fortran -lhdf5 -lsz -lhdf5hl_fortran -lhdf5_hl -lz
-  HDF5_LIB_PATH += $(addprefix -L, $(OCE_FIELDML_INSTALL_DIR)/lib/ )
-  HDF5_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib/ )
+  HDF5_LIBRARIES += $(call convertlistlink,$(OCE_HDF5LIBS))
+  HDF5_LIB_PATH += $(addprefix -L, $(OCE_HDF5LIBPATH) )
+  HDF5_INCLUDE_PATH += $(addprefix -I, $(OCE_HDF5INCLUDEPATH) )
 endif
 
 #CUDA
@@ -651,13 +613,9 @@ CUDA_INCLUDE_PATH =#
 CUDA_LIBRARIES =#
 CUDA_LIB_PATH =#
 ifeq (${OPENCMISS_USE_CUDA},true)
-  CUDA_LIBRARIES += -lcufft -lcublas -lcudart -lcusparse
-  CUDA_INCLUDE_PATH += $(addprefix -I, ${CUDA_ROOT}/include/ )
-  ifeq ($(ABI),32)
-    CUDA_LIB_PATH += $(addprefix -L, ${CUDA_ROOT}/lib/ )
-  else
-    CUDA_LIB_PATH += $(addprefix -L, ${CUDA_ROOT}/lib64/ )
-  endif
+  CUDA_LIBRARIES += $(call convertlistlink,$(OCE_CUDALIBS))
+  CUDA_INCLUDE_PATH += $(addprefix -L, $(OCE_CUDALIBPATH) )
+  CUDA_INCLUDE_PATH += $(addprefix -I, $(OCE_CUDAINCLUDEPATH) )
 endif
 
 #MPI
@@ -665,68 +623,14 @@ MPI_LIB_PATH =#
 MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-<<<<<<< HEAD
-  MPI_LIBRARIES += $(OCE_MPILIBRARIES)
+  MPI_LIBRARIES += $(call convertlistlink,$(OCE_MPILIBS))
   MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
   MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINCLUDEPATH) )
-  ifneq (,$(OCE_MPIEXTRALIBRARIES))
-    MPI_LIBRARIES += $(OCE_MPIEXTRALIBRARIES)
-    MPI_LIB_PATH += $(addprefix -L, $(OCE_MPIEXTRALIBPATH) )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIEXTRAINCLUDEPATH) )
-=======
-  ifeq ($(MPI),mpich2)
-    MPI_LIBRARIES += -lmpichf90
-    ifeq ($(MPIPROF),true)
-      MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
-    endif
-    MPL_LIB = $(call searchdirs, $(MPI_DIR)/lib/, libmpl* )
-    MPI_LIBRARIES += -lmpich
-    ifneq (,$(MPL_LIB))
-      MPI_LIBRARIES += -lmpl
-    endif
-    MPI_LIBRARIES += -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-  else
-    ifeq ($(MPI),intel)
-      ifeq ($(MPIPROF),true)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
-        MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
-        MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
-      endif
-      MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
-      ifeq ($(ABI),64)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
-        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
-      else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
-        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
-      endif
-    else
-      ifeq ($(MPI),openmpi)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
-        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil -lpthread
-        MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-      else
-        ifeq ($(MPI),mvapich2)
-          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-          MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
-          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-        else
-          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-          MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-        endif
-      endif
-    endif
->>>>>>> 8b3f9e9726ffabb6135067681e0b6d7ff6edd410
-  endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MPI_LIBRARIES += $(OCE_MPILIBRARIES)
+    MPI_LIBRARIES += $(call convertlistlink,$(OCE_MPILIBS))
     MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINSTALLPATH) )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINCLUDEPATH) )
   else# windows
     MPI_LIBRARIES += $(OCE_MPILIBRARIES)
     MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
@@ -735,14 +639,13 @@ else
 endif
 
 #BLAS/lapack
-BLASLAPACK_INCLUDE_PATH =  $(addprefix -I, $(OCE_LAPACKINCLUDEPATH) )
-BLASLAPACK_INCLUDE_PATH =  $(addprefix -I, $(OCE_BLASINCLUDEPATH) )
 BLASLAPACK_LIB_PATH = $(addprefix -L, $(OCE_LAPACKLIBPATH) )
-BLASLAPACK_LIB_PATH = $(addprefix -L, $(OCE_BLASLIBPATH) )
-BLASLAPACK_LIBRARIES = $(OCE_LAPACKLIBRARIES) $(OCE_BLASLIBRARIES)
+BLASLAPACK_LIB_PATH += $(addprefix -L, $(OCE_BLASLIBPATH) )
+BLASLAPACK_LIBRARIES = $(call convertlistlink,$(OCE_LAPACKLIBSF) $(OCE_BLASLIBSF))
 
-EXTERNAL_LIBRARIES += $(strip $(SLEPC_LIBRARIES) $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(UMFPACK_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(PASTIX_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(PARMETIS_LIBRARIES) $(CUBPACK_LIBRARIES) $(TAU_LIBRARIES) $(NETCDF_LIBRARIES) $(HDF5_LIBRAREIS) $(CUDA_LIBRARIES) $(MPI_LIBRARIES) $(BLASLAPACK_LIBRARIES))
-EXTERNAL_LIB_PATH += $(strip $(SLEPC_LIB_PATH) $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(UMFPACK_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(PASTIX_LIB_PATH) $(PASTIX_LIB_PATH) $(MUMPS_LIB_PATH) $(PARMETIS_LIB_PATH) $(CUBPACK_LIB_PATH) $(TAU_LIB_PATH) $(NETCDF_LIB_PATH) $(HDF5_LIB_PATH) $(CUDA_LIB_PATH) $(MPI_LIB_PATH) $(BLASLAPACK_LIB_PATH))
-EXTERNAL_INCLUDE_PATH += $(strip $(SLEPC_INCLUDE_PATH) $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(UMFPACK_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(SUPERLU_INCLUDE_PATH) $(PASTIX_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(CUBPACK_INCLUDE_PATH) $(TAU_INCLUDE_PATH) $(NETCDF_INCLUDE_PATH) $(HDF5_INCLUDE_PATH) $(CUDA_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLASLAPACK_INCLUDE_PATH))
+EXTERNAL_LIBRARIES += $(strip $(SLEPC_LIBRARIES) $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(UMFPACK_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(PASTIX_LIBRARIES) $(SUPERLU_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(PARMETIS_LIBRARIES) $(CUBPACK_LIBRARIES) $(TAU_LIBRARIES) $(PAPI_LIBRARIES) $(CELLML_LIBRARIES) $(FIELDML_LIBRARIES) $(NETCDF_LIBRARIES) $(HDF5_LIBRARIES) $(CUDA_LIBRARIES) $(MPI_LIBRARIES) $(BLASLAPACK_LIBRARIES))
+#Note put MPI path in before NetCDF and HDF5 incase we have system NetCDF and HDF5 but OCE MPI.
+EXTERNAL_LIB_PATH += $(strip $(SLEPC_LIB_PATH) $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(UMFPACK_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(PASTIX_LIB_PATH)$(SUPERLU_LIB_PATH)  $(PLAPACK_LIB_PATH) $(MUMPS_LIB_PATH) $(PARMETIS_LIB_PATH) $(CUBPACK_LIB_PATH) $(TAU_LIB_PATH) $(PAPI_LIB_PATH) $(CELLML_LIB_PATH) $(FIELDML_LIB_PATH) $(MPI_LIB_PATH) $(NETCDF_LIB_PATH) $(HDF5_LIB_PATH) $(CUDA_LIB_PATH) $(BLASLAPACK_LIB_PATH))
+EXTERNAL_INCLUDE_PATH += $(strip $(SLEPC_INCLUDE_PATH) $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(UMFPACK_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(PASTIX_INCLUDE_PATH) $(SUPERLU_INCLUDE_PATH) $(PLAPACK_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(CUBPACK_INCLUDE_PATH) $(TAU_INCLUDE_PATH)  $(PAPI_INCLUDE_PATH) $(CELLML_INCLUDE_PATH) $(FIELDML_INCLUDE_PATH) $(NETCDF_INCLUDE_PATH) $(HDF5_INCLUDE_PATH) $(CUDA_INCLUDE_PATH) $(MPI_INCLUDE_PATH) )
 
 # vim:filetype=make

@@ -94,7 +94,7 @@ FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
 
 .SUFFIXES:	.f90	.c
 
-main: preliminaries \
+main:	preliminaries \
 	$(LIBRARY) \
 	$(MOD_INCLUDE) \
 	$(MOD_FIELDML_TARGET) \
@@ -1735,7 +1735,7 @@ PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
 PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
 PYTHON_WRAPPER_OBJ = $(OBJECT_DIR)/opencmiss_wrap.o
 PYTHON_INCLUDES = $(shell python-config --includes)
-NUMPY_INCLUDE = $(shell python $(GLOBAL_CM_ROOT)/utils/numpy_include.py)
+NUMPY_INCLUDE = $(shell python $(OC_CM_GLOBAL_ROOT)/utils/numpy_include.py)
 
 python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO) python_cp
 
@@ -1748,14 +1748,9 @@ python_cp: $(PYTHON_MODULE_SO)
 $(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) SWIG $@
 
-<<<<<<< HEAD
-$(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py $(SOURCE_DIR)/opencmiss.f90
-	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
-=======
 $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py \
 	$(SOURCE_DIR)/opencmiss.f90 $(BINDINGS_DIR)/python/extra_content.py
-	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
->>>>>>> 8b3f9e9726ffabb6135067681e0b6d7ff6edd410
+	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
 
 $(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
 # Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
@@ -1864,4 +1859,4 @@ help:
 # Aliases
 #-----------------------------------------------------------------------------
 
-include $(UTILS_ROOT)/Makefile_Aliases.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_Aliases.inc

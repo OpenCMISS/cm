@@ -557,6 +557,22 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatCreate
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+    SUBROUTINE MatCreateAIJ(comm,localm,localn,globalm,globaln,diagnumbernzperrow,diagnumbernzeachrow,offdiagnumbernzperrow, &
+      & offdiagnumbernzeachrow,A,ierr)
+      MPI_Comm comm
+      PetscInt localm
+      PetscInt localn
+      PetscInt globalm
+      PetscInt globaln
+      PetscInt diagnumbernzperrow
+      PetscInt diagnumbernzeachrow(*)
+      PetscInt offdiagnumbernzperrow
+      PetscInt offdiagnumbernzeachrow(*)
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE MatCreateAIJ
+#else
     SUBROUTINE MatCreateMPIAIJ(comm,localm,localn,globalm,globaln,diagnumbernzperrow,diagnumbernzeachrow,offdiagnumbernzperrow, &
       & offdiagnumbernzeachrow,A,ierr)
       MPI_Comm comm
@@ -571,7 +587,20 @@ MODULE CMISS_PETSC
       Mat A
       PetscInt ierr
     END SUBROUTINE MatCreateMPIAIJ
+#endif    
         
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+    SUBROUTINE MatCreateDense(comm,localm,localn,globalm,globaln,matrixdata,A,ierr)
+      MPI_Comm comm
+      PetscInt localm
+      PetscInt localn
+      PetscInt globalm
+      PetscInt globaln
+      PetscScalar matrixdata(*)
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE MatCreateDense
+#else
     SUBROUTINE MatCreateMPIDense(comm,localm,localn,globalm,globaln,matrixdata,A,ierr)
       MPI_Comm comm
       PetscInt localm
@@ -582,6 +611,7 @@ MODULE CMISS_PETSC
       Mat A
       PetscInt ierr
     END SUBROUTINE MatCreateMPIDense
+#endif    
         
     SUBROUTINE MatCreateSeqAIJ(comm,m,n,numbernzperrow,numbernzeachrow,A,ierr)
       MPI_Comm comm
@@ -895,6 +925,7 @@ MODULE CMISS_PETSC
     END SUBROUTINE SNESLineSearchSetOrder
 #endif
     
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
     SUBROUTINE SNESLineSearchSetParams(snes,alpha,maxstep,steptol,ierr)
       SNES snes
       PetscReal alpha
@@ -902,6 +933,7 @@ MODULE CMISS_PETSC
       PetscReal steptol
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSetParams
+#endif    
     
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
     SUBROUTINE SNESLineSearchSetType(snes,linesearchtype,ierr)
@@ -1401,7 +1433,7 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_MATCOLORING_NATURAL,PETSC_MATCOLORING_SL,PETSC_MATCOLORING_LF,PETSC_MATCOLORING_ID
 
   PUBLIC PETSC_MATINITIALISE,PETSC_MATFINALISE,PETSC_MATASSEMBLYBEGIN,PETSC_MATASSEMBLYEND,PETSC_MATCREATE, &
-    & PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE,PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
+    & PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
     & PETSC_MATFDCOLORINGCREATE,PETSC_MATFDCOLORINGDESTROY,PETSC_MATFDCOLORINGFINALISE,PETSC_MATFDCOLORINGINITIALISE, &
     & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATFDCOLORINGSETFUNCTION,PETSC_MATFDCOLORINGSETFUNCTIONSNES, &
     & PETSC_MATFDCOLORINGSETPARAMETERS, &
@@ -1409,7 +1441,12 @@ MODULE CMISS_PETSC
     & PETSC_MATGETROW,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATRESTOREARRAYF90,PETSC_MATRESTOREROW, &
     & PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES, &
     & PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES,PETSC_MATSETTYPE
-
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  PUBLIC PETSC_MATCREATEAIJ,PETSC_MATCREATEDENSE
+#else
+  PUBLIC PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE
+#endif
+  
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
   PUBLIC PETSC_MAT_SOLVER_SPOOLES,PETSC_MAT_SOLVER_SUPERLU,PETSC_MAT_SOLVER_SUPERLU_DIST,PETSC_MAT_SOLVER_UMFPACK, &
     & PETSC_MAT_SOLVER_ESSL,PETSC_MAT_SOLVER_LUSOL,PETSC_MAT_SOLVER_MUMPS,PETSC_MAT_SOLVER_MATLAB,PETSC_MAT_SOLVER_PASTIX, &
@@ -1488,13 +1525,13 @@ MODULE CMISS_PETSC
   
   PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
     & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP, &
-    & PETSC_SNESLINESEARCHSETPARAMS,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
+    & PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
     & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,   PETSC_SNESSETKSP, &
     & PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC PETSC_SNESLINESEARCHSETORDER,PETSC_SNESLINESEARCHSETTYPE
 #else
-  PUBLIC PETSC_SNESLINESEARCHSET
+  PUBLIC PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS
 #endif
   
   PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCOPY,PETSC_VECCREATE, &
@@ -2628,6 +2665,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !>Buffer routine to the PETSc MatCreateAIJ routine.
+  SUBROUTINE PETSC_MATCREATEAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
+    & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
+
+    !Argument Variables
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
+    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global rows
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global columns
+    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the off-diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the off-diagonal part of the matrix
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATCREATEAIJ",ERR,ERROR,*999)
+
+    CALL MatCreateAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
+      & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A%MAT,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatCreateAIJ",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATCREATEAIJ")
+    RETURN
+999 CALL ERRORS("PETSC_MATCREATEAIJ",ERR,ERROR)
+    CALL EXITS("PETSC_MATCREATEAIJ")
+    RETURN 1
+  END SUBROUTINE PETSC_MATCREATEAIJ
+#else  
   !>Buffer routine to the PETSc MatCreateMPIAIJ routine.
   SUBROUTINE PETSC_MATCREATEMPIAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
     & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
@@ -2664,11 +2739,45 @@ CONTAINS
     CALL EXITS("PETSC_MATCREATEMPIAIJ")
     RETURN 1
   END SUBROUTINE PETSC_MATCREATEMPIAIJ
+#endif  
     
   !
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !>Buffer routine to the PETSc MatCreateDense routine.
+  SUBROUTINE PETSC_MATCREATEDENSE(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A,ERR,ERROR,*)
+
+    !Argument Variables
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
+    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global rows
+    REAL(DP), INTENT(IN) :: MATRIX_DATA(*) !<Optional, the allocated matrix data.
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATCREATEDENSE",ERR,ERROR,*999)
+
+    CALL MatCreateDense(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A%MAT,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatCreateDense",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATCREATEDENSE")
+    RETURN
+999 CALL ERRORS("PETSC_MATCREATEDENSE",ERR,ERROR)
+    CALL EXITS("PETSC_MATCREATEDENSE")
+    RETURN 1
+  END SUBROUTINE PETSC_MATCREATEDENSE
+#else  
   !>Buffer routine to the PETSc MatCreateMPIDense routine.
   SUBROUTINE PETSC_MATCREATEMPIDENSE(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A,ERR,ERROR,*)
 
@@ -2700,7 +2809,8 @@ CONTAINS
     CALL EXITS("PETSC_MATCREATEMPIDENSE")
     RETURN 1
   END SUBROUTINE PETSC_MATCREATEMPIDENSE
-    
+#endif
+  
   !
   !================================================================================================================================
   !
@@ -4204,6 +4314,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
   !>Buffer routine to the PETSc SNESLineSearchSetParams routine.
   SUBROUTINE PETSC_SNESLINESEARCHSETPARAMS(SNES_,ALPHA,MAXSTEP,STEPTOL,ERR,ERROR,*)
 
@@ -4232,6 +4343,7 @@ CONTAINS
     CALL EXITS("PETSC_SNESLINESEARCHSETPARAMS")
     RETURN 1
   END SUBROUTINE PETSC_SNESLINESEARCHSETPARAMS
+#endif  
     
   !
   !================================================================================================================================
