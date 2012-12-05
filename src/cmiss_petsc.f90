@@ -918,8 +918,14 @@ MODULE CMISS_PETSC
     END SUBROUTINE SNESLineSearchSet
     
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-    SUBROUTINE SNESLineSearchSetOrder(snes,linesearchorder,ierr)
-      SNES snes
+    SUBROUTINE SNESLineSearchSetComputeNorms(linesearch,flag,ierr)
+      SNESLineSearch linesearch
+      PetscBool flag
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetComputeNorms
+
+    SUBROUTINE SNESLineSearchSetOrder(linesearch,linesearchorder,ierr)
+      SNESLineSearch linesearch
       SNESLineSearchOrder linesearchorder
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSetOrder
@@ -936,8 +942,14 @@ MODULE CMISS_PETSC
 #endif    
     
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-    SUBROUTINE SNESLineSearchSetType(snes,linesearchtype,ierr)
+    SUBROUTINE SNESGetSNESLineSearch(snes,linesearch,ierr)
       SNES snes
+      SNESLineSearch linesearch
+      PetscInt ierr
+    END SUBROUTINE SNESGetSNESLineSearch
+
+    SUBROUTINE SNESLineSearchSetType(linesearch,linesearchtype,ierr)
+      SNESLineSearch linesearch
       SNESLineSearchType linesearchtype
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSetType
@@ -1529,7 +1541,8 @@ MODULE CMISS_PETSC
     & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,   PETSC_SNESSETKSP, &
     & PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  PUBLIC PETSC_SNESLINESEARCHSETORDER,PETSC_SNESLINESEARCHSETTYPE
+  PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
+  PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
 #else
   PUBLIC PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS
 #endif
@@ -4222,7 +4235,91 @@ CONTAINS
     CALL EXITS("PETSC_SNESGETKSP")
     RETURN 1
   END SUBROUTINE PETSC_SNESGETKSP
-    
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !>Buffer routine to the PETSc SNESGetSNESLineSearch routine.
+  SUBROUTINE Petsc_SnesGetSnesLineSearch(snes_,lineSearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: snes_ !<The SNES to get the SNES line search for
+    TYPE(PetscSnesLinesearchType), INTENT(OUT) :: lineSearch !<On return, the SNES line search object
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Petsc_SnesGetSnesLineSearch",err,error,*999)
+
+    CALL SNESGetSNESLineSearch(snes_%snes_,lineSearch%snesLineSearch,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESGetSNESLineSearch",err,error,*999)
+    ENDIF
+
+    CALL Exits("Petsc_SnesGetSnesLineSearch")
+    RETURN
+999 CALL Errors("Petsc_SnesGetSnesLineSearch",err,error)
+    CALL Exits("Petsc_SnesGetSnesLineSearch")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesGetSnesLineSearch
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !Finalise the PETSc SNES line search structure
+  SUBROUTINE Petsc_SnesLineSearchFinalise(lineSearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Petsc_SnesLineSearchFinalise",err,error,*999)
+
+    ! We don't actually call PETSc's SNESLineSearchDestroy as PETSc accesses
+    ! the LineSearch when calling SNESDestroy and also destroys it when
+    ! calling SNESDestroy, so we'll just let PETSc clean it up.
+    lineSearch%snesLineSearch=PETSC_NULL
+
+    CALL Exits("Petsc_SnesLineSearchFinalise")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchFinalise",err,error)
+    CALL Exits("Petsc_SnesLineSearchFinalise")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchFinalise
+
+  !
+  !================================================================================================================================
+  !
+
+  !Initialise the PETSc SNES line search structure
+  SUBROUTINE Petsc_SnesLineSearchInitialise(lineSearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL Enters("Petsc_SnesLineSearchInitialise",err,error,*999)
+
+    lineSearch%snesLineSearch=PETSC_NULL
+
+    CALL Exits("Petsc_SnesLineSearchInitialise")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchInitialise",err,error)
+    CALL Exits("Petsc_SnesLineSearchInitialise")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchInitialise
+#endif
+
   !
   !================================================================================================================================
   !
@@ -4266,49 +4363,81 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_SNESLINESEARCHSET
 #endif
-    
+
   !
   !================================================================================================================================
   !
- 
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc SNESLineSearchSetOrder routine.
-  SUBROUTINE PETSC_SNESLINESEARCHSETOrder(SNES_,LINESEARCHORDER,ERR,ERROR,*)
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !>Buffer routine to the PETSc SNESLineSearchSetComputeNorms routine.
+  SUBROUTINE Petsc_SnesLineSearchSetComputeNorms(lineSearch,computeNorms,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the line search order for
-    SNESLineSearchOrder, INTENT(IN) :: LINESEARCHORDER !<The line search order to set.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set whether to compute norms
+    PetscBool, INTENT(IN) :: computeNorms !<Whether to compute norms
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_SNESLINESEARCHSETORDER",ERR,ERROR,*999)
+    CALL Enters("Petsc_SnesLineSearchSetComputeNorms",err,error,*999)
+
+    CALL SNESLineSearchSetComputeNorms(lineSearch%snesLineSearch,computeNorms,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESLineSearchSetComputeNorms",err,error,*999)
+    ENDIF
+
+    CALL Exits("Petsc_SnesLineSearchSetComputeNorms")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchSetComputeNorms",err,error)
+    CALL Exits("Petsc_SnesLineSearchSetComputeNorms")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchSetComputeNorms
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !>Buffer routine to the PETSc SNESLineSearchSetOrder routine.
+  SUBROUTINE Petsc_SnesLineSearchSetOrder(lineSearch,lineSearchOrder,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set the line search order for
+    SNESLineSearchOrder, INTENT(IN) :: lineSearchOrder !<The line search order to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL Enters("Petsc_SnesLineSearchSetOrder",err,error,*999)
 
     SELECT CASE(LINESEARCHORDER)
     CASE(PETSC_SNES_LINESEARCH_LINEAR)
-      CALL SNESLineSearchSetOrder(SNES_%SNES_,PETSC_SNES_LINESEARCH_LINEAR,ERR)
+      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,PETSC_SNES_LINESEARCH_LINEAR,err)
     CASE(PETSC_SNES_LINESEARCH_QUADRATIC)
-      CALL SNESLineSearchSetOrder(SNES_%SNES_,PETSC_SNES_LINESEARCH_QUADRATIC,ERR)
+      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,PETSC_SNES_LINESEARCH_QUADRATIC,err)
     CASE(PETSC_SNES_LINESEARCH_CUBIC)
-      CALL SNESLineSearchSetOrder(SNES_%SNES_,PETSC_SNES_LINESEARCH_CUBIC,ERR)
+      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,PETSC_SNES_LINESEARCH_CUBIC,err)
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid line search order.",ERR,ERROR,*999)
+      CALL FlagError("Invalid line search order.",err,error,*999)
     END SELECT
-    IF(ERR/=0) THEN
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchSetOrder",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESLineSearchSetOrder",err,error,*999)
     ENDIF
-    
-    CALL EXITS("PETSC_SNESLINESEARCHSETORDER")
+
+    CALL Exits("Petsc_SnesLineSearchSetOrder")
     RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHSETORDER",ERR,ERROR)
-    CALL EXITS("PETSC_SNESLINESEARCHSETORDER")
+999 CALL Errors("Petsc_SnesLineSearchSetOrder",err,error)
+    CALL Exits("Petsc_SnesLineSearchSetOrder")
     RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHSETORDER
+  END SUBROUTINE Petsc_SnesLineSearchSetOrder
 #endif
-  
 
   !
   !================================================================================================================================
@@ -4349,35 +4478,34 @@ CONTAINS
   !================================================================================================================================
   !
   
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR >= 3 )
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   !>Buffer routine to the PETSc SNESLineSearchSetType routine.
-  SUBROUTINE PETSC_SNESLINESEARCHSETTYPE(SNES_,LINESEARCHTYPE,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesLineSearchSetType(lineSearch,lineSearchType,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the line search type for
-    SNESLineSearchType, INTENT(IN) :: LINESEARCHTYPE !<The line search type to set.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set the line search type for
+    SNESLineSearchType, INTENT(IN) :: lineSearchType !<The line search type to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    CALL ENTERS("PETSC_SNESLINESEARCHSETTYPE",ERR,ERROR,*999)
+    CALL Enters("Petsc_SnesLineSearchSetType",err,error,*999)
 
-    CALL SNESLineSearchSetType(SNES_%SNES_,LINESEARCHTYPE,ERR)
-    IF(ERR/=0) THEN
+    CALL SNESLineSearchSetType(LINESEARCH%snesLineSearch,lineSearchType,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchSetType",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESLineSearchSetType",err,error,*999)
     ENDIF
-    
-    CALL EXITS("PETSC_SNESLINESEARCHSETTYPE")
+
+    CALL Exits("Petsc_SnesLineSearchSetType")
     RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHSETTYPE",ERR,ERROR)
-    CALL EXITS("PETSC_SNESLINESEARCHSETTYPE")
+999 CALL Errors("Petsc_SnesLineSearchSetType",err,error)
+    CALL Exits("Petsc_SnesLineSearchSetType")
     RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHSETTYPE
+  END SUBROUTINE Petsc_SnesLineSearchSetType
 #endif
-  
+
   !
   !================================================================================================================================
   !

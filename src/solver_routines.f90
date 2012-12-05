@@ -177,9 +177,10 @@ MODULE SOLVER_ROUTINES
   !> \brief The types line search techniques for Newton line search nonlinear solvers
   !> \see SOLVER_ROUTINES
   !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_LINEAR=1 !<Linear search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_QUADRATIC=2 !<Quadratic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_CUBIC=3!<Cubic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONORMS=1 !<No norms line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_LINEAR=2 !<Linear search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_QUADRATIC=3 !<Quadratic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_CUBIC=4!<Cubic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
   !>@}
 #else
   !> \addtogroup SOLVER_ROUTINES_NewtonLineSearchTypes SOLVER_ROUTINES::NewtonLineSearchTypes
@@ -391,7 +392,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_NEWTON_LINESEARCH,SOLVER_NEWTON_TRUSTREGION
 
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  PUBLIC SOLVER_NEWTON_LINESEARCH_LINEAR,SOLVER_NEWTON_LINESEARCH_QUADRATIC,SOLVER_NEWTON_LINESEARCH_CUBIC
+  PUBLIC SOLVER_NEWTON_LINESEARCH_NONORMS,SOLVER_NEWTON_LINESEARCH_LINEAR,SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
+    & SOLVER_NEWTON_LINESEARCH_CUBIC
 #else
   PUBLIC SOLVER_NEWTON_LINESEARCH_NONORMS,SOLVER_NEWTON_LINESEARCH_NONE,SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
     & SOLVER_NEWTON_LINESEARCH_CUBIC
@@ -13125,23 +13127,30 @@ CONTAINS
                       & LINESEARCH_SOLVER%LINESEARCH_MAXSTEP,LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE, &
                       & ERR,ERROR,*999)
 #else
-!!TODO: We need to investigate the new PETSc 3.3 line search options in full.
-                    !Set the line search type
-                    CALL PETSC_SNESLINESEARCHSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_LINESEARCH_BT,ERR,ERROR,*999)
-                    !Set the line search order
-                    SELECT CASE(LINESEARCH_SOLVER%LINESEARCH_TYPE)
+                    CALL Petsc_SnesGetSnesLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
+                    !Set the line search type and order where applicable
+                    SELECT CASE(linesearch_solver%linesearch_type)
+                    CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
+                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BASIC,err,error,*999)
+                      CALL Petsc_SnesLineSearchSetComputeNorms(linesearch_solver%snesLineSearch,PETSC_FALSE,err,error,*999)
                     CASE(SOLVER_NEWTON_LINESEARCH_LINEAR)
-                      CALL PETSC_SNESLINESEARCHSETORDER(LINESEARCH_SOLVER%SNES,PETSC_SNES_LINESEARCH_LINEAR,ERR,ERROR,*999)
+                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_CP,err,error,*999)
+                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_LINEAR, &
+                        & err,error,*999)
                     CASE(SOLVER_NEWTON_LINESEARCH_QUADRATIC)
-                      CALL PETSC_SNESLINESEARCHSETORDER(LINESEARCH_SOLVER%SNES,PETSC_SNES_LINESEARCH_QUADRATIC,ERR,ERROR,*999)
+                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BT,err,error,*999)
+                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_QUADRATIC, &
+                        & err,error,*999)
                     CASE(SOLVER_NEWTON_LINESEARCH_CUBIC)
-                      CALL PETSC_SNESLINESEARCHSETORDER(LINESEARCH_SOLVER%SNES,PETSC_SNES_LINESEARCH_CUBIC,ERR,ERROR,*999)
+                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BT,err,error,*999)
+                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_CUBIC, &
+                        & err,error,*999)
                     CASE DEFAULT
-                      LOCAL_ERROR="The nonlinear Newton line search order of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%LINESEARCH_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      local_error="The nonlinear Newton line search type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
+                      CALL FlagError(local_error,err,error,*999)
                     END SELECT
-#endif                    
+#endif
                     !Set the tolerances for the SNES solver
                     CALL PETSC_SNESSETTOLERANCES(LINESEARCH_SOLVER%SNES,NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
                       & NEWTON_SOLVER%RELATIVE_TOLERANCE,NEWTON_SOLVER%SOLUTION_TOLERANCE, &
@@ -13202,6 +13211,7 @@ CONTAINS
     IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
       CALL PETSC_ISCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
       CALL PETSC_MATFDCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+      CALL Petsc_SnesLineSearchFinalise(LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
       CALL PETSC_SNESFINALISE(LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
       DEALLOCATE(LINESEARCH_SOLVER)
     ENDIF
@@ -13248,6 +13258,7 @@ CONTAINS
         CALL PETSC_ISCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
         CALL PETSC_MATFDCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
         CALL PETSC_SNESINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
+        CALL Petsc_SnesLineSearchInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*998)
@@ -13597,6 +13608,8 @@ CONTAINS
                   IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
                     SELECT CASE(LINESEARCH_TYPE)
+                    CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
+                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_NONORMS
                     CASE(SOLVER_NEWTON_LINESEARCH_LINEAR)
                       LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_LINEAR
                     CASE(SOLVER_NEWTON_LINESEARCH_QUADRATIC)
