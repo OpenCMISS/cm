@@ -4061,7 +4061,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetObj
   END INTERFACE !CMISSInterfacePointsConnectivity_PointXiSet 
   
-  !!>Update points connectivity information with projection results
+  !>Update points connectivity information with projection results
   INTERFACE CMISSInterfacePointsConnectivity_UpdateFromProjection
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber

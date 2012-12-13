@@ -1665,11 +1665,11 @@ CONTAINS
 
     IF(ASSOCIATED(interface)) THEN
       IF(ASSOCIATED(interface%pointsConnectivity)) THEN
-        CALL FLAG_ERROR("Interface has already got points connectivity associated.",err,error,*999)
+        CALL FLAG_ERROR("Interface has already got points connectivity associated.",err,error,*998)
       ELSE
         !Initialise the poins connectivity
         ALLOCATE(interface%pointsConnectivity,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface points connectivity.",err,error,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface points connectivity.",err,error,*998)
         interface%pointsConnectivity%interface=>interface
         interface%pointsConnectivity%pointsConnectivityFinished=.FALSE.
         interface%pointsConnectivity%interfaceMesh=>interfaceMesh
@@ -2019,6 +2019,8 @@ CONTAINS
                       & InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(2)
                    END SELECT
                  ENDDO !dataPointIdx
+               CASE DEFAULT
+                 ! Do nothing
                END SELECT
              ENDIF
            ENDDO !meshIdx
