@@ -1159,11 +1159,11 @@ CONTAINS
   !
 
   !>Returns the interface condition integration type 
-  SUBROUTINE InterfaceCondition_IntegrationTypeGet(interfaceCondition,InterfaceConditionIntegrationType,err,error,*)
+  SUBROUTINE InterfaceCondition_IntegrationTypeGet(interfaceCondition,interfaceConditionIntegrationType,err,error,*)
 
     !Argument variables
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition to get the operator for
-    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionIntegrationType !<On return, the interface condition integration type. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
+    INTEGER(INTG), INTENT(OUT) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
@@ -1172,7 +1172,7 @@ CONTAINS
 
     IF(ASSOCIATED(interfaceCondition)) THEN
       IF(interfaceCondition%INTERFACE_CONDITION_FINISHED) THEN
-        InterfaceConditionIntegrationType=interfaceCondition%integrationType
+        interfaceConditionIntegrationType=interfaceCondition%integrationType
       ELSE
         CALL FLAG_ERROR("Interface condition has not been finished.",err,error,*999)
       ENDIF
@@ -1192,11 +1192,11 @@ CONTAINS
   !
 
   !>Sets/changes the interface condition integration type 
-  SUBROUTINE InterfaceCondition_IntegrationTypeSet(interfaceCondition,InterfaceConditionIntegrationType,err,error,*)
+  SUBROUTINE InterfaceCondition_IntegrationTypeSet(interfaceCondition,interfaceConditionIntegrationType,err,error,*)
 
     !Argument variables
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition to set the operator for
-    INTEGER(INTG), INTENT(IN) :: InterfaceConditionIntegrationType !<The interface condition integration type to set. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionIntegrationType !<The interface condition integration type to set. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
@@ -1208,14 +1208,14 @@ CONTAINS
       IF(interfaceCondition%INTERFACE_CONDITION_FINISHED) THEN
         CALL FLAG_ERROR("Interface condition has been finished.",err,error,*999)
       ELSE
-        SELECT CASE(InterfaceConditionIntegrationType)
+        SELECT CASE(interfaceConditionIntegrationType)
         CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
           interfaceCondition%integrationType=INTERFACE_CONDITION_GAUSS_INTEGRATION
         CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
           interfaceCondition%integrationType=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION
         CASE DEFAULT
           localError="The specified interface condition operator of "// &
-            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionIntegrationType,"*",err,ERROR))//" is not valid."
+            & TRIM(NUMBER_TO_VSTRING(interfaceConditionIntegrationType,"*",err,ERROR))//" is not valid."
           CALL FLAG_ERROR(localError,err,error,*999)
         END SELECT
       ENDIF
@@ -1485,10 +1485,6 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 DO component_idx=1,INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS
-!                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-!                    & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-!                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
-!                    & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &

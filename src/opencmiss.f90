@@ -34597,13 +34597,13 @@ CONTAINS
   SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishObj(interfacePointsConnectivity,Err)
   
     !Argument variables
-    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface points connectivity to finish creating.
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: interfacePointsConnectivity !<The interface points connectivity to finish creating.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error,*999)
  
-    CALL InterfacePointsConnectivity_CreateFinish(InterfacePointsConnectivity%pointsConnectivity,err,error,*999)
+    CALL InterfacePointsConnectivity_CreateFinish(interfacePointsConnectivity%pointsConnectivity,err,error,*999)
 
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
     RETURN
