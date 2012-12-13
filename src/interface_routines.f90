@@ -1150,14 +1150,16 @@ CONTAINS
     CALL ENTERS("InterfacePointsConnectivity_CoupledElementsFinalise",err,error,*999)
 
     IF(ASSOCIATED(interfacePointsConnectivity)) THEN
-      DO coupledMeshIdx=1,SIZE(interfacePointsConnectivity%coupledElements,2)
-        DO elementIdx=1,SIZE(interfacePointsConnectivity%coupledElements,1)
-          interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%numberOfCoupledElements=0
-          IF(ALLOCATED(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)) &
-            & DEALLOCATE(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)
+      IF(ALLOCATED(interfacePointsConnectivity%coupledElements)) THEN
+        DO coupledMeshIdx=1,SIZE(interfacePointsConnectivity%coupledElements,2)
+          DO elementIdx=1,SIZE(interfacePointsConnectivity%coupledElements,1)
+            interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%numberOfCoupledElements=0
+            IF(ALLOCATED(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)) &
+              & DEALLOCATE(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)
+          ENDDO
         ENDDO
-      ENDDO
-      DEALLOCATE(interfacePointsConnectivity%coupledElements)
+        DEALLOCATE(interfacePointsConnectivity%coupledElements)
+      END IF
       IF(ALLOCATED(interfacePointsConnectivity%maxNumberOfCoupledElements)) &
         & DEALLOCATE(interfacePointsConnectivity%maxNumberOfCoupledElements)
     ELSE
