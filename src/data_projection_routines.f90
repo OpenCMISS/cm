@@ -2958,31 +2958,33 @@ CONTAINS
   !
   
   !>Sets the element for a data projection.
-  SUBROUTINE DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,DATA_POINT_NUMBER,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DATA_PROJECTION_ELEMENT_SET(dataProjection,dataPointNumber,elementNumber,err,error,*)
 
     !Argument variables
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the element for
-    INTEGER(INTG), INTENT(IN) :: DATA_POINT_NUMBER !<data point number
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<the element number to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection to set the element for
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<data point number
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     
-    CALL ENTERS("DATA_PROJECTION_ELEMENT_SET",ERR,ERROR,*999)
+    CALL ENTERS("DATA_PROJECTION_ELEMENT_SET",err,error,*999)
 
-    IF(ASSOCIATED(DATA_PROJECTION)) THEN
-      IF((ELEMENT_NUMBER<DATA_PROJECTION%MESH%NUMBER_OF_ELEMENTS) .OR. (ELEMENT_NUMBER>0)) THEN
-        DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%ELEMENT_NUMBER=ELEMENT_NUMBER
+    IF(ASSOCIATED(dataProjection)) THEN
+      IF(elementNumber>0 .AND. elementNumber<=dataProjection%MESH%NUMBER_OF_ELEMENTS) THEN
+        dataProjection%DATA_PROJECTION_RESULTS(dataPointNumber)%ELEMENT_NUMBER=elementNumber
       ELSE
-        CALL FLAG_ERROR("Data projection element number out of range.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data projection element number "//TRIM(NUMBER_TO_VSTRING(elementNumber,"*",err,error))// &
+            & " is out of range for datapoint "//TRIM(NUMBER_TO_VSTRING(dataPointNumber,"*",err,error))//".", & 
+            & err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
     ENDIF
     
     CALL EXITS("DATA_PROJECTION_ELEMENT_SET")
     RETURN
-999 CALL ERRORS("DATA_PROJECTION_ELEMENT_SET",ERR,ERROR)    
+999 CALL ERRORS("DATA_PROJECTION_ELEMENT_SET",err,error)
     CALL EXITS("DATA_PROJECTION_ELEMENT_SET")
     RETURN 1
 
