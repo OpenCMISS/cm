@@ -2205,6 +2205,9 @@ CONTAINS
             SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%INTERPOLATION_TYPE)
             CASE(FIELD_NODE_BASED_INTERPOLATION)
               nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
+              IF(.NOT.ASSOCIATED(topology%NODES%NODES)) THEN
+                CALL FlagError("Topology nodes are not associated.",err,error,*999)
+              END IF
               IF(topology%NODES%NODES(nodeNumber)%BOUNDARY_NODE) THEN
                 SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
                 CASE(1)
@@ -2230,6 +2233,9 @@ CONTAINS
                 CASE(2)
                   ! Loop over all lines for this node and find any DOFs that have a Neumann point condition set
                   DO lineIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_LINES
+                    IF(.NOT.ALLOCATED(topology%LINES%LINES)) THEN
+                      CALL FlagError("Topology lines have not been calculated.",err,error,*999)
+                    END IF
                     line=>topology%LINES%LINES(topology%NODES%NODES(nodeNumber)%NODE_LINES(lineIdx))
                     IF(.NOT.line%BOUNDARY_LINE) CYCLE
                     DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
@@ -2262,6 +2268,9 @@ CONTAINS
                 CASE(3)
                   ! Loop over all faces for this node and find any DOFs that have a Neumann point condition set 
                   DO faceIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_FACES
+                    IF(.NOT.ALLOCATED(topology%faces%faces)) THEN
+                      CALL FlagError("Topology faces have not been calculated.",err,error,*999)
+                    END IF
                     face=>topology%FACES%FACES(topology%NODES%NODES(nodeNumber)%NODE_FACES(faceIdx))
                     IF(.NOT.face%BOUNDARY_FACE) CYCLE
                     DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
