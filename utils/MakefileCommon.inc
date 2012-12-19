@@ -51,162 +51,70 @@
 #
 #----------------------------------------------------------------------------------------------------------------------------------
 
+ifndef OPENCMISS_ROOT
+  OPENCMISS_ROOT := ../.
+  OC_GLOBAL_ROOT := $(OPENCMISS_ROOT)
+else
+  OC_GLOBAL_ROOT := ${OPENCMISS_ROOT}
+endif
+ifndef OC_CM_GLOBAL_ROOT
+  OC_CM_GLOBAL_ROOT := $(OCE_GLOBAL_ROOT)/cm
+endif
+ifndef OC_CELLML_GLOBAL_ROOT
+  OC_CELLML_GLOBAL_ROOT := $(OCE_GLOBAL_ROOT)/cellml
+endif
+
 ifndef OPENCMISSEXTRAS_ROOT
-  OPENCMISSEXTRAS_ROOT := ../../opencmissextras
+  OPENCMISSEXTRAS_ROOT := ../../OpenCMISSExtras
+  OCE_GLOBAL_ROOT := $(OPENCMISSEXTRAS_ROOT)
+else
+  OCE_GLOBAL_ROOT := ${OPENCMISSEXTRAS_ROOT}
 endif
 
-ifndef EXTERNAL_CM_ROOT
-  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
-endif
-ifndef EXTERNAL_CELLML_ROOT
-  EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
-endif
-ifndef EXTERNAL_FIELDML_ROOT
-  EXTERNAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
-endif
-ifndef EXTERNAL_COMMON_ROOT
-  EXTERNAL_COMMON_ROOT := ${OPENCMISSEXTRAS_ROOT}/common
-endif
+OCE_MAKEINC_ROOT := $(OCE_GLOBAL_ROOT)/utils/make
 
-ifndef GLOBAL_CELLML_ROOT
-  GLOBAL_CELLML_ROOT := ${GLOBAL_CM_ROOT}/../cellml
-endif
-ifndef GLOBAL_FIELDML_ROOT
-  GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
-endif
-ifndef GLOBAL_UTILS_ROOT
-  GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
-endif
-ifndef GLOBAL_MPI_ROOT
-  GLOBAL_MPI_ROOT := ${OPENCMISSEXTRAS_ROOT}/mpi
-endif
+include $(OCE_MAKEINC_ROOT)/Makefile.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_Compilers.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_MPI.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_BlasLapack.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_BlacsScalapack.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_HDF5.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_NetCDF.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_PAPI.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_CUDA.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_OSOperations.inc
 
-include $(GLOBAL_UTILS_ROOT)/Makefile.inc
+ifndef OCE_CM_INSTALL_DIR
+  OCE_CM_INSTALL_DIR := $(CM_INSTALL_DIR)
+endif
+ifndef OCE_CELLML_INSTALL_DIR
+  OCE_CELLML_INSTALL_DIR := $(CELLML_INSTALL_DIR)
+endif
+ifndef OCE_FIELDML_INSTALL_DIR
+  OCE_FIELDML_INSTALL_DIR := $(FIELDML_INSTALL_DIR)
+endif
+ifndef OCE_COMMON_INSTALL_DIR
+  OCE_COMMON_INSTALL_DIR := $(COMMON_INSTALL_DIR)
+endif
+ifndef OCE_MPI_INSTALL_DIR
+  OCE_MPI_INSTALL_DIR := $(MPI_INSTALL_DIR)
+endif
+ifndef OC_CELLML_ROOT
+  OC_CELLML_ROOT := ${OC_GLOBAL_ROOT}/cellml
+endif
+OC_CELLML_INSTALL_DIR := $(OC_CELLML_ROOT)/$(ENVIRONMENT)$(BUILD_TYPE)$(NOMPI_TOOLCHAIN)
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-ifndef MPI
-  MPI := mpich2
-endif
-
-ifndef USECELLML
-  USECELLML := false
-endif
-
-ifndef USEFIELDML
-  USEFIELDML := true
-endif
-
-ifeq ($(MPI),mpich2)
-  MPI := mpich2
-else
-  ifeq ($(MPI),intel)
-    ifeq ($(OPERATING_SYSTEM),linux)
-      ifdef I_MPI_ROOT
-        MPI := intel
-      else
-        $(error Intel MPI libraries not setup)
-      endif
-    else
-      $(error can only use intel mpi with Linux)
-    endif
-  else
-    ifeq ($(MPI),openmpi)
-      MPI := openmpi
-    else
-      ifeq ($(MPI),mvapich2)
-        MPI := mvapich2
-      else
-        ifeq ($(MPI),cray)
-          MPI := cray
-        else
-          ifeq ($(MPI),poe)
-            MPI := poe
-          else
-            $(error unknown MPI type - $(MPI))
-          endif
-        endif
-      endif
-    endif
-  endif
-endif
-
-ifeq ($(MPIPROF),true)
-  ifeq ($(MPI),intel)
-    ifndef VT_ROOT
-      $(error intel trace collector not setup)
-    endif
-    ifndef VT_ADD_LIBS
-      $(error intel trace collector not setup)
-    endif
-  endif
-endif
-
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifdef COMPILER_VERSION
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    endif
-    ifndef MPI_DIR
-      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    endif
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
-    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
-    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
-    MAIN_OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-  else
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    endif
-    ifndef MPI_DIR
-      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    endif
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
-    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
-    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
-    MAIN_OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-    LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-  endif
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    endif
-    ifndef MPI_DIR
-      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    endif
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
-    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
-    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-  else# windows
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    endif
-    ifndef MPI_DIR
-      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    endif
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-  endif
-  MAIN_OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-  INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-  LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-endif
+MAIN_OBJECT_DIR := $(OC_CM_GLOBAL_ROOT)/object/$(ENVIRONMENT)$(BUILD_TYPE)$(TOOLCHAIN)
+INC_DIR := $(OC_CM_GLOBAL_ROOT)/include/$(ENVIRONMENT)$(BUILD_TYPE)$(TOOLCHAIN)
+LIB_DIR := $(OC_CM_GLOBAL_ROOT)/lib/$(ENVIRONMENT)$(BUILD_TYPE)$(TOOLCHAIN)
 
 #----------------------------------------------------------------------------------------------------------------------------------
 # compiling commands
 
-ifeq ($(MPI),mpich2)
-  MPIFC = mpif90
-  MPICC = mpicc
-else
-  MPIFC = mpiifort
-  MPICC = mpiicc
-endif
+MPIFC = $(OCE_MPIF90)
+MPICC = $(OCE_MPICC)
 FC = $(MPIFC)
 CC = $(MPICC)
 AR = ar
@@ -240,11 +148,9 @@ ifneq ($(MP),false)
   CFLAGS += $(MP_FLGS)
   FFLAGS += $(MP_FLGS)
 endif
+
 ARFLAGS = -crsv
-ifneq ($(TAUPROF),false)
-  CPPFLAGS += -DTAUPROF #Necessary?
-  FPPFLAGS += -DTAUPROF
-endif
+
 # suboption lists
 CFL_FLGS =#    flags for C fortran and linking
 L_FLGS =#      flags for linking only
@@ -267,33 +173,21 @@ OPTF_FLGS =#   OPT=true flags for fortran only
 # long.
 olist_args = `cat $1`
 
+CC = $(OCE_MPICC)
+FC = $(OCE_MPIF90)
+
 #----------------------------------------------------------------------------------------------------------------------------------
 ifeq ($(OPERATING_SYSTEM),linux)
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
-
-  CC = gcc
-  FC = gfortran
-
-  ifeq ($(COMPILER),intel)
-
-    #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
-    ifneq (,$(shell icc -V 2>&1 | grep -i intel))
-      CC = icc
-    endif
-    ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
-      FC = ifort
-    endif
-
-  endif
-
   # Set the flags for the various different CC compilers
-  ifeq ($(CC),gcc)# gcc
+  ifeq ($(COMPILER),gnu)
     # Position independent code is required for the Python bindings
     C_FLGS += -pipe -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
+        F_FLGS += -march=nocona
       endif
     endif
     DBGC_FLGS += -O0 -fbounds-check
@@ -301,171 +195,122 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifeq ($(PROF),false)
       ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
         OPTC_FLGS += -momit-leaf-frame-pointer
+        OPTF_FLGS += -momit-leaf-frame-pointer
       endif
     else
       C_FLGS += -g -pg -fprofile-arcs -ftest-coverage
       ELFLGS += -g -pg -fprofile-arcs -ftest-coverage
+      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
     endif
-  endif
-  ifeq ($(CC),icc)
-    # Turn on all warnings
-    C_FLGS += -Wall -m$(ABI) -fPIC
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
-          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
-            C_FLGS += -xT# Core2 Duo
-          else
-            C_FLGS += -x0# Core Duo
-          endif
-        else
-          C_FLGS += -xP# for sse3 (90nm Pentium 4 series)
-        endif
-      else
-        C_FLGS += -xW# Pentium4 compatible (?sse2)
-      endif
-    endif
-    ifeq ($(filter-out i%86,$(MACHNAME)),)
-      ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
-        C_FLGS += -xN# for Pentium 4
-      endif
-    endif
-    DBGC_FLGS += -O0
-    OPTC_FLGS = -O3 -ansi_alias
-    ifneq ($(PROF),false)
-      C_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-    ifeq ($(MPIPROF),true)
-      ifeq ($(MPI),mpich2)
-        C_FLGS += -Wl,--export-dyanmic
-        DBGC_FLGS += -Wl,--export-dyanmic
-      else
-        C_FLGS += -tcollect
-      endif
-    endif
-  endif
-  ifeq ($(filter-out xlc%,$(CC)),)# xlc* C compiler
-    CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
-    C_FLGS += -q$(ABI) -qarch=auto -qhalt=e
-    # -qinitauto for C is bytewise: 7F gives large integers.
-    DBGC_FLGS += -qfullpath -C -qflttrap=inv:en -qinitauto=7F
-    OPTC_FLGS += -O3
-    # for trailing _ on fortran symbols
-    CPPFLAGS += -Dunix
-  endif
-  ifeq ($(CC),cc)# cray cc
-    DBGC_FLGS += -O0 -g
-    OPTC_FLGS = -O3
-    ifeq ($(PROF),true)
-      C_FLGS += -g -pg
-    endif
-  endif
-
-  # Set the flags for the various different Fortran compilers
-  ifeq ($(FC),gfortran)
-    #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
-    # -fstatck-check
     F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input -fPIC
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -march=nocona
-      endif
-    endif
     DBGF_FLGS += -O0 -ffpe-trap=invalid,zero -fbacktrace
     ifdef COMPILER_VERSION
       ifeq ($(COMPILER_VERSION),4.4)
         DBGF_FLGS += -fbounds-check
       else
-				# For any more recent versions
+        # For any more recent versions
         DBGF_FLGS += -fcheck=all
       endif
     endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
-    ifeq ($(PROF),false)
-      ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
-        OPTF_FLGS += -momit-leaf-frame-pointer
-      endif
-    else
-      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
-      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
-    endif
     ELFLAGS += -m$(ABI)
-  endif
-  ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003 -fPIC
-    DBGF_FLGS += -O0 -fbounds-check
-    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
-    ELFLAGS += -m$(ABI)
-    #$(error g95 not implemented)
-  endif
-  ifeq ($(FC),ifort)
-    # turn on preprocessing,
-    # turn on warnings,
-    # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all -m$(ABI) -fPIC
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
-          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
-            F_FLGS += -xT# Core2 Duo
+  else
+    ifeq ($(COMPILER),intel)
+      # Turn on all warnings
+      C_FLGS += -Wall -m$(ABI) -fPIC
+      ifeq ($(MACHNAME),x86_64)
+        ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
+          ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
+            ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
+              C_FLGS += -xSSSE3# Core2 Duo
+              F_FLGS += -xSSSE3# Core2 Duo
+            else
+              C_FLGS += -msse3# Core Duo
+              F_FLGS += -msse3# Core Duo
+            endif
           else
-            F_FLGS += -x0# Core Duo
+            C_FLGS += -xSSE3# for sse3 (90nm Pentium 4 series)
+            F_FLGS += -xSSE3# for sse3 (90nm Pentium 4 series)
           endif
         else
-          F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+          C_FLGS += -msse2# Pentium4 compatible (?sse2)
+          F_FLGS += -msse2# Pentium4 compatible (?sse2)
         endif
-      else
-        F_FLGS += -xW# Pentium4 compatible (?sse2)
       endif
-    endif
-    ifeq ($(filter-out i%86,$(MACHNAME)),)
-      ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -xN# for Pentium 4
+      ifeq ($(filter-out i%86,$(MACHNAME)),)
+        ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
+          C_FLGS += -xSSE2# for Pentium 4
+          F_FLGS += -xSSE2# for Pentium 4
+        endif
       endif
-    endif
-    DBGF_FLGS += -O0 -check all -traceback -debug all
-    OPTF_FLGS = -O3
-    ifneq ($(PROF),false)
-      F_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-    ifeq ($(MPIPROF),true)
-      ifeq ($(MPI),mpich2)
-        F_FLAS += -Wl,--export-dyanmic
-        DBGF_FLGS += -Wl,--export-dyanmic
-      else
-        F_FLGS += -tcollect
+      DBGC_FLGS += -O0
+      OPTC_FLGS = -O3 -ansi_alias
+      ifneq ($(PROF),false)
+        C_FLGS += -g -pg
+        F_FLGS += -g -pg
+        ELFLAGS += -pg
       endif
-    endif
-#    MP_FLGS = -openmp
-    ELFLAGS += -nofor_main -m$(ABI) -traceback
-  endif
-  ifeq ($(filter-out xlf%,$(FC)),)# xlf* fortran compiler
-    F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
-    ELFLAGS += -q$(ABI)
-    ifeq ($(ABI),64)
-      F_FLGS += -qwarn64
-    endif
-    ifeq ($(DEBUG),false)
-      MP_FLGS = -qsmp=omp
+      ifeq ($(MPIPROF),true)
+        ifeq ($(MPI),mpich2)
+          C_FLGS += -Wl,--export-dynamic
+          DBGC_FLGS += -Wl,--export-dynamic
+          F_FLAS += -Wl,--export-dynamic
+          DBGF_FLGS += -Wl,--export-dynamic
+        else
+          F_FLGS += -tcollect
+          C_FLGS += -tcollect
+        endif
+      endif
+      # turn on preprocessing,
+      # turn on warnings,
+      # warn about non-standard Fortran 95
+      F_FLGS += -cpp -warn all -m$(ABI) -fPIC
+      DBGF_FLGS += -O0 -check all -traceback -debug all
+      OPTF_FLGS = -O3
+#     MP_FLGS = -openmp
+      ELFLAGS += -nofor_main -m$(ABI) -traceback
     else
-      MP_FLGS = -qsmp=omp:noopt
-    endif
-    # -qinitauto for Fortran 7FF7FFFF is a large integer or NaNQ real*4 or NaNS real*8
-    DBGF_FLGS += -qfullpath -C -qflttrap=inv:en -qextchk -qinitauto=7FF7FFFF
-    OPTF_FLGS += -O3
-  endif
-  ifeq ($(FC),ftn)
-    DBGF_FLGS += -O0 -g
-    OPTF_FLGS = -O3
-    ifeq ($(PROF),true)
-      F_FLGS += -g -pg
-      ELFLAGS += -pg
+      ifeq ($(COMPILER),ibm)
+        CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
+        C_FLGS += -q$(ABI) -qarch=auto -qhalt=e
+        # -qinitauto for C is bytewise: 7F gives large integers.
+        DBGC_FLGS += -qfullpath -C -qflttrap=inv:en -qinitauto=7F
+        OPTC_FLGS += -O3
+        # for trailing _ on fortran symbols
+        CPPFLAGS += -Dunix
+        F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
+        ELFLAGS += -q$(ABI)
+        ifeq ($(ABI),64)
+          F_FLGS += -qwarn64
+        endif
+        ifeq ($(DEBUG),false)
+          MP_FLGS = -qsmp=omp
+        else
+          MP_FLGS = -qsmp=omp:noopt
+        endif
+        # -qinitauto for Fortran 7FF7FFFF is a large integer or NaNQ real*4 or NaNS real*8
+        DBGF_FLGS += -qfullpath -C -qflttrap=inv:en -qextchk -qinitauto=7FF7FFFF
+        OPTF_FLGS += -O3
+      else
+        ifeq ($(COMPILER),cray)
+          DBGC_FLGS += -O0 -g
+          OPTC_FLGS = -O3
+          ifeq ($(PROF),true)
+            C_FLGS += -g -pg
+            F_FLGS += -g -pg
+            ELFLAGS += -pg
+          endif
+          DBGF_FLGS += -O0 -g
+          OPTF_FLGS = -O3
+	else
+	  $(error COMPILER is not valid
+	endif
+      endif
     endif
   endif
 
@@ -485,7 +330,6 @@ ifeq ($(OPERATING_SYSTEM),linux)
   CPPFLAGS += -DBSD_TIMERS
 endif
 ifeq ($(OPERATING_SYSTEM),win32)
-  FC = gfortran
   F_FLGS += -fno-second-underscore
   OPTCF_FLGS = -O2
   ELFLAGS += -Wl,-static
@@ -494,13 +338,6 @@ ifeq ($(OPERATING_SYSTEM),win32)
   olist_args = $1
 endif
 ifeq ($(OPERATING_SYSTEM),aix)
-  ifeq ($(MP),false)
-    FC = mpxlf95
-    CC = xlc
-  else
-    FC = mpxlf95_r
-    CC = xlc_r
-  endif
   F_FLGS += -qsuffix=cpp=f90 -qnoextname
   CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
   ELFLAGS += -q$(ABI)
@@ -549,322 +386,191 @@ ifeq ($(OPERATING_SYSTEM),aix)
   CPPFLAGS += -DBSD_TIMERS
 endif
 
-# This returns an empty string if not found
-searchdirs = $(firstword $(wildcard $(addsuffix /$(strip $2),$1)))
-# This still returns the name of the desired file if not found and so is useful for error checking and reporting.
-searchdirsforce = $(firstword $(wildcard $(addsuffix /$(strip $2),$1)) $2)
-
 # Check that call function works (for searchdirs, olist_args, etc.)
 ifeq ($(call olist_args,test),)
   $(error call function not available.  Use GNU make version 3.78 or newer)
+endif
+
+#SLEPc
+SLEPC_INCLUDE_PATH =#
+SLEPC_LIBRARIES =#
+SLEPC_LIB_PATH =#
+ifeq (${OPENCMISS_USE_SLEPC},true)
+  SLEPC_LIBRARIES += -lslepc
+  SLEPC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #TAO
 TAO_INCLUDE_PATH =#
 TAO_LIBRARIES =#
 TAO_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  TAO_LIBRARIES = -ltao
-  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  else# windows
-    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_TAO},true)
+  TAO_LIBRARIES += -ltao
+  TAO_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #PETSc
 PETSC_INCLUDE_PATH =#
 PETSC_LIBRARIES =#
 PETSC_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/conf )
-  PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
-  ifeq (,$(PETSC_TSLIB))
-    PETSC_LIBRARIES = -lpetsc -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl #Prob newer version of PETSc which has rolled all the libraries into one.
-  else
-    PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl
-  endif
-  PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  ifeq ($(ABI),64)
-    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
-    PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/ )
-    PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif/ )
-  else
-    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_LIB_PATH += $(addprefix -L, /usr/lib/ )
-    PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
-  endif
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/conf/ )
-    PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
+ifeq (${OPENCMISS_USE_PETSC},true)
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/include )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/conf )
+    PETSC_TSLIB = $(call searchdirs, $(OCE_CM_INSTALL_DIR)/lib, libpetscts.a )
     ifeq (,$(PETSC_TSLIB))
-      PETSC_LIBRARIES = -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
+      PETSC_LIBRARIES += -lpetsc -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl #Prob newer version of PETSc which has rolled all the libraries into one.
     else
-      PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+      PETSC_LIBRARIES += -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl
     endif
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
-  else# windows
-    PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+    ifeq ($(ABI),64)
+      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64 )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib64 )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif )
+    else
+      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif )
+    endif
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/include )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(OCE_CM_INSTALL_DIR)/conf )
+      PETSC_TSLIB = $(call searchdirs, $(OCE_CM_INSTALL_DIR)/lib, libpetscts.a )
+      ifeq (,$(PETSC_TSLIB))
+        PETSC_LIBRARIES += -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
+      else
+        PETSC_LIBRARIES += -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+      endif
+      PETSC_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+      PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib )
+    else# windows
+      PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib )
+      PETSC_INCLUDE_PATH += $(addprefix -I, /home/users/local )
+    endif
   endif
+endif
+
+#UMFPACK
+UMFPACK_INCLUDE_PATH =#
+UMFPACK_LIBRARIES =#
+UMFPACK_LIB_PATH =#
+ifeq (${OPENCMISS_USE_UMFPACK},true)
+  UMFPACK_LIBRARIES += -lumfpack -lcholmod -lamd -lcamd -lccolamd -lcolamd -lsuitesparseconfig
+  UMFPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #SUNDIALS
 SUNDIALS_INCLUDE_PATH =#
 SUNDIALS_LIBRARIES =#
 SUNDIALS_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
-  SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    SUNDIALS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-    SUNDIALS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_SUNDIALS},true)
+  SUNDIALS_LIBRARIES += -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
+  SUNDIALS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #HYPRE
 HYPRE_INCLUDE_PATH =#
 HYPRE_LIBRARIES =#
 HYPRE_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  HYPRE_LIBRARIES = -lHYPRE
-  HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    HYPRE_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-    HYPRE_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_HYPRE},true)
+  HYPRE_LIBRARIES += -lHYPRE
+  HYPRE_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
-#PaStiX
+#PaStiX and Scotch
+PASTIX_INCLUDE_PATH =#
 PASTIX_LIBRARIES =#
 PASTIX_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PASTIX_LIBRARIES = -lpastix
-  PASTIX_LIBRARIES = -lpastix -lrt
-  PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  PASTIX_LIBRARIES = -lpastix
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    PASTIX_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_PASTIX},true)
+  PASTIX_LIBRARIES += -lpastix -lptscotch -lptscotcherr -lptscotcherrexit -lscotch -lscotcherr -lscotcherrexit -lrt
+  PASTIX_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
-#Scotch
-SCOTCH_LIBRARIES =#
-SCOTCH_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SCOTCH_LIBRARIES = -lptscotch -lptscotcherr -lptscotcherrexit -lscotch -lscotcherr -lscotcherrexit
-  SCOTCH_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  SCOTCH_LIBRARIES = -lptscotch -lptscotchexit -lptscotcherrexit -lptscotchparmetis
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SCOTCH_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    SCOTCH_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
-endif
-
-#SuperLU_DIST
-SUPERLU_DIST_LIBRARIES =#
-SUPERLU_DIST_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUPERLU_DIST_LIBRARIES = -lsuperlu_dist
-  SUPERLU_DIST_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  SUPERLU_DIST_LIBRARIES = -lsuperlu_dist
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUPERLU_DIST_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    SUPERLU_DIST_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
-endif
-
-#SuperLU
+#SuperLU_DIST and SuperLU
+SUPERLU_INCLUDE_PATH =#
 SUPERLU_LIBRARIES =#
 SUPERLU_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUPERLU_LIBRARIES = -lsuperlu
-  SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  SUPERLU_LIBRARIES = -lsuperlu
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    SUPERLU_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_SUPERLU},true)
+  SUPERLU_LIBRARIES += -lsuperlu -lsuperlu_dist
+  SUPERLU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #PLAPACK
+PLAPACK_INCLUDE_PATH =#
 PLAPACK_LIBRARIES =#
 PLAPACK_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PLAPACK_LIBRARIES = -lPLAPACK
-  PLAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  PLAPACK_LIBRARIES = -lPLAPACK
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PLAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    PLAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_PLAPACK},true)
+  PLAPACK_LIBRARIES += -lPLAPACK
+  PLAPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
-#MUMPS
+#MUMPS, ScaLAPACK and BLACS
 MUMPS_INCLUDE_PATH =#
 MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
-  MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    MUMPS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-    MUMPS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
-endif
-
-#ScaLAPACK
-SCALAPACK_INCLUDE_PATH =#
-SCALAPACK_LIBRARIES =#
-SCALAPACK_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  SCALAPACK_LIBRARIES = -lscalapack
-  SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    SCALAPACK_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-    SCALAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
-endif
-
-#BLACS
-BLACS_INCLUDE_PATH =#
-BLACS_LIBRARIES =#
-BLACS_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77
-  BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-  else# windows
-    BLACS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-    BLACS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_MUMPS},true)
+  MUMPS_LIBRARIES += $(call convertlistlink,$(OCE_BLACSLIBS)) $(call convertlistlink,$(OCE_SCALAPACKLIBS)) -ldmumps -lmumps_common -lpord
+  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_BLACSLIBPATH) )
+  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_SCALAPACKLIBPATH) )
+  MUMPS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #ParMETIS
-PARMETIS_INCLUDE_PATH =#
-PARMETIS_LIBRARIES = -lparmetis -lmetis
+PARMETIS_INCLUDE_PATH = #
+PARMETIS_LIBRARIES = #
 PARMETIS_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  else# windows
-    PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_PARMETIS},true)
+  PARMETIS_LIBRARIES += -lparmetis -lmetis
+  PARMETIS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
 #CUBPACK
 CUBPACK_INCLUDE_PATH =#
-CUBPACK_LIBRARIES = -lcubpack
+CUBPACK_LIBRARIES = #
 CUBPAK_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  CUBPACK_INCLUDE_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/include/ )
-  CUBPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    CUBPACK_INCLUDE_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/include/ )
-    CUBPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  else# windows
-    CUBPACK_INCLUDE_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/include/ )
-    CUBPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  endif
+ifeq (${OPENCMISS_USE_CUBPACK},true)
+  CUBPACK_LIBRARIES = -lcubpack
+  CUBPACK_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
-#TAU/PAPI
+#TAU
+TAU_INCLUDE_PATH =#
 TAU_LIBRARIES =#
 TAU_LIB_PATH =#
-ifeq ($(TAUPROF),true)
-  TAU_LIBRARIES += -ltau-memory-phase-papi-mpi -l:libpapi.a -l:libpfm.a
-  ifeq ($(ABI),32)
-    TAU_LIB_PATH += -L$(EXTERNAL_CM_DIR)/lib
-  else
-    TAU_LIB_PATH = -L$(EXTERNAL_CM_DIR)/lib -L$(EXTERNAL_CM_DIR)/lib64
-  endif
+ifeq (${OPENCMISS_USE_TAU},true)
+  CPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
+  FPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
+  TAU_LIBRARIES += -lTAU_tf
+  TAU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+endif
+
+#PAPI
+PAPI_INCLUDE_PATH =#
+PAPI_LIBRARIES =#
+PAPI_LIB_PATH =#
+ifeq (${OPENCMISS_USE_PAPI},true)
+  PAPI_LIBRARIES += $(call convertlistlink,$(OCE_PAPILIBS))
+  PAPI_INCLUDE_PATH += $(addprefix -I, $(OCE_PAPIINCLUDEPATH) )
+  PAPI_LIB_PATH += $(addprefix -L, $(OCE_PAPILIBPATH) )
 endif
 
 #CELLML
 CELLML_INCLUDE_PATH =#
 CELLML_LIBRARIES =#
 CELLML_LIB_PATH =#
-ifeq ($(USECELLML),true)
+ifeq (${OPENCMISS_USE_CELLML},true)
+  CPPFLAGS += -DUSECELLML -DOPENCMISS_USE_CELLML
+  FPPFLAGS += -DUSECELLML -DOPENCMISS_USE_CELLML
   CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2 -lz
-  ifeq ($(OPERATING_SYSTEM),linux)# Linux
-    ifdef COMPILER_VERSION
-      CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
-     CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/lib/ )
-    else
-      CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-      CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-    endif
-    CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
-    CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
-  else
-    ifeq ($(OPERATING_SYSTEM),aix)# AIX
-         CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-         CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
-         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
-    else# windows
-         CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-         CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
-         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
-    endif
-  endif
+  CELLML_INCLUDE_PATH += $(addprefix -I, $(OC_CELLML_INSTALL_DIR)/include/ )
+  CELLML_INCLUDE_PATH += $(addprefix -I, $(OCE_CELLML_INSTALL_DIR)/include )
+  CELLML_LIB_PATH += $(addprefix -L, $(OC_CELLML_INSTALL_DIR)/lib )
+  CELLML_LIB_PATH += $(addprefix -L, $(OCE_CELLML_INSTALL_DIR)/lib )
+  CELLML_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib )
 endif
 
 #FIELDML
@@ -872,37 +578,44 @@ FIELDML_INCLUDE_PATH =#
 MOD_FIELDML_TARGET = #
 FIELDML_LIBRARIES =#
 FIELDML_LIB_PATH =#
-ifeq ($(USEFIELDML),true)
+ifeq (${OPENCMISS_USE_FIELDML},true)
+  CPPFLAGS += -DUSEFIELDML -DOPENCMISS_USE_FIELDML
+  FPPFLAGS += -DUSEFIELDML -DOPENCMISS_USE_FIELDML
   MOD_FIELDML_TARGET = MOD_FIELDML
   FIELDML_LIBRARIES += -lfieldml_api -lfieldml_io_api -lxml2 -lz
-  ifeq ($(OPERATING_SYSTEM),linux)# Linux
-    ifdef COMPILER_VERSION
-      FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
-    else
-      FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    endif
-    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
-    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
-    FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
-  else
-    ifeq ($(OPERATING_SYSTEM),aix)# AIX
-       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
-      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
-      FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
-    else# windows
-       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
-      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
-      FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
-    endif
-  endif
+  FIELDML_INCLUDE_PATH += $(addprefix -I, $(OCE_FIELDML_INSTALL_DIR)/include )
+  FIELDML_LIB_PATH += $(addprefix -L, $(OCE_FIELDML_INSTALL_DIR)/lib )
+  FIELDML_LIB_PATH += $(addprefix -L, $(OCE_COMMON_INSTALL_DIR)/lib )
 endif
 
-#TAU/PAPI
-ifeq ($(TAUPROF),true)
-  CPPFLAGS += -DTAUPROF
-  FPPFLAGS += -DTAUPROF
+#NetCDF
+NETCDF_INCLUDE_PATH =#
+NETCDF_LIBRARIES =#
+NETCDF_LIB_PATH =#
+ifeq (${OPENCMISS_USE_NETCDF},true)
+  NETCDF_LIBRARIES += $(call convertlistlink,$(OCE_NETCDFLIBS))
+  NETCDF_LIB_PATH += $(addprefix -L, $(OCE_NETCDFLIBPATH) )
+  NETCDF_INCLUDE_PATH += $(addprefix -I, $(OCE_NETCDFINCLUDEPATH) )
+endif
+
+#HDF5
+HDF5_INCLUDE_PATH =#
+HDF5_LIBRARIES =#
+HDF5_LIB_PATH =#
+ifeq (${OPENCMISS_USE_HDF5},true)
+  HDF5_LIBRARIES += $(call convertlistlink,$(OCE_HDF5LIBS))
+  HDF5_LIB_PATH += $(addprefix -L, $(OCE_HDF5LIBPATH) )
+  HDF5_INCLUDE_PATH += $(addprefix -I, $(OCE_HDF5INCLUDEPATH) )
+endif
+
+#CUDA
+CUDA_INCLUDE_PATH =#
+CUDA_LIBRARIES =#
+CUDA_LIB_PATH =#
+ifeq (${OPENCMISS_USE_CUDA},true)
+  CUDA_LIBRARIES += $(call convertlistlink,$(OCE_CUDALIBS))
+  CUDA_INCLUDE_PATH += $(addprefix -L, $(OCE_CUDALIBPATH) )
+  CUDA_INCLUDE_PATH += $(addprefix -I, $(OCE_CUDAINCLUDEPATH) )
 endif
 
 #MPI
@@ -910,101 +623,29 @@ MPI_LIB_PATH =#
 MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    MPI_LIBRARIES += -lmpichf90
-    ifeq ($(MPIPROF),true)
-      MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
-    endif
-    MPL_LIB = $(call searchdirs, $(MPI_DIR)/lib/, libmpl* )
-    MPI_LIBRARIES += -lmpich
-    ifneq (,$(MPL_LIB))
-      MPI_LIBRARIES += -lmpl
-    endif
-    MPI_LIBRARIES += -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-  else
-    ifeq ($(MPI),intel)
-      ifeq ($(MPIPROF),true)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
-        MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
-        MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
-      endif
-      MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
-      ifeq ($(ABI),64)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
-        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
-      else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
-        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
-      endif
-    else
-      ifeq ($(MPI),openmpi)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
-        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil -lpthread
-        MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-      else
-        ifeq ($(MPI),mvapich2)
-          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-          MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
-          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-        else
-          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
-          MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-          MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
-        endif
-      endif
-    endif
-  endif
+  MPI_LIBRARIES += $(call convertlistlink,$(OCE_MPILIBS))
+  MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
+  MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINCLUDEPATH) )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MPI_LIBRARIES = -lmpi
-    MPI_LIB_PATH += $(addprefix -L, /usr/lpp/ppe.poe/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+    MPI_LIBRARIES += $(call convertlistlink,$(OCE_MPILIBS))
+    MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINCLUDEPATH) )
   else# windows
-    MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+    MPI_LIBRARIES += $(OCE_MPILIBRARIES)
+    MPI_LIB_PATH += $(addprefix -L, $(OCE_MPILIBPATH) )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(OCE_MPIINSTALLPATH) )
   endif
 endif
 
 #BLAS/lapack
-BLAS_INCLUDE_PATH =#
-BLAS_LIB_PATH =#
-BLAS_LIBRARIES =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  BLAS_LIBRARIES = -llapack -lblas
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    BLAS_LIBRARIES = -lessl
-  else# windows
-    BLAS_LIBRARIES = -llapack -lblas
-  endif
-endif
+BLASLAPACK_LIB_PATH = $(addprefix -L, $(OCE_LAPACKLIBPATH) )
+BLASLAPACK_LIB_PATH += $(addprefix -L, $(OCE_BLASLIBPATH) )
+BLASLAPACK_LIBRARIES = $(call convertlistlink,$(OCE_LAPACKLIBSF) $(OCE_BLASLIBSF))
 
-EXTERNAL_LIBRARIES = #
-EXTERNAL_LIB_PATH = #
-EXTERNAL_INCLUDE_PATH = #
-
-ifeq ($(USECELLML),true)
-  EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
-  FPPFLAGS += -DUSECELLML
-  CPPFLAGS += -DUSECELLML
-  EXTERNAL_LIBRARIES += $(CELLML_LIBRARIES)
-  EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
-endif
-
-ifeq ($(USEFIELDML),true)
-  EXTERNAL_LIBRARIES += $(FIELDML_LIBRARIES)
-  EXTERNAL_LIB_PATH += $(FIELDML_LIB_PATH)
-  EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
-  FPPFLAGS += -DUSEFIELDML
-  CPPFLAGS += -DUSEFIELDML
-endif
-
-EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(SUPERLU_DIST_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(CUBPACK_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(SUPERLU_DIST_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(PASTIX_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(CUBPACK_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
-EXTERNAL_INCLUDE_PATH += $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPACK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(CUBPACK_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
+EXTERNAL_LIBRARIES += $(strip $(SLEPC_LIBRARIES) $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(UMFPACK_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(PASTIX_LIBRARIES) $(SUPERLU_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(PARMETIS_LIBRARIES) $(CUBPACK_LIBRARIES) $(TAU_LIBRARIES) $(PAPI_LIBRARIES) $(CELLML_LIBRARIES) $(FIELDML_LIBRARIES) $(NETCDF_LIBRARIES) $(HDF5_LIBRARIES) $(CUDA_LIBRARIES) $(MPI_LIBRARIES) $(BLASLAPACK_LIBRARIES))
+#Note put MPI path in before NetCDF and HDF5 incase we have system NetCDF and HDF5 but OCE MPI.
+EXTERNAL_LIB_PATH += $(strip $(CELLML_LIB_PATH) $(FIELDML_LIB_PATH) $(SLEPC_LIB_PATH) $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(UMFPACK_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(PASTIX_LIB_PATH) $(SUPERLU_LIB_PATH) $(PLAPACK_LIB_PATH) $(MUMPS_LIB_PATH) $(PARMETIS_LIB_PATH) $(CUBPACK_LIB_PATH) $(TAU_LIB_PATH) $(PAPI_LIB_PATH) $(MPI_LIB_PATH) $(NETCDF_LIB_PATH) $(HDF5_LIB_PATH) $(CUDA_LIB_PATH) $(BLASLAPACK_LIB_PATH))
+EXTERNAL_INCLUDE_PATH += $(strip $(SLEPC_INCLUDE_PATH) $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(UMFPACK_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(PASTIX_INCLUDE_PATH) $(SUPERLU_INCLUDE_PATH) $(PLAPACK_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(CUBPACK_INCLUDE_PATH) $(TAU_INCLUDE_PATH)  $(PAPI_INCLUDE_PATH) $(CELLML_INCLUDE_PATH) $(FIELDML_INCLUDE_PATH) $(NETCDF_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(HDF5_INCLUDE_PATH) $(CUDA_INCLUDE_PATH) )
 
 # vim:filetype=make
