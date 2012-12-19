@@ -53,15 +53,15 @@
 
 ifndef GLOBAL_ROOT
   $(error GLOBAL_ROOT is not setup)
-else
-  GLOBAL_CM_ROOT := $(GLOBAL_ROOT)
 endif
+
+OC_CM_GLOBAL_ROOT = $(GLOBAL_ROOT)
 
 ifndef OPENCMISSEXAMPLES_ROOT
-  OPENCMISSEXAMPLES_ROOT := $(GLOBAL_CM_ROOT)/../examples
+  OPENCMISSEXAMPLES_ROOT := $(OC_CM_GLOBAL_ROOT)/../examples
 endif
 
-include $(GLOBAL_CM_ROOT)/utils/MakefileCommon.inc
+include $(OC_CM_GLOBAL_ROOT)/utils/MakefileCommon.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -77,18 +77,18 @@ endif
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifdef COMPILER_VERSION
-    OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(ENVIRONMENT)$(BUILD_TYPE)$(MPI_TOOLCHAIN)
     EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
   else
-    OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(ENVIRONMENT)$(BUILD_TYPE)$(MPI_TOOLCHAIN)
     EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
   endif
 else
-  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(ENVIRONMENT)$(BUILD_TYPE)$(MPI_TOOLCHAIN)
   EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
 endif
 
-MAIN_SOURCE_DIR := $(GLOBAL_CM_ROOT)/src
+MAIN_SOURCE_DIR := $(OC_CM_GLOBAL_ROOT)/src
 BASE_EXE_NAME = $(BASE_EXAMPLE_NAME)
 BASE_LIB_NAME = OpenCMISS
 EXAMPLE_SOURCE_DIR = $(EXAMPLE_ROOT)/src
@@ -144,7 +144,7 @@ $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
 	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
 
 $(OPENCMISS_LIBRARY) :
-	( cd $(GLOBAL_CM_ROOT); $(MAKE) )
+	( cd $(OC_CM_GLOBAL_ROOT); $(MAKE) )
 
 
 # Place the list of dependencies for the objects here.
@@ -187,21 +187,8 @@ clobber: clean
 	rm -f $(EXECUTABLE)
 
 externallibs:
-	$(MAKE) --no-print-directory -f $(EXTERNAL_CM_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI)
+	$(MAKE) --no-print-directory -f $(UTILS_ROOT)/Makefile DEBUG=$(DEBUG) ABI=$(ABI)
 
-debug opt debug64 opt64:
-	$(MAKE) --no-print-directory DEBUG=$(DEBUG) ABI=$(ABI)
-
-debug debug64: DEBUG=true
-opt opt64: DEBUG=false
-ifneq (,$(filter $(MACHNAME),ia64 x86_64))# ia64 or x86_64
-   debug opt: ABI=64
-else
-   debug opt: ABI=32
-endif
-debug64 opt64: ABI=64
-
-all: debug opt
 all64: debug64 opt64
 
 # TODO only for linux 64bit for now.
@@ -281,3 +268,8 @@ help:
 	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
 	@echo
 
+#-----------------------------------------------------------------------------
+# Aliases
+#-----------------------------------------------------------------------------
+
+include $(OCE_MAKEINC_ROOT)/Makefile_Aliases.inc

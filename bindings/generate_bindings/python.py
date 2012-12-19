@@ -15,6 +15,14 @@ This Python module wraps the underlying OpenCMISS Fortran library.
 http://www.opencmiss.org
 """)
 
+DLOPEN_FIX = ("""# Make symbols from dynamically imported libraries global so
+# that the Intel MKL library can be loaded correctly when used
+import sys
+import ctypes
+if hasattr(sys, "setdlopenflags"):
+    sys.setdlopenflags(sys.getdlopenflags() | ctypes.RTLD_GLOBAL)
+""")
+
 INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
 WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
@@ -41,6 +49,7 @@ def generate(cm_path, args):
     library = LibrarySource(cm_path)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
+    module.write(DLOPEN_FIX)
     module.write("import _opencmiss_swig\n")
     module.write("import signal\n")
     module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
