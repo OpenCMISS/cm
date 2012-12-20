@@ -545,6 +545,11 @@ ifeq (${OPENCMISS_USE_TAU},true)
   CPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
   FPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
   TAU_LIBRARIES += -lTAU_tf
+  ifeq (${OPENCMISS_USE_PAPI},true)
+    TAU_LIBRARIES += -lTauMpi-memory-phase-papi-mpi -ltau-memory-phase-papi-mpi
+  else
+    TAU_LIBRARIES += -lTauMpi-memory-phase-mpi -ltau-memory-phase-mpi
+  endif
   TAU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
 endif
 
