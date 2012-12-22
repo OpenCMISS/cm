@@ -70,13 +70,14 @@
 MODULE TYPES
 
   USE CMISS_PETSC_TYPES, ONLY : PETSC_ISCOLORING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE,PETSC_MATFDCOLORING_TYPE,PETSC_PC_TYPE, &
-    & PETSC_SNES_TYPE,PETSC_VEC_TYPE
+    & PETSC_SNES_TYPE,PetscSnesLineSearchType,PETSC_VEC_TYPE
   USE CONSTANTS
   USE KINDS
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE TREES
   use linkedlist_routines
+
   IMPLICIT NONE
 
   !
@@ -2538,6 +2539,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(PETSC_ISCOLORING_TYPE) :: JACOBIAN_ISCOLORING !<The Jacobian matrix index set colouring
     TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+    TYPE(PetscSnesLineSearchType) :: snesLineSearch !<The PETSc SNES line search object
   END TYPE NEWTON_LINESEARCH_SOLVER_TYPE
   
   !>Contains information for a Newton trust region nonlinear solver
