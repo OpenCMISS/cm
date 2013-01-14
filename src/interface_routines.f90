@@ -1326,14 +1326,16 @@ CONTAINS
     CALL ENTERS("InterfacePointsConnectivity_CoupledElementsFinalise",err,error,*999)
 
     IF(ASSOCIATED(interfacePointsConnectivity)) THEN
-      DO coupledMeshIdx=1,SIZE(interfacePointsConnectivity%coupledElements,2)
-        DO elementIdx=1,SIZE(interfacePointsConnectivity%coupledElements,1)
-          interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%numberOfCoupledElements=0
-          IF(ALLOCATED(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)) &
-            & DEALLOCATE(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)
+      IF(ALLOCATED(interfacePointsConnectivity%coupledElements)) THEN
+        DO coupledMeshIdx=1,SIZE(interfacePointsConnectivity%coupledElements,2)
+          DO elementIdx=1,SIZE(interfacePointsConnectivity%coupledElements,1)
+            interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%numberOfCoupledElements=0
+            IF(ALLOCATED(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)) &
+              & DEALLOCATE(interfacePointsConnectivity%coupledElements(elementIdx,coupledMeshIdx)%elementNumbers)
+          ENDDO
         ENDDO
-      ENDDO
-      DEALLOCATE(interfacePointsConnectivity%coupledElements)
+        DEALLOCATE(interfacePointsConnectivity%coupledElements)
+      END IF
       IF(ALLOCATED(interfacePointsConnectivity%maxNumberOfCoupledElements)) &
         & DEALLOCATE(interfacePointsConnectivity%maxNumberOfCoupledElements)
     ELSE
@@ -1939,11 +1941,11 @@ CONTAINS
 
     IF(ASSOCIATED(interface)) THEN
       IF(ASSOCIATED(interface%pointsConnectivity)) THEN
-        CALL FLAG_ERROR("Interface has already got points connectivity associated.",err,error,*999)
+        CALL FLAG_ERROR("Interface has already got points connectivity associated.",err,error,*998)
       ELSE
         !Initialise the poins connectivity
         ALLOCATE(interface%pointsConnectivity,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface points connectivity.",err,error,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface points connectivity.",err,error,*998)
         interface%pointsConnectivity%interface=>interface
         interface%pointsConnectivity%pointsConnectivityFinished=.FALSE.
         interface%pointsConnectivity%interfaceMesh=>interfaceMesh
@@ -2293,6 +2295,8 @@ CONTAINS
                       & InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(2)
                    END SELECT
                  ENDDO !dataPointIdx
+               CASE DEFAULT
+                 ! Do nothing
                END SELECT
              ENDIF
            ENDDO !meshIdx

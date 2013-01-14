@@ -4113,7 +4113,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetObj
   END INTERFACE !CMISSInterfacePointsConnectivity_PointXiSet 
   
-  !!>Update points connectivity information with projection results
+  !>Update points connectivity information with projection results
   INTERFACE CMISSInterfacePointsConnectivity_UpdateFromProjection
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber
     MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber
@@ -4185,12 +4185,12 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR = &
     & INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR !<Solid fluid normal operator, i.e., lambda(v_f.n_f-du_s/dt.n_s). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   !>@}
-  !> \addtogroup OPENCMISS_InterfaceConditionIntegrationType OPENCMISS::InterfaceConditions::IntegrationType
+  !> \addtogroup OPENCMISS_InterfaceConditionIntegrationTypes OPENCMISS::InterfaceConditions::IntegrationTypes
   !> \brief Interface condition integration types.
   !> \see OPENCMISS::InterfaceConditions,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_GAUSS_INTEGRATION=INTERFACE_CONDITION_GAUSS_INTEGRATION !<Gauss points integration type, i.e. Loop over element Gauss points and sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationType,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_DATA_POINTS_INTEGRATION=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION !< Data points integration type i.e. Loop over data points and  sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationType,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_GAUSS_INTEGRATION=INTERFACE_CONDITION_GAUSS_INTEGRATION !<Gauss points integration type, i.e. Loop over element Gauss points and sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_DATA_POINTS_INTEGRATION=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION !< Data points integration type i.e. Loop over data points and  sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -4242,7 +4242,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceCondition_EquationsDestroyObj
   END INTERFACE !CMISSInterfaceCondition_EquationsDestroy
   
-  !>Sets/changes the integration type for an interface condition.
+  !>Returns the integration type for an interface condition.
   INTERFACE CMISSInterfaceCondition_IntegrationTypeGet
     MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeGetNumber
     MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeGetObj
@@ -35588,13 +35588,13 @@ CONTAINS
   SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishObj(interfacePointsConnectivity,Err)
   
     !Argument variables
-    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface points connectivity to finish creating.
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: interfacePointsConnectivity !<The interface points connectivity to finish creating.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error,*999)
  
-    CALL InterfacePointsConnectivity_CreateFinish(InterfacePointsConnectivity%pointsConnectivity,err,error,*999)
+    CALL InterfacePointsConnectivity_CreateFinish(interfacePointsConnectivity%pointsConnectivity,err,error,*999)
 
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
     RETURN

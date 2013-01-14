@@ -287,11 +287,11 @@ CONTAINS
   !
 
   !>Calculate the positions of the element matrices in the interface matrices. 
-  SUBROUTINE InterfaceMatrices_ElementCalculate(interfaceMatrices,InterfaceElementNumber,err,error,*)
+  SUBROUTINE InterfaceMatrices_ElementCalculate(interfaceMatrices,interfaceElementNumber,err,error,*)
 
     !Argument variables
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: interfaceMatrices !<A pointer to the interface matrices
-    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number to calculate the mappings for
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number to calculate the mappings for
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
@@ -338,7 +338,7 @@ CONTAINS
                         rowsElementNumber=meshConnectivity%ELEMENT_CONNECTIVITY(InterfaceElementNumber,rowsMeshIdx)% &
                           & COUPLED_MESH_ELEMENT_NUMBER
                         CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE(interfaceMatrix%ELEMENT_MATRIX, &
-                          & interfaceMatrix%UPDATE_MATRIX,[rowsElementNumber],[InterfaceElementNumber],rowsFieldVariable, &
+                          & interfaceMatrix%UPDATE_MATRIX,[rowsElementNumber],[interfaceElementNumber],rowsFieldVariable, &
                           & colsFieldVariable,err,error,*999)
                       ELSE
                         localError="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrixIdx,"*",err,error))// &
@@ -400,7 +400,7 @@ CONTAINS
                   !Calculate the rows  for the equations RHS
                   rowsFieldVariable=>rhsMapping%RHS_VARIABLE
                   CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE(rhsVector%ELEMENT_VECTOR,rhsVector%UPDATE_VECTOR, &
-                    & InterfaceElementNumber,rowsFieldVariable,err,error,*999)
+                    & interfaceElementNumber,rowsFieldVariable,err,error,*999)
                 ELSE
                   CALL FLAG_ERROR("Interface mapping rhs mapping is not associated.",err,error,*999)
                 ENDIF
