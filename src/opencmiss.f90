@@ -39495,7 +39495,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to start the creation of.
     TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface containing the mesh to start the creation of.
     INTEGER(INTG), INTENT(IN) :: numberOfDimensions !<The number of dimensions for the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: mesh !<On return, the created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !<On return, the created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
