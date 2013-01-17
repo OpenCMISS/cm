@@ -2604,8 +2604,11 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information for a geometric transformation solver
   TYPE GeometricTransformationSolverType
     TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to the problem_solver
+    LOGICAL :: arbitraryPath !<.TRUE. if the transformation has an arbitrary path, .FALSE. if it's uni-directional(default)
+    INTEGER(INTG) :: numberOfIncrements !<The number of increments used to apply the transformation.
+    REAL(DP), ALLOCATABLE :: scalings(:) !scaling(loadIncrementIdx), the scaling factors for each load increment, apply the full transformation in 1 load increment if unallocated. Only allocated if there are multiple load steps and if the transformation is uni-directional.
+    REAL(DP), ALLOCATABLE :: transformationMatrices(:,:,:) !<transformationMatrices(spatialCoord+1,spatialCoord+1,incrementIdx). 4x4 matrices for 3D transformation, 3x3 for 2D transformation
     REAL(DP), ALLOCATABLE :: translation(:) !<translations(spatialCoordIdx), the translation vector for this geometric transformation
-    REAL(DP), ALLOCATABLE :: rotation(:,:) !<rotations(spatialCoordIdx,spatialCoordIdx), the rotation matrix for this geometric transformation
     TYPE(FIELD_TYPE), POINTER :: field !<fields to which the geometric transformations are applied 
     INTEGER(INTG) :: fieldVariableType !<The field variable type index to transform
   END TYPE GeometricTransformationSolverType

@@ -3018,42 +3018,157 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
-    INTEGER(INTG) :: componentIdx,versionIdx,derivativeIdx,nodeIdx,solverIdx
-    INTEGER(INTG) :: localNodeNumber
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(SOLVERS_TYPE), POINTER :: solvers
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: loadIncrementLoop
+    TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER :: simpleLoop
+    TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: fixedLoop
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: whileLoop
+    INTEGER(INTG) :: componentIdx,versionIdx,derivativeIdx,nodeIdx,solverIdx,noGeomComp
+    INTEGER(INTG) :: localNodeNumber,userNodeNumber,incrementIdx,iterationNumber,matrixIdx
+    REAL(DP) :: nodalParameters(3),nodalParametersTrans(3),transformationMatrix(4,4)
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
-    TYPE(LOGICAL) :: transformBC=.FALSE.
+    TYPE(LOGICAL) :: transformBC=.FALSE.,sameBases=.TRUE.
     
     CALL ENTERS("Problem_SolverGeometricTransformationSolve",err,error,*999) 
     
     IF(ASSOCIATED(geometricTransformationSolver)) THEN
       IF(ASSOCIATED(geometricTransformationSolver%field)) THEN
         fieldVariable=>geometricTransformationSolver%field%VARIABLE_TYPE_MAP(geometricTransformationSolver%fieldVariableType)%PTR
-        IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) transformBC=.TRUE.
-        DO componentIdx=1,SIZE(geometricTransformationSolver%translation,1)
-          domain=>fieldVariable%COMPONENTS(componentIdx)%DOMAIN
+        IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) transformBC=.TRUE. !if the BC is defined on the field variablet to be transformed
+        noGeomComp=SIZE(geometricTransformationSolver%transformationMatrices,1)-1 ! Number of geometric components
+        !**********************************************************************************************************************
+        !Determine iteration/load increment number 
+        IF(geometricTransformationSolver%numberOfIncrements>1) THEN
+          solver=>geometricTransformationSolver%solver
+          IF(ASSOCIATED(solver)) THEN
+            solvers=>solver%SOLVERS
+            IF(ASSOCIATED(solvers)) THEN
+              controlLoop=>solvers%CONTROL_LOOP
+              IF(ASSOCIATED(controlLoop)) THEN
+                SELECT CASE(controlLoop%LOOP_TYPE)
+                CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
+                  simpleLoop=>controlLoop%SIMPLE_LOOP
+                  IF(ASSOCIATED(simpleLoop)) THEN
+                    iterationNumber=1
+                  ELSE
+                    CALL FLAG_ERROR("Simple loop is not associated.",err,error,*999)
+                  ENDIF
+                CASE(PROBLEM_CONTROL_FIXED_LOOP_TYPE)
+                  fixedLoop=>controlLoop%FIXED_LOOP
+                  IF(ASSOCIATED(fixedLoop)) THEN
+                    iterationNumber=fixedLoop%ITERATION_NUMBER
+                  ELSE
+                    CALL FLAG_ERROR("Fixed loop is not associated.",err,error,*999)
+                  ENDIF
+                CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+                  CALL FLAG_ERROR("Geometric transformation for time loop is not implemented.",err,error,*999)
+                CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
+                  whileLoop=>controlLoop%WHILE_LOOP
+                  IF(ASSOCIATED(whileLoop)) THEN
+                    iterationNumber=whileLoop%ITERATION_NUMBER
+                  ELSE
+                    CALL FLAG_ERROR("Simple loop is not associated.",err,error,*999)
+                  ENDIF
+                CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+                  loadIncrementLoop=>controlLoop%LOAD_INCREMENT_LOOP
+                  IF(ASSOCIATED(loadIncrementLoop)) THEN
+                    iterationNumber=loadIncrementLoop%ITERATION_NUMBER
+                  ELSE
+                    CALL FLAG_ERROR("Load increment loop is not associated.",err,error,*999)
+                  ENDIF
+                END SELECT
+                IF(iterationNumber>geometricTransformationSolver%numberOfIncrements) THEN
+                  !If load increment is not specified for that iteration, loop around
+                  incrementIdx=MOD(iterationNumber-1,geometricTransformationSolver%numberOfIncrements)+1
+                ELSE
+                  incrementIdx=iterationNumber !If load increment is specified for that iteration, use that load increment
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solvers is not associated.",err,error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          incrementIdx=1
+        ENDIF
+        !Determine the transformation matrix to use
+        IF(geometricTransformationSolver%arbitraryPath .OR. geometricTransformationSolver%numberOfIncrements==1) THEN
+          transformationMatrix(1:noGeomComp+1,1:noGeomComp+1)=geometricTransformationSolver%transformationMatrices &
+            & (1:noGeomComp+1,1:noGeomComp+1,incrementIdx)
+        ELSE !If need to scale transformation matrix (i.e. transformation applied through several load increment.)
+          IF(incrementIdx==1) THEN ! 1st load increment, rotation is applied
+            transformationMatrix(1:noGeomComp,1:noGeomComp)=geometricTransformationSolver%transformationMatrices &
+              & (1:noGeomComp,1:noGeomComp,1)
+          ELSE !No rotation operation in any other load increments
+            DO componentIdx=1,noGeomComp
+              transformationMatrix(componentIdx,componentIdx)=1.0_DP
+            ENDDO !componentIdx
+          ENDIF
+          !Translation is scaled for every load increment 
+          transformationMatrix(1:noGeomComp,noGeomComp+1)=geometricTransformationSolver%transformationMatrices &
+            & (1:noGeomComp,noGeomComp+1,1)*geometricTransformationSolver%scalings(incrementIdx)
+        ENDIF
+        !**********************************************************************************************************************
+        ! Transform the field
+        ! Determine if the all components have the same mesh components/ bases
+        DO componentIdx=1,noGeomComp-1
+          IF(fieldVariable%COMPONENTS(componentIdx)%MESH_COMPONENT_NUMBER/= &
+            & fieldVariable%COMPONENTS(componentIdx+1)%MESH_COMPONENT_NUMBER) sameBases=.FALSE.
+        ENDDO
+        IF(sameBases) THEN
+          domain=>fieldVariable%COMPONENTS(1)%DOMAIN !Use the 1st component domain since they are the same for all components
           IF(ASSOCIATED(domain)) THEN
             domainNodes=>domain%TOPOLOGY%NODES
-            derivativeIdx=1 !For translation only the coordinates are modified
             DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
               localNodeNumber=domainNodes%NODES(nodeIdx)%LOCAL_NUMBER
-              DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-                !Translate nodal parameters
-                CALL FIELD_PARAMETER_SET_ADD_LOCAL_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
-                  & fieldVariableType,FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,localNodeNumber,componentIdx, &
-                  & geometricTransformationSolver%translation(componentIdx),err,error,*999)
-                !Translate boundary conditions if requried
-                IF(transformBC) THEN
-                  CALL FIELD_PARAMETER_SET_ADD_LOCAL_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
-                    & fieldVariableType,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,versionIdx,derivativeIdx,localNodeNumber,componentIdx, &
-                    & geometricTransformationSolver%translation(componentIdx),err,error,*999)
-                ENDIF
-              ENDDO !versionIdx
+              userNodeNumber=domainNodes%NODES(nodeIdx)%USER_NUMBER
+              DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                  DO componentIdx=1,noGeomComp !Get all component for a nodal derivative
+                    CALL FIELD_PARAMETER_SET_GET_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                      & fieldVariableType,FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber,componentIdx, &
+                      & nodalParameters(componentIdx),err,error,*999)
+                  ENDDO !componentIdx
+                  !Rotate the nodal parameters
+                  userNodeNumber=domainNodes%NODES(nodeIdx)%USER_NUMBER
+                  nodalParametersTrans(1:noGeomComp)=MATMUL(transformationMatrix(1:noGeomComp,1:noGeomComp), &
+                    & nodalParameters(1:noGeomComp))
+                  DO componentIdx=1,noGeomComp !Update all component for a nodal derivative
+                    CALL FIELD_PARAMETER_SET_UPDATE_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                      & fieldVariableType,FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber,componentIdx, &
+                      & nodalParametersTrans(componentIdx),err,error,*999)
+                    IF(derivativeIdx==1) THEN ! Translate nodal coordinate
+                      CALL FIELD_PARAMETER_SET_ADD_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                        & fieldVariableType,FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber,componentIdx, &
+                        & transformationMatrix(componentIdx,1+noGeomComp),err,error,*999)
+                    ENDIF !derivativeIdx==1
+                    IF(transformBC) THEN
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                        & fieldVariableType,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber, &
+                        & componentIdx,nodalParametersTrans(componentIdx),err,error,*999)
+                      IF(derivativeIdx==1) THEN ! Translate nodal coordinate for BC
+                        CALL FIELD_PARAMETER_SET_ADD_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
+                          & fieldVariableType,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber, &
+                          & componentIdx,transformationMatrix(componentIdx,1+noGeomComp),err,error,*999)
+                      ENDIF !derivativeIdx==1
+                    ENDIF !transformBC
+                  ENDDO !componentIdx
+                ENDDO !versionIdx
+              ENDDO !derivativeIdx
             ENDDO !nodeIdx
           ELSE
             CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
           ENDIF
-        ENDDO !componentIdx
+        ELSE
+          CALL FLAG_ERROR("Transformation for different component bases not implemented.",err,error,*999)
+        ENDIF
       ELSE
         CALL FLAG_ERROR("The field of geometric transformation solver is not associated.",err,error,*999)
       ENDIF

@@ -5807,16 +5807,52 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_DynamicTimesSetObj
   END INTERFACE !CMISSSolver_DynamicTimesSet
   
+  !Sets the arbitrary path logical for the transformation
+  INTERFACE CMISSSolver_GeometricTransformationArbitraryPathSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationArbitraryPathSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationArbitraryPathSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationArbitraryPathSet
+  
   !Sets the field to transform
   INTERFACE CMISSSolver_GeometricTransformationFieldSet
     MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetNumber
     MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetObj
   END INTERFACE CMISSSolver_GeometricTransformationFieldSet
   
+  !Sets the full transformation matrix for a geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationMatrixSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetNumber0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetObj0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetNumber1
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetObj1
+  END INTERFACE CMISSSolver_GeometricTransformationMatrixSet
+  
+  !Sets number of load increments for the transformation
+  INTERFACE CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationNoLoadIncrementsSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationNoLoadIncrementsSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+  
+  !Sets the rotation for a geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationRotationSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetNumber0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetObj0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetNumber1
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetObj1
+  END INTERFACE CMISSSolver_GeometricTransformationRotationSet
+  
+  !Sets the scalings for a uni-directional geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationScalingsSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationScalingsSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationScalingsSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationScalingsSet
+  
   !Sets the translation for a geometric transformation
   INTERFACE CMISSSolver_GeometricTransformationTranslationSet
-    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetNumber
-    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetObj
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetNumber0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetObj0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetNumber1
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetObj1
   END INTERFACE CMISSSolver_GeometricTransformationTranslationSet
 
   !>Returns the label of a solver.
@@ -6167,7 +6203,15 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolver_DynamicTimesSet
   
-  PUBLIC CMISSSolver_GeometricTransformationFieldSet,CMISSSolver_GeometricTransformationTranslationSet
+  PUBLIC CMISSSolver_GeometricTransformationArbitraryPathSet,CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationScalingsSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationFieldSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationMatrixSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationRotationSet,CMISSSolver_GeometricTransformationTranslationSet
 
   PUBLIC CMISSSolver_LabelGet,CMISSSolver_LabelSet
 
@@ -46769,6 +46813,80 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets the arbitrary path logical for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & arbitraryPath,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    LOGICAL, INTENT(IN) :: arbitraryPath !<.TRUE. if the the transformation has an arbitrary path, .FALSE. if the path is uni-directional
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationArbitraryPathSet(solver,arbitraryPath,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetObj(solver,arbitraryPath,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
+    LOGICAL, INTENT(IN) :: arbitraryPath !<.TRUE. if the the transformation has an arbitrary path, .FALSE. if the path is uni-directional
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationArbitraryPathSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationArbitraryPathSet(solver%SOLVER,arbitraryPath,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationArbitraryPathSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the field for a geometric transformation identified by an user number.
   SUBROUTINE CMISSSolver_GeometricTransformationFieldSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
       & regionUserNumber,fieldUserNumber,variableType,err)
@@ -46779,7 +46897,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number for the field
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number
-    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the translation for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the transformation for
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: problem
@@ -46843,7 +46961,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field for the solver to set.
-    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the translation for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the transformation for
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -46864,8 +46982,464 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the translation for a geometric transformation identified by an user number.
-  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+  !>Sets the full transformation matrix for a geometric transformation identified by an user number, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & matrix,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationMatrixSet(solver,matrix,1,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix for a geometric transformation solver identified by an object, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj0(solver,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetObj0",err,error,*999)
+    
+    CALL Solver_GeometricTransformationMatrixSet(solver%SOLVER,matrix,1,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetObj0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix at a specific increment for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber1(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & matrix,loadIncrementIdx,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the matrix for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationMatrixSet(solver,matrix,loadIncrementIdx,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix vector at a specific load increment for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj1(solver,matrix,loadIncrementIdx,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the matrix for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetObj1",err,error,*999)
+    
+    CALL Solver_GeometricTransformationMatrixSet(solver%SOLVER,matrix,loadIncrementIdx,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetObj1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetNumber(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,numberOfIncrements,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    INTEGER(INTG), INTENT(IN) :: numberOfIncrements !<The number of load increments to apply the transformation
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationNumberOfLoadIncrementsSet(solver,numberOfIncrements,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetObj(solver,numberOfIncrements,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: numberOfIncrements !<The number of load increments to apply the transformation
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationNumberOfLoadIncrementsSet(solver%SOLVER,numberOfIncrements,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation for a geometric transformation identified by an user number, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & pivotPoint,axis,angle,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationRotationSet(solver,pivotPoint,axis,angle,1,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation for a geometric transformation solver identified by an object, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj0(solver,pivotPoint,axis,angle,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetObj0",err,error,*999)
+    
+    CALL Solver_GeometricTransformationRotationSet(solver%SOLVER,pivotPoint,axis,angle,1,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetObj0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation at a specific increment for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber1(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & pivotPoint,axis,angle,loadIncrementIdx,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the rotation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationRotationSet(solver,pivotPoint,axis,angle,loadIncrementIdx,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation at a specific load increment for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj1(solver,pivotPoint,axis,angle,loadIncrementIdx,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the rotation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetObj1",err,error,*999)
+    
+    CALL Solver_GeometricTransformationRotationSet(solver%SOLVER,pivotPoint,axis,angle,loadIncrementIdx,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetObj1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scalings for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & scalings,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the scalings for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the scalings for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the scalings for.
+    REAL(DP), INTENT(IN) :: scalings(:) !<The scalings to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationScalingsSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationScalingsSet(solver,scalings,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationScalingsSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scalings for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetObj(solver,scalings,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the scalings for.
+    REAL(DP), INTENT(IN) :: scalings(:) !<The scalings to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationScalingsSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationScalingsSet(solver%SOLVER,scalings,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationScalingsSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation for a geometric transformation identified by an user number, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
       & translation,err)
 
     !Argument variables
@@ -46879,7 +47453,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber",err,error,*999)
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber0",err,error,*999)
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -46887,7 +47461,7 @@ CONTAINS
     IF(ASSOCIATED(problem)) THEN
       CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
       IF(ASSOCIATED(solver)) THEN
-        CALL Solver_GeometricTransformationTranslationSet(solver,translation,err,error,*999)
+        CALL Solver_GeometricTransformationTranslationSet(solver,translation,1,err,error,*999)
       ELSE
         localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
           & " does not exist."
@@ -46899,21 +47473,21 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
-    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber")
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber0")
     RETURN
-999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber",err,error)
-    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber")
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber0")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber0
   
   !
   !================================================================================================================================
   !
 
-  !>Sets the field for a geometric transformation solver identified by an object.
-  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj(solver,translation,err)
+  !>Sets the translation vector for a geometric transformation solver identified by an object, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj0(solver,translation,err)
 
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the translation for.
@@ -46921,18 +47495,94 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj",err,error,*999)
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj0",err,error,*999)
     
-    CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,err,error,*999)
+    CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,1,err,error,*999)
 
-    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj")
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj0")
     RETURN
-999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj",err,error)
-    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj")
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj0")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation at a specific increment for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber1(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & translation,loadIncrementIdx,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the translation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationTranslationSet(solver,translation,loadIncrementIdx,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation vector at a specific load increment for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj1(solver,translation,loadIncrementIdx,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the translation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj1",err,error,*999)
+    
+    CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,loadIncrementIdx,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj1
 
   !
   !================================================================================================================================
