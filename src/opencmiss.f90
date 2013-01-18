@@ -5072,8 +5072,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
     
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments and reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE !<finear elasticity problem subject to contact constraint, transform field at load increments \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE !<finear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes

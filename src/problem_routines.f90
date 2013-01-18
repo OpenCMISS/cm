@@ -3292,6 +3292,7 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
     TYPE(INTERFACE_TYPE), POINTER :: interface
+    LOGICAL :: reproject
     TYPE(VARYING_STRING) :: localError
     
     CALL ENTERS("Problem_SolverNonlinearMonitor",err,error,*998)
@@ -3318,9 +3319,20 @@ CONTAINS
                 ENDIF
                 SELECT CASE(problem%SUBTYPE)
                 CASE(PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE,PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE)
-                  !Do nothing???
+                  IF(iterationNumber==0) THEN
+                    reproject=.TRUE.
+                  ELSE
+                    reproject=.FALSE.
+                  ENDIF
                 CASE(PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE,PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE, &
                     & PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE,PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE)
+                  reproject=.TRUE.
+                CASE DEFAULT
+                  localError="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(problem%SUBTYPE,"*",err,error))//" &
+                    & is invalid."
+                  CALL FLAG_ERROR(localError,err,error,*999)
+                END SELECT
+                IF(Reproject) THEN
                   solverEquations=>solver%SOLVER_EQUATIONS
                   IF(ASSOCIATED(solverEquations)) THEN
                     solverMapping=>solverEquations%SOLVER_MAPPING
@@ -3351,11 +3363,7 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Nonlinear solver equations is not associated.",err,error,*999)
                   ENDIF
-                CASE DEFAULT
-                  localError="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(problem%SUBTYPE,"*",err,error))//" &
-                    & is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
-                END SELECT
+                ENDIF !Reproject
               CASE DEFAULT
                 localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%TYPE,"*",err,error))//" &
                   & is invalid."

@@ -422,10 +422,11 @@ CONTAINS
     INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp,numberOfInterfaceMeshXi,numberOfCoupledMeshXi, &
       & numberOfMatrixCoupledElements,localDof,globalDof
     INTEGER(INTG) :: dataPointIdx,coupledMeshIdx,xiIdx,localElementNumber,localFaceLineNumber,matrixElementIdx,rowComponentIdx, &
-      & rowParameterIdx,rowIdx,colIdx,componentIdx
+      & rowParameterIdx,rowIdx,colIdx,componentIdx,globalDataPointNumber
     INTEGER(INTG) :: matrixCoefficients(2)
     REAL(DP) :: PGMSI,contactStiffness
     REAL(DP) :: positionPoint(3),normalPoint(3),tangentsPoint(3,3),xi(3)
+    LOGICAL :: reverseNormal
     REAL(DP), ALLOCATABLE :: gaps(:),gapsComponents(:,:),normals(:,:)
     LOGICAL, ALLOCATABLE :: orthogonallyProjected(:)
     
@@ -465,8 +466,9 @@ CONTAINS
                     & DEPENDENT%DEPENDENT_FIELD
                   !mesh component number is the same for all geometric components in elasticity problems
                   DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
-                    DO xiIdx=1,SIZE(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi,1)
-                      IF(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%reducedXi(xiIdx) &
+                    globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
+                    DO xiIdx=1,SIZE(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)%reducedXi,1)
+                      IF(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)%reducedXi(xiIdx) &
                           & == 0.0_DP) THEN
                         orthogonallyProjected(dataPointIdx)=.FALSE.
                       ENDIF
@@ -500,20 +502,30 @@ CONTAINS
                     & FIELD_GEOMETRIC_COMPONENTS_TYPE)
                   interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
                   DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                    globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
                     !Only interpolate if orthogonally projected
                     IF(orthogonallyProjected(dataPointIdx)) THEN
-                      localElementNumber=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%coupledMeshElementNumber
+                      localElementNumber=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
+                        & coupledMeshElementNumber
                       localFaceLineNumber=coupledMeshDependentField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(localElementNumber)% &
-                        & ELEMENT_FACES(pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)%elementLineFaceNumber)
+                        & ELEMENT_FACES(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
+                        & elementLineFaceNumber)
                       SELECT CASE(numberOfInterfaceMeshXi) !Use face/line interpolation parameters for normal calculation
                       CASE(1)
                         CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,localFaceLineNumber, &
                           & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                       CASE(2)
+                        SELECT CASE(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
+                            & elementLineFaceNumber)
+                        CASE(1,3,5)
+                          reverseNormal=.FALSE.
+                        CASE(2,4,6)
+                          reverseNormal=.TRUE.
+                        END SELECT
                         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,localFaceLineNumber, &
                           & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                       END SELECT
-                      CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(dataPointIdx, &
+                      CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(globalDataPointNumber, &
                         & coupledMeshIdx)%reducedXi(:),interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE) !Interpolate contact data points on each surface
                       gapsComponents(1:numberOfCoupledMeshGeoComp,dataPointIdx)=gapsComponents(1:numberOfCoupledMeshGeoComp, &
                         & dataPointIdx)+interpolatedPoint%VALUES(1:numberOfCoupledMeshGeoComp,NO_PART_DERIV)* &
@@ -525,7 +537,7 @@ CONTAINS
                         CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(numberOfCoupledMeshGeoComp,interpolatedPointsMetrics &
                           & (FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
                         CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC(interpolatedPointsMetrics &
-                          & (FIELD_U_VARIABLE_TYPE)%PTR,positionPoint,normalPoint,tangentsPoint,err,error,*999)
+                          & (FIELD_U_VARIABLE_TYPE)%PTR,reverseNormal,positionPoint,normalPoint,tangentsPoint,err,error,*999)
                         normals(1:numberOfCoupledMeshGeoComp,dataPointIdx)=normalPoint(1:numberOfCoupledMeshGeoComp)
                         CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(interpolatedPointsMetrics,err,error,*999)
                       ENDIF !coupledMeshIdx==1
@@ -557,8 +569,9 @@ CONTAINS
                       & DEPENDENT%DEPENDENT_FIELD
                     interfaceElementMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%ELEMENT_MATRIX
                     DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                      globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
                       IF(gaps(dataPointIdx)>0.0_dp) THEN !Only add contact point contribution if the gap is a penetration
-                        localElementNumber=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
+                        localElementNumber=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
                           & coupledMeshElementNumber
                         !Calculate the element index (non-conforming element) for this interface matrix
                         matrixElementIdx=1
@@ -566,7 +579,7 @@ CONTAINS
                             & elementNumbers(matrixElementIdx))
                           matrixElementIdx=matrixElementIdx+1
                         ENDDO   
-                        xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
+                        xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
                           & xi(1:numberOfCoupledMeshXi)                  
                         DO rowComponentIdx=1,numberOfCoupledMeshGeoComp
                           meshComponentNumber=coupledMeshDependentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
@@ -604,6 +617,7 @@ CONTAINS
                           DO rowParameterIdx=1,coupledMeshDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS 
                             rowIdx=rowIdx+1
                             DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                              globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
                               colIdx=dataPointIdx
                               interfaceElementMatrix%MATRIX(rowIdx,colIdx)=interfaceElementMatrix%MATRIX(rowIdx, &
                                 & colIdx)*interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)% &
