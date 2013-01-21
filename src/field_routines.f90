@@ -5213,7 +5213,8 @@ CONTAINS
   !
 
   !>Interpolates a field at a gauss point to give an interpolated point. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated. Old CMISS name XEXG, ZEXG
-  SUBROUTINE FIELD_INTERPOLATE_GAUSS(PARTIAL_DERIVATIVE_TYPE,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER,INTERPOLATED_POINT,ERR,ERROR,*)
+  SUBROUTINE FIELD_INTERPOLATE_GAUSS(PARTIAL_DERIVATIVE_TYPE,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER,INTERPOLATED_POINT, &
+      & ERR,ERROR,*,componentType)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_TYPE !<The partial derivative type of the provided field interpolation
@@ -5222,8 +5223,10 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<The pointer to the interpolated point which will contain the field interpolation information at the specified Gauss point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), OPTIONAL, INTENT(IN) :: componentType !<The components type to interpolate
     !Local Variables
     INTEGER(INTG) :: component_idx,ni,nu
+    INTEGER(INTG) :: startComponentIdx,endComponentIdx
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
@@ -5238,9 +5241,45 @@ CONTAINS
         IF(ASSOCIATED(FIELD)) THEN
           NULLIFY(COORDINATE_SYSTEM)
           CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+          IF(PRESENT(componentType)) THEN
+            SELECT CASE(componentType)
+            CASE(FIELD_ALL_COMPONENTS_TYPE)
+              startComponentIdx=1
+              endComponentIdx=INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+            CASE(FIELD_GEOMETRIC_COMPONENTS_TYPE)
+              IF(INTERPOLATION_PARAMETERS%FIELD%TYPE==FIELD_GEOMETRIC_GENERAL_TYPE) THEN
+                startComponentIdx=1
+                endComponentIdx=INTERPOLATION_PARAMETERS%FIELD%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
+                  & NUMBER_OF_COMPONENTS
+              ELSEIF(INTERPOLATION_PARAMETERS%FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+                startComponentIdx=1
+                endComponentIdx=INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              ELSE
+                LOCAL_ERROR="Field type "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD%TYPE,"*",ERR,ERROR))// &
+                  & " is not valid for only interpolating geometric field, use FIELD_GEOMETRIC_GENERAL_TYPE."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            CASE(FIELD_NONGEOMETRIC_COMPONENTS_TYPE)
+              IF(INTERPOLATION_PARAMETERS%FIELD%TYPE==FIELD_GEOMETRIC_GENERAL_TYPE) THEN
+                startComponentIdx=-INTERPOLATION_PARAMETERS%FIELD%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
+                  & PTR%NUMBER_OF_COMPONENTS+1
+                endComponentIdx=INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              ELSE
+                LOCAL_ERROR="Field type "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD%TYPE,"*",ERR,ERROR))// &
+                  & " is not valid for only interpolating geometric field, use FIELD_GEOMETRIC_GENERAL_TYPE."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="Interpolation component type "//TRIM(NUMBER_TO_VSTRING(componentType,"*",ERR,ERROR))//" is not valid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            startComponentIdx=1
+            endComponentIdx=INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          ENDIF
           SELECT CASE(PARTIAL_DERIVATIVE_TYPE)
           CASE(NO_PART_DERIV)
-            DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+            DO component_idx=startComponentidx,endComponentIdx
               SELECT CASE(INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
               CASE(FIELD_CONSTANT_INTERPOLATION)
                 INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)
@@ -5265,7 +5304,7 @@ CONTAINS
             ENDDO! component_idx
             INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=NO_PART_DERIV
           CASE(FIRST_PART_DERIV)
-            DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+            DO component_idx=startComponentidx,endComponentIdx
               SELECT CASE(INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
               CASE(FIELD_CONSTANT_INTERPOLATION)
                 !Handle the first case of no partial derivative
@@ -5321,7 +5360,7 @@ CONTAINS
             ENDDO! component_idx
             INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=FIRST_PART_DERIV
           CASE(SECOND_PART_DERIV)
-            DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+            DO component_idx=startComponentidx,endComponentIdx
               SELECT CASE(INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
               CASE(FIELD_CONSTANT_INTERPOLATION)
                 !Handle the first case of no partial derivative
@@ -7209,7 +7248,10 @@ CONTAINS
         CALL FIELD_COORDINATE_SYSTEM_GET(INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
         NUMBER_OF_X_DIMENSIONS=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
         NUMBER_OF_XI_DIMENSIONS=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD%DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS
-        IF(NUMBER_OF_X_DIMENSIONS==SIZE(INTERPOLATED_POINT%VALUES,1)) THEN
+        !Size of interpolated point values may be greater than number of x dimensions, as FIELD_GEOMETRIC_GENERAL_TYPE
+        !fields can have geometric components and then other non-geometric components, eg. for dependent fields with
+        !geometric components.
+        IF(NUMBER_OF_X_DIMENSIONS<=SIZE(INTERPOLATED_POINT%VALUES,1)) THEN
           ALLOCATE(INTERPOLATED_POINT_METRICS,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interpolated point metrics.",ERR,ERROR,*999)
           ALLOCATE(INTERPOLATED_POINT_METRICS%GL(NUMBER_OF_XI_DIMENSIONS,NUMBER_OF_XI_DIMENSIONS),STAT=ERR)
@@ -7945,8 +7987,10 @@ CONTAINS
         & VARIABLE_NUMBER,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Parameter set type = ",PARAMETER_SET_TYPE,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Line number = ",LINE_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of components = ",INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
-        & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of components = ", &
+        & INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Interpolation number of components = ", &
+        & endComponentIdx-startComponentIdx+1,ERR,ERROR,*999)
       DO component_idx=startComponentIdx,endComponentIdx
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Component = ",component_idx,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of parameters = ",INTERPOLATION_PARAMETERS% &
@@ -8151,8 +8195,10 @@ CONTAINS
         & VARIABLE_NUMBER,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Parameter set type = ",PARAMETER_SET_TYPE,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Face number = ",FACE_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of components = ",INTERPOLATION_PARAMETERS%FIELD_VARIABLE% &
-        & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of components = ", &
+        & INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Interpolation number of components = ", &
+        & endComponentIdx-startComponentIdx+1,ERR,ERROR,*999)
       DO component_idx=startComponentIdx,endComponentIdx
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Component = ",component_idx,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of parameters = ",INTERPOLATION_PARAMETERS% &
