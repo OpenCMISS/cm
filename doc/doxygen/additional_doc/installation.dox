@@ -21,9 +21,9 @@ They will be used during the installation process.
 It would be great if you also have the following tools installed. 
 However, if you don't have them installed or not have the right version, you can download and build them as part of the installation steps (See \ref step6 "Step 6"). 
 To do this, you need to set the USE_OPENCMISS_xxx environment variables to true in \ref step4_2 "Step 4.2".
-- cmake (you may install it later with libraries build)
-- GNU Fortran (GCC) 4.4 or 4.6 or later (you may install it later with libraries build)
-- git (you may install it later with libraries build)
+- GNU Fortran (GCC) 4.4 or 4.6 or later (you may install it later during the OpenCMISSExtras compiler build)
+- cmake (you may install it later during the OpenCMISSExtras tools build)
+- git (you may install it later during the OpenCMISSExtras tools build)
 
 \section opencmiss_installation Installations
 To fully install OpenCMISS, you need to install OpenCMISSExtras and OpenCMISS. 
@@ -64,19 +64,44 @@ setenv OPENCMISSEXTRAS_ROOT <path to your OpenCMISSExtras folder>
 2. Set any additional programmer script variables. 
 \anchor step4_2
 The opencmiss_programmers script in $OPENCMISSEXTRAS_ROOT/utils/scripts will let you customise the setup by setting environment variables after the root sets and before executing the script. These variables are:
-- COMPILER : set the compiler to be used as the default. Options are gnu and intel.
 - USE_OPENCMISS_GFORTRAN : if set use the gfortran in the OpenCMISSextras repository. If not set use the system gfortran.
 - USE_OPENCMISS_CMAKE : if set use the cmake in the OpenCMISSextras repository. If not set use the system cmake.
 - USE_OPENCMISS_GIT : if set use the git in the OpenCMISSextras repository. If not set use the system git.
-- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4, 4.5 or 4.6.
+- COMPILER : set the compiler to be used as the default. Options are gnu, intel or ibm.
+- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4, 4.5, 4.6 or 4.7
 - OPENCMISSEXTRAS_RUN_CONFIG : select which configuration of the OpenCMISSextras binaries to use at runtime. Options are debug or optimised.
-- MPI : select what version of MPI to use. Options are mpich2, intel, mvapich2 or openmpi.
+- MPI : select what version of MPI to use. Options are mpich2, intel, mvapich2, openmpi, poe or cray
+- TOTALVIEW_PATH : path to your version of Totalview.
+- TOTALVIEW_VERSION : the version number of your Totalview.
+- FLEXLM_VERSION : the version number of your Flexlm for Totalview.
+- CUDA_ROOT : the path to the CUDA runtime.
+- CUDA_SDK_ROOT : the path to the CUDA Software Development Kit.
 
-The following variables are not required if you are using Intel compiler version 12 or above: 
+The following variables are not required if you are using Intel compiler version 11 or below: 
 - INTEL_COMPILER_VERSION : if using the pre 12.0 version of the intel compilers the compiler version to use e.g., 11.1
 - INTEL_COMPILER_BUILD : if using the pre 12.0 version of the intel compilers the build version to use e.g., 072
 - INTEL_TRACE_COLLECTOR_VERSION : the version of the intel trace collector to use e.g., 8.0.1.009
 - INTEL_MPI_VERSION : the version of the intel MPI to use e.g., 4.0.1.007
+
+You can also set which libraries are used during the building of OpenCMISS and OpenCMISSExtras. If you set the following variables to true that library will be included, or not included if false. The variables are
+- OPENCMISS_USE_CELLML
+- OPENCMISS_USE_CUDA
+- OPENCMISS_USE_FIELDML 
+- OPENCMISS_USE_HDF5
+- OPENCMISS_USE_HYPRE
+- OPENCMISS_USE_MUMPS
+- OPENCMISS_USE_NETCDF
+- OPENCMISS_USE_PARMETIS
+- OPENCMISS_USE_PASTIX
+- OPENCMISS_USE_PETSC
+- OPENCMISS_USE_PLAPACK
+- OPENCMISS_USE_SLEPC
+- OPENCMISS_USE_SUNDIALS
+- OPENCMISS_USE_SUPERLU
+- OPENCMISS_USE_TAO
+- OPENCMISS_USE_TAU
+
+If you are in doubt about any of the variables just leave them out of your login script and they will default to a sensible value.
 
 3. Add in the lines in the login script to run the script:
 
@@ -106,20 +131,74 @@ cd to the $OPENCMISSEXTRAS_ROOT/utils dir
 \code cd $OPENCMISSEXTRAS_ROOT/utils \endcode
 
 \subsection step6 Step 6
-Now you are ready to build OpenCMISSExtras via the make script.
+Now you are ready to build the gcc and gfortran compiler (if required). If you do want to build gfortran from the 
+OpenCMISSExtras repository, you need to define the USE_OPENCMISS_GFORTRAN environment variable described in 
+\ref step4_2 "Step 4.2". 
+
+1. Build or update the required libraries from the repositories. 
+If there is no previous compiler directories, you may use:
+\code make compiler_checkout \endcode
+If you have checked out or built the libraries before, or you want to update to the latest version, use:
+\code make compiler_update \endcode
+
+2. Clean the build (Optional).
+If you want to clean the previous build and do a fresh build, you may use:
+\code make compiler_clean \endcode
+
+3. Build the OpenCMISSExtras compiler.
+To build the OpenCMISSExtras compiler, use:
+\code make compiler \endcode
+You may specify the following options to the build:
+- ABI=(32|64): to build 32 bit or 64 bit libraries
+- (DEBUG=|OPT=): compile the libraries to the debug version or optimised (release) version
+
+For example, to build the optimised version of the compiler:
+\code make compiler OPT=true \endcode
+
+4. To ensure that the environment variables are set to ensure this compiler is used please log out and then log back in again.
+
+\subsection step7 Step 7
+Now you are ready to build the OpenCMISSExtras tools - cmake and git (if required).
+If you want to build cmake and git from the OpenCMISSExtras repository, you need to define the relevant USE_OPENCMISS_xxx 
+environment variables described in \ref step4_2 "Step 4.2". 
+
+1. Checkout or update the required libraries from the repositories. 
+If there is no previous checkout, you may use:
+\code make tools_checkout \endcode
+If you have checked out or built the libraries before, or you want to update to the latest version, use:
+\code make tools_update \endcode
+
+2. Clean the builds (Optional).
+If you want to clean the previous build and do a fresh build, you may use:
+\code make tools_clean \endcode
+
+3. Build the OpenCMISSExtras tools.
+To build the OpenCMISSExtras tools, use:
+\code make tools\endcode
+You may specify the following options to the build:
+- ABI=(32|64): to build 32 bit or 64 bit libraries
+- COMPILER=(intel|gnu|ibm|cray): to use the fortran and c compiler as specified
+- (DEBUG=|OPT=): compiler the libraries to the debug version or optimised (release) version
+
+For example, to build the optimised version of libraries using the Intel compiler:
+\code make tools COMPILER=intel OPT=true \endcode
+
+4. To ensure that the environment variables are set to ensure these tools are used please log out and then log back in again.
+
+\subsection step8 Step 8
+Now you are ready to build the OpenCMISSExtras libraries via the make script. If you want to include or exclude various libraries 
+from the OpenCMISSExtras repository, you need to define the relevant USE_OPENCMISS_xxx environment variables described in 
+\ref step4_2 "Step 4.2". 
 
 1. Checkout or update the required libraries from the repositories. 
 If there is no previous checkout, you may use:
 \code make checkout \endcode
-If you have checked out or built the libraries before, use:
+If you have checked out or built the libraries before, or you want to update to the latest version, use:
 \code make update \endcode
-If you want to build gfortran, cmake or git from the OpenCMISSExtras repository, 
-you need to define the relevant USE_OPENCMISS_xxx environment variables described in \ref step4_2 "Step 4.2". 
 
 2. Clean the builds (Optional).
 If you want to clean the previous build and do a fresh build, you may use:
 \code make clean \endcode
-If the relevant USE_OPENCMISS_xxx environment variables are set, it will also clean the gfortran, cmake or git build from the OpenCMISSExtras repository. 
 
 3. Build the OpenCMISSExtras libraries.
 To build the OpenCMISSExtras libraries, use:
@@ -135,11 +214,13 @@ You may specify the following options to the build:
 For example, to build the optimised version of libraries using the Intel compiler:
 \code make COMPILER=intel OPT=true \endcode
 
-\subsection step7 Step 7
+4. To ensure that the environment variables are set to ensure these libraries are used please log back out and then log in again.
+
+\subsection step9 Step 9
 cd to the OpenCMISS folder that is created in \ref step1 "Step 1".
 \code cd $OPENCMISS_ROOT \endcode
 
-\subsection step8 Step 8
+\subsection step10 Step 10
 To obtain the OpenCMISS source you need to clone the Git repository.
 There are three parts of OpenCMISS to obtain - OpenCMISS itself, the OpenCMISS examples, and OpenCMISS CellML.
 
@@ -173,7 +254,7 @@ If you use C Shell or tcsh Shell you can do this by adding the following lines t
 setenv OPENCMISSEXAMPLES_ROOT <path to your examples folder>
 \endcode 
 
-\subsection step9 Step 9
+\subsection step11 Step 11
 Build the OpenCMISS celllml.
 
 1. cd to the cellml directory.
@@ -186,7 +267,7 @@ You may specify the following options to the build:
 - COMPILER=(intel|gnu|ibm|cray): to use the fortran and c compiler as specified
 - (DEBUG=|OPT=): compiler the libraries to the debug version or optimised (release) version
 
-\subsection step10 Step 10
+\subsection step12 Step 12
 Build OpenCMISS. 
 
 1. cd to the cm directory.
@@ -211,7 +292,7 @@ For example, to build the optimised version of libraries using the Intel compile
 You may build OpenCMISS with python binding by
 \code make python \endcode
 
-\subsection step11 Step 11
+\subsection step13 Step 13
 Build an example.
 
 1. cd to an example directory, e.g the Laplace example
@@ -234,9 +315,7 @@ You may specify the arguments to execute the example, e.g.
 \code ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 1 \endcode
 
 4. Execute the example with mpi:
-To execute the example with mpi, you first need to start mpi.
-\code mpd & \endcode
-and then e.g. execute the examples running on two computational nodes:
+To execute the example with mpi running on two computational nodes:
 \code mpiexec -2 ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 2 \endcode
 
 5. Build and execute examples with python binding, e.g.
