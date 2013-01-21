@@ -622,6 +622,8 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_DATA_TYPE_CHECK,FIELD_DATA_TYPE_GET,FIELD_DATA_TYPE_SET,FIELD_DATA_TYPE_SET_AND_LOCK
 
+  PUBLIC Field_DependentGeometricFieldGet
+
   PUBLIC FIELD_DEPENDENT_TYPE_CHECK,FIELD_DEPENDENT_TYPE_GET,FIELD_DEPENDENT_TYPE_SET,FIELD_DEPENDENT_TYPE_SET_AND_LOCK
 
   PUBLIC FIELD_DIMENSION_CHECK,FIELD_DIMENSION_GET,FIELD_DIMENSION_SET,FIELD_DIMENSION_SET_AND_LOCK
@@ -4545,6 +4547,82 @@ CONTAINS
     CALL EXITS("FIELD_CREATE_VALUES_CACHE_INITIALISE")
     RETURN 1
   END SUBROUTINE FIELD_CREATE_VALUES_CACHE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the deformed geometric field for a field if there is any, otherwise the undeformed geometry is returned.
+  !>If no geometric field is found then an error is raised. \see OPENCMISS::CMISSField_DependentGeometricFieldGet
+  SUBROUTINE Field_DependentGeometricFieldGet(field,findDependent,geometricField,dependentFound,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<A pointer to the field to get the geometric field for
+    LOGICAL, INTENT(IN) :: findDependent !<If true then get the dependent geometry if possible, otherwise get the undeformed geometry
+    TYPE(FIELD_TYPE), POINTER, INTENT(OUT) :: geometricField !<On return, a pointer to the geometric field. Must not be associated on entry.
+    LOGICAL, INTENT(OUT) :: dependentFound !<On return, true if we found a dependent geometric field, otherwise false.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: fieldIdx
+    TYPE(FIELD_TYPE), POINTER :: otherField
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("Field_DependentGeometricFieldGet",err,error,*999)
+
+    NULLIFY(geometricField)
+
+    ! Check input parameters
+    IF(ASSOCIATED(field)) THEN
+      IF(field%field_finished) THEN
+        IF(.NOT.ASSOCIATED(field%fields)) THEN
+          CALL FlagError("Field fields are not associated.",err,error,*999)
+        END IF
+      ELSE
+        localError="Field number "//TRIM(number_to_vstring(field%user_number,"*",err,error))// &
+          & " has not been finished."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("Field is not associated.",err,error,*999)
+    END IF
+    IF(ASSOCIATED(geometricField)) THEN
+      CALL FlagError("Geometric field is already associated.",err,error,*999)
+    END IF
+
+    dependentFound=.FALSE.
+    IF(findDependent) THEN
+      ! Find the dependent geometric field associated with this field
+      DO fieldIdx=1,field%fields%number_of_fields
+        otherField=>field%fields%fields(fieldIdx)%ptr
+        IF(ASSOCIATED(otherField)) THEN
+          IF(otherField%TYPE==FIELD_GEOMETRIC_GENERAL_TYPE) THEN
+            geometricField=>otherField
+            dependentFound=.TRUE.
+          END IF
+        ELSE
+          CALL FlagError("Field number "//TRIM(number_to_vstring(fieldIdx,"*",err,error))// &
+            & " is not associated.",err,error,*999)
+        END IF
+      END DO
+    END IF
+
+    IF(.NOT.dependentFound) THEN
+      ! Either findDependent is false or we couldn't find a dependent geometric field.
+      ! Just return the undeformed geometric field.
+      IF(ASSOCIATED(field%geometric_field)) THEN
+        geometricField=>field%geometric_field
+      ELSE
+        CALL FlagError("Dependent geometric field not found and geometric field is not associated.",err,error,*999)
+      END IF
+    END IF
+
+    CALL Exits("Field_DependentGeometricFieldGet")
+    RETURN
+999 CALL Errors("Field_DependentGeometricFieldGet",err,error)
+    CALL Exits("Field_DependentGeometricFieldGet")
+    RETURN 1
+  END SUBROUTINE Field_DependentGeometricFieldGet
 
   !
   !================================================================================================================================
