@@ -688,6 +688,52 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_CREATE_START_DATA_POINTS 
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks that a user data point number is defined for a specific data projection
+  SUBROUTINE DataProjection_DataPointCheckExist(DataProjection,dataPointUserNumber,dataPointExist,dataPointGlobalNumber,err,error,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DataProjection !<A pointer to the data projection whose data points to check
+    INTEGER(INTG) :: dataPointUserNumber !<The user data point number to check if it exists
+    LOGICAL, INTENT(OUT) :: dataPointExist !<On exit, is .TRUE. if the data point user number exists in the region, .FALSE. if not
+    INTEGER(INTG), INTENT(OUT) :: dataPointGlobalNumber !<On exit, if the data point exists the global number corresponding to the user data point number. If the data point does not exist then global number will be 0.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(TREE_NODE_TYPE), POINTER :: treeNode
+   
+    CALL ENTERS("DataProjection_DataPointCheckExist",err,ERROR,*999)
+    
+    dataPointExist=.FALSE.
+    dataPointGlobalNumber=0
+    IF(ASSOCIATED(DataProjection)) THEN
+      dataPoints=>DataProjection%DATA_POINTS
+      IF(ASSOCIATED(dataPoints)) THEN
+        NULLIFY(treeNode)
+        CALL TREE_SEARCH(dataPoints%DATA_POINTS_TREE,dataPointUserNumber,treeNode,err,error,*999)
+        IF(ASSOCIATED(treeNode)) THEN
+          CALL TREE_NODE_VALUE_GET(dataPoints%DATA_POINTS_TREE,treeNode,dataPointGlobalNumber,err,error,*999)
+          dataPointExist=.TRUE.
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Data points is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("DataProjection_DataPointCheckExist")
+    RETURN
+999 CALL ERRORS("DataProjection_DataPointCheckExist",err,error)
+    CALL EXITS("DataProjection_DataPointCheckExist")
+    RETURN 1
+   
+  END SUBROUTINE DataProjection_DataPointCheckExist
 
   !
   !================================================================================================================================
@@ -3007,23 +3053,36 @@ CONTAINS
   !
   
   !>Sets the element for a data projection.
-  SUBROUTINE DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,DATA_POINT_NUMBER,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,ELEMENT_USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the element for
-    INTEGER(INTG), INTENT(IN) :: DATA_POINT_NUMBER !<data point number
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<the element number to set
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<data point user number
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_USER_NUMBER !<the user element number to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER,ELEMENT_GLOBAL_NUMBER
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER=1!<TODO:mesh component is harded coded to be 1, need to be generalised
+    LOGICAL :: DATA_POINT_EXISTS,ELEMENT_EXISTS
     
     CALL ENTERS("DATA_PROJECTION_ELEMENT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
-      IF((ELEMENT_NUMBER<DATA_PROJECTION%MESH%NUMBER_OF_ELEMENTS) .OR. (ELEMENT_NUMBER>0)) THEN
-        DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%ELEMENT_NUMBER=ELEMENT_NUMBER
+      CALL DataProjection_DataPointCheckExist(DATA_PROJECTION,DATA_POINT_USER_NUMBER,DATA_POINT_EXISTS, &
+        & DATA_POINT_GLOBAL_NUMBER,ERR,ERROR,*999)
+      IF(DATA_POINT_EXISTS) THEN
+        CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(DATA_PROJECTION%MESH,MESH_COMPONENT_NUMBER,ELEMENT_USER_NUMBER, &
+          & ELEMENT_EXISTS,ELEMENT_GLOBAL_NUMBER,ERR,ERROR,*999)       
+        IF(ELEMENT_EXISTS) THEN
+          DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%ELEMENT_NUMBER=ELEMENT_GLOBAL_NUMBER
+        ELSE
+          CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
+            & (ELEMENT_USER_NUMBER,"*",ERR,ERROR))//") does not exist.",ERR,ERROR,*999)
+        ENDIF
       ELSE
-        CALL FLAG_ERROR("Data projection element number out of range.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
+            & (DATA_POINT_USER_NUMBER,"*",ERR,ERROR))//") does not exist.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -3042,33 +3101,40 @@ CONTAINS
   !
   
   !>Sets the starting xi for a data projection.
-  SUBROUTINE DATA_PROJECTION_XI_SET(DATA_PROJECTION,DATA_POINT_NUMBER,XI,ERR,ERROR,*)
+  SUBROUTINE DATA_PROJECTION_XI_SET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,XI,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the xi for
-    INTEGER(INTG), INTENT(IN) :: DATA_POINT_NUMBER !<data point number
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<data point user number
     REAL(DP), INTENT(IN) :: XI(:) !<the xi position to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ni
-    LOGICAL :: VALID_INPUT
+    INTEGER(INTG) :: ni,DATA_POINT_GLOBAL_NUMBER
+    LOGICAL :: VALID_INPUT,DATA_POINT_EXISTS
     
     CALL ENTERS("DATA_PROJECTION_XI_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
-      IF(SIZE(XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
-        VALID_INPUT=.TRUE.
-        DO ni=1,SIZE(XI,1)
-          IF((XI(ni)<=0).OR.(XI(ni)>=1)) VALID_INPUT=.FALSE.
-        ENDDO
-        IF(VALID_INPUT) THEN
-          DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%XI=XI
+      CALL DataProjection_DataPointCheckExist(DATA_PROJECTION,DATA_POINT_USER_NUMBER,DATA_POINT_EXISTS, &
+        & DATA_POINT_GLOBAL_NUMBER,ERR,ERROR,*999)
+      IF(DATA_POINT_EXISTS) THEN
+        IF(SIZE(XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
+          VALID_INPUT=.TRUE.
+          DO ni=1,SIZE(XI,1)
+            IF((XI(ni)<0).OR.(XI(ni)>1)) VALID_INPUT=.FALSE.
+          ENDDO
+          IF(VALID_INPUT) THEN
+            DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI=XI
+          ELSE
+            CALL FLAG_ERROR("Data projection xi must be between 0 and 1.",ERR,ERROR,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("Data projection xi must be between 0 and 1.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Data projection xi dimension mismatch.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data projection xi dimension mismatch.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
+            & (DATA_POINT_USER_NUMBER,"*",ERR,ERROR))//") does not exist.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
