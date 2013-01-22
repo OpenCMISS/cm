@@ -5813,6 +5813,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_GeometricTransformationArbitraryPathSetObj
   END INTERFACE CMISSSolver_GeometricTransformationArbitraryPathSet
   
+  !Clear transformation for a geometric transformation solver
+  INTERFACE CMISSSolver_GeometricTransformationClear
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationClearNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationClearObj
+  END INTERFACE CMISSSolver_GeometricTransformationClear
+  
   !Sets the field to transform
   INTERFACE CMISSSolver_GeometricTransformationFieldSet
     MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetNumber
@@ -6203,7 +6209,9 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolver_DynamicTimesSet
   
-  PUBLIC CMISSSolver_GeometricTransformationArbitraryPathSet,CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+  PUBLIC CMISSSolver_GeometricTransformationArbitraryPathSet,CMISSSolver_GeometricTransformationClear
+  
+  PUBLIC CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
   
   PUBLIC CMISSSolver_GeometricTransformationScalingsSet
   
@@ -46818,8 +46826,8 @@ CONTAINS
       & arbitraryPath,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the field for.
-    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the arbitrary path for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the arbitrary path for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
     LOGICAL, INTENT(IN) :: arbitraryPath !<.TRUE. if the the transformation has an arbitrary path, .FALSE. if the path is uni-directional
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -46865,7 +46873,7 @@ CONTAINS
   SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetObj(solver,arbitraryPath,err)
 
     !Argument variables
-    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the arbitrary path for.
     LOGICAL, INTENT(IN) :: arbitraryPath !<.TRUE. if the the transformation has an arbitrary path, .FALSE. if the path is uni-directional
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -46882,6 +46890,77 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Clear transformation a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationClearNumber(problemUserNumber,controlLoopIdentifier,solverIndex,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to clear.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to clear.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationClearNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationClear(solver,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationClearNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationClearNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationClearNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationClearNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Clear transformation for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationClearObj(solver,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to clear
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationClearObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationClear(solver%SOLVER,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationClearObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationClearObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationClearObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationClearObj
   
   !
   !================================================================================================================================

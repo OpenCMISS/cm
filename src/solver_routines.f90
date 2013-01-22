@@ -501,7 +501,9 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_LINEAR_ITERATIVE_TYPE_SET
   
-  PUBLIC Solver_GeometricTransformationArbitraryPathSet,Solver_GeometricTransformationNumberOfLoadIncrementsSet
+  PUBLIC Solver_GeometricTransformationArbitraryPathSet,Solver_GeometricTransformationClear
+  
+  PUBLIC Solver_GeometricTransformationNumberOfLoadIncrementsSet
   
   PUBLIC Solver_GeometricTransformationScalingsSet
   
@@ -6933,12 +6935,6 @@ CONTAINS
     IF(ASSOCIATED(solver)) THEN
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
         solver%geometricTransformationSolver%arbitraryPath=arbitraryPath
-!        IF(.NOT. ALLOCATED(solver%geometricTransformationSolver%scalings)) THEN
-!          IF((solver%geometricTransformationSolver%numberOfIncrements>1).AND.(.NOT. arbitraryPath)) THEN
-!            ALLOCATE(solver%geometricTransformationSolver%scalings(numberOfIncrements),STAT=err)
-!            IF(err/=0) CALL FLAG_ERROR("Could not allocate scalings for geometric transformation sovler",err,error,*999)
-!          ENDIF
-!        ENDIF
       ELSE
         CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
@@ -6959,6 +6955,47 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Clear transformation for a geometric transformation solver 
+  SUBROUTINE Solver_GeometricTransformationClear(solver,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the field for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: incrementIdx,i
+    
+    CALL ENTERS("Solver_GeometricTransformationClear",err,error,*999)
+    
+    IF(ASSOCIATED(solver)) THEN
+      IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
+        solver%geometricTransformationSolver%transformationMatrices=0.0_DP
+        DO incrementIdx=1,solver%geometricTransformationSolver%numberOfIncrements
+          DO i=1,SIZE(solver%geometricTransformationSolver%transformationMatrices,1)
+            solver%geometricTransformationSolver%transformationMatrices(i,i,incrementIdx)=1.0_DP
+          ENDDO
+        ENDDO !incrementIdx
+        IF(ALLOCATED(solver%geometricTransformationSolver%scalings)) DEALLOCATE(solver%geometricTransformationSolver%scalings)
+      ELSE
+        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+    ENDIF
+        
+    CALL EXITS("Solver_GeometricTransformationClear")
+    RETURN
+    
+999 CALL ERRORS("Solver_GeometricTransformationClear",err,error)
+    CALL EXITS("Solver_GeometricTransformationClear")
+    RETURN 1
+   
+  END SUBROUTINE Solver_GeometricTransformationClear
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Set the field and field variable type for geometric transformation solver 
   SUBROUTINE Solver_GeometricTransformationFieldSet(solver,field,variableType,err,error,*)
 
@@ -6972,7 +7009,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricFieldVariable
     INTEGER(INTG) :: numberOfGeoemtricComponents,i,j
 
-    CALL ENTERS("Solver_GeometricTransformationFieldSet",err,error,*998)
+    CALL ENTERS("Solver_GeometricTransformationFieldSet",err,error,*999)
     
     IF(ASSOCIATED(solver)) THEN
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
@@ -6983,8 +7020,6 @@ CONTAINS
               geometricFieldVariable=>field%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(1)%PTR !only 1 variable for geometric field
               IF(ASSOCIATED(geometricFieldVariable)) THEN
                 numberOfGeoemtricComponents=geometricFieldVariable%NUMBER_OF_COMPONENTS
-                ALLOCATE(solver%geometricTransformationSolver%translation(numberOfGeoemtricComponents),STAT=err)
-                IF(err/=0) CALL FLAG_ERROR("Could not allocate translation for geometric transformation sovler",err,error,*999)
                 IF(solver%geometricTransformationSolver%arbitraryPath) THEN !Allocate memory for transformation matrix at each load increment if the transformation is arbitrary at each step
                   ALLOCATE(solver%geometricTransformationSolver%transformationMatrices(numberOfGeoemtricComponents+1, &
                     & numberOfGeoemtricComponents+1,solver%geometricTransformationSolver%numberOfIncrements),STAT=err)
@@ -6996,7 +7031,6 @@ CONTAINS
                   IF(err/=0) CALL FLAG_ERROR("Could not allocate transform matrices for geometric transformation sovler", &
                     & err,error,*999)
                 ENDIF
-                solver%geometricTransformationSolver%translation=0.0_DP
                 solver%geometricTransformationSolver%transformationMatrices=0.0_DP
                 ! Set all transformation matrices to be identity matrices
                 DO i=1,SIZE(solver%geometricTransformationSolver%transformationMatrices,3)
@@ -7007,29 +7041,28 @@ CONTAINS
                 solver%geometricTransformationSolver%field=>field
                 solver%geometricTransformationSolver%fieldVariableType=variableType
               ELSE
-                CALL FLAG_ERROR("Field's geometric field variable is not associated.",err,error,*998)
+                CALL FLAG_ERROR("Field's geometric field variable is not associated.",err,error,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Field's geometric field is not associated.",err,error,*998)
+              CALL FLAG_ERROR("Field's geometric field is not associated.",err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Field variable to be transformed is not associated.",err,error,*998)
+            CALL FLAG_ERROR("Field variable to be transformed is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Field is not associated.",err,error,*998)
+          CALL FLAG_ERROR("Field is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*998)
+        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*998)
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
     ENDIF
         
     CALL EXITS("Solver_GeometricTransformationFieldSet")
     RETURN
     
-999 IF(ALLOCATED(solver%geometricTransformationSolver%translation)) DEALLOCATE(solver%geometricTransformationSolver%translation)
-998 CALL ERRORS("Solver_GeometricTransformationFieldSet",err,error)
+999 CALL ERRORS("Solver_GeometricTransformationFieldSet",err,error)
     CALL EXITS("Solver_GeometricTransformationFieldSet")
     RETURN 1
    
@@ -7103,12 +7136,6 @@ CONTAINS
     IF(ASSOCIATED(solver)) THEN
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
         solver%geometricTransformationSolver%numberOfIncrements=numberOfIncrements
-!        IF(.NOT. ALLOCATED(solver%geometricTransformationSolver%scalings)) THEN
-!          IF((numberOfIncrements>1).AND.(.NOT. solver%geometricTransformationSolver%arbitraryPath)) THEN
-!            ALLOCATE(solver%geometricTransformationSolver%scalings(numberOfIncrements),STAT=err)
-!            IF(err/=0) CALL FLAG_ERROR("Could not allocate scalings for geometric transformation sovler",err,error,*999)
-!          ENDIF
-!        ENDIF
       ELSE
         CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
@@ -7296,7 +7323,6 @@ CONTAINS
             ENDDO
             IF(SIZE(translation,1)==numberOfGeomComp) THEN
               translationMatrix(1:numberOfGeomComp,numberOfGeomComp+1)=translation
-              solver%geometricTransformationSolver%translation=translation
               ! Calculate the new transformation matrix by multiplying the old matrix with the new translation matrix
               transformationMatrix=MATMUL(solver%geometricTransformationSolver%transformationMatrices(:,:,incrementIdx), &
                 & translationMatrix(1:1+numberOfGeomComp,1:1+numberOfGeomComp))
@@ -7353,8 +7379,6 @@ CONTAINS
         & DEALLOCATE(geometricTransformationSolver%transformationMatrices)
       geometricTransformationSolver%numberOfIncrements=0
       geometricTransformationSolver%fieldVariableType=0
-      IF(ALLOCATED(geometricTransformationSolver%translation))  &
-        & DEALLOCATE(geometricTransformationSolver%translation)
       DEALLOCATE(geometricTransformationSolver)
     ENDIF
         
