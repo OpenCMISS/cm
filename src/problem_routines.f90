@@ -317,7 +317,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_CELLML_EQUATIONS_SOLVE",ERR,ERROR,*999)
     
@@ -3291,8 +3290,7 @@ CONTAINS
     !Local Variables
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer the solvers to update the variables from
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to update the variables from
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2 !<A pointer the sub control loop
-    INTEGER(INTG) :: solver_idx,loop_idx
+    INTEGER(INTG) :: solver_idx
 
     NULLIFY(SOLVER)
 
@@ -3630,7 +3628,95 @@ SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
 998 CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(RESIDUAL_VECTOR,DUMMY_ERR,DUMMY_ERROR,*997)
 997 CALL WRITE_ERROR(ERR,ERROR,*996)
 996 CALL FLAG_WARNING("Error evaluating nonlinear residual.",ERR,ERROR,*995)
-995 RETURN    
+995 RETURN
 
 END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
+
+!>Called from the PETSc SNES solvers to test convergence for a Newton like nonlinear solver
+SUBROUTINE PROBLEM_SOLVER_CONVERGENCE_TEST_PETSC(SNES,ITER,XNORM,GNORM,FNORM,REASON,CTX,ERR)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC_TYPES
+  USE DISTRIBUTED_MATRIX_VECTOR
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE STRINGS
+  USE TYPES
+  USE CMISS_PETSC
+
+  IMPLICIT NONE
+  
+  !Argument variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
+  INTEGER(INTG), INTENT(INOUT) :: ITER !< The current iteration (0 is the first and is before any Newton step)
+  REAL(DP), INTENT(INOUT) :: XNORM !<The 2-norm of current iterate
+  REAL(DP), INTENT(INOUT) :: GNORM !<The 2-norm of current step
+  REAL(DP), INTENT(INOUT) :: FNORM !<The 2-norm of function
+  INTEGER(INTG), INTENT(INOUT) :: REASON !<The reason for convergence/divergence
+  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  !Local Variables
+  TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR,SOLVER_VECTOR
+  TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+  TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+  TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+  TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+  TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+  TYPE(VARYING_STRING) :: ERROR,LOCAL_ERROR
+
+  IF(ASSOCIATED(CTX)) THEN
+    NONLINEAR_SOLVER=>CTX%NONLINEAR_SOLVER
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+      IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+        SOLVER_EQUATIONS=>CTX%SOLVER_EQUATIONS
+        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+          SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+          IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+            IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+              SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
+              IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
+                IF(ASSOCIATED(SOLVER_VECTOR)) THEN
+                  RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
+                  IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
+                    CALL FLAG_ERROR("User defined convergence tests not implemented.",ERR,ERROR,*999)
+                  ELSE
+                    CALL FLAG_ERROR("Residual vector is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The number of solver matrices of "// &
+                & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                & " is invalid. There should be 1 solver matrix."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+  ELSE
+    CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
+  ENDIF
+  
+  RETURN
+999 CALL WRITE_ERROR(ERR,ERROR,*998)
+998 CALL FLAG_WARNING("Error in convergence test.",ERR,ERROR,*997)
+997 RETURN    
+
+END SUBROUTINE PROBLEM_SOLVER_CONVERGENCE_TEST_PETSC
 
