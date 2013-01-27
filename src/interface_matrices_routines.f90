@@ -335,8 +335,13 @@ CONTAINS
                         rowsFieldVariable=>interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%VARIABLE
                         colsFieldVariable=>interfaceMapping%LAGRANGE_VARIABLE !\todo: TEMPORARY: Needs generalising
                         rowsMeshIdx=interfaceMapping%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrixIdx)%MESH_INDEX
-                        rowsElementNumber=meshConnectivity%ELEMENT_CONNECTIVITY(InterfaceElementNumber,rowsMeshIdx)% &
-                          & COUPLED_MESH_ELEMENT_NUMBER
+                        IF(ASSOCIATED(rowsFieldVariable,colsFieldVariable)) THEN
+                          ! If the rows and column variables are both the Lagrange variable (this is the diagonal matrix)
+                          rowsElementNumber=InterfaceElementNumber
+                        ELSE
+                          rowsElementNumber=meshConnectivity%ELEMENT_CONNECTIVITY(InterfaceElementNumber,rowsMeshIdx)% &
+                            & COUPLED_MESH_ELEMENT_NUMBER
+                        ENDIF
                         CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_CALCULATE(interfaceMatrix%ELEMENT_MATRIX, &
                           & interfaceMatrix%UPDATE_MATRIX,[rowsElementNumber],[InterfaceElementNumber],rowsFieldVariable, &
                           & colsFieldVariable,err,error,*999)

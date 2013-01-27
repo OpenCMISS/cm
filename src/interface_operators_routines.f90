@@ -168,15 +168,15 @@ CONTAINS
             !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
             IF(coupledMeshIdx>1) THEN
               matrixCoefficient=-1.0_DP
-            ENDIF
+            ENDIF 
             !Pointers to the coupledMeshIdx'th coupled mesh variables (rows of interface element matrix)
             coupledMeshDependentField=>interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)%DEPENDENT_FIELD
+            elementConnectivity=>interfaceCondition%INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(elementNumber,coupledMeshIdx)
+            coupledMeshElementNumber=elementConnectivity%COUPLED_MESH_ELEMENT_NUMBER
             interfaceMatrixVariable=> &
               & interfaceEquations%INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(coupledMeshIdx)%VARIABLE
             coupledMeshVariableType=interfaceMatrixVariable%VARIABLE_TYPE
             interfaceElementMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%ELEMENT_MATRIX
-            elementConnectivity=>interfaceCondition%INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(elementNumber,coupledMeshIdx)
-            coupledMeshElementNumber=elementConnectivity%COUPLED_MESH_ELEMENT_NUMBER
             interfaceConnectivityBasis=>interfaceCondition%INTERFACE%MESH_CONNECTIVITY%BASIS
 
             !Loop over gauss points
@@ -203,8 +203,8 @@ CONTAINS
                   ENDDO !rowParameterIdx
                 ENDDO !rowComponentIdx
               ELSE
-                !\todo defaults to first mesh component, Generalise
-                XI(1:interfaceDependentBasis%NUMBER_OF_XI)=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                !\todo defaults to first mesh component, generalise
+                XI=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
                   & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
                 ! Loop over number of Lagrange variable components as not all components in the dependent field variable may be coupled
                 !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
