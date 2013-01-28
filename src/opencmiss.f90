@@ -3469,6 +3469,22 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetUpdateConstantLNumber
     MODULE PROCEDURE CMISSField_ParameterSetUpdateConstantLObj
   END INTERFACE !CMISSField_ParameterSetUpdateConstant
+  
+  !>Update the given parameter set a value for the specified data pont of a field variable component.
+  INTERFACE CMISSField_ParameterSetUpdateDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointIntgNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointIntgNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointIntgObj
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointSPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointSPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointSPObj
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPObj
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointLNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointLNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointLObj
+  END INTERFACE !CMISSField_ParameterSetUpdateDataPoint
 
   !>Updates the given parameter set with the given value for a particular user element of a field variable component.
   INTERFACE CMISSField_ParameterSetUpdateElement
@@ -3682,7 +3698,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSField_ParameterSetGetConstant,CMISSField_ParameterSetGetElement,CMISSField_ParameterSetGetNode
   
-  PUBLIC CMISSField_ParameterSetGetDataPoint
+  PUBLIC CMISSField_ParameterSetGetDataPoint,CMISSField_ParameterSetUpdateDataPoint
 
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
 
@@ -30532,6 +30548,586 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetUpdateConstantLObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a integer value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a single precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a double precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a logical value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointLObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointLObj
 
   !
   !================================================================================================================================
