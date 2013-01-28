@@ -8514,7 +8514,7 @@ CONTAINS
           FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_GAUSS_POINT_DOFS=NUMBER_OF_GAUSS_POINT_DOFS
         ENDIF
         IF(NUMBER_OF_DATA_POINT_DOFS>0) THEN
-          ALLOCATE(FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,NUMBER_OF_DATA_POINT_DOFS),STAT=ERR)
+          ALLOCATE(FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(3,NUMBER_OF_DATA_POINT_DOFS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof to parameter Gauss point map.",ERR,ERROR,*999)
           FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_DATA_POINT_DOFS=NUMBER_OF_DATA_POINT_DOFS
         ENDIF
@@ -9052,8 +9052,8 @@ CONTAINS
                     FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_DATA_POINT_DOF_TYPE
                     FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=data_point_nyy
                     FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=localDataNumber
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(1,data_point_nyy)=elementIdx
-                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,data_point_nyy)=component_idx
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(2,data_point_nyy)=elementIdx
+                    FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DATA_POINT_DOF2PARAM_MAP(3,data_point_nyy)=component_idx
                     !Setup reverse parameter to dof map
                     FIELD_COMPONENT%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(localDataNumber)=variable_local_ny
                   ENDDO !dataPointIdx
