@@ -32,7 +32,7 @@
 - Routine parameters and variables should be in lower camel case, eg. "lowerCamelCase".
 - Types, routines and class methods should be in upper camel case, eg. "UpperCamelCase".
 - Where a routine is to be a method of a class in bindings to an object oriented language, or could be thought of as a method of a type in internal code, the method name and type name should be separated by an underscore, eg. "CMISSBasis_NumberOfXiGet".
-- Fortran key words should be in upper case.
+- Fortran key words and intrinsic functions should be in upper case.
 
 \section fortran_code Fortran code
 

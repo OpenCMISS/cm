@@ -138,8 +138,6 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_USER_NUMBER_FIND
   
-  PUBLIC PROBLEM_SOLVER_LOAD_INCREMENT_APPLY
-
 CONTAINS
 
   !
@@ -1852,8 +1850,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!TODO Should this be a public routine? Shouldn't the control loop apply the load increment???
 
   !> Apply the load increment for each equations_set associated with solver.
   SUBROUTINE PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER_EQUATIONS,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)

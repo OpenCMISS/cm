@@ -15,6 +15,14 @@ This Python module wraps the underlying OpenCMISS Fortran library.
 http://www.opencmiss.org
 """)
 
+DLOPEN_FIX = ("""# Make symbols from dynamically imported libraries global so
+# that the Intel MKL library can be loaded correctly when used
+import sys
+import ctypes
+if hasattr(sys, "setdlopenflags"):
+    sys.setdlopenflags(sys.getdlopenflags() | ctypes.RTLD_GLOBAL)
+""")
+
 INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
 WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
@@ -41,6 +49,7 @@ def generate(cm_path, args):
     library = LibrarySource(cm_path)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
+    module.write(DLOPEN_FIX)
     module.write("import _opencmiss_swig\n")
     module.write("import signal\n")
     module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
@@ -72,6 +81,12 @@ def generate(cm_path, args):
             else:
                 module.write("%s = %d\n" % (c.name[5:], c.value))
         module.write('\n')
+
+    # Add any extra Python code
+    extra_content_path = os.sep.join((cm_path, 'bindings', 'python',
+        'extra_content.py'))
+    with open(extra_content_path, 'r') as extra_content:
+        module.write(extra_content.read())
 
     module.write(INITIALISE)
     module.close()
@@ -249,9 +264,16 @@ def check_parameter(parameter):
     otherwise does nothing.
     """
 
-    if parameter.array_dims > 0 and parameter.pointer:
+    if parameter.array_dims > 1 and parameter.pointer:
         raise UnsupportedParameterError("Python bindings don't support "
-            "passing arrays by pointer")
+            "passing multi-dimensional arrays by pointer.")
+    if parameter.array_dims > 2:
+        raise UnsupportedParameterError("Python bindings don't support "
+            "arrays with dimensions > 2.")
+    if (parameter.array_dims > 0 and parameter.pointer and
+            parameter.intent == 'IN'):
+        raise UnsupportedParameterError("Python bindings don't support "
+            "passing arrays by pointer with intent IN.")
 
 
 def parameters_docstring(parameters):
@@ -512,6 +534,11 @@ def process_parameters(parameters):
         elif param.intent == 'OUT' and param.array_dims > 0:
             if (param.array_dims == 1 and
                     param.var_type == Parameter.CHARACTER):
+                pass
+            elif param.pointer:
+                # If intent is out and a pointer, then we are getting data
+                # allocated internally so the size is a return value and
+                # is used when creating the numpy array to return
                 pass
             elif (param.array_dims == 1 and param.required_sizes == 1):
                 python_parameters.append(param.name + 'Size')
