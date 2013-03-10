@@ -2781,13 +2781,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COL_NUMBERS(:) !<EQUATIONS_COL_NUMBERS(i). The i'th equations column number in the equation set the solver column is mapped to.
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for solver column mapping
 !!TODO: Maybe split this into a linear and a nonlinear part? The only problem is that would probably use about the same memory???
-    INTEGER(INTG) :: JACOBIAN_COL_NUMBER !<The Jacbian column number in the equations set that the solver column is mapped to.
+    !\todo equalDofs: do these need to be arrays? - They are not actually used anywhere though...
+    INTEGER(INTG) :: JACOBIAN_COL_NUMBER !<The Jacobian column number in the equations set that the solver column is mapped to.
     REAL(DP) :: JACOBIAN_COUPLING_COEFFICIENT !<The coupling coefficient for the solver column to Jacobian column mapping.
   END TYPE SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE
 
   !>Contains information about mapping the solver dof to the field variable dofs in the equations set.
   TYPE SOLVER_DOF_TO_VARIABLE_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS !<The number of equations this solver dof is mapped to
+    INTEGER(INTG) :: NUMBER_OF_EQUATION_DOFS !<The number of equation dofs this solver dof is mapped to
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_TYPES(:) !<EQUATION_TYPES(equation_idx). The type of equation of the equation_idx'th dof that the solver dof is mapped to.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_INDICES(:) !<EQUATIONS_INDICES(equation_idx). The index of either the equations set or interface condition of the equation_idx'th dof that this solver dof is mapped to.
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLE(:) !<VARIABLE(equation_idx)%PTR is a pointer to the field variable that the solver dof is mapped to in the equation_idx'th equation
@@ -2837,13 +2838,26 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !>Contains information on the mappings from a solver row to the equations.
   TYPE SOLVER_ROW_TO_EQUATIONS_MAPS_TYPE
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets the solver row is mapped to. If the rows are interface rows then this will be zero.
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SET_ROWS !<The number of equations set rows the solver row is mapped to. If the rows are interface rows then this will be zero.
     INTEGER(INTG) :: INTERFACE_CONDITION_INDEX !<The interface condition index that the solver row is mapped to. If the rows are from an equations set then this will be zero.
-     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_INDEX(:) !<EQUATIONS_INDEX(i). If the rows are equations set rows then this is the index of the equations set that the i'th equations set row that the solver row is mapped to. If the rows are interface rows this will not be allocated.
-    INTEGER(INTG), ALLOCATABLE :: ROWCOL_NUMBER(:) !<ROWCOL_NUMBER(i). If the row are equations set rows the i'th row number that the solver row is mapped to. If the rows are interface rows then the i'th column number that the solver row is mapped to.
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_INDEX(:) !<EQUATIONS_INDEX(i). If the rows are equations set rows then this is the index of the equations set that the i'th equations set row belongs to. If the rows are interface rows this will not be allocated.
+    INTEGER(INTG), ALLOCATABLE :: ROWCOL_NUMBER(:) !<ROWCOL_NUMBER(i). If the rows are equations set rows the i'th equations row number that the solver row is mapped to. If the rows are interface rows then the i'th column number that the solver row is mapped to.
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for the solver row to equations mapping
   END TYPE SOLVER_ROW_TO_EQUATIONS_MAPS_TYPE
-  
+
+  !>Describes a DOF constraint that maps a set of equations DOFs to one solver DOF
+  TYPE SolverMappingEqualDofsConstraintType
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    INTEGER(INTG) :: numberOfDofs !<The number of DOFs that are constrained to be equal.
+    INTEGER(INTG), ALLOCATABLE :: globalDofs(:) !<The list of global DOFs of the field variable in the constraint.
+  END TYPE SolverMappingEqualDofsConstraintType
+
+  !>Describes linear constraints between solver DOFs in the solver mapping
+  TYPE SolverMappingDofConstraintsType
+    INTEGER(INTG) :: numberOfEqualDofConstraints !<The number of DOF constraints in this solver mapping.
+    TYPE(SolverMappingEqualDofsConstraintType), ALLOCATABLE :: equalDofConstraints(:) !<equalDofConstraints(constraintIdx), the constraintIdx'th DOF constraint in the solver mappings
+  END TYPE SolverMappingDofConstraintsType
+
   !>Contains information about the cached create values for a solver mapping
   TYPE SOLVER_MAPPING_CREATE_VALUES_CACHE_TYPE
     TYPE(LIST_PTR_TYPE), POINTER :: EQUATIONS_VARIABLE_LIST(:) !<EQUATIONS_VARIABLES_LIST(solver_matrix_idx). The list of equations set variables in the solver mapping.
@@ -2854,6 +2868,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER, ALLOCATABLE :: SOURCE_VARIABLE_TYPE(:) !<SOURCE_VARIABLE_TYPE(equations_set_idx). The source variable type that is mapped to the RHS for the equations_set_idx'th equations set.
     TYPE(LIST_PTR_TYPE), POINTER :: INTERFACE_VARIABLE_LIST(:) !<INTERFACE_VARIABLES_LIST(solver_matrix_idx). The list of interface condition variables in the solver mapping for the solver_matrix idx'th solver matrix.
     TYPE(LIST_PTR_TYPE), POINTER :: INTERFACE_INDICES(:) !<INTERFACE_INDICES(equations_set_idx). The list of interface condition indices in the equations_set_idx'th equations set.
+    TYPE(SolverMappingDofConstraintsType), POINTER :: dofConstraints !<A pointer to the DOF constraints structure for the solver mappings.
   END TYPE SOLVER_MAPPING_CREATE_VALUES_CACHE_TYPE
 
   TYPE SOLVER_MAPPING_VARIABLE_TYPE

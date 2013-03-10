@@ -474,6 +474,8 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET
 
+  PUBLIC SolverEquations_ConstrainNodeDofsEqual
+
   PUBLIC SOLVER_EQUATIONS_CREATE_FINISH,SOLVER_EQUATIONS_CREATE_START
 
   PUBLIC SOLVER_EQUATIONS_DESTROY
@@ -5934,6 +5936,65 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain two nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE SolverEquations_ConstrainNodeDofsEqual( &
+      & solverEquations,field,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: solverEquations !<The solver equations to constrain the DOFs for.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbes of the nodes to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message.
+    !Local variables
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    INTEGER(INTG) :: numberOfNodes, nodeIdx, dof
+    INTEGER(INTG), ALLOCATABLE :: globalDofs(:)
+
+    CALL Enters("SolverEquations_ConstrainNodeDofsEqual",err,error,*998)
+
+    NULLIFY(fieldVariable)
+
+    IF(.NOT.ASSOCIATED(solverEquations)) THEN
+      CALL FlagError("Solver equations are not associated.",err,error,*998)
+    END IF
+    solverMapping=>solverEquations%solver_mapping
+    IF(.NOT.ASSOCIATED(solverMapping)) THEN
+      CALL FlagError("Solver equations solver mapping is not associated.",err,error,*998)
+    END IF
+
+    numberOfNodes=SIZE(nodes,1)
+    ALLOCATE(globalDofs(numberOfNodes),stat=err)
+    IF(err/=0) CALL FlagError("Could not allocate equal global DOFs array.",err,error,*998)
+    !Get field DOFs for nodes
+    DO nodeIdx=1,numberOfNodes
+      CALL FIELD_COMPONENT_DOF_GET_USER_NODE(field,fieldVariableType,versionNumber,derivativeNumber,nodes(nodeIdx), &
+        & component,dof,globalDofs(nodeIdx),err,error,*999)
+    END DO
+    CALL FIELD_VARIABLE_GET(field,fieldVariableType,fieldVariable,err,error,*999)
+
+    !Now set DOF constraint
+    CALL SolverMapping_ConstrainDofsEqual(solverMapping,fieldVariable,globalDofs,err,error,*999)
+
+    DEALLOCATE(globalDofs)
+
+    CALL Exits("SolverEquations_ConstrainNodeDofsEqual")
+    RETURN
+999 IF(ALLOCATED(globalDofs)) DEALLOCATE(globalDofs)
+998 CALL Errors("SolverEquations_ConstrainNodeDofsEqual",err,error)
+    CALL Exits("SolverEquations_ConstrainNodeDofsEqual")
+    RETURN 1
+  END SUBROUTINE SolverEquations_ConstrainNodeDofsEqual
 
   !
   !================================================================================================================================
@@ -15829,7 +15890,7 @@ CONTAINS
                       DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                         !Loop over the equations sets associated with this dof
                         DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATION_DOFS
                           SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                             & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
                           CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
@@ -16363,7 +16424,7 @@ CONTAINS
                     DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                       !Loop over the equations associated with this dof
                       DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                        & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                        & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATION_DOFS
                         SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                           & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
                         CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
@@ -16551,7 +16612,7 @@ CONTAINS
                     DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                       !Loop over the equations associated with this dof
                       DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                        & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                        & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATION_DOFS
                         SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                           & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
                         CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
@@ -16619,7 +16680,7 @@ CONTAINS
                       DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver dof index = ",solver_dof_idx,ERR,ERROR,*999)
                         DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATION_DOFS
                           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations index = ",equations_idx,ERR,ERROR,*999)
                           variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                             & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_idx)
