@@ -64,10 +64,16 @@ MODULE DATA_PROJECTION_ROUTINES
   PRIVATE
 
   !Module parameters
+
+  !> \addtogroup DATA_PROJECTION_ROUTINES_DataProjectionTypes DATA_PROJECTION_ROUTINES::DataProjectionProjectionTypes
+  !> \brief Data projection definition type parameters
+  !> \see DATA_PROJECTION_ROUTINES,OPENCMISS_DataProjection::ProjectionTypes
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE=1 !<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE=2 !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE=3 !<The element projection type for data projection, projects to all elements in mesh. \see DATA_PROJECTION_ROUTINES 
-  
+  !>@}
+
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_CONVERGED=1 !<Data projection exited due to it being converged \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_BOUNDS=2 !<Data projection exited due to it hitting the bound and continue to travel out of the element. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_MAX_ITERATION=3 !<Data projection exited due to it attaining maximum number of iteration specified by user. \see DATA_PROJECTION_ROUTINES 
