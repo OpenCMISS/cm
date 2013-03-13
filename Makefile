@@ -95,7 +95,6 @@ FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
 .SUFFIXES:	.f90	.c
 
 main:	preliminaries \
-	$(info $(OPENCMISS_LINUX_DISTRIBUTION).$(FEDORA_LINUX).$(REDHAT_LINUX).$(UBUNTU_LINUX)) \
 	$(LIBRARY) \
 	$(MOD_INCLUDE) \
 	$(MOD_FIELDML_TARGET) \
