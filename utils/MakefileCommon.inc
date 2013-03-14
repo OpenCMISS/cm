@@ -514,7 +514,7 @@ MUMPS_INCLUDE_PATH =#
 MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
 ifeq (${OPENCMISS_USE_MUMPS},true)
-  MUMPS_LIBRARIES += -ldmumps -lmumps_common $(call convertlistlink,$(OCE_SCALAPACKLIBS)) -lblacs $(call convertlistlink,$(OCE_BLACSLIBS)) -lpord
+  MUMPS_LIBRARIES += -ldmumps -lmumps_common $(call convertlistlink,$(OCE_SCALAPACKLIBS)) $(call convertlistlink,$(OCE_BLACSLIBS))  $(call convertlistlink,$(OCE_BLACSLIBS)) -lpord
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_BLACSLIBPATH) )
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_SCALAPACKLIBPATH) )
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
