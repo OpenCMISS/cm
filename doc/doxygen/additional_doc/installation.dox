@@ -12,6 +12,7 @@ They will be used during the installation process.
   - git (Optional: Can be installed later as a tool)
   - cmake (Optional: Can be installed later as a tool)
   - python-devel
+  - numpy
   - bison
   - flex
   - swig
@@ -35,15 +36,11 @@ They will be used during the installation process.
   - libxmu-dev
   - csh
 
-  - lesstif2-devel ???
-
-
-It would be great if you also have the following tools installed. 
-However, if you don't have them installed or not have the right version, you can download and build them as part of the installation steps (See \ref step6 "Step 6"). 
-To do this, you need to set the USE_OPENCMISS_xxx environment variables to true in \ref step4_2 "Step 4.2".
+If you don't have 
 - GNU Fortran (GCC) 4.4 or 4.6 or later (you may install it later during the OpenCMISSExtras compiler build)
-- cmake (you may install it later during the OpenCMISSExtras tools build)
-- git (you may install it later during the OpenCMISSExtras tools build)
+- cmake 
+- git 
+installed or you do not have the right version, you can download and build them as part of the installation steps (See \ref step6 "Step 6"). To do this, you need to set the USE_OPENCMISS_xxx environment variables to true in \ref step4_2 "Step 4.2".
 
 You may also like to install additional packages for your Linux distribution to save compiling libraries later. 
 - For Fedora you can install
@@ -51,7 +48,7 @@ You may also like to install additional packages for your Linux distribution to 
   - lapack-devel and lapack-static
   - omniORB-devel
   - papi-devel and papi-static
-  - For MPICH2
+  - For MPICH2 (recommended for Fedora)
     - mpich2-devel
     - blacs-mpich2-devel and blacs-mpich2-static
     - scalapack-mpich2-devel and scalapack-mpich2-static
@@ -69,13 +66,14 @@ You may also like to install additional packages for your Linux distribution to 
   - libblas-dev
   - liblapack-dev
   - libomniorb4-dev and omniidl (omniidl4 for Ubuntu 10.04 LTS)
-  - For OpenMPI as the MPI library
+  - For OpenMPI as the MPI library (recommended for Ubuntu)
     - libopenmpi-dev
     - libblacs-mpi-dev
     - libscalapack-mpi-dev
     - libhdf5-openmpi-dev
     - libnetcdf-dev
   - For MPICH2 as the MPI library
+    - libmpich2-dev
     - libhdf5-mpich-dev
 
 \section opencmiss_installation Installations
@@ -155,6 +153,16 @@ You can also set which libraries are used during the building of OpenCMISS and O
 - OPENCMISS_USE_SUPERLU
 - OPENCMISS_USE_TAO
 - OPENCMISS_USE_TAU
+
+If you have installed system BLAS/LAPACK, BLACS/ScaLAPACK, MPI,  HDF5, NETCDF, PAPI, TAU, omniORB packages from your Linux distribution you can force the use of OpenCMISSEXtras versions of these libraries by setting these environment variables to true
+- FORCE_OCE_BLASLAPACK
+- FORCE_OCE_BLACSSCALAPACK
+- FORCE_OCE_MPI
+- FORCE_OCE_HDF5
+- FORCE_OCE_NETCDF
+- FORCE_OCE_PAPI
+- FORCE_OCE_TAU
+- FORCE_OCE_OMNIORB
 
 If you are in doubt about any of the variables just leave them out of your login script and they will default to a sensible value.
 
@@ -310,6 +318,16 @@ If you use C Shell or tcsh Shell you can do this by adding the following lines t
 \code
 setenv OPENCMISSEXAMPLES_ROOT <path to your examples folder>
 \endcode 
+
+Once the cm, examples and cellml repositories have been cloned you should set the git upstream repositories 
+\code cd cm
+ git remote add upstream https://github.com/OpenCMISS/cm.git
+ cd ../examples
+ git remote add upstream https://github.com/OpenCMISS/examples.git
+ cd ../cellml
+ git remote add upstream https://github.com/OpenCMISS/cellml.git /endcode
+
+Additional information on git can be found at http://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Git_Workflow
 
 \subsection step11 Step 11
 Build the OpenCMISS celllml.
