@@ -2,28 +2,79 @@
 \page installation Obtaining the Code and Setting up the Development Environment
 \section before_start Before Start
 Before the installation, you need to check if the following libraries or tools are installed, preferably to the latest or recent versions. 
-They will be used during the installation process. 
-- Intel Fortran Compiler (Optional: to compile the libraries and OpenCMISS with intel)
-- subversion
-- GNU make
-- python
-- python-dev
-- python-setuptools
-- bison
-- yacc
-- SWIG
-- lesstif2-devel
-- openmotif-devel
-- libXmu-devel  
-- libstdc++-devel
-- csh
+They will be used during the installation process.
+- For Fedora
+  - gcc
+  - gcc-c++
+  - gcc-gfortran (Optional: to compile the libraries and OpenCMISS with gfortran, Can be installed later as a tool)
+  - Intel Fortran Compiler (Optional: to compile the libraries and OpenCMISS with intel)
+  - subversion
+  - git (Optional: Can be installed later as a tool)
+  - cmake (Optional: Can be installed later as a tool)
+  - python-devel
+  - numpy
+  - bison
+  - flex
+  - swig
+  - openmotif-devel
+  - libXmu-devel
+  - tcsh
+- For Ubuntu
+  - gcc
+  - g++
+  - gfortran (Optional: to compile the libraries and OpenCMISS with gfortran, Can be installed later as a tool)
+  - Intel Fortran Compiler (Optional: to compile the libraries and OpenCMISS with intel)
+  - subversion
+  - git (Optional: Can be installed later as a tool)
+  - cmake (Optional: Can be installed later as a tool)
+  - python-dev and python-setuptools
+  - python-numpy
+  - bison
+  - flex
+  - swig
+  - libmotif-dev
+  - libxmu-dev
+  - csh
 
-It would be great if you also have the following tools installed. 
-However, if you don't have them installed or not have the right version, you can download and build them as part of the installation steps (See \ref step6 "Step 6"). 
-To do this, you need to set the USE_OPENCMISS_xxx environment variables to true in \ref step4_2 "Step 4.2".
+If you don't have 
 - GNU Fortran (GCC) 4.4 or 4.6 or later (you may install it later during the OpenCMISSExtras compiler build)
-- cmake (you may install it later during the OpenCMISSExtras tools build)
-- git (you may install it later during the OpenCMISSExtras tools build)
+- cmake 
+- git 
+installed or you do not have the right version, you can download and build them as part of the installation steps (See \ref step6 "Step 6"). To do this, you need to set the USE_OPENCMISS_xxx environment variables to true in \ref step4_2 "Step 4.2".
+
+You may also like to install additional packages for your Linux distribution to save compiling libraries later. 
+- For Fedora you can install
+  - blas-devel and blas-static
+  - lapack-devel and lapack-static
+  - omniORB-devel
+  - papi-devel and papi-static
+  - For MPICH2 (recommended for Fedora)
+    - mpich2-devel
+    - blacs-mpich2-devel and blacs-mpich2-static
+    - scalapack-mpich2-devel and scalapack-mpich2-static
+    - hdf5-mpich2-devel and hdf5-mpich2-static
+    - netcdf-cxx4-mpich2-devel and netcdf-cxx4-mpich2-static
+    - netcdf-fortran-mpich2-devel and netcdf-fortran-mpich2-static
+  - For OpenMPI
+    - openmpi-devel
+    - blacs-openmpi-devel and blacs-openmpi-static
+    - scalapack-openmpi-devel and scalapack-openmpi-static
+    - hdf5-openmpi-devel and hdf5-openmpi-static
+    - netcdf-cxx4-openmpi-devel and netcdf-cxx4-openmpi-static
+    - netcdf-fortran-openmpi-devel and netcdf-fortran-openmpi-static
+- For Ubuntu you can install
+  - libblas-dev
+  - liblapack-dev
+  - libomniorb4-dev and omniidl (omniidl4 for Ubuntu 10.04 LTS)
+  - For OpenMPI as the MPI library (recommended for Ubuntu)
+    - libopenmpi-dev
+    - libblacs-mpi-dev
+    - libscalapack-mpi-dev
+    - libhdf5-openmpi-dev
+    - libnetcdf-dev
+  - For MPICH2 as the MPI library
+    - libmpich2-dev
+    - libhdf5-mpich-dev
 
 \section opencmiss_installation Installations
 To fully install OpenCMISS, you need to install OpenCMISSExtras and OpenCMISS. 
@@ -44,6 +95,8 @@ cd to the OpenCMISSExtras directory
 \subsection step3 Step 3
 In the OpenCMISSExtras directory, check out the utils repository: 
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/utils/trunk/ utils \endcode
+
+note: you may need to accept a security certificate
 
 \subsection step4 Step 4
 Set up your shell login script to call the opencmiss_programer script, which will set environment variables used when building OpenCMISS.
@@ -101,6 +154,16 @@ You can also set which libraries are used during the building of OpenCMISS and O
 - OPENCMISS_USE_TAO
 - OPENCMISS_USE_TAU
 
+If you have installed system BLAS/LAPACK, BLACS/ScaLAPACK, MPI,  HDF5, NETCDF, PAPI, TAU, omniORB packages from your Linux distribution you can force the use of OpenCMISSEXtras versions of these libraries by setting these environment variables to true
+- FORCE_OCE_BLASLAPACK
+- FORCE_OCE_BLACSSCALAPACK
+- FORCE_OCE_MPI
+- FORCE_OCE_HDF5
+- FORCE_OCE_NETCDF
+- FORCE_OCE_PAPI
+- FORCE_OCE_TAU
+- FORCE_OCE_OMNIORB
+
 If you are in doubt about any of the variables just leave them out of your login script and they will default to a sensible value.
 
 3. Add in the lines in the login script to run the script:
@@ -125,6 +188,8 @@ If you use a c  shell, you can execute:
 \code source ~/.cshrc \endcode
 If you use tc shell, you can execute:
 \code source ~/.tcshrc \endcode 
+
+Note: you may get a warning about the OpenCMISS examples directory not existing. Ignore this until step 10.
 
 \subsection step5 Step 5
 cd to the $OPENCMISSEXTRAS_ROOT/utils dir
@@ -253,6 +318,16 @@ If you use C Shell or tcsh Shell you can do this by adding the following lines t
 \code
 setenv OPENCMISSEXAMPLES_ROOT <path to your examples folder>
 \endcode 
+
+Once the cm, examples and cellml repositories have been cloned you should set the git upstream repositories 
+\code cd cm
+ git remote add upstream https://github.com/OpenCMISS/cm.git
+ cd ../examples
+ git remote add upstream https://github.com/OpenCMISS/examples.git
+ cd ../cellml
+ git remote add upstream https://github.com/OpenCMISS/cellml.git /endcode
+
+Additional information on git can be found at http://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Git_Workflow
 
 \subsection step11 Step 11
 Build the OpenCMISS celllml.
