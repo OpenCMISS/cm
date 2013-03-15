@@ -81,6 +81,7 @@ include $(OCE_MAKEINC_ROOT)/Makefile_BlacsScalapack.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_HDF5.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_NetCDF.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_PAPI.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_TAU.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_CUDA.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_OSOperations.inc
 
@@ -513,7 +514,7 @@ MUMPS_INCLUDE_PATH =#
 MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
 ifeq (${OPENCMISS_USE_MUMPS},true)
-  MUMPS_LIBRARIES += -ldmumps -lmumps_common $(call convertlistlink,$(OCE_SCALAPACKLIBS)) -lblacs $(call convertlistlink,$(OCE_BLACSLIBS)) -lpord
+  MUMPS_LIBRARIES += -ldmumps -lmumps_common $(call convertlistlink,$(OCE_SCALAPACKLIBS)) $(call convertlistlink,$(OCE_BLACSLIBS)) -lpord
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_BLACSLIBPATH) )
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_SCALAPACKLIBPATH) )
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
@@ -544,13 +545,9 @@ TAU_LIB_PATH =#
 ifeq (${OPENCMISS_USE_TAU},true)
   CPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
   FPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
-  TAU_LIBRARIES += -lTAU_tf
-  ifeq (${OPENCMISS_USE_PAPI},true)
-    TAU_LIBRARIES += -lTauMpi-memory-phase-papi-mpi -ltau-memory-phase-papi-mpi
-  else
-    TAU_LIBRARIES += -lTauMpi-memory-phase-mpi -ltau-memory-phase-mpi
-  endif
-  TAU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+  TAU_LIBRARIES += $(call convertlistlink,$(OCE_TAULIBS))
+  TAU_INCLUDE_PATH += $(addprefix -I, $(OCE_TAUINCLUDEPATH) )
+  TAU_LIB_PATH += $(addprefix -L, $(OCE_TAULIBPATH) )
 endif
 
 #PAPI
