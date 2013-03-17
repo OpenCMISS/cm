@@ -320,12 +320,14 @@ setenv OPENCMISSEXAMPLES_ROOT <path to your examples folder>
 \endcode 
 
 Once the cm, examples and cellml repositories have been cloned you should set the git upstream repositories 
-\code cd cm
+\code 
+ cd cm
  git remote add upstream https://github.com/OpenCMISS/cm.git
  cd ../examples
  git remote add upstream https://github.com/OpenCMISS/examples.git
  cd ../cellml
- git remote add upstream https://github.com/OpenCMISS/cellml.git /endcode
+ git remote add upstream https://github.com/OpenCMISS/cellml.git 
+\endcode
 
 Additional information on git can be found at http://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Git_Workflow
 
