@@ -1576,7 +1576,7 @@ CONTAINS
     INTEGER(INTG) :: BOUND(2),EXIT_TAG
     REAL(DP) :: XI(2),XI_NEW(2),XI_UPDATE(2),XI_UPDATE_NORM !<xi
     REAL(DP) :: RELATIVE_TOLERANCE,ABSOLUTE_TOLERANCE !<tolerances
-    REAL(DP) :: DISTANCE_VECTOR(3),FUNCTION_VALUE,FUNCTION_VALUE_NEW
+    REAL(DP) :: DISTANCE_VECTOR(2),FUNCTION_VALUE,FUNCTION_VALUE_NEW
     REAL(DP) :: FUNCTION_GRADIENT(2),FUNCTION_GRADIENT_NORM
     REAL(DP) :: FUNCTION_HESSIAN(2,2),HESSIAN_DIAGONAL(2)
     REAL(DP) :: TEMP1,TEMP2,DET,EIGEN_MIN,EIGEN_MAX,EIGEN_SHIFT
@@ -1919,7 +1919,9 @@ CONTAINS
                 !try 2D projection
                 FREE=.TRUE.
                 nifix=nifix2(1)
-                IF((NBOUND==2).AND.(XI_UPDATE(nifix2(2))>XI_UPDATE(nifix2(1)))) nifix=nifix2(2) !only fix the direction that is most strongly suggesting leaving the element
+                IF(NBOUND==2) THEN
+                  IF(XI_UPDATE(nifix2(2))>XI_UPDATE(nifix2(1))) nifix=nifix2(2) !only fix the direction that is most strongly suggesting leaving the element
+                ENDIF
                 XI_UPDATE(nifix)=0.0_DP
                 ni2(1)=1+MOD(nifix,3)
                 ni2(2)=1+MOD(nifix+1,3)
