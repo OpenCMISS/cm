@@ -1,0 +1,1047 @@
+
+\chapter{Data fitting with finite elements}
+\label{cha:datafitting}
+
+
+\section{Introduction}
+
+We show here how finite elements can be used for fitting one, two or
+three-dimensional fields. The data could, for examples, be a series of
+temperature measurememts (as in figure ***) and there is a need to find the
+finite element nodal parameteres which, together with the chosen basis
+functions, 'fit' the data in a least-sqquares sense. This linear least-squares
+probelm is considerd in \secref{cha:linearfieldfitting} Another common
+requirement is to fit nodal geometric parameters describing a finite element
+surface in 3D space to a set of non-uniformly spced coordinates defining the
+original surface. Geometric fitting problems are nonlinear when the $\xi_i$
+-coordinates found at the orthogonal projection of the data onto the finite
+element mesh are changed by the fitting process. A jucicious choice of
+coordinate system can sometimes avoid the problem and keep the geometric
+fitting linear, (this situation considers in **\secref{}. Full nonlinear
+geometric fitting is considered in \secref)
+
+
+
+
+\section{Linear field fitting}
+\label{sec:linearfieldfitting}
+
+\subsection{The linear field fitting problem}
+
+Consider the two-dimensional bilinear element shown in
+\figref{fig:linfieldfit}. The element surrounds a set of data points (shown by
+the x's in \figref{fig:linfieldfit}) which consist of measured values $u_{d}$,
+$d=1..D$, of some field (such as temperature) at specified locations $(x_{d},
+y_{d})$. The field fitting problem is to find the values of the finite element
+nodal parameters $u_{n}$, $n=1..4$, which minimise the sum of squared
+differences $(u(\xi_{d})-u_{d})^{2}$ between $u_{d}$ and the finite element
+field $u$ evaluated at the $(\xi_{1},\xi_{2})$ coordinates of data point $d$ 
+$(u(\xi_{d}))$.
+
+\begin{figure}[htpb] \centering
+  \input{figs/datafitting/linfieldfit.pstex}
+  \caption{Least-squares fitting of finite element nodal parameters $u_{n}$,
+    $n=1..4$, to measured data values $u_{d}$, $d=1..D$, at point locations
+    $(x_{d}, y_{d})$.}
+  \label{fig:linfieldfit}
+\end{figure}
+
+\subsection{Calculation of data point projections}
+
+The first requirement, therefore, is to find the $\xi_{i}$ coordinates of each
+data point $(x_{d}, y_{d}$). For a bilinear element (with the basis functions
+given by \eqref{eqn:2,3DE}) this is a straightforward inversion of the
+following relations for each data point:
+
+\begin{equation}
+  \begin{array}{rcl}
+    x_{d}&=&(1-\xi_{1}^{d})(1-\xi_{2}^{d})x_{1}+\xi_{1}^{d}(1-\xi_{2}^{d})x_{2}
+    +(1-\xi_{1}^{d})\xi_{2}^{d}x_{3}+\xi_{1}^{d}\xi_{2}^{d}x_{4} \\
+    y_{d}&=&(1-\xi_{1}^{d})(1-\xi_{2}^{d})y_{1}+\xi_{1}^{d}(1-\xi_{2}^{d})y_{2}
+    +(1-\xi_{1}^{d})\xi_{2}^{d}y_{3}+\xi_{1}^{d}\xi_{2}^{d}y_{4}
+  \end{array}
+  \label{eqn:datapointposfield}
+\end{equation}
+
+where $(x_{n}, y_{n}), n=1..4$, are the specified node positions and $(x_{d},
+y_{d}), d=1..D$, are the specified data point positions. To solve
+\bref{eqn:datapointposfield} for $\xi_{1}^{d}$ and $\xi_{2}^{d}$ we rearrange
+\bref{eqn:datapointposfield} as
+
+\begin{equation}
+  \begin{array}{rcl}
+    a\xi_{1}^{d}+b\xi_{2}^{d}+c\xi_{1}^{d}\xi_{2}^{d}&=&d \\
+    A\xi_{1}^{d}+B\xi_{2}^{d}+C\xi_{1}^{d}\xi_{2}^{d}&=&D 
+  \end{array}
+  \label{eqn:dataxipos1}
+\end{equation}
+where
+\begin{displaymath}
+  a=x_{2}-x_{1}, \quad b=x_{3}-x_{1}, \quad c=x_{1}-x_{2}-x_{3}+x_{4}, \quad
+  \mbox{and} \quad d=x_{d}-x_{1}
+\end{displaymath}
+and
+\begin{displaymath}
+  A=y_{2}-y_{1}, \quad B=y_{3}-y_{1}, \quad C=y_{1}-y_{2}-y_{3}+y_{4}, \quad
+  \mbox{and} \quad D=y_{d}-y_{1}
+\end{displaymath}
+then
+\begin{equation}
+  \xi_{2}^{d}=\dfrac{d-a\xi_{1}^{d}}{b+c\xi_{1}^{d}}=\dfrac{D-A\xi_{1}^{d}}
+  {B+C\xi_{1}^{d}}
+  \label{eqn:dataxipos2}
+\end{equation}
+or
+\begin{equation}
+  \alpha(\xi_{1}^{d})^{2}+\beta(\xi_{1}^{d})+\gamma=0
+  \label{eqn:dataxipos3}
+\end{equation}
+where
+\begin{displaymath}
+  \alpha=Ac-aC, \quad \beta=dC-Dc+Ab-aB, \quad \mbox{and} \quad \gamma=Bd-bD
+\end{displaymath}
+Solving \bref{eqn:dataxipos3} gives
+\begin{equation}
+  \xi_{1}^{d}= \left\{ \begin{array}{ll} 
+      \dfrac{-\beta\pm\sqrt{\beta^{2}-4\alpha\gamma}}{2\alpha} & 
+      \mbox{when } \alpha\neq 0 \\
+      -\dfrac{\gamma}{\beta} & \mbox{when } \alpha = 0
+    \end{array} \right.
+  \label{eqn:dataxipos4}
+\end{equation}
+and then $\xi_{2}^{d}$ is recovered from \bref{eqn:dataxipos2}.
+
+\subsection{Least squares field fitting}
+
+Once the $\xi_{i}$ coordinate positions of each data point
+$\xi_{d}=(\xi_{1}^{d},\xi_{2}^{d})$ is known, and interpolation of the
+(unknown) nodal values of $u_{n}$ ($n=1..4$) gives
+\begin{displaymath}
+  u(\xi_{d})=\Psi_{n}u_{n}
+\end{displaymath}
+where there is an implied sum over $n=1..4$. Now the weighted sum of squared
+differences between this value and the measured value $u_{d}$ for $d=1..D$, is
+
+\begin{equation}
+%  {\cal F(\vect{u})}=\dsum_{d=1}^{D}w_{d}\left(\Psi_n(\xi_{d})u_{n}-
+%    u_{d}\right)^{2}
+  eqn here
+  \label{eqn:datasumsqs}
+\end{equation}
+where $w_{d}$ is the weight for data point $d$. For measured data a good
+choice for $w_{d}$ is one over the variance of the error for data point $d$.
+
+Minimising \bref{eqn:datasumsqs} with respect to the nodal parameters $u_{m}$
+gives
+\begin{equation}
+  \delby{{\cal F}}{u_{m}}=2\dsum_{d=1}^{D}w_{d}\left(\Psi_n(\xi_{d})u_{n}-
+    u_{d}\right)\Psi_m(\xi_{d}) = 0
+\end{equation}
+or
+\begin{equation}
+  \left[\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})\Psi_n(\xi_{d})\right]u_{n}=
+  \dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})u_{d} \quad \quad m=1..4
+  \label{eqn:linfieldfiteqn}
+\end{equation}
+Note that there is an implied sum over $n=1..4$ on the left hand side of
+\eqref{eqn:linfieldfiteqn}. For the single 4-node element shown in
+\figref{fig:linfieldfit}. 
+\todo{check capital?}
+\eqref{eqn:linfieldfiteqn} gives four unknowns
+$u_{1}, u_{2}, u_{3}$ and $u_{4}$. If more than one element is used in the
+fitting, the matrix and vector on the left and right hand sides, respectively,
+of \bref{eqn:linfieldfiteqn} are
+\begin{equation}
+  E_{mn}=\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})\Psi_n(\xi_{d}) \quad \mbox{and} 
+  \quad f_{m}=\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})u_{d}
+\end{equation}
+which can then be assembled into a global system of equations in exactly the
+same fashion as occurs in the finite element solution of a boundary value
+problem (see \secref{sec:OdSSHC-2.1}).
+
+\subsection{Gauss point fitting}
+
+An extension to linear field fitting is Gauss point fitting. Consider the
+problem of finding the nodal stress field from a finite element analysis. The
+finite element formulation for a stress analysis typically solves for
+displacements, not stresses (see \chapref{cha:linearelasticity}). Stresses are
+a derived quantity and are calculated from the constitutive law from the
+strains which are calculated (in terms of nodal displacements) at the Gauss
+points. The result of the analysis is that it is only possible to obtain a
+Gauss point based description of the stresses. To obtain a nodal field based
+description of the stress field we can use a fitting approach very similar to
+the one described above for field fitting. The only difference in this case is
+that our 'data points' are located at the Gauss points and hence the $\xi_d$
+location is just the Gauss point location $\xi_{g}$. The values of the field
+$u_{d}$ are just the values of stress calculated at the Gauss points and the
+weights for each data point $w_{d}$ are 1.
+
+\section{Linear geometric fitting}
+\label{sec:lineargeometricfitting}
+
+\subsection{Introduction}
+
+Another common requirement is to fit nodal geometric parameters describing a
+finite element geometry to a set of non-uniformly spaced coordinates defining
+the original geometry. Geometric fitting differs from field fitting in that
+when fitting with more than one geometric variable we have a non-linear
+problem since the mesh data projection is no longer orthogonal.
+
+Geometric fitting problems can be turned into a linear problem in two
+ways. The first is to only fit geometries were there is one geometric
+variable. The second is to keep the data projections constant throughout the
+fit. Both options will now be considered.
+
+\subsection{Fitting with one geometric variable}
+
+A Geometric fitting problem with one variable is linear hence it is desirable
+to try and arrange a geometric fitting problem so that only one variable is
+being fitted. This can often be achieved by adopting a non-rectangular
+cartesian coordinate system. For example consider a fitting problem in polar
+coordinates as shown in \figref{fig:polargeomfit}
+
+\todo{missing figure}
+
+\begin{figure}[htpb] \centering
+%  \input{figs/datafitting/polargeomfit.pstex}
+%  \caption{Fitting the radial coordinate in a polar coordinate mesh. There are
+%    four elements and four nodes. The dashed lines show the projections of the
+%    data points (x) onto the starting mesh.}
+  \label{fig:polargeomfit}
+\end{figure}
+
+In this case the orthogonal data point projections $\xi_{d}$ are independent
+of the radius and can be easily found from the theta coordinate of the data
+point $\theta_{d}$. This independence from radius means we can formulate the
+geometric fitting problem with only one geometric variable, $r$ being
+fitted. As with the linear field fitting case we can formulate an error
+function as the weighted sum of squares of the individual errors, that is
+
+\begin{equation}
+  {\cal F(\vect{r})}=\dsum_{d=1}^{D}w_{d}\left(\Psi_{n}(\xi_{d})r_{n}-r_{d}
+  \right)^{2}
+\end{equation}
+
+Minimising this error function with respect to the nodal radii $r_{n}$ we
+obtain
+\begin{equation}
+  \delby{{\cal F}}{r_{m}}=2\dsum_{d=1}^{D}w_{d}\left(\Psi_n(\xi_{d})r_{n}-
+    r_{d}\right)\Psi_m(\xi_{d}) = 0
+\end{equation}
+or in terms of element stiffness matrices
+\begin{equation}
+  E_{mn}r_{n}=f_{m}
+\end{equation}
+where
+\begin{equation}
+  E_{mn}=\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})\Psi_n(\xi_{d}) \quad \mbox{and} 
+  \quad f_{m}=\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})u_{d}
+\end{equation}
+
+Another example of a change of coordinate systems is a prolate spheroidal
+coordinates for fitting a heart geometry.
+
+\subsection{Linear geometric fitting with fixed $\xi_{d}$ locations}
+
+In some geometric fitting problems there is no appropriate change of 
+coordinates and a rectangular cartesian system must be used. This means that,
+in general, we require both x and y (and z) in the fit at the same time.
+This results in a non-linear problem as the data point projection $\xi_{d}$
+will now, in general, change as we change any geometric variable during the
+fit. Hence in order to obtain a linear problem the data point projections
+must remain fixed during the fit. To see how this works consider the geometric
+fitting problem as shown in \figref{fig:fixedxifitbefore}.
+
+\begin{figure}[htpb] \centering
+  \epsfig{file=epsfiles/beforefit.eps,width=15cm}
+  \caption{Geometric fitting problem. The three nodal y-coordinates 
+    $y_{1}, y_{2}$ and $y_{3}$ of a two linear element basis function mesh are
+    fitted to five data points. The initial locations of the nodes are
+    $(x_{1},y_{1})=(0,0), (x_{2},y_{2})=(1,0)$ and $(x_{3},y_{3})=(2,0)$. The
+    location of the data points are
+    $(x^{1},y^{1})=(0.2,1.2),(x^{2},y^{2})=(0.8,1.5),(x^{3},y^{3})=(1.3,1.5),
+    (x^{4},y^{4})=(1.5,1.1)$ and $(x^{5},y^{5})=(1.7,0.8)$. The initial $\xi$
+    projections are $\xi^{1}=0.2$ and $\xi^{2}=0.8$ in element 1 and
+    $\xi^{3}=0.3,\xi^{4}=0.5$ and $\xi^{5}=0.7$ in element 2.}
+  \label{fig:fixedxifitbefore}
+\end{figure}
+
+Now computing the error functions as a weighted sum of squares we obtain
+\begin{equation}
+  {\cal F(\vect{r})}=\dsum_{d=1}^{D}w_{d}\left(\Psi_{n}(\xi_{d})y_{n}-y_{d}
+  \right)^{2}
+\end{equation}
+
+Minimising this error function with respect to the nodal parameters $y_{n}$ we
+obtain the element matrix equation
+\begin{equation}
+  E_{mn}y_{n}=f_{m}
+\end{equation}
+where, as before,
+\begin{equation}
+  E_{mn}=\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})\Psi_n(\xi_{d}) \quad \mbox{and} 
+  \quad f_{m}=\dsum_{d=1}^{D}w_{d}\Psi_m(\xi_{d})u_{d}
+\end{equation}
+
+Now for element 1
+\begin{equation}
+  \begin{array}{rcl}
+    E_{11}&=&(1-\xi^{1})(1-\xi^{1})+(1-\xi^{2})(1-\xi^{2}) \\
+    &=&(1-0.2)(1-0.2)+(1-0.8)(1-0.8)=0.68 \\
+    E_{12}&=&E_{21}=(1-\xi^{1})\xi^{1}+(1-\xi^{2})\xi^{2} \\
+    &=&(1-0.2)(0.2)+(1-0.8)(0.8)=0.32 \\
+    E_{22}&=&\xi^{1}\xi^{1}+\xi^{2}\xi^{2} \\
+    &=& (0.2)(0.2)+(0.8)(0.8)=0.68 \\
+    f_{1}&=&(1-\xi^{1})y^{1}+(1-\xi^{2})y^{2} \\
+    &=&(1-0.2)(1.2)+(1-0.8)(1.5)=1.26 \\
+    f_{2}&=&\xi^{1}y^{1}+\xi^{2}y^{2} \\
+    &=&(0.2)(1.2)+(0.8)(1.5)=1.44
+  \end{array}
+\end{equation}
+and for element 2
+\begin{equation}
+  \begin{array}{rcl}
+    E_{11}&=&(1-\xi^{3})(1-\xi^{3})+(1-\xi^{4})(1-\xi^{4})+(1-\xi^{5})
+    (1-\xi^{5})\\
+    &=&(1-0.3)(1-0.3)+(1-0.5)(1-0.5)+(1-0.7)(1-0.7)=0.83 \\
+    E_{12}&=&E_{21}=(1-\xi^{3})\xi^{3}+(1-\xi^{4})\xi^{4}+(1-\xi^{5})\xi^{5}\\
+    &=&(1-0.3)(0.3)+(1-0.5)(0.5)+(1-0.7)(0.7)=0.67 \\
+    E_{22}&=&\xi^{3}\xi^{3}+\xi^{4}\xi^{4}+\xi^{5}\xi^{5}\\
+    &=&(0.3)(0.3)+(0.5)(0.5)+(0.7)(0.7)=0.83 \\
+    f_{1}&=&(1-\xi^{3})y^{3}+(1-\xi^{4})y^{4}+(1-\xi^{5})y^{5}\\
+    &=&(1-0.3)(1.5)+(1-0.5)(1.1)+(1-0.7)(0.8)=1.84\\
+    f_{2}&=&\xi^{3}y^{3}+\xi^{4}y^{4}+\xi^{5}y^{5}\\
+    &=&(0.3)(1.5)+(0.5)(1.1)+(0.7)(0.8)=1.56
+  \end{array}
+\end{equation}
+
+Assembling these element matrices and vectors into a global system of
+equations we get
+\begin{equation}
+  \begin{bmatrix}
+    0.68 & 0.32 & 0.00 \\
+    0.32 & 1.51 & 0.67 \\
+    0.00 & 0.67 & 0.83 
+  \end{bmatrix}
+  \begin{bmatrix}
+    y_{1} \\
+    y_{2} \\
+    y_{3}
+  \end{bmatrix} =
+  \begin{bmatrix}
+    1.26 \\
+    3.28 \\
+    1.56
+  \end{bmatrix}
+\end{equation}
+
+Solving these gives
+\begin{equation}
+  \begin{bmatrix}
+    y_{1} \\
+    y_{2} \\
+    y_{3}
+  \end{bmatrix} =
+  \begin{bmatrix}
+    1.03210 \\
+    1.74420 \\
+    0.47152
+  \end{bmatrix}
+\end{equation}
+
+The fitted solution is shown in \figref{fig:fixedxifitafter}.
+\begin{figure}[htpb] \centering
+  \epsfig{file=epsfiles/afterfit.eps,width=15cm}
+  \caption{Fitted mesh. The $\xi_{d}$ locations on the fitted mesh are
+    $\xi^{1}=0.212$ and $\xi^{2}=0.752$ in element 1 and $\xi^{3}=0.233,
+    \xi^{4}=0.504$ and $\xi^{5}=0.726$ in element 2.}
+  \label{fig:fixedxifitafter}
+\end{figure}
+It should be noted that after the fit the new data point projections have
+changed after the fit. Hence it general there maybe some benefit from
+reapplying the fitting procedure to the new data point projection i.e. 
+iterating on the fit.
+
+\section{Geometric fitting with Hermite elements}
+
+\subsection{Review of cubic Hermite interpolation}
+
+\subsubsection{Cubic Hermite basis functions}
+
+One of the most commonly used basis functions in finite elements are Lagrange
+basis functions which preserve continuity of the geometric coordinates across
+element boundaries by interpolating nodal coordinates which are shared by
+adjacent elements i.e.  $C^{0}$ continuity.  The interpolation formula for
+linear Lagrange interpolation is given in \eqref{eqn:linLagrangeinterp}.
+\begin{equation}
+  \fnof{\vect{x}}{\xi}=\varphi_{1}(\xi)\vect{x}_{1}+\varphi_{2}(\xi)\vect{x}_{2}
+  \label{eqn:linLagrangeinterp}
+\end{equation}
+where $\vect{x}_{n}$ is the geometric position of local node $n$ and the two
+one-dimensional linear Lagrange basis functions are given in
+\eqref{eqn:linLagrangeBfuns}.
+\begin{eqnarray}
+  \varphi_{1}(\xi)=1-\xi & \varphi_{2}(\xi)=\xi
+  \label{eqn:linLagrangeBfuns}
+\end{eqnarray}
+
+Cubic Hermite functions, on the other hand, also preserve continuity of the
+derivative of these coordinates with respect to $\xi$ across element
+boundaries by defining additional nodal parameters \todo{here}
+%\dbyat{\vect{x}}{\xi}{n}
+i.e. $C^{1}$ continuity. The interpolation formula within an element is given
+by
+\begin{equation}
+%  \fnof{\vect{x}}{\xi}=\Psi_{1}^{0}(\xi)\vect{x}_{1}+\Psi_{1}^{1}(\xi)\dbyat{\vect{x}}
+%  {\xi}{1}+\Psi_{2}^{0}(\xi)\vect{x}_{2}+\Psi_{2}^{1}(\xi)\dbyat{\vect{x}}
+%  {\xi}{2}
+  \todo{eqn}
+  \label{eqn:cubHermxiinterp}
+\end{equation}
+where the four one-dimensional cubic Hermite basis functions are given in 
+\eqref{eqn:cubHermBfuns}.
+\begin{eqnarray}
+  \Psi_{1}^{0}(\xi)=1-3\xi^{2}+2\xi^{3} & \Psi_{1}^{1}(\xi)=\xi(\xi-1)^{2} 
+  \nonumber \\
+  \Psi_{2}^{0}(\xi)=\xi^{2}(3-2\xi) & \Psi_{2}^{1}(\xi)=\xi^{2}(\xi-1)
+  \label{eqn:cubHermBfuns}
+\end{eqnarray}
+
+One further step is required to make cubic Hermite basis functions useful in
+practice.  Consider now the two cubic Hermite elements as shown in 
+\figref{fig:cubHermelem}.
+
+\begin{figure}[htbp] \centering
+  \input{figs/datafitting/cubichermiteelem.pstex}
+  \caption{Two cubic Hermite elements (denoted by {\bf 1} and {\bf 2}) formed
+    from three nodes (shown as a $\bullet$ and denoted by 1, 2 and 3) and 
+    having arc-lengths $s_{1}$ and $s_{2}$.}
+  \label{fig:cubHermelem}
+\end{figure}
+
+The derivative \todo{here}
+%\dbyat{\vect{x}}{\xi}{n} defined at node $n$ is dependent upon
+the local element $\xi$-coordinate and is therefore, in general, different in
+the two adjacent elements. Therefore we carry a physical derivative
+%$\dbyat{\vect{x}}{s}{n}$ at nodes and use
+\begin{equation}
+%  \dbyat{\vect{x}}{\xi}{n}=\brdby{\vect{x}}{s}_{\Delta(n,e)}.\brdby{s}{\xi}_{e}
+  \label{eqn:xitoarclength}
+\end{equation}
+%to determine \dbyat{\vect{x}}{\xi}{n}. Here \dby{\vect{x}}{s} is a physical arc-
+length derivative, $\Delta(n,e)$ is the global node number of local node $n$
+%in element $e$, $\brdby{s}{\xi}_{e}$ is an element 'scale factor', denoted by
+$S_{e}$, which scales the arc-length derivative to the $\xi$-coordinate
+derivative.  Thus $\dby{\vect{x}}{s}$ is constrained to be continuous across
+element boundaries rather than $\dby{\vect{x}}{\xi}$.
+
+There is one condition that must be placed on the $\xi$ to arc-length
+transformation to ensure that we have arc-length derivatives. This condition
+is that the arc-length derivative vector at a node must have unit magnitude,
+that is
+\begin{equation}
+%  \norm{\brdby{\vect{x}}{s}_{n}}=1
+  \label{eqn:cubHermnormconst}
+\end{equation}
+This ensures that we have continuity with respect to a physical parameter
+rather than with respect to a mathematical parameter $\xi$. The set of mesh
+parameters, \vect{u}, for cubic Hermite interpolation hence contains the set
+of nodal values (or positions), the set of nodal arc-length derivatives and
+the set of scale factors.
+
+\subsubsection{Bicubic Hermite basis functions}
+
+Bicubic Hermite basis functions are the two-dimensional extension of the
+one-dimensional cubic Hermite basis functions. They are formed from the tensor
+(or outer) product of two one-dimensional basis functions as defined in
+\eqref{eqn:cubHermBfuns}. The interpolation formula for a point $(\xi_{1},
+\xi_{2})$ within an element is obtained from the bicubic Hermite interpolation
+formula,
+\begin{eqnarray}
+%\vect{x}(\xi_{1},\xi_{2}) &=& \Psi_{1}^{0}(\xi_{1})\Psi_{1}^{0}(\xi_{2})
+%    \vect{x}_{1}+\Psi_{2}^{0}(\xi_{1})\Psi_{1}^{0}(\xi_{2})\vect{x}_{2} + 
+%    \nonumber \\
+%    & & \Psi_{1}^{0}(\xi_{1})\Psi_{2}^{0}(\xi_{2})\vect{x}_{3} +
+%    \Psi_{2}^{0}(\xi_{1})\Psi_{2}^{0}(\xi_{2})\vect{x}_{4} + \nonumber \\
+%    & & \Psi_{1}^{1}(\xi_{1})\Psi_{1}^{0}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{1}}{1}+\Psi_{2}^{1}(\xi_{1})\Psi_{1}^{0}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{1}}{2} + \nonumber \\
+%    & & \Psi_{1}^{1}(\xi_{1})\Psi_{2}^{0}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{1}}{3}+\Psi_{2}^{1}(\xi_{1})\Psi_{2}^{0}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{1}}{4} + \nonumber \\
+%    & & \Psi_{1}^{0}(\xi_{1})\Psi_{1}^{1}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{2}}{1}+\Psi_{2}^{0}(\xi_{1})\Psi_{1}^{1}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{2}}{2} + \nonumber \\
+%    & & \Psi_{1}^{0}(\xi_{1})\Psi_{2}^{1}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{2}}{3}+\Psi_{2}^{0}(\xi_{1})\Psi_{2}^{1}(\xi_{2})\delbyat{\vect{x}}
+%    {\xi_{2}}{4} + \nonumber \\
+%    & & \Psi_{1}^{1}(\xi_{1})\Psi_{1}^{1}(\xi_{2})\deltwobyat{\vect{x}}
+%    {\xi_{1}}{\xi_{2}}{1} +
+%    \Psi_{2}^{1}(\xi_{1})\Psi_{1}^{1}(\xi_{2})\deltwobyat{\vect{x}}
+%    {\xi_{1}}{\xi_{2}}{2} + \nonumber \\
+%    & & \Psi_{1}^{1}(\xi_{1})\Psi_{2}^{1}(\xi_{2})\deltwobyat{\vect{x}}
+%    {\xi_{1}}{\xi_{2}}{3} +
+%    \Psi_{2}^{1}(\xi_{1})\Psi_{2}^{1}(\xi_{2})\deltwobyat{\vect{x}}
+%    {\xi_{1}}{\xi_{2}}{4}
+    \label{eqn:bicubHerminterp}
+\end{eqnarray}
+
+As with the one-dimensional cubic Hermite elements, the derivatives with
+respect to $\xi$ in the two-dimensional interpolation formula above are
+expressed as the product of a nodal arc-length derivative and a nodal scale
+factor. This is, however, complicated by the fact that there are now scale
+factors for each $\xi$ direction at each node. For node $n$ we
+have
+\begin{equation}
+%  \delbyat{\vect{x}}{\xi_{i}}{n}=\brdelby{\vect{x}}{s_{i}}_{\Delta(n,e)}.
+%  \left(S_{i}\right)_{e}
+  \label{eqn:xitoarclength2}
+\end{equation}
+and for the cross-derivative
+\begin{equation}
+%  \deltwobyat{\vect{x}}{\xi_{1}}{\xi_{2}}{n}=\brdeltwoby{\vect{x}}{s_{1}}{s_{2}}_
+%  {\Delta(n,e)}.\left(S_{1}\right)_{e}.\left(S_{2}\right)_{e}
+  \label{eqn:xitoarclength3}
+\end{equation}
+
+As with the one-dimensional cubic Hermite case conditions must be placed on
+this transformation in order to maintain $C^{1}$ continuity. A sufficient
+condition is that the scale factor at a node in one element must be the same
+as the scale factor at the same node in an adjacent element. That is, the
+elemental scale factor should be nodally based so that the same scale factor
+is used at a given node regardless of the current element. With this condition
+satisfied any choice of scale factor will give $C^{1}$ continuity across
+element boundaries. The choice of the scale factor will, however, affect the
+spacing of $\xi$ with arc-length. It is often computationally desirable to
+have a uniform spacing of $\xi$ with respect to arc-length (for example, not
+biasing the Gaussian quadrature scheme to one end of the element). To achieve
+this uniform spacing a good choice of the nodal scale factor (denoted from now
+on as ${\cal S}_{n}$ for node $n$) is the average of the two arc-lengths on
+either side of the node. This condition must also be applied together with
+arc-length derivatives for each $\xi$ direction as defined by
+\eqref{eqn:cubHermnormconst}.
+
+If $n_{\ominus}$ is the node or line immediately before node $n$ (in the sense
+of increasing $\xi$) and $n_{\oplus}$ is the node or line immediately after
+node $n$, the nodal scale factor is given by
+\begin{equation}
+  {\cal S}_{n}=\frac{s_{n_{\ominus}}+s_{n_{\oplus}}}{2}
+  \label{eqn:avearclenscale}
+\end{equation}
+This is termed average arc-length scaling.  For example consider node 2 in
+\figref{fig:cubHermelem} then
+\[{\cal S}_{2}=\frac{s_{1}+s_{2}}{2}\]
+Thus, for an element $e$, the one-dimensional cubic Hermite interpolation
+formula in \bref{eqn:cubHermxiinterp} becomes
+\begin{equation}
+%  \fnof{\vect{x}}{\xi}=\sum_{n=1,2}\left[\Psi_{n}^{0}(\xi)\vect{x}_{n}+\Psi_{n}^{1}(\xi)
+%  \brdby{\vect{x}}{s}_{n}.{\cal S}_{n}\right]
+  \label{eqn:cubHerminterp}
+\end{equation}
+To calculate the arc-length for a particular element an iterative process is
+needed. The arc-length for an one-dimensional element is defined as
+\begin{equation}
+%  \mbox{arc-length}=\int_{0}^{1}\norm{\dby{\vect{x}(\xi)}{\xi}}d\xi=
+%  \int_{0}^{1}\sqrt{\brdby{x(\xi)}{\xi}^{2}+\brdby{y(\xi)}{\xi}^{2}}d\xi
+  \label{eqn:arclendef}
+\end{equation}
+However, since the interpolation of \fnof{\vect{x}}{\xi}, as defined in
+\bref{eqn:cubHerminterp}, uses the arc-length in the calculation of the
+scaling factor, an iterative root finding technique is needed to obtain the
+arc-length.
+
+With nodal based scale factors and arc-length derivatives we achieve a good
+arc-length to $\xi$ spacing, continuity is maintained with respect to a
+physically meaningful parameter and the numerical results when using the mesh
+are more accurate.
+
+\subsection{Least squares fitting with cubic Hermite interpolation}
+
+\subsubsection{Problem formulation}
+
+Consider a set of rectangular cartesian data with geometric positions
+$\vect{z}_{d},d=1..D$. For each data point we can find the position on the mesh
+which has the smallest distance to that data point. This point is the
+orthogonal projection of the data point onto the mesh and has geometric
+position $\vect{z}$. The point $\vect{z}$ is also given by the local element
+co-ordinate $\vect{\xi}_{d}$ as is shown in \figref{fig:dataproj}.
+
+To calculate $\vect{\xi}_{d}$ a non-linear iterative procedure is required.
+Given a $\vect{\xi}$ position for the data point projection within an element
+the geometric position of this projection is given by the standard
+interpolation formula (\eqref{eqn:cubHermxiinterp} or
+\eqref{eqn:bicubHerminterp}). An error function can then be set up as the
+Euclidean distance between this position and the actual position of the data
+point. The $\vect{\xi}$ position which minimises this function can the be found
+by using the Newton-Rhapson root finding method on the derivative of this
+function. This $\vect{\xi}$ position is the orthogonal projection of the data
+point.
+
+\begin{figure} \centering
+  \input{figs/datafitting/datapos.pstex}
+  \caption{Definition of a data point projection into an element. The data
+    point at geometric location $\vect{z}_{d}$ is projected into an element at a
+    geometric position $\vect{z}$ and element co-ordinate $\xi_{d}$.}
+  \label{fig:dataproj}
+\end{figure}
+
+For simplicity only two-dimensional fitting (i.e. cubic Hermite elements) will
+be covered in this section. Hence, given $\xi_{d}$, $\vect{z}$ can be found from
+interpolation i.e.
+\begin{equation}
+%  \vf{z}{\xi_{d}}=\sum_{n=1,2}\left[\onevf{\Psi_{n}^{0}}{\xi_{d}}\vect{x}_{n}+
+%  \onevf{\Psi_{n}^{1}}{\xi_{d}}\brdby{\vect{x}}{s}_{n}.{\cal S}_{n}\right]
+  \label{eqn:datapointpos}
+\end{equation}
+
+The measure of error for each data point is defined as the Euclidean distance
+between the data point and its closest projection onto the current mesh:
+\begin{equation}
+%  \onevf{f_{d}}{\xi_{d}}=\norm{\vf{z}{\xi_{d}}-\vect{z}_{d}}
+\end{equation} 
+
+For a given projection of the data points onto the mesh (i.e. $\xi_{d}$ is
+held constant) the objective function to be minimised in the fit is then formed
+as the sum-of-squares of the individual errors.
+\begin{equation}
+%  \vvf{{\cal F}}{u}=\sum_{d=1,D}\gamma_{d}\onevf{f_{d}^{2}}{\xi_{d}}=
+%  \sum_{d=1,D}\gamma_{d}\norm{\onevf{\vect{z}}{\xi_{d}}-\vect{z}_{d}}^{2}
+  \label{eqn:linfitobjfun}
+\end{equation}
+where $\gamma_{d}$ is a weight for each data point and \vect{u} is a vector of
+mesh parameters.
+
+The fitting problem is to find the set of mesh parameters that minimises 
+this objective function. Substituting \bref{eqn:datapointpos} into
+\bref{eqn:linfitobjfun} and differentiating we obtain
+\begin{equation}
+%  \delby{\vvf{{\cal F}}{u}}{\left(x_{j}\right)_{m}}=2\sum_{d=1,D}\gamma_{d}
+%  \left(\sum_{n=1,2}\left[\onevf{\Psi_{n}^{0}}{\xi_{d}}\left(x_{j}\right)_{n}+
+%  \onevf{\Psi_{n}^{1}}{\xi_{d}}\brdelby{x_{j}}{s}_{n}.{\cal S}_{n}\right]-
+%  {z_{d}}_{j}\right)\onevf{\Psi_{m}^{0}}{\xi_{d}} 
+  \label{eqn:lindatajacnode}
+\end{equation}
+\begin{equation}
+%  \delby{\vvf{{\cal F}}{u}}{\brdelby{x_{j}}{s}_{m}}=2\sum_{d=1,D}\gamma_{d}
+%  \left(\sum_{n=1,2}\left[\onevf{\Psi_{n}^{0}}{\xi_{d}}\left(x_{j}\right)_{n}+
+%  \onevf{\Psi_{n}^{1}}{\xi_{d}}\brdelby{x_{j}}{s}_{n}.{\cal S}_{n}\right]-
+%  {z_{d}}_{j}\right)\onevf{\Psi_{m}^{1}}{\xi_{d}}{\cal S}_{m} 
+  \label{eqn:lindatajacderiv}
+\end{equation}
+
+A minimum can thus be found to the objective function by setting both 
+\eqnrefs{eqn:lindatajacnode}{eqn:lindatajacderiv} to zero. This will result in
+a linear system only if the scale factors are kept constant during the fit. 
+That is the vector $\vect{u}$ will contain the nodal positions and the nodal
+arc-length derivatives. With this restriction we can obtain
+\begin{eqnarray*}
+%  \sum_{d=1,D}\gamma_{d}\left(\sum_{n=1,2}\left[\onevf{\Psi_{n}^{0}}{\xi_{d}}
+%  \left(x_{j}\right)_{n}+\onevf{\Psi_{n}^{1}}{\xi_{d}}{\cal S}_{n}
+%  \brdelby{x_{j}}{s}_{n}\right]\onevf{\Psi_{m}^{0}}{\xi_{d}}\right)
+%  &=&\sum_{d=1,D}\gamma_{d}\onevf{\Psi_{m}^{0}}{\xi_{d}}{z_{d}}_{j} \\ 
+%  \sum_{d=1,D}\gamma_{d}\left(\sum_{n=1,2}\left[\onevf{\Psi_{n}^{0}}{\xi_{d}}
+%  \left(x_{j}\right)_{n}+\onevf{\Psi_{n}^{1}}{\xi_{d}}{\cal S}_{n}
+%  \brdelby{x_{j}}{s}_{n}\right]\onevf{\Psi_{m}^{1}}{\xi_{d}}{\cal S}_{m}\right)
+%  &=&\sum_{d=1,D}\gamma_{d}\onevf{\Psi_{m}^{1}}{\xi_{d}}{\cal S}_{m}{z_{d}}_{j}
+\end{eqnarray*}
+This is a linear system of equations for the element of the form
+\begin{equation}
+  K_{mn}u_{n}=f_{m}
+  \label{eqn:linsystem}
+\end{equation}
+
+A linear system of equations governing the entire mesh can then be found by
+assembling a global stiffness matrix from all the individual element matrices.
+This can then be solved to yield the nodal positions and derivatives which
+minimises the error in the mesh. An example of fitting is shown in
+\figref{fig:cubHermfit}.
+
+\begin{figure} \centering
+  \input{figs/datafitting/fitting.pstex}
+  \caption{Geometric data fitting with cubic Hermite elements. (a) The data
+     points (+) are shown projected onto the two element mesh at some 
+     intermediate stage in the fitting procedure. (b) The final fitted mesh.}
+  \label{fig:cubHermfit}
+\end{figure}
+
+\subsubsection{Sobelov Smoothing}
+
+With an insufficient number of data points, fitting 'noisy' data or fitting
+data that has an uneven spread, a smoothness constraint \cite{young:1989}
+can be introduced by adding a second term to the objective function:
+%\[\vvf{F}{u}=\sum_{d=1,D}\gamma_{d}\norm{\onevf{\vect{z}}{\vect{\xi}_{d}}-
+%\vect{z}_{d}}^{2}+\int_{\Omega} \onevf{g}{\vvvf{u}{\xi}}d\vect{\xi}\]
+
+The first term measures the error in the surface from the data and the second
+term measures deformation of the surface. To measure the deformation of the
+surface a $p^{th}$ order weighted Sobelov norm 
+\cite{terzopoulos:1986,tikhonov:1977} is used, defined by
+\begin{equation}
+%  \onevf{g_{p,w}}{\vvvf{u}{\xi}}=\sum_{q=0}^{p}\sum_{i+j=q}w_{ij}
+%  \norm{\frac{\del^{q}\vect{u}}{\del^{i}\xi_{1}\del^{j}\xi_{2}}}^{2}
+  \label{eqn:Sobnorm}
+\end{equation}
+where $w_{ij}$ are the weights for the norm. The addition to the objective
+function, called the Sobelov value, is defined as
+\begin{equation}
+%  \onevf{G}{\vvvf{u}{\xi}}=\int_{\Omega}{\onevf{g}{\vvvf{u}{\xi}}d
+%    \vect{\xi}}
+  \label{eqn:Sobvalue}
+\end{equation}
+where $\Omega$ is the mesh domain.
+
+For the case of two-dimensional fitting (i.e. cubic Hermite elements) $j=0$
+(as there is no $\xi_{2}$ direction) and for the case of three-dimensional
+fitting (i.e. bicubic Hermite elements) $j=0..2$. Consider the case for $p=2$,
+and for 2D: $w_{0}=0, w_{1}=\alpha, w_{2}=\beta$, and for 3D: $w_{00}=0,
+w_{01}=w_{10}=\alpha, w_{20}=w_{02}= \beta, w_{11}=2\beta$. The Sobelov value
+now becomes
+\begin{equation}
+  \begin{array}{lllll}
+%    &\onevf{G}{\vvvf{u}{\xi}}&=&\displaystyle\int_{\Omega}{\left\{
+%    \alpha\norm{\dby{\vect{u}}{\xi}}^{2}+\beta\norm{\dtwosqby{\vect{u}}{\xi}}^{2}
+%    \right\}d\xi} & \mbox{for 2D} \nonumber \\ 
+%    \mbox{or}&\onevf{G}{\vvvf{u}{\xi}}&=&\displaystyle\int_{\Omega}
+%    \left\{\alpha\left(\norm{\delby{\vect{u}}{\xi_{1}}}^{2}+\norm{\delby{\vect{u}}
+%    {\xi_{2}}}^{2}\right)\right.+ & \nonumber \\ 
+%    &&&\left.\beta\left(\norm{\deltwosqby{\vect{u}}{\xi_{1}}}^{2}+
+%    2\norm{\deltwoby{\vect{u}}{\xi_{1}}{\xi_{2}}}^{2}+
+%    \norm{\deltwosqby{\vect{u}}{\xi_{2}}}^{2}\right)\right\}d\vect{\xi}
+%    & \mbox{for 3D} \nonumber
+  \end{array}
+  \label{eqn:ptwoSobnorm}
+\end{equation}
+
+The parameter $\alpha$ controls the tension of the surface and the parameter
+$\beta$ controls the degree of surface curvature
+\cite{terzopoulos:1986}.
+
+\subsection{Non-linear geometric fitting with Hermite elements}
+
+\subsubsection{Problem formulation}
+
+One problem that arises when using linear fitting with cubic Hermite elements
+is that arc-length derivatives and average arc-length scaling are not
+maintained during the fit. In linear fitting there is no information supplied
+in the linear fitting model that enforces arc-length derivatives and the scale
+factors are held constant during the fit. Here we consider how to fit the data
+whilst maintaining arc-length derivatives and an even spacing of arc-length
+with $\xi$. Because both the value of the arc-length for the element and the
+relationship between the derivatives in the various spatial directions depend
+upon the mesh parameters in a non-linear fashion, the only way to ensure
+arc-length derivatives are maintained during fitting is to use a non-linear
+fitting procedure.
+
+Consider the following: Let \vect{u} be the vector of mesh parameters, 
+$\vect{z}_{d}$ the vector of the location of the data points in space and 
+%\twovf{\vect{z}}{\vect{u}}{\vect{\xi}_{d}} 
+the vector of the location of the closest projection (at the points given by
+%the vector $\vect{\xi}_{d}$) of data point $d$ onto the mesh. Now the error in
+the $d^{th}$ data point can be expressed by an error vector
+\begin{equation}
+%\twovf{\vect{e}_{d}}{\vect{u}}{\vect{\xi}_{d}}=\twovf{\vect{z}}{\vect{u}}{\vect{\xi}_{d}}
+%-\vect{z}_{d}
+\label{eqn:errorvec}
+\end{equation}
+and by a residual,
+\begin{equation}
+%\twovf{f_{d}}{\vect{u}}{\vect{\xi}_{d}}=\norm{\twovf{\vect{e}_{d}}{\vect{u}}
+%{\vect{\xi}_{d}}}^{2}
+\label{eqn:dataresidvec}
+\end{equation}
+
+%An objective function, \twovf{{\cal F}}{\vect{u}}{\vect{\xi}_{d}}, is formed 
+as the sum of squares of the individual residuals for the mesh \vect{u} and
+projections $\vect{\xi}_{d}$
+\begin{equation}
+%\twovf{{\cal F}}{\vect{u}}{\vect{\xi}_{d}}= \twovft{\vect{f}}{\vect{u}}{\vect{\xi}_{d}}
+%\twovf{\vect{f}}{\vect{u}}{\vect{\xi}_{d}}
+\label{eqn:dataresfun}
+\end{equation}
+%The fitting problem then becomes, for constant $\vect{\xi}_{d}$,
+\begin{eqnarray*}
+%\min_{\vect{u} \in \Re} & \vvf{{\cal F}}{u} = \twovft{\vect{f}}{\vect{u}}
+%{\vect{\xi}_{d}}\twovf{\vect{f}}{\vect{u}}{\vect{\xi}_{d}}
+\end{eqnarray*}
+
+In order to maintain arc-length derivatives a non-linear constraint is needed.
+This constraint comes from the geometric properties of arc-length derivatives.
+For a node $n$ and $\xi$-direction $i$ the magnitude of the vector of
+arc-length derivatives in the various spatial directions must be 1 as detailed
+in \eqref{eqn:cubHermnormconst}.  Hence the constraint is
+\begin{equation}
+%  c=\norm{\brdelby{\vect{x}}{s_{i}}_{n}}=1
+  \label{eqn:normconst}
+\end{equation}
+This also implies simple bounds on the derivative variables:
+%\[-1 \leq \brdelby{x_{j}}{s_{i}}_{n} \leq 1\]
+
+Thus the fitting problem can be written in terms of a non-linearly constrained,
+non-linear optimisation problem
+\begin{eqnarray}
+%  \min_{\vect{u} \in \Re,~\vect{\xi}_{d} \mbox{const}} & \vvf{{\cal F}}{u} = 
+%  \twovft{\vect{f}}{\vect{u}}{\vect{\xi}_{d}}\twovf{\vect{f}}{\vect{u}}{\vect{\xi}_{d}} 
+  \label{eqn:nloproblem} \\
+%  \mbox{subject to} & \vect{a} \leq \left(\begin{array}{c}
+%  \vect{u} \nonumber \\ \vvvf{c}{u} \end{array} \right) \leq \vect{b} \nonumber
+\end{eqnarray}
+where \vect{a} is a vector of lower bounds, \vect{b} a vector of upper bounds 
+%and \vvvf{c}{u} a vector of non-linear constraints. This type of optimisation 
+problem can be solved with readily available non-linear optimisation packages 
+such as NPSOL \cite{gill:1986}. 
+
+In order to ensure that there is an approximately uniform spacing of $\xi$
+with arc-length two approaches can be used. The first approach is to use
+an iterative technique for the scale factors and is detailed here. The
+second approach is to include the scale factors in the optimisation problem
+and is detailed in the next section.
+
+The constraint on the nodal scale factors (being the average of the line
+lengths either side of the node) is placed upon the problem to ensure that the
+arc-length to $\xi$ spacing is approximately uniform. As we are only getting
+approximately uniform arc-length to $\xi$ spacing we can relax the constraint
+on nodal scale factors. If the nodal scale factors are held fixed during the
+fit we will not have average arc-length scaling throughout the fitting process
+but we will have a reasonable approximation. With the nodal scale factors
+fixed the variables ${\cal S}_{n}$ can be removed from the vector of mesh
+%parameters \vect{u}.
+
+The approach is to hold the scale factors constant, fit the mesh with
+these scale factors, and then update the scale factors (based on the new mesh)
+to be average arc-length. This process can be repeated iteratively until the
+desired fit has be achieved. It should also be noted that
+\eqref{eqn:nloproblem} is defined only for a constant data point projection.
+With this iterative approach the data point projections are also updated
+at the same time as the scale factors.
+
+The convergence of the fitting problem can be measured in two ways. The first
+is the convergence of the RMS error in the data and second is the convergence
+in the magnitude of the nodal scale factors.
+
+The algorithm is therefore:
+\begin{enumerate}
+  \item Define initial mesh (and calculate initial nodal scale factors)
+  \item Calculate the initial data point projections
+  \item Repeat until converged or the maximum number of iterations is exceeded
+  \begin{enumerate}
+    \item Fit the mesh to the data by solving \bref{eqn:nloproblem}
+    \item Update the scale factors to be average arc-lengths based on the new
+      mesh
+    \item Recalculate the data point projections on the new mesh
+  \end{enumerate}
+\end{enumerate}
+
+\subsubsection{Alternative formulation}
+\label{sec:alternativeformulation}
+
+An alternative approach to ensuring average arc-length scale factors can be
+formulated by including the scale factors in the optimisation problem as
+optimisation variables.  The vector of mesh parameters, \vect{u}, is hence
+extended to include the nodal scale factors. With this a new constraint
+can be introduced to \eqref{eqn:nloproblem} to ensure that there is an
+approximately uniform spacing of $\xi$ with arc-length. This can be achieved
+if the nodal scale factor is the average on the arc-lengths on either side of
+that node. If $\left({\cal S}_{i}\right)_{n}$ is the average arc-length for
+node $n$ in the $\xi_{i}$ direction as given by \bref{eqn:avearclenscale} then
+the constraint that the nodal scale factor equals the average arc-length is
+given by
+\begin{equation}
+%  c=\frac{\left(s_{i}\right)_{n\ominus}+\left(s_{i}\right)_{n\oplus}}{2}-
+%  \left({\cal S}_{i}\right)_{n}=0
+\end{equation}
+or
+\begin{equation} 
+%  c=\frac{1}{2}\left(\int_{0}^{1}\norm{\delby{\vvvf{x}{\xi}}{\xi_{i}}}_
+%  {n_{\ominus}}d\xi_{i}+\int_{0}^{1}\norm{\delby{\vvvf{x}{\xi}}{\xi_{i}}}_
+%  {n_{\oplus}}d\xi_{i}
+%  \right)-\left({\cal S}_{i}\right)_{n}=0
+  \label{eqn:arclenconst}
+\end{equation}
+Note that no summation over $\xi_{i}$ is implied.
+
+This also generates a simple bound on the scale-factors:
+%\[\left({\cal S}_{i}\right)_{n} > 0\]
+
+This formulation of the non-linear fitting problem does have one practical
+limitation. With average arc-length scaling the interpolation within an
+element depends on the arc-length on the neighbouring elements, and the
+arc-length of the neighbouring elements depends on their neighbouring elements
+and so on.  This results in a 'global mesh' in that every part of the mesh
+is dependent on every other part of the mesh. The implication of this is that
+the entire mesh must be included in the fit otherwise average arc-length
+scaling cannot be achieved. This is not a desirable feature for very large
+problems or for problems where only a small part of the mesh is in error and
+needs to be fitted. The formulation still requires iteration for the data
+point projections but does have the advantage that the number of iterations 
+required is reduced as the scale factors are found during the fit. This is 
+at the expense of having to solve a much larger non-linear optimisation
+problem with more variables and, more importantly, more non-linear constraints.
+
+The fit can be considered converged when either the data point projections or
+the RMS error in the fit does not change significantly between iterations.
+The algorithm for the non-linear data fitting procedure is as follows:
+
+\begin{enumerate}
+  \item Define the initial mesh (and calculate the initial nodal scale factors)
+  \item Calculate the initial data point projections
+  \item Repeat until converged or the maximum number of iterations is exceeded
+  \begin{enumerate}
+    \item Fit the mesh to the data by solving \bref{eqn:nloproblem} (with
+      the new constraints)
+    \item Recalculate the data point projections on the new mesh
+  \end{enumerate}
+\end{enumerate}
+
+\subsubsection{Residual and constraint Jacobians}
+\label{sec:resandcontjacs}
+
+Solution of the non-linear problem given by \bref{eqn:nloproblem} will
+generally require the evaluation of objective gradient (or residual vector
+Jacobian) and the constraint Jacobian with respect to the optimisation (mesh)
+parameters. For simplicity in this section we will be concerned with
+two-dimensions only (i.e.  one-dimensional cubic Hermite elements). The
+residual and constraint Jacobians will be given for the alternative
+formulation as this covers all cases. If the scale factors are found by
+iteration (i.e. the problem as described in \secref{sec:probform}) the
+Jacobians with respect to the nodal scale factors can be ignored, as can the
+second constraint (\eqref{eqn:arclenconst}) which ensures average arc-length
+scale factors.  In this case there are three basic types of variable within an
+element: the nodal variables $\left(x_{j} \right)_{n}$, the derivative
+%variables $\brdelby{x_{j}}{s}_{n}$ and the nodal scale factors ${\cal S}_{n}$.
+The residual and constraint Jacobians are given below for each of these three
+variable types.
+
+%Consider the error vector for the data point $d$, $\vect{e}_{d}$, defined in
+\bref{eqn:errorvec}, and its corresponding residual $f_{d}$, defined in
+\bref{eqn:dataresidvec}. The position of the projection of data point $d$
+within the element is given by \bref{eqn:datapointpos}.  Substituting
+\bref{eqn:datapointpos} into \eqnrefs{eqn:errorvec}{eqn:dataresidvec} and
+differentiating with respect to the various optimisation variables we can
+obtain the Jacobian of the residual vector:
+\begin{eqnarray}
+%  \delby{f_{d}}{\left(x_{j}\right)_{n}}&=&2\Psi^{0}_{n}(
+%  \xi_{d})~{e_{d}}_{j} \label{eqn:dataresjacnode} \\
+%  \delby{f_{d}}{\brdelby{x_{j}}{s}_{n}}&=&2\Psi^{1}_{n}(\xi_{d})~{\cal S}_{n}~
+%  {e_{d}}_{j} \label{dataresjacderiv} \\
+%  \delby{f_{d}}{{\cal S}_{n}}&=&2\Psi^{1}_{n}(\xi_{d})~\brdelby{\vect{x}}
+%  {s}_{n}\cdot\vect{e}_{d} \label{eqn:dataresjacline}
+\end{eqnarray}
+
+Note that if the data residual was
+%\[\twovf{f_{d}}{\vect{u}}{\vect{\xi}_{d}}=\norm{\twovf{\vect{e}_{d}}{\vect{u}}
+%{\vect{\xi}_{d}}}\]
+\eqref{eqn:dataresjacnode} would become
+%\[\delby{f_{d}}{\left(x_{j}\right)_{n}}=\frac{\Psi^{0}_{n}(\xi_{d})~{e_{d}}_{j}}
+%{f_{d}}\] which is singular at the optimal solution $f_{d}=0$. To avoid
+numerical problems the residual is therefore defined by
+\bref{eqn:dataresidvec}.
+
+Now consider the constraint Jacobians. Differentiating constraint
+\bref{eqn:normconst} with respect to the mesh parameters gives constraint
+gradients:
+\begin{eqnarray}
+%  \delby{c}{\left(x_{j}\right)_{n}}&=&0 \label{eqn:normjacnode} \\
+%  \delby{c}{\brdelby{x_{j}}{s}_{n}}&=&\frac{\brdelby{x_{j}}{s}_{n}}{\norm{
+%  \brdelby{\vect{x}}{s}_{n}}}\label{eqn:normjacderiv} \\
+%  \delby{c}{{\cal S}_{n}}&=&0 \label{eqn:normjacline}
+\end{eqnarray}
+
+To calculate the gradients for constraint \bref{eqn:arclenconst} we first
+compute the rate of change of \vect{x} with respect to $\xi$ within an element
+by differentiating \bref{eqn:cubHerminterp}:
+\begin{equation}
+%  \delby{\fnof{\vect{x}}{\xi}}{\xi}=\sum_{n=1,2}\left[\delby{\onevf{\Psi_{n}^{0}}{\xi}}
+%  {\xi}\vect{x}_{n}+\delby{\onevf{\Psi_{n}^{1}}{\xi}}{\xi}\brdelby{\vect{x}}
+%  {s}_{n}.{\cal S}_{n}\right]
+  \label{eqn:delxdelxiinterp}
+\end{equation}
+
+Substituting \bref{eqn:delxdelxiinterp} into
+\bref{eqn:arclenconst} and differentiating with respect to the optimisation
+variables gives the constraint gradients:
+\begin{eqnarray}
+%  \delby{c}{\left(x_{j}\right)_{n}}&=&\half\left({\int_{0}^{1}\frac{\left(
+%  \delby{\onevf{\Psi_{2}^{0}}{\xi}}{\xi}\delby{\onevf{x_{j}}{\xi}}{\xi}
+%  \right)_{n_{\ominus}}}{\norm{\delby{\fnof{\vect{x}}{\xi}}{\xi}}_{n_{\ominus}}}d\xi}+
+%  \int_{0}^{1}{\frac{\left(\delby{\onevf{\Psi_{1}^{0}}{\xi}}{\xi}\delby{
+%  \onevf{x_{j}}{\xi}}{\xi}\right)_{n_{\oplus}}}{\norm{\delby{\fnof{\vect{x}}{\xi}}
+%  {\xi}}_{n_{\oplus}}}d\xi}\right) \label{eqn:arclenjacnode} \\
+%  \delby{c}{\brdelby{x_{j}}{s}_{n}}&=&\half\left({\int_{0}^{1}\frac{\left(
+%  \delby{\onevf{\Psi_{2}^{1}}{\xi}}{\xi}{\cal S}_{n}\delby{\onevf{x_{j}}
+%  {\xi}}{\xi}\right)_{n_{\ominus}}}{\norm{\delby{\fnof{\vect{x}}{\xi}}{\xi}}_{n_{
+%  \ominus}}}d\xi}+\int_{0}^{1}{\frac{\left(\delby{\onevf{\Psi_{1}^{1}}{\xi}}
+%  {\xi}{\cal S}_{n}\delby{\onevf{x_{j}}{\xi}}{\xi}\right)_{n_{\oplus}}}
+%  {\norm{\delby{\fnof{\vect{x}}{\xi}}{\xi}}_{n_{\oplus}}}d\xi}\right) 
+%  \label{eqn:arclenjacderiv} \\
+%  \delby{c}{{\cal S}_{n}}&=&\half\left(\int_{0}^{1}{\frac{\left(\delby{
+%  \onevf{\Psi_{2}^{1}}{\xi}}{\xi}\brdelby{\vect{x}}{s}_{n}\cdot\delby{
+%  \fnof{\vect{x}}{\xi}}{\xi}\right)_{n_{\ominus}}}{\norm{\delby{\fnof{\vect{x}}{\xi}}
+%  {\xi}}_{n_{\ominus}}}d\xi}\right. + \nonumber \\
+%  &&\hspace{3cm}\left.\int_{0}^{1}{\frac{\left(\delby{\onevf{\Psi_{1}^{1}}
+%  {\xi}}{\xi}\brdelby{\vect{x}}{s}_{n}\cdot\delby{\fnof{\vect{x}}{\xi}}{\xi}\right)_{
+%  n_{\oplus}}}{\norm{\delby{\fnof{\vect{x}}{\xi}}{\xi}}_{n_{\oplus}}}d\xi}\right) 
+%  - 1 
+   \label{eqn:arclenjacline}
+\end{eqnarray}
+
+Note that when the integrand in these formula contains $n_{\ominus}$
+($n_{\oplus}$) the $\xi$ variable is assumed to be taken over the previous
+(next) element.
+
+Similar results can be found for three-dimensions (i.e. bicubic Hermite
+elements).
+
+\subsubsection{Sobelov smoothing}
+
+In order to implement Sobelov smoothing in the form of the non-linear
+optimisation problem given in \bref{eqn:nloproblem} we need to modify the
+residual vector by defining an additional residual as the Sobelov value for
+the mesh being fitted, that is
+\begin{equation}
+%  \twovf{f_{D+1}}{\vect{u}}{\vect{\xi}}=\onevf{G}{\vvvf{u}{\xi}}
+  \label{eqn:addSobresidual}
+\end{equation}
+%where \onevf{G}{\vvvf{u}{\xi}} is defined in \bref{eqn:ptwoSobnorm}.
+The objective function to minimise now becomes
+%\[\vvf{F}{u}=\vvf{{\cal F}}{u}+\vvf{G^{2}}{u}=\vvf{{\cal F}}{u}+
+%\vvf{{\cal G}}{u}\]
+%where \vvf{{\cal F}}{u} is the data objective defined in \bref{eqn:dataresfun}
+%and $\vvf{{\cal G}}{u}=\vvf{G^{2}}{u}$ is the Sobelov objective.
+
+The gradients of this additional residual can then be found by differentiating
+\bref{eqn:ptwoSobnorm} with respect to the mesh parameters. Considering the
+case of two-dimensional fitting and breaking the domain up into elements we
+obtain
+%\[\vvf{G}{u}=\sum_{e}\int_{0}^{1}\left\{\alpha\normdelby{\fnof{\vect{x}}{\xi}}
+%{\xi}^{2}+\beta\norm{\frac{\del^{2}\fnof{\vect{x}}{\xi}}{\del \xi^{2}}}^{2}
+%\right\}d\xi\]
+Interpolating within the element using cubic Hermite elements and 
+differentiating with respect to the three different mesh parameters within
+an element we obtain the additional residual gradients given in equations 
+(\ref{eqn:sobjacnode}--\ref{eqn:sobjacline}).
+\begin{eqnarray}
+%  \delby{f_{D+1}}{\left(x_{j}\right)_{n}}&=&2\int_{0}^{1}\left\{\alpha
+%  \delby{\onevf{\Psi_{n}^{0}}{\xi}}{\xi}\delby{\onevf{x_{j}}{\xi}}{\xi}+
+%  \beta\frac{\del^{2}\onevf{\Psi_{n}^{0}}{\xi}}{\del\xi^{2}}\frac{\del^{2}
+%  \onevf{x_{j}}{\xi}}{\del\xi^{2}}\right\}d\xi \label{eqn:sobjacnode} \\
+%  \delby{f_{D+1}}{\brdelby{x_{j}}{s}_{n}}&=&2\int_{0}^{1}\left\{\alpha
+%  \delby{\onevf{\Psi_{n}^{1}}{\xi}}{\xi}{\cal S}_{n}\delby{\onevf{x_{j}}
+%  {\xi}}{\xi}+\beta\frac{\del^{2}\onevf{\Psi_{n}^{1}}{\xi}}{\del\xi^{2}}
+%  {\cal S}_{n}\frac{\del^{2}\onevf{x_{j}}{\xi}}{\del\xi^{2}}\right\}d\xi 
+%  \label{eqn:sobjacderiv} \\
+%  \delby{f_{D+1}}{{\cal S}_{n}}&=&2\int_{0}^{1}\left\{\alpha\delby{
+%  \onevf{\Psi_{n}^{1}}{\xi}}{\xi}\brdelby{\vect{x}}{s}_{n}\cdot\delby{\fnof{\vect{x}}
+%  {\xi}}{\xi}+\beta
+%  \frac{\del^{2}\onevf{\Psi_{n}^{1}}{\xi}}{\del\xi^{2}}\brdelby{\vect{x}}{s}_{n}
+%  \cdot\frac{\del^{2}\fnof{\vect{x}}{\xi}}{\del\xi^{2}}\right\}d\xi \label{eqn:sobjacline}
+\end{eqnarray}
+
+Note that all the above integrals are with respect to one element. All the
+contributions from each element need to be included to obtain the complete
+residual gradients for the optimisation parameters.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "/product/cmiss/documents/notes/fembemnotes/fembemnotes"
+%%% compile-command: "cd ..; latex '\\nonstopmode\\input{fembemnotes}'"
+%%% End: 

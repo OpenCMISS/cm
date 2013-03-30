@@ -1,0 +1,106 @@
+\documentclass[12pt,twoside,a4paper]{book}
+
+%\includeonly{titlepage}
+%\includeonly{fem_basis_fns/fem_basis_fns}
+%\includeonly{heat_conduction/heat_conduction}
+%\includeonly{bem/bem}
+%\includeonly{transient_heat_condn/transient_heat_condn}
+%\includeonly{lin_elasticity/lin_elasticity}
+%\includeonly{modal_analysis/modal_analysis}
+%\includeonly{con_mechanics/con_mechanics}
+
+%\includeonly{domints_in_bem/domints_in_bem}
+%\includeonly{timedep_bem/timedep_bem}
+%\includeonly{datafitting/datafitting}
+
+
+%%% the first three chapters
+%\includeonly{titlepage,fem_basis_fns/fem_basis_fns,heat_conduction/heat_conduction,bem/bem}
+%%% chapters 4-6
+%\includeonly{titlepage,transient_heat_condn/transient_heat_condn,lin_elasticity/lin_elasticity,modal_analysis/modal_analysis}
+%%% chapters 7-9
+%\includeonly{titlepage,con_mechanics/con_mechanics,domints_in_bem/domints_in_bem,timedep_bem/timedep_bem}
+
+\input{/product/cmiss/latex/macros} %define new commands etc.
+\input{/product/cmiss/latex/defns} %define packages etc.
+\input{/product/cmiss/latex/abbreviations} %define packages etc.
+
+\usepackage{/product/cmiss/latex/mybook} %define book style
+%\usepackage{/product/cmiss/latex/lofexamples} %list of examples style
+
+\usepackage{times} %fonts
+
+%\usepackage{mathptm}
+
+\renewcommand{\baselinestretch}{1.24}
+
+% Note: single spacing used for student notes
+\singlespc
+\raggedbottom
+
+% NOTE: many of the \todo and \remarks have been commented out
+% so the current version can tbe printed out for teaching these
+% should still be looked at NPS 22/2/99 
+
+\normalsize
+\makeindex
+
+\title{The FEM-BEM-notes}
+\author{}              % Author's name
+\date{\today}          % Revision Date
+
+
+\begin{document}
+
+\include{titlepage}
+\clearemptydoublepage 
+
+\pagenumbering{roman}
+\tableofcontents
+
+%\clearemptydoublepage
+%\listofexamples
+\clearemptydoublepage 
+\pagenumbering{arabic}
+
+\include{fem_basis_fns/fem_basis_fns}
+\clearemptydoublepage
+\include{heat_conduction/heat_conduction}
+\clearemptydoublepage
+\include{bem/bem}
+\clearemptydoublepage
+\include{transient_heat_condn/transient_heat_condn}
+\clearemptydoublepage
+\include{lin_elasticity/lin_elasticity}
+\clearemptydoublepage
+\include{modal_analysis/modal_analysis}
+
+%\clearemptydoublepage
+%\include{con_mechanics/con_mechanics}
+
+%\clearemptydoublepage
+%\include{datafitting/datafitting}
+%\clearemptydoublepage
+%\include{derivative_bie/derivative_bie}
+%\clearemptydoublepage
+%\include{chapter9/FEM9}
+%\clearemptydoublepage
+
+
+\include{domints_in_bem/domints_in_bem}
+\clearemptydoublepage
+\include{timedep_bem/timedep_bem}
+\clearemptydoublepage
+
+\include{references}
+\clearemptydoublepage
+
+\addcontentsline{toc}{chapter}{\numberline{}Index}
+\printindex
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

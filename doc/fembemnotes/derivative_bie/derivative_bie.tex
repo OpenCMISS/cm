@@ -1,0 +1,428 @@
+\chapter{Derivative BIE}
+
+\section{Boundary Element Formulation}
+
+The BEM will be used in any region of the torso in which the conductivity can
+be reasonably taken to be constant (e.g. the lungs).  Thus the equation to be
+solved in such a region is simply the Laplace equation.  The conventional
+boundary integral equation for Laplace's equation, $\nabla\phi = 0$ in a
+(closed) domain $\Omega \subset \Re^{m}\; (m=2$ or 3) can be written as
+\begin{equation}
+ C(P_{0})\phi(P_{0}) =
+ \left(G(P,P_{0})\delby{\phi(P)}{n}-\delby{G(P,P0)}{n}\phi(P)\right)
+ d\Gamma(P)
+ \label{eq:closed}
+\end{equation}
+where $C(P_{0}) = 1$ if $P_{0}\in \Omega^{0}$, and $G(P,P_{0})$ is the
+fundamental solution for the Laplace equation in either two or three
+dimensions (i.e. $G(P,P_{0}) = -\frac{1}{2\pi}\log \parallel P
+-P_{0}\parallel$ or $\frac{1}{4\pi}\parallel P-P_{0}\parallel$ ).
+
+The standard procedure in a boundary element formulation is to take the point
+$P_{0}$ to be one of the nodes used to approximate the dependent variable
+$\phi$, and this generates one integral equation for each node.  When Lagrange
+interpolation is used for $\phi$ there is only one unknown per node (allowing
+for boundary conditions and assuming no free surfaces). This means that a
+square system of equations is produced and a unique solution can be found.
+However, when using cubic Hermite interpolation there is always more than one
+unknown per node - in two-dimensions there are 2 (with Neuman boundary
+conditions these are $\phi$ and $\delby{\phi}{s}$) and in three-dimensions
+there are 4 (with Neuman boundary conditions these are $\phi,
+\delby{\phi}{s_{1}}, \delby{\phi}{s_{2}}$ and $\frac{\del^{2}\phi}{\del
+  s_{1}\del s_{2}}$).  Thus one needs to generate extra linearly independent
+equations.  This is achieved by differentiating (\ref{eq:closed}) in various
+directions \cite{tomlinson:1996}, yielding a hypersingular integral
+formulation.
+
+Taking the directional derivative of (\ref{eq:closed}) at $P_{0}$ in an
+(initially) arbitrary direction $n_{0} (\parallel n_{0}\parallel =1)$ gives
+\begin{equation}       
+  \delby{\phi(P_{0})}{n_{0}} = \int_{\del\Gamma}\left(\delby{G(P,P_{0})}{n}
+    \delby{\phi(P)}{n}-\frac{\del^{2}G(P,P_{0})}{\del n\del n_{0}}
+    \phi(P)\right)d\Gamma(P)
+ \label{eq:arbdir}
+\end{equation} 
+valid $\forall P_{0}\in \Omega^{0}$.  The hypersingular fundamental solution
+$\frac{\del^{2}G(P,P_{0})}{\del n\del n_{0}}$ is given by either
+\begin{eqnarray*}
+  &\frac{1}{2\pi}\left[\frac{{\bf n.n}_{0}}{r^{2}}-\frac{2({\bf r.n}_{0})
+      ({\bf r.n})}{r^{4}}\right] & \mbox{(two-dimensions)}\\ \mbox{or
+    }&\frac{1}{4\pi}\left[\frac{{\bf n.n}_{0}}{r^{3}} -\frac{3({\bf r.n}_{0})
+      ({\bf r.n})}{r^{5}}\right] & \mbox{(three-dimensions)}
+\end{eqnarray*}
+Here ${\bf r}$ is the vector of modulus $r = \parallel P-P_{0}\parallel$ from
+$P_{0}$ to $P, {\bf n}$ is the unit outward normal vector and $n_{0}$ is the
+unit vector in the direction of differentiation.
+
+At this stage the integral expression (\ref{eq:arbdir}) is well defined.  With
+$P_{0}$ placed on the boundary of $\Omega$ the second integrand is termed
+hypersingular and it is the interpretation of this term and the procedure used
+to take $P_{0}$ to the boundary that gives rise to the variety of integral
+expressions currently in use in hypersingular boundary integral formulations.
+To obtain a weakly-singular form of the derivative equation , one requires the
+following identities
+\begin{eqnarray}
+ \int_{\del\Omega}\delby{G(P,P_{0})}{n}d\Gamma(P)=-1 & & 
+  \forall P_{0}\in \Omega^{0}\\
+ \nonumber\\
+ \int_{\del\Omega}\frac{\del^{2}G(P,P_{0})}{\del n\del n_{0}}d\Gamma(P)=0  & & \forall P_{0}\in \Omega^{0}\\
+ \nonumber\\
+ \int_{\del\Omega}\left(n_{k}\delby{G(P,P_{0})}{n_{0}}-(x_{k}-x_{0k})
+  \frac{\del^{2}G(P,P_{0})}{\del n\del n_{0}}\right)d\Gamma(P)=
+  n_{0k}(P_{0}) & & 
+  \forall P_{0}\in \Omega^{0}
+\end{eqnarray}
+The first two of these identities are obtained from (\ref{eq:closed}) and
+(\ref{eq:arbdir}) respectively by putting $\phi \equiv 1$.  The third identity
+is also obtained from (\ref{eq:arbdir}) by substitution of $x_{k}-x_{0k}$
+(where $x_{k}, x_{0k}, n_{k}, n_{0k}$ are the $k$th cartesian components of
+$P, P_{0}, n,$ and $n_{0}$ respectively).
+
+The derivation of the weakly singular form of the derivative equation follows
+the traditional derivation of the conventional boundary integral equation.
+The point $P_{0}$ is placed on the boundary of the domain $\Omega$ and the
+domain is enlarged about this point to include a semicircular or hemispherical
+region of some small radius $\varepsilon > 0$.  The limits of the integral
+expression (\ref{eq:arbdir}) over each part of the enlarged domain are then
+considered in detail as$\varepsilon \rightarrow 0$, with judicious application
+of the above identities \cite{tomlinson:1996,liu:1991}.  The result is
+\begin{eqnarray}
+ \int_{\del\Omega}\frac{\del^{2}G(P,P_{0})}{\del n\del n_{0}}
+  &\left(\phi(P)-\phi(P_{0})-\delby{\phi(P_{0})}{x_{k}}\right)
+  d\Gamma(P)\nonumber\\
+  &=\int_{\del\Omega} n_{k}\delby{G(P,P_{0})}{n_{0}}\left(
+  \delby{\phi(P)}{n}-\delby{\phi(P_{0})}{x_{k}}n_{k}(P)\right)
+  d\Gamma(P)
+ \label{eq:result}
+\end{eqnarray}
+where now $P_{0}\in \del\Omega$ (the singular point), $n$ is a unit outward
+normal on $\del\Omega, n_{0}$ is an arbitrary unit vector at $P_{0}$ (the
+direction in which (\ref{eq:Laplace}) was differentiated) and a sum over $k$
+is implied.
+
+\subsection{Discretisation}
+The surface is discretised into ``boundary elements'' i.e.$\Omega =
+\displaystyle{\bigcup_{m=1}^{M}}\Omega_{m}$.  Introducing cubic Hermite
+interpolation for $\phi $, and, as above, approximating $\delby{\phi(P)}{n}$
+by $N_{\alpha}\left(\delby{\phi(P)}{n}\right)_{\alpha}$ and also interpolating
+the geometry as $x_{k} = M_{\alpha} x_{k}^{\alpha}$ for some set of basis
+functions $\{M_{\alpha}\}$ (these will be taken to be cubic Hermite, but for
+now we leave these general), Equation~(\ref{eq:result}) becomes
+\begin{eqnarray}
+  \sum_{m=1}^{M}\int_{\Gamma_{m}}\frac{\del^{2}G(P,P_{0})} {\del n\del n_{0}}
+  &&\left(\Psi_{\alpha}^{i}\phi_{i}^{\alpha}-\phi(P_{0})
+    -\delby{\phi(P_{0})}{x_{k}}(M_{\alpha}x_{k}^{\alpha} - x_{0k})
+  \right)d\Gamma(P)\nonumber\\ 
+  &=&\sum_{m=1}^{M}\int_{\Gamma_{m}}\delby{G(P,P_{0})}{n_{0}}\left(
+    N_{\alpha}\delby{\phi^{\alpha}}{n}-\delby{\phi(P_{0})}{x_{k}}
+    n_{k}(P)\right)d\Gamma(P)
+ \label{eq:result2}
+\end{eqnarray}
+or, in terms of the local $\xi$ coordinate
+\begin{eqnarray}
+ \sum_{m=1}^{M}\int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}
+  &&\left(\Psi_{\alpha}^{i}(\xi)\phi,_{i}^{\alpha}-\phi(P_{0})
+  -\delby{\phi(P_{0})}{x_{k}}(M_{\alpha}(\xi)x_{k}^{\alpha} - x_{0k})
+  \right)|J(\xi)d\xi\nonumber\\
+ &=&\sum_{m=1}^{M}\int_{0}^{1}\delby{G(\xi,P_{0})}{n_{0}}\left(
+  N_{\alpha}(\xi)\delby{\phi^{\alpha}}{n}
+  -\delby{\phi(P_{0})}{x_{k}}n_{k}(\xi)
+  \right)|J(\xi)d\xi
+ \label{eq:result3}
+\end{eqnarray}
+As with the conventional boundary integral equation, $P_{0}$ is located at
+each of the solution variable nodes in turn.
+
+The global unknowns we are dealing with are nodal values of
+$\phi,\delby{\phi}{s}$ and $\phi,\delby{\phi}{n}$ (and
+also$\frac{\del^{2}\phi}{\del s\del n}$ if cubic Hermite interpolation is used
+for the normal derivative).  By adopting a local coordinate system ($s,n$) [or
+$(\xi,n)$] one has, by the chain rule,
+\begin{eqnarray}
+ \delby{\phi}{x_{k}}=\left(\delby{\phi}{\sigma_{l}}\delby{\sigma_{l}}
+  {x_{k}}\right) & & (l=1,2)
+ \label{eq:chain}
+\end{eqnarray}
+where ($\sigma_{1},\sigma_{2}) = (s,n)$ [or ($s_{1}, s_{2}, n$) in three
+dimensions]. $\delby{\sigma_{l}}{x_{k}}$ can either be obtained exactly (as in
+some of the test problems) or, more generally, by inverting the matrix
+$\left[\delby{x_{k}}{\sigma_{l}}\right]$.  For a cubic Hermite geometric mesh,
+$\delby{x_{k}}{s}$ are known nodal values (either entered or calculated as
+part of the mesh fitting) so the matrix entries are all known.  The use of
+(\ref{eq:chain}) in (\ref{eq:result3}) yields an integral expression, which,
+with the application of element scale factors (if required), involves only the
+required nodal unknowns as coefficients.  We concentrate now on obtaining
+expressions suitable for numerical computation for these coefficients.  As in
+\cite{liu:1992} two separate cases must be considered - that for which $P_{0}$
+is contained in the element $\Gamma_{m}$ being considered, and that for which
+$P_{0}$ is removed from the current element $\Gamma_{m}$.  For each case, we
+investigate both integrals of (\ref{eq:result3}).
+
+\subsection*{Case 1:  $P_{0}??? \Gamma_{m}$ SHOULD BE NOT AN ELEMENT} 
+In this case the integrands of both integrals in (\ref{eq:result3}) are
+nonsingular and both integrals exist.  The first integral can be written as
+\begin{eqnarray}
+ \phi,_{i}^{\alpha}\int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}\Psi_{\alpha}^{i}(\xi)|J(\xi)|d\xi &-& \phi(P_{0})
+  \int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}|J(\xi)|d\xi\nonumber\\
+ &-&\delby{\phi}{\sigma_{l}}(P_{0})\delby{\sigma_{l}}{x_{k}}(P_{0})
+   \int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}{\del n\del n_{0}}
+   (M_{\alpha}(\xi)x_{k}^{\alpha}-x_{0k})|J(\xi)|d\xi
+ \label{eq:1stint}
+\end{eqnarray}
+Since $\phi,_{i}^{\alpha}$ is either a nodal value of $\phi$ or
+$\delby{\phi}{\xi}$, multiplication of the appropriate first integrals by
+element scale factors generates coefficients of nodal values of
+$\delby{\phi}{s}$ .  Each integral expression is (\ref{eq:1stint}) is regular
+and standard Gaussian quadrature can be used to evaluate these.
+
+The second integral can be written as
+\begin{equation}
+ \delby{\phi^{\alpha}}{n}\int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}N_{\alpha}(\xi)|J(\xi)|d\xi - 
+  \delby{\phi}{\sigma_{l}}(P_{0})\delby{\sigma_{l}}{x_{k}}(P_{0})
+   \int_{0}^{1}\frac{\del G(\xi,P_{0})}{\del n\del n_{0}}
+   n_{k}(\xi)|J(\xi)|d\xi
+ \label{eq:2ndint}
+\end{equation}
+and again each integral can be evaluated by standard Gaussian quadrature.  A
+more efficient grouping of the integrals in (\ref{eq:1stint}) and
+(\ref{eq:2ndint}) can be obtained by grouping like coefficients, resulting in
+some computational saving.
+
+\subsection*{Case 2:  $P_{0}\in \Gamma_{m}$} 
+In this case special care must be exercised to retain the weakly singular
+nature of the integral expressions in (\ref{eq:result3}).  A straightforward
+application of either (\ref{eq:1stint}) or (\ref{eq:2ndint}) will result in
+divergent integrals.  We identify with $\beta$ the local node on element
+$\Gamma_{m}$ corresponding to $P_{0}$.  Keeping the appropriate coefficients
+grouped, we have from the first integral of (\ref{eq:result3})
+\begin{eqnarray}
+ \phi(P_{0})\int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}(\Psi_{\beta}^{0}(\xi)-1)|J(\xi)|d\xi & + 
+  \phi ,_{i}^{\alpha\{\alpha\neq\beta\}}\int_{0}^{1}
+  \frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}(\Psi_{\alpha}^{i}(\xi)-1)|J(\xi)|d\xi\nonumber\\
+ +\delby{\phi}{s}(P_{0})\int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}\left[\delby{s}{\xi}(P_{0})\Psi_{\beta}^{1}(\xi)\right.
+ & \left.- \delby{s}{x_{k}}(P_{0})(M_{\alpha}(\xi)x_{k}^{\alpha}-x_{0k})\right]
+ |J(\xi)|d\xi\nonumber\\
+ -\delby{\phi}{n}(P_{0})\int_{0}^{1}\frac{\del^{2}G(\xi,P_{0})}
+  {\del n\del n_{0}}\delby{n}{x_{k}}(P_{0})
+  \left(M_{\alpha}(\xi)x_{k}^{\alpha}-x_{0k}\right)|J(\xi)|d\xi
+ \label{eq:from1stint}
+\end{eqnarray}
+Here we have explicitly included the element scale factors, and the second
+integral involves a sum over $\alpha$ with $\alpha\neq\beta$.  With this
+grouping, all integrals are at most weakly singular and amenable to numerical
+integration.  The second integral of (\ref{eq:result3}) is more
+straightforward, although certain groupings must still be retained.  The
+appropriate expression for numerical integration is
+\begin{eqnarray}
+ \delby{\phi}{n}(P_{0}) &\int_{0}^{1}\frac{\del G(\xi,P_{0})}
+  {\del n_{0}}\left[ N_{\beta}(\xi)-\delby{n}{x_{k}}(P_{0})n_{k}(\xi)\right]
+  |J(\xi)|d\xi \nonumber\\
+ &-&\delby{\phi^\alpha{\alpha\neq\beta}}{n}\int_{0}^{1}
+  \frac{\del G(\xi,P_{0})}{\del n_{0}}N_{\alpha}(\xi)|J(\xi)|d\xi\nonumber\\
+ &-&\delby{\phi}{s}(P_{0})\int_{0}^{1}\frac{\del G(\xi,P_{0})}
+  {\del n_{0}}\delby{s}{x_{k}}(P_{0})n_{k}(\xi)|J(\xi)|d\xi
+ \label{eq:approp}
+\end{eqnarray}
+The above equations provide numerically well-behaved expressions for the
+coefficients of the discretised derivative boundary integral equation.  It
+only remains to specify the direction(s) of $n_{0}$.  After extensive testing
+\cite{tomlinson:1996} we concluded that the direction of differentiation
+should be that of $s$ (i.e.  tangential) for two-dimensional problems (where
+one extra equation is required) and for three-dimensional problems, one should
+differentiate in both the $s_{1}$ and $s_{2}$ directions (and set the cross
+derivative coefficients to zero).
+
+\section{Three-dimensional element splitting}
+
+If the singular point $P_{0}$ is contained in the current element then the
+element is sub- divided in local ($\xi_{1}, \xi_{2}$) space according to the
+location of $P_{0}$.  Each of these triangular elements is then transformed to
+a regular four-noded element in another space [say ($s, t$) space] in such a
+way that the Jacobian of this last transformation cancels the dominant
+singularity in the integrand (which is $O( \frac{1}{r} )$ in the original
+space, where $r$ is the distance from the singular point $P_{0}$).  The
+numerical integrations are then performed over the elements in the ($s,t$)
+space.  We use the following subdivisions and transformations.  In each case
+the absolute value of the Jacobian of the transformation for element $A$ is
+$s$ and for element $B$ is $t$.
+
+\begin{figure}
+\centering
+ \input{figs/A1.pstex}
+ \caption[The element splitting used when $P_{0}$ is at local node 1]{The element splitting used when $P_{0}$ is at local node 1.  The individual transformations 
+   yield Jacobians that reduce the order of the singularity in the otherwise
+   singular boundary element integrals.}
+\label{fig:A1}
+\end{figure}
+
+\subsection{$P_{o}$ at local node 1}
+
+Sub-divide from local node 1 to 4, giving two elements $A$ and $B$.
+
+Transformation for element $A$:
+\begin{displaymath}
+\begin{array}{llllr}        
+  s = \xi_{1} & t = \frac{\xi_{2}}{\xi_{1}} & \left(\mbox{inverse mapping
+      is}\right. & \xi_{1} = s & \left.\xi_{2} = s t \right)
+\end{array}
+\end{displaymath}
+
+Transformation for element $B$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = \frac{\xi_{2}}{\xi_{1}} & t = \xi_{2} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = st & 
+  \left.\xi_{2} = t \right)
+\end{array}
+\end{displaymath} 
+ 
+\subsection{$P_{o}$ at local node 2}
+Sub-divide from local node 2 to 3.  Element $A$ contains local nodes 1, 2 and
+3.
+
+Transformation for element $A$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = 1-\xi_{1} & t = \frac{1-\xi_{1}-\xi_{2}}{1-\xi_{1}} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = 1-s & 
+  \left.\xi_{2} = s (1-t) \right)
+\end{array}
+\end{displaymath}
+
+Transformation for element $B$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = \frac{1-\xi_{1}}{\xi_{2}} & t = \xi_{2} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = 1-st & 
+  \left.\xi_{2} = t \right)
+\end{array}
+\end{displaymath}  
+
+\subsection{$P_{o}$ at local node 3}
+Sub-divide from local node 2 to 3.  Element $A$ contains local nodes 2,3 and 4.
+
+Transformation for element $A$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = \xi_{1} & t = \frac{1-\xi_{2}}{\xi_{1}} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = s & 
+  \left.\xi_{2} = 1-st \right)
+\end{array}
+\end{displaymath}
+
+Transformation for element $B$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = \frac{1-\xi_{1}-\xi_{2}}{1-\xi_{2}} & t = 1-\xi_{2} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = t(1-s) & 
+  \left.\xi_{2} = 1-t \right)
+\end{array}
+\end{displaymath}
+
+\subsection{$P_{o}$ at local node 4}
+Sub-divide from local node 1 to 4.  Element $A$ contains local nodes 1,3 and 4.
+        
+Transformation for element $A$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = 1-\xi_{1} & t = \frac{1-\xi_{2}}{1-\xi_{1}} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = 1-s & 
+  \left.\xi_{2} = 1-st \right)
+\end{array}
+\end{displaymath}
+
+Transformation for element $B$:
+\begin{displaymath}
+\begin{array}{llllr}        
+ s = \frac{1-\xi_{1}}{1-\xi_{2}} & t = 1-\xi_{2} & 
+  \left(\mbox{inverse mapping is}\right. & \xi_{1} = 1-st & 
+  \left.\xi_{2} = 1-t \right)
+\end{array}
+\end{displaymath}
+
+\section{Hermite ``Simplexes''}
+
+We describe here the special three-noded Hermite elements that have been used
+to close a cubic Hermite surface in three-dimensional space.  The need for
+such elements was illustrated in Figure~\ref{fig:2}.  We describe the two
+special elements that were used - one in which the derivatives come to a point
+at local node 3 (the top), and one in which the derivatives come together at
+local node 1 (the bottom).
+
+\begin{figure}
+\centering
+ \input{figs/B1.pstex}
+ \caption[The two Hermite ``simplexes'']{The two Hermite ``simplexes'' and their connection to standard cubic Hermite 
+elements.}
+\label{fig:B1}
+\end{figure}
+
+\subsection{Apex at local node 3}
+With reference to Figure~\ref{fig:B1}~a, we construct the appropriate
+two-dimensional interpolation functions via a tensor product (instead of using
+area functions, which are commonly used in three-noded elements).  The tensor
+product formulation requires a description of the basis functions to be used
+in each direction.  We use standard Hermite interlation in the $\xi_{1}$
+direction, so that any standard cubic Hermite element sharing this edge
+maintains consistent interpolation.  In the $\xi_{2}$ direction we require the
+interpolation function to interpolate nodal values of function and derivative
+at the first node, and only the value of the function at the second node (i.e.
+we have dropped the arclength derivative at the second node since it is no
+longer uniquely defined).  Thus we require
+\begin{displaymath}
+ {\bf x}(\xi_{2}) = \Psi_{1}(\xi_{2}){\bf x}_{1} + \Psi_{2}(\xi_{2}) 
+  \delby{{\bf x}_{1}}{\xi_{2}}  + \Psi_{3}(\xi_{2}) {\bf x}_{3}
+\end{displaymath}  
+where   
+\begin{eqnarray*}
+ \Psi_{1} (0)  = 1,&\Psi_{1} (1)=0,&\delby{\Psi_{1}}{\xi_{2}} (0) = 0\\  \\
+ \Psi_{2} (0)  = 0,&\Psi_{2} (1)=0,&\delby{\Psi_{2}}{\xi_{2}}(0) = 1\\
+ \\  
+ \Psi_{3} (0)  = 0,&\Psi_{3} (1)=1,&\delby{\Psi_{3}}{\xi_{2}} (0) = 0
+\end{eqnarray*}  
+These conditions yield
+\begin{eqnarray*}
+ \Psi_{1} (\xi) & = & 1 - \xi^{2}\\ 
+ \Psi_{2} (\xi) & = & \xi - \xi^{2}\\ 
+ \Psi_{3} (\xi) & = & \xi^{2}
+\end{eqnarray*} 
+and the appropriate two-dimensional basis function is obtained from a tensor
+product of the standard Hermite basis function and the family given above.
+
+\subsection{Apex at local node 1}
+Again, with reference to Figure~\ref{fig:B1}~b, we construct the appropriate
+two-dimensional interpolation functions via a tensor product with standard
+Hermite interpolation in the $\xi_{1}$ direction.  In the $\xi_{2}$ direction
+we require the interpolation function to interpolate nodal values of function
+at the first node, and the value of the function and derivative at the second
+node.  Thus we require
+\begin{displaymath}
+ {\bf x}(\xi_{2}) = \zeta_{1}(\xi_{2}){\bf x}_{1} + \zeta_{2}(\xi_{2}) 
+  \delby{{\bf x}_{3}}{\xi_{2}}  + \zeta_{3}(\xi_{2}) {\bf x}_{3}
+\end{displaymath}  
+where   
+\begin{eqnarray*}
+ \zeta_{1} (0)= 1,&\zeta_{1} (1)=0,&\delby{\zeta_{1}}{\xi_{2}} (1) = 0\\  \\
+ \zeta_{2} (0)= 0,&\zeta_{2} (1)=0,&\delby{\zeta_{2}}{\xi_{2}}(1) = 1\\
+ \\  
+ \zeta_{3} (0)= 0,&\zeta_{3} (1)=1,&\delby{\zeta_{3}}{\xi_{2}} (1) = 0
+\end{eqnarray*}  
+These conditions yield
+\begin{eqnarray*}
+ \zeta_{1} (\xi) & = & (\xi-1)^{2}\\ 
+ \zeta_{2} (\xi) & = & \xi^{2} - \xi\\ 
+ \zeta_{3} (\xi) & = & 2\xi-\xi^{2}
+\end{eqnarray*} 
+and the appropriate two-dimensional basis function are obtained as above.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "/product/cmiss/documents/notes/fembemnotes/fembemnotes"
+%%% End: 
