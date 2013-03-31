@@ -21,12 +21,12 @@
 %%% chapters 7-9
 %\includeonly{titlepage,con_mechanics/con_mechanics,domints_in_bem/domints_in_bem,timedep_bem/timedep_bem}
 
-\input{/product/cmiss/latex/macros} %define new commands etc.
-\input{/product/cmiss/latex/defns} %define packages etc.
-\input{/product/cmiss/latex/abbreviations} %define packages etc.
+\input{../latex/macros} %define new commands etc.
+\input{../latex/defns} %define packages etc.
+\input{../latex/abbreviations} %define packages etc.
 
-\usepackage{/product/cmiss/latex/mybook} %define book style
-%\usepackage{/product/cmiss/latex/lofexamples} %list of examples style
+\usepackage{../latex/mybook} %define book style
+%\usepackage{../latex/lofexamples} %list of examples style
 
 \usepackage{times} %fonts
 
@@ -74,19 +74,15 @@
 \include{lin_elasticity/lin_elasticity}
 \clearemptydoublepage
 \include{modal_analysis/modal_analysis}
-
-%\clearemptydoublepage
-%\include{con_mechanics/con_mechanics}
-
-%\clearemptydoublepage
-%\include{datafitting/datafitting}
-%\clearemptydoublepage
-%\include{derivative_bie/derivative_bie}
-%\clearemptydoublepage
+\clearemptydoublepage
+\include{con_mechanics/con_mechanics}
+\clearemptydoublepage
+\include{datafitting/datafitting}
+\clearemptydoublepage
+\include{derivative_bie/derivative_bie}
+\clearemptydoublepage
 %\include{chapter9/FEM9}
 %\clearemptydoublepage
-
-
 \include{domints_in_bem/domints_in_bem}
 \clearemptydoublepage
 \include{timedep_bem/timedep_bem}
