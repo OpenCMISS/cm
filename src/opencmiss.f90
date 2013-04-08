@@ -3272,6 +3272,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_MeshDecompositionSetObj
   END INTERFACE !CMISSField_MeshDecompositionSet
 
+  !>Sets/changes the data projection for a field.
+  INTERFACE CMISSField_DataProjectionSet
+    MODULE PROCEDURE CMISSField_DataProjectionSetNumber
+    MODULE PROCEDURE CMISSField_DataProjectionSetObj
+  END INTERFACE !CMISSField_DataProjectionSet
+
   !>Returns the number of field components for a field variable.
   INTERFACE CMISSField_NumberOfComponentsGet
     MODULE PROCEDURE CMISSField_NumberOfComponentsGetNumber
@@ -3603,6 +3609,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_LabelGet,CMISSField_LabelSet
 
   PUBLIC CMISSField_MeshDecompositionGet,CMISSField_MeshDecompositionSet
+
+  PUBLIC CMISSField_DataProjectionSet
 
   PUBLIC CMISSField_PositionNormalTangentCalculateNode
 
@@ -25975,6 +25983,96 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_MeshDecompositionSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the data projection for a field identified by a user number.
+  SUBROUTINE CMISSField_DataProjectionSetNumber(regionUserNumber,fieldUserNumber,dataProjectionUserNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the mesh decomposition for.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to set the mesh decomposition for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The field data projection user number to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    INTEGER(INTG) :: DATA_PROJECTION_NUMBER
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_DataProjectionSetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+        IF(ASSOCIATED(DATA_POINTS)) THEN
+          CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_NUMBER,&
+           & err,ERROR,*999)
+          CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+          IF(ASSOCIATED(DATA_PROJECTION)) THEN
+            CALL Field_DataProjectionSet(FIELD,DATA_PROJECTION,err,error,*999)
+          ELSE
+            localError="A data projection does not exist for the data points on region number "// &
+             & TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END IF
+        ELSE
+          localError="Data points do not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_DataProjectionSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_DataProjectionSetNumber",err,error)
+    CALL EXITS("CMISSField_DataProjectionSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_DataProjectionSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the data projection for a field identified by an object.
+  SUBROUTINE CMISSField_DataProjectionSetObj(field,dataProjection,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the mesh decomposition for.
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection for the field to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_DataProjectionSetObj",err,error,*999)
+
+    CALL Field_DataProjectionSet(field%FIELD,dataProjection%DATA_PROJECTION,err,error,*999)
+
+    CALL EXITS("CMISSField_DataProjectionSetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_DataProjectionSetObj",err,error)
+    CALL EXITS("CMISSField_DataProjectionSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_DataProjectionSetObj
 
   !
   !================================================================================================================================

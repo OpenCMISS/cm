@@ -596,6 +596,8 @@ MODULE FIELD_ROUTINES
   
   PUBLIC FIELD_MESH_DECOMPOSITION_GET,FIELD_MESH_DECOMPOSITION_SET,FIELD_MESH_DECOMPOSITION_SET_AND_LOCK
 
+  PUBLIC Field_DataProjectionSet
+
   PUBLIC FIELD_NUMBER_OF_COMPONENTS_CHECK,FIELD_NUMBER_OF_COMPONENTS_GET,FIELD_NUMBER_OF_COMPONENTS_SET, &
     & FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK
 
@@ -4333,6 +4335,7 @@ CONTAINS
         FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE_LOCKED=.FALSE.
         FIELD%CREATE_VALUES_CACHE%MESH_COMPONENT_NUMBER=0
         FIELD%CREATE_VALUES_CACHE%MESH_COMPONENT_NUMBER_LOCKED=.FALSE.
+        FIELD%CREATE_VALUES_CACHE%DataProjectionLocked=.FALSE.
         DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
           FIELD%CREATE_VALUES_CACHE%VARIABLE_TYPES(variable_idx)=variable_idx
           SELECT CASE(variable_idx)
@@ -10751,6 +10754,57 @@ CONTAINS
     CALL EXITS("FIELD_MESH_DECOMPOSITION_SET_AND_LOCK")
     RETURN 1
   END SUBROUTINE FIELD_MESH_DECOMPOSITION_SET_AND_LOCK
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the data projection for a field. \see OPENCMISS::CMISSFieldDataProjectionSet
+  SUBROUTINE Field_DataProjectionSet(field,dataProjection,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to set the decomposition for
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("Field_DataProjectionSet",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        localError="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))// &
+          & " has been finished."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ELSE
+        IF(ASSOCIATED(field%CREATE_VALUES_CACHE)) THEN
+          IF(field%CREATE_VALUES_CACHE%DataProjectionLocked) THEN
+            localError="The data projection has been locked for field number "// &
+              & TRIM(NUMBER_TO_VSTRING(field%USER_NUMBER,"*",ERR,ERROR))//" and can not be changed."
+            CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+          ELSE
+            IF(ASSOCIATED(dataProjection)) THEN
+              field%DataProjection=>dataProjection
+            ELSE
+              CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          localError="Field create values cache is not associated for field number "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("Field_DataProjectionSet")
+    RETURN
+999 CALL ERRORS("Field_DataProjectionSet",err,error)
+    CALL EXITS("Field_DataProjectionSet")
+    RETURN 1
+  END SUBROUTINE Field_DataProjectionSet
 
   !
   !================================================================================================================================
