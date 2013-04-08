@@ -1111,6 +1111,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    REAL(DP), POINTER :: petscData(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DISTRIBUTED_MATRIX_DATA_RESTORE_DP",ERR,ERROR,*999)
@@ -1123,11 +1124,34 @@ CONTAINS
             NULLIFY(DATA)
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+              SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
+              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                !Convert 1D array to 2D
+                CALL C_F_POINTER(C_LOC(DATA(1)),petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
+              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !PETSc expects an m * n 2D matrix rather than a 1D array with length equal to number of non-zeros
+                !This is a bug in PETSc so we have to give it a 2D matrix with junk at the end
+                CALL C_F_POINTER(C_LOC(DATA(1)),petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING( &
+                  & DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
               IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
-                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,DISTRIBUTED_MATRIX%PETSC%DATA_DP, &
+                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,petscData, &
                   & ERR,ERROR,*999)
               ELSE
-                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,DISTRIBUTED_MATRIX%PETSC%DATA_DP, &
+                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,petscData, &
                   & ERR,ERROR,*999)
               ENDIF
             ELSE
