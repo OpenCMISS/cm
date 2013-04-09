@@ -4489,9 +4489,16 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetObj
   END INTERFACE !CMISSDecomposition_ElementDomainGet
 
+  !>Calculates the decomposition topology for data points .
+  INTERFACE CMISSDecomposition_TopologyDataProjectionCalculate
+    MODULE PROCEDURE CMISSDecomposition_TopologyDataProjectionCalculateObj
+  END INTERFACE !CMISSDecomposition_TopologyDataProjectionCalculate
+
   PUBLIC CMISS_DECOMPOSITION_ALL_TYPE,CMISS_DECOMPOSITION_CALCULATED_TYPE,CMISS_DECOMPOSITION_USER_DEFINED_TYPE
 
   PUBLIC CMISSDecomposition_CreateFinish,CMISSDecomposition_CreateStart
+
+  PUBLIC CMISSDecomposition_TopologyDataProjectionCalculate
 
   PUBLIC CMISSDecomposition_Destroy
 
@@ -35809,6 +35816,35 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDecomposition_CreateFinishObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Calculates the decomposition topology for data points
+  SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj(decomposition,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error,*999)
+
+    CALL DecompositionTopology_DataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyDataProjectionCalculateObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj
 
   !
   !================================================================================================================================

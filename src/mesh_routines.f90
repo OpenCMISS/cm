@@ -117,6 +117,8 @@ MODULE MESH_ROUTINES
   
   PUBLIC DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS,DecompositionTopology_DataPointCheckExists
   
+  PUBLIC DecompositionTopology_DataProjectionCalculate
+  
   PUBLIC DECOMPOSITION_TYPE_GET,DECOMPOSITION_TYPE_SET
   
   PUBLIC DECOMPOSITION_USER_NUMBER_FIND, DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION
@@ -1236,6 +1238,34 @@ CONTAINS
     CALL EXITS("DecompositionTopology_DataPointsCalculate")
     RETURN 1
   END SUBROUTINE DecompositionTopology_DataPointsCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the decomposition element topology for a data projection (for data projections on fields).
+  SUBROUTINE DecompositionTopology_DataProjectionCalculate(decompositionTopology,err,error,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology !<A pointer to the decomposition topology to calculate the elements for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("DecompositionTopology_DataProjectionCalculate",err,error,*999)
+
+    IF(ASSOCIATED(decompositionTopology)) THEN
+      CALL DECOMPOSITION_TOPOLOGY_DATA_POINTS_INITIALISE(decompositionTopology,err,error,*999)
+      CALL DecompositionTopology_DataPointsCalculate(decompositionTopology,err,error,*999)
+    ELSE
+      CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DecompositionTopology_DataProjectionCalculate")
+    RETURN
+999 CALL ERRORS("DecompositionTopology_DataProjectionCalculate",err,error)
+    CALL EXITS("DecompositionTopology_DataProjectionCalculate")
+    RETURN 1
+  END SUBROUTINE DecompositionTopology_DataProjectionCalculate
   
   !
   !================================================================================================================================
