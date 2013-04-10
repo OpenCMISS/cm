@@ -1870,6 +1870,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_ElementSetObj
   END INTERFACE !CMISSDataProjection_ElementSet
 
+  !>Gets the element number for a projected data point.
+  INTERFACE CMISSDataProjection_ElementGet
+    MODULE PROCEDURE CMISSDataProjection_ElementGetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_ElementGetObj
+  END INTERFACE !CMISSDataProjection_ElementGet
+
   PUBLIC CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
 
   PUBLIC CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
@@ -1895,6 +1901,8 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjection_StartingXiGet,CMISSDataProjection_StartingXiSet
   
   PUBLIC CMISSDataProjection_XiSet,CMISSDataProjection_ElementSet
+
+  PUBLIC CMISSDataProjection_ElementGet
 
 !!==================================================================================================================================
 !!
@@ -3460,8 +3468,12 @@ MODULE OPENCMISS
   !>Updates the given parameter set with the given value for a particular gauss point of a field variable component.
   INTERFACE CMISSField_ParameterSetUpdateGaussPoint
     MODULE PROCEDURE CMISSField_ParameterSetUpdateGaussPointDPObj
-  END INTERFACE !CMISSField_ParameterSetUpdateNode
+  END INTERFACE !CMISSField_ParameterSetUpdateGaussPoint
 
+  !>Updates the given parameter set with the given value for a particular data point of a field variable component.
+  INTERFACE CMISSField_ParameterSetUpdateDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPObj
+  END INTERFACE !CMISSField_ParameterSetUpdateDataPoint
 
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSField_ParameterSetUpdateFinish
   INTERFACE CMISSField_ParameterSetUpdateStart
@@ -3630,6 +3642,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
   PUBLIC CMISSField_ParameterSetUpdateGaussPoint, CMISSField_ParameterSetGetGaussPoint
+
+  PUBLIC CMISSField_ParameterSetUpdateDataPoint
 
   PUBLIC CMISSField_ParameterSetUpdateFinish,CMISSField_ParameterSetUpdateStart
 
@@ -20231,6 +20245,79 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_ElementSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the element number for a projected data point identified by a region user number.
+  SUBROUTINE CMISSDataProjection_ElementGetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the element for
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to get the element for 
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set get the element for
+    INTEGER(INTG), INTENT(OUT) :: elementNumber !<the element number to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_ElementGetRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+      CALL DataProjection_ElementGet(DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_ElementGetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementGetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ElementGetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementGetRegionNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the element for a projected data point identified an object.
+  SUBROUTINE CMISSDataProjection_ElementGetObj(dataProjection,dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the element for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to get the element for
+    INTEGER(INTG), INTENT(OUT) :: elementNumber !<the element number to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ElementGetObj",err,error,*999)
+
+    CALL DataProjection_ElementGet(dataProjection%DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ElementGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ElementGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementGetObj
   
   !
   !================================================================================================================================
@@ -30216,6 +30303,36 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPObj
+
+  !
+  !================================================================================================================================
+  !
+  !>Updates the given parameter set with the given double precision value for the element data point of the field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj(field,variableType,fieldSetType,dataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The user data point number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,dataPointNumber,&
+    & componentNumber,value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj
 
   !
   !================================================================================================================================
