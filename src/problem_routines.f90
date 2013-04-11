@@ -3112,8 +3112,13 @@ CONTAINS
             ENDDO !componentIdx
           ENDIF
           !Translation is scaled for every load increment 
-          transformationMatrix(1:noGeomComp,noGeomComp+1)=geometricTransformationSolver%transformationMatrices &
-            & (1:noGeomComp,noGeomComp+1,1)*geometricTransformationSolver%scalings(incrementIdx)
+          IF(ALLOCATED(geometricTransformationSolver%scalings)) THEN
+            transformationMatrix(1:noGeomComp,noGeomComp+1)=geometricTransformationSolver%transformationMatrices &
+              & (1:noGeomComp,noGeomComp+1,1)*geometricTransformationSolver%scalings(incrementIdx)
+          ELSE !if no scaling just take 1/numberOfIncrements as scaling
+            transformationMatrix(1:noGeomComp,noGeomComp+1)=geometricTransformationSolver%transformationMatrices &
+              & (1:noGeomComp,noGeomComp+1,1)/geometricTransformationSolver%numberOfIncrements
+          ENDIF
         ENDIF
         !**********************************************************************************************************************
         ! Transform the field

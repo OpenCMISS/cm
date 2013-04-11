@@ -7268,6 +7268,8 @@ CONTAINS
           CALL FLAG_ERROR("Transformation with arbitrary path does not have uni-directional scalings.",err,error,*999)
         ELSE
           IF(solver%geometricTransformationSolver%numberOfIncrements==SIZE(scalings)) THEN
+            IF(ALLOCATED(solver%geometricTransformationSolver%scalings)) &
+              & DEALLOCATE(solver%geometricTransformationSolver%scalings)
             ALLOCATE(solver%geometricTransformationSolver%scalings(SIZE(scalings)),STAT=err)
             IF(err/=0) CALL FLAG_ERROR("Could not allocate scalings for geometric transformation sovler",err,error,*999)
             solver%geometricTransformationSolver%scalings=scalings
@@ -7402,6 +7404,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
+    TYPE(SOLVERS_TYPE), POINTER :: solvers
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: whileLoop
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: loadIncrementLoop
+    TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: dummyErr
     TYPE(VARYING_STRING) :: dummyError
 
@@ -7416,7 +7423,35 @@ CONTAINS
         IF(err/=0) CALL FLAG_ERROR("Could not allocate solver geometric transformation solver.",err,error,*999)
         solver%geometricTransformationSolver%solver=>solver
         solver%geometricTransformationSolver%arbitraryPath=.FALSE.
-        solver%geometricTransformationSolver%numberOfIncrements=0
+        ! Set default number of load increment
+        solvers=>solver%SOLVERS
+        IF(ASSOCIATED(solvers)) THEN
+          controlLoop=>solvers%CONTROL_LOOP
+          IF(ASSOCIATED(controlLoop)) THEN
+            IF(controlLoop%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
+              whileLoop=>controlLoop%WHILE_LOOP
+              IF(ASSOCIATED(whileLoop)) THEN
+                solver%geometricTransformationSolver%numberOfIncrements=whileLoop%MAXIMUM_NUMBER_OF_ITERATIONS
+              ELSE
+                CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSEIF(controlLoop%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
+              loadIncrementLoop=>controlLoop%LOAD_INCREMENT_LOOP
+              IF(ASSOCIATED(loadIncrementLoop)) THEN
+                solver%geometricTransformationSolver%numberOfIncrements=loadIncrementLoop%MAXIMUM_NUMBER_OF_ITERATIONS
+              ELSE
+                CALL FLAG_ERROR("Control loop load increment loop is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE ! For other loop types set number of increment to be 1
+              solver%geometricTransformationSolver%numberOfIncrements=1
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("control loop is not associated.",err,error,*998)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solvers is not associated.",err,error,*998)
+        ENDIF
+        ! nullify field
         NULLIFY(solver%geometricTransformationSolver%field)
         solver%geometricTransformationSolver%fieldVariableType=0
       ENDIF
