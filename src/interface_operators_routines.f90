@@ -46,6 +46,7 @@ MODULE INTERFACE_OPERATORS_ROUTINES
 
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
+  USE CONSTANTS
   USE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE INTERFACE_CONDITIONS_CONSTANTS
@@ -570,7 +571,7 @@ CONTAINS
                     interfaceElementMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%ELEMENT_MATRIX
                     DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
                       globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
-                      IF(gaps(dataPointIdx)>0.0_dp) THEN !Only add contact point contribution if the gap is a penetration
+                      IF(gaps(dataPointIdx)>ZERO_TOLERANCE) THEN !Only add contact point contribution if the gap is a penetration
                         localElementNumber=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
                           & coupledMeshElementNumber
                         !Calculate the element index (non-conforming element) for this interface matrix
@@ -598,7 +599,7 @@ CONTAINS
                             interfaceElementMatrix%MATRIX(rowIdx,colIdx)=PGMSI !Update interface element matrix with contact point contribution
                           ENDDO !rowParameterIdx
                         ENDDO !rowComponentIdx
-                      ENDIF !gaps(dataPointIdx)>0.0_dp
+                      ENDIF !gaps(dataPointIdx)>ZERO_TOLERANCE
                     ENDDO !dataPointIdx
                     !scale factor update
                     IF(coupledMeshDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN

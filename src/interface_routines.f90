@@ -2275,6 +2275,8 @@ CONTAINS
                          & xi(xiIdx)==1.0_DP) THEN
                        InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=(xiIdx-1)*2+1 !Calculate face number
                        EXIT
+                     ELSE
+                       CALL FLAG_ERROR("Data projection is not on a face!",err,error,*999)
                      ENDIF
                    ENDDO !xiIdx
                    SELECT CASE(xiIdx) !Populate reducedXi 

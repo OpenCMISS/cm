@@ -628,8 +628,8 @@ CONTAINS
                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                   CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                     decompositionData=>ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%DECOMPOSITION%TOPOLOGY%dataPoints
-                    DO dataPointIdx=1,decompositionData%elementDataPoint(colElementNumber)%numberOfProjectedData
-                      localDataPointNumber=decompositionData%elementDataPoint(colElementNumber)% &
+                    DO dataPointIdx=1,decompositionData%elementDataPoint(rowElementNumber)%numberOfProjectedData
+                      localDataPointNumber=decompositionData%elementDataPoint(rowElementNumber)% &
                         & dataIndices(dataPointIdx)%localNumber
                       local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
                         & DATA_POINTS(localDataPointNumber)
