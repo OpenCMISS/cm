@@ -461,12 +461,14 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(VARYING_STRING) :: localError
 
-    REAL(DP), POINTER :: independentParameters(:)
+    REAL(DP), POINTER :: independentVectorParameters(:),independentWeightParameters(:)
     REAL(DP):: POROSITY_0, POROSITY, PERM_OVER_VIS_PARAM_0, PERM_OVER_VIS_PARAM,TAU_PARAM,KAPPA_PARAM
     REAL(DP):: MATERIAL_FACT
     REAL(DP):: DXDY(3,3), DXDXI(3,3), DYDXI(3,3), DXIDY(3,3), DXI_DX(3,3)
     REAL(DP):: Jxy, Jyxi
     REAL(DP):: projectionXi(3),dataPointVector(3)
+    REAL(DP):: dataPointWeight,sumWeights
+    INTEGER(INTG) :: numberOfEmbeddedPoints
     INTEGER(INTG) :: derivative_idx, component_idx, xi_idx, NUMBER_OF_DIMENSIONS
     INTEGER(INTG) :: dataPointIdx,dataPointNumber
     INTEGER(INTG) :: xiIdx,numberOfXi
@@ -488,7 +490,8 @@ CONTAINS
     NULLIFY(EQUATIONS_MATRIX)
     NULLIFY(DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD)
     NULLIFY(independentField)
-    NULLIFY(independentParameters)
+    NULLIFY(independentVectorParameters)
+    NULLIFY(independentWeightParameters)
     NULLIFY(FIELD_VARIABLE)
     NULLIFY(fieldVariable)
     NULLIFY(QUADRATURE_SCHEME)
@@ -547,7 +550,24 @@ CONTAINS
           numberOfXi = DEPENDENT_BASIS%NUMBER_OF_XI
           ! Get data point vector parameters
           CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & independentParameters,err,error,*999)
+            & independentVectorParameters,err,error,*999)
+          ! Get data point weight parameters
+          CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            & independentWeightParameters,err,error,*999)
+
+          !Loop over data points to get the sum of the weights (for non-embedded data points)
+          sumWeights = 0.0_DP
+          numberOfEmbeddedPoints = 0
+          DO dataPointIdx=1,dataPoints%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
+            dataPointNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%userNumber
+            ! Get data point weight value
+            variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
+            fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+            localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+             & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointNumber)
+            dataPointWeight=independentWeightParameters(localDof)
+            sumWeights = sumWeights + dataPointWeight
+          ENDDO
 
           !===========================================
           ! D a t a   P o i n t   V e c t o r    F i t
@@ -567,8 +587,14 @@ CONTAINS
             DO componentIdx=1,numberOfXi
               localDof=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointNumber)
-              dataPointVector(componentIdx)=independentParameters(localDof)
+              dataPointVector(componentIdx)=independentVectorParameters(localDof)
             ENDDO
+
+            variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
+            fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+            localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+             & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointNumber)
+            dataPointWeight=independentWeightParameters(localDof)/sumWeights
 
             mhs=0          
             !Loop over element rows
@@ -591,7 +617,7 @@ CONTAINS
                       PGN=BASIS_EVALUATE_XI(DEPENDENT_BASIS2,ns,NO_PART_DERIV,projectionXi,err,error)
                       SUM=0.0_DP
                       IF(mh==nh) THEN
-                        SUM = SUM + PGM * PGN
+                        SUM = SUM + PGM * PGN * dataPointWeight
                       ENDIF
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM
                     ENDDO !ns
@@ -599,7 +625,7 @@ CONTAINS
                 ENDIF
                 SUM=0.0_DP
                 IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-                  SUM = SUM + PGM*dataPointVector(mh)
+                  SUM = SUM + PGM*dataPointVector(mh)*dataPointWeight
                   RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM
                 ENDIF
               ENDDO !ms
@@ -608,7 +634,10 @@ CONTAINS
 
           !Restore data point vector parameters
           CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & independentParameters,err,error,*999)
+            & independentVectorParameters,err,error,*999)
+          !Restore data point weight parameters
+          CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            & independentWeightParameters,err,error,*999)
             
           !===========================================
           ! S o b e l o v   S m o o t h i n g 
@@ -3545,9 +3574,10 @@ CONTAINS
               CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET% & 
                 & GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
-                & 1,ERR,ERROR,*999)
+                & 2,ERR,ERROR,*999)
               CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
-                & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
+              ! U Variable: data point vectors
               CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                 & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -3561,6 +3591,18 @@ CONTAINS
               !Default to the geometric interpolation setup
               CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
                   & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+              ! V Variable: data point weights
+              CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                & FIELD_DP_TYPE,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                & FIELD_V_VARIABLE_TYPE,1,ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+              !Default to the geometric interpolation setup
+              CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                  & FIELD_V_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 !Specify fem solution method
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -3568,6 +3610,8 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,dimensionIdx,FIELD_DATA_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO
+                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                  & FIELD_V_VARIABLE_TYPE,1,FIELD_DATA_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
@@ -3582,8 +3626,10 @@ CONTAINS
               !Check the user specified field
               CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-              CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
+              CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE], &
+                & ERR,ERROR,*999)
+              ! U (vector) variable
               CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                 & ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -3591,6 +3637,15 @@ CONTAINS
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               !calculate number of components with one component for each dimension and one for pressure
               CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+              ! V (weight) variable
+              CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, &
+                & ERR,ERROR,*999)
+              CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+              !calculate number of components with one component for each dimension and one for pressure
+              CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)

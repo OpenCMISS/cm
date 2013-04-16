@@ -1876,6 +1876,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_ElementGetObj
   END INTERFACE !CMISSDataProjection_ElementGet
 
+  !>Gets the distance for a projected data point.
+  INTERFACE CMISSDataProjection_DistanceGet
+    MODULE PROCEDURE CMISSDataProjection_DistanceGetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_DistanceGetObj
+  END INTERFACE !CMISSDataProjection_DistanceGet
+
   PUBLIC CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
 
   PUBLIC CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
@@ -1902,7 +1908,7 @@ MODULE OPENCMISS
   
   PUBLIC CMISSDataProjection_XiSet,CMISSDataProjection_ElementSet
 
-  PUBLIC CMISSDataProjection_ElementGet
+  PUBLIC CMISSDataProjection_ElementGet,CMISSDataProjection_DistanceGet
 
 !!==================================================================================================================================
 !!
@@ -2333,16 +2339,14 @@ MODULE OPENCMISS
     & EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSet_DataPointVectorStaticFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE = &
     & EquationsSet_DataPointVectorStaticFittingSubtype !<Standard static Galerkin Projection using data points subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSet_DataPointVectorQuasistaticFittingSubtype = &
-    & EquationsSet_DataPointVectorQuasistaticFittingSubtype !<Standard quasisstatic Galerkin Projection using data points subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE = &
+    & EquationsSet_DataPointVectorQuasistaticFittingSubtype !<Standard quasistatic Galerkin Projection using data points subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-
-
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE = &
@@ -2647,7 +2651,8 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE, &
     & CMISS_EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_MAT_PROP_INRIA_MODEL_DATA_FITTING_SUBTYPE, &
-    & CMISSEquationsSet_DataPointvectorStaticFittingSubtype, &
+    & CMISS_EQUATIONS_SET_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE, &
     & CMISS_EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE, &
     & CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE, &
@@ -4880,9 +4885,9 @@ MODULE OPENCMISS
     & PROBLEM_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblem_DataPointVectorStaticFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE = &
     & Problem_DataPointVectorStaticFittingSubtype !<Standard static Galerkin projection problem using data points subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblem_DataPointVectorQuasistaticFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE = &
     & Problem_DataPointVectorQuasistaticFittingSubtype !<Standard quasistatic Galerkin projection problem using data points subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5023,8 +5028,8 @@ MODULE OPENCMISS
   PUBLIC CMISS_PROBLEM_STANDARD_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE, &
     & CMISS_PROBLEM_VECTOR_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE, &
     & CMISS_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE,CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
-    & CMISS_PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE,CMISSProblem_DataPointVectorStaticFittingSubtype, &
-    & CMISSProblem_DataPointVectorQuasistaticFittingSubtype
+    & CMISS_PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE, &
+    & CMISS_PROBLEM_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE,CMISS_PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE, &
     & CMISS_PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE,CMISS_PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE
@@ -20323,6 +20328,79 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_ElementGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the distance number for a projected data point identified by a region user number.
+  SUBROUTINE CMISSDataProjection_DistanceGetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,distance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the distance for
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to get the distance for 
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set get the distance for
+    REAL(DP), INTENT(OUT) :: distance !<the distance number to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_DistanceGetRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+      CALL DataProjection_DistanceGet(DATA_PROJECTION,dataPointNumber,distance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_DistanceGetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DistanceGetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_DistanceGetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DistanceGetRegionNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the distance for a projected data point identified an object.
+  SUBROUTINE CMISSDataProjection_DistanceGetObj(dataProjection,dataPointNumber,distance,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the distance for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to get the distance for
+    REAL(DP), INTENT(OUT) :: distance !<the distance number to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_DistanceGetObj",err,error,*999)
+
+    CALL DataProjection_DistanceGet(dataProjection%DATA_PROJECTION,dataPointNumber,distance,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_DistanceGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DistanceGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_DistanceGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DistanceGetObj
   
   !
   !================================================================================================================================
