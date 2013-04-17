@@ -1125,6 +1125,7 @@ $(OBJECT_DIR)/history_routines.o	:	$(SOURCE_DIR)/history_routines.f90 \
 $(OBJECT_DIR)/interface_operators_routines.o	:	$(SOURCE_DIR)/interface_operators_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_conditions_constants.o \
