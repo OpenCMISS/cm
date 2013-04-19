@@ -949,9 +949,9 @@ CONTAINS
                       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of model maps = ",MODEL_MAPS% &
                         & NUMBER_OF_FIELDS_MAPPED_TO,ERR,ERROR,*999)
                     ENDIF
-                    !Loop over the number of CellML to field maps
-                    DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
-                      MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
+                    !Loop over the number of field to CellML maps
+                    DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
+                      MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
                       IF(ASSOCIATED(MODEL_MAP)) THEN
                         !Get the OpenCMISS mapped field DOF value
                         SELECT CASE(dofType)
