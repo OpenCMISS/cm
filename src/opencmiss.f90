@@ -49320,7 +49320,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: meshArgumentName !< The name of the argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which to create the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: mesh !< On return, the newly created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !< On return, the newly created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartObjVS",err,error,*999)
@@ -49392,7 +49392,7 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName !< The name of the argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which to create the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: mesh !< On return, the newly created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !< On return, the newly created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartObjC",err,error,*999)
@@ -49464,7 +49464,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !< On return, the newly created coordinate system.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: coordinateSystem !< On return, the newly created coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS",err,error,*999)
@@ -49533,7 +49533,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !< On return, the newly created coordinate system.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: coordinateSystem !< On return, the newly created coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartObjC",err,error,*999)
@@ -49637,7 +49637,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
-    TYPE(CMISSBasisType), INTENT(OUT) :: basis !<On return, the newly created basis.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On return, the newly created basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartObjVS",err,error,*999)
@@ -49704,7 +49704,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
-    TYPE(CMISSBasisType), INTENT(OUT) :: basis !<On return, the newly created basis.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On return, the newly created basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartObjC",err,error,*999)
@@ -49736,7 +49736,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the nodes from.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     !Locals
@@ -49772,7 +49772,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the basis from.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes  !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes  !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartObjVS",err,error,*999)
@@ -49804,7 +49804,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the nodes from.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     !Locals
@@ -49840,7 +49840,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the basis from.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes  !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes  !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartObjC",err,error,*999)
@@ -50025,7 +50025,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
-    TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjVS",err,error,*999)
@@ -50110,7 +50110,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
-    TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjC",err,error,*999)
