@@ -97,6 +97,8 @@ MODULE NODE_ROUTINES
   PUBLIC NODES_NUMBER_OF_NODES_GET
   
   PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
+  
+  PUBLIC Nodes_AllUserNumbersSet
 
   !PUBLIC NODES_NUMBER_OF_VERSIONS_SET
 
@@ -850,6 +852,55 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE NODES_USER_NUMBER_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Changes/sets the user numbers for all nodes. \see OPENCMISS::CMISSNodes_AllUserNumbersSet
+  SUBROUTINE Nodes_AllUserNumbersSet(nodes,userNumbers,err,error,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: nodes !<A pointer to the nodes to set the numbers for
+    INTEGER(INTG), INTENT(IN) :: userNumbers(:) !<The user numbers to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: nodeIdx,insertStatus
+    
+    CALL ENTERS("Nodes_AllUserNumbersSet",err,error,*999)
+
+    IF(ASSOCIATED(nodes)) THEN
+      IF(nodes%NODES_FINISHED) THEN
+        CALL FLAG_ERROR("Nodes have been finished.",err,error,*999)
+      ELSE
+        IF(nodes%NUMBER_OF_NODES==SIZE(userNumbers,1)) THEN
+          CALL TREE_DESTROY(nodes%NODES_TREE,err,error,*999)
+          CALL TREE_CREATE_START(nodes%NODES_TREE,err,error,*999)
+          CALL TREE_INSERT_TYPE_SET(nodes%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,err,error,*999)
+          CALL TREE_CREATE_FINISH(nodes%NODES_TREE,err,error,*999)
+          DO nodeIdx=1,nodes%NUMBER_OF_NODES
+            nodes%NODES(nodeIdx)%GLOBAL_NUMBER=nodeIdx
+            nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
+            nodes%NODES(nodeIdx)%LABEL=""
+            CALL TREE_ITEM_INSERT(nodes%NODES_TREE,userNumbers(nodeIdx),nodeIdx,insertStatus,err,error,*999)
+            nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
+          ENDDO !nodeIdx
+        ELSE
+          CALL FLAG_ERROR("Number of node user numbers input does not match number of nodes.",err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Nodes_AllUserNumbersSet")
+    RETURN
+999 CALL ERRORS("Nodes_AllUserNumbersSet",err,error)    
+    CALL EXITS("Nodes_AllUserNumbersSet")
+    RETURN 1
+   
+  END SUBROUTINE Nodes_AllUserNumbersSet
 
   !
   !================================================================================================================================
