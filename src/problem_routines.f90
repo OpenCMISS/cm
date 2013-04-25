@@ -3323,7 +3323,7 @@ CONTAINS
                   ENDIF
                 ENDIF
                 SELECT CASE(problem%SUBTYPE)
-                CASE(PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE,PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE)
+                CASE(PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE,PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE) !Reproject at iteration 0 before the nonlinear solve to update xi location since the field is transformed.
                   IF(iterationNumber==0) THEN
                     reproject=.TRUE.
                   ELSE
@@ -3345,16 +3345,18 @@ CONTAINS
                       DO interfaceConditionIdx=1,solverMapping%NUMBER_OF_INTERFACE_CONDITIONS
                         interfaceCondition=>solverMapping%INTERFACE_CONDITIONS(interfaceConditionIdx)%PTR
                         IF(ASSOCIATED(interfaceCondition)) THEN
-                          IF(interfaceCondition%OPERATOR==INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR .AND. &
-                              & interfaceCondition%integrationType==INTERFACE_CONDITION_DATA_POINTS_INTEGRATION) THEN
-                            interface=>interfaceCondition%INTERFACE
-                            IF(ASSOCIATED(interface)) THEN
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"**************** Reproject! ****************",ERR,ERROR,*999)
-                              CALL InterfacePointsConnectivity_DataReprojection(interface,interfaceCondition,err,error,*999)
-                              CALL INTERFACE_CONDITION_ASSEMBLE(interfaceCondition,err,error,*999)
-                            ELSE
-                              CALL FLAG_ERROR("Interface is not associated for nonlinear solver equations mapping.", &
-                                & err,error,*999)
+                          IF(interfaceCondition%OPERATOR==INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR .OR. &
+                              & interfaceCondition%OPERATOR==INTERFACE_CONDITION_FLS_CONTACT_OPERATOR) THEN !Only reproject for contact operator
+                            IF(interfaceCondition%integrationType==INTERFACE_CONDITION_DATA_POINTS_INTEGRATION) THEN !Only reproject for data point interpolated field
+                              interface=>interfaceCondition%INTERFACE
+                              IF(ASSOCIATED(interface)) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"**************** Reproject! ****************",ERR,ERROR,*999)
+                                CALL InterfacePointsConnectivity_DataReprojection(interface,interfaceCondition,err,error,*999)
+                                CALL INTERFACE_CONDITION_ASSEMBLE(interfaceCondition,err,error,*999)
+                              ELSE
+                                CALL FLAG_ERROR("Interface is not associated for nonlinear solver equations mapping.", &
+                                  & err,error,*999)
+                              ENDIF
                             ENDIF
                           ENDIF
                         ELSE

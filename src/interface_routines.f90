@@ -1530,7 +1530,6 @@ CONTAINS
             !Evaluate data points positions
             dependentFieldFixed=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(fixedBodyIdx)%PTR%FIELD
             IF(ASSOCIATED(dependentFieldFixed)) THEN 
-              !Temporarily change field variable to only have number of geometric components
               numberOfGeometricComponents=dependentFieldFixed%GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
               CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(dependentFieldFixed,interpolationParameters,err,error,*999, &
                 & FIELD_GEOMETRIC_COMPONENTS_TYPE)
