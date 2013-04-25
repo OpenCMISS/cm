@@ -81,6 +81,7 @@ include $(OCE_MAKEINC_ROOT)/Makefile_BlacsScalapack.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_HDF5.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_NetCDF.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_PAPI.inc
+include $(OCE_MAKEINC_ROOT)/Makefile_TAU.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_CUDA.inc
 include $(OCE_MAKEINC_ROOT)/Makefile_OSOperations.inc
 
@@ -513,7 +514,7 @@ MUMPS_INCLUDE_PATH =#
 MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
 ifeq (${OPENCMISS_USE_MUMPS},true)
-  MUMPS_LIBRARIES += $(call convertlistlink,$(OCE_BLACSLIBS)) $(call convertlistlink,$(OCE_SCALAPACKLIBS)) -ldmumps -lmumps_common -lpord
+  MUMPS_LIBRARIES += -ldmumps -lmumps_common $(call convertlistlink,$(OCE_SCALAPACKLIBS)) $(call convertlistlink,$(OCE_BLACSLIBS)) -lpord
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_BLACSLIBPATH) )
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_SCALAPACKLIBPATH) )
   MUMPS_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
@@ -544,13 +545,9 @@ TAU_LIB_PATH =#
 ifeq (${OPENCMISS_USE_TAU},true)
   CPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
   FPPFLAGS += -DTAUPROF -DOPENCMISS_USE_TAU
-  TAU_LIBRARIES += -lTAU_tf
-  ifeq (${OPENCMISS_USE_PAPI},true)
-    TAU_LIBRARIES += -lTauMpi-memory-phase-papi-mpi -ltau-memory-phase-papi-mpi
-  else
-    TAU_LIBRARIES += -lTauMpi-memory-phase-mpi -ltau-memory-phase-mpi
-  endif
-  TAU_LIB_PATH += $(addprefix -L, $(OCE_CM_INSTALL_DIR)/lib )
+  TAU_LIBRARIES += $(call convertlistlink,$(OCE_TAULIBS))
+  TAU_INCLUDE_PATH += $(addprefix -I, $(OCE_TAUINCLUDEPATH) )
+  TAU_LIB_PATH += $(addprefix -L, $(OCE_TAULIBPATH) )
 endif
 
 #PAPI
@@ -645,8 +642,8 @@ endif
 
 #BLAS/lapack
 BLASLAPACK_LIB_PATH = $(addprefix -L, $(OCE_LAPACKLIBPATH) )
-BLASLAPACK_LIB_PATH += $(addprefix -L, $(OCE_BLASLIBPATH) )
-BLASLAPACK_LIBRARIES = $(call convertlistlink,$(OCE_LAPACKLIBSF) $(OCE_BLASLIBSF))
+BLASLAPACK_LIB_PATH += $(call convertlistlibpaths,$(OCE_BLASLIBPATHF))
+BLASLAPACK_LIBRARIES = $(call convertlistlink,$(OCE_LAPACKLIBS) $(OCE_BLASLIBSF))
 
 EXTERNAL_LIBRARIES += $(strip $(SLEPC_LIBRARIES) $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(UMFPACK_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(PASTIX_LIBRARIES) $(SUPERLU_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(PARMETIS_LIBRARIES) $(CUBPACK_LIBRARIES) $(TAU_LIBRARIES) $(PAPI_LIBRARIES) $(CELLML_LIBRARIES) $(FIELDML_LIBRARIES) $(NETCDF_LIBRARIES) $(HDF5_LIBRARIES) $(CUDA_LIBRARIES) $(MPI_LIBRARIES) $(BLASLAPACK_LIBRARIES))
 #Note put MPI path in before NetCDF and HDF5 incase we have system NetCDF and HDF5 but OCE MPI.
