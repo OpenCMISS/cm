@@ -31720,7 +31720,7 @@ CONTAINS
     CALL GENERATED_MESH_CREATE_FINISH(generatedMesh%GENERATED_MESH,meshUserNumber,mesh%MESH,err,error,*999)
 
 #ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('Generated mesh Create')
+    CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
 #endif
 
     CALL EXITS("CMISSGeneratedMesh_CreateFinishObj")
