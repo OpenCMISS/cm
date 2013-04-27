@@ -546,8 +546,11 @@ CONTAINS
       & RECEIVE_COUNTS(:)
     INTEGER(INTG) :: ELEMENT_WEIGHT(1),WEIGHT_FLAG,NUMBER_FLAG,NUMBER_OF_CONSTRAINTS, &
       & NUMBER_OF_COMMON_NODES,PARMETIS_OPTIONS(0:2)
-    REAL(SP) :: UBVEC(1)
-    REAL(SP), ALLOCATABLE :: TPWGTS(:)
+    !ParMETIS now has double for these
+    !REAL(SP) :: UBVEC(1)
+    !REAL(SP), ALLOCATABLE :: TPWGTS(:)
+    REAL(DP) :: UBVEC(1)
+    REAL(DP), ALLOCATABLE :: TPWGTS(:)
     REAL(DP) :: NUMBER_ELEMENTS_PER_NODE
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
@@ -644,8 +647,11 @@ CONTAINS
               NUMBER_FLAG=0 !C Numbering as there is a bug with Fortran numbering
               NUMBER_OF_CONSTRAINTS=1
               NUMBER_OF_COMMON_NODES=2
-              TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
-              UBVEC=1.05_SP
+              !ParMETIS now has doule precision for these
+              !TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
+              !UBVEC=1.05_SP
+              TPWGTS=1.0_DP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,DP)
+              UBVEC=1.05_DP
               PARMETIS_OPTIONS(0)=1 !If zero, defaults are used, otherwise next two values are used
               PARMETIS_OPTIONS(1)=7 !Level of information to output
               PARMETIS_OPTIONS(2)=CMISS_RANDOM_SEEDS(1) !Seed for random number generator
