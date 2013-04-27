@@ -597,6 +597,8 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_GEOMETRIC_FIELD_GET,FIELD_GEOMETRIC_FIELD_SET,FIELD_GEOMETRIC_FIELD_SET_AND_LOCK
 
+  PUBLIC Field_GeometricParametersElementLineLengthGet
+
   PUBLIC FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI,FIELD_INTERPOLATE_NODE,FIELD_INTERPOLATE_FIELD_NODE, &
     & FIELD_INTERPOLATE_LOCAL_FACE_GAUSS
 
@@ -9996,6 +9998,75 @@ CONTAINS
     CALL EXITS("FIELD_GEOMETRIC_PARAMETERS_INITIALISE")
     RETURN 1
   END SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the line length between nodes of a geometric field for a given element number and element basis line number.
+  SUBROUTINE Field_GeometricParametersElementLineLengthGet(field,elementNumber,elementLineNumber,lineLength,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to get the line length for
+    INTEGER(INTG),  INTENT(IN) :: elementNumber !<The element to get the line length for
+    INTEGER(INTG), INTENT(IN) :: elementLineNumber !<The element basis line to get the length for
+    REAL(DP), INTENT(OUT) :: lineLength !<The line length of the chosen element line number
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: decompositionElement
+    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: domainElement
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: globalLineNumber
+
+    CALL ENTERS("Field_GeometricParametersElementLineLengthGet",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        IF(field%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+          IF(ASSOCIATED(field%GEOMETRIC_FIELD_PARAMETERS)) THEN
+            !\todo user to global element maps not in OpenCMISS?
+            IF(elementNumber>=1.AND.elementNumber<=field%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+              domainElement=>field%DECOMPOSITION%DOMAIN(field%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
+              decompositionElement=>field%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
+              IF(elementLineNumber>=1.AND.elementLineNumber<=domainElement%BASIS%NUMBER_OF_LOCAL_LINES) THEN
+                globalLineNumber=decompositionElement%ELEMENT_LINES(elementLineNumber)
+                lineLength=Field%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(globalLineNumber)
+              ELSE
+                localError="Element basis line number  "//TRIM(NUMBER_TO_VSTRING(elementNumber,"*",err,error))// &
+                  & " is not valid and needs to be >=1 and <="//TRIM(NUMBER_TO_VSTRING( &
+                  & domainElement%BASIS%NUMBER_OF_LOCAL_LINES,"*",err,error))
+                CALL FLAG_ERROR(localError,err,error,*999)
+              ENDIF
+            ELSE
+              localError="Element number "//TRIM(NUMBER_TO_VSTRING(elementNumber,"*",err,error))// &
+                & " is not present in this fields decomposition"
+              CALL FLAG_ERROR(localError,err,error,*999)
+            ENDIF
+          ELSE
+            localError="Geometric parameters are not associated for field number "// &
+              & TRIM(NUMBER_TO_VSTRING(field%USER_NUMBER,"*",err,error))//"."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="Field number "//TRIM(NUMBER_TO_VSTRING(field%USER_NUMBER,"*",err,error))//" is not a geometric field."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="Field number "//TRIM(NUMBER_TO_VSTRING(field%USER_NUMBER,"*",err,error))//" has not been finished."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("Field_GeometricParametersElementLineLengthGet")
+    RETURN
+999 CALL ERRORS("Field_GeometricParametersElementLineLengthGet",err,error)
+    CALL EXITS("Field_GeometricParametersElementLineLengthGet")
+    RETURN 1
+  END SUBROUTINE Field_GeometricParametersElementLineLengthGet
 
   !
   !================================================================================================================================

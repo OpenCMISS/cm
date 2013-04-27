@@ -3244,6 +3244,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_GeometricFieldSetObj
   END INTERFACE !CMISSField_GeometricFieldSet
 
+  !>Gets line lengths from a geometric field given an element number and element basis line number.
+  INTERFACE CMISSField_GeometricParametersElementLineLengthGet
+    MODULE PROCEDURE CMISSField_GeometricParametersElementLineLengthGetNumber
+    MODULE PROCEDURE CMISSField_GeometricParametersElementLineLengthGetObj
+  END INTERFACE !CMISSField_GeometricParametersElementLineLengthGet
+
  !>Returns the label for a field.
   INTERFACE CMISSField_LabelGet
     MODULE PROCEDURE CMISSField_LabelGetCNumber
@@ -3620,6 +3626,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_DimensionGet,CMISSField_DimensionSet
 
   PUBLIC CMISSField_GeometricFieldGet,CMISSField_GeometricFieldSet
+
+  PUBLIC CMISSField_GeometricParametersElementLineLengthGet
 
   PUBLIC CMISSField_LabelGet,CMISSField_LabelSet
 
@@ -25607,6 +25615,84 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_GeometricFieldSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the line length between nodes of a geometric field for a given element number and element basis line number by a user number.
+  SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetNumber(regionUserNumber,geometricFieldUserNumber,elementNumber, &
+    & elementLineNumber,lineLength,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to obtain the line length from
+    INTEGER(INTG), INTENT(IN) :: geometricFieldUserNumber !<The geometric field user number to obtain the line length from
+    INTEGER(INTG),  INTENT(IN) :: elementNumber !<The element to get the line length for
+    INTEGER(INTG), INTENT(IN) :: elementLineNumber !<The element basis line to get the length for
+    REAL(DP), INTENT(OUT) :: lineLength !<The line length of the chosen element line number
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: geometricField
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_GeometricParametersElementLineLengthGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(geometricField)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(geometricFieldUserNumber,region,geometricField,err,error,*999)
+      IF(ASSOCIATED(geometricField)) THEN
+        CALL Field_GeometricParametersElementLineLengthGet(geometricField,elementNumber,elementLineNumber,lineLength, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(geometricFieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_GeometricParametersElementLineLengthGetNumber",err,error)
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the line length between nodes of a geometric field for a given element number and element basis line number by an object.
+  SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetObj(geometricField,elementNumber,elementLineNumber,lineLength,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: geometricField !<The geometric field to obtain the line length from
+    INTEGER(INTG),  INTENT(IN) :: elementNumber !<The element to get the line length for
+    INTEGER(INTG), INTENT(IN) :: elementLineNumber !<The element basis line to get the length for
+    REAL(DP), INTENT(OUT) :: lineLength !<The line length of the chosen element line number
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_GeometricParametersElementLineLengthGetObj",err,error,*999)
+
+    CALL Field_GeometricParametersElementLineLengthGet(geometricField%FIELD,elementNumber,elementLineNumber,lineLength, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_GeometricParametersElementLineLengthGetObj",err,error)
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetObj
 
   !
   !================================================================================================================================
