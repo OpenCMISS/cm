@@ -1820,7 +1820,7 @@ test: main
 	@echo "Please go to http://readthedocs.org/docs/nose/ for details."
 	@echo "For detailed logfiles, go to <OPENCMISS_ROOT>/build/logs directory."
 	@echo "================================================================================================"
-	COMPILER=$(COMPILER) SIZE=${SIZE} DIR=$(DIR) ABI=${ABI} nosetests ${OPENCMISSEXAMPLES_ROOT}/noseMain.py:test_example
+	COMPILER=$(COMPILER) SIZE=${SIZE} DIR=$(DIR) ABI=${ABI} python ${OPENCMISSEXAMPLES_ROOT}/scripts/run_tests.py
 
 #-----------------------------------------------------------------------------
 

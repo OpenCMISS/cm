@@ -754,7 +754,7 @@ MODULE CMISS_PETSC
         
     SUBROUTINE MatRestoreArrayF90(A,mat_data,ierr)
       Mat A
-      PetscScalar, POINTER :: mat_data(:)
+      PetscScalar, POINTER :: mat_data(:,:)
       PetscInt ierr
     END SUBROUTINE MatRestoreArrayF90
     
@@ -3579,7 +3579,7 @@ CONTAINS
 
     !Argument Variables
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
-    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
+    REAL(DP), POINTER :: ARRAY(:,:) !<A pointer to the matrix array to restore
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
