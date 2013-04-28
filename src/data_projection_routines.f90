@@ -118,9 +118,8 @@ MODULE DATA_PROJECTION_ROUTINES
   
   PUBLIC DATA_PROJECTION_STARTING_XI_GET,DATA_PROJECTION_STARTING_XI_SET
   
-  PUBLIC DATA_PROJECTION_XI_SET,DATA_PROJECTION_ELEMENT_SET
-  
- 
+  PUBLIC DATA_PROJECTION_XI_SET,DATA_PROJECTION_XI_GET,DATA_PROJECTION_ELEMENT_SET
+
 CONTAINS
 
   !
@@ -2994,7 +2993,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Sets the starting xi for a data projection.
+  !>Sets the xi for a data projection.
   SUBROUTINE DATA_PROJECTION_XI_SET(DATA_PROJECTION,DATA_POINT_NUMBER,XI,ERR,ERROR,*)
 
     !Argument variables
@@ -3037,6 +3036,41 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_XI_SET
+
+   !
+   !================================================================================================================================
+   !
+
+  !>Gets the xi for a data projection.
+  SUBROUTINE DATA_PROJECTION_XI_GET(DATA_PROJECTION,DATA_POINT_NUMBER,XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to get the xi for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_NUMBER !<data point number
+    REAL(DP), INTENT(OUT) :: XI(:) !<the xi position to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("DATA_PROJECTION_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      IF(SIZE(XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
+        XI=DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%XI
+      ELSE
+        CALL FLAG_ERROR("Data projection xi dimension mismatch.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_XI_GET")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_XI_GET",ERR,ERROR)    
+    CALL EXITS("DATA_PROJECTION_XI_GET")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_XI_GET
 
   !
   !================================================================================================================================
