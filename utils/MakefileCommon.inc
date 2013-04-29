@@ -178,11 +178,28 @@ CC = $(OCE_MPICC)
 FC = $(OCE_MPIF90)
 
 #----------------------------------------------------------------------------------------------------------------------------------
+
 ifeq ($(OPERATING_SYSTEM),linux)
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
+
+  CC = gcc
+  FC = gfortran
+
+  ifeq ($(COMPILER),intel)
+
+    #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
+    ifneq (,$(shell icc -V 2>&1 | grep -i intel))
+      CC = icc
+    endif
+    ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
+      FC = ifort
+    endif
+
+  endif
+
   # Set the flags for the various different CC compilers
-  ifeq ($(COMPILER),gnu)
+  ifeq ($(CC),gcc)# gcc
     # Position independent code is required for the Python bindings
     C_FLGS += -pipe -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)

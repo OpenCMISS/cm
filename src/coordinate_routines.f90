@@ -656,7 +656,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mi,ni,nu
-    REAL(DP) :: A(2,2),B(2),C,D,DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
+    REAL(DP) :: A(3,3),B(3),C,D,DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -837,7 +837,7 @@ CONTAINS
                   DET_DX_DXI=METRICS%DX_DXI(1,1)*DX_DXI2(2)-METRICS%DX_DXI(2,1)*DX_DXI2(1)
                   IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
                     METRICS%DXI_DX(1,1)=DX_DXI2(2)/DET_DX_DXI
-                    METRICS%DXI_DX(1,2)=DX_DXI2(1)/DET_DX_DXI
+                    METRICS%DXI_DX(1,2)=-1.0_DP*DX_DXI2(1)/DET_DX_DXI
                     !Normalise to ensure that g^11=g^1.g^1
                     LENGTH=L2NORM(METRICS%DXI_DX(1,1:2))
                     SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
@@ -855,60 +855,29 @@ CONTAINS
                     IF(ERR/=0) GOTO 999
                     !Calculate the bi-normal vector from the normalised cross product of the tangent and normal vectors
                     CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(1:3,1),DX_DXI2,DX_DXI3,ERR,ERROR,*999)
-                  ELSE
-                    !Solve system of equations to find g_2 and g_3 using g_3 = g_1 x g_2 and g_2 = g_3 x g_1
-                    !We need to choose a component of g_2 to fix this system. As we are going to normalise results
-                    !we don't need to worry about the value.
-                    !If we pick a component to set then we need to ensure that it is roughly orthogonal to the tangent
-                    !vector. Try the first component unless it is in the direction of the tangent else try the second
-                    C=METRICS%DX_DXI(1,1)/SQRT(METRICS%DX_DXI(1,1)**2+METRICS%DX_DXI(2,1)**2+METRICS%DX_DXI(3,1)**2)
-                    IF(ABS(C)>0.9_DP) THEN
-                      !Tangent has a significant first component, set the second component of g_2
-                      C=METRICS%DX_DXI(2,1)/SQRT(METRICS%DX_DXI(1,1)**2+METRICS%DX_DXI(2,1)**2+METRICS%DX_DXI(3,1)**2)
-                      D=1.0_DP/(1.0_DP-C)
-                      A(1,1)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)+METRICS%DX_DXI(3,1)*METRICS%DX_DXI(3,1)-1.0_DP
-                      A(1,2)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(3,1)
-                      A(2,1)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
-                      A(2,2)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)-1.0_DP
-                      B(1)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(2,1)*D
-                      B(2)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)*D
-                      CALL SOLVE_SMALL_LINEAR_SYSTEM(A,DX_DXI2(1:2),B,ERR,ERROR,*999)
-                      DX_DXI2(3)=DX_DXI2(2)
-                      DX_DXI2(2)=D
+                    DET_DX_DXI=METRICS%DX_DXI(1,1)*(DX_DXI2(2)*DX_DXI3(3)-DX_DXI2(3)*DX_DXI3(2))+ &
+                      & DX_DXI2(1)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
+                      & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*DX_DXI2(3)-METRICS%DX_DXI(3,1)*DX_DXI2(2))
+                    IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
+                      METRICS%DXI_DX(1,1)=(DX_DXI3(3)*DX_DXI2(2)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
+                      METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*DX_DXI2(1)-DX_DXI2(3)*DX_DXI3(1))/DET_DX_DXI
+                      METRICS%DXI_DX(1,3)=(DX_DXI3(2)*DX_DXI2(1)-DX_DXI2(2)*DX_DXI3(1))/DET_DX_DXI
+                      !Normalise to ensure that g^11=g^1.g^1
+                      LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
+                      SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
+                      METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DX_DXI(1,1:3)
                     ELSE
-                      !Tangent does not have a significant first component, set the first component of g_2
-                      D=1.0_DP/(1.0_DP-C)
-                      A(1,1)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(3,1)*METRICS%DX_DXI(3,1)-1
-                      A(1,2)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
-                      A(2,1)=-1.0_DP*METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
-                      A(2,2)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)-1
-                      B(1)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(2,1)
-                      B(2)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(3,1)
-                      DX_DXI2(1)=D
-                      CALL SOLVE_SMALL_LINEAR_SYSTEM(A,DX_DXI2(2:3),B,ERR,ERROR,*999)
+                      CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
+                      METRICS%DXI_DX=0.0_DP                    
                     ENDIF
-                    DX_DXI2=NORMALISE(DX_DXI2,ERR,ERROR)
-                    IF(ERR/=0) GOTO 999
-                    DX_DXI3(1)=METRICS%DX_DXI(2,1)*DX_DXI2(3)-DX_DXI2(2)*METRICS%DX_DXI(3,1)
-                    DX_DXI3(2)=METRICS%DX_DXI(3,1)*DX_DXI2(1)-DX_DXI2(3)*METRICS%DX_DXI(1,1)
-                    DX_DXI3(3)=METRICS%DX_DXI(1,1)*DX_DXI2(2)-DX_DXI2(1)*METRICS%DX_DXI(2,1)
-                    DX_DXI3=NORMALISE(DX_DXI3,ERR,ERROR)
-                    IF(ERR/=0) GOTO 999
-                  ENDIF
-                  DET_DX_DXI=METRICS%DX_DXI(1,1)*(DX_DXI2(2)*DX_DXI3(3)-DX_DXI2(3)*DX_DXI3(2))+ &
-                    & DX_DXI2(1)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
-                    & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*DX_DXI2(3)-METRICS%DX_DXI(3,1)*DX_DXI2(2))
-                  IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
-                    METRICS%DXI_DX(1,1)=(DX_DXI3(3)*DX_DXI2(2)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
-                    METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*DX_DXI2(1)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
-                    METRICS%DXI_DX(1,3)=(DX_DXI3(2)*DX_DXI2(1)-DX_DXI2(2)*DX_DXI3(1))/DET_DX_DXI
+                  ELSE
+                    METRICS%DXI_DX(1,1)=METRICS%DX_DXI(1,1)
+                    METRICS%DXI_DX(1,2)=METRICS%DX_DXI(2,1)
+                    METRICS%DXI_DX(1,3)=METRICS%DX_DXI(3,1)
                     !Normalise to ensure that g^11=g^1.g^1
                     LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
                     SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
                     METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DXI_DX(1,1:3)
-                  ELSE
-                    CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
-                    METRICS%DXI_DX=0.0_DP                    
                   ENDIF
                 CASE DEFAULT
                   CALL FLAG_ERROR("Invalid embedding of a line in space.",ERR,ERROR,*999)

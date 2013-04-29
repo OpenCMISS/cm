@@ -11618,7 +11618,7 @@ CONTAINS
                         FROM_DOMAIN=>FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%DOMAIN
                         TO_DOMAIN=>TO_FIELD_VARIABLE%COMPONENTS(TO_COMPONENT_NUMBER)%DOMAIN
                         IF(ASSOCIATED(FROM_DOMAIN)) THEN
-                          IF(ASSOCIATED(FROM_DOMAIN,TO_DOMAIN)) THEN
+!WIP                          IF(ASSOCIATED(FROM_DOMAIN,TO_DOMAIN)) THEN
                             IF(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%INTERPOLATION_TYPE== &
                               & TO_FIELD_VARIABLE%COMPONENTS(TO_COMPONENT_NUMBER)%INTERPOLATION_TYPE) THEN
                               IF(FROM_FIELD_VARIABLE%DATA_TYPE==TO_FIELD_VARIABLE%DATA_TYPE) THEN
@@ -11783,7 +11783,8 @@ CONTAINS
                                       CASE(FIELD_DP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
-                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+!WIP                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                                        DO node_idx=1,TO_DOMAIN%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
                                           DO deriv_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                             DO version_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                               & NUMBER_OF_VERSIONS
@@ -11890,10 +11891,10 @@ CONTAINS
                                 & TRIM(NUMBER_TO_VSTRING(TO_FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))//"."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("The from field variable component domain is not associated with the "// &
-                              & "to field variable component domain.",ERR,ERROR,*999)
-                          ENDIF
+                          ! ELSE
+                          !   CALL FLAG_ERROR("The from field variable component domain is not associated with the "// &
+                          !     & "to field variable component domain.",ERR,ERROR,*999)
+                          ! ENDIF
                         ELSE
                           CALL FLAG_ERROR("The from variable component domain is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -23107,24 +23108,26 @@ CONTAINS
     ENDIF
 
     IF(DIAGNOSTICS1) THEN
-      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Scale Factors for nodes in the domain:",ERR,ERROR,*999)
-      DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Node : ",node_idx,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of Derivatives = ", &
-          & DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
-        DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Derivative : ",derivative_idx,ERR,ERROR,*999)
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of Versions = ", &
-            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,ERR,ERROR,*999)
-          DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Version : ",version_idx,ERR,ERROR,*999)
-            dof_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
-            CALL DISTRIBUTED_VECTOR_VALUES_GET(FIELD_SCALING%SCALE_FACTORS,dof_idx,VALUE,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Scale Factor : ",VALUE,ERR,ERROR,*999)
-          ENDDO !version_idx
-        ENDDO !derivative_idx
-      ENDDO !node_idx
+      IF(ASSOCIATED(DOMAIN))THEN
+        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Scale Factors for nodes in the domain:",ERR,ERROR,*999)
+        DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Node : ",node_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of Derivatives = ", &
+            & DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
+          DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Derivative : ",derivative_idx,ERR,ERROR,*999)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of Versions = ", &
+              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,ERR,ERROR,*999)
+            DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Version : ",version_idx,ERR,ERROR,*999)
+              dof_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+              CALL DISTRIBUTED_VECTOR_VALUES_GET(FIELD_SCALING%SCALE_FACTORS,dof_idx,VALUE,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Scale Factor : ",VALUE,ERR,ERROR,*999)
+            ENDDO !version_idx
+          ENDDO !derivative_idx
+        ENDDO !node_idx
+      ENDIF
     ENDIF
 
     CALL EXITS("FIELD_SCALINGS_CALCULATE")

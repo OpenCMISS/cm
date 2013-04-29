@@ -852,9 +852,9 @@ CONTAINS
     IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
       IF(ASSOCIATED(COLS_FIELD_VARIABLE)) THEN
         ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS+4
         ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=COLS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & COLS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          & COLS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS+4
         IF(ALLOCATED(ELEMENT_MATRIX%ROW_DOFS)) THEN
           CALL FLAG_ERROR("Element matrix row dofs already allocated.",ERR,ERROR,*999)
         ELSE
@@ -1048,7 +1048,7 @@ CONTAINS
 
     IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
       ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-        & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+        & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS+4
       IF(ALLOCATED(ELEMENT_VECTOR%ROW_DOFS)) THEN
         CALL FLAG_ERROR("Element vector row dofs is already allocated.",ERR,ERROR,*999)        
       ELSE
@@ -2137,9 +2137,9 @@ CONTAINS
     IF(ASSOCIATED(rowsFieldVariable)) THEN
       IF(ASSOCIATED(colsFieldVariable)) THEN
         nodalMatrix%maxNumberOfRows=rowsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & rowsFieldVariable%NUMBER_OF_COMPONENTS
+          & rowsFieldVariable%NUMBER_OF_COMPONENTS+4
         nodalMatrix%maxNumberOfColumns=colsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & colsFieldVariable%NUMBER_OF_COMPONENTS
+          & colsFieldVariable%NUMBER_OF_COMPONENTS+4
         IF(ALLOCATED(nodalMatrix%rowDofs)) THEN
           CALL FLAG_ERROR("Nodal matrix row dofs already allocated.",err,error,*999)
         ELSE
@@ -2193,7 +2193,7 @@ CONTAINS
 
     IF(ASSOCIATED(rowsFieldVariable)) THEN
       nodalVector%maxNumberOfRows=rowsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-        & rowsFieldVariable%NUMBER_OF_COMPONENTS
+        & rowsFieldVariable%NUMBER_OF_COMPONENTS+4
       IF(ALLOCATED(nodalVector%rowDofs)) THEN
         CALL FLAG_ERROR("Nodal vector row dofs is already allocated.",err,error,*999)        
       ELSE
