@@ -76,8 +76,10 @@ MODULE CMISS_PARMETIS
       INTEGER(INTG) :: numflag
       INTEGER(INTG) :: ncon
       INTEGER(INTG) :: nparts
-      REAL(SP) :: tpwgts(*)
-      REAL(SP) :: ubvec(*)
+      !REAL(SP) :: tpwgts(*)
+      !REAL(SP) :: ubvec(*)
+      REAL(DP) :: tpwgts(*)
+      REAL(DP) :: ubvec(*)
       INTEGER(INTG) :: options(*)
       INTEGER(INTG) :: edgecut
       INTEGER(INTG) :: part(*)
@@ -99,8 +101,10 @@ MODULE CMISS_PARMETIS
       INTEGER(INTG) :: ncon
       INTEGER(INTG) :: ncommonnodes
       INTEGER(INTG) :: nparts
-      REAL(SP) :: tpwgts(*)
-      REAL(SP) :: ubvec(*)
+      !REAL(SP) :: tpwgts(*)
+      !REAL(SP) :: ubvec(*)
+      REAL(DP) :: tpwgts(*)
+      REAL(DP) :: ubvec(*)
       INTEGER(INTG) :: options(*)
       INTEGER(INTG) :: edgecut
       INTEGER(INTG) :: part(*)
@@ -131,8 +135,10 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NUM_FLAG
     INTEGER(INTG), INTENT(IN) :: NCON
     INTEGER(INTG), INTENT(IN) :: NUMBER_PARTS
-    REAL(SP), INTENT(IN) :: TP_WEIGHTS(:)
-    REAL(SP), INTENT(IN) :: UB_VEC(:)
+    !REAL(SP), INTENT(IN) :: TP_WEIGHTS(:)
+    !REAL(SP), INTENT(IN) :: UB_VEC(:)
+    REAL(DP), INTENT(IN) :: TP_WEIGHTS(:)
+    REAL(DP), INTENT(IN) :: UB_VEC(:)
     INTEGER(INTG), INTENT(IN) :: OPTIONS(:)
     INTEGER(INTG), INTENT(OUT) :: NUMBER_EDGES_CUT
     INTEGER(INTG), INTENT(OUT) :: PARTITION(:)
@@ -174,8 +180,10 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NCON
     INTEGER(INTG), INTENT(IN) :: NUMBER_COMMON_NODES
     INTEGER(INTG), INTENT(IN) :: NUMBER_PARTS
-    REAL(SP), INTENT(IN) :: TP_WEIGHTS(:)
-    REAL(SP), INTENT(IN) :: UB_VEC(:)
+    !REAL(SP), INTENT(IN) :: TP_WEIGHTS(:)
+    !REAL(SP), INTENT(IN) :: UB_VEC(:)
+    REAL(DP), INTENT(IN) :: TP_WEIGHTS(:)
+    REAL(DP), INTENT(IN) :: UB_VEC(:)
     INTEGER(INTG), INTENT(IN) :: OPTIONS(:)
     INTEGER(INTG), INTENT(OUT) :: NUMBER_EDGES_CUT
     INTEGER(INTG), INTENT(OUT) :: PARTITION(:)

@@ -50,6 +50,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   USE COMP_ENVIRONMENT
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
+  USE ISO_C_BINDING
   USE KINDS
   USE MATRIX_VECTOR
   USE MPI
@@ -60,6 +61,8 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   IMPLICIT NONE
 
   PRIVATE
+
+#include "include/petscversion.h"
   
   !Module parameters
 
@@ -254,7 +257,9 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DISTRIBUTED_MATRIX_DATA_GET,DISTRIBUTED_MATRIX_DATA_RESTORE
 
-  PUBLIC DISTRIBUTED_MATRIX_DATA_TYPE_SET
+  PUBLIC DistributedMatrix_DataTypeGet, DISTRIBUTED_MATRIX_DATA_TYPE_SET
+
+  PUBLIC DistributedMatrix_DimensionsGet
 
   PUBLIC DISTRIBUTED_MATRIX_DESTROY
 
@@ -298,7 +303,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DISTRIBUTED_VECTOR_DATA_GET,DISTRIBUTED_VECTOR_DATA_RESTORE
 
-  PUBLIC DISTRIBUTED_VECTOR_DATA_TYPE_SET
+  PUBLIC DistributedVector_DataTypeGet, DISTRIBUTED_VECTOR_DATA_TYPE_SET
 
   PUBLIC DISTRIBUTED_VECTOR_DESTROY
 
@@ -874,8 +879,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    REAL(DP), POINTER :: petscData(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+
     CALL ENTERS("DISTRIBUTED_MATRIX_DATA_GET_DP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
@@ -894,10 +900,35 @@ CONTAINS
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
               IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
-                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,DATA,ERR,ERROR,*999)
+                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,petscData,ERR,ERROR,*999)
               ELSE
-                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,DATA,ERR,ERROR,*999)
+                CALL PETSC_MATGETARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,petscData,ERR,ERROR,*999)
               ENDIF
+              ! Convert 2D array from PETSc to 1D array
+              ! Using C_F_POINTER(C_LOC(... is a bit ugly but transfer doesn't work with pointers
+              SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
+              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                CALL C_F_POINTER(C_LOC(petscData(1,1)),DATA,[DISTRIBUTED_MATRIX%PETSC%M*DISTRIBUTED_MATRIX%PETSC%N])
+              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !PETSc returns an m * n matrix rather than number non-zeros by 1, so the returned
+                !2D array actually contains junk data outside of the actual matrix.
+                !This is a bug in PETSc but we can get the correct 1D data here
+                CALL C_F_POINTER(C_LOC(petscData(1,1)),DATA,[DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS])
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING( &
+                  & DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             ELSE
               CALL FLAG_ERROR("Distributed matris PETSc is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -1080,6 +1111,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    REAL(DP), POINTER :: petscData(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DISTRIBUTED_MATRIX_DATA_RESTORE_DP",ERR,ERROR,*999)
@@ -1092,11 +1124,34 @@ CONTAINS
             NULLIFY(DATA)
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+              SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
+              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                !Convert 1D array to 2D
+                CALL C_F_POINTER(C_LOC(DATA(1)),petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
+              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !PETSc expects an m * n 2D matrix rather than a 1D array with length equal to number of non-zeros
+                !This is a bug in PETSc so we have to give it a 2D matrix with junk at the end
+                CALL C_F_POINTER(C_LOC(DATA(1)),petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING( &
+                  & DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
               IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
-                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,DISTRIBUTED_MATRIX%PETSC%DATA_DP, &
+                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,petscData, &
                   & ERR,ERROR,*999)
               ELSE
-                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,DISTRIBUTED_MATRIX%PETSC%DATA_DP, &
+                CALL PETSC_MATRESTOREARRAYF90(DISTRIBUTED_MATRIX%PETSC%MATRIX,petscData, &
                   & ERR,ERROR,*999)
               ENDIF
             ELSE
@@ -1175,6 +1230,38 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the data type of a distributed matrix.
+  SUBROUTINE DistributedMatrix_DataTypeGet(matrix,dataType,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: matrix !<A pointer to the distributed matrix
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the data type of the matrix. \see DISTRIBUTED_MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("DistributedMatrix_DataTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(matrix)) THEN
+      IF(.NOT.matrix%matrix_finished) THEN
+        CALL flag_error("The matrix has not been finished.",err,error,*999)
+      ELSE
+        dataType=matrix%data_type
+      END IF
+    ELSE
+      CALL flag_error("Distributed matrix is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("DistributedMatrix_DataTypeGet")
+    RETURN
+999 CALL errors("DistributedMatrix_DataTypeGet",err,error)
+    CALL exits("DistributedMatrix_DataTypeGet")
+    RETURN 1
+  END SUBROUTINE DistributedMatrix_DataTypeGet
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the data type of a distributed matrix.
   SUBROUTINE DISTRIBUTED_MATRIX_DATA_TYPE_SET(DISTRIBUTED_MATRIX,DATA_TYPE,ERR,ERROR,*)
 
@@ -1230,6 +1317,68 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_MATRIX_DATA_TYPE_SET")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_DATA_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the dimensions of a matrix on this computational node.
+  SUBROUTINE DistributedMatrix_DimensionsGet(distributedMatrix,m,n,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: distributedMatrix !<A pointer to the distributed matrix to get dimensions for
+    INTEGER(INTG), INTENT(OUT) :: m !<On return, the number of rows in the matrix for this domain
+    INTEGER(INTG), INTENT(OUT) :: n !<On return, the number of columns in the matrix for this domain
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(MATRIX_TYPE), POINTER :: matrix
+    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: petscMatrix
+    TYPE(VARYING_STRING) :: localError
+
+    CALL enters("DistributedMatrix_DimensionsGet",err,error,*999)
+
+    IF(ASSOCIATED(distributedMatrix)) THEN
+      SELECT CASE(distributedMatrix%library_type)
+      CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+        IF(ASSOCIATED(distributedMatrix%cmiss)) THEN
+          matrix=>distributedMatrix%cmiss%matrix
+          IF(ASSOCIATED(matrix)) THEN
+            IF(.NOT.matrix%matrix_finished) THEN
+              CALL flag_error("The matrix has not been finished.",err,error,*999)
+            ELSE
+              m=matrix%m
+              n=matrix%n
+            END IF
+          ELSE
+            CALL flag_error("Distributed matrix CMISS matrix is not associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL flag_error("Distributed matrix CMISS is not associated.",err,error,*999)
+        END IF
+      CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+        petscMatrix=>distributedMatrix%petsc
+        IF(ASSOCIATED(petscMatrix)) THEN
+          m=petscMatrix%m
+          n=petscMatrix%n
+        ELSE
+          CALL flag_error("Distributed matrix PETSc is not associated.",err,error,*999)
+        END IF
+      CASE DEFAULT
+        localError="The distributed matrix library type of "// &
+          & TRIM(number_to_vstring(distributedMatrix%library_type,"*",err,error))//" is invalid."
+        CALL flag_error(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL flag_error("Distributed matrix is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("DistributedMatrix_DimensionsGet")
+    RETURN
+999 CALL errors("DistributedMatrix_DimensionsGet",err,error)
+    CALL exits("DistributedMatrix_DimensionsGet")
+    RETURN 1
+  END SUBROUTINE DistributedMatrix_DimensionsGet
 
   !
   !================================================================================================================================
@@ -2127,8 +2276,13 @@ CONTAINS
               !Set up the matrix
               ALLOCATE(PETSC_MATRIX%DATA_DP(PETSC_MATRIX%DATA_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix data.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+              CALL PETSC_MATCREATEDENSE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
+                & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_MATRIX%DATA_DP,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+#else
               CALL PETSC_MATCREATEMPIDENSE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
                 & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_MATRIX%DATA_DP,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+#endif              
             CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
               PETSC_MATRIX%NUMBER_NON_ZEROS=PETSC_MATRIX%M
               PETSC_MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=1
@@ -2147,9 +2301,15 @@ CONTAINS
               PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS=1
               PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS=0
               !Create the PETsc AIJ matrix
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+              CALL PETSC_MATCREATEAIJ(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
+                & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_NULL_INTEGER,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS, &
+                & PETSC_NULL_INTEGER,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+#else              
               CALL PETSC_MATCREATEMPIAIJ(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
                 & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_NULL_INTEGER,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS, &
                 & PETSC_NULL_INTEGER,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+#endif              
             CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
               CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
@@ -2158,9 +2318,15 @@ CONTAINS
               IF(ALLOCATED(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)) THEN
                 IF(ALLOCATED(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)) THEN
                   !Create the PETSc AIJ matrix
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+                  CALL PETSC_MATCREATEAIJ(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
+                    & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_NULL_INTEGER,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS, &
+                    & PETSC_NULL_INTEGER,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+#else
                   CALL PETSC_MATCREATEMPIAIJ(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
                     & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_NULL_INTEGER,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS, &
                     & PETSC_NULL_INTEGER,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+#endif                  
                   !Set matrix options
                   CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
                   CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
@@ -6009,6 +6175,38 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_VECTOR_CREATE_START")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_VECTOR_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the data type of a distributed vector.
+  SUBROUTINE DistributedVector_DataTypeGet(vector,dataType,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: vector !<A pointer to the distributed vector
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the data type of the vector. \see DISTRIBUTED_MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL enters("DistributedVector_DataTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(vector)) THEN
+      IF(.NOT.vector%vector_finished) THEN
+        CALL flag_error("The vector has not been finished.",err,error,*999)
+      ELSE
+        dataType=vector%data_type
+      END IF
+    ELSE
+      CALL flag_error("Distributed vector is not associated.",err,error,*999)
+    END IF
+
+    CALL exits("DistributedVector_DataTypeGet")
+    RETURN
+999 CALL errors("DistributedVector_DataTypeGet",err,error)
+    CALL exits("DistributedVector_DataTypeGet")
+    RETURN 1
+  END SUBROUTINE DistributedVector_DataTypeGet
 
   !
   !================================================================================================================================
