@@ -571,7 +571,7 @@ CONTAINS
                     interfaceElementMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%ELEMENT_MATRIX
                     DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
                       globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
-                      IF(gaps(dataPointIdx)>ZERO_TOLERANCE) THEN !Only add contact point contribution if the gap is a penetration
+                      IF(gaps(dataPointIdx)>1.0E-10) THEN !Only add contact point contribution if the gap is a penetration
                         localElementNumber=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
                           & coupledMeshElementNumber
                         !Calculate the element index (non-conforming element) for this interface matrix
