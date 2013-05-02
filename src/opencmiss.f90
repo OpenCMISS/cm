@@ -3478,9 +3478,9 @@ MODULE OPENCMISS
   END INTERFACE !CMISSField_ParameterSetUpdateGaussPoint
 
   !>Updates the given parameter set with the given value for a particular data point of a field variable component.
-  INTERFACE CMISSField_ParameterSetUpdateDataPoint
-    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPObj
-  END INTERFACE !CMISSField_ParameterSetUpdateDataPoint
+  INTERFACE CMISSField_ParameterSetUpdateElementDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateElementDataPointDPObj
+  END INTERFACE !CMISSField_ParameterSetUpdateElementDataPoint
 
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSField_ParameterSetUpdateFinish
   INTERFACE CMISSField_ParameterSetUpdateStart
@@ -3650,7 +3650,7 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
   PUBLIC CMISSField_ParameterSetUpdateGaussPoint, CMISSField_ParameterSetGetGaussPoint
 
-  PUBLIC CMISSField_ParameterSetUpdateDataPoint
+  PUBLIC CMISSField_ParameterSetUpdateElementDataPoint
 
   PUBLIC CMISSField_ParameterSetUpdateFinish,CMISSField_ParameterSetUpdateStart
 
@@ -4515,11 +4515,32 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDecomposition_TopologyDataProjectionCalculateObj
   END INTERFACE !CMISSDecomposition_TopologyDataProjectionCalculate
 
+  !>Gets the local data point number for data points projected on an element
+  INTERFACE CMISSDecomposition_TopologyElementDataPointLocalNumberGet
+    MODULE PROCEDURE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj
+  END INTERFACE !CMISSDecomposition_TopologyElementDataPointLocalNumberGet
+
+  !>Gets the user data point number for data points projected on an element
+  INTERFACE CMISSDecomposition_TopologyElementDataPointUserNumberGet
+    MODULE PROCEDURE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj
+  END INTERFACE !CMISSDecomposition_TopologyElementDataPointUserNumberGet
+
+  !>Gets the number of data points projected on an element
+  INTERFACE CMISSDecomposition_TopologyNumberOfElementDataPointsGet
+    MODULE PROCEDURE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj
+  END INTERFACE !CMISSDecomposition_TopologyNumberOfElementDataPointsGet
+
   PUBLIC CMISS_DECOMPOSITION_ALL_TYPE,CMISS_DECOMPOSITION_CALCULATED_TYPE,CMISS_DECOMPOSITION_USER_DEFINED_TYPE
 
   PUBLIC CMISSDecomposition_CreateFinish,CMISSDecomposition_CreateStart
 
   PUBLIC CMISSDecomposition_TopologyDataProjectionCalculate
+
+  PUBLIC CMISSDecomposition_TopologyElementDataPointLocalNumberGet
+
+  PUBLIC CMISSDecomposition_TopologyElementDataPointUserNumberGet
+
+  PUBLIC CMISSDecomposition_TopologyNumberOfElementDataPointsGet
 
   PUBLIC CMISSDecomposition_Destroy
 
@@ -30391,31 +30412,33 @@ CONTAINS
   !================================================================================================================================
   !
   !>Updates the given parameter set with the given double precision value for the element data point of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj(field,variableType,fieldSetType,dataPointNumber,componentNumber,value,err)
+  SUBROUTINE CMISSField_ParameterSetUpdateElementDataPointDPObj(field,variableType,fieldSetType,elementNumber,dataPointIndex, &
+       & componentNumber,value,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The user data point number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The user element number to update the data point for.
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The index of the data point for the data points projected on this element.
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
     REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error,*999)
+    CALL ENTERS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error,*999)
 
-    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,dataPointNumber,&
-    & componentNumber,value,err,error,*999)
+    CALL Field_ParameterSetUpdateElementDataPoint(field%FIELD,variableType,fieldSetType,elementNumber,&
+    & dataPointIndex,componentNumber,value,err,error,*999)
 
-    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
     RETURN
-999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error)
-    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+999 CALL ERRORS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj
+  END SUBROUTINE CMISSField_ParameterSetUpdateElementDataPointDPObj
 
   !
   !================================================================================================================================
@@ -36045,6 +36068,106 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the local data point number for data points projected on an element
+  SUBROUTINE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj(decomposition,elementNumber,dataPointIndex, &
+       & dataPointLocalNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
+    INTEGER(INTG), INTENT(OUT) :: dataPointLocalNumber !<The data point local number to retu
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
+
+    CALL DecompositionTopology_ElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+     & dataPointLocalNumber,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the user data point number for data points projected on an element
+  SUBROUTINE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj(decomposition,elementNumber,dataPointIndex, &
+       & dataPointUserNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
+    INTEGER(INTG), INTENT(OUT) :: dataPointUserNumber !<The data point user number to retu
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
+
+    CALL DecompositionTopology_ElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+     & dataPointUserNumber,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointUserNumberGetObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of data points projected on an element
+  SUBROUTINE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj(decomposition,elementNumber,numberOfDataPoints,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(OUT) :: numberOfDataPoints !<The data point local number to return
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
+
+    CALL DecompositionTopology_NumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
+     & numberOfDataPoints,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj
 
   !
   !================================================================================================================================

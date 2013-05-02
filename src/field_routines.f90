@@ -466,9 +466,9 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP
   END INTERFACE !FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
 
-  INTERFACE Field_ParameterSetUpdateDataPoint
-    MODULE PROCEDURE Field_ParameterSetUpdateDataPointDP
-  END INTERFACE !Field_ParameterSetUpdateDataPoint
+  INTERFACE Field_ParameterSetUpdateElementDataPoint
+    MODULE PROCEDURE Field_ParameterSetUpdateElementDataPointDP
+  END INTERFACE !Field_ParameterSetUpdateElementDataPoint
 
   !>Finds and returns a field identified by a user number. If no field  with that number exits field is left nullified.
   INTERFACE FIELD_USER_NUMBER_FIND
@@ -631,7 +631,7 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT, &
     & FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT,FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE, &
-    & FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT,Field_ParameterSetUpdateDataPoint
+    & FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT,Field_ParameterSetUpdateElementDataPoint
 
   PUBLIC FIELD_PARAMETER_SET_VECTOR_GET
 
@@ -18813,21 +18813,22 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Updates the given parameter set with the given double precision value for a particular data point of the field variable component.  \see CMISSFieldParameterSetUpdateDataPoint
-  SUBROUTINE Field_ParameterSetUpdateDataPointDP(field,variableType,fieldSetType,dataPointNumber,&
+  !>Updates the given parameter set with the given double precision value for a particular data point of the field variable component.  \see CMISSFieldParameterSetUpdateElementDataPoint
+  SUBROUTINE Field_ParameterSetUpdateElementDataPointDP(field,variableType,fieldSetType,userElementNumber,dataPointIndex, &
   & componentNumber,value,err,error,*)
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to update
     INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The gauss point number to update
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number the data point is projected on
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The index of the data point projected on the element
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The field variable component to update
     REAL(DP), INTENT(IN) :: value !<The value to update to
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: userElementNumber,decompositionLocalElementNumber,dofIdx
+    INTEGER(INTG) :: decompositionLocalElementNumber,dataPointLocalNumber,dofIdx
     LOGICAL :: ghostElement,userElementExists
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
@@ -18836,7 +18837,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Field_ParameterSetUpdateDataPointDP",err,error,*999)
+    CALL ENTERS("Field_ParameterSetUpdateElementDataPointDP",err,error,*999)
 
     IF(ASSOCIATED(field)) THEN
       IF(field%FIELD_FINISHED) THEN
@@ -18887,7 +18888,9 @@ CONTAINS
                           dataProjection=>field%dataProjection
                           IF(ASSOCIATED(dataProjection)) THEN
                             ! Use element topology to check if data point is on current computational node
-                            userElementNumber = dataProjection%data_projection_results(dataPointNumber)%element_number
+                            ! userElementNumber = dataProjection%data_projection_results(dataPointUserNumber)%element_number
+                            ! CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+                            !   & userElementExists,decompositionLocalElementNumber,ghostElement,err,error,*999)
                             CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
                               & userElementExists,decompositionLocalElementNumber,ghostElement,err,error,*999)
                             IF(userElementExists) THEN
@@ -18896,15 +18899,17 @@ CONTAINS
                                   & TRIM(NUMBER_TO_VSTRING(userElementNumber,"*",err,error))//" as it is a ghost element."
                                 CALL FLAG_ERROR(localError,err,error,*999)
                               ELSE
-                                IF(dataPointNumber >= 1 .AND. dataPointNumber <= fieldVariable% &
+                                dataPointLocalNumber = decompositionTopology%dataPoints% &
+                                  & elementDataPoint(decompositionLocalElementNumber)%dataIndices(dataPointIndex)%localNumber
+                                IF(dataPointLocalNumber >= 1 .AND. dataPointLocalNumber <= fieldVariable% &
                                   & COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
                                   & NUMBER_OF_DATA_POINT_PARAMETERS) THEN
                                   dofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
-                                    & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointNumber)
+                                    & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
                                   CALL DISTRIBUTED_VECTOR_VALUES_SET(parameterSet%PARAMETERS,dofIdx,value,err,error,*999)
                                 ELSE
-                                  localError="The specified data point number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(dataPointNumber,"*",err,error))// &
+                                  localError="The specified data point index "// &
+                                    & TRIM(NUMBER_TO_VSTRING(dataPointLocalNumber,"*",err,error))// &
                                     & " is not within the expected range."
                                   CALL FLAG_ERROR(localError,err,error,*999)
                                 ENDIF
@@ -18978,12 +18983,12 @@ CONTAINS
       CALL FLAG_ERROR("Field is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Field_ParameterSetUpdateDataPointDP")
+    CALL EXITS("Field_ParameterSetUpdateElementDataPointDP")
     RETURN
-999 CALL ERRORS("Field_ParameterSetUpdateDataPointDP",err,error)
-    CALL EXITS("Field_ParameterSetUpdateDataPointDP")
+999 CALL ERRORS("Field_ParameterSetUpdateElementDataPointDP",err,error)
+    CALL EXITS("Field_ParameterSetUpdateElementDataPointDP")
     RETURN 1
-  END SUBROUTINE Field_ParameterSetUpdateDataPointDP
+  END SUBROUTINE Field_ParameterSetUpdateElementDataPointDP
 
   !
   !================================================================================================================================
