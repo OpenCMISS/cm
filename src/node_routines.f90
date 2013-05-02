@@ -867,6 +867,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     INTEGER(INTG) :: nodeIdx,insertStatus
+    TYPE(VARYING_STRING) :: localError
     
     CALL ENTERS("Nodes_AllUserNumbersSet",err,error,*999)
 
@@ -880,11 +881,20 @@ CONTAINS
           CALL TREE_INSERT_TYPE_SET(nodes%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,err,error,*999)
           CALL TREE_CREATE_FINISH(nodes%NODES_TREE,err,error,*999)
           DO nodeIdx=1,nodes%NUMBER_OF_NODES
-            nodes%NODES(nodeIdx)%GLOBAL_NUMBER=nodeIdx
-            nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
-            nodes%NODES(nodeIdx)%LABEL=""
-            CALL TREE_ITEM_INSERT(nodes%NODES_TREE,userNumbers(nodeIdx),nodeIdx,insertStatus,err,error,*999)
-            nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
+            IF(userNumbers(nodeIdx)>0) THEN
+              nodes%NODES(nodeIdx)%GLOBAL_NUMBER=nodeIdx
+              nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
+              nodes%NODES(nodeIdx)%LABEL=""
+              CALL TREE_ITEM_INSERT(nodes%NODES_TREE,userNumbers(nodeIdx),nodeIdx,insertStatus,err,error,*999)
+              IF(insertStatus/=TREE_NODE_INSERT_SUCESSFUL) THEN
+                localError="The user number for global node of "//TRIM(NUMBER_TO_VSTRING(nodeIdx,"*",err,error))// &
+                  & " is duplicated. The user node numbers must be unique."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              ENDIF
+              nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
+            ELSE
+              CALL FLAG_ERROR("User node numbers cannot be negative.",err,error,*999)
+            ENDIF
           ENDDO !nodeIdx
         ELSE
           CALL FLAG_ERROR("Number of node user numbers input does not match number of nodes.",err,error,*999)
