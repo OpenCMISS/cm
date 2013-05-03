@@ -13026,6 +13026,9 @@ CONTAINS
                         CALL PETSC_SNESSETFUNCTION(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
                           & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
                           & ERR,ERROR,*999)
+                        CALL PETSC_SNESSETCONVERGENCETEST(LINESEARCH_SOLVER%SNES,PROBLEM_SOLVER_CONVERGENCE_TEST_PETSC, &
+                          & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
+                            & ERR,ERROR,*999)
                       ELSE
                         CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                       ENDIF

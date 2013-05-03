@@ -3632,6 +3632,10 @@ SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
 
 END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
 
+!
+!================================================================================================================================
+!
+
 !>Called from the PETSc SNES solvers to test convergence for a Newton like nonlinear solver
 SUBROUTINE PROBLEM_SOLVER_CONVERGENCE_TEST_PETSC(SNES,ITER,XNORM,GNORM,FNORM,REASON,CTX,ERR)
 
