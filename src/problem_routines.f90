@@ -3668,7 +3668,6 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
   TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
   TYPE(SOLVER_MATRIX_TYPE), POINTER :: solverMatrix
-  TYPE(PetscSnesLinesearchType), POINTER :: lineSearch
   REAL(DP) :: solverVectorValue,residualVectorValue,energy
   INTEGER(INTG) :: vectorIdx
   TYPE(VARYING_STRING) :: error,localError
@@ -3689,7 +3688,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
                 IF(ASSOCIATED(solverVector)) THEN
                   residualVector=>solverMatrices%RESIDUAL
                   IF(ASSOCIATED(residualVector)) THEN
-                    CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
+                    CALL SNESLineSearchGetVecs(newtonSolver%LINESEARCH_SOLVER%snesLineSearch,x%VEC,f%VEC,y%VEC,w%VEC,g%VEC,err)
                     energy=0.0_DP
                     DO vectorIdx=1,residualVector%PETSC%N
                       CALL DISTRIBUTED_VECTOR_VALUES_GET(residualVector,vectorIdx,residualVectorValue,err,error,*999)
