@@ -1059,8 +1059,8 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESSetType
 
-    SUBROUTINE SNESLineSearchGetVecs(snes,x,f,y,w,g,ierr)
-      SNES snes
+    SUBROUTINE SNESLineSearchGetVecs(linesearch,x,f,y,w,g,ierr)
+      SNESLineSearch linesearch
       Vec x
       Vec f
       Vec y
@@ -1590,7 +1590,7 @@ MODULE CMISS_PETSC
     & PETSC_SNESGETKSP,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
     & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,PETSC_SNESSETKSP, &
     & PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN,PETSC_SNESSETCONVERGENCETEST, &
-    & PETSC_SNESLINESEARCHGETVECS,PETSC_SNESSETNORMTYPE
+    & Petsc_SnesLineSearchGetVecs,PETSC_SNESSETNORMTYPE
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
   PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
@@ -4724,8 +4724,8 @@ CONTAINS
   SUBROUTINE PETSC_SNESSETCONVERGENCETEST(SNES_,CFUNCTION,CTX,ERR,ERROR,*)
     !Argument Variables
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    EXTERNAL CFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    EXTERNAL CFUNCTION !<The external function to call (OpenCMISS subroutine to calculate convergence
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the convergence test function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -5076,35 +5076,35 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc SNESLineSearchGetVecs routine.
-  SUBROUTINE PETSC_SNESLINESEARCHGETVECS(SNES_,X,F,Y,W,G,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the vectors from the SNESLineSearch
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The The old solution 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The old function 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: Y !<The search direction 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: W !<The new solution 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G !<The new function 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The PetcsSnesLineSearch to get the vectors from the SNESLineSearch
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: x !<The The old solution 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: f !<The old function 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: y !<The search direction 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: w !<The new solution 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: g !<The new function 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_SNESLINESEARCHGETVECS",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_SnesLineSearchGetVecs",err,error,*999)
 
-    CALL SNESLineSearchGetVecs(SNES_%SNES_,X%VEC,F%VEC,Y%VEC,W%VEC,G%VEC,ERR)
-    IF(ERR/=0) THEN
+    CALL SNESLineSearchGetVecs(lineSearch%snesLineSearch,x%VEC,f%VEC,y%VEC,w%VEC,g%VEC,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchGetVecs",ERR,ERROR,*999)
+      CALL FLAG_ERROR("PETSc error in SNESLineSearchGetVecs",err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_SNESLINESEARCHGETVECS")
+    CALL EXITS("Petsc_SnesLineSearchGetVecs")
     RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHGETVECS",ERR,ERROR)
-    CALL EXITS("PETSC_SNESLINESEARCHGETVECS")
+999 CALL ERRORS("Petsc_SnesLineSearchGetVecs",err,error)
+    CALL EXITS("Petsc_SnesLineSearchGetVecs")
     RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHGETVECS
+  END SUBROUTINE Petsc_SnesLineSearchGetVecs
 
   !
   !================================================================================================================================
