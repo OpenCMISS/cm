@@ -323,7 +323,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   
   PUBLIC DISTRIBUTED_VECTOR_VALUES_ADD
 
-  PUBLIC DistributedVector_L2Norm
+  PUBLIC DistributedVector_L2Norm,DistributedVector_VecDot
 
   PUBLIC DISTRIBUTED_VECTOR_VALUES_GET,DISTRIBUTED_VECTOR_VALUES_SET
 
@@ -8081,6 +8081,90 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DistributedVector_L2Norm
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the dot product of 2 distributed vectors on this computational node
+  SUBROUTINE DistributedVector_VecDot(distributedVectorA,distributedVectorB,dotProduct,err,error,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), INTENT(IN), POINTER :: distributedVectorA !<A pointer to the distributed vector A
+    TYPE(DISTRIBUTED_VECTOR_TYPE), INTENT(IN), POINTER :: distributedVectorB !<A pointer to the distributed vector B
+    REAL(DP), INTENT(OUT) :: dotProduct !<The dotProduct this computational node
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dataTypeA,dataTypeB,i
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("DistributedVector_VecDot",err,error,*999)
+
+    IF(ASSOCIATED(distributedVectorA) .AND. ASSOCIATED(distributedVectorB)) THEN
+      IF(distributedVectorA%VECTOR_FINISHED .AND. distributedVectorB%VECTOR_FINISHED) THEN
+        IF (distributedVectorA%LIBRARY_TYPE==distributedVectorB%LIBRARY_TYPE) THEN
+          CALL DistributedVector_DataTypeGet(distributedVectorA,dataTypeA,err,error,*999)
+          CALL DistributedVector_DataTypeGet(distributedVectorB,dataTypeB,err,error,*999)
+          IF(dataTypeA==dataTypeB) THEN
+            SELECT CASE(distributedVectorA%LIBRARY_TYPE)
+            CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+              IF(ASSOCIATED(distributedVectorA%CMISS)) THEN
+                IF(distributedVectorA%CMISS%DATA_SIZE==distributedVectorB%CMISS%DATA_SIZE) THEN
+                  SELECT CASE(distributedVectorA%DATA_TYPE)
+                  CASE(MATRIX_VECTOR_DP_TYPE)
+                    dotProduct=0.0_DP
+                    DO i=1,distributedVectorA%CMISS%DATA_SIZE
+                      dotProduct=dotProduct+(distributedVectorA%CMISS%DATA_DP(i)*distributedVectorB%CMISS%DATA_DP(i))
+                    ENDDO !i
+                  CASE(MATRIX_VECTOR_SP_TYPE)
+                    CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                  CASE(MATRIX_VECTOR_INTG_TYPE)
+                    CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                  CASE(MATRIX_VECTOR_L_TYPE)
+                    CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                  CASE DEFAULT
+                    localError="The distributed data type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(distributedVectorA%DATA_TYPE,"*",err,error))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(localError,err,error,*999)
+                  END SELECT
+                ELSE
+                  CALL FLAG_ERROR("The distributed vectors do not have the same size.",err,error,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Distributed vector CMISS is not associated.",err,error,*999)
+              ENDIF
+            CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+              IF(ASSOCIATED(distributedVectorA%PETSC)) THEN
+                CALL Petsc_VecDot(distributedVectorA%PETSC%VECTOR,distributedVectorB%PETSC%VECTOR, &
+                  & dotProduct,err,error,*999)
+              ELSE
+                CALL FLAG_ERROR("Distributed vector PETSC is not associated.",err,error,*999)
+              ENDIF
+            CASE DEFAULT
+              localError="The distributed vector library type of "// &
+                & TRIM(NUMBER_TO_VSTRING(distributedVectorA%LIBRARY_TYPE,"*",err,error))//" is invalid."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("The distributed vectors do not have the same data type.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The distributed vectors do not have the same library type.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The distributed vector has not been finished.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed vector is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("DistributedVector_VecDot")
+    RETURN
+999 CALL ERRORS("DistributedVector_VecDot",err,error)
+    CALL EXITS("DistributedVector_VecDot")
+    RETURN 1
+  END SUBROUTINE DistributedVector_VecDot
   !
   !================================================================================================================================
   !

@@ -201,7 +201,16 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED=1 !<The Jacobian values will not be calculated for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED=2 !<The Jacobian values will be calculated analytically for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calculated using finite differences for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
-  !>@}  
+  !>@} 
+  
+  !> \addtogroup SOLVER_ROUTINES_NewtonConvergenceTestTypes SOLVER_ROUTINES::NewtonConvergenceTestTypes
+  !> \brief The convergence test types for a nonlinear solver 
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT=1 !<Petsc default convergence test \see SOLVER_ROUTINES_NewtonConvergenceTestTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM=2 !<Energy norm convergence test \see SOLVER_ROUTINES_NewtonConvergenceTestTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO=3 !<Sum of differentiated ratios of unconstrained to constrained residuals convergence test \see SOLVER_ROUTINES_NewtonConvergenceTestTypes,SOLVER_ROUTINES
+  !>@}
 
   !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
   !> \brief The order types for a dynamic solver 
@@ -401,6 +410,9 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED,SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED, &
     & SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
+
+  PUBLIC SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT,SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM, &
+    & SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
   
   PUBLIC SOLVER_DYNAMIC_LINEAR,SOLVER_DYNAMIC_NONLINEAR,SOLVER_DYNAMIC_LINEARITY_TYPE_SET
 
@@ -539,6 +551,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_NEWTON_LINEAR_SOLVER_GET
 
   PUBLIC SOLVER_NEWTON_CELLML_SOLVER_GET
+
+  PUBLIC Solver_NewtonConvergenceTestTypeSet
 
   PUBLIC SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET
 
@@ -12454,12 +12468,14 @@ CONTAINS
           NONLINEAR_SOLVER%NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=50
           NONLINEAR_SOLVER%NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS=1000
           NONLINEAR_SOLVER%NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
+          NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT
           NONLINEAR_SOLVER%NEWTON_SOLVER%ABSOLUTE_TOLERANCE=1.0E-10_DP
           NONLINEAR_SOLVER%NEWTON_SOLVER%RELATIVE_TOLERANCE=1.0E-05_DP
           NONLINEAR_SOLVER%NEWTON_SOLVER%SOLUTION_TOLERANCE=1.0E-05_DP
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%LINESEARCH_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%TRUSTREGION_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER)
+          NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest)
           !Default to a Newton linesearch solver
           NONLINEAR_SOLVER%NEWTON_SOLVER%NEWTON_SOLVE_TYPE=SOLVER_NEWTON_LINESEARCH
           CALL SOLVER_NEWTON_LINESEARCH_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
@@ -12796,6 +12812,72 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Sets/changes the convergence test for a Newton nonlinear solver \see OPENCMISS::CMISSSolverNewtonConvergenceTestSet
+  SUBROUTINE Solver_NewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the convergence test for
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: newtonSolver 
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("Solver_NewtonConvergenceTestTypeSet",err,error,*999)
+
+    IF(ASSOCIATED(solver)) THEN
+      IF(solver%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
+      ELSE
+        IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+          nonlinearSolver=>solver%NONLINEAR_SOLVER
+          IF(ASSOCIATED(nonlinearSolver)) THEN
+            IF(nonlinearSolver%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              newtonSolver=>nonlinearSolver%NEWTON_SOLVER
+              IF(ASSOCIATED(newtonSolver)) THEN
+                SELECT CASE(convergenceTestType)
+                CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
+                  newtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT
+                CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
+                  newtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM
+                CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
+                  newtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
+                CASE DEFAULT
+                  localError="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(convergenceTestType, &
+                    & "*",err,error))//" is invalid."
+                  CALL FLAG_ERROR(localError,err,error,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("Solver_NewtonConvergenceTestTypeSet")
+    RETURN
+999 CALL ERRORS("Solver_NewtonConvergenceTestTypeSet",ERR,ERROR)    
+    CALL EXITS("Solver_NewtonConvergenceTestTypeSet")
+    RETURN 1
+   
+  END SUBROUTINE Solver_NewtonConvergenceTestTypeSet
+
+  !
+  !================================================================================================================================
+  !
 
   !>Sets/changes the line search alpha for a Newton linesearch solver \todo should this be SOLVER_NONLINEAR_NEWTON_LINESEARCH_ALPHA_SET??? \see OPENCMISS::CMISSSolverNewtonLineSearchAlphaSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,LINESEARCH_ALPHA,ERR,ERROR,*)
@@ -13026,8 +13108,22 @@ CONTAINS
                         CALL PETSC_SNESSETFUNCTION(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
                           & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
                           & ERR,ERROR,*999)
-                        CALL PETSC_SNESSETCONVERGENCETEST(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
-                          & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
+                        SELECT CASE(LINESEARCH_SOLVER%NEWTON_SOLVER%convergenceTestType)
+                        CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
+                          !Default convergence test, do nothing
+                        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
+                          CALL PETSC_SNESSETCONVERGENCETEST(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
+                            & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
+                          ALLOCATE(LINESEARCH_SOLVER%NEWTON_SOLVER%convergenceTest,STAT=ERR)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate convergence test object.",ERR,ERROR,*999)
+                        CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
+                          CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals &
+                            &  convergence test type is not implemented.",ERR,ERROR,*999)
+                        CASE DEFAULT
+                          LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
+                            & NEWTON_SOLVER%convergenceTestType,"*",err,error))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
                       ELSE
                         CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                       ENDIF

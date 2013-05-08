@@ -2509,6 +2509,11 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
   END TYPE NEWTON_TRUSTREGION_SOLVER_TYPE
 
+  !>Contains information about the convergence test for a newton solver
+  TYPE NewtonSolverConvergenceTest
+    REAL(DP) :: energyFirstIter !<The energy for the first iteration
+  END TYPE NewtonSolverConvergenceTest
+
   !>Contains information for a Newton nonlinear solver
   TYPE NEWTON_SOLVER_TYPE
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
@@ -2519,9 +2524,11 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS !<The maximum number of function evaluations
     INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of calculation used for the Jacobian \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: convergenceTestType !<The type of convergence test \see SOLVER_ROUTINES_NewtonConvergenceTestTypes,SOLVER_ROUTINES
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The tolerance between the absolute decrease between the solution norm and the initial guess
     REAL(DP) :: RELATIVE_TOLERANCE !<The tolerance between the relative decrease between the solution norm and the initial guess
     REAL(DP) :: SOLUTION_TOLERANCE !<The tolerance of the change in the norm of the solution
+    TYPE(NewtonSolverConvergenceTest), POINTER :: convergenceTest !<A pointer to the newton solver convergence test 
     TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Newton line search solver information
     TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Newton trust region solver information
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver

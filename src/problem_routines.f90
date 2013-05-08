@@ -3641,7 +3641,6 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
 
   USE BASE_ROUTINES
   USE CMISS_PETSC_TYPES
-  USE CMISS_PETSC
   USE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_VARYING_STRING
   USE KINDS
@@ -3662,15 +3661,11 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
   INTEGER(INTG), INTENT(INOUT) :: err !<The error code
   !Local Variables
-  TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: residualVector,solverVector
+  TYPE(PETSC_VEC_TYPE) :: x,f,y,w,g
   TYPE(NEWTON_SOLVER_TYPE), POINTER :: newtonSolver
   TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
-  TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
-  TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
-  TYPE(SOLVER_MATRIX_TYPE), POINTER :: solverMatrix
-  TYPE(PetscSnesLinesearchType), POINTER :: lineSearch
-  REAL(DP) :: solverVectorValue,residualVectorValue,energy
-  INTEGER(INTG) :: vectorIdx
+  TYPE(PetscSnesLinesearchType) :: lineSearch
+  REAL(DP) :: energy,normalisedEnergy
   TYPE(VARYING_STRING) :: error,localError
 
   IF(ASSOCIATED(ctx)) THEN
@@ -3678,48 +3673,36 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
     IF(ASSOCIATED(nonlinearSolver)) THEN
       newtonSolver=>nonlinearSolver%NEWTON_SOLVER
       IF(ASSOCIATED(newtonSolver)) THEN
-        solverEquations=>ctx%SOLVER_EQUATIONS
-        IF(ASSOCIATED(solverEquations)) THEN
-          solverMatrices=>solverEquations%SOLVER_MATRICES
-          IF(ASSOCIATED(solverMatrices)) THEN
-            IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
-              solverMatrix=>solverMatrices%MATRICES(1)%PTR
-              IF(ASSOCIATED(solverMatrix)) THEN
-                solverVector=>solverMatrix%SOLVER_VECTOR
-                IF(ASSOCIATED(solverVector)) THEN
-                  residualVector=>solverMatrices%RESIDUAL
-                  IF(ASSOCIATED(residualVector)) THEN
-                    CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
-                    energy=0.0_DP
-                    DO vectorIdx=1,residualVector%PETSC%N
-                      CALL DISTRIBUTED_VECTOR_VALUES_GET(residualVector,vectorIdx,residualVectorValue,err,error,*999)
-                      CALL DISTRIBUTED_VECTOR_VALUES_GET(solverVector,vectorIdx,solverVectorValue,err,error,*999)
-                      energy=energy+residualVectorValue*solverVectorValue
-                    ENDDO
-                    energy=energy
-                    IF(fnorm<newtonSolver%ABSOLUTE_TOLERANCE) THEN
-                      reason=PETSC_SNES_CONVERGED_FNORM_ABS
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Residual vector is not associated.",err,error,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver vector is not associated.",err,error,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver matrix is not associated.",err,error,*999)
-              ENDIF
+        IF(iterationNumber>0) THEN
+          CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
+          CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
+          CALL PETSC_VECINITIALISE(x,err,error,*999)
+          CALL PETSC_VECINITIALISE(f,err,error,*999)
+          CALL PETSC_VECINITIALISE(y,err,error,*999)
+          CALL PETSC_VECINITIALISE(w,err,error,*999)
+          CALL PETSC_VECINITIALISE(g,err,error,*999)
+          CALL Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*999)
+          CALL Petsc_VecDot(y,g,energy,err,error,*999)
+          IF(iterationNumber==1) THEN
+            IF(ABS(energy)<ZERO_TOLERANCE) THEN
+              reason=PETSC_SNES_CONVERGED_FNORM_ABS
             ELSE
-              localError="The number of solver matrices of "// &
-                & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
-                & " is invalid. There should be 1 solver matrix."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              newtonSolver%convergenceTest%energyFirstIter=energy
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver matrices is not associated.",err,error,*999)
+            normalisedEnergy=energy/newtonSolver%convergenceTest%energyFirstIter
+            IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
+              reason=PETSC_SNES_CONVERGED_FNORM_ABS
+            ENDIF
           ENDIF
+          !CALL PETSC_VECFINALISE(x,err,error,*999)
+          !CALL PETSC_VECFINALISE(f,err,error,*999)
+          !CALL PETSC_VECFINALISE(y,err,error,*999)
+          !CALL PETSC_VECFINALISE(w,err,error,*999)
+          !CALL PETSC_VECFINALISE(g,err,error,*999)
+          CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",err,error,*999)
+          newtonSolver%convergenceTest%energyFirstIter=0.0_DP
         ENDIF
       ELSE
         CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",err,error,*999)
