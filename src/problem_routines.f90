@@ -3673,6 +3673,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
     IF(ASSOCIATED(nonlinearSolver)) THEN
       newtonSolver=>nonlinearSolver%NEWTON_SOLVER
       IF(ASSOCIATED(newtonSolver)) THEN
+        reason=PETSC_SNES_CONVERGED_ITERATING
         IF(iterationNumber>0) THEN
           CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
           CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)

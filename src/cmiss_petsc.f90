@@ -895,11 +895,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESDestroy
 
-    SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,ierr)
+    SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,destroy,ierr)
       USE TYPES
       SNES snes
       EXTERNAL cfunction
       TYPE(SOLVER_TYPE), POINTER :: ctx
+      EXTERNAL destroy
       PetscInt ierr
     END SUBROUTINE SNESSetConvergenceTest
 
@@ -4775,7 +4776,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_SNESSETCONVERGENCETEST",ERR,ERROR,*999)
 
-    CALL SNESSetConvergenceTest(SNES_%SNES_,CFUNCTION,CTX,ERR)
+    CALL SNESSetConvergenceTest(SNES_%SNES_,CFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
