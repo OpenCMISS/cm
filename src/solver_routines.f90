@@ -12476,6 +12476,8 @@ CONTAINS
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%TRUSTREGION_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest)
+          ALLOCATE(NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate convergence test object.",ERR,ERROR,*999)
           !Default to a Newton linesearch solver
           NONLINEAR_SOLVER%NEWTON_SOLVER%NEWTON_SOLVE_TYPE=SOLVER_NEWTON_LINESEARCH
           CALL SOLVER_NEWTON_LINESEARCH_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
@@ -13111,14 +13113,9 @@ CONTAINS
                         SELECT CASE(LINESEARCH_SOLVER%NEWTON_SOLVER%convergenceTestType)
                         CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
                           !Default convergence test, do nothing
-                        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
+                        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM,SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
                           CALL PETSC_SNESSETCONVERGENCETEST(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
                             & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
-                          ALLOCATE(LINESEARCH_SOLVER%NEWTON_SOLVER%convergenceTest,STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate convergence test object.",ERR,ERROR,*999)
-                        CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-                          CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals &
-                            &  convergence test type is not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
                             & NEWTON_SOLVER%convergenceTestType,"*",err,error))//" is invalid."

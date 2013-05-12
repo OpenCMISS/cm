@@ -3645,6 +3645,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   USE ISO_VARYING_STRING
   USE KINDS
   USE PROBLEM_ROUTINES
+  USE SOLVER_ROUTINES
   USE STRINGS
   USE TYPES
   USE CMISS_PETSC
@@ -3672,39 +3673,43 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
     nonlinearSolver=>CTX%NONLINEAR_SOLVER
     IF(ASSOCIATED(nonlinearSolver)) THEN
       newtonSolver=>nonlinearSolver%NEWTON_SOLVER
-      IF(ASSOCIATED(newtonSolver)) THEN
+      IF(ASSOCIATED(newtonSolver)) THEN 
         reason=PETSC_SNES_CONVERGED_ITERATING
-        IF(iterationNumber>0) THEN
-          CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
-          CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
-          CALL PETSC_VECINITIALISE(x,err,error,*999)
-          CALL PETSC_VECINITIALISE(f,err,error,*999)
-          CALL PETSC_VECINITIALISE(y,err,error,*999)
-          CALL PETSC_VECINITIALISE(w,err,error,*999)
-          CALL PETSC_VECINITIALISE(g,err,error,*999)
-          CALL Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*999)
-          CALL Petsc_VecDot(y,g,energy,err,error,*999)
-          IF(iterationNumber==1) THEN
-            IF(ABS(energy)<ZERO_TOLERANCE) THEN
-              reason=PETSC_SNES_CONVERGED_FNORM_ABS
+        SELECT CASE(newtonSolver%convergenceTestType)
+        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM) 
+          IF(iterationNumber>0) THEN
+            CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
+            CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
+            CALL PETSC_VECINITIALISE(x,err,error,*999)
+            CALL PETSC_VECINITIALISE(f,err,error,*999)
+            CALL PETSC_VECINITIALISE(y,err,error,*999)
+            CALL PETSC_VECINITIALISE(w,err,error,*999)
+            CALL PETSC_VECINITIALISE(g,err,error,*999)
+            CALL Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*999)
+            CALL Petsc_VecDot(y,g,energy,err,error,*999)
+            IF(iterationNumber==1) THEN
+              IF(ABS(energy)<ZERO_TOLERANCE) THEN
+                reason=PETSC_SNES_CONVERGED_FNORM_ABS
+              ELSE
+                newtonSolver%convergenceTest%energyFirstIter=energy
+              ENDIF
             ELSE
-              newtonSolver%convergenceTest%energyFirstIter=energy
+              normalisedEnergy=energy/newtonSolver%convergenceTest%energyFirstIter
+              IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
+                reason=PETSC_SNES_CONVERGED_FNORM_ABS
+              ENDIF
             ENDIF
+            CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
           ELSE
-            normalisedEnergy=energy/newtonSolver%convergenceTest%energyFirstIter
-            IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
-              reason=PETSC_SNES_CONVERGED_FNORM_ABS
-            ENDIF
+            newtonSolver%convergenceTest%energyFirstIter=0.0_DP
           ENDIF
-          !CALL PETSC_VECFINALISE(x,err,error,*999)
-          !CALL PETSC_VECFINALISE(f,err,error,*999)
-          !CALL PETSC_VECFINALISE(y,err,error,*999)
-          !CALL PETSC_VECFINALISE(w,err,error,*999)
-          !CALL PETSC_VECFINALISE(g,err,error,*999)
-          CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
-        ELSE
-          newtonSolver%convergenceTest%energyFirstIter=0.0_DP
-        ENDIF
+        CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
+          CALL FLAG_ERROR("Differentiated ratio convergence test not implemented.",err,error,*999)
+        CASE DEFAULT
+          localError="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING( &
+            & newtonSolver%convergenceTestType,"*",err,error))//" is invalid."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
       ELSE
         CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",err,error,*999)
       ENDIF

@@ -5402,7 +5402,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED = SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED !<The Jacobian values will not be calculated for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED = SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED !<The Jacobian values will be calculated analytically for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
-  !>@{
+  !>@}
   !> \addtogroup OPENCMISS_NewtonConvergenceTypes OPENCMISS::Solver::NewtonConvergenceTypes
   !> \brief The convergence test types for a nonlinear newton solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
