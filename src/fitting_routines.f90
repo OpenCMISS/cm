@@ -435,7 +435,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,ms,nh,nhs,ns,mi,ni
-    REAL(DP) :: RWG,SUM
+    REAL(DP) :: RWG,SUM,jacobianGaussWeight
     REAL(DP) :: PGM,PGN,PGMSI(3),PGNSI(3)
     REAL(DP) :: U_VALUE(3)
     TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
@@ -666,6 +666,9 @@ CONTAINS
             TAU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
             KAPPA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
             !Loop over field components
+            jacobianGaussWeight=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+              & QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+
             mhs=0          
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
               !Loop over element rows
@@ -712,7 +715,7 @@ CONTAINS
                         & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng)))
 
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
-                        & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM
+                        & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * jacobianGaussWeight
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF ! update matrix
