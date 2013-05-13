@@ -568,6 +568,8 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+            ! Do nothing
           CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Set start action
@@ -4265,12 +4267,15 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE,boundaryConditionsVariable
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(FIELD_TYPE), POINTER ::  ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_TYPE), POINTER ::  dependentField
+    TYPE(FIELD_TYPE), POINTER ::  independentField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: ANALYTIC_VARIABLE,FIELD_VARIABLE,GEOMETRIC_VARIABLE,MATERIALS_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: dependentFieldVariable,independentFieldVariable
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES,domainNodes
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_TIME_LOOP
@@ -4288,14 +4293,23 @@ CONTAINS
     REAL(DP), POINTER :: TIME !<The time to evaluate at
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
     REAL(DP), POINTER :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
+    REAL(DP), ALLOCATABLE :: nodeData(:,:)
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
+    INTEGER(INTG) :: meshUserNumberVelocity,componentNumberVelocity
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx
 !    INTEGER(INTG) :: component_idx,node_idx,NUMBER_OF_DIMENSIONS,variable_type
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
     INTEGER(INTG) :: NDOFS_TO_PRINT
+    INTEGER(INTG) :: dependentVariableType,independentVariableType
+    INTEGER(INTG) :: numberOfNodes,numberOfDimensions,currentLoopIteration,numberOfGlobalNodes
+    INTEGER(INTG) :: nodeIdx,componentIdx,boundaryConditionCheckVariable,reason
+    INTEGER(INTG) :: dependentDof,independentDof,computationalNode,userNodeNumber,localNodeNumber
+    INTEGER(INTG) :: localDof,globalDof
+    LOGICAL :: ghostNode,nodeExists,importDataFromFile
+    CHARACTER(41) :: inputFile,tempString1,tempString2
 
     CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
 
@@ -4314,6 +4328,99 @@ CONTAINS
               EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
               IF(ASSOCIATED(EQUATIONS)) THEN
                 EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+
+                !TODO implement non-analytic time-varying boundary conditions (i.e. from file)
+                ! Fitting boundary condition
+                IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN                
+                  !Read in field values to independent field
+                  NULLIFY(independentFieldVariable)
+                  NULLIFY(dependentFieldVariable)
+                  independentField=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                  dependentField=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                  independentVariableType=independentField%VARIABLES(1)%VARIABLE_TYPE
+                  CALL FIELD_VARIABLE_GET(independentField,FIELD_U_VARIABLE_TYPE,independentFieldVariable,ERR,ERROR,*999)
+                  dependentVariableType=dependentField%VARIABLES(1)%VARIABLE_TYPE
+                  CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,dependentFieldVariable,ERR,ERROR,*999)
+                  CALL BOUNDARY_CONDITIONS_VARIABLE_GET(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                    & dependentFieldVariable,boundaryConditionsVariable,ERR,ERROR,*999)
+                  !Read in field data from file
+                  !Loop over nodes and update independent field values - if a fixed fitted boundary, also update dependent
+                  IF(ASSOCIATED(independentField)) THEN
+                    meshUserNumberVelocity = 1
+                    componentNumberVelocity = 1
+                    numberOfDimensions = 3
+                    ! Get the nodes on this computational domain
+                    IF(independentFieldVariable%COMPONENTS(componentNumberVelocity)%INTERPOLATION_TYPE== &
+                      & FIELD_NODE_BASED_INTERPOLATION) THEN
+                      domain=>independentFieldVariable%COMPONENTS(componentNumberVelocity)%DOMAIN
+                      IF(ASSOCIATED(domain)) THEN
+                        IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                          domainNodes=>domain%TOPOLOGY%NODES
+                          IF(ASSOCIATED(domainNodes)) THEN
+                            numberOfNodes = domainNodes%NUMBER_OF_NODES
+                            numberOfGlobalNodes = domainNodes%NUMBER_OF_GLOBAL_NODES
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                    ENDIF
+
+                    ! Construct the filename based on the computational node and time step
+                    currentLoopIteration=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    computationalNode=COMPUTATIONAL_NODE_NUMBER_GET(err,error)
+                    WRITE(tempString1,"(I4.4)") currentLoopIteration
+                    inputFile = './interpolatedData/fitData' // tempString1(1:4) // '.dat'
+
+                    INQUIRE(FILE=inputFile, EXIST=importDataFromFile)
+                    IF(importDataFromFile) THEN
+                      !Read fitted data from input file (if exists)
+                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Updating independent field and boundary nodes from "//inputFile, &
+                       & ERR,ERROR,*999)
+                      ALLOCATE(nodeData(numberOfGlobalNodes,numberOfDimensions))
+                      OPEN(UNIT=10, FILE=inputFile, STATUS='OLD')                  
+                      DO nodeIdx=1,numberOfGlobalNodes
+                        READ(10,*) (nodeData(nodeIdx,componentIdx), componentIdx=1,numberOfDimensions)
+                      ENDDO
+
+                      !Loop over local nodes and update independent field and (and dependent field for any FixedFitted nodes)
+                      DO nodeIdx=1,numberOfNodes
+                        userNodeNumber=domainNodes%NODES(nodeIdx)%USER_NUMBER
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(domain%Topology,userNodeNumber,nodeExists,localNodeNumber, &
+                             & ghostNode,err,error,*999)
+                        IF(nodeExists .AND. .NOT. ghostNode) THEN
+                          DO componentIdx=1,numberOfDimensions
+                            dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                              & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                            independentDof = independentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                              & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                            VALUE = nodeData(userNodeNumber,componentIdx)
+                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,independentVariableType, &
+                              & FIELD_VALUES_SET_TYPE,independentDof,VALUE,ERR,ERROR,*999)
+                            CALL FIELD_COMPONENT_DOF_GET_USER_NODE(dependentField,dependentVariableType,1,1,userNodeNumber, & 
+                              & componentIdx,localDof,globalDof,err,error,*999)
+                            boundaryConditionCheckVariable=boundaryConditionsVariable%CONDITION_TYPES(globalDof)
+                            IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FixedFitted) THEN
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,dependentVariableType, &
+                                & FIELD_VALUES_SET_TYPE,localDof,VALUE,ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO !componentIdx
+                        ENDIF ! ghost/exist check
+                      ENDDO !nodeIdx
+                      DEALLOCATE(nodeData)
+                    ENDIF !check import file exists
+                  ELSE
+                    CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+                
+                ! Analytic equations
                 IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                   !Standard analytic functions
                   IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN.OR. &
@@ -4725,7 +4832,6 @@ CONTAINS
                   ENDIF !Standard/unit analytic subtypes
 
                 ENDIF
-!TODO implement non-analytic time-varying boundary conditions (i.e. from file)
               ELSE
                 CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
               END IF
@@ -6961,6 +7067,7 @@ CONTAINS
     INTEGER(INTG) :: dimensionIdx,derivativeIdx,versionIdx,gaussIdx,parameterIdx,elementNodeIdx
     INTEGER(INTG) :: fieldVariableType,meshComponent1
     INTEGER(INTG) :: nodeNumber,numberOfDimensions,local_ny
+    INTEGER(INTG) :: numberOfLines,elementLineIdx,lineNumber
     REAL(DP) :: muParameter,rhoParameter,alphaParameter,lengthScale,reynoldsNumber,pecletNumber
     REAL(DP) :: magnitudeVelocitySUPG,maxVelocitySUPG,lineLength
     REAL(DP) :: X1(3),X2(3),velocityGauss(3),velocityGaussSUPG(3)
@@ -7025,40 +7132,13 @@ CONTAINS
                   & geometricParameters,err,error,*999)
                 numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
 
-                !Loop over element nodes
-                DO elementNodeIdx=1,geometricBasis%NUMBER_OF_NODES
-                  nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                   & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_NODES(elementNodeIdx)
-                  domain=>geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
-                  IF(ASSOCIATED(domain)) THEN
-                    IF(ASSOCIATED(domain%TOPOLOGY)) THEN
-                      domainNodes=>domain%TOPOLOGY%NODES
-                      !Loop over the derivatives
-                      DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
-                        !Loop over versions
-                        DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-                          !Loop over dimensions
-                          DO dimensionIdx=1,numberOfDimensions
-                            local_ny=fieldVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP% &
-                              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                            IF(elementNodeIdx==1 .AND. derivativeIdx==1 .AND. versionIdx==1) THEN
-                              !First node that lengths will be calculated relative to:  
-                              X1(dimensionIdx)=geometricParameters(local_ny)
-                            ELSE
-                              X2(dimensionIdx)=geometricParameters(local_ny)
-                            ENDIF
-                          ENDDO !dimensionIdx
-                          lineLength = L2NORM(X1-X2)
-                          lengthScale = MAX(lengthScale,lineLength)
-                        ENDDO !versionIdx
-                      ENDDO !derivativeIdx
-                    ELSE
-                      CALL FLAG_ERROR("Domain topology is not associated.",err,error,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
-                  ENDIF
-                END DO  
+                !Loop over element lines to get longest line
+                numberOfLines=SIZE(geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES)
+                DO elementLineIdx=1,numberOfLines
+                  lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES(elementLineIdx)
+                  lineLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
+                  lengthScale = MAX(lengthScale,lineLength)
+                ENDDO ! element lines
                 lengthScale = lengthScale/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
 
                 !Length scale hadn't been calculated for this element, so add element components for each SUPG metric
