@@ -3698,6 +3698,9 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
               IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
                 reason=PETSC_SNES_CONVERGED_FNORM_ABS
               ENDIF
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"*********************************************",err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Normalised energy = ",normalisedEnergy,err,error,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"*********************************************",err,error,*999)
             ENDIF
             CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
           ELSE
