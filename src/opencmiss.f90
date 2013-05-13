@@ -5621,6 +5621,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED = SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED !<The Jacobian values will be calculated analytically for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_NewtonConvergenceTypes OPENCMISS::Solver::NewtonConvergenceTypes
+  !> \brief The convergence test types for a nonlinear newton solver.
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT = SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT !<Newton solver Petsc default convergence test type. \see OPENCMISS_NewtonConvergenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM = SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM !<Newton solver energy norm convergence test type. \see OPENCMISS_NewtonConvergenceTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO = SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO !<Newton solver Sum of differentiated ratios of unconstrained to constrained residuals convergence test type. \see OPENCMISS_NewtonConvergenceTypes,OPENCMISS 
+  !>@}
   !> \addtogroup OPENCMISS_DynamicOrderTypes OPENCMISS::Solver::DynamicOrderTypes
   !> \brief The order types for a dynamic solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
@@ -6025,6 +6033,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_NewtonCellMLSolverGetObj
   END INTERFACE !CMISSSolver_NewtonCellMLSolverGet
 
+  !>Sets/change the convergence test for a nonlinear Newton solver.
+  INTERFACE CMISSSolver_NewtonConvergenceTestTypeSet
+    MODULE PROCEDURE CMISSSolver_NewtonConvergenceTestTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_NewtonConvergenceTestTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_NewtonConvergenceTestTypeSetObj
+  END INTERFACE CMISSSolver_NewtonConvergenceTestTypeSet
+
   !>Sets/changes the line search alpha for a nonlinear Newton solver.
   INTERFACE CMISSSolver_NewtonLineSearchAlphaSet
     MODULE PROCEDURE CMISSSolver_NewtonLineSearchAlphaSetNumber0
@@ -6203,6 +6218,9 @@ MODULE OPENCMISS
   PUBLIC CMISS_SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED,CMISS_SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED, &
     & CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
 
+  PUBLIC CMISS_SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT,CMISS_SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM, &
+    & CMISS_SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
+
   PUBLIC CMISS_SOLVER_DYNAMIC_FIRST_ORDER,CMISS_SOLVER_DYNAMIC_SECOND_ORDER
 
   PUBLIC CMISS_SOLVER_DYNAMIC_LINEAR,CMISS_SOLVER_DYNAMIC_NONLINEAR
@@ -6298,6 +6316,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolver_NewtonLinearSolverGet
 
   PUBLIC CMISSSolver_NewtonCellMLSolverGet
+
+  PUBLIC CMISSSolver_NewtonConvergenceTestTypeSet
 
   PUBLIC CMISSSolver_NewtonLineSearchAlphaSet
 
@@ -50417,9 +50437,121 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_NewtonCellMLSolverGetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for an Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & convergenceTestType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the convergence test for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      CALL Solver_NewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*999)
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber0
 
   !
   !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+      & convergenceTestType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifiers,solverIndex,solver,err,error,*999)
+      CALL Solver_NewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*999)
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber1
+  
+  ! 
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetObj(solver,convergenceTestType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetObj",err,error,*999)
+
+    CALL Solver_NewtonConvergenceTestTypeSet(solver%SOLVER,convergenceTestType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+  
   !>Sets/changes the line search alpha for an Newton linesearch solver identified by an user number.
   SUBROUTINE CMISSSolver_NewtonLineSearchAlphaSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,alpha,err)
 

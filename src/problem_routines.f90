@@ -322,7 +322,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_CELLML_EQUATIONS_SOLVE",ERR,ERROR,*999)
     
@@ -3698,8 +3697,7 @@ CONTAINS
     !Local Variables
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer the solvers to update the variables from
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to update the variables from
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2 !<A pointer the sub control loop
-    INTEGER(INTG) :: solver_idx,loop_idx
+    INTEGER(INTG) :: solver_idx
 
     NULLIFY(SOLVER)
 
@@ -4037,9 +4035,107 @@ SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
 998 CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(RESIDUAL_VECTOR,DUMMY_ERR,DUMMY_ERROR,*997)
 997 CALL WRITE_ERROR(ERR,ERROR,*996)
 996 CALL FLAG_WARNING("Error evaluating nonlinear residual.",ERR,ERROR,*995)
-995 RETURN    
+995 RETURN
 
 END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
+
+!
+!================================================================================================================================
+!
+
+!>Called from the PETSc SNES solvers to test convergence for a Newton like nonlinear solver
+SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,fnorm,reason,ctx,err)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC_TYPES
+  USE DISTRIBUTED_MATRIX_VECTOR
+  USE INPUT_OUTPUT
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE SOLVER_ROUTINES
+  USE STRINGS
+  USE TYPES
+  USE CMISS_PETSC
+
+  IMPLICIT NONE
+  
+  !Argument variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: snes !<The PETSc SNES type
+  INTEGER(INTG), INTENT(INOUT) :: iterationNumber !< The current iteration (1 is the first and is before any Newton step)
+  REAL(DP), INTENT(INOUT) :: xnorm !<The 2-norm of current iterate
+  REAL(DP), INTENT(INOUT) :: gnorm !<The 2-norm of current step
+  REAL(DP), INTENT(INOUT) :: fnorm !<The 2-norm of function
+  INTEGER(INTG), INTENT(INOUT) :: reason !<The reason for convergence/divergence
+  TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+  !Local Variables
+  TYPE(PETSC_VEC_TYPE) :: x,f,y,w,g
+  TYPE(NEWTON_SOLVER_TYPE), POINTER :: newtonSolver
+  TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+  TYPE(PetscSnesLinesearchType) :: lineSearch
+  REAL(DP) :: energy,normalisedEnergy
+  TYPE(VARYING_STRING) :: error,localError
+
+  IF(ASSOCIATED(ctx)) THEN
+    nonlinearSolver=>CTX%NONLINEAR_SOLVER
+    IF(ASSOCIATED(nonlinearSolver)) THEN
+      newtonSolver=>nonlinearSolver%NEWTON_SOLVER
+      IF(ASSOCIATED(newtonSolver)) THEN 
+        reason=PETSC_SNES_CONVERGED_ITERATING
+        SELECT CASE(newtonSolver%convergenceTestType)
+        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM) 
+          IF(iterationNumber>0) THEN
+            CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
+            CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
+            CALL PETSC_VECINITIALISE(x,err,error,*999)
+            CALL PETSC_VECINITIALISE(f,err,error,*999)
+            CALL PETSC_VECINITIALISE(y,err,error,*999)
+            CALL PETSC_VECINITIALISE(w,err,error,*999)
+            CALL PETSC_VECINITIALISE(g,err,error,*999)
+            CALL Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*999)
+            CALL Petsc_VecDot(y,g,energy,err,error,*999)
+            IF(iterationNumber==1) THEN
+              IF(ABS(energy)<ZERO_TOLERANCE) THEN
+                reason=PETSC_SNES_CONVERGED_FNORM_ABS
+              ELSE
+                newtonSolver%convergenceTest%energyFirstIter=energy
+              ENDIF
+            ELSE
+              normalisedEnergy=energy/newtonSolver%convergenceTest%energyFirstIter
+              IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
+                reason=PETSC_SNES_CONVERGED_FNORM_ABS
+              ENDIF
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"*********************************************",err,error,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Normalised energy = ",normalisedEnergy,err,error,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"*********************************************",err,error,*999)
+            ENDIF
+            CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
+          ELSE
+            newtonSolver%convergenceTest%energyFirstIter=0.0_DP
+          ENDIF
+        CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
+          CALL FLAG_ERROR("Differentiated ratio convergence test not implemented.",err,error,*999)
+        CASE DEFAULT
+          localError="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING( &
+            & newtonSolver%convergenceTestType,"*",err,error))//" is invalid."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver nonlinear solver is not associated.",err,error,*999)
+    ENDIF
+  ELSE
+    CALL FLAG_ERROR("Solver context is not associated.",err,error,*999)
+  ENDIF
+  
+  RETURN
+999 CALL WRITE_ERROR(err,error,*998)
+998 CALL FLAG_WARNING("Error in convergence test.",err,error,*997)
+997 RETURN    
+
+END SUBROUTINE ProblemSolver_ConvergenceTestPetsc
 
 !
 !================================================================================================================================
@@ -4093,5 +4189,3 @@ SUBROUTINE Problem_SolverNonlinearMonitorPETSC(SNES,iterationNumber,residualNorm
 997 RETURN    
 
 END SUBROUTINE Problem_SolverNonlinearMonitorPETSC
-
-
