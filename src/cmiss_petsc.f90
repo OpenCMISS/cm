@@ -928,13 +928,21 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESSetFunctionNorm
 
-    SUBROUTINE SNESLineSearchSetNorms(snes,xnorm,fnorm,ynorm,ierr)
+    SUBROUTINE SnesLineSearchSetNorms(snes,xnorm,fnorm,ynorm,ierr)
       SNES snes
       PetscReal xnorm
       PetscReal fnorm
       PetscReal ynorm
       PetscInt ierr
-    END SUBROUTINE SNESLineSearchSetNorms
+    END SUBROUTINE SnesLineSearchSetNorms
+
+    SUBROUTINE SnesLineSearchGetNorms(linesearch,xnorm,fnorm,ynorm,ierr)
+      SNESLineSearch linesearch
+      PetscReal xnorm
+      PetscReal fnorm
+      PetscReal ynorm
+      PetscInt ierr
+    END SUBROUTINE SnesLineSearchGetNorms
 
     SUBROUTINE SNESGetIterationNumber(snes,iter,ierr)
       SNES snes
@@ -955,12 +963,25 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSet
     
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+    SUBROUTINE SnesLineSearchSetMonitor(linesearch,flag,ierr)
+      SNESLineSearch linesearch
+      PetscBool flag
+      PetscInt ierr
+    END SUBROUTINE SnesLineSearchSetMonitor
+#endif
+
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
     SUBROUTINE SNESLineSearchSetComputeNorms(linesearch,flag,ierr)
       SNESLineSearch linesearch
       PetscBool flag
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSetComputeNorms
+
+    SUBROUTINE SnesLineSearchComputeNorms(linesearch,ierr)
+      SNESLineSearch linesearch
+      PetscInt ierr
+    END SUBROUTINE SnesLineSearchComputeNorms
 
     SUBROUTINE SNESLineSearchSetOrder(linesearch,linesearchorder,ierr)
       SNESLineSearch linesearch
@@ -1599,14 +1620,18 @@ MODULE CMISS_PETSC
 #endif
   
   PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
-    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESSETFUNCTIONNORM,PETSC_SNESLineSearchSetNorms,PETSC_SNESGETITERATIONNUMBER, &
-    & PETSC_SNESGETKSP,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
-    & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,PETSC_SNESSETKSP, &
-    & PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN,PETSC_SNESSETCONVERGENCETEST, &
-    & Petsc_SnesLineSearchGetVecs,PETSC_SNESSETNORMTYPE,Petsc_SnesGetSolutionUpdate
+    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESSETFUNCTIONNORM,petsc_sneslinesearchsetnorms,petsc_sneslinesearchgetnorms, &
+    & PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION, &
+    & PETSC_SNESSETJACOBIAN,PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE, &
+    & PETSC_SNESSETKSP,PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN, &
+    & PETSC_SNESSETCONVERGENCETEST,Petsc_SnesLineSearchGetVecs,PETSC_SNESSETNORMTYPE,Petsc_SnesGetSolutionUpdate
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+  PUBLIC Petsc_SnesLineSearchSetMonitor
+#endif
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
-  PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
+  PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchComputeNorms, &
+    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
 #else
   PUBLIC PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS
 #endif
@@ -4304,8 +4329,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc SNESLineSearchSetNorms routine.
-  SUBROUTINE PETSC_SNESLINESEARCHSETNORMS(SNES_,XNORM,FNORM,YNORM,ERR,ERROR,*)
+  !>Buffer routine to the petsc SnesLineSearchSetNorms routine.
+  SUBROUTINE PETSC_SnesLineSearchSetNorms(SNES_,XNORM,FNORM,YNORM,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the computed norms for X, Y, and F
@@ -4316,22 +4341,55 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_SNESLINESEARCHSETNORMS",ERR,ERROR,*999)
+    CALL ENTERS("petsc_SnesLineSearchSetNorms",ERR,ERROR,*999)
 
-    CALL SNESLineSearchSetNorms(SNES_%SNES_,XNORM,FNORM,YNORM,ERR)
+    CALL SnesLineSearchSetNorms(SNES_%SNES_,XNORM,FNORM,YNORM,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLINESEARCHSETNORMS",ERR,ERROR,*999)
+      CALL FLAG_ERROR("petsc error in SnesLineSearchSetNorms",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("PETSC_SNESLINESEARCHSETNORMS")
+    CALL EXITS("petsc_SnesLineSearchSetNorms")
     RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHSETNORMS",ERR,ERROR)
-    CALL EXITS("PETSC_SNESLINESEARCHSETNORMS")
+999 CALL ERRORS("petsc_SnesLineSearchSetNorms",ERR,ERROR)
+    CALL EXITS("petsc_SnesLineSearchSetNorms")
     RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHSETNORMS
+  END SUBROUTINE petsc_SnesLineSearchSetNorms
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the petsc SnesLineSearchGetNorms routine.
+  SUBROUTINE petsc_SnesLineSearchGetNorms(lineSearch,XNORM,FNORM,YNORM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to get the norms for X, Y, and F from.
+    REAL(DP), INTENT(INOUT) :: XNORM !<On exit, the norm of the current solution
+    REAL(DP), INTENT(INOUT) :: FNORM !<On exit, the norm of the current function
+    REAL(DP), INTENT(INOUT) :: YNORM !<On exit, the norm of the current update
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("petsc_SnesLineSearchGetNorms",ERR,ERROR,*999)
+
+    CALL SnesLineSearchGetNorms(lineSearch%snesLineSearch,XNORM,FNORM,YNORM,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("petsc error in SnesLineSearchGetNorms",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("petsc_SnesLineSearchGetNorms")
+    RETURN
+999 CALL ERRORS("petsc_SnesLineSearchGetNorms",ERR,ERROR)
+    CALL EXITS("petsc_SnesLineSearchGetNorms")
+    RETURN 1
+  END SUBROUTINE petsc_SnesLineSearchGetNorms
 
   !
   !================================================================================================================================
@@ -4527,6 +4585,39 @@ CONTAINS
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+  !>Buffer routine to the PETSc SNESLineSearchSetMonitor routine.
+  SUBROUTINE Petsc_SnesLineSearchSetMonitor(lineSearch,monitorLinesearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set whether to output linesearch debug information
+    PetscBool, INTENT(IN) :: monitorLinesearch !<Whether to output linesearch debug information
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL Enters("Petsc_SnesLineSearchSetMonitor",err,error,*999)
+
+    CALL SnesLineSearchSetMonitor(lineSearch%snesLineSearch,monitorLinesearch,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESLineSearchSetMonitor",err,error,*999)
+    ENDIF
+
+    CALL Exits("Petsc_SnesLineSearchSetMonitor")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchSetMonitor",err,error)
+    CALL Exits("Petsc_SnesLineSearchSetMonitor")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchSetMonitor
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   !>Buffer routine to the PETSc SNESLineSearchSetComputeNorms routine.
   SUBROUTINE Petsc_SnesLineSearchSetComputeNorms(lineSearch,computeNorms,err,error,*)
@@ -4554,6 +4645,36 @@ CONTAINS
     CALL Exits("Petsc_SnesLineSearchSetComputeNorms")
     RETURN 1
   END SUBROUTINE Petsc_SnesLineSearchSetComputeNorms
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchComputeNorms routine.
+  SUBROUTINE Petsc_SnesLineSearchComputeNorms(lineSearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to compute norms for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL Enters("Petsc_SnesLineSearchComputeNorms",err,error,*999)
+
+    CALL SnesLineSearchComputeNorms(lineSearch%snesLineSearch,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SnesLineSearchComputeNorms",err,error,*999)
+    ENDIF
+
+    CALL Exits("Petsc_SnesLineSearchComputeNorms")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchComputeNorms",err,error)
+    CALL Exits("Petsc_SnesLineSearchComputeNorms")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchComputeNorms
 #endif
 
   !
