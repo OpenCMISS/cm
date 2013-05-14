@@ -5740,6 +5740,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_NewtonAbsoluteToleranceSetObj
   END INTERFACE !CMISSSolver_NewtonAbsoluteToleranceSet
 
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver.
+  INTERFACE CMISSSolver_NewtonLineSearchMonitorOutputSet
+    MODULE PROCEDURE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0
+    MODULE PROCEDURE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1
+    MODULE PROCEDURE CMISSSolver_NewtonLineSearchMonitorOutputSetObj
+  END INTERFACE !CMISSSolver_NewtonLineSearchMonitorOutputSet
+
   !>Sets/changes the Jacobian calculation type for a nonlinear Newton solver.
   INTERFACE CMISSSolver_NewtonJacobianCalculationTypeSet
     MODULE PROCEDURE CMISSSolver_NewtonJacobianCalculationTypeSetNumber0
@@ -6026,6 +6033,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolver_LinearTypeSet
 
   PUBLIC CMISSSolver_NewtonAbsoluteToleranceSet
+
+  PUBLIC CMISSSolver_NewtonLineSearchMonitorOutputSet
 
   PUBLIC CMISSSolver_NewtonJacobianCalculationTypeSet
 
@@ -46113,6 +46122,115 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_NewtonAbsoluteToleranceSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+    & monitorLinesearchFlag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Newton solver to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the linesearch monitoring for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL Solver_NewtonLineSearchMonitorOutputSet(SOLVER,monitorLinesearchFlag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+    & monitorLinesearchFlag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the absolute tolerance for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL Solver_NewtonLineSearchMonitorOutputSet(SOLVER,monitorLinesearchFlag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetObj(solver,monitorLinesearchFlag,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Newton solver to set the linesearch monitoring for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj",err,error,*999)
+
+    CALL Solver_NewtonLineSearchMonitorOutputSet(solver%SOLVER,monitorLinesearchFlag,err,error,*999)
+
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj",err,error)
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetObj
 
   !
   !================================================================================================================================

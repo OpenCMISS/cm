@@ -542,6 +542,8 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET
 
+  PUBLIC Solver_NewtonLineSearchMonitorOutputSet
+
   PUBLIC SOLVER_NEWTON_LINESEARCH_ALPHA_SET
 
   PUBLIC SOLVER_NEWTON_LINESEARCH_TYPE_SET
@@ -12364,7 +12366,71 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET
-        
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver.
+  SUBROUTINE Solver_NewtonLineSearchMonitorOutputSet(solver,linesearchMonitorOutputFlag,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the absolute tolerance for
+    LOGICAL, INTENT(IN) :: linesearchMonitorOutputFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: linesearchSolver
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: newtonSolver
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+    
+    CALL ENTERS("Solver_NewtonLineSearchMonitorOutputSet",err,error,*999)
+
+    IF(ASSOCIATED(solver)) THEN
+      IF(solver%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
+      ELSE
+        IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+          nonlinearSolver=>solver%NONLINEAR_SOLVER
+          IF(ASSOCIATED(nonlinearSolver)) THEN
+            IF(nonlinearSolver%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              newtonSolver=>nonlinearSolver%NEWTON_SOLVER
+              IF(ASSOCIATED(newtonSolver)) THEN
+                IF(newtonSolver%NEWTON_SOLVE_TYPE==SOLVER_NEWTON_LINESEARCH) THEN
+                  linesearchSolver=>newtonSolver%LINESEARCH_SOLVER
+                  IF(ASSOCIATED(linesearchSolver)) THEN
+                    linesearchSolver%linesearchMonitorOutput=linesearchMonitorOutputFlag
+                  ELSE
+                    CALL FLAG_ERROR("The Newton linesearch solver is not associated.",err,error,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The Newton solver is not a linesearch solver.",err,error,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",err,error,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",err,error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a nonlinear solver.",err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Solver_NewtonLineSearchMonitorOutputSet")
+    RETURN
+999 CALL ERRORS("Solver_NewtonLineSearchMonitorOutputSet",err,error)    
+    CALL EXITS("Solver_NewtonLineSearchMonitorOutputSet")
+    RETURN 1
+   
+  END SUBROUTINE Solver_NewtonLineSearchMonitorOutputSet
+
   !
   !================================================================================================================================
   !
@@ -13249,8 +13315,12 @@ CONTAINS
                       CALL FlagError(local_error,err,error,*999)
                     END SELECT
 #endif
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
-                    CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_TRUE,err,error,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+                    IF(linesearch_solver%linesearchMonitorOutput) THEN
+                      CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_TRUE,err,error,*999)
+                    ELSE
+                      CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_FALSE,err,error,*999)
+                    ENDIF
 #endif
                     !Set the tolerances for the SNES solver
                     CALL PETSC_SNESSETTOLERANCES(LINESEARCH_SOLVER%SNES,NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
@@ -13360,6 +13430,7 @@ CONTAINS
         CALL PETSC_MATFDCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
         CALL PETSC_SNESINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
         CALL Petsc_SnesLineSearchInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
+        NEWTON_SOLVER%LINESEARCH_SOLVER%linesearchMonitorOutput=.false.
       ENDIF
     ELSE
       CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*998)
