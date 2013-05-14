@@ -895,11 +895,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESDestroy
 
-    SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,ierr)
+    SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,destroy,ierr)
       USE TYPES
       SNES snes
       EXTERNAL cfunction
       TYPE(SOLVER_TYPE), POINTER :: ctx
+      EXTERNAL destroy
       PetscInt ierr
     END SUBROUTINE SNESSetConvergenceTest
 
@@ -914,6 +915,12 @@ MODULE CMISS_PETSC
       PetscReal fnorm
       PetscInt ierr
     END SUBROUTINE SNESGetFunctionNorm
+
+    SUBROUTINE SNESGetSolutionUpdate(snes,solutionUpdate,ierr)
+      SNES snes
+      Vec solutionUpdate
+      PetscInt ierr
+    END SUBROUTINE SNESGetSolutionUpdate
 
     SUBROUTINE SNESSetFunctionNorm(snes,fnorm,ierr)
       SNES snes
@@ -1059,8 +1066,8 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESSetType
 
-    SUBROUTINE SNESLineSearchGetVecs(snes,x,f,y,w,g,ierr)
-      SNES snes
+    SUBROUTINE SNESLineSearchGetVecs(linesearch,x,f,y,w,g,ierr)
+      SNESLineSearch linesearch
       Vec x
       Vec f
       Vec y
@@ -1258,6 +1265,12 @@ MODULE CMISS_PETSC
       Vec old,new
       PetscInt ierr
     END SUBROUTINE VecDuplicate
+
+    SUBROUTINE VecDot(x,y,val,ierr)
+      Vec x
+      Vec y
+      PetscScalar val
+    END SUBROUTINE VecDot
 
     SUBROUTINE VecGetArray(x,vec_data,vec_offset,ierr)
       Vec x
@@ -1590,7 +1603,7 @@ MODULE CMISS_PETSC
     & PETSC_SNESGETKSP,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
     & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,PETSC_SNESSETKSP, &
     & PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN,PETSC_SNESSETCONVERGENCETEST, &
-    & PETSC_SNESLINESEARCHGETVECS,PETSC_SNESSETNORMTYPE
+    & Petsc_SnesLineSearchGetVecs,PETSC_SNESSETNORMTYPE,Petsc_SnesGetSolutionUpdate
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
   PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
@@ -1604,7 +1617,7 @@ MODULE CMISS_PETSC
     & PETSC_VECGETLOCALSIZE,PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE,PETSC_VECGETVALUES,PETSC_VECGHOSTGETLOCALFORM, &
     & PETSC_VECGHOSTRESTORELOCALFORM,PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND, &
     & PETSC_VECRESTOREARRAYF90,PETSC_VECSCALE,PETSC_VECSET,PETSC_VECSETFROMOPTIONS,PETSC_VECSETLOCALTOGLOBALMAPPING, &
-    & PETSC_VECSETSIZES,PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW
+    & PETSC_VECSETSIZES,PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW,Petsc_VecDot
 
   PUBLIC PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD,PETSC_VIEWER_DRAW_SELF
 
@@ -4224,6 +4237,37 @@ CONTAINS
     CALL EXITS("PETSC_SNESGETFUNCTIONNORM")
     RETURN 1
   END SUBROUTINE PETSC_SNESGETFUNCTIONNORM
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSC SNESGetSolutionUpdate routine.
+  SUBROUTINE Petsc_SnesGetSolutionUpdate(snes_,solutionUpdate,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: snes_ !<The SNES to get the solution update for
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: solutionUpdate !<On exit, the solution update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_SnesGetSolutionUpdate",err,error,*999)
+
+    CALL SNESGetSolutionUpdate(snes_%SNES_,solutionUpdate%VEC,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetSolutionUpdate",err,error,*999)
+    ENDIF
+
+    CALL EXITS("Petsc_SnesGetSolutionUpdate")
+    RETURN
+999 CALL ERRORS("Petsc_SnesGetSolutionUpdate",err,error)
+    CALL EXITS("Petsc_SnesGetSolutionUpdate")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesGetSolutionUpdate
     
   !
   !================================================================================================================================
@@ -4724,15 +4768,15 @@ CONTAINS
   SUBROUTINE PETSC_SNESSETCONVERGENCETEST(SNES_,CFUNCTION,CTX,ERR,ERROR,*)
     !Argument Variables
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    EXTERNAL CFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    EXTERNAL CFUNCTION !<The external function to call (OpenCMISS subroutine to calculate convergence
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the convergence test function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_SNESSETCONVERGENCETEST",ERR,ERROR,*999)
 
-    CALL SNESSetConvergenceTest(SNES_%SNES_,CFUNCTION,CTX,ERR)
+    CALL SNESSetConvergenceTest(SNES_%SNES_,CFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -5076,35 +5120,35 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc SNESLineSearchGetVecs routine.
-  SUBROUTINE PETSC_SNESLINESEARCHGETVECS(SNES_,X,F,Y,W,G,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the vectors from the SNESLineSearch
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The The old solution 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The old function 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: Y !<The search direction 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: W !<The new solution 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G !<The new function 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The PetcsSnesLineSearch to get the vectors from the SNESLineSearch
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: x !<The The old solution 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: f !<The old function 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: y !<The search direction 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: w !<The new solution 
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: g !<The new function 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_SNESLINESEARCHGETVECS",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_SnesLineSearchGetVecs",err,error,*999)
 
-    CALL SNESLineSearchGetVecs(SNES_%SNES_,X%VEC,F%VEC,Y%VEC,W%VEC,G%VEC,ERR)
-    IF(ERR/=0) THEN
+    CALL SNESLineSearchGetVecs(lineSearch%snesLineSearch,x%VEC,f%VEC,y%VEC,w%VEC,g%VEC,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchGetVecs",ERR,ERROR,*999)
+      CALL FLAG_ERROR("PETSc error in SNESLineSearchGetVecs",err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_SNESLINESEARCHGETVECS")
+    CALL EXITS("Petsc_SnesLineSearchGetVecs")
     RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHGETVECS",ERR,ERROR)
-    CALL EXITS("PETSC_SNESLINESEARCHGETVECS")
+999 CALL ERRORS("Petsc_SnesLineSearchGetVecs",err,error)
+    CALL EXITS("Petsc_SnesLineSearchGetVecs")
     RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHGETVECS
+  END SUBROUTINE Petsc_SnesLineSearchGetVecs
 
   !
   !================================================================================================================================
@@ -6260,6 +6304,40 @@ CONTAINS
     CALL EXITS("PETSC_VECGETOWNERSHIPRANGE")
     RETURN 1
   END SUBROUTINE PETSC_VECGETOWNERSHIPRANGE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecDot routine.
+  SUBROUTINE Petsc_VecDot(x,y,dotProduct,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: x !<The vector x
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: y !<The vector y
+    REAL(DP), INTENT(OUT) :: dotProduct !<The dot product 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    
+    CALL ENTERS("Petsc_VecDot",err,error,*999)
+    
+    CALL VecDot(x%VEC,y%VEC,dotProduct,err)
+
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetSolutionUpdate",err,error,*999)
+    ENDIF
+
+    CALL EXITS("Petsc_VecDot")
+    RETURN
+999 CALL ERRORS("Petsc_VecDot",err,error)
+    CALL EXITS("Petsc_VecDot")
+    RETURN 1
+  END SUBROUTINE Petsc_VecDot
+
     
   !
   !================================================================================================================================
