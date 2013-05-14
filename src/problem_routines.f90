@@ -3695,6 +3695,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
               ENDIF
             ELSE
               normalisedEnergy=energy/newtonSolver%convergenceTest%energyFirstIter
+              newtonSolver%convergenceTest%normalisedEnergy=normalisedEnergy
               IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
                 reason=PETSC_SNES_CONVERGED_FNORM_ABS
               ENDIF
@@ -3702,6 +3703,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
             CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
           ELSE
             newtonSolver%convergenceTest%energyFirstIter=0.0_DP
+            newtonSolver%convergenceTest%normalisedEnergy=0.0_DP
           ENDIF
         CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
           CALL FLAG_ERROR("Differentiated ratio convergence test not implemented.",err,error,*999)

@@ -2512,6 +2512,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information about the convergence test for a newton solver
   TYPE NewtonSolverConvergenceTest
     REAL(DP) :: energyFirstIter !<The energy for the first iteration
+    REAL(DP) :: normalisedEnergy !<The normalized energy for the subsequent iterations
   END TYPE NewtonSolverConvergenceTest
 
   !>Contains information for a Newton nonlinear solver
