@@ -895,6 +895,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBoundaryConditions_NeumannSparsityTypeSetObj
   END INTERFACE !CMISSBoundaryConditions_NeumannSparsityTypeSet
 
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  INTERFACE CMISSBoundaryConditions_ConstrainNodeDofsEqual
+    MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber
+    MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj
+  END INTERFACE CMISSBoundaryConditions_ConstrainNodeDofsEqual
+
   PUBLIC CMISS_BOUNDARY_CONDITION_FREE,CMISS_BOUNDARY_CONDITION_FIXED, &
     & CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
     & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
@@ -916,6 +922,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditions_AddNode,CMISSBoundaryConditions_SetNode
 
   PUBLIC CMISSBoundaryConditions_NeumannSparsityTypeSet
+
+  PUBLIC CMISSBoundaryConditions_ConstrainNodeDofsEqual
 
 !!==================================================================================================================================
 !!
@@ -5887,12 +5895,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverEquations_BoundaryConditionsGetObj
   END INTERFACE !CMISSSolverEquations_BoundaryConditionsGet
 
-  !>Constrain two nodal equations dependent field DOFs to be a single solver DOF in the solver equations
-  INTERFACE CMISSSolverEquations_ConstrainNodeDofsEqual
-    MODULE PROCEDURE CMISSSolverEquations_ConstrainNodeDofsEqualNumber
-    MODULE PROCEDURE CMISSSolverEquations_ConstrainNodeDofsEqualObj
-  END INTERFACE CMISSSolverEquations_ConstrainNodeDofsEqual
-
   PUBLIC CMISS_SOLVER_LINEAR_TYPE,CMISS_SOLVER_NONLINEAR_TYPE,CMISS_SOLVER_DYNAMIC_TYPE,CMISS_SOLVER_DAE_TYPE, &
     & CMISS_SOLVER_EIGENPROBLEM_TYPE, &
     & CMISS_SOLVER_OPTIMISER_TYPE
@@ -6052,8 +6054,6 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverEquations_BoundaryConditionsCreateFinish,CMISSSolverEquations_BoundaryConditionsCreateStart
 
   PUBLIC CMISSSolverEquations_BoundaryConditionsGet
-
-  PUBLIC CMISSSolverEquations_ConstrainNodeDofsEqual
 
   PUBLIC CMISSSolverEquations_NumberOfMatricesGet
 
@@ -11759,6 +11759,115 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber(regionUserNumber,problemUserNumber,controlLoopIdentifier, &
+    & solverIndex,fieldUserNumber,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field DOFs to constrain.
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem containing the solver equations.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier to get the solver equations.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index of the solver equations.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the dependent field containing the DOFs to contrain.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The variable type of the dependent field containing the DOFs to constrain. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(problem)
+    NULLIFY(solverEquations)
+    NULLIFY(field)
+
+    CALL Region_user_number_find(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL Problem_user_number_find(problemUserNumber,problem,err,error,*999)
+      IF(ASSOCIATED(problem)) THEN
+        CALL Problem_solver_equations_get(problem,controlLoopIdentifier,solverIndex,solverEquations,err,error,*999)
+        IF(ASSOCIATED(solverEquations)) THEN
+          CALL Solver_equations_boundary_conditions_get(solverEquations,boundaryConditions,err,error,*999)
+          IF(ASSOCIATED(boundaryConditions)) THEN
+            CALL Field_user_number_find(fieldUserNumber,region,field,err,error,*999)
+            IF(ASSOCIATED(field)) THEN
+              CALL BoundaryConditions_ConstrainNodeDofsEqual(boundaryConditions,field, &
+                & fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*999)
+            ELSE
+              localError="A field with a user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+                & " does not exist."
+              CALL FlagError(localError,err,error,*999)
+            END IF
+          ELSE
+            localError="The boundary conditions for the solver equations are not associated."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The solver equations are not associated.",err,error,*999)
+        END IF
+      ELSE
+        localError="A problem with a user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber")
+    RETURN
+999 CALL Errors("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber",err,error)
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj( &
+      & boundaryConditions,field,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err)
+
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: boundaryConditions !<The boundary conditions to constrain the DOFs in.
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL Enters("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj",err,error,*999)
+
+    CALL BoundaryConditions_ConstrainNodeDofsEqual(boundaryConditions%boundary_conditions,field%field, &
+      & fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*999)
+
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj")
+    RETURN
+999 CALL Errors("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj",err,error)
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj
 
 !!==================================================================================================================================
 !!
@@ -48685,108 +48794,6 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverEquations_BoundaryConditionsGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Constrain two nodal equations dependent field DOFs to be a single solver DOF in the solver equations
-  SUBROUTINE CMISSSolverEquations_ConstrainNodeDofsEqualNumber(regionUserNumber,problemUserNumber,controlLoopIdentifier, &
-    & solverIndex,fieldUserNumber,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field DOFs to constrain.
-    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem containing the solver equations.
-    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier to get the solver equations.
-    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index of the solver equations.
-    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the dependent field containing the DOFs to contrain.
-    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The variable type of the dependent field containing the DOFs to constrain. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
-    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
-    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
-    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(REGION_TYPE), POINTER :: region
-    TYPE(PROBLEM_TYPE), POINTER :: problem
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
-    TYPE(FIELD_TYPE), POINTER :: field
-    TYPE(VARYING_STRING) :: localError
-
-    CALL Enters("CMISSSolverEquations_ConstrainNodeDofsEqualNumber",err,error,*999)
-
-    NULLIFY(region)
-    NULLIFY(problem)
-    NULLIFY(solverEquations)
-    NULLIFY(field)
-
-    CALL Region_user_number_find(regionUserNumber,region,err,error,*999)
-    IF(ASSOCIATED(region)) THEN
-      CALL Problem_user_number_find(problemUserNumber,problem,err,error,*999)
-      IF(ASSOCIATED(problem)) THEN
-        CALL Problem_solver_equations_get(problem,controlLoopIdentifier,solverIndex,solverEquations,err,error,*999)
-        IF(ASSOCIATED(solverEquations)) THEN
-          CALL Field_user_number_find(fieldUserNumber,region,field,err,error,*999)
-          IF(ASSOCIATED(field)) THEN
-            CALL SolverEquations_ConstrainNodeDofsEqual(solverEquations,field, &
-              & fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*999)
-          ELSE
-            localError="A field with a user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
-              & " does not exist."
-            CALL FlagError(localError,err,error,*999)
-          END IF
-        ELSE
-          CALL FlagError("The solver equations are not associated.",err,error,*999)
-        END IF
-      ELSE
-        localError="A problem with a user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
-        CALL FlagError(localError,err,error,*999)
-      END IF
-    ELSE
-      localError="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
-      CALL FlagError(localError,err,error,*999)
-    END IF
-
-    CALL Exits("CMISSSolverEquations_ConstrainNodeDofsEqualNumber")
-    RETURN
-999 CALL Errors("CMISSSolverEquations_ConstrainNodeDofsEqualNumber",err,error)
-    CALL Exits("CMISSSolverEquations_ConstrainNodeDofsEqualNumber")
-    CALL CMISSHandleError(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSSolverEquations_ConstrainNodeDofsEqualNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Constrain two nodal equations dependent field DOFs to be a single solver DOF in the solver equations
-  SUBROUTINE CMISSSolverEquations_ConstrainNodeDofsEqualObj( &
-      & solverEquations,field,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err)
-
-    !Argument variables
-    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to constrain the DOFs in.
-    TYPE(CMISSFieldType), INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
-    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
-    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
-    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
-    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-
-    CALL Enters("CMISSSolverEquations_ConstrainNodeDofsEqualObj",err,error,*999)
-
-    CALL SolverEquations_ConstrainNodeDofsEqual(solverEquations%solver_equations,field%field, &
-      & fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*999)
-
-    CALL Exits("CMISSSolverEquations_ConstrainNodeDofsEqualObj")
-    RETURN
-999 CALL Errors("CMISSSolverEquations_ConstrainNodeDofsEqualObj",err,error)
-    CALL Exits("CMISSSolverEquations_ConstrainNodeDofsEqualObj")
-    CALL CMISSHandleError(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSSolverEquations_ConstrainNodeDofsEqualObj
 
   !
   !================================================================================================================================

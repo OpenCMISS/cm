@@ -1735,6 +1735,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: DOF_COUNTS(:) !<DOF_COUNTS(CONDITION_TYPE): The number of DOFs that have a CONDITION_TYPE boundary condition set
     LOGICAL, ALLOCATABLE :: parameterSetRequired(:) !<parameterSetRequired(PARAMETER_SET) is true if any boundary condition has been set that requires the PARAMETER_SET field parameter set
+    TYPE(BoundaryConditionsDofConstraintsType), POINTER :: dofConstraints !<A pointer to the linear DOF constraints structure.
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1782,6 +1783,45 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE
     INTEGER(INTG), ALLOCATABLE :: PRESSURE_INCREMENTED_DOF_INDICES(:)  !<PRESSURE_INCREMENTED_DOF_INDICES(idx). Stores the dof_idx of the dofs which are subject to a pressure incremented boundary condition \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   END TYPE BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE
+
+  !>Describes the value of a DOF as a linear combination of other DOFs.
+  TYPE BoundaryConditionsDofConstraintType
+    INTEGER(INTG) :: globalDof !<The global DOF number of this DOF.
+    INTEGER(INTG) :: numberOfDofs !<The number of other DOFs that contribute to the value of this DOF.
+    INTEGER(INTG), ALLOCATABLE :: dofs(:) !<dofs(dofIdx) is the dofIdx'th DOF in the linear combination.
+    REAL(DP), ALLOCATABLE :: coefficients(:) !<coefficients(dofIdx) is the linear proportion of the dofIdx'th dof in the value for this DOF.
+  END TYPE BoundaryConditionsDofConstraintType
+
+  !>A pointer to a linear DOF constraint.
+  TYPE BoundaryConditionsDofConstraintPtrType
+    TYPE(BoundaryConditionsDofConstraintType), POINTER :: ptr
+  END TYPE BoundaryConditionsDofConstraintPtrType
+
+  !>The coupled equations DOF information for the DOF constraints.
+  !>The BoundaryConditionsDofConstraintType describes how an
+  !>equations DOF is a linear combination of other equations DOFs.
+  !>This data structure describes a solver row or column that is mapped to multiple
+  !>equations rows or columns and is used to help build the solver mapping.
+  !>The first equation row/column is used as the owner of the solver row/column.
+  TYPE BoundaryConditionsCoupledDofsType
+    INTEGER(INTG) :: numberOfDofs !<The number of equations rows or columns that are mapped to this solver DOF.
+    INTEGER(INTG), ALLOCATABLE :: globalDofs(:) !<globalDofs(dofIdx) is the dofIdx'th global DOF mapped to the row/column.
+    INTEGER(INTG), ALLOCATABLE :: localDofs(:) !<localDofs(dofIdx) is the dofIdx'th local DOF mapped to the row/column.
+    REAL(DP), ALLOCATABLE :: coefficients(:) !<coefficients(dofIdx) is the linear proportion of the dofIdx'th dof in the mapping for this row or column.
+  END TYPE BoundaryConditionsCoupledDofsType
+
+  !>A pointer to the coupled equations DOF information for the DOF constraints.
+  TYPE BoundaryConditionsCoupledDofsPtrType
+    TYPE(BoundaryConditionsCoupledDofsType), POINTER :: ptr
+  END TYPE BoundaryConditionsCoupledDofsPtrType
+
+  !>Describes linear constraints between solver DOFs in the solver mapping.
+  TYPE BoundaryConditionsDofConstraintsType
+    INTEGER(INTG) :: numberOfConstraints !<The number of DOF constraints.
+    INTEGER(INTG) :: numberOfDofs !<The number of global DOFs.
+    TYPE(BoundaryConditionsDofConstraintPtrType), ALLOCATABLE :: constraints(:) !<constraints(constraintIdx) is a pointer to the dof constraint for the constraintIdx'th constraint.
+    TYPE(BoundaryConditionsCoupledDofsPtrType), ALLOCATABLE :: dofCouplings(:) !<dofCouplings(dofIdx) is a pointer to the coupled DOF information for the solver row/column corresponding to the dofIdx'th equations DOF.
+  END TYPE BoundaryConditionsDofConstraintsType
 
   !
   !================================================================================================================================
@@ -2781,7 +2821,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COL_NUMBERS(:) !<EQUATIONS_COL_NUMBERS(i). The i'th equations column number in the equation set the solver column is mapped to.
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for solver column mapping
 !!TODO: Maybe split this into a linear and a nonlinear part? The only problem is that would probably use about the same memory???
-    !\todo equalDofs: do these need to be arrays? - They are not actually used anywhere though...
     INTEGER(INTG) :: JACOBIAN_COL_NUMBER !<The Jacobian column number in the equations set that the solver column is mapped to.
     REAL(DP) :: JACOBIAN_COUPLING_COEFFICIENT !<The coupling coefficient for the solver column to Jacobian column mapping.
   END TYPE SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE
@@ -2845,19 +2884,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for the solver row to equations mapping
   END TYPE SOLVER_ROW_TO_EQUATIONS_MAPS_TYPE
 
-  !>Describes a DOF constraint that maps a set of equations DOFs to one solver DOF
-  TYPE SolverMappingEqualDofsConstraintType
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
-    INTEGER(INTG) :: numberOfDofs !<The number of DOFs that are constrained to be equal.
-    INTEGER(INTG), ALLOCATABLE :: globalDofs(:) !<The list of global DOFs of the field variable in the constraint.
-  END TYPE SolverMappingEqualDofsConstraintType
-
-  !>Describes linear constraints between solver DOFs in the solver mapping
-  TYPE SolverMappingDofConstraintsType
-    INTEGER(INTG) :: numberOfEqualDofConstraints !<The number of DOF constraints in this solver mapping.
-    TYPE(SolverMappingEqualDofsConstraintType), ALLOCATABLE :: equalDofConstraints(:) !<equalDofConstraints(constraintIdx), the constraintIdx'th DOF constraint in the solver mappings
-  END TYPE SolverMappingDofConstraintsType
-
   !>Contains information about the cached create values for a solver mapping
   TYPE SOLVER_MAPPING_CREATE_VALUES_CACHE_TYPE
     TYPE(LIST_PTR_TYPE), POINTER :: EQUATIONS_VARIABLE_LIST(:) !<EQUATIONS_VARIABLES_LIST(solver_matrix_idx). The list of equations set variables in the solver mapping.
@@ -2868,7 +2894,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER, ALLOCATABLE :: SOURCE_VARIABLE_TYPE(:) !<SOURCE_VARIABLE_TYPE(equations_set_idx). The source variable type that is mapped to the RHS for the equations_set_idx'th equations set.
     TYPE(LIST_PTR_TYPE), POINTER :: INTERFACE_VARIABLE_LIST(:) !<INTERFACE_VARIABLES_LIST(solver_matrix_idx). The list of interface condition variables in the solver mapping for the solver_matrix idx'th solver matrix.
     TYPE(LIST_PTR_TYPE), POINTER :: INTERFACE_INDICES(:) !<INTERFACE_INDICES(equations_set_idx). The list of interface condition indices in the equations_set_idx'th equations set.
-    TYPE(SolverMappingDofConstraintsType), POINTER :: dofConstraints !<A pointer to the DOF constraints structure for the solver mappings.
   END TYPE SOLVER_MAPPING_CREATE_VALUES_CACHE_TYPE
 
   TYPE SOLVER_MAPPING_VARIABLE_TYPE
@@ -2884,7 +2909,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_VARIABLES !<The number of variables involved in the solver matrix.
     TYPE(SOLVER_MAPPING_VARIABLE_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx). The variable information for the variable_idx'th variable involved in the solver matrix.
   END TYPE SOLVER_MAPPING_VARIABLES_TYPE
-  
+
+  !>Describes the coupled rows or columns in the solver mapping
+  TYPE SolverMappingDofCouplingsType
+    INTEGER(INTG) :: numberOfCouplings !<The number of couplings in the list.
+    INTEGER(INTG) :: capacity !<The allocated length of the couplings array.
+    TYPE(BoundaryConditionsCoupledDofsPtrType), ALLOCATABLE :: dofCouplings(:) !<dofCouplings(couplingIdx) is a pointer to the coupled DOF information for the couplingIdx'th coupling in the solver rows or columns.
+  END TYPE SolverMappingDofCouplingsType
+
   !>Contains information on the solver mapping between the global equation sets and the solver matrices.
   TYPE SOLVER_MAPPING_TYPE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations for this mapping.
