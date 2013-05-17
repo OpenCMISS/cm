@@ -8088,6 +8088,7 @@ CONTAINS
         !\TODO: need to be changed once the elements topology is moved under meshTopologyType.
         elements=>mesh%TOPOLOGY(1)%PTR%ELEMENTS
         ALLOCATE(dataPointsTopology%elementDataPoint(elements%NUMBER_OF_ELEMENTS),STAT=ERR)     
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points topology element.",ERR,ERROR,*999)
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           dataPointsTopology%elementDataPoint(elementIdx)%elementNumber=elements%ELEMENTS(elementIdx)%GLOBAL_NUMBER
           dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData=0
@@ -8107,6 +8108,7 @@ CONTAINS
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           ALLOCATE(dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(dataPointsTopology% &
             & elementDataPoint(elementIdx)%numberOfProjectedData),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points topology element data points.",ERR,ERROR,*999)
           DO countIdx=1,dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData
             dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%userNumber=0
             dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%globalNumber=0
@@ -8114,6 +8116,7 @@ CONTAINS
         ENDDO     
         !Record the indices of the data that projected on the elements 
         globalCountIdx=0
+        dataPointsTopology%totalNumberOfProjectedData=0
         DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS 
           dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
           elementNumber=dataProjectionResult%ELEMENT_NUMBER
@@ -8133,6 +8136,7 @@ CONTAINS
         ENDDO !dataPointIdx
         !Allocate memory to store total data indices in ascending order and element map
         ALLOCATE(dataPointsTopology%dataPoints(dataPointsTopology%totalNumberOfProjectedData),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points topology data points.",ERR,ERROR,*999)
         !The global number for the data points will be looping through elements.
         countIdx=1  
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
@@ -8153,7 +8157,7 @@ CONTAINS
       CALL FLAG_ERROR("Mesh is not associated.",err,error,*999)
     ENDIF
     
-  CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
+    CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
     RETURN
 999 CALL ERRORS("Mesh_TopologyDataPointsCalculateProjection",err,error)
     CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")

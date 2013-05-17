@@ -281,10 +281,22 @@ MODULE BASIS_ROUTINES
   PUBLIC BASES_FINALISE,BASES_INITIALISE
 
   PUBLIC BASIS_USER_NUMBER_FIND
-    
-  PUBLIC BASIS_COLLAPSED_XI_GET,BASIS_INTERPOLATION_XI_GET,BASIS_NUMBER_OF_XI_GET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET, &
-    & BASIS_QUADRATURE_ORDER_GET,BASIS_QUADRATURE_TYPE_GET,BASIS_TYPE_GET
 
+  PUBLIC BASIS_COLLAPSED_XI_GET
+
+  PUBLIC BASIS_INTERPOLATION_XI_GET
+
+  PUBLIC BASIS_NUMBER_OF_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_GAUSS_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_ORDER_GET 
+
+  PUBLIC BASIS_QUADRATURE_TYPE_GET
+
+  PUBLIC BASIS_TYPE_GET
 
 
 CONTAINS
@@ -3327,6 +3339,84 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by a pointer. If no Gauss points are specified then xi positions of all Gauss points are returned. \see OPENCMISS::CMISSBasisQuadratureGaussXiGet
+  SUBROUTINE BASIS_QUADRATURE_GAUSS_XI_GET(BASIS,SCHEME,GAUSS_POINTS,GAUSS_XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: SCHEME !<The quadrature scheme to return the Gauss points for
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINTS(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GAUSS_XI(:,:) !<On return, GAUSS_XI(Gauss_point,xi_direction) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: Gauss_point, Gauss_point_idx
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("BASIS_QUADRATURE_GAUSS_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(SCHEME)%PTR
+          IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
+            IF(SIZE(GAUSS_XI,2)==BASIS%NUMBER_OF_XI) THEN
+              IF(SIZE(GAUSS_POINTS,1)==0) THEN !Return all Gauss point xi locations.
+                IF(SIZE(GAUSS_XI,1)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                  GAUSS_XI=TRANSPOSE(QUADRATURE_SCHEME%GAUSS_POSITIONS)
+                ELSE
+                  LOCAL_ERROR="The size of the number of guass index of the specified array GAUSS_XI is invalid. "// &
+                    & "The supplied size is "// &
+                    & TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_XI,2),"*",ERR,ERROR))//" and needs to be = "// &
+                    & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE !Return only specified Gauss point xi locations.
+                DO Gauss_point_idx=1,SIZE(GAUSS_POINTS,1)
+                  Gauss_point=GAUSS_POINTS(Gauss_point_idx)
+                  IF(Gauss_point>0.AND.Gauss_point<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                    GAUSS_XI(Gauss_point_idx,:)=QUADRATURE_SCHEME%GAUSS_POSITIONS(:,Gauss_point)
+                  ELSE
+                    LOCAL_ERROR="The specified Gauss point number of "// & 
+                      & TRIM(NUMBER_TO_VSTRING(Gauss_point,"*",ERR,ERROR))//" is invalid for the specified quadrature "// &
+                      & "scheme of the specified element for this field which has "// &
+                      & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDDO
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The size of the number of xi index of the specified array GAUSS_XI is invalid. "// &
+                & "The supplied size is "// &
+                & TRIM(NUMBER_TO_VSTRING(SIZE(GAUSS_XI,1),"*",ERR,ERROR))//" and needs to be = "// &
+                & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The specified quadrature scheme is not associated for this basis.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Quadrature basis is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_GAUSS_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_GAUSS_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_GAUSS_XI_GET")
+    RETURN
+  END SUBROUTINE BASIS_QUADRATURE_GAUSS_XI_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get the order of a quadrature for a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureOrderGet
   SUBROUTINE BASIS_QUADRATURE_ORDER_GET(BASIS,QUADRATURE_ORDER,ERR,ERROR,*)
 

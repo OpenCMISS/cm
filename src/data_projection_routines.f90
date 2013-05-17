@@ -53,6 +53,7 @@ MODULE DATA_PROJECTION_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
+  USE MESH_ROUTINES
   USE MPI
   USE SORTING
   USE STRINGS
@@ -64,15 +65,26 @@ MODULE DATA_PROJECTION_ROUTINES
   PRIVATE
 
   !Module parameters
+
+  !> \addtogroup DATA_POINT_PROJECTION_ROUTINES_DataProjectionTypes DATA_POINT_PROJECTION_ROUTINES::DataProjectionTypes
+  !> \brief Datapoint projection definition type parameters
+  !> \see DATA_POINT_PROJECTION_ROUTINES,OPENCMISS_DataProjectionTypes
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE=1 !<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE=2 !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE=3 !<The element projection type for data projection, projects to all elements in mesh. \see DATA_PROJECTION_ROUTINES 
-  
+  !>@}
+
+  !> \addtogroup DATA_POINT_PROJECTION_ROUTINES_DataProjectionExitTags DATA_POINT_PROJECTION_ROUTINES::DataProjectionExitTags
+  !> \brief Datapoint projection exit tags
+  !> \see DATA_POINT_PROJECTION_ROUTINES,OPENCMISS_DataProjectionExitTags
+  !>@{ 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_CONVERGED=1 !<Data projection exited due to it being converged \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_BOUNDS=2 !<Data projection exited due to it hitting the bound and continue to travel out of the element. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_MAX_ITERATION=3 !<Data projection exited due to it attaining maximum number of iteration specified by user. \see DATA_PROJECTION_ROUTINES 
   INTEGER(INTG), PARAMETER :: DATA_PROJECTION_EXIT_TAG_NO_ELEMENT=4 !<Data projection exited due to no local element found, this happens when none of the candidate elements are within this computational node, and before MPI communication with other nodes. \see DATA_PROJECTION_ROUTINES     
-    
+  !>@}
+
   !Module types
 
   !Module variables
@@ -90,11 +102,15 @@ MODULE DATA_PROJECTION_ROUTINES
   
   PUBLIC DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE
   
+  PUBLIC DataProjection_DataPointsPositionEvaluate
+  
   PUBLIC DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET,DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_SET
   
   PUBLIC DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET,DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_SET
   
   PUBLIC DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_GET,DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET
+  
+  PUBLIC DataProjection_ProjectionCandidatesSet
   
   PUBLIC DATA_PROJECTION_PROJECTION_TYPE_GET,DATA_PROJECTION_PROJECTION_TYPE_SET
   
@@ -103,6 +119,7 @@ MODULE DATA_PROJECTION_ROUTINES
   PUBLIC DATA_PROJECTION_STARTING_XI_GET,DATA_PROJECTION_STARTING_XI_SET
   
   PUBLIC DATA_PROJECTION_XI_SET,DATA_PROJECTION_ELEMENT_SET
+  
  
 CONTAINS
 
@@ -215,8 +232,9 @@ CONTAINS
         DO nce=1,NUMBER_OF_CLOSEST_CANDIDATES
           ELEMENT_NUMBER=CANDIDATE_ELEMENTS(nce)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999, &
+            & FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR(1:REGION_DIMENSIONS) = POINT_VALUES-INTERPOLATED_POINT%VALUES(:,1)
           DISTANCE2 = DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
           DO insert_idx=nce,1,-1
@@ -237,8 +255,9 @@ CONTAINS
         DO nce=NUMBER_OF_CLOSEST_CANDIDATES+1,NUMBER_OF_CANDIDATES
           ELEMENT_NUMBER=CANDIDATE_ELEMENTS(nce)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999) 
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999, &
+            & FIELD_GEOMETRIC_COMPONENTS_TYPE) 
           DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES - INTERPOLATED_POINT%VALUES(:,1)
           DISTANCE2 = DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
           IF(DISTANCE2<CLOSEST_DISTANCES(NUMBER_OF_CLOSEST_CANDIDATES))THEN
@@ -315,8 +334,9 @@ CONTAINS
           FACE_NUMBER=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS( &
             & ELEMENT_NUMBER)%ELEMENT_FACES(ELEMENT_FACE_NUMBER)
           CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,FACE_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999, &
+            & FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR(1:REGION_DIMENSIONS) = POINT_VALUES-INTERPOLATED_POINT%VALUES(:,1)
           DISTANCE2 = DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
           DO insert_idx=nce,1,-1
@@ -342,8 +362,9 @@ CONTAINS
           FACE_NUMBER=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS( &
             & ELEMENT_NUMBER)%ELEMENT_FACES(ELEMENT_FACE_NUMBER)          
           CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,FACE_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999) 
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999, &
+            & FIELD_GEOMETRIC_COMPONENTS_TYPE) 
           DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES - INTERPOLATED_POINT%VALUES(:,1)
           DISTANCE2 = DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
           IF(DISTANCE2<CLOSEST_DISTANCES(NUMBER_OF_CLOSEST_CANDIDATES))THEN
@@ -423,8 +444,9 @@ CONTAINS
           LINE_NUMBER=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS( &
             & ELEMENT_NUMBER)%ELEMENT_LINES(ELEMENT_LINE_NUMBER)
           CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,LINE_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999, &
+            & FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR(1:REGION_DIMENSIONS) = POINT_VALUES-INTERPOLATED_POINT%VALUES(:,1)
           DISTANCE2 = DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
           DO insert_idx=nce,1,-1
@@ -450,8 +472,9 @@ CONTAINS
           LINE_NUMBER=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS( &
             & ELEMENT_NUMBER)%ELEMENT_LINES(ELEMENT_LINE_NUMBER)          
           CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,LINE_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999) 
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,DATA_PROJECTION%STARTING_XI,INTERPOLATED_POINT,ERR,ERROR,*999, &
+            & FIELD_GEOMETRIC_COMPONENTS_TYPE) 
           DISTANCE_VECTOR(1:REGION_DIMENSIONS)=POINT_VALUES - INTERPOLATED_POINT%VALUES(:,1)
           DISTANCE2 = DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
           IF(DISTANCE2<CLOSEST_DISTANCES(NUMBER_OF_CLOSEST_CANDIDATES))THEN
@@ -582,12 +605,11 @@ CONTAINS
             ENDIF
             IF(DATA_POINTS_REGION_DIMENSIONS==MESH_REGION_DIMENSIONS) THEN !Dimension has to be equal
               ALLOCATE(DATA_PROJECTION,STAT=ERR)
-              !indentation
-              DATA_PROJECTION%GLOBAL_NUMBER=data_projection_idx
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data projection.",ERR,ERROR,*999)
               DATA_PROJECTION%USER_NUMBER=DATA_PROJECTION_USER_NUMBER
               DATA_PROJECTION%LABEL=""
-              CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER,data_projection_idx, &
-                & INSERT_STATUS,ERR,ERROR,*999)
+              CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_PROJECTIONS_TREE,DATA_PROJECTION_USER_NUMBER, &
+                & DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1,INSERT_STATUS,ERR,ERROR,*999)
               DATA_PROJECTION%DATA_PROJECTION_FINISHED=.FALSE.
               DATA_PROJECTION%DATA_POINTS=>DATA_POINTS
               DATA_PROJECTION%MESH=>MESH
@@ -626,22 +648,24 @@ CONTAINS
                 DATA_PROJECTION%STARTING_XI(xi_idx)=0.5_DP !<initialised to 0.5 in each xi direction
               ENDDO !xi_idx              
               DATA_PROJECTION%ABSOLUTE_TOLERANCE=1.0E-8_DP
-              DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP  
+              DATA_PROJECTION%RELATIVE_TOLERANCE=1.0E-6_DP
               IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS>0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
                 DO data_projection_idx=1,DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS
                   NEW_DATA_PROJECTIONS_PTR(data_projection_idx)%PTR=>DATA_POINTS%DATA_PROJECTIONS(data_projection_idx)%PTR
-                ENDDO !xi_idx 
+                ENDDO !xi_idx
               ELSE IF(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS==0) THEN
                 ALLOCATE(NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new data projections.",ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("The number of data projections is < 0.",ERR,ERROR,*999)
               ENDIF
+              !Return the pointer
               NEW_DATA_PROJECTIONS_PTR(DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1)%PTR=>DATA_PROJECTION
               CALL MOVE_ALLOC(NEW_DATA_PROJECTIONS_PTR,DATA_POINTS%DATA_PROJECTIONS)
               DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS=DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS+1
+              DATA_PROJECTION%GLOBAL_NUMBER=DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS
             ELSE
               CALL FLAG_ERROR("Dimensions bewtween the mesh region/interface and data points region/interface does not match.", &
                 & ERR,ERROR,*999)        
@@ -664,6 +688,52 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_CREATE_START_DATA_POINTS 
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks that a user data point number is defined for a specific data projection
+  SUBROUTINE DataProjection_DataPointCheckExist(DataProjection,dataPointUserNumber,dataPointExist,dataPointGlobalNumber,err,error,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DataProjection !<A pointer to the data projection whose data points to check
+    INTEGER(INTG) :: dataPointUserNumber !<The user data point number to check if it exists
+    LOGICAL, INTENT(OUT) :: dataPointExist !<On exit, is .TRUE. if the data point user number exists in the region, .FALSE. if not
+    INTEGER(INTG), INTENT(OUT) :: dataPointGlobalNumber !<On exit, if the data point exists the global number corresponding to the user data point number. If the data point does not exist then global number will be 0.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(TREE_NODE_TYPE), POINTER :: treeNode
+   
+    CALL ENTERS("DataProjection_DataPointCheckExist",err,ERROR,*999)
+    
+    dataPointExist=.FALSE.
+    dataPointGlobalNumber=0
+    IF(ASSOCIATED(DataProjection)) THEN
+      dataPoints=>DataProjection%DATA_POINTS
+      IF(ASSOCIATED(dataPoints)) THEN
+        NULLIFY(treeNode)
+        CALL TREE_SEARCH(dataPoints%DATA_POINTS_TREE,dataPointUserNumber,treeNode,err,error,*999)
+        IF(ASSOCIATED(treeNode)) THEN
+          CALL TREE_NODE_VALUE_GET(dataPoints%DATA_POINTS_TREE,treeNode,dataPointGlobalNumber,err,error,*999)
+          dataPointExist=.TRUE.
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Data points is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("DataProjection_DataPointCheckExist")
+    RETURN
+999 CALL ERRORS("DataProjection_DataPointCheckExist",err,error)
+    CALL EXITS("DataProjection_DataPointCheckExist")
+    RETURN 1
+   
+  END SUBROUTINE DataProjection_DataPointCheckExist
 
   !
   !================================================================================================================================
@@ -839,10 +909,10 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: PROJECTED_ELEMENT(:),PROJECTED_FACE(:),PROJECTION_EXIT_TAG(:)
     REAL(DP), ALLOCATABLE :: PROJECTED_DISTANCE(:,:),PROJECTED_XI(:,:)
     
-    INTEGER(INTG) :: ne,nse,ncn,ni
+    INTEGER(INTG) :: ne,nse,ncn,ni,localElementNumber
     INTEGER(INTG) :: temp_number,start_idx,finish_idx,data_point_idx
     
-    LOGICAL :: BOUNDARY_PROJECTION    
+    LOGICAL :: BOUNDARY_PROJECTION,elementExists,ghostElement    
     
     !INTEGER(INTG) :: NUMBER_OF_PROJECTED_POINTS,NUMBER_OF_PROJECTED_POINTS_2
   
@@ -858,8 +928,10 @@ CONTAINS
               DATA_PROJECTION%PROJECTION_FIELD=>PROJECTION_FIELD
               DATA_PROJECTION_GLOBAL_NUMBER=DATA_PROJECTION%GLOBAL_NUMBER
               DATA_POINTS=>DATA_PROJECTION%DATA_POINTS
-              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(PROJECTION_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINTS,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(PROJECTION_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*998, &
+                & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINTS,ERR,ERROR,*998, &
+                & FIELD_GEOMETRIC_COMPONENTS_TYPE)
               INTERPOLATED_POINT=>INTERPOLATED_POINTS(FIELD_U_VARIABLE_TYPE)%PTR
               DECOMPOSITION=>PROJECTION_FIELD%DECOMPOSITION  
               MESH_COMPONENT_NUMBER=PROJECTION_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER
@@ -877,23 +949,21 @@ CONTAINS
               NUMBER_OF_FACES=DOMAIN%TOPOLOGY%FACES%NUMBER_OF_FACES
               NUMBER_OF_LINES=DOMAIN%TOPOLOGY%LINES%NUMBER_OF_LINES        
               NUMBER_OF_CANDIDATES=0
-              SELECT CASE(DATA_PROJECTION%PROJECTION_TYPE)
+              IF(ALLOCATED(DATA_PROJECTION%candidateElementNumbers) .AND. ALLOCATED(DATA_PROJECTION%localFaceLineNumbers)) THEN
+                SELECT CASE(DATA_PROJECTION%PROJECTION_TYPE)
                 CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE)  !identify all non-ghost boundary lines
                   ALLOCATE(CANDIDATE_ELEMENTS(NUMBER_OF_LINES),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate elements.",ERR,ERROR,*999)
                   ALLOCATE(CANDIDATE_FACES(NUMBER_OF_LINES),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate lines.",ERR,ERROR,*999)
-                  DO ne=DOMAIN%MAPPINGS%ELEMENTS%INTERNAL_START,DOMAIN%MAPPINGS%ELEMENTS%BOUNDARY_FINISH
-                    IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BOUNDARY_ELEMENT) THEN
-                      DO nse=1,SIZE(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_LINES,1)
-                        temp_number=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_LINES(nse)
-                        IF(DECOMPOSITION%TOPOLOGY%LINES%LINES(temp_number)%BOUNDARY_LINE) THEN
-                          NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
-                          CANDIDATE_FACES(NUMBER_OF_CANDIDATES)=nse
-                          CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=ne
-                        ENDIF !boundary line
-                      ENDDO !nse
-                    ENDIF !boundary element
+                  DO ne=1,SIZE(DATA_PROJECTION%candidateElementNumbers,1) !Loop through all candidate element defined by user number
+                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION%TOPOLOGY,DATA_PROJECTION% &
+                      & candidateElementNumbers(ne),elementExists,localElementNumber,ghostElement,ERR,ERROR,*999) !Check if element exists on current domain, get local number
+                    IF((elementExists) .AND. (.NOT.ghostElement)) THEN !Get non-ghost elements
+                      NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
+                      CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=localElementNumber
+                      CANDIDATE_FACES(NUMBER_OF_CANDIDATES)=DATA_PROJECTION%localFaceLineNumbers(ne) !Store element line number for line projection type
+                    ENDIF
                   ENDDO !ne
                 CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !identify all non-ghost boundary faces
                   IF(DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS>=2) THEN
@@ -901,17 +971,14 @@ CONTAINS
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate elements.",ERR,ERROR,*999)
                     ALLOCATE(CANDIDATE_FACES(NUMBER_OF_FACES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate faces.",ERR,ERROR,*999)
-                    DO ne=DOMAIN%MAPPINGS%ELEMENTS%INTERNAL_START,DOMAIN%MAPPINGS%ELEMENTS%BOUNDARY_FINISH
-                      IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BOUNDARY_ELEMENT) THEN
-                        DO nse=1,SIZE(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_FACES,1)
-                          temp_number=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_FACES(nse)
-                          IF(DECOMPOSITION%TOPOLOGY%FACES%FACES(temp_number)%BOUNDARY_FACE) THEN
-                            NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
-                            CANDIDATE_FACES(NUMBER_OF_CANDIDATES)=nse
-                            CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=ne
-                          ENDIF !boundary face
-                        ENDDO !nse
-                      ENDIF !boundary element
+                    DO ne=1,SIZE(DATA_PROJECTION%candidateElementNumbers,1) !Loop through all candidate element defined by user number
+                      CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION%TOPOLOGY,DATA_PROJECTION% &
+                        & candidateElementNumbers(ne),elementExists,localElementNumber,ghostElement,ERR,ERROR,*999) !Check if element exists on current domain, get local number
+                      IF((elementExists) .AND. (.NOT.ghostElement)) THEN !Get non-ghost elements
+                        NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
+                        CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=localElementNumber
+                        CANDIDATE_FACES(NUMBER_OF_CANDIDATES)=DATA_PROJECTION%localFaceLineNumbers(ne) !Store element face number for face projection type
+                      ENDIF
                     ENDDO !ne
                   ELSE
                     CALL FLAG_ERROR("Decomposition mesh number of dimensions has to be 2 or greater.",ERR,ERROR,*999)        
@@ -920,17 +987,77 @@ CONTAINS
                   IF(DATA_PROJECTION%NUMBER_OF_XI==DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS) THEN
                     ALLOCATE(CANDIDATE_ELEMENTS(NUMBER_OF_ELEMENTS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate elements.",ERR,ERROR,*999)
-                    DO ne=DOMAIN%MAPPINGS%ELEMENTS%INTERNAL_START,DOMAIN%MAPPINGS%ELEMENTS%BOUNDARY_FINISH
-                      NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
-                      CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=ne
-                    ENDDO
+                    DO ne=1,SIZE(DATA_PROJECTION%candidateElementNumbers,1) !Loop through all candidate element defined by user number
+                      CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION%TOPOLOGY,DATA_PROJECTION% &
+                        & candidateElementNumbers(ne),elementExists,localElementNumber,ghostElement,ERR,ERROR,*999) !Check if element exists on current domain, get local number
+                      IF((elementExists) .AND. (.NOT.ghostElement)) THEN !Get non-ghost elements
+                        NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
+                        CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=localElementNumber
+                      ENDIF
+                    ENDDO !ne
                   ELSE
                     CALL FLAG_ERROR("Data projection number of xi has to equal to decomposition mesh number of dimensions",ERR, &
                       & ERROR,*999)
                   ENDIF
                 CASE DEFAULT
                   CALL FLAG_ERROR("No match for data projection type found",ERR,ERROR,*999)
-              END SELECT !DATA_PROJECTION%PROJECTION_TYPE
+                END SELECT !DATA_PROJECTION%PROJECTION_TYPE           
+              ELSE !If user didn't define candidate element number
+                SELECT CASE(DATA_PROJECTION%PROJECTION_TYPE)
+                  CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE)  !identify all non-ghost boundary lines
+                    ALLOCATE(CANDIDATE_ELEMENTS(NUMBER_OF_LINES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate elements.",ERR,ERROR,*999)
+                    ALLOCATE(CANDIDATE_FACES(NUMBER_OF_LINES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate lines.",ERR,ERROR,*999)
+                    DO ne=1,DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_LOCAL
+                      IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BOUNDARY_ELEMENT) THEN
+                        DO nse=1,SIZE(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_LINES,1)
+                          temp_number=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_LINES(nse)
+                          IF(DECOMPOSITION%TOPOLOGY%LINES%LINES(temp_number)%BOUNDARY_LINE) THEN
+                            NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
+                            CANDIDATE_FACES(NUMBER_OF_CANDIDATES)=nse
+                            CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=ne
+                          ENDIF !boundary line
+                        ENDDO !nse
+                      ENDIF !boundary element
+                    ENDDO !ne
+                  CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !identify all non-ghost boundary faces
+                    IF(DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS>=2) THEN
+                      ALLOCATE(CANDIDATE_ELEMENTS(NUMBER_OF_FACES),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate elements.",ERR,ERROR,*999)
+                      ALLOCATE(CANDIDATE_FACES(NUMBER_OF_FACES),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate faces.",ERR,ERROR,*999)
+                      DO ne=1,DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_LOCAL
+                        IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BOUNDARY_ELEMENT) THEN
+                          DO nse=1,SIZE(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_FACES,1)
+                            temp_number=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ELEMENT_FACES(nse)
+                            IF(DECOMPOSITION%TOPOLOGY%FACES%FACES(temp_number)%BOUNDARY_FACE) THEN
+                              NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
+                              CANDIDATE_FACES(NUMBER_OF_CANDIDATES)=nse
+                              CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=ne
+                            ENDIF !boundary face
+                          ENDDO !nse
+                        ENDIF !boundary element
+                      ENDDO !ne
+                    ELSE
+                      CALL FLAG_ERROR("Decomposition mesh number of dimensions has to be 2 or greater.",ERR,ERROR,*999)        
+                    ENDIF
+                  CASE (DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE) !identify all non-ghost elements
+                    IF(DATA_PROJECTION%NUMBER_OF_XI==DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS) THEN
+                      ALLOCATE(CANDIDATE_ELEMENTS(NUMBER_OF_ELEMENTS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidate elements.",ERR,ERROR,*999)
+                      DO ne=1,DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_LOCAL
+                        NUMBER_OF_CANDIDATES=NUMBER_OF_CANDIDATES+1
+                        CANDIDATE_ELEMENTS(NUMBER_OF_CANDIDATES)=ne
+                      ENDDO
+                    ELSE
+                      CALL FLAG_ERROR("Data projection number of xi has to equal to decomposition mesh number of dimensions",ERR, &
+                        & ERROR,*999)
+                    ENDIF
+                  CASE DEFAULT
+                    CALL FLAG_ERROR("No match for data projection type found",ERR,ERROR,*999)
+                END SELECT !DATA_PROJECTION%PROJECTION_TYPE
+              ENDIF
               !#####################################################################################################################
               !find the clostest elements/faces/lines for each point in the current computational node base on starting xi
               !the clostest elements/faces/lines are required to shrink down on the list of possible projection candiates
@@ -947,21 +1074,21 @@ CONTAINS
                 CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) !find closest candidate lines
                   DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                     CALL DATA_PROJECTION_CLOSEST_LINES_FIND(DATA_PROJECTION,INTERPOLATED_POINT, &
-                      & DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES,CANDIDATE_ELEMENTS, &
+                      & DATA_POINTS%DATA_POINTS(data_point_idx)%position,CANDIDATE_ELEMENTS, &
                       & CANDIDATE_FACES,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_FACES( &
                       & data_point_idx,:),CLOSEST_DISTANCES(data_point_idx,:),ERR,ERROR,*999)
                   ENDDO !data_point_idx
                 CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !find closest candidate faces      
                   DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                     CALL DATA_PROJECTION_CLOSEST_FACES_FIND(DATA_PROJECTION,INTERPOLATED_POINT, &
-                      & DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES,CANDIDATE_ELEMENTS, &
+                      & DATA_POINTS%DATA_POINTS(data_point_idx)%position,CANDIDATE_ELEMENTS, &
                       & CANDIDATE_FACES,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_FACES( &
                       & data_point_idx,:),CLOSEST_DISTANCES(data_point_idx,:),ERR,ERROR,*999)
                   ENDDO !data_point_idx
                 CASE (DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE) !find closest candidate elements
                   DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                     CALL DATA_PROJECTION_CLOSEST_ELEMENTS_FIND(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS%DATA_POINTS( &
-                      & data_point_idx)%VALUES,CANDIDATE_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:), &
+                      & data_point_idx)%position,CANDIDATE_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:), &
                       & CLOSEST_DISTANCES(data_point_idx,:),ERR,ERROR,*999)
                     !CLOSEST_ELEMENTS(data_point_idx,:)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(CLOSEST_ELEMENTS(data_point_idx,:)) !local to global element number mapping
                   ENDDO !data_point_idx
@@ -1042,7 +1169,7 @@ CONTAINS
                       NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                       IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
                         CALL DATA_PROJECTION_NEWTON_LINES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT, &
-                          & DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS( &
+                          & DATA_POINTS%DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS( &
                           & data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_FACES(data_point_idx,1: &
                           & NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx),  &
                           & PROJECTED_FACE(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
@@ -1056,9 +1183,9 @@ CONTAINS
                       NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                       IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
                         CALL DATA_PROJECTION_NEWTON_FACES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT, &
-                          & DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS( &
-                          & data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_FACES(data_point_idx,1: &
-                          & NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx), &
+                          & DATA_POINTS%DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS( &
+                          & data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_FACES(data_point_idx, &
+                          & 1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx), &
                           & PROJECTED_FACE(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
                           & ERR,ERROR,*999)
                         PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
@@ -1072,9 +1199,10 @@ CONTAINS
                           NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                           IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
                             CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_1(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS% &
-                              & DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES &
-                              & ),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1, &
-                              & data_point_idx),PROJECTED_XI(:,data_point_idx),ERR,ERROR,*999)
+                              & DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx, &
+                              & 1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx), &
+                              & PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx), &
+                              & PROJECTED_XI(:,data_point_idx),ERR,ERROR,*999)
                             PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
                               & data_point_idx)) !map the element number to global number
 
@@ -1085,9 +1213,10 @@ CONTAINS
                           NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                           IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
                             CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_2(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS% &
-                              & DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES &
-                              & ),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1, &
-                              & data_point_idx),PROJECTED_XI(:,data_point_idx),ERR,ERROR,*999)                    
+                              & DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx, &
+                              & 1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx), &
+                              & PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx), &
+                              & PROJECTED_XI(:,data_point_idx),ERR,ERROR,*999)                    
                             PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
                               & data_point_idx)) !map the element number to global number
                           ENDIF
@@ -1097,9 +1226,10 @@ CONTAINS
                           NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                           IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
                             CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS% &
-                              & DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES &
-                              & ),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1, &
-                              & data_point_idx),PROJECTED_XI(:,data_point_idx),ERR,ERROR,*999)
+                              & DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx, &
+                              & 1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx), &
+                              & PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx), &
+                              & PROJECTED_XI(:,data_point_idx),ERR,ERROR,*999)
                             PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
                               & data_point_idx)) !map the element number to global number
                           ENDIF
@@ -1173,7 +1303,7 @@ CONTAINS
                   CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) !Newton project to closest lines, and find miminum projection
                     DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                       CALL DATA_PROJECTION_NEWTON_LINES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS%DATA_POINTS( &
-                        & data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_FACES(data_point_idx,:), &
+                        & data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_FACES(data_point_idx,:), &
                         & DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%EXIT_TAG,DATA_PROJECTION% &
                         & DATA_PROJECTION_RESULTS(data_point_idx)%ELEMENT_NUMBER,DATA_PROJECTION% &
                         & DATA_PROJECTION_RESULTS(data_point_idx)%ELEMENT_LINE_NUMBER,DATA_PROJECTION%DATA_PROJECTION_RESULTS( &
@@ -1182,7 +1312,7 @@ CONTAINS
                   CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !find closest candidate faces
                     DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                       CALL DATA_PROJECTION_NEWTON_FACES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS%DATA_POINTS( &
-                        & data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_FACES(data_point_idx,:), &
+                        & data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_FACES(data_point_idx,:), &
                         & DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%EXIT_TAG,DATA_PROJECTION% &
                         & DATA_PROJECTION_RESULTS(data_point_idx)%ELEMENT_NUMBER,DATA_PROJECTION% &
                         & DATA_PROJECTION_RESULTS(data_point_idx)%ELEMENT_FACE_NUMBER,DATA_PROJECTION%DATA_PROJECTION_RESULTS( &
@@ -1193,7 +1323,7 @@ CONTAINS
                       CASE (1) !1D mesh
                         DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                           CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_1(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS% &
-                            & DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,:),DATA_PROJECTION% &
+                            & DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx,:),DATA_PROJECTION% &
                             & DATA_PROJECTION_RESULTS(data_point_idx)%EXIT_TAG,DATA_PROJECTION%DATA_PROJECTION_RESULTS( &
                             & data_point_idx)%ELEMENT_NUMBER, DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%DISTANCE, &
                             & DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%XI,ERR,ERROR,*999)
@@ -1201,7 +1331,7 @@ CONTAINS
                       CASE (2) !2D mesh
                         DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                           CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_2(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS% &
-                            & DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,:),DATA_PROJECTION% &
+                            & DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx,:),DATA_PROJECTION% &
                             & DATA_PROJECTION_RESULTS(data_point_idx)%EXIT_TAG,DATA_PROJECTION%DATA_PROJECTION_RESULTS( &
                             & data_point_idx)%ELEMENT_NUMBER,DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%DISTANCE, &
                             & DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%XI,ERR,ERROR,*999)
@@ -1209,7 +1339,7 @@ CONTAINS
                       CASE (3) !3D mesh
                         DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                           CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINTS% &
-                            & DATA_POINTS(data_point_idx)%VALUES,CLOSEST_ELEMENTS(data_point_idx,:),DATA_PROJECTION% &
+                            & DATA_POINTS(data_point_idx)%position,CLOSEST_ELEMENTS(data_point_idx,:),DATA_PROJECTION% &
                             & DATA_PROJECTION_RESULTS(data_point_idx)%EXIT_TAG,DATA_PROJECTION%DATA_PROJECTION_RESULTS( &
                             & data_point_idx)%ELEMENT_NUMBER,DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%DISTANCE, &
                             & DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%XI,ERR,ERROR,*999)
@@ -1238,13 +1368,117 @@ CONTAINS
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
     ENDIF !ASSOCIATED(DATA_PROJECTION)  
 
+    ! Deallocate arrays used within this routine
+    IF(ALLOCATED(CANDIDATE_ELEMENTS)) DEALLOCATE(CANDIDATE_ELEMENTS)
+    IF(ALLOCATED(CANDIDATE_FACES)) DEALLOCATE(CANDIDATE_FACES)
+    IF(ALLOCATED(CLOSEST_ELEMENTS)) DEALLOCATE(CLOSEST_ELEMENTS)
+    IF(ALLOCATED(CLOSEST_FACES)) DEALLOCATE(CLOSEST_FACES)
+    IF(ALLOCATED(CLOSEST_DISTANCES)) DEALLOCATE(CLOSEST_DISTANCES)
+    IF(ALLOCATED(GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES)) DEALLOCATE(GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES)
+    IF(ALLOCATED(GLOBAL_NUMBER_OF_CLOSEST_CANDIDATES)) DEALLOCATE(GLOBAL_NUMBER_OF_CLOSEST_CANDIDATES)
+    IF(ALLOCATED(GLOBAL_MPI_DISPLACEMENTS)) DEALLOCATE(GLOBAL_MPI_DISPLACEMENTS)
+    IF(ALLOCATED(GLOBAL_NUMBER_OF_PROJECTED_POINTS)) DEALLOCATE(GLOBAL_NUMBER_OF_PROJECTED_POINTS)
+    IF(ALLOCATED(PROJECTION_EXIT_TAG)) DEALLOCATE(PROJECTION_EXIT_TAG)
+    IF(ALLOCATED(PROJECTED_ELEMENT)) DEALLOCATE(PROJECTED_ELEMENT)
+    IF(ALLOCATED(PROJECTED_FACE)) DEALLOCATE(PROJECTED_FACE)
+    IF(ALLOCATED(PROJECTED_DISTANCE)) DEALLOCATE(PROJECTED_DISTANCE)
+    IF(ALLOCATED(PROJECTED_XI)) DEALLOCATE(PROJECTED_XI)
+    IF(ALLOCATED(SORTING_IND_2)) DEALLOCATE(SORTING_IND_2)
+    IF(ALLOCATED(GLOBAL_CLOSEST_DISTANCES)) DEALLOCATE(GLOBAL_CLOSEST_DISTANCES)
+    IF(ALLOCATED(SORTING_IND_1)) DEALLOCATE(SORTING_IND_1)
+
     CALL EXITS("DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE")
     RETURN
-999 CALL ERRORS("DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE",ERR,ERROR)    
+999 IF(ALLOCATED(CANDIDATE_ELEMENTS)) DEALLOCATE(CANDIDATE_ELEMENTS)
+    IF(ALLOCATED(CANDIDATE_FACES)) DEALLOCATE(CANDIDATE_FACES)
+    IF(ALLOCATED(CLOSEST_ELEMENTS)) DEALLOCATE(CLOSEST_ELEMENTS)
+    IF(ALLOCATED(CLOSEST_FACES)) DEALLOCATE(CLOSEST_FACES)
+    IF(ALLOCATED(CLOSEST_DISTANCES)) DEALLOCATE(CLOSEST_DISTANCES)
+    IF(ALLOCATED(GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES)) DEALLOCATE(GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES)
+    IF(ALLOCATED(GLOBAL_NUMBER_OF_CLOSEST_CANDIDATES)) DEALLOCATE(GLOBAL_NUMBER_OF_CLOSEST_CANDIDATES)
+    IF(ALLOCATED(GLOBAL_MPI_DISPLACEMENTS)) DEALLOCATE(GLOBAL_MPI_DISPLACEMENTS)
+    IF(ALLOCATED(GLOBAL_NUMBER_OF_PROJECTED_POINTS)) DEALLOCATE(GLOBAL_NUMBER_OF_PROJECTED_POINTS)
+    IF(ALLOCATED(PROJECTION_EXIT_TAG)) DEALLOCATE(PROJECTION_EXIT_TAG)
+    IF(ALLOCATED(PROJECTED_ELEMENT)) DEALLOCATE(PROJECTED_ELEMENT)
+    IF(ALLOCATED(PROJECTED_FACE)) DEALLOCATE(PROJECTED_FACE)
+    IF(ALLOCATED(PROJECTED_DISTANCE)) DEALLOCATE(PROJECTED_DISTANCE)
+    IF(ALLOCATED(PROJECTED_XI)) DEALLOCATE(PROJECTED_XI)
+    IF(ALLOCATED(SORTING_IND_2)) DEALLOCATE(SORTING_IND_2)
+    IF(ALLOCATED(GLOBAL_CLOSEST_DISTANCES)) DEALLOCATE(GLOBAL_CLOSEST_DISTANCES)
+    IF(ALLOCATED(SORTING_IND_1)) DEALLOCATE(SORTING_IND_1)
+998 CALL ERRORS("DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE",ERR,ERROR)
     CALL EXITS("DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE")
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Evaluate the data points position in a field based on data projection
+  SUBROUTINE DataProjection_DataPointsPositionEvaluate(dataProjection,field,fieldVariableType,err,error,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<Data projection to give the xi locations and element number for the data points
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to be interpolated
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: dataPointIdx,elementNumber,coordIdx
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    
+    CALL ENTERS("DataProjection_DataPointsPositionEvaluate",err,error,*999)
+    
+    IF(ASSOCIATED(field)) THEN 
+      IF (FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR.FIELD%TYPE==FIELD_GEOMETRIC_GENERAL_TYPE) THEN
+        IF(ASSOCIATED(dataProjection)) THEN
+          dataPoints=>dataProjection%DATA_POINTS
+          IF(ASSOCIATED(dataPoints)) THEN
+            NULLIFY(interpolatedPoints)
+            NULLIFY(interpolationParameters)
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(field,interpolationParameters,err,error,*999, &
+              & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999, &
+              & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+            interpolatedPoint=>interpolatedPoints(fieldVariableType)%PTR
+            !Loop through data points 
+             DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
+               elementNumber=dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)%ELEMENT_NUMBER
+               CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber, &
+                 & interpolationParameters(fieldVariableType)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+               CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)%XI, &
+                 & interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+               DO coordIdx=1,SIZE(dataPoints%DATA_POINTS(dataPointIdx)%position)
+                 dataPoints%DATA_POINTS(dataPointIdx)%position(coordIdx)=interpolatedPoint%VALUES(coordIdx,NO_PART_DERIV)
+               ENDDO !coordIdx     
+             ENDDO !dataPointIdx
+           ELSE
+             CALL FLAG_ERROR("Data points is not associated.",err,error,*999)
+           ENDIF
+         ELSE
+           CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+         ENDIF
+       ELSE
+         CALL FLAG_ERROR("Cannot evaluate data points position on field other than geometric or geometric general type.", &
+           & err,error,*999)
+       ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DataProjection_DataPointsPositionEvaluate")
+    RETURN
+999 CALL ERRORS("DataProjection_DataPointsPositionEvaluate",err,error)    
+    CALL EXITS("DataProjection_DataPointsPositionEvaluate")
+    RETURN 1
+
+  END SUBROUTINE DataProjection_DataPointsPositionEvaluate
   
   !
   !================================================================================================================================
@@ -1439,9 +1673,9 @@ CONTAINS
           CONVERGED=.FALSE.
           DELTA=0.5_DP*MAXIMUM_DELTA !start at half the MAXIMUM_DELTA as we do not know if quadratic model is a good approximation yet
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,INTERPOLATED_POINT% &
-            & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            & INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           XI=DATA_PROJECTION%STARTING_XI
-          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))       
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
@@ -1484,7 +1718,7 @@ CONTAINS
               ELSEIF(XI_NEW(1)>1.0_DP) THEN
                 XI_NEW(1)=1.0_DP  
               ENDIF
-              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
               DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test
@@ -1599,9 +1833,9 @@ CONTAINS
           CONVERGED=.FALSE.
           DELTA=0.5_DP*MAXIMUM_DELTA !start at half the MAXIMUM_DELTA as we do not know if quadratic model is a good approximation yet            
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           XI=DATA_PROJECTION%STARTING_XI
-          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))   
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
@@ -1694,7 +1928,7 @@ CONTAINS
                   XI_NEW(3-ni)=XI(3-ni)+XI_UPDATE(3-ni)*(1.0_DP-XI(ni))/XI_UPDATE(ni)
                 ENDIF
               ENDDO
-              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
               DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
@@ -1812,9 +2046,9 @@ CONTAINS
           CONVERGED=.FALSE.
           DELTA=0.5_DP*MAXIMUM_DELTA !start at half the MAXIMUM_DELTA as we do not know if quadratic model is a good approximation yet            
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           XI=DATA_PROJECTION%STARTING_XI
-          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR,DISTANCE_VECTOR)   
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
@@ -1987,7 +2221,7 @@ CONTAINS
                   XI_NEW=XI+XI_UPDATE*(1.0_DP-XI(ni))/XI_UPDATE(ni)
                 ENDIF
               ENDDO !ni
-              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
               DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR,DISTANCE_VECTOR)
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
@@ -2112,9 +2346,9 @@ CONTAINS
           CONVERGED=.FALSE.
           DELTA=0.5_DP*MAXIMUM_DELTA !start at half the MAXIMUM_DELTA as we do not know if quadratic model is a good approximation yet            
           CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,FACE_NUMBER, &
-            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            & INTERPOLATED_POINT%INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           XI=DATA_PROJECTION%STARTING_XI
-          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))   
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
@@ -2207,7 +2441,7 @@ CONTAINS
                   XI_NEW(3-ni)=XI(3-ni)+XI_UPDATE(3-ni)*(1.0_DP-XI(ni))/XI_UPDATE(ni)
                 ENDIF
               ENDDO
-              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
               DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
@@ -2325,9 +2559,9 @@ CONTAINS
           CONVERGED=.FALSE.
           DELTA=0.5_DP*MAXIMUM_DELTA !start at half the MAXIMUM_DELTA as we do not know if quadratic model is a good approximation yet
           CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,LINE_NUMBER,INTERPOLATED_POINT% &
-            & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            & INTERPOLATION_PARAMETERS,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           XI=DATA_PROJECTION%STARTING_XI
-          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
           DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))       
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
@@ -2370,7 +2604,7 @@ CONTAINS
               ELSEIF(XI_NEW(1)>1.0_DP) THEN
                 XI_NEW(1)=1.0_DP  
               ENDIF
-              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_XI(SECOND_PART_DERIV,XI_NEW,INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
               DISTANCE_VECTOR=POINT_VALUES-INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test
@@ -2501,6 +2735,64 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets the candidates element numbers and local line/face numbers for a data projection.
+  SUBROUTINE DataProjection_ProjectionCandidatesSet(dataProjection,elementUserNumber,localFaceLineNumbers,err,error,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection to set the projection type for
+    INTEGER(INTG), INTENT(IN) :: elementUserNumber(:) !<the projection candidate user element numbers
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<the projection candidate element face/line numbers
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: elementIdx,elementGlobalNumber
+    INTEGER(INTG) :: meshComponentNumber=1 !<TODO:mesh component is harded coded to be 1, need to be removed once MeshComponentsElementsType is moved under MeshTopologyType
+    LOGICAL :: elementExists
+    
+    CALL ENTERS("DataProjection_ProjectionCandidatesSet",err,error,*999)
+
+    IF(ASSOCIATED(dataProjection)) THEN
+      IF(SIZE(elementUserNumber,1)==SIZE(localFaceLineNumbers,1)) THEN
+        ALLOCATE(dataProjection%candidateElementNumbers(SIZE(elementUserNumber,1)),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidiate element numbers.",ERR,ERROR,*998)
+        ALLOCATE(dataProjection%localFaceLineNumbers(SIZE(localFaceLineNumbers,1)),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidiate local face/line numbers.",ERR,ERROR,*999)
+        DO elementIdx=1,SIZE(elementUserNumber,1)
+          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(dataProjection%MESH,meshComponentNumber,elementUserNumber(elementIdx), &
+            & elementExists,elementGlobalNumber,err,error,*999)       
+          IF(elementExists) THEN
+            dataProjection%candidateElementNumbers(elementIdx)=elementUserNumber(elementIdx)
+            dataProjection%localFaceLineNumbers(elementIdx)=localFaceLineNumbers(elementIdx)
+          ELSE
+            CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
+              & (elementUserNumber(elementIdx),"*",err,ERROR))//") does not exist.",err,error,*999)
+          ENDIF
+        ENDDO !elementIdx
+      ELSE
+        CALL FLAG_ERROR("Input user element numbers and face numbers sizes do not match.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DataProjection_ProjectionCandidatesSet")
+    RETURN
+999 IF(ALLOCATED(dataProjection%candidateElementNumbers)) THEN
+      DEALLOCATE(dataProjection%candidateElementNumbers)
+    END IF
+    IF(ALLOCATED(dataProjection%localFaceLineNumbers)) THEN
+      DEALLOCATE(dataProjection%localFaceLineNumbers)
+    END IF
+998 CALL ERRORS("DataProjection_ProjectionCandidatesSet",err,error)
+    CALL EXITS("DataProjection_ProjectionCandidatesSet")
+    RETURN 1
+
+  END SUBROUTINE DataProjection_ProjectionCandidatesSet
   
   !
   !================================================================================================================================
@@ -2761,23 +3053,36 @@ CONTAINS
   !
   
   !>Sets the element for a data projection.
-  SUBROUTINE DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,DATA_POINT_NUMBER,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,ELEMENT_USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the element for
-    INTEGER(INTG), INTENT(IN) :: DATA_POINT_NUMBER !<data point number
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<the element number to set
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<data point user number
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_USER_NUMBER !<the user element number to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER,ELEMENT_GLOBAL_NUMBER
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER=1!<TODO:mesh component is harded coded to be 1, need to be generalised
+    LOGICAL :: DATA_POINT_EXISTS,ELEMENT_EXISTS
     
     CALL ENTERS("DATA_PROJECTION_ELEMENT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
-      IF((ELEMENT_NUMBER<DATA_PROJECTION%MESH%NUMBER_OF_ELEMENTS) .OR. (ELEMENT_NUMBER>0)) THEN
-        DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%ELEMENT_NUMBER=ELEMENT_NUMBER
+      CALL DataProjection_DataPointCheckExist(DATA_PROJECTION,DATA_POINT_USER_NUMBER,DATA_POINT_EXISTS, &
+        & DATA_POINT_GLOBAL_NUMBER,ERR,ERROR,*999)
+      IF(DATA_POINT_EXISTS) THEN
+        CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(DATA_PROJECTION%MESH,MESH_COMPONENT_NUMBER,ELEMENT_USER_NUMBER, &
+          & ELEMENT_EXISTS,ELEMENT_GLOBAL_NUMBER,ERR,ERROR,*999)       
+        IF(ELEMENT_EXISTS) THEN
+          DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%ELEMENT_NUMBER=ELEMENT_GLOBAL_NUMBER
+        ELSE
+          CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
+            & (ELEMENT_USER_NUMBER,"*",ERR,ERROR))//") does not exist.",ERR,ERROR,*999)
+        ENDIF
       ELSE
-        CALL FLAG_ERROR("Data projection element number out of range.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
+            & (DATA_POINT_USER_NUMBER,"*",ERR,ERROR))//") does not exist.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -2796,33 +3101,40 @@ CONTAINS
   !
   
   !>Sets the starting xi for a data projection.
-  SUBROUTINE DATA_PROJECTION_XI_SET(DATA_PROJECTION,DATA_POINT_NUMBER,XI,ERR,ERROR,*)
+  SUBROUTINE DATA_PROJECTION_XI_SET(DATA_PROJECTION,DATA_POINT_USER_NUMBER,XI,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the xi for
-    INTEGER(INTG), INTENT(IN) :: DATA_POINT_NUMBER !<data point number
+    INTEGER(INTG), INTENT(IN) :: DATA_POINT_USER_NUMBER !<data point user number
     REAL(DP), INTENT(IN) :: XI(:) !<the xi position to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ni
-    LOGICAL :: VALID_INPUT
+    INTEGER(INTG) :: ni,DATA_POINT_GLOBAL_NUMBER
+    LOGICAL :: VALID_INPUT,DATA_POINT_EXISTS
     
     CALL ENTERS("DATA_PROJECTION_XI_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
-      IF(SIZE(XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
-        VALID_INPUT=.TRUE.
-        DO ni=1,SIZE(XI,1)
-          IF((XI(ni)<=0).OR.(XI(ni)>=1)) VALID_INPUT=.FALSE.
-        ENDDO
-        IF(VALID_INPUT) THEN
-          DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_NUMBER)%XI=XI
+      CALL DataProjection_DataPointCheckExist(DATA_PROJECTION,DATA_POINT_USER_NUMBER,DATA_POINT_EXISTS, &
+        & DATA_POINT_GLOBAL_NUMBER,ERR,ERROR,*999)
+      IF(DATA_POINT_EXISTS) THEN
+        IF(SIZE(XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
+          VALID_INPUT=.TRUE.
+          DO ni=1,SIZE(XI,1)
+            IF((XI(ni)<0).OR.(XI(ni)>1)) VALID_INPUT=.FALSE.
+          ENDDO
+          IF(VALID_INPUT) THEN
+            DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI=XI
+          ELSE
+            CALL FLAG_ERROR("Data projection xi must be between 0 and 1.",ERR,ERROR,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("Data projection xi must be between 0 and 1.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Data projection xi dimension mismatch.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data projection xi dimension mismatch.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
+            & (DATA_POINT_USER_NUMBER,"*",ERR,ERROR))//") does not exist.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -2835,7 +3147,7 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_XI_SET
-        
+
   !
   !================================================================================================================================
   !

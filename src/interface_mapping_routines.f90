@@ -95,7 +95,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) ::       ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) ::    ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: column_idx,dof_idx,matrix_idx,mesh_idx,variable_idx
+    INTEGER(INTG) :: column_idx,dof_idx,matrix_idx,mesh_idx,variable_idx,number_of_interface_matrices
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,LAGRANGE_VARIABLE
@@ -116,7 +116,7 @@ CONTAINS
         IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
           INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
           SELECT CASE(INTERFACE_CONDITION%METHOD)
-          CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+          CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
             LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
             IF(ASSOCIATED(LAGRANGE)) THEN
               INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
@@ -147,7 +147,15 @@ CONTAINS
                   & STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrix rows to variable maps.",ERR,ERROR,*999)
                 !Loop over the interface matrices and calculate the row mappings
-                DO matrix_idx=1,INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
+                !The pointers below have been checked for association above.
+                SELECT CASE(INTERFACE_CONDITION%METHOD)
+                CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                  number_of_interface_matrices=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
+                CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                  !Number of interface matrices whose rows/columns are related to Dependent/Lagrange variables and not Lagrange/Lagrange variables (last interface matrix is Lagrange/Lagrange (Penalty matrix)
+                  number_of_interface_matrices=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES-1 
+                ENDSELECT
+                DO matrix_idx=1,number_of_interface_matrices
                   !Initialise and setup the interface matrix
                   CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
                   mesh_idx=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)
@@ -185,7 +193,7 @@ CONTAINS
                       !1-1 mapping for now
                       DO dof_idx=1,FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
                         INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP(dof_idx)=dof_idx
-                      ENDDO !dof_idx                  
+                      ENDDO !dof_idx
                     ELSE
                       LOCAL_ERROR="Dependent variable for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                         & " could not be found."
@@ -197,8 +205,62 @@ CONTAINS
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDDO !matrix_idx
+
+                !The pointers below have been checked for association above.
+                SELECT CASE(INTERFACE_CONDITION%METHOD)
+                CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                  !Sets up the Lagrange-Lagrange (Penalty) interface matrix mapping and calculate the row mappings
+                  matrix_idx = INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES !last of the interface matrices
+                  !Initialise and setup the interface matrix
+                  CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
+                  mesh_idx=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)
+                  NULLIFY(LAGRANGE_VARIABLE)
+                  CALL FIELD_VARIABLE_GET(LAGRANGE_FIELD,CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE,LAGRANGE_VARIABLE, &
+                    & ERR,ERROR,*999)
+                  NULLIFY(INTERFACE_EQUATIONS)
+                  NULLIFY(FIELD_VARIABLE)
+                  FIELD_VARIABLE=>LAGRANGE_VARIABLE
+                  INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+                  IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+                    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%INTERFACE_EQUATIONS=>INTERFACE_EQUATIONS
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE=>FIELD_VARIABLE
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MESH_INDEX=mesh_idx
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MATRIX_COEFFICIENT=INTERFACE_MAPPING% &
+                        & CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(matrix_idx)
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%HAS_TRANSPOSE=INTERFACE_MAPPING% &
+                        & CREATE_VALUES_CACHE%HAS_TRANSPOSE(matrix_idx)
+                        !Set the number of rows
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_ROWS=FIELD_VARIABLE%NUMBER_OF_DOFS
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%TOTAL_NUMBER_OF_ROWS= &
+                        & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_GLOBAL_ROWS= &
+                        & FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS
+                      !Set the row mapping
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%ROW_DOFS_MAPPING=> &
+                        & FIELD_VARIABLE%DOMAIN_MAPPING
+                      ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP( &
+                        & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to row map.",ERR,ERROR,*999)
+                      !1-1 mapping for now
+                      DO dof_idx=1,FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                        INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP(dof_idx)=dof_idx
+                      ENDDO !dof_idx
+                    ELSE
+                      LOCAL_ERROR="Lagrange variable for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
+                        & " could not be found."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    LOCAL_ERROR="Interface Equations for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
+                      & " could not be found."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDSELECT
+
                 !Calculate RHS mappings
-                IF(CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE/=0) THEN                  
+                IF(CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE/=0) THEN
                   CALL INTERFACE_MAPPING_RHS_MAPPING_INITIALISE(INTERFACE_MAPPING,ERR,ERROR,*999)
                   RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
                   IF(ASSOCIATED(RHS_MAPPING)) THEN
@@ -234,8 +296,6 @@ CONTAINS
             ENDIF
           CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(INTERFACE_CONDITION_PENALTY_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
@@ -255,7 +315,7 @@ CONTAINS
     
     CALL EXITS("INTERFACE_MAPPING_CALCULATE")
     RETURN
-999 CALL ERRORS("INTERFACE_MAPPING_CALCULATE",ERR,ERROR)    
+999 CALL ERRORS("INTERFACE_MAPPING_CALCULATE",ERR,ERROR)
     CALL EXITS("INTERFACE_MAPPING_CALCULATE")
     RETURN 1
    
@@ -406,20 +466,28 @@ CONTAINS
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=0
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=0
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=0.0_DP
-            !Set the default interface mapping in the create values cache          
+            !Set the default interface mapping in the create values cache
             !First calculate how many interface matrices we have and set the variable types
             SELECT CASE(INTERFACE_CONDITION%METHOD)
-            CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+            CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
               LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
               IF(ASSOCIATED(LAGRANGE)) THEN
                 LAGRANGE_FIELD=>LAGRANGE%LAGRANGE_FIELD
                 IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
                   INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
                   IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
-                    !Default the number of interface matrices to the number of added dependent variables
-                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES= &
+                    !The pointers below have been checked for association above.
+                    SELECT CASE(INTERFACE_CONDITION%METHOD)
+                    CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                      !Default the number of interface matrices to the number of added dependent variables
+                      INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES= &
                       INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
-                    !Default the Lagrange variable to the first Lagrange variable              
+                    CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                      !Default the number of interface matrices to the number of added dependent variables plus a single Lagrange variable
+                      INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES= &
+                      INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES+1
+                    END SELECT
+                    !Default the Lagrange variable to the first Lagrange variable
                     INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=0
                     DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
                       IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(variable_type_idx)%PTR)) THEN
@@ -434,7 +502,7 @@ CONTAINS
                       IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(variable_type_idx2)%PTR)) THEN
                         INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=variable_type_idx2
                         EXIT
-                      ENDIF                       
+                      ENDIF
                     ENDDO !variable_type_idx2
                     IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE==0) &
                       & CALL FLAG_ERROR("Could not find a RHS Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
@@ -447,16 +515,26 @@ CONTAINS
                     ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE(INTERFACE_MAPPING% &
                       & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache has transpose.",ERR,ERROR,*999)
-                    !Default the interface matrices coefficients to add.
+                    !Default the interface matrices to all have a transpose
                     INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE=.TRUE.
-                    ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_DEPENDENT% &
-                      & NUMBER_OF_DEPENDENT_VARIABLES),STAT=ERR)
+                    ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_MAPPING% &
+                      & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix row field variable indexes.", &
                       & ERR,ERROR,*999)
                     !Default the interface matrices to be in mesh index order.
                     DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
                       INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(variable_idx)=variable_idx
                     ENDDO !variable_idx
+                    !The pointers below have been checked for association above.
+                    SELECT CASE(INTERFACE_CONDITION%METHOD)
+                    CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                      !Default the interface matrix (Penalty) to have no transpose
+                      INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE(INTERFACE_MAPPING% &
+                        & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)=.FALSE.
+                      !Default the interface matrices to be in mesh index order (and set Penalty matrix (last interface matrix)to be the first Lagrange variable).
+                      INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_DEPENDENT% &
+                        & NUMBER_OF_DEPENDENT_VARIABLES+1)=1
+                    END SELECT
                   ELSE
                     CALL FLAG_ERROR("Interface condition depdendent is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -467,8 +545,6 @@ CONTAINS
                 CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)           
-            CASE(INTERFACE_CONDITION_PENALTY_METHOD)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -520,7 +596,7 @@ CONTAINS
         
     CALL EXITS("INTERFACE_MAPPING_DESTROY")
     RETURN
-999 CALL ERRORS("INTERFACE_MAPPING_DESTROY",ERR,ERROR)    
+999 CALL ERRORS("INTERFACE_MAPPING_DESTROY",ERR,ERROR)
     CALL EXITS("INTERFACE_MAPPING_DESTROY")
     RETURN 1
    
@@ -647,7 +723,7 @@ CONTAINS
             INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
             IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
               SELECT CASE(INTERFACE_CONDITION%METHOD)
-              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
                 LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
                 IF(ASSOCIATED(LAGRANGE)) THEN
                   IF(LAGRANGE%LAGRANGE_FINISHED) THEN
@@ -662,8 +738,6 @@ CONTAINS
                   CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(INTERFACE_CONDITION_PENALTY_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1034,7 +1108,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: matrix_idx,matrix_idx2,variable_idx
+    INTEGER(INTG) :: matrix_idx,matrix_idx2,variable_idx,number_of_dependent_variables
     INTEGER(INTG), ALLOCATABLE :: OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(:)
     LOGICAL :: FOUND
     LOGICAL, ALLOCATABLE :: OLD_MATRIX_TRANSPOSE(:)
@@ -1058,12 +1132,18 @@ CONTAINS
             INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
             IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
               SELECT CASE(INTERFACE_CONDITION%METHOD)
-              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
                 !Check the number of interface matrices
                 IF(NUMBER_OF_INTERFACE_MATRICES>0) THEN
                   INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
                   IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
-                    IF(NUMBER_OF_INTERFACE_MATRICES<=INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES) THEN
+                    SELECT CASE(INTERFACE_CONDITION%METHOD)
+                    CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                      number_of_dependent_variables=INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                    CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                      number_of_dependent_variables=INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES+1
+                    END SELECT
+                    IF(NUMBER_OF_INTERFACE_MATRICES<=number_of_dependent_variables) THEN
                       !If we need to reallocate and reset all the create values cache arrays and change the number of matrices
                       IF(NUMBER_OF_INTERFACE_MATRICES/=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
                         ALLOCATE(OLD_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
@@ -1138,7 +1218,7 @@ CONTAINS
                       LOCAL_ERROR="The specified number of interface matrices of "// &
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. The number must be <= the number of added dependent variables of "// &
-                        & TRIM(NUMBER_TO_VSTRING(INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES,"*",ERR,ERROR))//"."
+                        & TRIM(NUMBER_TO_VSTRING(number_of_dependent_variables,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -1151,8 +1231,6 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(INTERFACE_CONDITION_PENALTY_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1211,16 +1289,16 @@ CONTAINS
         CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
-        IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN          
+        IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
            INTERFACE_EQUATIONS=>INTERFACE_MAPPING%INTERFACE_EQUATIONS
           IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
             INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
             IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
               SELECT CASE(INTERFACE_CONDITION%METHOD)
-              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
                 !Check that the number of supplied coefficients matches the number of interface matrices
                 IF(SIZE(MATRIX_TRANSPOSE,1)==CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
-                  CREATE_VALUES_CACHE%HAS_TRANSPOSE=MATRIX_TRANSPOSE       
+                  CREATE_VALUES_CACHE%HAS_TRANSPOSE=MATRIX_TRANSPOSE
                 ELSE
                   LOCAL_ERROR="Invalid size of matrix tranpose. The size of the supplied array ("// &
                     & TRIM(NUMBER_TO_VSTRING(SIZE(MATRIX_TRANSPOSE,1),"*",ERR,ERROR))// &
@@ -1229,8 +1307,6 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(INTERFACE_CONDITION_PENALTY_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1406,7 +1482,7 @@ CONTAINS
               INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
               IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
                 SELECT CASE(INTERFACE_CONDITION%METHOD)
-                CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
                   INTERFACE_LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
                   IF(ASSOCIATED(INTERFACE_LAGRANGE)) THEN
                     LAGRANGE_FIELD=>INTERFACE_LAGRANGE%LAGRANGE_FIELD
@@ -1442,8 +1518,6 @@ CONTAINS
                     CALL FLAG_ERROR("Interface Lagrange is not associated.",ERR,ERROR,*999)
                   ENDIF
                 CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(INTERFACE_CONDITION_PENALTY_METHOD)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
