@@ -4374,7 +4374,6 @@ CONTAINS
 
                     ! Construct the filename based on the computational node and time step
                     currentLoopIteration=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
-                    computationalNode=COMPUTATIONAL_NODE_NUMBER_GET(err,error)
                     WRITE(tempString1,"(I4.4)") currentLoopIteration
                     inputFile = './interpolatedData/fitData' // tempString1(1:4) // '.dat'
 
@@ -4398,8 +4397,8 @@ CONTAINS
                           DO componentIdx=1,numberOfDimensions
                             dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                               & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
-                            independentDof = independentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                              & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                            independentDof = independentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
                             VALUE = nodeData(userNodeNumber,componentIdx)
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(independentField,independentVariableType, &
                               & FIELD_VALUES_SET_TYPE,independentDof,VALUE,ERR,ERROR,*999)
