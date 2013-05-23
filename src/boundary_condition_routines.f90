@@ -1321,11 +1321,11 @@ CONTAINS
 
   !> Checks the boundary condition type and sets the boundary condition type and dof type for the boundary conditions.
   !> Makes sure any field parameter sets required are created, and sets the parameter set required array value.
-  SUBROUTINE BoundaryConditions_SetConditionType(boundaryConditionsVariable,dofIndex,condition,err,error,*)
+  SUBROUTINE BoundaryConditions_SetConditionType(boundaryConditionsVariable,globalDof,condition,err,error,*)
 
     !Argument variables
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable !<A pointer to the boundary conditions variable to set the boundary condition for
-    INTEGER(INTG), INTENT(IN) :: dofIndex !<The local dof index to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: globalDof !<The globalDof to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: condition !<The boundary condition type to set \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
@@ -1399,14 +1399,14 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE DEFAULT
       CALL FLAG_ERROR("The specified boundary condition type for dof number "// &
-        & TRIM(NUMBER_TO_VSTRING(dofIndex,"*",err,error))//" of "// &
+        & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" of "// &
         & TRIM(NUMBER_TO_VSTRING(condition,"*",err,error))//" is invalid.", &
         & err,error,*999)
     END SELECT
 
     !We have a valid boundary condition type
     !Update condition type counts
-    previousCondition=boundaryConditionsVariable%CONDITION_TYPES(dofIndex)
+    previousCondition=boundaryConditionsVariable%CONDITION_TYPES(globalDof)
     IF(previousCondition/=condition) THEN
       ! DOF_COUNTS array doesn't include a count for BOUNDARY_CONDITION_FREE, which equals zero
       IF(previousCondition/=BOUNDARY_CONDITION_FREE) THEN
@@ -1419,7 +1419,7 @@ CONTAINS
       END IF
     END IF
     !Update Dirichlet DOF count
-    previousDof=boundaryConditionsVariable%DOF_TYPES(dofIndex)
+    previousDof=boundaryConditionsVariable%DOF_TYPES(globalDof)
     IF(dofType==BOUNDARY_CONDITION_DOF_FIXED.AND.previousDof/=BOUNDARY_CONDITION_DOF_FIXED) THEN
       boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS= &
         & boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS+1
@@ -1429,8 +1429,8 @@ CONTAINS
     END IF
 
     !Set the boundary condition type and DOF type
-    boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=condition
-    boundaryConditionsVariable%DOF_TYPES(dofIndex)=dofType
+    boundaryConditionsVariable%CONDITION_TYPES(globalDof)=condition
+    boundaryConditionsVariable%DOF_TYPES(globalDof)=dofType
 
     CALL EXITS("BoundaryConditions_SetConditionType")
     RETURN
