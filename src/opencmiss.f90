@@ -324,7 +324,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSComputationalWorkGroupType,CMISSComputationalWorkGroup_Initialise
 
-  PUBLIC CMISSControlLoopType,CMISSControlLoop_Finalise,CMISSControlLoop_Initialise
+  PUBLIC CMISSControlLoopType,CMISSControlLoop_Finalise,CMISSControlLoop_Initialise,CMISSControlLoop_WriteIntermediateResultsSet
 
   PUBLIC CMISSCoordinateSystemType,CMISSCoordinateSystem_Finalise,CMISSCoordinateSystem_Initialise
 
@@ -2138,6 +2138,10 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PLATE_SUBTYPE = EQUATIONS_SET_PLATE_SUBTYPE !<Plate linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_SHELL_SUBTYPE = EQUATIONS_SET_SHELL_SUBTYPE !<Shell linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE = EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE !< Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE = &
+  & EQUATIONS_SET_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE !< Incompressible Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NEARLY_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE = &
+  & EQUATIONS_SET_NEARLY_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE !< Nearly Incompressible Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE =&
     & EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE !< Active contraction/costa-based law with quasistatic time loop for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE = EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2168,6 +2172,10 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE !< Static finite elasticity coupled with fluid pressure set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE= &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE !<Holmes and Mow's poroelastic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+    INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE = &
+    & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE !< Transverse isotropic constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+    
+    
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2570,8 +2578,9 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE,CMISS_EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE, &
     & CMISS_EQUATIONS_SET_PLATE_SUBTYPE, &
     & CMISS_EQUATIONS_SET_SHELL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE,CMISS_EQUATIONS_SET_NEARLY_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE,CMISS_EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE,&
+    & CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE,CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE, &
     & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE, &
     & CMISS_EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,CMISS_EQUATIONS_SET_ELASTICITY_MULTI_COMP_DARCY_INRIA_SUBTYPE, &
@@ -15486,6 +15495,32 @@ CONTAINS
 
   END SUBROUTINE CMISSControlLoop_MaximumIterationsSetObj
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output for a load incremented control loop identified by an object.
+  SUBROUTINE CMISSControlLoop_WriteIntermediateResultsSet(controlLoop,WriteIntermediateResults,err)
+
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop to set the maximum iterations for.
+    LOGICAL, INTENT(IN) :: WriteIntermediateResults !<If true, write out results after each load step
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSControlLoop_WriteIntermediateResultsSet",err,error,*999)
+
+    CALL CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET(controlLoop%CONTROL_LOOP,WriteIntermediateResults,err,error,*999)
+
+    CALL EXITS("CMISSControlLoop_WriteIntermediateResultsSet")
+    RETURN
+999 CALL ERRORS("CMISSControlLoop_WriteIntermediateResultsSet",err,error)
+    CALL EXITS("CMISSControlLoop_WriteIntermediateResultsSet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSControlLoop_WriteIntermediateResultsSet
+  
   !
   !================================================================================================================================
   !
