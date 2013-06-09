@@ -3430,30 +3430,79 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equationsSetIdx,incrementIdx
-    LOGICAL :: dirExist
+    INTEGER(INTG) :: equationsSetIdx,load_step
+    LOGICAL :: dirExists
     TYPE(REGION_TYPE), POINTER :: region !<A pointer to region to output the fields for
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
     TYPE(FIELDS_TYPE), POINTER :: fields
     TYPE(VARYING_STRING) :: fileName,method,directory
     
+    INTEGER(INTG) :: interfaceConditionIdx, interfaceElementNumber, dataPointIdx, globalDataPointNumber, coupledMeshElementNumber, &
+      & coupledMeshFaceLineNumber, coupledMeshIdx,component
+    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface 
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
+    TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the interface points connectivity
+    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(DecompositionElementDataPointsType), POINTER :: decompositionElementData !<A pointer to the decomposition data point topology
+    TYPE(DATA_POINTS_TYPE), POINTER :: interfaceDatapoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+
+    INTEGER(INTG) :: IUNIT
+    CHARACTER(LEN=100) :: filenameOutput,groupname
+
+    TYPE(VARYING_STRING) :: fileToCheck
+    LOGICAL :: fileExists
+    INTEGER(INTG) :: firstIterationNumber, solve_call, max_solve_calls
+
     CALL ENTERS("Problem_SolverNewtonFieldsOutput",err,error,*999)
     
     IF(ASSOCIATED(solver%SOLVER_EQUATIONS))THEN
-      incrementIdx=solver%SOLVERS%CONTROL_LOOP%LOAD_INCREMENT_LOOP%ITERATION_NUMBER
       solverMapping=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING
+
+      directory="results_iter/"
+      INQUIRE(FILE=CHAR(directory),EXIST=dirExists)
+      IF(.NOT.dirExists) THEN
+        CALL SYSTEM(CHAR("mkdir "//directory))
+      ENDIF
+
+      ! Find how many times the problem solve command has been issued.
+      max_solve_calls=100
+      coupledMeshIdx=1
+      load_step=1
+      firstIterationNumber=0
+      DO solve_call=1,max_solve_calls
+        fileToCheck=directory// &
+          & "PointsConnectivity"//TRIM(NUMBER_TO_VSTRING(coupledMeshIdx,"*",err,error))// &
+          & "_solveCall"//TRIM(NUMBER_TO_VSTRING(solve_call,"*",err,error))// &
+          & "_load"//TRIM(NUMBER_TO_VSTRING(load_step,"*",err,error))// &
+          & "_iter"//TRIM(NUMBER_TO_VSTRING(firstIterationNumber,"*",err,error))//".exdata"
+        INQUIRE(FILE=CHAR(fileToCheck),EXIST=fileExists)
+        IF(.NOT.fileExists) THEN
+          EXIT
+        ENDIF
+      ENDDO
+
+      load_step=solver%SOLVERS%CONTROL_LOOP%LOAD_INCREMENT_LOOP%ITERATION_NUMBER
+
+      IF((iterationNumber > 0).OR.(load_step > 1))THEN
+        solve_call = solve_call - 1
+      ENDIF
+
+      WRITE(*,'(1X,''SolveCall: '',I4)') solve_call
+      WRITE(*,'(1X,''  LoadStep: '',I4)') load_step
+      WRITE(*,'(1X,''    Iteration: '',I4)') iterationNumber
+
       DO equationsSetIdx=1,solverMapping%NUMBER_OF_EQUATIONS_SETS
         region=>solverMapping%EQUATIONS_SETS(equationsSetIdx)%PTR%REGION
         IF(ASSOCIATED(region))THEN
           NULLIFY(fields)
           fields=>region%FIELDS
-          directory="results_iter/"
-          INQUIRE(FILE=CHAR(directory),EXIST=dirExist)
-          IF(.NOT.dirExist) THEN
-            CALL SYSTEM(CHAR("mkdir "//directory))
-          ENDIF
           fileName=directory//"mesh"//TRIM(NUMBER_TO_VSTRING(equationsSetIdx,"*",err,error))// &
-            & "_load"//TRIM(NUMBER_TO_VSTRING(incrementIdx,"*",err,error))// &
+            & "_solveCall"//TRIM(NUMBER_TO_VSTRING(solve_call,"*",err,error))// &
+            & "_load"//TRIM(NUMBER_TO_VSTRING(load_step,"*",err,error))// &
             & "_iter"//TRIM(NUMBER_TO_VSTRING(iterationNumber,"*",err,error))
           method="FORTRAN"
           CALL FIELD_IO_ELEMENTS_EXPORT(fields,fileName,method,err,error,*999)
@@ -3462,6 +3511,82 @@ CONTAINS
           CALL FLAG_ERROR("Region is not associated.",err,error,*999)
         ENDIF
       ENDDO
+      IUNIT = 300
+
+      DO interfaceConditionIdx=1,solverMapping%NUMBER_OF_INTERFACE_CONDITIONS
+        interfaceCondition=>solverMapping%INTERFACE_CONDITIONS(interfaceConditionIdx)%PTR
+        interface=>solverMapping%INTERFACE_CONDITIONS(interfaceConditionIdx)%PTR%interface
+        pointsConnectivity=>interface%pointsConnectivity
+        interfaceDatapoints=>interface%DATA_POINTS
+        IF(ASSOCIATED(pointsConnectivity)) THEN
+          DO coupledMeshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
+            filenameOutput=directory//"PointsConnectivity"//TRIM(NUMBER_TO_VSTRING(coupledMeshIdx,"*",err,error))// &
+              & "_solveCall"//TRIM(NUMBER_TO_VSTRING(solve_call,"*",err,error))// &
+              & "_load"//TRIM(NUMBER_TO_VSTRING(load_step,"*",err,error))// &
+              & "_iter"//TRIM(NUMBER_TO_VSTRING(iterationNumber,"*",err,error))//".exdata"
+            OPEN(UNIT=IUNIT,FILE=filenameOutput,STATUS="UNKNOWN",ACTION="WRITE",IOSTAT=ERR)
+            groupname="PointsConnectivity"//TRIM(NUMBER_TO_VSTRING(coupledMeshIdx,"*",err,error))
+            WRITE(IUNIT,'( '' Group name: '',A)') groupname
+            WRITE(IUNIT,'(1X,''#Fields=4'')')
+            WRITE(IUNIT,'(1X,''1) coordinates, coordinate, rectangular cartesian, #Components=3'')')
+            WRITE(IUNIT,'(1X,''  x.  Value index= 1, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''  y.  Value index= 2, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''  z.  Value index= 3, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''2) error, field, rectangular cartesian, #Components=3'')')
+            WRITE(IUNIT,'(1X,''  x.  Value index= 4, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''  y.  Value index= 5, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''  z.  Value index= 6, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''3) projectedCoordinate, field, rectangular cartesian, #Components=3'')')
+            WRITE(IUNIT,'(1X,''  x.  Value index= 7, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''  y.  Value index= 8, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''  z.  Value index= 9, #Derivatives=0'')')
+            WRITE(IUNIT,'(1X,''4) exitTag, field, rectangular cartesian, #Components=1'')')
+            WRITE(IUNIT,'(1X,''  tag.  Value index= 10, #Derivatives=0'')')
+            coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
+              & DEPENDENT%DEPENDENT_FIELD
+            NULLIFY(interpolationParameters)
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(coupledMeshDependentField,interpolationParameters,err,error, &
+              & *999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+            NULLIFY(interpolatedPoints)
+            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999, &
+              & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+            interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
+            dataProjection=>interfaceDatapoints%DATA_PROJECTIONS(coupledMeshIdx+1)%PTR
+            DO interfaceElementNumber=1,SIZE(pointsConnectivity%coupledElements,1)
+              decompositionElementData=>interfaceCondition%LAGRANGE%LAGRANGE_FIELD%DECOMPOSITION%TOPOLOGY%dataPoints% &
+                & elementDataPoint(interfaceElementNumber)
+              DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
+                globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
+                WRITE(IUNIT,'(1X,''Node:'',I4)') globalDataPointNumber
+                DO component=1,3
+                  WRITE(IUNIT,'(1X,3E25.15)') interfaceDatapoints%DATA_POINTS(globalDataPointNumber)%position(component)
+                ENDDO !component
+                coupledMeshElementNumber=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
+                  & coupledMeshElementNumber
+                coupledMeshFaceLineNumber=coupledMeshDependentField%DECOMPOSITION%TOPOLOGY%ELEMENTS% &
+                  & ELEMENTS(coupledMeshElementNumber)% &
+                  & ELEMENT_FACES(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
+                  & elementLineFaceNumber)
+                CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,coupledMeshFaceLineNumber, &
+                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+                CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,pointsConnectivity%pointsConnectivity(globalDataPointNumber, &
+                  & coupledMeshIdx)%reducedXi(:),interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE) !Interpolate contact data points on each surface
+                DO component=1,3
+                  WRITE(IUNIT,'(1X,3E25.15)') interpolatedPoint%VALUES(component,NO_PART_DERIV) - &
+                    & interfaceDatapoints%DATA_POINTS(globalDataPointNumber)%position(component)
+                ENDDO !component
+                DO component=1,3
+                  WRITE(IUNIT,'(1X,3E25.15)') interpolatedPoint%VALUES(component,NO_PART_DERIV)
+                ENDDO !component
+                WRITE(IUNIT,'(1X,I2)') dataProjection%DATA_PROJECTION_RESULTS(globalDataPointNumber)%EXIT_TAG
+              ENDDO !dataPointIdx
+            ENDDO !interfaceElementNumber
+            CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(interpolationParameters,err,error,*999)
+            CALL FIELD_INTERPOLATED_POINTS_FINALISE(interpolatedPoints,err,error,*999)
+            OPEN(UNIT=IUNIT)
+          ENDDO !coupledMeshIdx
+        ENDIF
+      ENDDO !interfaceConditionIdx
     ELSE
       CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
     ENDIF
