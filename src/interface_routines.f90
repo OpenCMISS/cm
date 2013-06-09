@@ -1517,8 +1517,8 @@ CONTAINS
     
     NULLIFY(interpolatedPoints)
     NULLIFY(interpolationParameters)
-    fixedBodyIdx=1 !\todo: need to generalise
-    projectionBodyIdx=2
+    fixedBodyIdx=2 !\todo: need to generalise
+    projectionBodyIdx=1
 
     IF(ASSOCIATED(interface)) THEN
       IF(ASSOCIATED(interfaceCondition)) THEN
@@ -1554,6 +1554,8 @@ CONTAINS
             !######################################################################################################################
             !Data reprojection and update points connectivity information with the projection results
             dataProjection=>dataPoints%DATA_PROJECTIONS(projectionBodyIdx+1)%PTR 
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ProjectedBodyDataProjectionLabel",ERR,ERROR,*999)
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,dataProjection%label,ERR,ERROR,*999)
             IF(ASSOCIATED(dataProjection)) THEN
               dependentFieldProjection=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(projectionBodyIdx)%PTR%FIELD
               IF(ASSOCIATED(dependentFieldProjection)) THEN
@@ -1634,8 +1636,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(MESH_TYPE), POINTER :: interfaceMesh
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
-    LOGICAL :: dataPointExists,elementExists
+    INTEGER(INTG) :: dataPointGlobalNumber
+    LOGICAL :: dataPointExists
 
     CALL ENTERS("InterfacePointsConnectivity_ElementNumberGet",err,error,*999)
     
@@ -1644,10 +1646,8 @@ CONTAINS
         & dataPointGlobalNumber,err,error,*999)
       IF(dataPointExists) THEN
         interfaceMesh=>pointsConnectivity%interfaceMesh
-        elementGlobalNumber=pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
+        coupledMeshUserElementNumber=pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
           & coupledMeshElementNumber
-        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(elementGlobalNumber,coupledMeshUserElementNumber, &
-          & interfaceMesh%TOPOLOGY(meshComponentNumber)%PTR%ELEMENTS,err,error,*999)
       ELSE
         CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
           & (dataPointUserNumber,"*",err,error))//") does not exist.",err,error,*999)
@@ -2032,13 +2032,12 @@ CONTAINS
     
   !>Gets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
   SUBROUTINE InterfacePointsConnectivity_PointXiGet(pointsConnectivity,dataPointUserNumber,coupledMeshIndexNumber, &
-    & coupledMeshUserElementNumber,xi,err,error,*)
+    & xi,err,error,*)
 
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to interface points connectivity to set the element number of elements for.
     INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The index of the data point.
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh in the interface to set the number of elements for.
-    INTEGER(INTG), INTENT(IN) :: coupledMeshUserElementNumber !<The coupled mesh element user number
     REAL(DP), INTENT(OUT) :: xi(:) !<xi(xi_idx). The full xi location in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
@@ -2084,20 +2083,18 @@ CONTAINS
     
   !>Sets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
   SUBROUTINE InterfacePointsConnectivity_PointXiSet(pointsConnectivity,dataPointUserNumber,coupledMeshIndexNumber, &
-    & coupledMeshUserElementNumber,xi,err,error,*)
+    & xi,err,error,*)
 
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to interface points connectivity to set the element number of elements for.
     INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The index of the data point.
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh in the interface to set the number of elements for.
-    INTEGER(INTG), INTENT(IN) :: coupledMeshUserElementNumber !<The coupled mesh element user number
     REAL(DP), INTENT(IN) :: xi(:) !<xi(xi_idx). The full xi location in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
-    INTEGER(INTG) :: meshComponentNumber=1 !\todo: not required once the element topology is mesh component invariant.
-    LOGICAL :: dataPointExists,elementExists
+    INTEGER(INTG) :: dataPointGlobalNumber
+    LOGICAL :: dataPointExists
     
     CALL ENTERS("InterfacePointsConnectivity_PointXiSet",err,error,*999)
     
@@ -2113,24 +2110,12 @@ CONTAINS
             IF ((coupledMeshIndexNumber>pointsConnectivity%interface%NUMBER_OF_COUPLED_MESHES).OR.(coupledMeshIndexNumber<0)) THEN
               CALL FLAG_ERROR("Interface coupled mesh index number out of range.",err,error,*999)
             ELSE
-              CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
-                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementGlobalNumber,err,error,*999)       
-              IF(elementExists) THEN
-                IF(pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
-                    & coupledMeshElementNumber==elementGlobalNumber) THEN
-                  IF(SIZE(pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%xi,1)== &
-                      & SIZE(xi,1)) THEN
-                    pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
-                      & xi(:)=xi(:) 
-                  ELSE
-                    CALL FLAG_ERROR("Input xi dimension does not match full coupled mesh xi dimension.",err,error,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",err,error,*999)
-                ENDIF
+              IF(SIZE(pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%xi,1)== &
+                  & SIZE(xi,1)) THEN
+                pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
+                  & xi(:)=xi(:) 
               ELSE
-                CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
-                  & (coupledMeshUserElementNumber,"*",err,error))//") does not exist.",err,error,*999)
+                CALL FLAG_ERROR("Input xi dimension does not match full coupled mesh xi dimension.",err,error,*999)
               ENDIF
             ENDIF
           ELSE
@@ -2176,6 +2161,7 @@ CONTAINS
     IF(ASSOCIATED(InterfacePointsConnectivity)) THEN
       IF(ASSOCIATED(dataProjection)) THEN
         IF(dataProjection%DATA_PROJECTION_FINISHED) THEN
+          WRITE(*,*) "InterfacePointsConnectivity_UpdateFromProjection"
           DO dataPointIdx=1,SIZE(dataProjection%DATA_PROJECTION_RESULTS,1) !Update reduced xi location, projection element number and element face/line number with projection result
             dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
             InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%reducedXi(:)= &

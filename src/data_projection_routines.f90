@@ -91,6 +91,18 @@ MODULE DATA_PROJECTION_ROUTINES
 
   !Interfaces
   
+  !>Gets the label for a data projection.
+  INTERFACE DATA_PROJECTION_LABEL_GET
+    MODULE PROCEDURE DATA_PROJECTION_LABEL_GET_C
+    MODULE PROCEDURE DATA_PROJECTION_LABEL_GET_VS
+  END INTERFACE !DATA_PROJECTION_LABEL_GET
+  
+  !>Sets/changes the label for a data projection.
+  INTERFACE DATA_PROJECTION_LABEL_SET
+    MODULE PROCEDURE DATA_PROJECTION_LABEL_SET_C
+    MODULE PROCEDURE DATA_PROJECTION_LABEL_SET_VS
+  END INTERFACE !DATA_PROJECTION_LABEL_SET  
+
   PUBLIC DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE, &
     & DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
   
@@ -120,7 +132,8 @@ MODULE DATA_PROJECTION_ROUTINES
   
   PUBLIC DATA_PROJECTION_XI_SET,DATA_PROJECTION_ELEMENT_SET
   
- 
+  PUBLIC DATA_PROJECTION_LABEL_GET,DATA_PROJECTION_LABEL_SET
+
 CONTAINS
 
   !
@@ -1426,7 +1439,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: dataPointIdx,elementNumber,coordIdx
     TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
@@ -1723,7 +1735,7 @@ CONTAINS
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test
               IF(CONVERGED) EXIT !converged: exit inner loop first
-              IF(FUNCTION_VALUE_NEW>FUNCTION_VALUE) THEN !bad model: reduce step size
+              IF((FUNCTION_VALUE_NEW-FUNCTION_VALUE)>ABSOLUTE_TOLERANCE) THEN !bad model: reduce step size
                 IF(DELTA<=MINIMUM_DELTA) THEN !something went wrong, MINIMUM_DELTA too large? not likely to happen if MINIMUM_DELTA is small
                   EXIT_TAG=DATA_PROJECTION_EXIT_TAG_MAX_ITERATION ! it will get stucked!!
                   EXIT main_loop
@@ -1933,7 +1945,7 @@ CONTAINS
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
               IF(CONVERGED) EXIT !converged: exit inner loop first
-              IF(FUNCTION_VALUE_NEW>FUNCTION_VALUE) THEN !bad model: reduce step size
+              IF((FUNCTION_VALUE_NEW-FUNCTION_VALUE)>ABSOLUTE_TOLERANCE) THEN !bad model: reduce step size
                 IF(DELTA<=MINIMUM_DELTA) THEN !something went wrong, MINIMUM_DELTA too large? not likely to happen if MINIMUM_DELTA is small
                   EXIT_TAG=DATA_PROJECTION_EXIT_TAG_MAX_ITERATION ! it will get stucked!!
                   EXIT main_loop
@@ -2226,7 +2238,7 @@ CONTAINS
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR,DISTANCE_VECTOR)
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
               IF(CONVERGED) EXIT !converged: exit inner loop first
-              IF(FUNCTION_VALUE_NEW>FUNCTION_VALUE) THEN !bad model: reduce step size
+              IF((FUNCTION_VALUE_NEW-FUNCTION_VALUE)>ABSOLUTE_TOLERANCE) THEN !bad model: reduce step size
                 IF(DELTA<=MINIMUM_DELTA) THEN !something went wrong, MINIMUM_DELTA too large? not likely to happen if MINIMUM_DELTA is small
                   EXIT_TAG=DATA_PROJECTION_EXIT_TAG_MAX_ITERATION ! it will get stucked!!
                   EXIT main_loop
@@ -2446,7 +2458,7 @@ CONTAINS
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test (before collision detection)
               IF(CONVERGED) EXIT !converged: exit inner loop first
-              IF(FUNCTION_VALUE_NEW>FUNCTION_VALUE) THEN !bad model: reduce step size
+              IF((FUNCTION_VALUE_NEW-FUNCTION_VALUE)>ABSOLUTE_TOLERANCE) THEN !bad model: reduce step size
                 IF(DELTA<=MINIMUM_DELTA) THEN !something went wrong, MINIMUM_DELTA too large? not likely to happen if MINIMUM_DELTA is small
                   EXIT_TAG=DATA_PROJECTION_EXIT_TAG_MAX_ITERATION ! it will get stucked!!
                   EXIT main_loop
@@ -2609,7 +2621,7 @@ CONTAINS
               FUNCTION_VALUE_NEW=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))
               CONVERGED=CONVERGED.AND.(DABS(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/(1.0_DP+FUNCTION_VALUE)<RELATIVE_TOLERANCE) !second half of the convergence test
               IF(CONVERGED) EXIT !converged: exit inner loop first
-              IF(FUNCTION_VALUE_NEW>FUNCTION_VALUE) THEN !bad model: reduce step size
+              IF((FUNCTION_VALUE_NEW-FUNCTION_VALUE)>ABSOLUTE_TOLERANCE) THEN !bad model: reduce step size
                 IF(DELTA<=MINIMUM_DELTA) THEN !something went wrong, MINIMUM_DELTA too large? not likely to happen if MINIMUM_DELTA is small
                   EXIT_TAG=DATA_PROJECTION_EXIT_TAG_MAX_ITERATION ! it will get stucked!!
                   EXIT main_loop
@@ -3147,6 +3159,133 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_XI_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the label for a data projection for character labels. \see OPENCMISS::CMISSDataProjectionLabelGet
+  SUBROUTINE DATA_PROJECTION_LABEL_GET_C(DATA_PROJECTION,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to get the label for
+    CHARACTER(LEN=*), INTENT(OUT) :: LABEL !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: C_LENGTH,VS_LENGTH
+    
+    CALL ENTERS("DATA_PROJECTION_LABEL_GET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        C_LENGTH=LEN(LABEL)
+        VS_LENGTH=LEN_TRIM(DATA_PROJECTION%LABEL)
+        IF(C_LENGTH>VS_LENGTH) THEN
+          LABEL=CHAR(LEN_TRIM(DATA_PROJECTION%LABEL))
+        ELSE
+          LABEL=CHAR(DATA_PROJECTION%LABEL,C_LENGTH)
+        ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_LABEL_GET_C")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_LABEL_GET_C",ERR,ERROR)
+    CALL EXITS("DATA_PROJECTION_LABEL_GET_C")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_LABEL_GET_C
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the label for a data projection for varying string labels. \see OPENCMISS::CMISSDataProjectionLabelGet
+  SUBROUTINE DATA_PROJECTION_LABEL_GET_VS(DATA_PROJECTION,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to get the label for
+    TYPE(VARYING_STRING), INTENT(OUT) :: LABEL !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("DATA_PROJECTION_LABEL_GET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      LABEL=DATA_PROJECTION%LABEL
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_LABEL_GET_VS")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_LABEL_GET_VS",ERR,ERROR)
+    CALL EXITS("DATA_PROJECTION_LABEL_GET_VS")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_LABEL_GET_VS
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets the label for a data projection for varying string labels. \see OPENCMISS::CMISSDataProjectionLabelSet
+  SUBROUTINE DATA_PROJECTION_LABEL_SET_C(DATA_PROJECTION,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the label for
+    CHARACTER(LEN=*), INTENT(IN) :: LABEL !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("DATA_PROJECTION_LABEL_SET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      DATA_PROJECTION%LABEL=LABEL
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_LABEL_SET_C")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_LABEL_SET_C",ERR,ERROR)
+    CALL EXITS("DATA_PROJECTION_LABEL_SET_C")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_LABEL_SET_C
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets the label for a data projection for varying string labels. \see OPENCMISS::CMISSDataProjectionLabelSet
+  SUBROUTINE DATA_PROJECTION_LABEL_SET_VS(DATA_PROJECTION,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to set the label for
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("DATA_PROJECTION_LABEL_SET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_PROJECTION)) THEN
+      DATA_PROJECTION%LABEL=LABEL
+    ELSE
+      CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_PROJECTION_LABEL_SET_VS")
+    RETURN
+999 CALL ERRORS("DATA_PROJECTION_LABEL_SET_VS",ERR,ERROR)
+    CALL EXITS("DATA_PROJECTION_LABEL_SET_VS")
+    RETURN 1
+
+  END SUBROUTINE DATA_PROJECTION_LABEL_SET_VS
 
   !
   !================================================================================================================================

@@ -1902,6 +1902,26 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_ElementSetObj
   END INTERFACE !CMISSDataProjection_ElementSet
 
+  !>Gets the label for a data point projection.
+  INTERFACE CMISSDataProjection_LabelGet
+    MODULE PROCEDURE CMISSDataProjection_LabelGetCRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetCInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetCObj
+    MODULE PROCEDURE CMISSDataProjection_LabelGetVSRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetVSInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetVSObj
+  END INTERFACE !CMISSDataProjection_LabelGet
+
+  !>Sets/changes the label for a data point projection.
+  INTERFACE CMISSDataProjection_LabelSet
+    MODULE PROCEDURE CMISSDataProjection_LabelSetCRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetCInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetCObj
+    MODULE PROCEDURE CMISSDataProjection_LabelSetVSRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetVSInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetVSObj
+  END INTERFACE !CMISSDataProjection_LabelSet
+
   PUBLIC CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
 
   PUBLIC CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
@@ -1931,6 +1951,8 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjection_StartingXiGet,CMISSDataProjection_StartingXiSet
 
   PUBLIC CMISSDataProjection_XiSet,CMISSDataProjection_ElementSet
+
+  PUBLIC CMISSDataProjection_LabelGet,CMISSDataProjection_LabelSet
 
 !!==================================================================================================================================
 !!
@@ -20956,7 +20978,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to set starting xi for.
     INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
     INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -21019,7 +21041,475 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_ElementSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetCInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    CHARACTER(LEN=*), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelGetCInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetCInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetCInterfaceNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetVSInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    TYPE(VARYING_STRING), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelGetVSInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelGetVSInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetVSInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetVSInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetVSInterfaceNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetCRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelGetCRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelGetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetCRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetCRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetCRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetVSRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelGetVSRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelGetVSRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetVSRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetVSRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetVSRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the character string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelGetCObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelGetCObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_GET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelGetCObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetCObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetCObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetCObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the varying string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelGetVSObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelGetVSObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_GET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelGetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetVSObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetVSObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetVSObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetCInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    CHARACTER(LEN=*), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelSetCInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelSetCInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetCInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetCInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetCInterfaceNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetVSInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    TYPE(VARYING_STRING), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelSetVSInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelSetVSInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetVSInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetVSInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetVSInterfaceNumber
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetCRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelSetCRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetCRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetCRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetCRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetVSRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_LabelSetVSRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelSetVSRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetVSRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetVSRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetVSRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the character string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelSetCObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelSetCObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_SET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelSetCObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetCObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetCObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetCObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the varying string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelSetVSObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelSetVSObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_SET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelSetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetVSObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetVSObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetVSObj
+
   !
   !================================================================================================================================
   !
@@ -37065,92 +37555,10 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberGetObj
-  
-  !  
+
+  !
   !================================================================================================================================
-  !  
-
-  !>Gets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
-  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetNumber(regionUserNumber,interfaceUserNumber, &
-      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,xi,err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
-    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
-    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element number
-    REAL(DP), INTENT(OUT) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(INTERFACE_TYPE), POINTER :: interface
-    TYPE(REGION_TYPE), POINTER :: region
-    TYPE(VARYING_STRING) :: localError
-    
-    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error,*999)
- 
-    NULLIFY(region)
-    NULLIFY(interface)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
-    IF(ASSOCIATED(region)) THEN
-      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,INTERFACE,err,error,*999)
-      IF(ASSOCIATED(interface)) THEN
-        CALL InterfacePointsConnectivity_PointXiGet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,xi,err,error,*999)
-      ELSE
-        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
-          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-        CALL FLAG_ERROR(localError,err,error,*999)
-      ENDIF
-    ELSE
-      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(localError,err,error,*999)
-    ENDIF
-
-    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error)
-    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
-    CALL CMISS_HANDLE_ERROR(Err,error)
-    RETURN
-    
-  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Gets the xi coordinate mapping between the interface data points and xi coordinates in a coupled region mesh
-  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, & 
-     &  coupledMeshIndexNumber,coupledMeshElementNumber,xi,Err)
-  
-    !Argument variables
-    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface to start the creation of the meshes connectivity for
-    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element number
-    REAL(DP), INTENT(OUT) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error,*999)
- 
-    CALL InterfacePointsConnectivity_PointXiGet(InterfacePointsConnectivity%pointsConnectivity, &
-      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,xi,err,error,*999)
-
-    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
-    RETURN
-999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error)
-    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
-    CALL CMISS_HANDLE_ERROR(Err,error)
-    RETURN
-    
-  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetObj
-  
-  !  
-  !================================================================================================================================
-  ! 
+  !
 
   !>Sets coupled mesh element number that the data point in the interface is connected to
   SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetNumber(regionUserNumber,interfaceUserNumber, &
@@ -37234,16 +37642,99 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Sets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
-  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetNumber(regionUserNumber,interfaceUserNumber, &
-      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,xi,err)
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetNumber(regionUserNumber,interfaceUserNumber, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
     INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
     INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element number
+    REAL(DP), INTENT(OUT) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,INTERFACE,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL InterfacePointsConnectivity_PointXiGet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
+         & coupledMeshIndexNumber,xi,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Gets the xi coordinate mapping between the interface data points and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, & 
+     &  coupledMeshIndexNumber,xi,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface to start the creation of the meshes connectivity for
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    REAL(DP), INTENT(OUT) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_PointXiGet(InterfacePointsConnectivity%pointsConnectivity, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetNumber(regionUserNumber,interfaceUserNumber, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
     REAL(DP), INTENT(IN) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -37260,7 +37751,7 @@ CONTAINS
       CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
       IF(ASSOCIATED(interface)) THEN
         CALL InterfacePointsConnectivity_PointXiSet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,xi,err,error,*999)
+         & coupledMeshIndexNumber,xi,err,error,*999)
       ELSE
         localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -37281,19 +37772,18 @@ CONTAINS
     
   END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetNumber
 
-  !  
+  !
   !================================================================================================================================
-  !  
+  !
  
   !>Sets the xi coordinate mapping between the interface data points and xi coordinates in a coupled region mesh
   SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, & 
-     &  coupledMeshIndexNumber,coupledMeshElementNumber,xi,Err)
+     &  coupledMeshIndexNumber,xi,Err)
   
     !Argument variables
     TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface to start the creation of the meshes connectivity for
     INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element number
     REAL(DP), INTENT(IN) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -37301,7 +37791,7 @@ CONTAINS
     CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error,*999)
  
     CALL InterfacePointsConnectivity_PointXiSet(InterfacePointsConnectivity%pointsConnectivity, &
-      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,xi,err,error,*999)
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err,error,*999)
 
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
     RETURN
