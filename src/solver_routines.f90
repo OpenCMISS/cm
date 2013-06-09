@@ -16360,8 +16360,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: column_number,equations_set_idx,local_number,solver_matrix_idx,variable_dof_idx,variable_idx,variable_type
-    REAL(DP) :: additive_constant,VALUE,coupling_coefficient,interface_condition_idx
+    INTEGER(INTG) :: column_number,equations_set_idx,local_number,solver_matrix_idx,variable_dof_idx,variable_idx,variable_type, &
+      & interface_condition_idx
+    REAL(DP) :: additive_constant,VALUE,coupling_coefficient
     REAL(DP), POINTER :: VARIABLE_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
