@@ -3474,6 +3474,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetUpdateNodeLObj
   END INTERFACE !CMISSField_ParameterSetUpdateNode
 
+
+  !>Updates the given parameter set with the given values for all local dofs of the field variable.  
+  INTERFACE CMISSField_ParameterSetUpdateLocalDofs
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateLocalDofsDPObj
+    !\todo: add Intg/SP/L routines, both indexed by Number and Obj
+  END INTERFACE !CMISSField_ParameterSetUpdateLocalDofs
+
   !>Updates the given parameter set with the given value for a particular gauss point of a field variable component.
   INTERFACE CMISSField_ParameterSetUpdateGaussPoint
     MODULE PROCEDURE CMISSField_ParameterSetUpdateGaussPointDPNumber
@@ -3664,6 +3671,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetGetConstant,CMISSField_ParameterSetGetElement,CMISSField_ParameterSetGetNode
 
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
+
+  PUBLIC CMISSField_ParameterSetUpdateLocalDofs
 
   PUBLIC CMISSField_ParameterSetUpdateGaussPoint, CMISSField_ParameterSetGetGaussPoint
 
@@ -30516,6 +30525,34 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetUpdateNodeLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the given parameter set with the given values for all local dofs of the field variable identified by an object..
+  SUBROUTINE CMISSField_ParameterSetUpdateLocalDofsDPObj(field,variableType,fieldSetType,values,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the values for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update values for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update values for. \see OPENCMISS_FieldParameterSetTypes
+    REAL(DP), INTENT(IN) :: values(:) !<The values to update the field parameter set to.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateLocalDofsDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS(field%FIELD,variableType,fieldSetType,values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateLocalDofsDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateLocalDofsDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateLocalDofsDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateLocalDofsDPObj
 
   !
   !================================================================================================================================

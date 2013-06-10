@@ -429,6 +429,11 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF_L
   END INTERFACE !FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF
 
+  !>Updates the given parameter set with the given values for all local dofs of the field variable.
+  INTERFACE FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS
+    MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS_DP
+  END INTERFACE !FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS
+
   !>Updates the given parameter set with the given value for a particular user element of the field variable component.
   INTERFACE FIELD_PARAMETER_SET_UPDATE_ELEMENT
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_ELEMENT_INTG
@@ -646,8 +651,9 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_PARAMETER_SET_UPDATE_FINISH,FIELD_PARAMETER_SET_UPDATE_START
 
-  PUBLIC FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT, &
-    & FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT,FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE
+  PUBLIC FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF,FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS, &
+    & FIELD_PARAMETER_SET_UPDATE_ELEMENT,FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT,FIELD_PARAMETER_SET_UPDATE_NODE, &
+    & FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE
 
   PUBLIC FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
 
@@ -20363,6 +20369,93 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF_L")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF_L
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the given parameter set with the given double precision values for all local dof of the field variable.
+  SUBROUTINE FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES 
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    REAL(DP), INTENT(IN) :: VALUES(:) !<The values to update to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS_DP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+            IF(FIELD_VARIABLE%DATA_TYPE==FIELD_DP_TYPE) THEN
+              IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
+                IF(ASSOCIATED(PARAMETER_SET)) THEN
+                  !\todo: Allow to specify a global number and then have it all update accordingly???
+                  IF(SIZE(VALUES)==FIELD_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
+                    !\todo: set the vector values directly without looping
+                    DO dof=1,FIELD_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_LOCAL
+                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof,VALUES(dof),ERR,ERROR,*999)
+                    ENDDO
+                  ELSE
+                    LOCAL_ERROR="The size of the parameter vector ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES),"*",ERR,ERROR))// &
+                      & ") does not match the number of dofs for this field ("// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_LOCAL,"*",ERR,ERROR))// &
+                      & ".)"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                    & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid. The field parameter set type must be between 1 and "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field variable data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the double precision data type of the given value."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+              & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The variable type must be between 1 and  "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF_DP")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF_DP",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF_DP")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS_DP
 
   !
   !================================================================================================================================
