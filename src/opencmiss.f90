@@ -3250,18 +3250,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_GeometricParametersElementLineLengthGetObj
   END INTERFACE !CMISSField_GeometricParametersElementLineLengthGet
 
-  !>Gets a interpolation scale factor for a particular element node.
-  INTERFACE CMISSField_InterpolationParametersNodeScaleFactorElemGet
-    MODULE PROCEDURE CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber
-    MODULE PROCEDURE CMISSField_InterpolationParametersNodeScaleFactorElemGetObj
-  END INTERFACE !CMISSField_InterpolationParametersNodeScaleFactorElemGet
-
-  !>Sets a interpolation scale factor for a particular element node.
-  INTERFACE CMISSField_InterpolationParametersNodeScaleFactorElemSet
-    MODULE PROCEDURE CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber
-    MODULE PROCEDURE CMISSField_InterpolationParametersNodeScaleFactorElemSetObj
-  END INTERFACE !CMISSField_InterpolationParametersNodeScaleFactorElemSet
-
  !>Returns the label for a field.
   INTERFACE CMISSField_LabelGet
     MODULE PROCEDURE CMISSField_LabelGetCNumber
@@ -3474,6 +3462,36 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetUpdateNodeLObj
   END INTERFACE !CMISSField_ParameterSetUpdateNode
 
+  !\todo: merge the two types of routines for getting scalefactors under the same interface declaration?
+  !>Gets a scale factor for a particular node.
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorGet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorGetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorGetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorGet
+
+  !>Gets the scale factors for all nodes
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorsGet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsGetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsGetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorsGet
+
+  !>Sets a scale factor for a particular node.
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorSet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorSetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorSetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorSet
+
+  !>Sets the scale factors for all nodes
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorsSet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsSetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsSetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorsSet
+
+  !>Gets the number of scalefactor dofs
+  INTERFACE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj
+  END INTERFACE !CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGet
 
   !>Updates the given parameter set with the given values for all local dofs of the field variable.  
   INTERFACE CMISSField_ParameterSetUpdateLocalDofs
@@ -3648,8 +3666,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSField_GeometricParametersElementLineLengthGet
 
-  PUBLIC CMISSField_InterpolationParametersNodeScaleFactorElemGet,CMISSField_InterpolationParametersNodeScaleFactorElemSet
-
   PUBLIC CMISSField_LabelGet,CMISSField_LabelSet
 
   PUBLIC CMISSField_MeshDecompositionGet,CMISSField_MeshDecompositionSet
@@ -3671,6 +3687,12 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetGetConstant,CMISSField_ParameterSetGetElement,CMISSField_ParameterSetGetNode
 
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
+
+  PUBLIC CMISSField_ParameterSetNodeScaleFactorGet,CMISSField_ParameterSetNodeScaleFactorSet
+
+  PUBLIC CMISSField_ParameterSetNodeScaleFactorsGet,CMISSField_ParameterSetNodeScaleFactorsSet
+
+  PUBLIC CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGet
 
   PUBLIC CMISSField_ParameterSetUpdateLocalDofs
 
@@ -25721,27 +25743,26 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets a interpolation scale factor for a particular element node.
-  SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber(regionUserNumber,fieldUserNumber,variableType, &
-    & elementNumber,versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+  !>Gets the scale factor for a particular node identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the scalefactor for
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to get scale factor for
     INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
-    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to get the scale factor for
-    REAL(DP), INTENT(OUT) :: scaleFactor !<The scale factor of the specified element node
+    REAL(DP), INTENT(OUT) :: scaleFactor !<The scale factor of the specified node
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber",err,error,*999)
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorGetNumber",err,error,*999)
 
     NULLIFY(region)
     NULLIFY(field)
@@ -25749,7 +25770,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL Field_InterpolationParametersNodeScaleFactorElemGet(field,variableType,elementNumber,versionNumber, &
+        CALL Field_ParameterSetNodeScaleFactorGet(field,variableType,versionNumber, &
           & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
@@ -25761,74 +25782,227 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber")
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetNumber")
     RETURN
-999 CALL ERRORS("CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber",err,error)
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber")
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorGetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemGetNumber
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetNumber
 
   !
   !================================================================================================================================
   !
 
-  !>Gets a interpolation scale factor for a particular element node.
-  SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemGetObj(field,variableType, &
-    & elementNumber,versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+  !>Gets the scale factor for a particular node identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetObj(field,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get scale factor for
     INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
-    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to get the scale factor for
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to get the scale factor for
-    REAL(DP), INTENT(OUT) :: scaleFactor !<The scale factor of the specified element node
+    REAL(DP), INTENT(OUT) :: scaleFactor !<The scale factor of the specified node
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_InterpolationParametersNodeScaleFactorElemGetObj",err,error,*999)
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorGetObj",err,error,*999)
 
-    CALL Field_InterpolationParametersNodeScaleFactorElemGet(field%FIELD,variableType,elementNumber,versionNumber, &
+    CALL Field_ParameterSetNodeScaleFactorGet(field%FIELD,variableType,versionNumber, &
       & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
 
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemGetObj")
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetObj")
     RETURN
-999 CALL ERRORS("CMISSField_InterpolationParametersNodeScaleFactorElemGetObj",err,error)
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemGetObj")
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorGetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemGetObj
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetObj
+
 
   !
   !================================================================================================================================
   !
 
-  !>Sets a interpolation scale factor for a particular element node.
-  SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber(regionUserNumber,fieldUserNumber,variableType, &
-    & elementNumber,versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+  !>Gets the scale factors for all nodes identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to get scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh omponent number of the field to set the scale factor for
+    REAL(DP), INTENT(OUT) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeScaleFactorsGet(field,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsGetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the scale factors for all nodes identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetObj(field,variableType,meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh omponent number of the field to set the scale factor for
+    REAL(DP), INTENT(OUT) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsGetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeScaleFactorsGet(field%FIELD,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsGetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetObj
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of scale factor dofs, identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & meshComponentNumber,numberOfScaleFactorsDofs,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the number of scalefactors for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(OUT) :: numberOfScaleFactorsDofs !<The number of scale factor dofs
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeNumberOfScaleFactorDofsGet(field,variableType,meshComponentNumber,numberOfScaleFactorsDofs, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of scale factor dofs, identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj(field,variableType,meshComponentNumber, &
+    & numberOfScaleFactorsDofs,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(OUT) :: numberOfScaleFactorsDofs !<The number of scale factor dofs
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeNumberOfScaleFactorDofsGet(field%FIELD,variableType,meshComponentNumber,numberOfScaleFactorsDofs, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factor for a particular node identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the scalefactor for
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to set scale factor for
     INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
-    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to set the scale factor for
-    REAL(DP), INTENT(IN) :: scaleFactor !<The scale factor of the specified element node
+    REAL(DP), INTENT(IN) :: scaleFactor !<The scale factor of the specified node
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber",err,error,*999)
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorSetNumber",err,error,*999)
 
     NULLIFY(region)
     NULLIFY(field)
@@ -25836,7 +26010,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL Field_InterpolationParametersNodeScaleFactorElemSet(field,variableType,elementNumber,versionNumber, &
+        CALL Field_ParameterSetNodeScaleFactorSet(field,variableType,versionNumber, &
           & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
@@ -25848,48 +26022,123 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber")
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetNumber")
     RETURN
-999 CALL ERRORS("CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber",err,error)
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber")
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorSetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemSetNumber
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetNumber
 
   !
   !================================================================================================================================
   !
 
-  !>Sets a interpolation scale factor for a particular element node.
-  SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemSetObj(field,variableType, &
-    & elementNumber,versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+  !>Sets the scale factor for a particular node identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetObj(field,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to set scale factor for
     INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
-    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to set the scale factor for
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to set the scale factor for
-    REAL(DP), INTENT(IN) :: scaleFactor !<The scale factor of the specified element node
+    REAL(DP), INTENT(IN) :: scaleFactor !<The scale factor of the specified node
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_InterpolationParametersNodeScaleFactorElemSetObj",err,error,*999)
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorSetObj",err,error,*999)
 
-    CALL Field_InterpolationParametersNodeScaleFactorElemSet(field%FIELD,variableType,elementNumber,versionNumber, &
+    CALL Field_ParameterSetNodeScaleFactorSet(field%FIELD,variableType,versionNumber, &
       & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
 
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemSetObj")
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetObj")
     RETURN
-999 CALL ERRORS("CMISSField_InterpolationParametersNodeScaleFactorElemSetObj",err,error)
-    CALL EXITS("CMISSField_InterpolationParametersNodeScaleFactorElemSetObj")
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorSetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_InterpolationParametersNodeScaleFactorElemSetObj
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factors for all nodes identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to set scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh omponent number of the field to set the scale factor for
+    REAL(DP), INTENT(IN) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsSetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeScaleFactorsSet(field,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsSetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factors for all nodes identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetObj(field,variableType,meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to set scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The component number of the field to set the scale factor for
+    REAL(DP), INTENT(IN) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsSetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeScaleFactorsSet(field%FIELD,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsSetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetObj
 
   !
   !================================================================================================================================
