@@ -424,7 +424,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nj,a,b,i,k,h
-    REAL(DP) :: CONDUCTIVITY_MATERIAL(3,3),CONDUCTIVITY(3,3),CONDUCTIVITY_TEMP(3,3),RWG,SUM,PGMSI(3),PGNSI(3),K_VALUE(3)
+    REAL(DP) :: CONDUCTIVITY_MATERIAL(3,3),CONDUCTIVITY(3,3),CONDUCTIVITY_TEMP(3,3),RWG,SUM,SUM1,SUM2,PGMSI(3),PGNSI(3),K_VALUE(3)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -436,7 +436,6 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,INDEPENDENT_FIELD,MATERIALS_FIELD,FIBRE_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
-    !added by Mylena
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -554,7 +553,6 @@ CONTAINS
             ENDDO !mh
           ENDIF
           
-        ! ADDED by Mylena  
         CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
 !!TODO: move these and scale factor adjustment out once generalised Laplace is put in.
           !Store all these in equations matrices/somewhere else?????
@@ -612,8 +610,7 @@ CONTAINS
 !!TODO: Think about symmetric problems. 
             RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
               & QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
-              
-            ! conductivity in material coordinates 
+            !conductivity in material coordinates 
             CONDUCTIVITY_MATERIAL=0.0_DP
             IF(NUMBER_OF_DIMENSIONS==2) THEN
               CONDUCTIVITY_MATERIAL(1,1)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
@@ -631,11 +628,7 @@ CONTAINS
               CONDUCTIVITY_MATERIAL(1,3)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,1)
               CONDUCTIVITY_MATERIAL(3,1)=CONDUCTIVITY_MATERIAL(1,3)
             ENDIF
-            
-!            DO nj=1,GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS
-!              CONDUCTIVITY_MATERIAL(nj,nj)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(nj,1)
-!            ENDDO !nj 
-            
+  
             ! rotate the conductivity in material coordinates to get the effective conductivity
             CALL LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE_DNUDXI(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,&
               & NUMBER_OF_DIMENSIONS,NUMBER_OF_XI,DNUDXI,DXIDNU,ERR,ERROR,*999)
@@ -643,9 +636,6 @@ CONTAINS
             CALL MATRIX_PRODUCT(DNUDXI,CONDUCTIVITY_MATERIAL,CONDUCTIVITY_TEMP,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(CONDUCTIVITY_TEMP,DXIDNU,CONDUCTIVITY,ERR,ERROR,*999)
             
-!            !! testing
-!            WRITE(*,*) CONDUCTIVITY
-
             !Loop over field components
             mhs=0          
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -663,25 +653,31 @@ CONTAINS
                         PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                       ENDDO !ni
+                      
+!                      SUM=0.0_DP
+!                      DO i=1,DEPENDENT_BASIS%NUMBER_OF_XI
+!                        DO k=1,DEPENDENT_BASIS%NUMBER_OF_XI
+!                          DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
+!                            SUM=SUM+CONDUCTIVITY(i,k)*PGNSI(k)*PGMSI(h)*EQUATIONS%INTERPOLATION% &
+!                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(i,h)
+!                          ENDDO !h
+!                        ENDDO !k
+!                      ENDDO !i
+
                       SUM=0.0_DP
                       DO i=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                        SUM1=0.0_DP
                         DO k=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                            SUM=SUM+CONDUCTIVITY(i,k)*PGNSI(k)*PGMSI(h)*EQUATIONS%INTERPOLATION% &
-                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(i,h)
-                          ENDDO !i
+                          SUM1=SUM1+CONDUCTIVITY(i,k)*PGNSI(k)
                         ENDDO !k
-                      ENDDO !h
-                      
-!                      DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
-!                        DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-!                          !MM
-!                          SUM=SUM+CONDUCTIVITY(mi,ni)*PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION% &
-!                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)
-!                          !!
-!                        ENDDO !ni
-!                      ENDDO !mi
-
+                        SUM2=0.0_DP                        
+                        DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                          SUM2=SUM2+PGMSI(h)*EQUATIONS%INTERPOLATION% &
+                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(i,h)
+                        ENDDO !h
+                        SUM=SUM+SUM1*SUM2
+                      ENDDO !i
+                        
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
     
                     ENDDO !ns
@@ -2734,14 +2730,10 @@ CONTAINS
   !Calculate dx/dxi
   DO component_idx=1,DIMEN
     DO xi_idx=1,NUMBER_OF_XI
-      derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)
+      derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)  ! 2,4,7
       DXDXI(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,derivative_idx) !dx/dxi
     ENDDO !xi_idx
   ENDDO !component_idx
-  !normalise
-  DO xi_idx=1,NUMBER_OF_XI
-    DXDXI(:,xi_idx)=NORMALISE(DXDXI(:,xi_idx),ERR,ERROR)
-  ENDDO
 
   !Calculate the third vector orthogonal to the first and the second vector
   IF (DIMEN==3 .AND. NUMBER_OF_XI==2) THEN
@@ -2770,12 +2762,6 @@ CONTAINS
   
   CALL INVERT(DNUDXI,DXIDNU,Jnuxi,ERR,ERROR,*999)
   
-!  !normalise (? necessary ?)
-!  DO xi_idx=1,3
-!    DNUDXI(:,xi_idx)=NORMALISE(DNUDXI(:,xi_idx),ERR,ERROR)
-!    DXIDNU(:,xi_idx)=NORMALISE(DXIDNU(:,xi_idx),ERR,ERROR)
-!  ENDDO
-    
   CALL EXITS("LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE_DNUDXI")
     RETURN
 999 CALL ERRORS("LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE_DNUDXI",ERR,ERROR)
