@@ -6054,6 +6054,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolver_LinearDirectTypeSet
 
+  PUBLIC CMISSSolver_MumpsSetIcntl,CMISSSolver_MumpsSetCntl
+
   PUBLIC CMISSSolver_LinearIterativeAbsoluteToleranceSet
 
   PUBLIC CMISSSolver_LinearIterativeDivergenceToleranceSet
@@ -45511,6 +45513,60 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_LinearDirectTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the MUMPS ICNTL(icntl)=ivalue integer control parameters through the PETSc-MUMPS interface
+  SUBROUTINE CMISSSolver_MumpsSetIcntl(solver,icntl,ivalue,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS ICNTL integer control parameter 
+    INTEGER(INTG), INTENT(IN) :: ivalue !<The MUMPS ICNTL integer value to set: ICNTL(icntl)=ivalue
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_MumpsSetIcntl",err,error,*999)
+
+    CALL Solver_MumpsSetIcntl(solver%SOLVER,icntl,ivalue,err,error,*999)
+
+    CALL EXITS("CMISSSolver_MumpsSetIcntl")
+    RETURN
+999 CALL ERRORS("CMISSSolver_MumpsSetIcntl",err,error)
+    CALL EXITS("CMISSSolver_MumpsSetIcntl")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_MumpsSetIcntl
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the MUMPS CNTL(icntl)=val real/complex control parameters through the PETSc-MUMPS interface
+  SUBROUTINE CMISSSolver_MumpsSetCntl(solver,icntl,val,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS CNTL integer control parameter 
+    REAL(DP), INTENT(IN) :: val !<The MUMPS CNTL real value to set: CNTL(icntl)=val
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_MumpsSetCntl",err,error,*999)
+
+    CALL Solver_MumpsSetCntl(solver%SOLVER,icntl,val,err,error,*999)
+
+    CALL EXITS("CMISSSolver_MumpsSetCntl")
+    RETURN
+999 CALL ERRORS("CMISSSolver_MumpsSetCntl",err,error)
+    CALL EXITS("CMISSSolver_MumpsSetCntl")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_MumpsSetCntl
 
   !
   !================================================================================================================================
