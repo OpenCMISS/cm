@@ -5682,13 +5682,16 @@ CONTAINS
                                 ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
                                   fixedNode=.TRUE.
                                 ELSE
-                                  CALL FLAG_ERROR("Please set 1D-0D coupled boundary as inlet or outlet.",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Please set 1D-0D coupled boundary for node "//TRIM(NUMBER_TO_VSTRING( &
+                                    & nodeIdx,"*",ERR,ERROR))//" as inlet or outlet.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Please set a boundary condition at the coupled node.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("No boundary condition variable at coupled node "//TRIM(NUMBER_TO_VSTRING( &
+                                  & nodeIdx,"*",ERR,ERROR)),ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Please set a boundary condition at the coupled node.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Please set a boundary condition at coupled node "//TRIM(NUMBER_TO_VSTRING( &
+                                & nodeIdx,"*",ERR,ERROR)),ERR,ERROR,*999)
                             ENDIF
                             materialIdx=8
                             CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE &
