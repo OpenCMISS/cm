@@ -1410,9 +1410,11 @@ CONTAINS
                 IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                   IF(columnIdx==1) THEN
                     ! dP/dQ
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr*Beta(1)))*(Q_BIF(1)/(A_BIF(1)**2.0_DP))
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr*Beta(1)))* &
+                      & (Q_BIF(1)/(A_BIF(1)**2.0_DP))
                     ! dP/dA
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1.0_DP/(2.0_DP*SQRT(A_BIF(1))) - (1.0/(2.0_DP*Fr*Beta(1)))* &
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1.0_DP/(2.0_DP*SQRT(A_BIF(1))) - &
+                      & (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                       & ((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
                   ELSE IF(columnIdx2==rowIdx) THEN
                     ! dP/dQ
