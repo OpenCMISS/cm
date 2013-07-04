@@ -75,7 +75,6 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   USE TIMER
   USE TYPES
 
-
   IMPLICIT NONE
 
   PRIVATE
@@ -207,7 +206,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: geometricDecomposition
     INTEGER(INTG) :: numberOfDimensions,componentIdx
     INTEGER(INTG) :: geometricScalingType,geometricMeshComponent,geometricComponentNumber    
-    INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents
+    INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents,numberComponentsU2
     INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables,numberComponentsV,numberComponentsU1
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsField1DNumberOfComponents,materialsFieldCoupledNumberOfComponents
     TYPE(VARYING_STRING) :: localError
@@ -291,12 +290,13 @@ CONTAINS
                 !point new field to geometric field
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,equationsSet%GEOMETRY% &
                   & GEOMETRIC_FIELD,err,error,*999)
-                !set number of variables to 4 (U,DELUDELN,V)=>(Q,A;dQ,dA;W(1,2);pCellML)
-                dependentFieldNumberOfVariables=4
+                !set number of variables to 5 (U,DELUDELN,V,U1,U2)=>(Q,A;dQ,dA;W(1,2);pCellML,Pressure)
+                dependentFieldNumberOfVariables=5
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & dependentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE],err,error,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], &
+                  & err,error,*999)
                 ! set dimension
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
@@ -305,6 +305,8 @@ CONTAINS
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 ! set data type
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -315,6 +317,8 @@ CONTAINS
                   & FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,err,error,*999)
                 ! number of components for U,DELUDELN=2 (Q,A)
                 dependentFieldNumberOfComponents=2
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
@@ -324,12 +328,15 @@ CONTAINS
 !                IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
                 numberComponentsV=2
                 numberComponentsU1=1
+                numberComponentsU2=1
 !                ENDIF
                 ! set number of components for V
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                  & FIELD_V_VARIABLE_TYPE,numberComponentsV,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                  & FIELD_U1_VARIABLE_TYPE,numberComponentsU1,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                 & FIELD_U2_VARIABLE_TYPE,numberComponentsU2,err,error,*999)
 
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & 1,geometricMeshComponent,err,error,*999)
@@ -345,6 +352,8 @@ CONTAINS
                   & FIELD_V_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
                   & FIELD_U1_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
+                  & FIELD_U2_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
 
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 !Specify nodal solution method
@@ -365,6 +374,10 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_U1_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   ENDDO
+                  DO componentIdx=1,numberComponentsU2
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                      & FIELD_U2_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                  ENDDO
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, &
                     & err,error,*999)
                   CALL FIELD_SCALING_TYPE_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD,geometricScalingType, &
@@ -379,20 +392,23 @@ CONTAINS
                 !Check the user specified field
                 CALL FIELD_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_GENERAL_TYPE,err,error,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_DEPENDENT_TYPE,err,error,*999)
-                dependentFieldNumberOfVariables=3 ! U,dUdN,V
+                dependentFieldNumberOfVariables=4 ! U,dUdN,V,U2
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(equationsSetSetup%FIELD,dependentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],err,error,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE],err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U2_VARIABLE_TYPE, & 
+                  & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
                   & err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & numberOfDimensions,err,error,*999)
                 !calculate number of components (Q,A) for U and dUdN
@@ -403,11 +419,15 @@ CONTAINS
                   & dependentFieldNumberOfComponents,err,error,*999)
                 IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
                   numberComponentsV=3
+                  numberComponentsU2=1
                 ELSE
                   numberComponentsV=2
+                  numberComponentsU2=1
                 ENDIF
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, &
                   & numberComponentsV,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & numberComponentsU2,err,error,*999)
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -415,6 +435,8 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(equationsSetSetup%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(equationsSetSetup%FIELD,FIELD_U2_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                 CASE DEFAULT
                   localError="The solution method of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD, &
@@ -555,12 +577,12 @@ CONTAINS
           SELECT CASE(equationsSet%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
-              materialsFieldNumberOfVariables=2 ! 1 U-type container variable w/ 12 components, 1 V-type w/ 2 components
-              materialsField1DNumberOfComponents=12
+              materialsFieldNumberOfVariables=2 ! 1 U-type container variable w/ 10 components, 1 V-type w/ 2 components
+              materialsField1DNumberOfComponents=10
               materialsFieldCoupledNumberOfComponents=2
             ELSE
-              materialsFieldNumberOfVariables=1 ! 1 U-type container variable w/ 12 components
-              materialsField1DNumberOfComponents=12
+              materialsFieldNumberOfVariables=1 ! 1 U-type container variable w/ 10 components
+              materialsField1DNumberOfComponents=10
               materialsFieldCoupledNumberOfComponents=0
             ENDIF
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
@@ -600,15 +622,13 @@ CONTAINS
                     & FIELD_U_VARIABLE_TYPE,1,geometricComponentNumber,err,error,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & 1,geometricComponentNumber,err,error,*999)
-                  ! Constant Materials
-                  DO componentIdx=1,8 !(mu,rho,K,Bs,As,Re,Fr,St)
+                  DO componentIdx=1,7 !(MU,RHO,K,As,Re,Fr,St)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & componentIdx,FIELD_CONSTANT_INTERPOLATION,err,error,*999)
+                      & componentIdx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
-                  ! Element-based Materials
-                  DO componentIdx=9,12 !(A0,Beta,E,H0)
+                  DO componentIdx=8,10 !(A0,E,H0)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & componentIdx,FIELD_ELEMENT_BASED_INTERPOLATION,err,error,*999)
+                      & componentIdx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
                   !Default the field scaling to that of the geometric field
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, & 
@@ -830,9 +850,8 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,versionIdx2,componentIdx,columnIdx,componentIdx2
-    INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(3)
-    REAL(DP) :: Q_BIF(3),A_BIF(3),A0_PARAM(3),Beta(3),W(2,3),normalWave(2,3)
-    REAL(DP) :: Bs,As,Fr,sum
+    INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,sum
     LOGICAL :: updateStiffnessMatrix, updateRhsVector,updateNonlinearResidual
     TYPE(VARYING_STRING) :: localError
 
@@ -925,8 +944,8 @@ CONTAINS
       IF (ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1)) >0) THEN
 
         !!!--  M A T E R I A L S   P A R A M E T E R S  --!!!
-        !Material Values at the node - material field variable 1, components 1-12, type U
-        ! First 8 components constant, 9-12 element-based (so will vary with version#)
+        !Material Values at the node - material field variable 1, components 1-10, type U
+        ! First 7 components constant, 8-10 node-based (so will vary with version#)
 
         ! Element-based material parameters for coupled problems
         IF(dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
@@ -934,12 +953,17 @@ CONTAINS
           elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
            & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(1)
           DO versionIdx=1,numberOfVersions
+            parameterIdx=8
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
             parameterIdx=9
-            CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & elementNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
             parameterIdx=10
-            CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & elementNumber,parameterIdx,Beta(versionIdx),err,error,*999)                
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
+            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+              & (3.0_DP*A0_PARAM(versionIdx))            
           ENDDO
         ! For branching flows, this gets the elements converging on the node and associates them 
         ! with their specific version number: versionElementNumber(version)
@@ -967,12 +991,17 @@ CONTAINS
                   IF(elementNodeVersion==versionIdx) THEN
                     !Get the element based material parameters for the surrounding elements
                     versionElementNumber(versionIdx)=elementNumber
+                    parameterIdx=8
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
                     parameterIdx=9
-                    CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                     & elementNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
                     parameterIdx=10
-                    CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                     & elementNumber,parameterIdx,Beta(versionIdx),err,error,*999)                
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
+                    Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+                      & (3.0_DP*A0_PARAM(versionIdx))                 
                   ENDIF
                 ENDDO
               ENDIF
@@ -986,10 +1015,8 @@ CONTAINS
         fieldVariable=>materialsField%VARIABLE_TYPE_MAP(variableType)%PTR
         ! Constant material parameters
         local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-        Bs=materialsParameters(local_ny)
-        local_ny=fieldVariable%COMPONENTS(5)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
         As=materialsParameters(local_ny)
-        local_ny=fieldVariable%COMPONENTS(7)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+        local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
         Fr=materialsParameters(local_ny)
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & materialsParameters,err,error,*999)
@@ -1057,7 +1084,7 @@ CONTAINS
               IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                 rowIdx=rowIdx + 1
                 nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
-                 & + normalWave(componentIdx,versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)/Bs))**0.5_DP)* &
+                 & + normalWave(componentIdx,versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)))**0.5_DP)* &
                  & (A_BIF(versionIdx)**0.25_DP)- W(componentIdx,versionIdx)
               ENDIF
             ENDDO
@@ -1078,7 +1105,7 @@ CONTAINS
                 ELSE
                   nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
                     & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                    & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(Bs/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
+                    & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
                     & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
                 ENDIF
               ENDIF
@@ -1132,12 +1159,10 @@ CONTAINS
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP), POINTER :: materialsParameters(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
-    INTEGER(INTG) :: numberOfVersions,local_ny,variableType
+    INTEGER(INTG) :: numberOfVersions,local_ny,variableType,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,baseIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
-    INTEGER(INTG) :: startColumn2
-    REAL(DP) :: Q_BIF(3),A_BIF(3),A0_PARAM(3),Beta(3),W(2,3),normalWave(2,3)
-    INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(3)
-    REAL(DP) :: Bs,As,Fr
+    INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
     LOGICAL :: updateJacobianMatrix
     TYPE(VARYING_STRING) :: localError
 
@@ -1227,8 +1252,8 @@ CONTAINS
       IF (ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1)) >0) THEN
 
         !!!--  M A T E R I A L S   P A R A M E T E R S  --!!!
-        !Material Values at the node - material field variable 1, components 1-12, type U
-        ! First 8 components constant, 9-12 element-based (so will vary with version#)
+        !Material Values at the node - material field variable 1, components 1-10, type U
+        ! First 7 components constant, 8-10 node-based (so will vary with version#)
 
         ! Element-based material parameters for coupled problems
         IF(dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
@@ -1236,12 +1261,17 @@ CONTAINS
           elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
            & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(1)
           DO versionIdx=1,numberOfVersions
+            parameterIdx=8
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
             parameterIdx=9
-            CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & elementNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
             parameterIdx=10
-            CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & elementNumber,parameterIdx,Beta(versionIdx),err,error,*999)                
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
+            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+              & (3.0_DP*A0_PARAM(versionIdx))                 
           ENDDO
         ! For branching flows, this gets the elements converging on the node and associates them 
         ! with their specific version number: versionElementNumber(version)
@@ -1269,12 +1299,17 @@ CONTAINS
                   IF(elementNodeVersion==versionIdx) THEN
                     !Get the element based material parameters for the surrounding elements
                     versionElementNumber(versionIdx)=elementNumber
+                    parameterIdx=8
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
                     parameterIdx=9
-                    CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                     & elementNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
                     parameterIdx=10
-                    CALL FIELD_PARAMETER_SET_GET_ELEMENT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                     & elementNumber,parameterIdx,Beta(versionIdx),err,error,*999)                
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
+                    Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+                      & (3.0_DP*A0_PARAM(versionIdx))          
                   ENDIF
                 ENDDO
               ENDIF
@@ -1288,10 +1323,8 @@ CONTAINS
         fieldVariable=>materialsField%VARIABLE_TYPE_MAP(variableType)%PTR
         ! Constant material parameters
         local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-        Bs=materialsParameters(local_ny)
-        local_ny=fieldVariable%COMPONENTS(5)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
         As=materialsParameters(local_ny)
-        local_ny=fieldVariable%COMPONENTS(7)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+        local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
         Fr=materialsParameters(local_ny)
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & materialsParameters,err,error,*999)
@@ -1353,7 +1386,7 @@ CONTAINS
                 columnIdx=columnIdx+1
                 rowIdx=rowIdx+1
                 jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
-                 & +normalWave(componentIdx,versionIdx)*SQRT((Fr*(Beta(versionIdx)/Bs)))* &
+                 & +normalWave(componentIdx,versionIdx)*SQRT((Fr*(Beta(versionIdx))))* &
                  & ((A_BIF(versionIdx)**(-0.75_DP)))
               ENDIF
             ENDDO
@@ -1377,17 +1410,19 @@ CONTAINS
                 IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                   IF(columnIdx==1) THEN
                     ! dP/dQ
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(Bs/(2.0_DP*Fr*Beta(1)))*(Q_BIF(1)/(A_BIF(1)**2.0_DP))
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr*Beta(1)))* &
+                      & (Q_BIF(1)/(A_BIF(1)**2.0_DP))
                     ! dP/dA
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1/(2.0_DP*SQRT(A_BIF(1))) - (Bs/(2.0_DP*Fr*Beta(1)))* &
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1.0_DP/(2.0_DP*SQRT(A_BIF(1))) - &
+                      & (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                       & ((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
                   ELSE IF(columnIdx2==rowIdx) THEN
                     ! dP/dQ
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Bs/(2.0_DP*Fr*Beta(1)))* &
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                       & (Q_BIF(versionIdx)/(A_BIF(versionIdx)**2.0_DP))
                     ! dP/dA
                     jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=-Beta(versionIdx)/Beta(1)* &
-                     & (1/(2.0_DP*SQRT(A_BIF(versionIdx)))) + (Bs/(2.0_DP*Fr*Beta(1)))* &
+                     & (1/(2.0_DP*SQRT(A_BIF(versionIdx)))) + (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                      & (Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP)
                   ELSE
                     jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP

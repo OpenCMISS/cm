@@ -15911,10 +15911,17 @@ endif
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
                                         & ERR,ERROR,*999)
-                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
                                     ELSE
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
                                         & ERR,ERROR,*999)
                                       DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
                                         & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
@@ -15933,10 +15940,24 @@ endif
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
                                         & ERR,ERROR,*999)
-                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
+                                        & (DELTA_T*DELTA_T*DELTA_T/6.0_DP)*SOLVER_VALUE
                                     ELSE
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
                                         & ERR,ERROR,*999)
                                       DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
                                         & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
