@@ -18888,9 +18888,6 @@ CONTAINS
                           dataProjection=>field%dataProjection
                           IF(ASSOCIATED(dataProjection)) THEN
                             ! Use element topology to check if data point is on current computational node
-                            ! userElementNumber = dataProjection%data_projection_results(dataPointUserNumber)%element_number
-                            ! CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
-                            !   & userElementExists,decompositionLocalElementNumber,ghostElement,err,error,*999)
                             CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
                               & userElementExists,decompositionLocalElementNumber,ghostElement,err,error,*999)
                             IF(userElementExists) THEN
