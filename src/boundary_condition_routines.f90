@@ -101,7 +101,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE=18 !<The dof is fixed as a boundary condition, to be used with load increment loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_IMPERMEABLE_WALL=19 !<The dof is set such that (via penalty formulation): velocity * normal = 0. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
-  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_CONSTRAINED=21 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_LINEAR_CONSTRAINT=21 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
   INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=21 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
@@ -1343,7 +1343,7 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FREE
     CASE(BOUNDARY_CONDITION_FIXED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
-    CASE(BOUNDARY_CONDITION_CONSTRAINED)
+    CASE(BOUNDARY_CONDITION_LINEAR_CONSTRAINT)
       dofType=BOUNDARY_CONDITION_DOF_CONSTRAINED
     CASE(BOUNDARY_CONDITION_FIXED_INLET)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
@@ -1629,7 +1629,7 @@ CONTAINS
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_FIXED)
             validEquationsSetFound=.TRUE.
-          CASE(BOUNDARY_CONDITION_CONSTRAINED)
+          CASE(BOUNDARY_CONDITION_LINEAR_CONSTRAINT)
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_FIXED_INLET, &
               & BOUNDARY_CONDITION_FIXED_OUTLET)
@@ -2931,7 +2931,8 @@ CONTAINS
     dofConstraints%numberOfConstraints=dofConstraints%numberOfConstraints+1
 
     !Set the DOF type and BC type of the constrained DOF
-    CALL BoundaryConditions_SetConditionType(boundaryConditionsVariable,globalDof,BOUNDARY_CONDITION_CONSTRAINED,err,error,*999)
+    CALL BoundaryConditions_SetConditionType(boundaryConditionsVariable,globalDof,BOUNDARY_CONDITION_LINEAR_CONSTRAINT, &
+      & err,error,*999)
 
     CALL Exits("BoundaryConditions_DofConstraintSet")
     RETURN
