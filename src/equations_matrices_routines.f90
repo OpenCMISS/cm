@@ -823,55 +823,61 @@ CONTAINS
   !
 
   !>Sets up the element matrix for the row and column field variables.
-  SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(ELEMENT_MATRIX,ROWS_FIELD_VARIABLE,COLS_FIELD_VARIABLE,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(elementMatrix,rowsFieldVariable,columnsFieldVariable,err,error,*)
 
     !Argument variables
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix to setup
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROWS_FIELD_VARIABLE !<A pointer to the field variable associated with the rows
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: COLS_FIELD_VARIABLE !<A pointer to the field variable associated with the columns
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(ELEMENT_MATRIX_TYPE) :: elementMatrix !<The element matrix to setup
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: rowsFieldVariable !<A pointer to the field variable associated with the rows
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: columnsFieldVariable !<A pointer to the field variable associated with the columns
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    INTEGER(INTG) :: dummyErr, componentIdx
+    TYPE(VARYING_STRING) :: dummyError
 
-    CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP",ERR,ERROR,*998)
+    CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP",err,error,*998)
 
-    IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
-      IF(ASSOCIATED(COLS_FIELD_VARIABLE)) THEN
-        ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-        ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=COLS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & COLS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-        IF(ALLOCATED(ELEMENT_MATRIX%ROW_DOFS)) THEN
-          CALL FLAG_ERROR("Element matrix row dofs already allocated.",ERR,ERROR,*999)
+    IF(ASSOCIATED(rowsFieldVariable)) THEN
+      IF(ASSOCIATED(columnsFieldVariable)) THEN
+        elementMatrix%MAX_NUMBER_OF_ROWS = 0
+        DO componentIdx=1,rowsFieldVariable%NUMBER_OF_COMPONENTS
+          elementMatrix%MAX_NUMBER_OF_ROWS=elementMatrix%MAX_NUMBER_OF_ROWS+ &
+            & rowsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+        ENDDO
+        elementMatrix%MAX_NUMBER_OF_COLUMNS = 0
+        DO componentIdx=1,columnsFieldVariable%NUMBER_OF_COMPONENTS
+          elementMatrix%MAX_NUMBER_OF_COLUMNS=elementMatrix%MAX_NUMBER_OF_COLUMNS+ &
+            & columnsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+        ENDDO
+        IF(ALLOCATED(elementMatrix%ROW_DOFS)) THEN
+          CALL FLAG_ERROR("Element matrix row dofs already allocated.",err,error,*999)
         ELSE
-          ALLOCATE(ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element matrix row dofs.",ERR,ERROR,*999)
+          ALLOCATE(elementMatrix%ROW_DOFS(elementMatrix%MAX_NUMBER_OF_ROWS),STAT=err)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element matrix row dofs.",err,error,*999)
         ENDIF
-        IF(ALLOCATED(ELEMENT_MATRIX%COLUMN_DOFS)) THEN
-          CALL FLAG_ERROR("Element matrix column dofs already allocated.",ERR,ERROR,*999)
+        IF(ALLOCATED(elementMatrix%COLUMN_DOFS)) THEN
+          CALL FLAG_ERROR("Element matrix column dofs already allocated.",err,error,*999)
         ELSE
-          ALLOCATE(ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element matrix column dofs.",ERR,ERROR,*999)
+          ALLOCATE(elementMatrix%COLUMN_DOFS(elementMatrix%MAX_NUMBER_OF_COLUMNS),STAT=err)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element matrix column dofs.",err,error,*999)
         ENDIF
-        IF(ALLOCATED(ELEMENT_MATRIX%MATRIX)) THEN
-          CALL FLAG_ERROR("Element matrix already allocated.",ERR,ERROR,*999)
+        IF(ALLOCATED(elementMatrix%MATRIX)) THEN
+          CALL FLAG_ERROR("Element matrix already allocated.",err,error,*999)
         ELSE
-          ALLOCATE(ELEMENT_MATRIX%MATRIX(ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS,ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element matrix.",ERR,ERROR,*999)
+          ALLOCATE(elementMatrix%MATRIX(elementMatrix%MAX_NUMBER_OF_ROWS,elementMatrix%MAX_NUMBER_OF_COLUMNS),STAT=err)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element matrix.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Columns field variable is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Columns field variable is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Rows field variable is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Rows field variable is not associated.",err,error,*999)
     ENDIF
     
     CALL EXITS("EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP")
     RETURN
-999 CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE(ELEMENT_MATRIX,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP",ERR,ERROR)
+999 CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE(elementMatrix,dummyErr,dummyError,*998)
+998 CALL ERRORS("EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP",err,error)
     CALL EXITS("EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP")
     RETURN 1
   END SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP
@@ -1021,42 +1027,45 @@ CONTAINS
   !
 
   !>Sets up the element vector for the row field variables.
-  SUBROUTINE EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP(ELEMENT_VECTOR,ROWS_FIELD_VARIABLE,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP(elementVector,rowsFieldVariable,err,error,*)
 
     !Argument variables
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element vector to setup
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROWS_FIELD_VARIABLE !<A pointer to the field variable associated with the rows
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(ELEMENT_VECTOR_TYPE) :: elementVector !<The element vector to setup
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: rowsFieldVariable !<A pointer to the field variable associated with the rows
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    INTEGER(INTG) :: DUMMY_ERR,componentIdx
+    TYPE(VARYING_STRING) :: dummyError
 
-    CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP",ERR,ERROR,*998)
+    CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP",err,error,*998)
 
-    IF(ASSOCIATED(ROWS_FIELD_VARIABLE)) THEN
-      ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-        & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-      IF(ALLOCATED(ELEMENT_VECTOR%ROW_DOFS)) THEN
-        CALL FLAG_ERROR("Element vector row dofs is already allocated.",ERR,ERROR,*999)        
+    IF(ASSOCIATED(rowsFieldVariable)) THEN
+      elementVector%MAX_NUMBER_OF_ROWS = 0
+      DO componentIdx=1,rowsFieldVariable%NUMBER_OF_COMPONENTS
+        elementVector%MAX_NUMBER_OF_ROWS=elementVector%MAX_NUMBER_OF_ROWS+ &
+          & rowsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+      ENDDO
+      IF(ALLOCATED(elementVector%ROW_DOFS)) THEN
+        CALL FLAG_ERROR("Element vector row dofs is already allocated.",err,error,*999)
       ELSE
-        ALLOCATE(ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element vector row dofs.",ERR,ERROR,*999)
+        ALLOCATE(elementVector%ROW_DOFS(elementVector%MAX_NUMBER_OF_ROWS),STAT=err)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element vector row dofs.",err,error,*999)
       ENDIF
-      IF(ALLOCATED(ELEMENT_VECTOR%VECTOR)) THEN
-        CALL FLAG_ERROR("Element vector vector already allocated.",ERR,ERROR,*999)        
+      IF(ALLOCATED(elementVector%VECTOR)) THEN
+        CALL FLAG_ERROR("Element vector vector already allocated.",err,error,*999)
       ELSE
-        ALLOCATE(ELEMENT_VECTOR%VECTOR(ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element vector vector.",ERR,ERROR,*999)
+        ALLOCATE(elementVector%VECTOR(elementVector%MAX_NUMBER_OF_ROWS),STAT=err)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element vector vector.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Rows field variable is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Rows field variable is not associated.",err,error,*999)
     ENDIF
     
     CALL EXITS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP")
     RETURN
-999 CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_FINALISE(ELEMENT_VECTOR,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP",ERR,ERROR)
+999 CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_FINALISE(elementVector,DUMMY_ERR,dummyError,*998)
+998 CALL ERRORS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP",err,error)
     CALL EXITS("EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP")
     RETURN 1
   END SUBROUTINE EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP
