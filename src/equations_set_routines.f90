@@ -6156,7 +6156,6 @@ CONTAINS
                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%neumannBoundaryConditions)) THEN
                       ! The boundary conditions parameter set contains the full values and the
                       ! current incremented values are transferred to the point values vector
-                      WRITE(*,*) "Incrementing  Neumann point conditions"
                       DO condition_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)+ &
                           & BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
                         condition_global_dof=BOUNDARY_CONDITIONS_VARIABLE%neumannBoundaryConditions%setDofs(condition_idx)
