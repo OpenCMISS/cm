@@ -573,8 +573,6 @@ CONTAINS
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-          !!MM needed??
-          !GEOMETRIC_VARIABLE=>GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
           
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                   
@@ -654,29 +652,29 @@ CONTAINS
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                       ENDDO !ni
                       
-!                      SUM=0.0_DP
-!                      DO i=1,DEPENDENT_BASIS%NUMBER_OF_XI
-!                        DO k=1,DEPENDENT_BASIS%NUMBER_OF_XI
-!                          DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
-!                            SUM=SUM+CONDUCTIVITY(i,k)*PGNSI(k)*PGMSI(h)*EQUATIONS%INTERPOLATION% &
-!                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(i,h)
-!                          ENDDO !h
-!                        ENDDO !k
-!                      ENDDO !i
-
                       SUM=0.0_DP
                       DO i=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                        SUM1=0.0_DP
                         DO k=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          SUM1=SUM1+CONDUCTIVITY(i,k)*PGNSI(k)
-                        ENDDO !k
-                        SUM2=0.0_DP                        
-                        DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          SUM2=SUM2+PGMSI(h)*EQUATIONS%INTERPOLATION% &
+                          DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                            SUM=SUM+CONDUCTIVITY(i,k)*PGNSI(k)*PGMSI(h)*EQUATIONS%INTERPOLATION% &
                             & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(i,h)
-                        ENDDO !h
-                        SUM=SUM+SUM1*SUM2
+                          ENDDO !h
+                        ENDDO !k
                       ENDDO !i
+
+!                      SUM=0.0_DP
+!                      DO i=1,DEPENDENT_BASIS%NUMBER_OF_XI
+!                        SUM1=0.0_DP
+!                        DO k=1,DEPENDENT_BASIS%NUMBER_OF_XI
+!                          SUM1=SUM1+CONDUCTIVITY(i,k)*PGNSI(k)
+!                        ENDDO !k
+!                        SUM2=0.0_DP                        
+!                        DO h=1,DEPENDENT_BASIS%NUMBER_OF_XI
+!                          SUM2=SUM2+PGMSI(h)*EQUATIONS%INTERPOLATION% &
+!                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(i,h)
+!                        ENDDO !h
+!                        SUM=SUM+SUM1*SUM2
+!                      ENDDO !i
                         
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
     
@@ -717,7 +715,6 @@ CONTAINS
               ENDDO !ms
             ENDDO !mh
           ENDIF
-
 
         CASE(EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE)
 !!TODO: move these and scale factor adjustment out once generalised Laplace is put in.
