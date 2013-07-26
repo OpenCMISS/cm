@@ -110,7 +110,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
-    
+
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
@@ -2226,7 +2226,6 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
-    TYPE(SOLVERS_TYPE), POINTER :: solvers
     TYPE(SOLVER_TYPE), POINTER :: cellmlSolver
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -3301,11 +3300,11 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
-    INTEGER(INTG) :: i,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
+    INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER,DECOMPOSITION_LOCAL_ELEMENT_NUMBER
     INTEGER(INTG) :: global_element_idx,nodeIdx,derivativeIdx,versionIdx,xiIdx,coordIdx,parameterIdx,variableType
     INTEGER(INTG) :: numberOfVersions,nodeNumber,local_ny,numberOfElementNodes,numberOfParameters,firstNode,lastNode
-    REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,W(4),normalWave(4),momentum,continuity
+    REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_BIF(4),A_BIF(4),Q_PRE(4),A_PRE(4),area,pressure
     REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:)
@@ -3314,8 +3313,6 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
-    TYPE(DOMAIN_TYPE), POINTER :: domain
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -4271,21 +4268,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: i,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,x
+    INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,x
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2,DECOMPOSITION_LOCAL_ELEMENT_NUMBER
     INTEGER(INTG) :: nodeNumber,numberOfVersions,nodeIdx,derivativeIdx,versionIdx,global_element_idx,xiIdx,coordIdx,local_ny
     INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,firstNode,lastNode,variableType,parameterIdx
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,Q_DERIV,A_VALUE,A_DERIV,Q_BIF(4),A_BIF(4)
-    REAL(DP) :: W(4),normalWave(4),momentum1,momentum2,continuity,W_SUPG,TAU_SUPG,U_SUPG(3)
+    REAL(DP) :: momentum1,momentum2,continuity,W_SUPG,TAU_SUPG,U_SUPG(3)
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:)
     LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS,UPDATE_JACOBIAN_MATRIX
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
-    TYPE(DOMAIN_TYPE), POINTER :: domain
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -4298,7 +4293,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX 
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD,dependentField
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
@@ -4965,7 +4960,6 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
@@ -4978,17 +4972,16 @@ CONTAINS
 
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:), GEOMETRIC_PARAMETERS(:)
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
-    REAL(DP), POINTER :: BIF_VALUES(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
-    REAL(DP) :: T_COORDINATES(20,3),Q_PRE(9),A_PRE(9),Beta(9),Period,MU_PARAM,RHO_PARAM,A0_PARAM(9),As,St,Fr,Re,TimeRef
-    REAL(DP) :: X(3),FLOW(6),W(2,4),Q_EX(9),A_EX(9),XI(1),areaCalculated,flowCalculated,w0d,H0_PARAM(9),E_PARAM(9)
+    REAL(DP) :: T_COORDINATES(20,3),Beta(9),MU_PARAM,RHO_PARAM,A0_PARAM(9),As,Fr
+    REAL(DP) :: X(3),W(2,4),Q_EX(9),A_EX(9),XI(1),areaCalculated,flowCalculated,H0_PARAM(9),E_PARAM(9)
     REAL(DP), POINTER :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
     REAL(DP), POINTER :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
     REAL(DP), POINTER :: TIME !<The time to evaluate at
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
     REAL(DP), POINTER :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
 
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,fieldVariableIndependent                       
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP), POINTER :: dependentParameters(:)
     REAL(DP), POINTER :: materialsParameters(:)
@@ -4999,9 +4992,40 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx,dof_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),TOTAL_NUMBER_OF_ELEMENTS
-    INTEGER(INTG) :: bif_idx,TOTAL_NUMBER_OF_NODES,NUMBER_OF_VERSIONS,TOTAL_NUMBER_OF_DOFS
-    INTEGER(INTG) :: FIELD_VAR_TYPE
+    INTEGER(INTG) :: bif_idx,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_DOFS
     LOGICAL :: inletNode,outletNode,fixedNode,nonReflecting,solverCharacteristicFlag,solverNavierStokesFlag
+
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(SOLVER_MAPPING)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(EQUATIONS)
+    NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
+    NULLIFY(BOUNDARY_CONDITIONS)
+    NULLIFY(ANALYTIC_FIELD)
+    NULLIFY(DEPENDENT_FIELD)
+    NULLIFY(GEOMETRIC_FIELD)
+    NULLIFY(MATERIALS_FIELD)
+    NULLIFY(INDEPENDENT_FIELD)
+    NULLIFY(ANALYTIC_VARIABLE)
+    NULLIFY(FIELD_VARIABLE)
+    NULLIFY(GEOMETRIC_VARIABLE)
+    NULLIFY(MATERIALS_VARIABLE)
+    NULLIFY(DOMAIN)
+    NULLIFY(DOMAIN_NODES)
+    NULLIFY(INTERPOLATED_POINT)
+    NULLIFY(INTERPOLATION_PARAMETERS)
+    NULLIFY(MESH_VELOCITY_VALUES)
+    NULLIFY(GEOMETRIC_PARAMETERS)
+    NULLIFY(BOUNDARY_VALUES)
+    NULLIFY(TANGENTS)
+    NULLIFY(NORMAL)
+    NULLIFY(TIME)
+    NULLIFY(ANALYTIC_PARAMETERS)
+    NULLIFY(MATERIALS_PARAMETERS)
+    NULLIFY(fieldVariable)
+    NULLIFY(independentParameters)
+    NULLIFY(dependentParameters)
+    NULLIFY(materialsParameters)
 
     CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
 
@@ -7308,10 +7332,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: component_idx
     REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
     REAL(DP) :: period
-    REAL(DP) :: n,K,R,position,dPdX,length
+    REAL(DP) :: R,position
     REAL(DP) :: boundaryNormal(3),amplitude,offset
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -8630,35 +8653,30 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: faceBasis1
     TYPE(BASIS_TYPE), POINTER :: faceBasis2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: dependentInterpolatedPoint
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: dependentInterpolatedPoint2
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: dependentInterpolationParameters
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme1
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: geometricInterpolationParameters
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics,pointMetrics2
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(FIELD_TYPE), POINTER :: dependentField
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
-    TYPE(DOMAIN_TYPE), POINTER :: domain
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     INTEGER(INTG) :: faceIdx, faceNumber
-    INTEGER(INTG) :: componentIdx,componentIdx2, gaussIdx
-    INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx,nodeIdx
-    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx,xiIdx,xi2Idx
-    INTEGER(INTG) :: basis1ParameterIdx,basis2ParameterIdx,xv,mi,ni
-    INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx, xiCoordinateComponentIdx
-    INTEGER(INTG) :: dimIdx,derivIdx,versionIdx,local_ny,numberOfDimensions,boundaryID
-    REAL(DP) :: gaussWeight,normalProjection,normalProjection2,normalProjection3,pressureGauss,mu,sumDelU,jacobianGaussWeights
-    REAL(DP) :: normalDifference,normalMagnitude,normalTolerance,boundaryValue,boundaryFlux
+    INTEGER(INTG) :: componentIdx, gaussIdx
+    INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx
+    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx,xiIdx
+    INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
+    INTEGER(INTG) :: numberOfDimensions,boundaryID
+    REAL(DP) :: normalProjection,normalProjection2,pressureGauss,mu,sumDelU,jacobianGaussWeights
+    REAL(DP) :: normalMagnitude,boundaryValue,boundaryFlux
     REAL(DP) :: areaJacobian,volumeJacobian
-    REAL(DP) :: dPhims_dXi(3),dPhins_dXi(3),Phims,Phins,SUM,resistanceProximal,faceNormal2(3)
+    REAL(DP) :: resistanceProximal,faceNormal2(3)
     REAL(DP) :: elementNormal(3),velocityGauss(3),faceNormal(3),unitNormal(3),delUGauss(3,3),dXi_dX(3,3)
-    REAL(DP) :: faceVector1(3),faceVector2(3),X1(3),X2(3),lineLength,lineLength1,lineLength2,phiParameter
-    LOGICAL :: elementIsMultidomainBoundary,invertedNormal,original
+    LOGICAL :: elementIsMultidomainBoundary
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP), POINTER :: geometricParameters(:)
@@ -8939,7 +8957,6 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
     TYPE(EQUATIONS_TYPE), POINTER :: equations
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: elementsMapping
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_TYPE), POINTER :: geometricField
@@ -8959,7 +8976,7 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: geometricInterpolationParameters
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics,pointMetrics2
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(FIELD_TYPE), POINTER :: dependentField
@@ -8967,19 +8984,18 @@ CONTAINS
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     INTEGER(INTG) :: faceIdx, faceNumber,elementIdx,decompositionLocalElementNumber,elementNumber,nodeNumber,versionNumber
-    INTEGER(INTG) :: componentIdx,componentIdx2, gaussIdx
+    INTEGER(INTG) :: componentIdx,gaussIdx
     INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx,nodeIdx
-    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx,xiIdx,xiIdx2
-    INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx, xiCoordinateComponentIdx
+    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx
+    INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
     INTEGER(INTG) :: dimIdx,derivIdx,versionIdx,local_ny,numberOfDimensions,boundaryID,boundaryIdx
-    REAL(DP) :: gaussWeight, normalProjection, pressureGauss,mu,sumDelU,DEBUG,elementNormal(3)
+    REAL(DP) :: gaussWeight, normalProjection,elementNormal(3)
     REAL(DP) :: normalDifference,normalTolerance,delUGauss(3,3),dXi_dX(3,3),faceFlux
     REAL(DP) :: conserveFaces,sumFaceFlux
     REAL(DP) :: velocityGauss(3),faceNormal(3),unitNormal(3),boundaryValue,faceArea,faceVelocity,boundaryFlux(10),boundaryArea(10)
-    REAL(DP) :: boundaryFluxPrevious
-    REAL(DP) :: faceVector1(3),faceVector2(3),X1(3),X2(3),lineLength,lineLength1,lineLength2,phiParameter
+    REAL(DP) :: faceVector1(3),faceVector2(3),X1(3),X2(3),lineLength,lineLength1,lineLength2
     LOGICAL :: correctFace,ghostElement,elementExists
-    LOGICAL :: elementIsMultidomainBoundary,invertedNormal,original
+    LOGICAL :: invertedNormal
 
     REAL(DP), POINTER :: geometricParameters(:)
 
@@ -8998,6 +9014,7 @@ CONTAINS
     NULLIFY(face)
     NULLIFY(faceBasis)
     NULLIFY(faceQuadratureScheme)
+    NULLIFY(fieldVariable)
     NULLIFY(dependentInterpolatedPoint)
     NULLIFY(dependentInterpolationParameters)
     NULLIFY(geometricInterpolatedPoint)
@@ -9458,23 +9475,22 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: equations
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
-    REAL(DP), POINTER :: dependentParameters(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    INTEGER(INTG) :: iterationIdx,maxIterations,nodeIdx,bif_idx,dofIdx,en
-    INTEGER(INTG) :: nodeNumber,nodeNumberFirst,nodeNumberLast,boundaryIdx,local_ny
+    INTEGER(INTG) :: iterationIdx,maxIterations,nodeIdx,dofIdx
+    INTEGER(INTG) :: boundaryIdx,local_ny
     INTEGER(INTG) :: numberOfVersions,numberOfNodes1D,numberOfDofs1D,numberOfElements1D,numberOfElementNodes
     INTEGER(INTG) :: boundaryConditionCheckVariable,componentIdx,derivativeIdx,elementNumber,returnComponent,oneDComponent
     INTEGER(INTG) :: numberOfSurroundingElements,parameterIdx,variableType,versionIdx
     INTEGER(INTG) :: solverCharacteristicNumber,solver1dNavierStokesNumber,solverDaeNumber 
-    REAL(DP) :: MU_PARAM,RHO_PARAM,As,Re,Fr,St
-    REAL(DP) :: XI(1),couplingTolerance
-    REAL(DP) :: A_PRE(3),Q_PRE(3),Q_EX(3),A_EX(3),A0_PARAM,normalWave(2),W(2),wNext(3),lambda(3),w1d0d,w0d1d,u0d,W0
+    REAL(DP) :: RHO_PARAM,As,Fr
+    REAL(DP) :: couplingTolerance
+    REAL(DP) :: A_PRE(3),Q_PRE(3),Q_EX(3),A_EX(3),A0_PARAM,normalWave(2),W(2),W0
     REAL(DP) :: pCellML,pPrevious,pVesselWall,pExternal,qBoundary,aBoundary,qPrevious
-    REAL(DP) :: deltaT,Bn,Kr,lEigenvalue,Beta,pTest,qTest,E_PARAM,H0_PARAM
-    LOGICAL :: converged,boundaryNode,inletNode,outletNode,nonReflecting,updateArea
+    REAL(DP) :: Kr,Beta,pTest,qTest,E_PARAM,H0_PARAM
+    LOGICAL :: converged,inletNode,outletNode,updateArea
 
     !Nullify pointers
     NULLIFY(solverEquations)
