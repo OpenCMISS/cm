@@ -77,7 +77,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
 
   PRIVATE
 
-  PUBLIC NAVIER_STOKES_ANALYTIC_CALCULATE
+  PUBLIC NavierStokes_AnalyticCalculate
   PUBLIC NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
@@ -108,7 +108,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+
     CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -1265,7 +1265,9 @@ CONTAINS
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
+            & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -1302,6 +1304,37 @@ CONTAINS
                             !Set analytic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
                             NUMBER_OF_ANALYTIC_COMPONENTS=4
+                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield, &
+                            &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds, &
+                            &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+                            &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
+                            !Check that this is a 1D equations set
+                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+                              !Set analytic function type
+                              EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
+                              !Set numbrer of components
+                              NUMBER_OF_ANALYTIC_COMPONENTS=1
+                            ELSE
+                              LOCAL_ERROR="Specify a 1DTransient or Coupled1D0D equations set subtype to use "// &
+                                & "an analytic function of type "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                            !Check that domain is 3D
+                            IF(NUMBER_OF_DIMENSIONS/=3) THEN
+                              LOCAL_ERROR="The number of geometric dimensions of "// &
+                                & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                                & " is invalid. The analytic function type of "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                & " requires that there be 2 geometric dimensions."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                            !Set analytic function type
+                            EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
+                            !Set numbrer of components
+                            NUMBER_OF_ANALYTIC_COMPONENTS=6
                           CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
                             !Set analtyic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
@@ -1476,10 +1509,38 @@ CONTAINS
                           & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
                         CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                        !Default the analytic parameter values to 0
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,3,0.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,4,0.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,5,0.0_DP,ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                           & " is invalid for an analytical transient Navier-Stokes equation."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+                    CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+                       & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+                      SELECT CASE(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
+                        !Default the analytic parameter period values to 1000
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1000.0_DP,ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " is invalid for a 1D Navier-Stokes equation."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
@@ -2208,8 +2269,8 @@ CONTAINS
             !Update transient boundary conditions and any analytic values
             CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-              !Update transient boundary conditions
-              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            !Update transient boundary conditions
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
               !Update transient boundary conditions
               CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -2226,11 +2287,11 @@ CONTAINS
                 CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
               ENDIF              
           CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
             SOLVER_NUMBER_NAVIER_STOKES=2
             !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-
             IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==2) THEN
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -2255,7 +2316,6 @@ CONTAINS
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
-            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(Problem_Coupled1dDaeNavierStokesSubtype)
             SELECT CASE(SOLVER%GLOBAL_NUMBER)
             CASE(1)
@@ -2267,7 +2327,9 @@ CONTAINS
             CASE(2)
               ! Characteristic solver
               CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(3)
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               ! 1D NSE solver - update solver matrix
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -2297,9 +2359,9 @@ CONTAINS
               LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
                 & " is invalid for a coupled CellML DAE / 1D Navier-Stokes problem."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            END SELECT            
           CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
             SOLVER_NUMBER_NAVIER_STOKES=2
             !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
@@ -2328,8 +2390,7 @@ CONTAINS
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
-            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)            
           CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             ! do nothing ???
             CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -4845,7 +4906,6 @@ CONTAINS
                   & " is invalid for Coupled1D-DAE Navier-Stokes problem."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
               CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
@@ -4962,7 +5022,16 @@ CONTAINS
                 EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                 IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                   !Standard analytic functions
-                  IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN.OR. &
+                  IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
+                    ! Update analytic time value with current time
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
+                    ! Calculate analytic values
+                    BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                      CALL NavierStokes_AnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== &
+                   & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN.OR. &
                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE) THEN
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
                       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -5402,123 +5471,38 @@ CONTAINS
                   solverNavierStokesFlag = .TRUE.
                 ENDIF
               ENDIF
-              !Temporary option that can be changed for flow waveform- this should be an analytic function type
+              !If analytic flow waveform, calculate and update
               IF(solverNavierStokesFlag) THEN
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                   EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
                   IF(ASSOCIATED(EQUATIONS)) THEN
                     EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                    GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                    MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
-                    IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                        EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                        IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                          FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                            FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                            TimeRef=1000.0_DP
-
-! Sheffield Input Flow
-                            FLOW(1)=(49.7_DP-31.47_DP*cos(1.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -25.58_DP*cos(2.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +4.208_DP*cos(3.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +1.644_DP*cos(4.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +7.950_DP*cos(5.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +1.203_DP*cos(6.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -3.487_DP*cos(7.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -0.902_DP*cos(8.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +54.71_DP*sin(1.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -17.48_DP*sin(2.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -9.114_DP*sin(3.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -8.087_DP*sin(4.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +4.242_DP*sin(5.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +2.605_DP*sin(6.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     +3.422_DP*sin(7.0_DP*9.117_DP*CURRENT_TIME/TimeRef) &
-                                      &     -1.139_DP*sin(8.0_DP*9.117_DP*CURRENT_TIME/TimeRef))/100.0_DP
-                                      
-! Reymonds Input Flow - Exp Aorta Avg
-
-                            FLOW(2)=(22.41_DP-10.6_DP*cos(1*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     -27.08_DP*cos(2*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     +14.02_DP*cos(3*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     +3.888_DP*cos(4*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     -2.732_DP*cos(5*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     -2.722_DP*cos(6*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     +37.86_DP*sin(1*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     -26.92_DP*sin(2*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     -6.379_DP*sin(3*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     +5.332_DP*sin(4*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     +5.174_DP*sin(5*7.153_DP*CURRENT_TIME/TimeRef) &
-                                      &     -0.436_DP*sin(6*7.153_DP*CURRENT_TIME/TimeRef))/100.0_DP
-       
-! Olufsen Input Flow
-
-                            FLOW(3)=(21.51_DP-5.276_DP*cos(1*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -25.84_DP*cos(2*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +10.99_DP*cos(3*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +5.946_DP*cos(4*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +1.276_DP*cos(5*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -3.462_DP*cos(6*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -1.618_DP*cos(7*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -1.807_DP*cos(8*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +37.34_DP*sin(1*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -22.28_DP*sin(2*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -9.312_DP*sin(3*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +0.280_DP*sin(4*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +5.906_DP*sin(5*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     +0.520_DP*sin(6*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -0.614_DP*sin(7*7.343_DP*CURRENT_TIME/TimeRef) &
-                                      &     -2.521_DP*sin(8*7.343_DP*CURRENT_TIME/TimeRef))/100.0_DP
-
-! Aorta Input Flow
-                            FLOW(4)=0.5*(134.1_DP+2.06_DP*cos(1*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -118.7_DP*cos(2*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -20.48_DP*cos(3*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -8.634_DP*cos(4*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     +13.43_DP*cos(5*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     +7.387_DP*cos(6*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     +4.127_DP*cos(7*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     +178.9_DP*sin(1*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     +18.41_DP*sin(2*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -45.9_DP*sin(3*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -22.71_DP*sin(4*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -16.28_DP*sin(5*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     -0.8115_DP*sin(6*7.741_DP*CURRENT_TIME/TimeRef) &
-                                      &     +0.8263_DP*sin(7*7.741_DP*CURRENT_TIME/TimeRef))/100.0_DP
-
-                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,1,FLOW(2),ERR,ERROR,*999)
-                            CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                              & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, & 
-                              & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                          ELSE
-                            CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
-                          ENDIF
+                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                      SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
+                        ! Update analytic time value with current time
+                        EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
+                        BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                          ! Calculate analytic values
+                          CALL NavierStokes_AnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
-                      END IF
-                    ELSE
-                      CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
-                    END IF
+                          CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                        END IF
+                      CASE DEFAULT
+                        ! Do nothing (might have another use for analytic equations)
+                      END SELECT
+                    ENDIF ! Check for analytic equations
                   ELSE
                     CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
                   CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
-
-                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
               ! Characteristics is solver # 1 for normal 1D transient & coupled cellML evaluators, 2 for coupled DAE
               ELSE IF(solverCharacteristicFlag) THEN
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -6682,12 +6666,12 @@ CONTAINS
                             VFileName = OUTPUT_FILE(1:FileNameLength)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                             Fields=>EQUATIONS_SET%REGION%FIELDS
-!                            CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
-                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
+                            CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+!                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                              & ERR,ERROR,*999)
                             IF(CURRENT_LOOP_ITERATION==0) THEN
-!                              CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
-!                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+                              CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
                             ENDIF
                             NULLIFY(Fields)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
@@ -6823,375 +6807,487 @@ CONTAINS
   !
 
   !>Sets up analytic parameters and calls NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE to evaluate solutions to analytic problems
-  SUBROUTINE NAVIER_STOKES_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE NavierStokes_AnalyticCalculate(equationsSet,boundaryConditions,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
     !Local Variables
-    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
-    INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX,version_idx
-    REAL(DP) :: VALUE,X(3),XI_COORDINATES(3),INITIAL_VALUE
+    INTEGER(INTG) :: componentIdx,derivativeIdx,dimensionIdx,local_ny,nodeIdx,numberOfDimensions,variableIdx,variableType,I,J,K
+    INTEGER(INTG) :: numberOfNodesXiCoord(3),elementIdx,en_idx,boundaryCount,analyticFunctionType,globalDerivativeIndex,versionIdx
+    INTEGER(INTG) :: boundaryConditionsCheckVariable,numberOfXi
+    REAL(DP) :: VALUE,X(3),xiCoordinates(3),initialValue
     REAL(DP) :: T_COORDINATES(20,3)
-    REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),GEOMETRIC_PARAMETERS(:),MATERIALS_PARAMETERS(:)
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE,ANALYTIC_VARIABLE,MATERIALS_VARIABLE
-    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
+    REAL(DP), POINTER :: analyticParameters(:),geometricParameters(:),materialsParameters(:)
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
+    TYPE(DOMAIN_TYPE), POINTER :: domain
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
+    TYPE(FIELD_TYPE), POINTER :: analyticField,dependentField,geometricField,materialsField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable,analyticVariable,materialsVariable
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoint(:)
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
     !THESE ARE TEMPORARY VARIABLES - they need to be replace by constant field values and the current simulation time
     REAL(DP) :: TIME,NORMAL(3),TANGENTS(3,3)
+    TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("NAVIER_STOKES_ANALYTIC_CALCULATE",ERR,ERROR,*999)
-!\todo: Introduce user call to set parameters
-    BOUND_COUNT=0
-    XI_COORDINATES(3)=0.0_DP
+    CALL ENTERS("NavierStokes_AnalyticCalculate",err,error,*999)
+    boundaryCount=0
+    xiCoordinates(3)=0.0_DP
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN     
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(ASSOCIATED(equationsSet%ANALYTIC)) THEN
+        dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(dependentField)) THEN
+          geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(geometricField)) THEN     
             ! Geometric parameters
-            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-            NULLIFY(GEOMETRIC_VARIABLE)
-            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-            NULLIFY(GEOMETRIC_PARAMETERS)
-            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-              & ERR,ERROR,*999)
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(geometricField,FIELD_U_VARIABLE_TYPE,numberOfDimensions,err,error,*999)
+            NULLIFY(geometricVariable)
+            CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,err,error,*999)
+            NULLIFY(geometricParameters)
+            CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,geometricParameters, &
+              & err,error,*999)
             ! Analytic parameters
-            ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-            ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
-            NULLIFY(ANALYTIC_VARIABLE)
-            NULLIFY(ANALYTIC_PARAMETERS)
-            IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
-              CALL FIELD_VARIABLE_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,ANALYTIC_VARIABLE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_DATA_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & ANALYTIC_PARAMETERS,ERR,ERROR,*999)           
+            analyticFunctionType=equationsSet%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+            analyticField=>equationsSet%ANALYTIC%ANALYTIC_FIELD
+            NULLIFY(analyticVariable)
+            NULLIFY(analyticParameters)
+            IF(ASSOCIATED(analyticField)) THEN
+              CALL FIELD_VARIABLE_GET(analyticField,FIELD_U_VARIABLE_TYPE,analyticVariable,err,error,*999)
+              CALL FIELD_PARAMETER_SET_DATA_GET(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & analyticParameters,err,error,*999)           
             ENDIF
             ! Materials parameters
-            NULLIFY(MATERIALS_FIELD)
-            NULLIFY(MATERIALS_VARIABLE)
-            NULLIFY(MATERIALS_PARAMETERS)
-            IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
-              MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
-              CALL FIELD_VARIABLE_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,MATERIALS_VARIABLE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
+            NULLIFY(materialsField)
+            NULLIFY(materialsVariable)
+            NULLIFY(materialsParameters)
+            IF(ASSOCIATED(equationsSet%MATERIALS)) THEN
+              materialsField=>equationsSet%MATERIALS%MATERIALS_FIELD
+              CALL FIELD_VARIABLE_GET(materialsField,FIELD_U_VARIABLE_TYPE,materialsVariable,err,error,*999)
+              CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & materialsParameters,err,error,*999)           
             ENDIF
-            TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
+            TIME=equationsSet%ANALYTIC%ANALYTIC_TIME
             ! Interpolation parameters
-            NULLIFY(INTERPOLATION_PARAMETERS)
-            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-            NULLIFY(INTERPOLATED_POINT) 
-            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
-            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-
-            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                  IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_ANALYTIC_VALUES_SET_TYPE)%PTR)) &
-                    & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    BOUND_COUNT=0
-                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                      IF(ASSOCIATED(DOMAIN)) THEN
-                        IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                            !Loop over the local nodes excluding the ghosts.
-                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                             element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
-                             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
-                               & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                             en_idx=0
-                             XI_COORDINATES=0.0_DP 
-                             number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)    
-                             number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(2)
-                             IF(NUMBER_OF_DIMENSIONS==3) THEN
-                               number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(3)
-                             ELSE
-                               number_of_nodes_xic(3)=1
-                             ENDIF
-
-                             !Unit shape testing types
-                             IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 .OR. &
-                              & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5) THEN
-                               !Quad/Hex
-                               !\todo: Use boundary flag
-                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2.OR. &
-                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
-                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
-                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
-                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
-                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
-                                 DO K=1,number_of_nodes_xic(3)
-                                   DO J=1,number_of_nodes_xic(2)
-                                     DO I=1,number_of_nodes_xic(1)
-                                       en_idx=en_idx+1
-                                       IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                       XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
-                                     ENDDO
-                                       IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                       XI_COORDINATES(1)=0.0_DP
-                                       XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
-                                   ENDDO
-                                   IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                   XI_COORDINATES(1)=0.0_DP
-                                   XI_COORDINATES(2)=0.0_DP
-                                   IF(number_of_nodes_xic(3)/=1) THEN
-                                     XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
-                                   ENDIF
-                                 ENDDO
-                                 CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
-                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                !Tri/Tet
-                                !\todo: Use boundary flag
-                                ELSE
-                                  IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                    T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                    T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                    T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                  ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
-                                    T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                    T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                    T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                    T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
-                                    T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
-                                    T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
-                                  ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
-                                    & NUMBER_OF_DIMENSIONS==2) THEN
-                                    T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                    T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                    T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                    T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                    T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
-                                    T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                    T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                    T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                    T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                  ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
-                                    & NUMBER_OF_DIMENSIONS==3) THEN
-                                    T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                    T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                    T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
-                                    T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
-                                    T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
-                                    T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
-                                    T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
-                                  ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                    T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                    T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                    T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                    T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                    T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                    T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                    T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                    T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                    T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  ENDIF
-                                  DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
-                                    IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
-                                  ENDDO
-                                  IF(NUMBER_OF_DIMENSIONS==2) THEN
-                                    CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
-                                      & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                  ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                    CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
-                                      & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                  ENDIF
-                                ENDIF
-                               X=0.0_DP
-                               DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                 X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
-                               ENDDO !dim_idx
-                             ELSE ! Standard analytic testing types
-                               DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                 !Default to version 1 of each node derivative
-                                 local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                   & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-                                 X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                               ENDDO !dim_idx
-                             ENDIF !unit/analytic shape testing types
-
-                              !Loop over the derivatives
-                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
-                                  & GLOBAL_DERIVATIVE_INDEX
-                                CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
-                                  & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,TIME,variable_type,GLOBAL_DERIV_INDEX,component_idx, &
-                                  & NUMBER_OF_DIMENSIONS,FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
-                                  & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
-                                DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS
-                                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(version_idx)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                    & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                  IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-                                    IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                      !If we are a boundary node then set the analytic value on the boundary
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
-                                        & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-
-! \todo: This is just a workaround for linear pressure fields in simplex element components
-                                      IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-                                        IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                          IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
-                                            IF(-0.001_DP<X(1).AND.X(1)<0.001_DP.AND.-0.001_DP<X(2).AND.X(2)<0.001_DP.OR. &
-                                              &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.-0.001_DP<X(2).AND. &
-                                              & X(2)<0.001_DP.OR. &
-                                              &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<10.0_DP+0.001_DP.OR. &
-                                              &  -0.001_DP<X(1).AND.X(1)<0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<10.0_DP+0.001_DP) THEN
-                                                CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
-                                                  & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                                BOUND_COUNT=BOUND_COUNT+1
-                                            ENDIF
-                                          ENDIF
-                                        ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND. &
-                                          & NUMBER_OF_DIMENSIONS==3) THEN
-                                          IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
-                                            & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
-                                            IF(-5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                              & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                              & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                              & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                              & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
-                                              & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
-                                              & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
-                                              & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                              & X(2)<-5.0_DP+ 0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP) THEN
-                                              CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
-                                                & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                              BOUND_COUNT=BOUND_COUNT+1
-                                            ENDIF
-                                          ENDIF
-  ! \todo: This is how it should be if adjacent elements would be working
-                                        ELSE IF(BOUND_COUNT==0) THEN
-                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type,&
-                                            & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                          BOUND_COUNT=BOUND_COUNT+1
-                                        ENDIF
-                                      ENDIF
-
-                                    ELSE
-                                      !Set the initial condition.
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_VALUES_SET_TYPE,local_ny,INITIAL_VALUE,ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDIF
-                                ENDDO !version_idx
-                              ENDDO !deriv_idx
-                            ENDDO !node_idx
-                          ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !component_idx
-                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDDO !variable_idx
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-            ELSE
-              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
-            ENDIF
+            NULLIFY(interpolationParameters)
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(geometricField,interpolationParameters,err,error,*999)
+            NULLIFY(interpolatedPoint) 
+            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoint,err,error,*999)
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(geometricField,FIELD_U_VARIABLE_TYPE,numberOfDimensions,err,error,*999)
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Equations set geometric field is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Equations set dependent field is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Equations set analytic is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("NAVIER_STOKES_ANALYTIC_CALCULATE")
+    IF(ASSOCIATED(boundaryConditions)) THEN
+      DO variableIdx=1,dependentField%NUMBER_OF_VARIABLES
+        variableType=dependentField%VARIABLES(variableIdx)%VARIABLE_TYPE
+        fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
+        IF(ASSOCIATED(fieldVariable)) THEN
+          IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_ANALYTIC_VALUES_SET_TYPE)%PTR)) &
+            & CALL FIELD_PARAMETER_SET_CREATE(dependentField,variableType,FIELD_ANALYTIC_VALUES_SET_TYPE,err,error,*999)
+          DO componentIdx=1,fieldVariable%NUMBER_OF_COMPONENTS
+            boundaryCount=0
+            IF(fieldVariable%COMPONENTS(componentIdx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+              domain=>fieldVariable%COMPONENTS(componentIdx)%DOMAIN
+              IF(ASSOCIATED(domain)) THEN
+                IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                  domainNodes=>domain%TOPOLOGY%NODES
+                  IF(ASSOCIATED(domainNodes)) THEN
+                    !Loop over the local nodes excluding the ghosts.
+                    DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
+                      elementIdx=domain%topology%nodes%nodes(nodeIdx)%surrounding_elements(1)
+                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementIdx, &
+                        & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                      en_idx=0
+                      xiCoordinates=0.0_DP
+                      numberOfXi=domain%topology%elements%elements(elementIdx)%basis%number_of_xi
+                      numberOfNodesXiCoord(1)=domain%topology%elements%elements(elementIdx)%basis%number_of_nodes_xic(1)
+                      IF(numberOfXi>1) THEN
+                        numberOfNodesXiCoord(2)=domain%topology%elements%elements(elementIdx)%basis%number_of_nodes_xic(2)
+                      ELSE
+                        numberOfNodesXiCoord(2)=1
+                      ENDIF
+                      IF(numberOfXi>2) THEN
+                        numberOfNodesXiCoord(3)=domain%topology%elements%elements(elementIdx)%basis%number_of_nodes_xic(3)
+                      ELSE
+                        numberOfNodesXiCoord(3)=1
+                      ENDIF
+
+                      SELECT CASE(analyticFunctionType)
+                      ! --- Calculate analytic profile for validation ---
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
+                        IF(variableIdx < 3) THEN
+                          ! Get geometric position info for this node
+                          DO dimensionIdx=1,numberOfDimensions
+                            local_ny=geometricVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                              & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                            X(dimensionIdx)=geometricParameters(local_ny)
+                          ENDDO !dimensionIdx
+                          DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                            globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
+                              & GLOBAL_DERIVATIVE_INDEX
+                            DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                                & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
+                                & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
+                                & materialsParameters,VALUE,err,error,*999)
+                              local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
+                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,err,error,*999)
+                            ENDDO !versionIdx
+                          ENDDO !derivativeIdx
+                        ENDIF ! variableIdx < 3
+
+                      ! --- Set velocity boundary conditions with analytic value ---
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                        ! Get geometric position info for this node
+                        DO dimensionIdx=1,numberOfDimensions
+                          local_ny=geometricVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                            & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                          X(dimensionIdx)=geometricParameters(local_ny)
+                        ENDDO !dimensionIdx
+                        !Loop over the derivatives
+                        DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                          globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
+                            & GLOBAL_DERIVATIVE_INDEX
+                          IF(componentIdx<=numberOfXi) THEN
+                            CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                              & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
+                              & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
+                              & materialsParameters,VALUE,err,error,*999)
+                            DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                              local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
+                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,err,error,*999)
+                              IF(variableType==FIELD_U_VARIABLE_TYPE) THEN
+                                IF(domainNodes%NODES(nodeIdx)%BOUNDARY_NODE) THEN
+                                  CALL BOUNDARY_CONDITIONS_VARIABLE_GET(boundaryConditions,fieldVariable, &
+                                   & boundaryConditionsVariable,err,error,*999)
+                                  IF(ASSOCIATED(boundaryConditionsVariable)) THEN
+                                    boundaryConditionsCheckVariable=boundaryConditionsVariable% &
+                                     & CONDITION_TYPES(local_ny)
+                                    IF(boundaryConditionsCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                      !If we are a boundary node then set the analytic value on the boundary
+                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
+                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,err,error,*999)
+                                    ENDIF
+                                  ENDIF
+                                ENDIF
+                              ENDIF
+                            ENDDO !versionIdx
+                          ENDIF
+                        ENDDO !derivativeIdx
+
+                      ! --- Set Flow rate boundary conditions with analytic value ---
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
+                        ! Get geometric position info for this node
+                        DO dimensionIdx=1,numberOfDimensions
+                          local_ny=geometricVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                            & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                          X(dimensionIdx)=geometricParameters(local_ny)
+                        ENDDO !dimensionIdx
+                        !Loop over the derivatives
+                        DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                          globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
+                            & GLOBAL_DERIVATIVE_INDEX
+                          IF(componentIdx==1 .AND. variableType==FIELD_U_VARIABLE_TYPE) THEN
+                            DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                              local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                              IF(domainNodes%NODES(nodeIdx)%BOUNDARY_NODE) THEN
+                                CALL BOUNDARY_CONDITIONS_VARIABLE_GET(boundaryConditions,fieldVariable, &
+                                 & boundaryConditionsVariable,err,error,*999)
+                                IF(ASSOCIATED(boundaryConditionsVariable)) THEN
+                                  boundaryConditionsCheckVariable=boundaryConditionsVariable% &
+                                   & CONDITION_TYPES(local_ny)
+                                  IF(boundaryConditionsCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                    CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                                      & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex, &
+                                      & componentIdx,numberOfXi,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
+                                      & materialsParameters,VALUE,err,error,*999)
+                                    !If we are a boundary node then set the analytic value on the boundary
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
+                                      & FIELD_VALUES_SET_TYPE,local_ny,VALUE,err,error,*999)
+                                  ENDIF
+                                ENDIF
+                              ENDIF
+                            ENDDO !versionIdx
+                          ENDIF
+                        ENDDO !derivativeIdx
+
+                      ! --- Legacy unit shape testing types ---
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4,  &
+                       & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
+                        !Quad/Hex
+                        !\todo: Use boundary flag
+                        IF(domain%topology%elements%maximum_number_of_element_parameters==4.AND.numberOfDimensions==2.OR. &
+                          & domain%topology%elements%maximum_number_of_element_parameters==9.OR. &
+                          & domain%topology%elements%maximum_number_of_element_parameters==16.OR. &
+                          & domain%topology%elements%maximum_number_of_element_parameters==8.OR. &
+                          & domain%topology%elements%maximum_number_of_element_parameters==27.OR. &
+                          & domain%topology%elements%maximum_number_of_element_parameters==64) THEN
+                          DO K=1,numberOfNodesXiCoord(3)
+                            DO J=1,numberOfNodesXiCoord(2)
+                              DO I=1,numberOfNodesXiCoord(1)
+                                en_idx=en_idx+1
+                                IF(domain%topology%elements%elements(elementIdx)%element_nodes(en_idx)==nodeIdx) EXIT
+                                xiCoordinates(1)=xiCoordinates(1)+(1.0_DP/(numberOfNodesXiCoord(1)-1))
+                              ENDDO
+                                IF(domain%topology%elements%elements(elementIdx)%element_nodes(en_idx)==nodeIdx) EXIT
+                                xiCoordinates(1)=0.0_DP
+                                xiCoordinates(2)=xiCoordinates(2)+(1.0_DP/(numberOfNodesXiCoord(2)-1))
+                            ENDDO
+                            IF(domain%topology%elements%elements(elementIdx)%element_nodes(en_idx)==nodeIdx) EXIT
+                            xiCoordinates(1)=0.0_DP
+                            xiCoordinates(2)=0.0_DP
+                            IF(numberOfNodesXiCoord(3)/=1) THEN
+                              xiCoordinates(3)=xiCoordinates(3)+(1.0_DP/(numberOfNodesXiCoord(3)-1))
+                            ENDIF
+                          ENDDO
+                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,xiCoordinates, &
+                            & interpolatedPoint(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                        !Tri/Tet
+                        !\todo: Use boundary flag
+                        ELSE
+                          IF(domain%topology%elements%maximum_number_of_element_parameters==3) THEN
+                            T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                            T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                            T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                          ELSE IF(domain%topology%elements%maximum_number_of_element_parameters==6) THEN
+                            T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                            T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                            T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                            T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
+                            T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
+                            T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                          ELSE IF(domain%topology%elements%maximum_number_of_element_parameters==10.AND. &
+                            & numberOfDimensions==2) THEN
+                            T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                            T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                            T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                            T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                            T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
+                            T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                          ELSE IF(domain%topology%elements%maximum_number_of_element_parameters==4) THEN
+                            T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                            T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                            T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                          ELSE IF(domain%topology%elements%maximum_number_of_element_parameters==10.AND. &
+                            & numberOfDimensions==3) THEN
+                            T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                            T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                            T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
+                            T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
+                            T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
+                            T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
+                            T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                          ELSE IF(domain%topology%elements%maximum_number_of_element_parameters==20) THEN
+                            T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                            T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                            T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                            T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                            T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                            T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                            T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                            T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                            T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                          ENDIF
+                          DO K=1,domain%topology%elements%maximum_number_of_element_parameters
+                            IF(domain%topology%elements%elements(elementIdx)%element_nodes(K)==nodeIdx) EXIT
+                          ENDDO
+                          IF(numberOfDimensions==2) THEN
+                            CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
+                              & interpolatedPoint(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                          ELSE IF(numberOfDimensions==3) THEN
+                            CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
+                              & interpolatedPoint(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+                          ENDIF
+                        ENDIF
+                        X=0.0_DP
+                        DO dimensionIdx=1,numberOfDimensions
+                          X(dimensionIdx)=interpolatedPoint(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dimensionIdx,1)
+                        ENDDO !dimensionIdx
+                        !Loop over the derivatives
+                        DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                          globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
+                            & GLOBAL_DERIVATIVE_INDEX
+                          CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                            & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
+                            & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
+                            & materialsParameters,VALUE,err,error,*999)
+                          DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                            local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
+                              & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,err,error,*999)
+                            IF(variableType==FIELD_U_VARIABLE_TYPE) THEN
+                              IF(domainNodes%NODES(nodeIdx)%BOUNDARY_NODE) THEN
+                                !If we are a boundary node then set the analytic value on the boundary
+                                CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(boundaryConditions,dependentField,variableType, &
+                                  & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,err,error,*999)
+                                ! \todo: This is just a workaround for linear pressure fields in simplex element components
+                                IF(componentIdx>numberOfDimensions) THEN
+                                  IF(domain%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                    IF(analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
+                                      IF(-0.001_DP<X(1).AND.X(1)<0.001_DP.AND.-0.001_DP<X(2).AND.X(2)<0.001_DP.OR. &
+                                        &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.-0.001_DP<X(2).AND. &
+                                        & X(2)<0.001_DP.OR. &
+                                        &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<10.0_DP+0.001_DP.OR. &
+                                        &  -0.001_DP<X(1).AND.X(1)<0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<10.0_DP+0.001_DP) THEN
+                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(boundaryConditions,dependentField, &
+                                            & variableType,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,err,error,*999)
+                                          boundaryCount=boundaryCount+1
+                                      ENDIF
+                                    ENDIF
+                                  ELSE IF(domain%topology%elements%maximum_number_of_element_parameters==4.AND. &
+                                    & numberOfDimensions==3) THEN
+                                    IF(analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
+                                      & analyticFunctionType==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
+                                      IF(-5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                        & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                        & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                        & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                        & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                        & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                        & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                        & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                        & X(2)<-5.0_DP+ 0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP) THEN
+                                        CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(boundaryConditions,dependentField, &
+                                          & variableType,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,err,error,*999)
+                                        boundaryCount=boundaryCount+1
+                                      ENDIF
+                                    ENDIF
+                                    ! \todo: This is how it should be if adjacent elements would be working
+                                  ELSE IF(boundaryCount==0) THEN
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(boundaryConditions,dependentField,variableType,&
+                                      & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,err,error,*999)
+                                    boundaryCount=boundaryCount+1
+                                  ENDIF
+                                ENDIF
+                              ELSE
+                                !Set the initial condition.
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
+                                  & FIELD_VALUES_SET_TYPE,local_ny,initialValue,err,error,*999)
+                              ENDIF
+                            ENDIF
+                          ENDDO !versionIdx
+                        ENDDO !derivativeIdx
+
+                      CASE DEFAULT
+                        localError="Analytic Function Type "//TRIM(NUMBER_TO_VSTRING(analyticFunctionType,"*",ERR,ERROR))// &
+                          & " is not yet implemented for a Navier-Stokes problem."
+                        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+                      END SELECT
+
+                    ENDDO !nodeIdx
+                  ELSE
+                    CALL FLAG_ERROR("Domain topology nodes is not associated.",err,error,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Domain topology is not associated.",err,error,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Only node based interpolation is implemented.",err,error,*999)
+            ENDIF
+          ENDDO !componentIdx
+          CALL FIELD_PARAMETER_SET_UPDATE_START(dependentField,variableType,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+            & err,error,*999)
+          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(dependentField,variableType,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+            & err,error,*999)
+          CALL FIELD_PARAMETER_SET_UPDATE_START(dependentField,variableType,FIELD_VALUES_SET_TYPE, &
+            & err,error,*999)
+          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(dependentField,variableType,FIELD_VALUES_SET_TYPE, &
+            & err,error,*999)
+        ELSE
+          CALL FLAG_ERROR("Field variable is not associated.",err,error,*999)
+        ENDIF
+      ENDDO !variableIdx
+      CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        & geometricParameters,err,error,*999)
+      CALL FIELD_INTERPOLATED_POINTS_FINALISE(interpolatedPoint,err,error,*999)
+      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(interpolationParameters,err,error,*999)
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("NavierStokes_AnalyticCalculate")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_ANALYTIC_CALCULATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_ANALYTIC_CALCULATE")
+999 CALL ERRORS("NavierStokes_AnalyticCalculate",err,error)
+    CALL EXITS("NavierStokes_AnalyticCalculate")
     RETURN 1    
-  END SUBROUTINE NAVIER_STOKES_ANALYTIC_CALCULATE
+  END SUBROUTINE NavierStokes_AnalyticCalculate
 
   !
   !================================================================================================================================
   !
   !>Calculates the various analytic values for NSE examples with exact solutions
   SUBROUTINE NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SUBTYPE,ANALYTIC_FUNCTION_TYPE,X, &
-    & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIV_INDEX,COMPONENT_NUMBER,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS, &
+    & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIV_INDEX,componentNumber,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS, &
     & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*)
 
     !Argument variables
@@ -7203,7 +7299,7 @@ CONTAINS
     REAL(DP), INTENT(IN) :: TIME !<The time to evaluate at
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to evaluate at
     INTEGER(INTG), INTENT(IN) :: GLOBAL_DERIV_INDEX !<The global derivative to evaluate at
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The dependent field component number to evaluate
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The dependent field component number to evaluate
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of geometric dimensions
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS !<The number of components for the dependent field
     REAL(DP), INTENT(IN) :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
@@ -7214,6 +7310,9 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: component_idx
     REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
+    REAL(DP) :: period
+    REAL(DP) :: n,K,R,position,dPdX,length
+    REAL(DP) :: boundaryNormal(3),amplitude,offset
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
@@ -7232,7 +7331,6 @@ CONTAINS
        IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
          MU_PARAM = MATERIALS_PARAMETERS(1)
          RHO_PARAM = MATERIALS_PARAMETERS(2)
-         component_idx=COMPONENT_NUMBER
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
            L_PARAM = ANALYTIC_PARAMETERS(1) ! channel length in x-direction
@@ -7241,13 +7339,13 @@ CONTAINS
            P_PARAM = ANALYTIC_PARAMETERS(4) ! pressure value at outlet 
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
-             IF(component_idx==1) THEN
+             IF(componentNumber==1) THEN
                !calculate u
                VALUE=(3.0_DP/2.0_DP)*U_PARAM*(1.0_DP-((X(2)-H_PARAM)**2)/(H_PARAM**2))
-             ELSE IF(component_idx==2) THEN
+             ELSE IF(componentNumber==2) THEN
                !calculate v
                VALUE=0.0_DP
-             ELSE IF(component_idx==3) THEN
+             ELSE IF(componentNumber==3) THEN
                !calculate p
                VALUE = (3.0_DP*MU_PARAM*U_PARAM*(X(1)-L_PARAM))/(H_PARAM**2)+P_PARAM
              ELSE
@@ -7298,7 +7396,6 @@ CONTAINS
          RHO_PARAM = MATERIALS_PARAMETERS(2)
          NU_PARAM = MU_PARAM/RHO_PARAM ! kinematic viscosity
 !         PI = 3.141592654_DP
-         component_idx=COMPONENT_NUMBER
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
            U_PARAM = ANALYTIC_PARAMETERS(1) ! characteristic velocity (initial amplitude)
@@ -7306,13 +7403,13 @@ CONTAINS
            K_PARAM = 2.0_DP*PI/L_PARAM   ! scale factor for equations
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
-             IF(component_idx==1) THEN
+             IF(componentNumber==1) THEN
                !calculate u
                VALUE=-1.0_DP*U_PARAM*COS(K_PARAM*X(1))*SIN(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
-             ELSE IF(component_idx==2) THEN
+             ELSE IF(componentNumber==2) THEN
                !calculate v
                VALUE=U_PARAM*SIN(K_PARAM*X(1))*COS(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
-             ELSE IF(component_idx==3) THEN
+             ELSE IF(componentNumber==3) THEN
                !calculate p
                VALUE =-1.0_DP*(U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
                  & COS(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME))
@@ -7357,6 +7454,273 @@ CONTAINS
          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
        ENDIF
 
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield)
+       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
+       ! a boundary condition in a fluid simulation.
+       SELECT CASE(NUMBER_OF_DIMENSIONS)
+       CASE(1)
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(componentNumber==1) THEN
+               !Set analytic value for Q
+               VALUE=(49.7_DP-31.47_DP*cos(1.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -25.58_DP*cos(2.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +4.208_DP*cos(3.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +1.644_DP*cos(4.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +7.950_DP*cos(5.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +1.203_DP*cos(6.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -3.487_DP*cos(7.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -0.902_DP*cos(8.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +54.71_DP*sin(1.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -17.48_DP*sin(2.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -9.114_DP*sin(3.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -8.087_DP*sin(4.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +4.242_DP*sin(5.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +2.605_DP*sin(6.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     +3.422_DP*sin(7.0_DP*9.117_DP*CURRENT_TIME/period) &
+                       &     -1.139_DP*sin(8.0_DP*9.117_DP*CURRENT_TIME/period))/100.0_DP
+             ELSE
+               CALL FLAG_ERROR("Incorrect component specification for Sheffield flow rate waveform ",ERR,ERROR,*999)
+             ENDIF
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
+           ! Do nothing
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="Sheffield flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+           & " dimension problem has not yet been implemented."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT
+
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds)
+       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
+       ! a boundary condition in a fluid simulation.
+       SELECT CASE(NUMBER_OF_DIMENSIONS)
+       CASE(1)
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(componentNumber==1) THEN
+               !Set analytic value for Q
+               VALUE=(22.41_DP-10.6_DP*cos(1*7.153_DP*CURRENT_TIME/period) &
+                       &     -27.08_DP*cos(2*7.153_DP*CURRENT_TIME/period) &
+                       &     +14.02_DP*cos(3*7.153_DP*CURRENT_TIME/period) &
+                       &     +3.888_DP*cos(4*7.153_DP*CURRENT_TIME/period) &
+                       &     -2.732_DP*cos(5*7.153_DP*CURRENT_TIME/period) &
+                       &     -2.722_DP*cos(6*7.153_DP*CURRENT_TIME/period) &
+                       &     +37.86_DP*sin(1*7.153_DP*CURRENT_TIME/period) &
+                       &     -26.92_DP*sin(2*7.153_DP*CURRENT_TIME/period) &
+                       &     -6.379_DP*sin(3*7.153_DP*CURRENT_TIME/period) &
+                       &     +5.332_DP*sin(4*7.153_DP*CURRENT_TIME/period) &
+                       &     +5.174_DP*sin(5*7.153_DP*CURRENT_TIME/period) &
+                       &     -0.436_DP*sin(6*7.153_DP*CURRENT_TIME/period))/100.0_DP
+             ELSE
+               CALL FLAG_ERROR("Incorrect component specification for Reymonds flow rate waveform ",ERR,ERROR,*999)
+             ENDIF
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
+           ! Do nothing
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="Reymonds flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+           & " dimension problem has not yet been implemented."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT
+
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen)
+       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
+       ! a boundary condition in a fluid simulation.
+       SELECT CASE(NUMBER_OF_DIMENSIONS)
+       CASE(1)
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(componentNumber==1) THEN
+               !Set analytic value for Q
+               VALUE=(21.51_DP-5.276_DP*cos(1*7.343_DP*CURRENT_TIME/period) &
+                       &     -25.84_DP*cos(2*7.343_DP*CURRENT_TIME/period) &
+                       &     +10.99_DP*cos(3*7.343_DP*CURRENT_TIME/period) &
+                       &     +5.946_DP*cos(4*7.343_DP*CURRENT_TIME/period) &
+                       &     +1.276_DP*cos(5*7.343_DP*CURRENT_TIME/period) &
+                       &     -3.462_DP*cos(6*7.343_DP*CURRENT_TIME/period) &
+                       &     -1.618_DP*cos(7*7.343_DP*CURRENT_TIME/period) &
+                       &     -1.807_DP*cos(8*7.343_DP*CURRENT_TIME/period) &
+                       &     +37.34_DP*sin(1*7.343_DP*CURRENT_TIME/period) &
+                       &     -22.28_DP*sin(2*7.343_DP*CURRENT_TIME/period) &
+                       &     -9.312_DP*sin(3*7.343_DP*CURRENT_TIME/period) &
+                       &     +0.280_DP*sin(4*7.343_DP*CURRENT_TIME/period) &
+                       &     +5.906_DP*sin(5*7.343_DP*CURRENT_TIME/period) &
+                       &     +0.520_DP*sin(6*7.343_DP*CURRENT_TIME/period) &
+                       &     -0.614_DP*sin(7*7.343_DP*CURRENT_TIME/period) &
+                       &     -2.521_DP*sin(8*7.343_DP*CURRENT_TIME/period))/100.0_DP
+             ELSE
+               CALL FLAG_ERROR("Incorrect component specification for Olufsen flow rate waveform ",ERR,ERROR,*999)
+             ENDIF
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
+           ! Do nothing
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="Olufsen flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+           & " dimension problem has not yet been implemented."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT
+
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
+       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
+       ! a boundary condition in a fluid simulation.
+       SELECT CASE(NUMBER_OF_DIMENSIONS)
+       CASE(1)
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(componentNumber==1) THEN
+               !Set analytic value for Q
+               VALUE=0.5_DP*(134.1_DP+2.06_DP*cos(1*7.741_DP*CURRENT_TIME/period) &
+                       &     -118.7_DP*cos(2*7.741_DP*CURRENT_TIME/period) &
+                       &     -20.48_DP*cos(3*7.741_DP*CURRENT_TIME/period) &
+                       &     -8.634_DP*cos(4*7.741_DP*CURRENT_TIME/period) &
+                       &     +13.43_DP*cos(5*7.741_DP*CURRENT_TIME/period) &
+                       &     +7.387_DP*cos(6*7.741_DP*CURRENT_TIME/period) &
+                       &     +4.127_DP*cos(7*7.741_DP*CURRENT_TIME/period) &
+                       &     +178.9_DP*sin(1*7.741_DP*CURRENT_TIME/period) &
+                       &     +18.41_DP*sin(2*7.741_DP*CURRENT_TIME/period) &
+                       &     -45.9_DP*sin(3*7.741_DP*CURRENT_TIME/period) &
+                       &     -22.71_DP*sin(4*7.741_DP*CURRENT_TIME/period) &
+                       &     -16.28_DP*sin(5*7.741_DP*CURRENT_TIME/period) &
+                       &     -0.8115_DP*sin(6*7.741_DP*CURRENT_TIME/period) &
+                       &     +0.8263_DP*sin(7*7.741_DP*CURRENT_TIME/period))/100.0_DP
+             ELSE
+               CALL FLAG_ERROR("Incorrect component specification for Aorta flow rate waveform ",ERR,ERROR,*999)
+             ENDIF
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
+           ! Do nothing
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="Aorta flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+           & " dimension problem has not yet been implemented."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT
+
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+       ! Returns a sinusoidal value for boundary nodes
+       SELECT CASE(NUMBER_OF_DIMENSIONS)
+       CASE(3)
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           boundaryNormal(1) = ANALYTIC_PARAMETERS(1) ! normal vector in x
+           boundaryNormal(2) = ANALYTIC_PARAMETERS(2) ! normal vector in y
+           boundaryNormal(3) = ANALYTIC_PARAMETERS(3) ! normal vector in z
+           period = ANALYTIC_PARAMETERS(4) ! time period for waveform
+           amplitude = ANALYTIC_PARAMETERS(5) ! amplitude of sine wave
+           offset = ANALYTIC_PARAMETERS(6) ! constant value
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             !Set analytic value for w
+             VALUE= boundaryNormal(componentNumber)*(offset + amplitude*sin(2*pi*(CURRENT_TIME/(period))))
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="Waveform type 1 for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+           & " dimension problem has not yet been implemented."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT
+
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
        IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
          !Polynomial function
@@ -7364,13 +7728,13 @@ CONTAINS
          CASE(FIELD_U_VARIABLE_TYPE)
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
-             IF(component_idx==1) THEN
+             IF(componentNumber==1) THEN
                !calculate Q
                VALUE=X(1)**2/10.0_DP**2
-             ELSE IF(component_idx==2) THEN
+             ELSE IF(componentNumber==2) THEN
                !calculate A
                VALUE=X(1)**2/10.0_DP**2
-             ELSE IF(component_idx==3) THEN
+             ELSE IF(componentNumber==3) THEN
                !calculate P
                VALUE=X(1)**2/10.0_DP**2
              ELSE
@@ -7422,13 +7786,13 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=X(2)**2/10.0_DP**2
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(1)**2*X(2))/(10.0_DP ** 4)
                    ELSE
@@ -7481,13 +7845,13 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE= EXP((X(1)-X(2))/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE= EXP((X(1)-X(2))/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
                    ELSE
@@ -7508,13 +7872,13 @@ CONTAINS
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE= 0.0_DP
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE= 0.0_DP
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE= 0.0_DP
                    ELSE
@@ -7551,13 +7915,13 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)+ &
                        & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
@@ -7579,13 +7943,13 @@ CONTAINS
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=16.0_DP*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/ 10.0_DP)*cos(2.0_DP*PI*X(1)/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
@@ -7622,17 +7986,17 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
                      VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
 !                      VALUE=SIN(X(1))*COS(X(2))
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
                      VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
 !                      VALUE=-COS(X(1))*SIN(X(2))
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
                        & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
@@ -7657,13 +8021,13 @@ CONTAINS
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=0.0_DP         
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
@@ -7700,16 +8064,16 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=X(2)**2/10.0_DP**2+X(3)**2/10.0_DP**2
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=X(1)**2/10.0_DP**2+X(3)**2/10.0_DP** 2
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate w
                      VALUE=X(1)**2/10.0_DP**2+X(2)**2/10.0_DP** 2
-                   ELSE IF(component_idx==4) THEN
+                   ELSE IF(componentNumber==4) THEN
                      !calculate p
                      VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
                        & RHO_PARAM*X(2)* &
@@ -7764,16 +8128,16 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(3)-X(1))/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate w
                      VALUE=EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
-                   ELSE IF(component_idx==4) THEN
+                   ELSE IF(componentNumber==4) THEN
                      !calculate p
                      VALUE=1.0_DP/10.0_DP*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)- & 
                        & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+RHO_PARAM*10.0_DP*EXP((X(1)-X(3))/10.0_DP)+ & 
@@ -7796,16 +8160,16 @@ CONTAINS
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(1)-X(2))+EXP(X(2)-X(3)))
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate w
                      VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(3)-X(1))+EXP(X(2)-X(3)))
-                   ELSE IF(component_idx==4) THEN
+                   ELSE IF(componentNumber==4) THEN
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
@@ -7842,16 +8206,16 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=2.0_DP*cos(2.0_DP*PI*x(1)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)*cos(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate w
                      VALUE=-cos(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*cos(2.0_DP*PI*X(3)/10.0_DP)
-                   ELSE IF(component_idx==4) THEN
+                   ELSE IF(componentNumber==4) THEN
                      !calculate p
                      VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
                        & SIN(2.0_DP*PI*X(3)/10.0_DP)-RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP+ &
@@ -7875,17 +8239,17 @@ CONTAINS
               CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                 SELECT CASE(GLOBAL_DERIV_INDEX)
                   CASE(NO_GLOBAL_DERIV)
-                    IF(component_idx==1) THEN
+                    IF(componentNumber==1) THEN
                       !calculate u
                       VALUE=0.0_DP
-                    ELSE IF(component_idx==2) THEN
+                    ELSE IF(componentNumber==2) THEN
                       !calculate v
                       VALUE=36*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)* & 
                         & cos(2.0_DP*PI*X(1)/10.0_DP)
-                    ELSE IF(component_idx==3) THEN
+                    ELSE IF(componentNumber==3) THEN
                       !calculate w
                       VALUE=0.0_DP
-                    ELSE IF(component_idx==4) THEN
+                    ELSE IF(componentNumber==4) THEN
                       !calculate p
                       VALUE=0.0_DP
                     ELSE
@@ -7922,17 +8286,17 @@ CONTAINS
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate v
                      VALUE=0.0_DP
 !                      VALUE=-COS(X(1))*SIN(X(2))
-                   ELSE IF(component_idx==4) THEN
+                   ELSE IF(componentNumber==4) THEN
                      !calculate p
                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
                        & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
@@ -7955,16 +8319,16 @@ CONTAINS
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
+                   IF(componentNumber==1) THEN
                      !calculate u
                      VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
+                   ELSE IF(componentNumber==2) THEN
                      !calculate v
                      VALUE=0.0_DP         
-                   ELSE IF(component_idx==3) THEN
+                   ELSE IF(componentNumber==3) THEN
                      !calculate p
                      VALUE=0.0_DP
-                   ELSE IF(component_idx==4) THEN
+                   ELSE IF(componentNumber==4) THEN
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
