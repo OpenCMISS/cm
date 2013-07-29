@@ -309,7 +309,8 @@ MODULE TYPES
   TYPE DATA_PROJECTION_PTR_TYPE
     TYPE(DATA_PROJECTION_TYPE), POINTER :: PTR !<The pointer to the data projection.
   END TYPE DATA_PROJECTION_PTR_TYPE
-  
+
+  !
   !================================================================================================================================
   !
   ! Data point types
@@ -322,7 +323,6 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
     REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
-!    TYPE(DATA_PROJECTION_RESULT_TYPE), ALLOCATABLE :: DATA_PROJECTIONS_RESULT(:)
   END TYPE DATA_POINT_TYPE
 
   !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
