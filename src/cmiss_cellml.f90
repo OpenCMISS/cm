@@ -4126,28 +4126,30 @@ CONTAINS
                     & FIELD_VALUES_SET_TYPE,MODELS_DATA,ERR,ERROR,*999)
                   DO models_dof_idx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
                     model_idx=MODELS_DATA(models_dof_idx)
-                    MODEL=>CELLML%MODELS(model_idx)%PTR
-                    IF(ASSOCIATED(MODEL)) THEN
-                      DO parameter_component_idx=1,MODEL%NUMBER_OF_PARAMETERS
-                        CELLML_VARIABLE_TYPE=MAP_CELLML_FIELD_TYPE_TO_VARIABLE_TYPE(CELLML_PARAMETERS_FIELD,ERR,ERROR)
-                        ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE_BY_INDEX(MODEL%PTR,CELLML_VARIABLE_TYPE,&
-                          & parameter_component_idx,INITIAL_VALUE)
-                        IF(ERR /= 0) THEN
-                          !problem getting the initial value
-                          LOCAL_ERROR="Failed to get an initial value for parameter variable with index "//&
-                            & TRIM(NUMBER_TO_VSTRING(parameter_component_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                        !WRITE(*,*) '(multiple models) Initial value for parameter variable: ',parameter_component_idx,'; type: ',&
-                        !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
-                        CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
-                          & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE, &
-                          & ERR,ERROR,*999)
-                      ENDDO !parameter_component_idx
-                    ELSE
-                      LOCAL_ERROR="The model is not associated for model index "// &
-                        & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    IF(model_idx>0) THEN
+                      MODEL=>CELLML%MODELS(model_idx)%PTR
+                      IF(ASSOCIATED(MODEL)) THEN
+                        DO parameter_component_idx=1,MODEL%NUMBER_OF_PARAMETERS
+                          CELLML_VARIABLE_TYPE=MAP_CELLML_FIELD_TYPE_TO_VARIABLE_TYPE(CELLML_PARAMETERS_FIELD,ERR,ERROR)
+                          ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE_BY_INDEX(MODEL%PTR,CELLML_VARIABLE_TYPE,&
+                            & parameter_component_idx,INITIAL_VALUE)
+                          IF(ERR /= 0) THEN
+                            !problem getting the initial value
+                            LOCAL_ERROR="Failed to get an initial value for parameter variable with index "//&
+                              & TRIM(NUMBER_TO_VSTRING(parameter_component_idx,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                          !WRITE(*,*) '(multiple models) Initial value for parameter variable: ',parameter_component_idx,'; type: ',&
+                          !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
+                          CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE, &
+                            & ERR,ERROR,*999)
+                        ENDDO !parameter_component_idx
+                      ELSE
+                        LOCAL_ERROR="The model is not associated for model index "// &
+                          & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
                     ENDIF
                   ENDDO !models_dof_idx
                   CALL FIELD_PARAMETER_SET_DATA_RESTORE(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE, &
