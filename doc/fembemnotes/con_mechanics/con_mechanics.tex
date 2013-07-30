@@ -1,0 +1,186 @@
+\chapter{Constitutive Laws}
+
+\section{Introduction}
+Continuum Mechanics deals with the movement of materials under the action of
+applied forces where the materials are continuous and deformable (we will only
+consider solid mechanics here).  The result of a set of forces acting on a
+deformable material is a (possibly time-varying) displacement field: each
+material point moves a certain amount dependent both on its position relative
+to the applied forces and on the mechanical properties of the material. A
+displacement ``field'' implies a continuous variation of displacement with
+position. The concepts of strain, a measure of length change or displacement
+gradient, and stress, the force per unit area acting on an infinitesimally
+small plane surface within the material, are of fundamental importance.
+
+We derive the equations governing the motion of deformable
+materials in the following four steps:
+\begin{enumerate}
+\item \textbf {Kinematic Relations}, which define the components of strain in
+  terms of displacement gradients and, in the case of incompressible
+  materials, define the incompressibility constraint.
+\item \textbf {Stress Equilibrium}, or equations of motion, derived from the laws
+  of conservation of linear momentum and conservation of angular momentum.
+\item \textbf {Constitutive Relations}, which express the relationship between
+  stress and strain and must be established from experimental measurement,
+  subject to certain theoretical restrictions.
+\item \textbf {Boundary Conditions}, which specify the external loads or
+  displacement constraints acting on the deforming body.
+\end{enumerate}
+The first two steps are concerned with relationships which hold for all
+materials and will be considered in detail in \secref{sec:Kinrel} and 7.4; the
+third step is concerned with relations determined experimentally for a
+particular material and is treated more fully in 7.5.
+\remark {fix up section references no 7.5}
+\section{Kinematic Relations}
+\label{sec:Kinrel} 
+
+\index{Kinematic relations}The key to analyzing strain in a material
+undergoing large displacements and deformation is to establish two types of
+coordinate system and the relationship between them. The first are fixed
+reference coordinates and the second (material coordinates) are embedded in
+the deforming body. From the base vectors of the material coordinates we
+define metric tensors - measures of the physical lengths of coordinate
+increments - and thence strain tensors.
+ 
+\subsection{Coordinate systems and metric tensors}
+The coordinates $\pbrac{X_{1},X_{2},X_{3}}$ define the position of a material point
+in the undeformed tissue (see Fig.2.1) \remark{fix up figure reference} with 
+respect to a fixed reference
+rectangular cartesian coordinate system. The same material point in the
+deformed tissue has rectangular cartesian coordinates $\pbrac{x_{1},x_{2},x_{3}}$.
+Another system of material coordinates $\pbrac{x_{1},x_{2},x_{3}}$ is defined in
+which the coordinate lines can be thought of as being attached to material
+particles and so move with the deforming body. During the deformation the
+initially straight and orthogonal $X_{M}$-coordinate axes remain ``attached''
+to material particles and therefore become distorted and non-orthogonal in the
+deformed configuration. $\bbrac{X_{M}}$ are called material coordinates or
+convected coordinates. On the other hand the $x_{i}$-coordinate axes are fixed
+throughout the deformation and $\bbrac{x_{i}}$ are called spatial coordinates (see
+Figure 3.1).
+\remark{fix reference}
+\remark{missing figure}
+\begin{figure} \centering
+  \caption{Coordinate systems used in the kinematic
+    analysis of large deformation. $\pbrac{X_{1},X_{2},X_{3}}$ are the
+    rectangular cartesian coordinates of the point $P$
+    (position vector $R$) in the undeformed body. $\pbrac{x_{1},x_{2},x_{3}}$
+    are the rectangular cartesian coordinates of the same
+    material point $p$ (position vector $r$) in the deformed
+    body after a displacement $u$. $\pbrac{x_{1},x_{2},x_{3}}$ are material
+    coordinates.}
+  \label{fig:coord}
+\end{figure} 
+
+The base vectors for the $x_{i}$-coordinates in the undeformed reference state
+are found by differentiating the position vector $\vect{R}=X_{k}\vect{i}_{k}$
+\begin{equation}
+  \vect{G}_{i} = \dfrac{\delta X_{k}}{\delta x_{i}} \vect{i}_{k}
+  \label{eq:pv}
+\end{equation}
+
+The covariant components $G_{ij}$ of the undeformed metric tensor
+are obtained from the inner products of the base vectors
+\begin{equation}
+  G_{ij}= \vect{G}_{i}\vect{G}_{j}=\dfrac{\delta X_{k}}{\delta x_{i}}
+  \dfrac{\delta X_{k}}{\delta x_{j}}
+  \label{eq:bv}
+\end{equation}
+ 
+Similarly, derivatives of the position vector $\vect{r}$ of a material
+point in the deformed body (see \figref{fig:coord}) with respect to the
+same material coordinates yield base vectors
+\begin{equation}
+ \vect{g}_{i} = \dfrac{\delta x_{k}}{\delta x_{i}} \vect{i}_{k}
+ \label{eq:bv2}
+\end{equation}
+and metric tensors
+\begin{equation}
+ g_{ij}= \vect{g}_{i} \vect{g}_{j} = \dfrac{\delta x_{k}}{\delta x_{i}}
+ \dfrac{\delta x_{k}}{\delta x_{j}}
+ \label{eq:mt}
+\end{equation}
+
+\subsection{Strain measures}
+\index{Strain measures}An initially undeformed line segment vector $d\vect{X}$
+with components $dX^{1}, dX^{2}, dX^{3}$ (expressed more succinctly as
+$d\vect{X} =\bbrac{dX^{M}}$) deforms into the line segment $d\vect{x}=
+\bbrac{dx^{i}}$.  The deformation field is defined by expressing $\vect{x}$ as
+a function of $\vect{X}$ and the components of deformation gradient,
+$\dfrac{\delta x_{i}}{\delta X_{M}}$, collectively give the deformation
+gradient tensor $\matr{F} = \bbrac{\dfrac{\delta x_{i}}{\delta X_{M}}}$.
+Thus, the line segment $d\vect{X}$ is carried by the deformation into
+$d\vect{x} = \matr{F}d\vect{X}$, or, in component form, $dx^{i} =
+F^{i}_{M}dX^{M}$, where summation is implied ($M$ = 1,2,3) over the repeated
+index $M$ and
+\begin{equation}
+  F^{i}_{M} = \dfrac{\delta x_{i}}{\delta X_{M}}
+  \label{eq:ri}
+\end{equation}
+ 
+\remark {missing figure}
+\begin{figure}\centering
+  \caption{Coordinate systems used in the kinematic
+    analysis of large deformation. $\pbrac{X_{1},X_{2},X_{3}}$ are the
+    rectangular cartesian coordinates of the point $P$
+    (position vector $\vect{R}$) in the undeformed body. $\pbrac{x_{1},x_{2},x_{3}}$
+    are the rectangular cartesian coordinates of the same
+    material point $p$ (position vector $\vect{r}$) in the deformed
+    body after a displacement $u$. $\pbrac{x_{1},x_{2},x_{3}}$ are material
+    coordinates.}
+  \label{fig:cs}
+\end{figure} 
+
+A very important concept is that of ``polar decomposition'' 
+\index{Polar decomposition}. The deformation gradient tensor $\matr{F}$ 
+can be considered
+as the product $\matr{F}=\matr{R}\matr{U}$ of an orthogonal rotation tensor
+$\matr{R}$ and a symmetric positive stretch tensor $\matr{U}$. Equivalently,
+the line segment components $dX^{M}$ are stretched into components $dy^{L} =
+U^{L}_{M }dX^{M}_{ }$ before being rotated into the components $dx^{i} =
+R^{i}_{L} dy^{L}$. An equally valid interpretation of the deformation would be
+to consider the rigid body rotation before the stretching but for the present
+purpose it is more convenient to interprete ``stretch'' in terms of material
+coordinates and then use the rotation tensor $\matr{R}$ to relate the
+stretched material lines to the spatial coordinates (for further details and a
+full justification of the polar decomposition theorem see Atkin and Fox (1980)
+or Spencer (1980)). The main point here is that the stretch tensor $\matr{U}$
+contains a complete description of the material strain, independent of rigid
+body motion (see also \Figref{fig:advection}).
+ 
+The length of the line segments $d\vect{X}$ and $d\vect{x}$ are denoted by $dS$
+and $ds$, respectively, where, from Pythagoras, $dS^{2} =dX^{M} dX^{M}$ and
+$ds^{2}= dx^{i}dx^{i}$
+
+Strain is a measure of relative length change and the so-called 
+``Right Cauchy-Green'' strain tensor
+\begin{displaymath}
+  \matr{C} = \transpose{\matr{F}}\matr{F} = \frac{\delta x_{k}}{\delta
+    X_{M}}\frac{\delta x_{k}}{\delta X_{N}}
+\end{displaymath}
+with components $C_{MN}$ , indicates how each component of undeformed line
+segment $d\vect{X}$ contributes to the squared length of the deformed line
+segment $d\vect{x}$ 
+\begin{displaymath} 
+  ds^{2} = dx^{k} dx^{k} = \dfrac{\delta x_{k}}{\delta X_{M}} dX^{M}
+  \dfrac{\delta x_{k}}{\delta X_{N}} dX^{N} = \matr{C}_{MN} dX^{M} 
+  dX^{N} = \transpose{dX} \matr{C} dX
+\end{displaymath}
+
+Using polar decomposition $\matr{F} = \matr{R}\matr{U}$, gives
+\begin{displaymath}
+  \matr{C} = \transpose{\matr{F}}\matr{F} =
+  \transpose{\pbrac{\matr{R}\matr{U}}} 
+  \matr{R}\matr{U} = \transpose{\matr{U}}\transpose{\matr{R}}
+  \matr{R}\matr{U} = \transpose{\matr{U}} \matr{U} = \matr{U}^{2}
+\end{displaymath}
+since $\matr{R}$ is orthogonal ($\transpose{\matr{R}} = \matr{R}^{-1}$ ) and
+$\matr{U}$ is symmetric ($\transpose{\matr{U}} = \matr{U}$).
+
+Thus the stretch tensor $\matr{U}$ can be obtained by taking the positive
+square-root of the strain tensor (see below).  Both $\matr{U}$ and $\matr{C}$ are
+expressed in terms of material coordinates.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
