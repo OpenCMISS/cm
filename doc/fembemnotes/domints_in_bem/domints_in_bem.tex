@@ -1,0 +1,988 @@
+\chapter{Domain Integrals in the BEM}
+
+\section{Achieving a Boundary Integral Formulation}
+
+The principal advantage of the BEM over other numerical methods is the
+ability to reduce the problem dimension by one.  This property is
+advantagous as it reduces the size of the solution system leading to
+improved computational efficiency.  This reduction of dimension also eases
+the burden on the engineer as it is only necessary to construct a boundary
+mesh to implement the BEM.
+
+To achieve this reduction of dimension it is necessary to formulate the
+governing equation as a boundary integral equation.  To achieve a boundary
+integral formulation it is necessary to find an appropriate reciprocity
+relationship for the problem and to determine an appropriate fundamental
+solution\index{Fundamental solution}.  If either of these requirements cannot
+be satisfied then a boundary integral formulation cannot be achieved.  The
+most common difficulty in applying the BEM is in determining an appropriate
+fundamental solution.
+
+A linear differential equation can be expressed in operator form as $Lu =
+\gamma$ where $L$ is a linear operator, $\gamma$ is an inhomogeneous source
+term and $u$ is the dependent variable.  The fundamental solution for this
+equation is a solution of
+\begin{equation}
+  L^{*} \fnof{\omega}{\vect{x},\vect{\xi}}  + \fnof{\delta}{\vect{\xi}} = 0
+\end{equation}
+where * indicates the adjoint of the operator $L$ and $\delta$ is the Dirac
+delta function.  No specific boundary conditions are prescribed but in some
+cases regularity conditions at infinity need to be satisfied. The
+fundamental solution is a Green's function which is not required to satisfy
+any boundary conditions and is therefore also commonly termed the
+free-space Green's function.
+
+The mathematical theory required to determine the fundamental solution of a
+constant coefficient PDE is well-developed and has been used successfully
+to determine the fundamental solutions for a wide range of constant
+coefficient equations \cite{walker:1980} \cite{clements:1978}
+\cite{ortner:1987}.  Fundamental solutions are known and have been
+published for many of the most important equations in engineering such as
+Laplace's equation, the diffusion equation and the wave equation
+\cite{brebbia:1984b}.  However, by no means can it be guaranteed that the
+fundamental solution to a specific differential equation is known.  In
+particular, PDEs with variable coefficients do not, in general, have known
+fundamental solutions.  If the fundamental solution to an operator cannot
+be found then domain integrals cannot be completely removed from the
+integral formulation.  Domain integrals will also arise for inhomogeneous
+equations.
+
+\citeasnoun{wu:1985} argued that the BEM has several advantages over
+other numerical methods which justify its use for many practical problems -
+even in cases where domain integration is required.  He argued that for
+problems such as flow problems a wide range of phenomena are described by
+the same governing equations. What distinguishes these phenomena is the
+boundary conditions of the problem.  For this reason accurate description
+of the boundary conditions is vital for solution accuracy.  The BEM
+generates a formulation involving both the dependent variable $u$ and the
+flux $q$. This allows flux boundary conditions to be applied directly which
+cannot be achieved in either the finite element or finite difference
+methods.
+
+Another advantage of the BEM over other numerical methods is that it allows an
+explicit expression for the solution at an internal point.  This allows a
+problem to be subdivided into a number of zones for which the BEM can be
+applied individually.  This zoning approach is suited to problems with
+significantly different length scales or different properties in different
+areas.
+
+Domain integration can be simply and accurately performed in the BEM.
+However, the presence of domain integrals in the BEM formulation negates
+one of the principal advantages of the BEM in that the problem dimension is
+no longer reduced by one.  Several methods have been developed which allow
+domain integrals to be expressed as equivalent boundary integrals. In this
+section these methods will be discussed.
+
+\section{Removing Domain Integrals due to Inhomogeneous Terms}
+
+Inhomogeneous PDEs occur for a large number of physical problems.  An
+inhomogeneous term may arise due to a number of factors including a source
+term, a body force term, or due to initial conditions in time-dependent
+problems.  An inhomogeneous linear PDE can be expressed in operator form as
+$Lu = \gamma$ where $\gamma$ is a known function of position or a non-zero
+constant.  If the fundamental solution is known for the operator $L$, the
+resulting BEM formulation will be
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = -\goneint{\gamma \omega}{\Omega}
+\label{eq:inhomog}
+\end{equation}
+The domain integral in this formulation does not involve any unknowns so
+domain integration can be used directly to solve this equation.  This
+requires discretising the domain into internal cells in much the same way
+as for the finite element method.  As the domain integral does not involve
+any unknown values accurate results can generally be achieved using a
+fairly coarse mesh.  This method is simple and has been shown to produce
+accurate results \cite{brebbia:1984b}.  This approach, however, requires a
+domain discretisation and a numerical domain integration procedure which
+reduces the attraction of the BEM over domain-based numerical methods.
+
+\subsection{The Galerkin Vector technique}
+
+For some particular forms of the inhomogeneous function $\gamma$ the domain
+integral can be transformed directly into boundary integrals. 
+
+Consider the Poisson equation $\laplacian{u} = \gamma$.  Applying the BEM gives
+an equation of the form of \eqnref{eq:inhomog}.  Using Green's second
+identity
+\begin{equation}
+  \goneint{\pbrac{\gamma \laplacian{v} - v
+  \laplacian{\gamma}}}{\Omega} = 
+  \goneint{\pbrac{\gamma \delby{v}{n} - v \delby{\gamma}{n}}}{\Gamma}
+\end{equation}
+domain integration can be avoided for certain forms of $\gamma$.  If a
+\index{Galerkin vector} $v$ can be found which satisfies $\laplacian{v} = \omega$,
+where $\omega$ is the fundamental solution of Laplace's equation, then for
+the specific case of $\gamma$ being harmonic ($\laplacian{\gamma} = 0$) Green's
+second identity can be reduced to
+\begin{equation}
+  \goneint{\gamma \omega}{\Omega} = \goneint{\pbrac{\gamma \delby{v}{n} - v
+      \delby{\gamma}{n}}}{\Gamma} 
+\end{equation}
+Therefore if a Galerkin vector can be found and $\gamma$ is harmonic the
+domain integral in \eqnref{eq:inhomog} can be expressed as equivalent
+boundary integrals.
+
+\citeasnoun{fairweather:1979} determined the Galerkin vector for the
+two-dimensional Poisson equation and \citeasnoun{rangogni:1982} determined
+the Galerkin vector for the three-dimensional Poisson equation.
+\citeasnoun{danson:1981} showed how this method can be applied
+successfully for a number of physical problems involving linear isotropic
+problems with body forces.  He considered the practical cases where the
+body force term arose due to either a constant gravitational load, rotation
+about a fixed axis or steady-state thermal loading.  In each of these cases
+the domain integral can be expressed as equivalent boundary integrals.
+
+This Galerkin vector approach provides a simple method of expressing 
+domain integrals as equivalent boundary integrals.  Unfortunately, it only
+applies to specific forms of the inhomogeneous term $\gamma$ (\ie $\gamma$
+is required to be harmonic).
+
+\subsection{The Monte Carlo method}
+
+Domain discretisation could be avoided by using a Monte Carlo technique.
+This technique approximates a domain integral as a sum of the integrand
+at a number of random points. Specifically, in two dimensions, a domain
+integral $I$ is approximated as 
+\begin{equation}
+  I \approx \dfrac{A}{N} \dsuml{i=1}{N} \fnof{f}{x_{i},y_{i}}
+\end{equation}
+where $\fnof{f}{x_{i},y_{i}}$ is the value of the integrand at random point
+$\pbrac{x_{i},y_{i}}$, $N$ is the number of random points used and $A$ is the
+area of the region over which the integration is performed.  This
+approximation allows a domain integral to be approximated by a summation
+over a set of random points so domain integration can be performed without
+requiring a domain mesh.  This method has the secondary advantage of
+allowing the integration to be performed over a simple geometry enclosing
+the problem domain - if a random point is not in the problem domain its
+contribution is ignored.
+
+The method was proposed by \citeasnoun{gipson:1987}.  Gipson has
+successfully applied this method to a number of Poisson-type problems.
+Unfortunately this method often proves to be computationally expensive as a
+large number of integration points are needed for accurate domain
+integration.  Gipson argues however that, as this method removes the burden
+of preparing a domain mesh, the extra computational expense is justified.
+
+\subsection{Complementary Function-Particular Integral method}
+\label{sec:anapim}
+
+A more general approach can be developed using particular solutions.  Consider
+the linear problem $Lu = \gamma$. $u$ can be considered as the sum of the
+complementary function $u_{c}$, which is a solution of the homogeneous
+equation $Lu_{c} = 0$, and a particular solution $u_{p}$ which satisfies
+$Lu_{p} = \gamma$ but is not required to satisfy the boundary conditions of
+the problem.  Applying BEM to the governing equation using the expansion 
+ $u =u_{c} + u_{p}$ gives
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \matr{H} \vect{u_{p}} - \matr{G}
+  \vect{q_{p}}
+\label{eq:partic}
+\end{equation}
+If a particular solution $u_{p}$ can be found, all values on the
+right-hand-side of \eqnref{eq:partic} are known - reducing the problem to
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \vect{d}
+\end{equation}
+where $\vect{d}$ is a vector of known values.  This linear system can be
+solved by applying boundary conditions.  
+
+This approach can be applied in a situation where an analytic expression
+for a particular solution can be found.  Unfortunately particular solutions
+are generally only known for simple operators and for simple forms of
+$\gamma$.  Alternatively an approximate particular solution could be
+calculated numerically.  \citeasnoun{zheng:1991} proposed a method
+where a particular solution is determined by approximating the
+inhomogeneous source term using a global interpolation function.  This
+approach is a special case of a more general method known as the dual
+reciprocity boundary element method.
+
+\section{Domain Integrals Involving the Dependent Variable}
+
+Consider the linear homogeneous PDE $Lu = 0$.  For many operators the
+fundamental solution to the operator $L$ may be unobtainable or may be in
+an unusable form.  This is especially likely if $L$ involves variable
+coefficients for which case it has been shown that it is particularly
+difficult to find a fundamental solution.  Instead, a BEM formulation can
+be derived based on a related operator $\hat{L}$ with known fundamental
+solution.  A BEM formulation for $Lu = 0$ based on the operator $\hat{L}$
+will be of the form
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} 
+            = -\goneint{\pbrac{\hat{L} - L} u \omega}{\Omega}
+\label{eq:relate}
+\end{equation}
+where $\omega$ is the fundamental solution corresponding to the operator 
+$\hat{L}$. This integral equation is similar to \eqnref{eq:inhomog}.  
+However in this case the domain integral term involves the dependent
+variable $u$.  This problem could be solved using domain integration where
+the internal nodes are treated as formal problem unknowns. 
+
+\subsection{The Perturbation Boundary Element Method}
+
+\index{Perturbation Boundary Element Method@Perturbation BEM}
+\citeasnoun{rangogni:1986} proposed solving variable coefficient PDEs by
+coupling the boundary element method with a perturbation method. He
+considered the two-dimensional generalised Laplace equation
+\begin{equation}
+  \nabla \cdot \pbrac{ \fnof{\kappa}{x,y}\nabla\fnof{V}{x,y} } = 0
+\label{eq:rangge2}
+\end{equation}
+Using the substitution $\fnof{V}{x,y} = \kappa^{-\dfrac{1}{2}} \fnof{u}{x,y}$
+\eqnref{eq:rangge2} can be recast as a heterogeneous Helmholtz equation
+\begin{equation}
+  \laplacian{u} + \fnof{f}{x,y}u = 0
+\label{eq:varhelm2}
+\end{equation}
+where $f$ is a known function of position.
+
+\citename{rangogni:1986} treated 
+this equation as a perturbation about Laplace's equation. He considered the class of equations
+\begin{equation}
+  \laplacian{u} + \varepsilon \fnof{f}{x,y} u = 0 \qquad 
+    \text{where } 0 \leq \varepsilon \leq 1
+\label{eq:eqnfamily}
+\end{equation}
+for which he sought a solution of the form
+\begin{equation}
+  u = u_{0} + \varepsilon u_{1} + \varepsilon^{2} u_{2} + \ldots =
+  \dsuml{j=0}{\infty} u_{j} \varepsilon^{j}
+\label{eq:uexpan}
+\end{equation}
+Substituting \eqnref{eq:uexpan} into \eqnref{eq:eqnfamily} and grouping powers
+ of $\varepsilon$ gives
+\begin{equation}
+  \laplacian{u_{0}} + \varepsilon \pbrac{\laplacian{u_{1}} + fu_{0}} +
+  \varepsilon^{2} \pbrac{\laplacian{u_{2}} + fu_{1}} + \ldots = 0
+\label{eq:groups}
+\end{equation}
+A solution will only exist for all values of $\varepsilon$ if the terms at
+each power of $\varepsilon $ equal zero. This allows \eqnref{eq:groups} to be
+treated as an infinite series of distinct problems which can be solved
+using the boundary element method. $u_{0}$ can be found by solving 
+ $\laplacian{u_{0}} = 0$ which Rangogni assumes will satisfy the boundary 
+conditions of the original problem.  Each successive $u_{j}$ can then be
+found by solving a Poisson equation with homogeneous boundary conditions as 
+ $u_{j-1}$ has been previously determined.  Rangogni used a domain
+ discretisation to solve these Poisson problems.
+
+\eqnref{eq:varhelm2} is a particular member of this family of equations for
+which $\varepsilon =1$.  The solution to \eqnref{eq:varhelm2} is therefore
+given by $\dsuml{j=0}{\infty} u_{j}$. Rangogni reported that in practice
+this series converged rapidly and in his numerical examples he achieved
+accurate results using only $u_{0}$ and $u_{1}$.
+
+\citeasnoun{rangogni:1991} extended this coupled perturbation - boundary
+element method to the general second-order variable coefficient PDE
+\begin{equation}
+  \laplacian{u} + \fnof{f}{x,y} \delby{u}{x} + \fnof{g}{x,y} \delby{u}{y} =
+  \fnof{h}{x,y}
+\end{equation}
+He considered the family of equations
+\begin{equation}
+  \laplacian{u} + \varepsilon \sqbrac{\fnof{f}{x,y} \delby{u}{x} +
+    \fnof{g}{x,y} \delby{u}{y}} = \fnof{h}{x,y} 
+    \quad (0 \leq \varepsilon \leq 1)
+\label{eq:family2}
+\end{equation}
+Applying the perturbation method to this family of equations allows
+\eqnref{eq:family2} to be expressed as an infinite series of distinct Poisson
+equations which can be solved using the boundary element method. Again
+Rangogni used an domain mesh to solve these Poisson equations.  Rangogni
+found that in practice convergence was rapid and accurate results were
+produced.
+
+\citeasnoun{gipson:1987b} considered a class of hyperbolic and elliptic
+problems which can be transformed into an inhomogeneous Helmholtz equation.
+They used the perturbation method to recast this as an infinite sequence of
+Poisson equations. They avoided domain discretisation by using a Monte
+Carlo integration technique \cite{gipson:1987} to evaluate the required
+domain integrals.
+
+\citeasnoun{lafe:1987} used the perturbation method to solve
+steady-state groundwater flow problems in heterogeneous aquifers.  They
+showed the method produced accurate results for simply varying hydraulic
+conductivities with convergence after two or three terms.
+\citename{lafe:1987} investigated the convergence of the perturbation
+method.  They found that for rapidly varying hydraulic conductivity
+convergence is not guaranteed.  From this investigation they concluded that
+accurate results can be obtained so long as the hydraulic conductivity does
+not vary by more than one order of magnitude within the solution domain.
+If the hydraulic conductivity variation is more significant they recommend
+using the perturbation method in conjunction with a subregion technique so
+that the variation of conductivity within each subregion satisfies their
+requirements.  This process could become computationally expensive,
+particularly if convergence is not rapid, as the solution of multiple
+subproblems will be required within each subregion.
+
+%%%
+%goes brown below here
+%%%
+\subsection{The Multiple Reciprocity Method}
+
+The multiple reciprocity method 
+ \index{Multiple reciprocity method|(} (MRM) was
+initially proposed by \citeasnoun{nowak:1987} for the solution of transient
+heat conduction problems.  Since then the method has been successfully applied
+to a wide range of problems.  The MRM can be viewed as a generalisation of the
+Galerkin vector approach.  Instead of using one higher-order fundamental
+solution, the Galerkin vector, to convert the remaining domain integrals to
+equivalent boundary integrals a series of higher-order fundamental solutions
+is used.
+
+ \index{Multiple reciprocity method!Poisson equation} Consider the Poisson equation
+\begin{equation}
+  \laplacian{u} = b_{0}
+\end{equation}
+where $b_{0} = \fnof{b_{0}}{\vect{x}}$ is a known function of position.
+Applying BEM to this equation, using the fundamental solution to the Laplace
+operator, gives
+\begin{equation}
+  \fnof{c}{\vect{\xi}} \fnof{u}{\vect{\xi}} + 
+  \goneint{u \delby{\omega_{0}}{n}}{\Gamma} + 
+  \goneint{b_{0} \omega_{0}}{\Omega} = \goneint{\omega_{0} \delby{u}{n}}{\Gamma}
+\label{eq:mrmstart}
+\end{equation}
+where $\omega_{0}$ is the known fundamental solution to Laplace's equation
+applied at point $\vect{\xi}$.  To avoid domain discretisation the domain integral
+in \eqnref{eq:mrmstart} needs to be expressed as equivalent boundary
+integrals.  Using MRM this is achieved by defining a higher-order
+fundamental solution $\omega_{1}$ such that
+\begin{equation}
+  \laplacian{\omega_{1}} = \omega_{0}
+\end{equation}
+Using this higher-order fundamental solution the domain integral in
+\eqnref{eq:mrmstart} can be written as
+\begin{equation}
+  \goneint{b_{0} \omega_{0}}{\Omega} =
+  \goneint{b_{0}\laplacian{\omega_{1}}}{\Omega} 
+\end{equation}
+or 
+\begin{equation}
+  \goneint{b_{0} \omega_{0}}{\Omega} = 
+  \goneint{\pbrac{u \delby{\omega_{1}}{n} - \omega_{1} \delby{u}{n}}}{\Gamma} +
+  \goneint{\omega_{1} \laplacian{b_{0}}}{\Omega}
+\label{eq:delb}
+\end{equation}
+This formulation has generated a new domain integral.  $b_{0}$ is a known
+function so we can introduce a new function $b_{1}$ which can be determined
+analytically from the relationship
+\begin{equation}
+  b_{1} = \laplacian{b_{0}}
+\end{equation}
+giving 
+\begin{equation}
+  \goneint{\omega_{1} \laplacian{b_{0}}}{\Omega} = 
+  \goneint{\omega_{1} b_{1}}{\Omega}
+\end{equation}
+This process can be repeated by introducing a new higher-order fundamental
+solution $\omega_{2}$ such that
+\begin{equation}
+  \laplacian{\omega_{2}} = \omega_{1}
+\end{equation}
+and continuing until convergence is reached.
+
+This procedure is based on the recurrence relationships
+%\section{}
+
+\begin{alignat}{2}
+  b_{j+1} & = \laplacian{b_{j}} & \qquad \text{for }j &= 0,1,2,\ldots
+  \label{eq:recurr} \\
+  \laplacian{\omega_{j+1}} & = \omega_{j} & \qquad \text{for }j &= 0,1,2,\ldots
+  \label{eq:higher}
+\end{alignat}
+Using these recurrence relationships gives the boundary integral formulation
+\begin{equation}
+  \fnof{c}{\vect{\xi}} \fnof{u}{\vect{\xi}} + 
+  \goneint{\pbrac{u\delby{\omega_{0}}{n} - \omega_{0} \delby{u}{n}}}{\Gamma} +
+  \dsuml{j=0}{\infty}   \goneint{\pbrac{b_{j}\delby{\omega_{j+1}}{n} 
+      - \omega_{j+1} \delby{b_{j}}{n}}}{\Gamma} = 0
+\end{equation}
+which is an exact formulation if the infinite series converges.  Errors are
+only introduced at the stage of boundary discretisation.  
+
+Introducing interpolattion functions and discretising the boundary gives
+the matrix system
+\begin{equation}
+  \matr{H_{0}} \vect{u} - \matr{G_{0}} \vect{q} = \dsuml{j=0}{\infty}
+  \pbrac{\matr{H_{j+1}} \vect{P_{j}} - \matr{G_{j+1}} \vect{R_{j}}}
+\end{equation}
+where $\matr{H_{j+1}}$ and $\matr{G_{j+1}}$ are influence coefficient
+matrices corresponding to the higher-order fundamental solutions and
+$\vect{p_{j}}$ and $\vect{r_{j}}$ contain the nodal values of $b_{j}$ and its
+normal derivative. 
+
+The MRM can be applied based on operators other than the Laplace operator.
+This approach relies on knowledge of the higher-order fundamental solutions
+necessary for application of the method.  These solutions have been
+determined and successfully used for the Laplace operator in both two and
+three dimensions but the extension of the method to other equation types
+needs further research.  \citeasnoun{itagaki:1993} have determined the higher
+order fundamental solutions for the two-dimensional modified Helmholtz
+equation.
+
+The MRM can be extended to other equations by allowing the forcing function
+$b_{0}$ to be a general function such that $b_{0} = \fnof{b_{0}}{\vect{x},u,t}$.
+The MRM will be restricted to cases where the recurrence relationships -
+\eqnrefs{eq:recurr}{eq:higher} - can be employed.  \citeasnoun{brebbia:1989}
+have applied the MRM to the Helmholtz equation $\laplacian{u} + \kappa^{2} u =
+0$ where $b_{0} = -\kappa^{2} u$ and the recurrence relationship defined by
+\eqnref{eq:recurr} becomes simply 
+\index{Multiple reciprocity method!Helmholtz equation}
+\begin{equation}
+  u_{j+1} = \laplacian{u_{j}} = - \kappa^{2j} u
+\end{equation}
+In this case the boundary integral formulation will be
+\begin{equation}
+  \fnof{c}{\vect{\xi}} \fnof{u}{\vect{\xi}} + \dsuml{j=0}{\infty}
+  \goneint{\kappa^{2j} \pbrac{u \delby{\omega_{j}}{n} -
+    \omega_{j} \delby{u}{n}}}{\Gamma} = 0
+\end{equation}
+\index{Multiple reciprocity method|)}
+
+\subsection{The Dual Reciprocity Boundary Element Method}
+
+\subsubsection{Equation Derivation}
+
+\index{Dual reciprocity boundary element method@Dual reciprocity BEM|)}
+The dual reciprocity boundary element method (DR-BEM) was developed to
+avoid the need for domain integration in cases where the fundamental
+solution of the governing differential equation is unknown or is
+impractical to apply.  Instead the DR-BEM is applied using an appropriate
+related operator with known fundamental solution.  The most common choice
+is the Laplace operator \cite{partridge:1992} and in this chapter the DR-BEM
+will be illustrated for this choice.
+
+Consider a second-order PDE which can be expressed in the form
+\begin{equation}
+  \laplacian{u} = b
+\label{eq:drmbase}
+\end{equation}
+The forcing function $b$ can be completely general. If $b = \fnof{b}{\vect{x}}$
+then $b$ is a known function of position and the differential equation
+described is simply the Poisson equation. For potential problems $b =
+\fnof{b}{\vect{x},u}$ and for transient problems $b = \fnof{b}{\vect{x},u,t}$.
+Applying the BEM to \eqnref{eq:drmbase} will give
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = -\goneint{b \omega}{\Omega}
+\end{equation}
+where $\omega$ is the known fundamental solution to Laplace's equation.
+The aim of the DR-BEM is to express the domain integral due to the forcing
+function $b$ as equivalent boundary integrals.
+
+The DR-BEM uses the idea of approximating $b$ using
+interpolation functions.  A global approximation to $b$ of the form
+\label{page:alpha}
+\begin{equation}
+  b = \dsuml{j=1}{M} \alpha_{j}f_{j}
+\label{eq:globalapprox}
+\end{equation}
+is proposed.  $\alpha_{j}$ are unknown coefficients and $f_{j}$ are
+approximating functions used in the interpolation and are generally chosen
+to be functions of the source point and the field point of the fundamental
+solution. The approximating functions $f_{j}$ are applied at $M$ different
+collocation points - called poles - generally most, but not all, of which
+are located on the boundary of the problem domain.
+
+As discussed in the previous chapter the solution to a linear PDE $Lu =
+\gamma$ can be constructed as the sum of a complimentary function $u_{c}$
+(which satisfies the homogeneous equation $Lu_{c} = 0$) and a particular
+solution $u_{p}$ to the equation $Lu_{p} = \gamma$.  Instead of using a
+single particular solution, which may be difficult to determine, the DR-BEM
+employs a series of particular solutions $\hat{u}_{j}$ which are related to
+the approximating functions $f_{j}$ as shown in \eqnref{eq:harmonic}.
+\begin{equation}
+  \laplacian{\hat{u}_{j}} = f_{j} \quad j = 1, \ldots ,M
+\label{eq:harmonic}
+\end{equation}
+By substituting \eqnrefs{eq:globalapprox}{eq:harmonic} into \eqnref{eq:drmbase}
+the forcing function $b$ is approximated by a weighted summation of
+particular solutions to the Poisson equation.
+\begin{equation}
+  \laplacian{u} = \dsuml{j=1}{M} \alpha_{j} \laplacian{\hat{u}_{j}}
+\label{eq:rhsapprox}
+\end{equation}
+The DR-BEM essentially constructs an approximate particular solution to the
+governing PDE as a summation of localised particular solutions.  
+
+With the governing equation rewritten in the form of \eqnref{eq:rhsapprox} the
+standard boundary element approach can be applied. \Eqnref{eq:rhsapprox} is
+multiplied by a weighting function $\omega$ and integrated over the domain.
+Green's theorem is applied twice and the fundamental solution of the
+Laplacian is used to remove the remaining domain integrals. The name dual
+reciprocity BEM is derived from the application of reciprocity
+relationships to both sides of \eqnref{eq:rhsapprox}. After applying these
+steps \eqnref{eq:drmmaths} is obtained, where the fundamental solution pole
+is applied at point $\vect{\xi}$.
+\begin{multline}
+  \fnof{c}{\vect{\xi}} \fnof{u}{\vect{\xi}} + \goneint{\pbrac{u
+    \delby{\omega}{n} - \omega \delby{u}{n}}}{\Gamma} \\ =
+  \dsuml{j=1}{M} \alpha_{j} \pbrac{\fnof{c}{\vect{\xi}}
+    \fnof{u_{j}}{\vect{\xi}} + \goneint{\pbrac{\hat{u}_{j}
+      \delby{\omega}{n} - \omega \delby{hat{u}_{j}}{n}}}{\Gamma}}
+\label{eq:drmmaths}
+\end{multline}
+In implementing a 
+numerical solution of this equation similar steps are taken as for 
+the standard BEM.  The boundary is
+discretised into elements and interpolation functions are introduced to
+approximate the dependent variable within each element. 
+
+The form of each $\hat{u}_{j}$ is known from \eqnref{eq:harmonic} once the
+approximating functions $f_{j}$ have been defined. It is not necessary to
+use interpolation functions to approximate each $\hat{u}_{j}$. However by
+using the same interpolation functions to approximate $u$ and $\hat{u}_{j}$
+the numerical implementation will generate the same matrices $\matr{H}$ and
+$\matr{G}$ on both sides of \eqnref{eq:drmmaths}. The error generated by
+approximating each $\hat{u}_{j}$ in this manner has been found to be small
+and can be justified by the improved computational efficiency of the method
+\cite{partridge:1992}.
+
+The application of this method results in the system
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \dsuml{j=1}{N+I} \alpha_{j}
+  \pbrac{\matr{H} \vect{\hat{u}_{j}} - \matr{G} \vect{\hat{q}_{j}}}
+\label{eq:sumin}
+\end{equation}
+where the $M$ poles were chosen to be the $N$ boundary nodes plus $I$ internal
+points so that $M = N+I$. Although it is not generally necessary to include
+poles at internal points it has been found that in general improved accuracy
+is achieved by doing so \cite{nowak:1992}.  It has been shown that for many
+problems \cite{partridge:1992} \cite{cruse:1993} using boundary points only in
+this procedure is insufficient to define the problem.  In general using
+internal points is likely to improve the solution accuracy as it increases the
+number of degrees of freedom.  No theory has been developed of how many
+internal collocation points should be used for optimal accuracy, or where
+these points should be positioned within the problem domain. Using internal
+poles in this interpolation does not require domain discretisation - it is
+only necessary to specify the coordinates of the internal collocation points.
+The internal points can be chosen to be locations where the solution is of
+interest.
+
+The $\vect{\hat{u}_{j}}$ and $\vect{\hat{q}_{j}}$ vectors can be treated as
+columns of the matrices $\matr{\hat{U}}$ and $\matr{\hat{Q}}$ respectively.
+This allows \eqnref{eq:sumin} to be rewritten as
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \pbrac{\matr{H} \matr{\hat{U}} -
+    \matr{G} \matr{\hat{Q}}} \vect{\alpha}
+\label{eq:drmalpha}
+\end{equation}
+where $\vect{\alpha}$ is a vector containing the nodal values of $\alpha$.
+To solve this system it is necessary to evaluate $\vect{\alpha}$.
+$\vect{\alpha}$ is defined by \eqnref{eq:globalapprox} which, for the nodal
+values, can be expressed in matrix form as $\vect{b} = \matr{F}
+\matr{\alpha}$. If the $\matr{F}$ matrix is nonsingular this expression can
+be rearranged to give \eqnref{eq:expalpha} which provides an explicit
+expression for $\matr{\alpha}$.
+\begin{equation}
+  \vect{\alpha} = \matr{F}^{-1} \vect{b}
+\label{eq:expalpha}
+\end{equation}
+Including this explicit expression for $\vect{\alpha}$ in 
+\eqnref{eq:drmalpha} gives
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \pbrac{\matr{H} \matr{\hat{U}} -
+    \matr{G} \matr{\hat{Q}}} \matr{F}^{-1} \vect{b}
+\label{eq:drmsystem}
+\end{equation}
+The approach taken to solve this equation will depend on the form of $b$.
+
+\subsubsection{The Approximating Function $f$}
+\label{sec:approxfnchoice}
+
+\index{Dual reciprocity boundary element method@Dual reciprocity
+  BEM!approximating function}
+The accuracy of the DR-BEM hinges on the accuracy of the global
+approximation to the forcing function $b$ (defined by
+\eqnref{eq:globalapprox}).  Therefore the choice of the approximating
+functions $f_{j}$ is a key consideration when implementing the DR-BEM. The
+only requirement so far prescribed on the form of the approximating
+functions $f_{j}$ is that the $\matr{F}$ matrix generated should be
+nonsingular and that the related particular solutions $\hat{u}_{j}$ can be
+determined and can be expressed in a practical closed form.  Some work has
+been conducted into investigating what form of $f_{j}$ should be used in a
+given situation to provide the highest accuracy and computational
+efficiency.
+
+Usually a form of $f_{j}$ is defined and this can be used, applying
+\eqnref{eq:harmonic}, to specify $\hat{u}$ and $\hat{q}$.  The fundamental
+solution of Laplace's equation is $\fnof{\omega}{\vect{x},\vect{\xi}} =
+-\dfrac{1}{2\pi} \ln r$ in two-dimensional space and
+$\fnof{\omega}{\vect{x},\vect{\xi}} = \dfrac{1}{4 \pi r}$ in three-dimensional
+space - where $r$ is the Euclidean distance between the field point
+$\vect{x}$ and the source point $\vect{\xi}$ of the fundamental
+solution.  Due to the dependence of this fundamental solution only on $r$
+the approximating function is generally chosen to be some radial function
+\ie  $f_{j} = \fnof{f_{j}}{r}$. Several other options for $f_{j}$ have been tried
+\cite{partridge:1992} but it has been found that in general the most accurate
+results were generated using some radial function.  For both two and
+three-dimensional problems \citeasnoun{wrobel:1986} recommended choosing
+$f_{j}$ from the series
+\begin{equation}
+  f_{j} = 1 + r_{j} + r_{j}^{2} +\ldots+ r_{j}^{m}
+\label{eq:fdefine}
+\end{equation}
+where $r_{j}$ is the distance between the field point (node $j$) and the
+DR-BEM collocation point (node $i$).  They showed that accurate results can
+be achieved using some combination of terms from this series.  Generally
+the same approximating function $f_{j}$ is used at all the collocation
+points so in this thesis, for simplicity, the form of approximating
+functions $f_{j}$ will be referred to by a single $f$.
+
+Choosing $f$ to be a function of only one variable simplifies the process
+of determining $\hat{u}$ and $\hat{q}$.  For two-dimensional problems, if $f
+= \fnof{f}{r}$ then the relationship
+\begin{equation}
+  \laplacian{\hat{u}} = \fnof{f}{r} 
+\end{equation}
+can be reduced to the ordinary differential equation
+\begin{equation}
+  \dtwosqby{\hat{u}}{r} + \dfrac{1}{r} \dby{\hat{u}}{r} = f 
+\end{equation}
+Using $f$ defined by \eqnref{eq:fdefine} the corresponding forms of $\hat{u}$
+and $\hat{q}$, for two-dimensional problems, can be shown to be
+\begin{align}
+  \hat{u} & = \dfrac{r^{2}}{4} + \dfrac{r^{3}}{9} + \ldots +
+  \dfrac{r^{m+2}}{\pbrac{m+2}^{2}} \\ \hat{q} & = \pbrac{r_{x} \delby{x}{n} +
+    r_{y} \delby{y}{n}} \pbrac{\dfrac{1}{2} + \dfrac{r}{3} +\ldots+
+    \dfrac{r^{m}}{m+2}}
+\end{align}
+where $r_{x} = x_{j} - x_{i}$ and $r_{y} = y_{j} - y_{i}$.
+
+Any combination of terms from \eqnref{eq:fdefine} can be used for specifying
+$f$. It has been found that in general including higher-order terms leads
+to little improvement in accuracy \cite{partridge:1992}. The most commonly
+used form is $f = 1 + r$ as this approximation will generally give accurate
+results with greater computational efficiency than other choices.
+
+\Eqnref{eq:fdefine} was recommended as a basis for the approximating function
+$f$ due to the particular form of the fundamental solution of Laplace's
+equation and its dependence on $r$ only. If a different operator is used as
+the basis of the DR-BEM then it is likely a different form of $f$ will be
+more appropriate.  The choice of $f$ in this case will be discussed in
+\secref{sec:otheroperators}.
+
+The performance of the DR-BEM hinges on the choice of the approximating
+function $f$.  The theory of how to determine the best approximating
+function is therefore a vital component of the DR-BEM.  Unfortunately the
+approximating function has generally been chosen and used in a rather
+ad-hoc manner.  Recently some more formal analysis of the use of
+approximating functions has been undertaken. 
+
+\citeasnoun{golberg:1994} argued that a formal analysis of the approximating
+function $f$ can be undertaken using the theory of radial basis functions.
+Radial basis functions are a generalisation of cubic splines in
+multi-dimensions.  Cubic splines are known to be optimal for one-dimensional
+interpolation.  Therefore, rather than being an arbitrary choice, it seems
+that choosing $f$ to be a radial function is a logical extension for two
+or three-dimensional problems.  \citename{golberg:1994} showed that, for the
+Poisson equation, choosing $f$ to be a radial basis function ensures
+convergence of the DR-BEM.
+
+They also demonstrated that $f = 1 + r$ is a specific member of the group
+of radial basis functions.  The theory of using radial basis functions for
+multi-dimensional approximation is fairly advanced.  It has been shown that
+$f = r$ is optimal for three-dimensional problems which justifies the use
+of $f = 1 + r$ when applying the DR-BEM to three-dimensional problems - the
+constant is included to ensure a non-zero diagonal for $\matr{F}$.  However
+for two-dimensional problems it has been shown that optimal approximation
+is attained using the thin plate spline $f = r^{2} log r$.  This
+observation lead \citename{golberg:1994} to suggest that choosing $f$ to be a
+thin plate spline may improve the accuracy of the DR-BEM in two dimensions.
+Recently \citeasnoun{golberg:1995} has published a review of the DR-BEM
+concentrating on developments since 1990 concerning the numerical
+evaluation of particular solutions.
+
+\subsubsection{Inhomogeneous Equations}
+
+If the forcing function $b$ is a function 
+of position only then the differential equation under consideration 
+is simply Poisson's equation. In this case it is not necessary to 
+invert the $\matr{F}$ matrix as $\vect{\alpha}$ can simply be calculated from 
+$\vect{b} = \matr{F} \vect{\alpha}$ using Gaussian
+elimination. \Eqnref{eq:drmsystem} can be rewritten as
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \vect{d}\quad\text{where
+    }\vect{d} = \pbrac{\matr{H} \matr{\hat{U}} - \matr{G} \matr{\hat{Q}}}
+  \vect{\alpha}
+\label{eq:drmpoisson}
+\end{equation}
+By applying boundary 
+conditions \eqnref{eq:drmpoisson} can be 
+reduced to a linear system $\matr{A} \vect{x} = \vect{\tau}$ which can be
+solved to give the unknown nodal values of $u$ and $q$.
+
+\citeasnoun{zheng:1991} and \citeasnoun{coleman:1991} have proposed
+a method which uses a global shape function to construct an approximate
+particular solution.  As discussed by \citeasnoun{polyzos:1994} this method
+is essentially equivalent to the DR-BEM.  However,
+\citename{zheng:1991} and \citename{coleman:1991} suggested several
+alternative ways of determining the unknown coefficients $\alpha_{j}$ for
+inhomogeneous equations.  \citeasnoun{zheng:1991} used a least-squares
+method where they minimised the sum of squares
+\begin{equation}
+  S = \dsuml{m=1}{M} \pbrac{\fnof{b}{r_{m}} - \dsuml{j=1}{N}
+    \alpha_{j} \fnof{f_{j}}{r_{m}}}
+\end{equation}
+using singular value decomposition.  For large systems they found the
+computational efficiency could be improved by employing the conjugate
+gradient method.  \citeasnoun{coleman:1991} successfully solved
+inhomogeneous potential and elasticity problems which are governed by
+operators other than the Laplacian.
+
+\subsubsection{Elliptic Problems}
+
+\index{Dual reciprocity boundary element method@Dual reciprocity
+  BEM!elliptic problems}
+If $b$ is a function of the dependent variable then $\vect{\alpha}$ will also 
+be a function of the dependent variable. Consider, for example, the 
+linear second-order differential equation
+\begin{equation}
+  \laplacian{u} + u = 0
+\label{eq:helmtypeeqn}
+\end{equation}
+In this case $b = -u$ so $\vect{\alpha} = \matr{F}^{-1} \vect{-u}$.
+Applying the DR-BEM to \eqnref{eq:helmtypeeqn}, based on the fundamental
+solution to Laplace's equation, gives
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G}\vect{q} = - \pbrac{\matr{H} \matr{\hat{U}} -
+    \matr{G} \matr{\hat{Q}}} \matr{F}^{-1} \vect{u}
+\end{equation}
+which can be rearranged to give 
+\begin{equation}
+  \pbrac{\matr{H} + \matr{S}} \vect{u} = \matr{G}
+  \vect{q}\quad\text{where }\matr{S} = \pbrac{\matr{H} \matr{\hat{U}}
+    - \matr{G} \matr{\hat{Q}}} \matr{F}^{-1}
+\label{eq:drmpotential}
+\end{equation}
+Again, by applying boundary conditions \eqnref{eq:drmpotential} can be reduced 
+to a linear system $\matr{A} \matr{x} = \matr{\tau}$ which can be solved to
+determine the unknown nodal values.
+
+Due to the presence 
+of the fully-populated $\matr{F}^{-1}$ matrix in \eqnref{eq:drmpotential}
+ it is not possible to solve the boundary problem and internal 
+problem separately. Instead the solution can be treated as a coupled 
+problem and the solutions at boundary and internal nodes are generated 
+simultaneously.
+
+\paragraph{Derivative Terms}
+\label{sec:deriv}
+
+\index{Dual reciprocity boundary element method@Dual reciprocity
+  BEM!derivative terms}
+The DR-BEM can also be applied for elliptic problems where
+$b$ involves derivatives of the dependent variable
+\cite{partridge:1992}. Consider, for example, the differential equation 
+\begin{equation}
+  \laplacian{u} + \delby{u}{x} = 0
+\end{equation}
+In this case applying DR-BEM, using the Laplace fundamental solution, gives
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = - \pbrac{\matr{H} \matr{\hat{U}} -
+    \matr{G} \matr{\hat{Q}}} \matr{F}^{-1} \vect{\delby{u}{x}}
+\end{equation}
+To solve this problem it is necessary to relate the nodal values of $u$ to
+the nodal values of $\delby{u}{x}$. This is achieved by
+using interpolation functions to approximate $\vect{u}$ in a similar manner
+as was used to approximate $b$ in \eqnref{eq:globalapprox}.  A global
+approximation function of the form
+\begin{equation}
+  u = \dsuml{j=1}{M} \fnof{\phi_{j}}{x,y} \beta_{j}
+\end{equation}
+can be used to approximate $u$ where $\phi_{j}$ are the chosen
+interpolation functions and $\beta_{j}$ are the unknown coefficients.  In
+system form this can be expressed as
+\begin{equation}
+  \vect{u} = \matr{\Phi} \vect{\beta}
+  \label{eq:uapprox}
+\end{equation}
+Although it is not necessary, equating $\matr{\Phi}$ to $\matr{F}$ 
+improves the computational efficiency of the method as only one matrix 
+inversion procedure is required. Differentiating \eqnref{eq:uapprox} gives 
+\begin{equation}
+  \vect{\delby{u}{x}} = \matr{\delby{\Phi}{x}} \vect{\beta}
+  \label{eq:uappder}
+\end{equation}
+Choosing $\matr{\Phi} = \matr{F}$ and inverting \eqnref{eq:uapprox} to give an
+explicit expression for $\vect{\beta}$ allows \eqnref{eq:uappder} to be
+rewritten as
+\begin{equation}
+  \vect{\delby{u}{x}} = \matr{\delby{F}{x}} \matr{F}^{-1} \vect{u}
+  \label{eq:dudxexp}
+\end{equation}
+\Eqnref{eq:drmsystem} can now be rewritten as
+\begin{equation}
+  \pbrac{\matr{H} + \matr{R}} \vect{u} = \matr{G}
+  \vect{q}\quad\text{where }\matr{R} = \pbrac{\matr{H} \matr{\hat{U}}
+    - \matr{G} \matr{\hat{Q}}} \matr{F}^{-1} \matr{\delby{F}{x}}
+  \matr{F}^{-1}
+\label{eq:drmderiv}
+\end{equation}
+By applying boundary conditions \eqnref{eq:drmderiv} can be reduced to 
+a linear system which can be solved to give the unknown nodal values.
+
+As mentioned earlier, the approximating function $f$ is generally chosen to be
+$f = 1 + r$.  This can lead to numerical problems if derivative terms are
+included in the forcing function $b$.  As shown in \eqnref{eq:dudxexp}
+derivative terms require derivatives of $f$ to be evaluated.  For example,
+evaluating the $\matr{\delby{F}{x}}$ matrix requires calculation of
+$\delby{f}{x}$.  Using the approximating function $f = 1 + r$ gives
+\begin{equation}
+  \delby{f}{x} = \delby{f}{r} \delby{r}{x} = \delby{f}{r} \dfrac{r_{x}}{r} 
+\end{equation}
+This derivative function can become singular, so - as shown by
+\citeasnoun{zhang:1993} - significant numerical error may result.  This
+will especially be the case in problems where collocation points are located
+close together.
+
+\citeasnoun{zhang:1993} suggested two possibilities for avoiding this
+problem.  The first suggestion involved using a mapping procedure to map
+the governing equation to an equation without convective terms. This method
+was shown to produce accurate results but is somewhat cumbersome and can
+only be applied to linear problems.  A simpler approach is to choose an
+approximating function which does not lead to singularities for convective
+terms.  \citename{zhang:1993} recommended use of either $f = 1 + r^{3}$
+or $f = 1 + r^{2}+ r^{3}$.  These approximating functions produce accurate
+results and can be simply applied for both linear and nonlinear problems.
+\citename{zhang:1993} recommended the adoption of these approximating
+functions for all use of the DR-BEM.
+
+The same idea of using \eqnref{eq:uapprox} to allow nodal values of $u$ to be
+associated to its derivatives can be applied to extend the DR-BEM to cases
+involving higher-order derivatives or cross derivatives of the dependent
+variable.  Appropriate approximating functions need to be chosen to avoid
+the problem of singularities.
+
+\paragraph{Variable Coefficients}
+
+\index{Dual reciprocity boundary element method@Dual reciprocity
+  BEM!variable coefficients}
+The DR-BEM can be readily extended to equations with variable coefficients.
+Consider the variable coefficient Helmholtz equation
+\begin{equation}
+  \laplacian{u} + \fnof{\kappa}{\vect{x}} u = 0
+\end{equation}
+where $\kappa$ is a function of position - $\kappa = \fnof{\kappa}{x,y}$ in
+two dimensions.  If the DR-BEM is applied using the known fundamental solution
+to the Laplace operator then the forcing function is $b = -\kappa u$.
+Applying the DR-BEM gives
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \pbrac{\matr{H} \matr{\hat{U}} -
+    \matr{G} \matr{\hat{Q}}} \matr{F}^{-1} \vect{b}
+  \label{eq:vcb}
+\end{equation}
+where $\vect{b}$ is a vector of the nodal values of the forcing function
+$b$.  The relationship $b = -\kappa u$ can be written in matrix form as
+$\vect{b} = - \matr{K} \vect{u}$ where $\matr{K}$ is a diagonal matrix
+containing the nodal values of $\fnof{\kappa}{x,y}$ \ie
+\begin{equation}
+  \matr{K} =  \begin{bmatrix} \fnof{\kappa}{x_{1},y_{1}} & 0 &
+      \cdots & 0 \\ 0 & \fnof{\kappa}{x_{2},y_{2}} & \cdots & 0 \\ \vdots &
+      \vdots & \ddots & \vdots \\ 0 & 0 & \cdots & \fnof{\kappa}{x_{M},y_{M}} 
+\end{bmatrix}
+\end{equation}
+where $M$ is the number of collocation points used in applying the DR-BEM.
+
+Using this matrix expression for $\vect{b}$ \eqnref{eq:vcb} can be rearranged
+to give
+\begin{equation}
+  \pbrac{\matr{H} + \matr{S} \matr{K}} \vect{u} = \matr{G}
+  \vect{q}\quad\text{where}\matr{S} = \pbrac{\matr{H} \matr{\hat{U}} -
+    \matr{G} \matr{\hat{Q}}} \matr{F}^{-1}
+\end{equation}
+which is a boundary-only expression for the variable coefficient Helmholtz
+equation.  This method is general and can easily be extended to accommodate
+variable coefficient derivative terms and a sum of variable coefficient
+terms. 
+
+\paragraph{Formulating the DR-BEM for a General Elliptic Problem}
+\label{sec:genform}
+
+In this section it has been shown how the DR-BEM can be applied for
+elliptic problems with varying forms of $b$.  The DR-BEM can be applied in
+cases where $b$ involves a sum of terms due to the basic property
+\begin{equation}
+  \goneint{\pbrac{b_{1} + b_{2}}}{\Omega} = \goneint{b_{1}}{\Omega} +
+  \goneint{b_{2}}{\Omega}
+\end{equation}
+Consider a two-dimensional equation of the form
+\begin{equation}
+  \laplacian{\fnof{u}{x,y}} = \fnof{k}{x,y} u + \fnof{l}{x,y} \delby{u}{x} +
+  \fnof{m}{x,y} \delby{u}{y} + \fnof{n}{x,y}
+\end{equation}
+Applying the DR-BEM to this equation gives a matrix system of the form
+\begin{equation}
+  \pbrac{\matr{H} - \matr{R}} \vect{u} = \matr{G} \vect{q} + \matr{S} \vect{n}
+\end{equation}
+where
+\begin{align}
+  \matr{S} & = \pbrac{\matr{H} \matr{\hat{U}} - \matr{G} \matr{\hat{Q}}}
+  \matr{F}^{-1} \label{eq:srelate} \\ \matr{R} & = \matr{S} \sqbrac{\matr{K} +
+    \pbrac{\matr{L} \matr{\delby{F}{x}} + \matr{M} \matr{\delby{F}{y}}}
+  \matr{F}^{-1}}
+\label{eq:rrelate} 
+\end{align}
+$\matr{K}$, $\matr{L}$ and $\matr{M}$ are diagonal matrices where the
+diagonals contain the nodal values of $k$, $l$ and $m$ respectively.
+$\vect{n}$ is a vector containing the nodal values of $n$.  
+
+\subsubsection{The DR-BEM Using Other Operators}
+\label{sec:otheroperators}
+
+The DR-BEM has been presented in this chapter based on the Laplace
+operator.  However the DR-BEM can be be applied using essentially any
+operator of appropriate order with known fundamental solution.  If an
+appropriate operator can be found the complexity of the forcing function
+$b$ can be reduced.  This should improve the accuracy of the method.  The
+problem with applying the DR-BEM based on another operator is in
+choosing the approximating function $f$.  A choice of $f$ which produces
+accurate results is required but it is also necessary to choose an $f$ for
+which a particular solution $\hat{u}$ can be determined. 
+
+\citeasnoun{zhu:1993} has determined the particular solutions necessary for
+applying the DR-BEM based on the two-dimensional Helmholtz operator.
+\begin{equation}
+  \laplacian{u} + \kappa^2 u = \fnof{b}{x,y,u,t}
+\end{equation}
+Radial functions have generally been used when applying the DR-BEM.  Along
+the lines of \citeasnoun{wrobel:1986}, \citename{zhu:1993} chose an
+approximating function of the form $f = r^{m}$ where $m$ is a positive
+integer.  Determining the particular solution $\hat{u}$ requires solving the
+ordinary differential equation
+\begin{equation}
+  \dtwosqby{\hat{u}}{r} + \dfrac{1}{r} \dby{\hat{u}}{r} + \kappa^2 u = r^{m}
+\end{equation}
+which can be achieved using a variation of coefficients method.
+
+\citeasnoun{partridge:1992} applied the DR-BEM to the transient convection
+diffusion equation
+\begin{equation}
+  D \laplacian{u} - v_{x} \delby{u}{x} - v_{y} \delby{u}{y} - k u = \delby{u}{t}
+\end{equation}
+where the material parameters $D$, $v_{x}$, $v_{y}$ and $k$ are all assumed to
+be homogeneous.  They applied the DR-BEM based on the steady-state
+convection-diffusion operator
+\begin{equation}
+  D \laplacian{u} - v_{x} \delby{u}{x} - v_{y} \delby{u}{y} - k u = 0
+\label{eq:steadycd}
+\end{equation}
+which has a known fundamental solution.
+
+This analysis requires the determination of a particular solution $\hat{u}$
+which satisfies
+\begin{equation}
+  D \laplacian{\hat{u}} - v_{x} \delby{\hat{u}}{x} - v_{y} \delby{\hat{u}}{y}
+  - k \hat{u} = f
+\label{eq:cdpartic}
+\end{equation}
+Instead of defining a form of the approximating function $f$ and solving
+for $\hat{u}$ \citename{partridge:1992} chose to define $\hat{u}$ and use
+\eqnref{eq:cdpartic} to determine the corresponding approximating function.
+Although somewhat ad-hoc this approach was found to produce accurate
+results.
+\index{Dual reciprocity boundary element method@Dual reciprocity BEM|)}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
