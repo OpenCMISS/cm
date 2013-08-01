@@ -1,0 +1,569 @@
+\chapter{Transient Heat Conduction}
+
+\section{Introduction}
+
+In the previous discussion of steady state boundary value problems the
+principal advantage of the finite element method over the finite difference
+method has been the greater ease with which complex boundary shapes can be
+modelled. In time-dependent problems the solution proceeds from an initial
+solution at $t = 0$ and it is almost always convenient to calculate each new
+solution at a constant time ($t>0$) throughout the entire spatial domain
+$\Omega$.  There is, therefore, no need to use the greater flexibility (and
+cost) of finite elements to subdivide the time domain: finite difference
+approximations of the time derivatives are usually preferred.  Finite
+difference techniques are introduced in \Secref{sec:finite} to solve the
+transient one dimensional heat equation. A combination of finite elements for
+the spatial domain and finite differences for the time domain is used in
+\Secref{sec:transient} to solve the transient advection-diffusion
+equation - a slight generalization of the heat equation.
+
+%%
+%% Finite Differences
+%%
+\section{Finite Differences}
+\label{sec:finite} 
+
+%%
+%% Explicit Transient Finite Differences
+%%
+\subsection{Explicit Transient Finite Differences}
+
+Consider the transient one-dimensional heat equation 
+\begin{equation}
+  \delby{u}{t} = D\deltwosqby{u}{x}, \qquad \pbrac{0<x<L, t>0}
+  \label{eqn:1DHT}
+\end{equation}
+where $D$ is the conductivity and $u=\fnof{u}{x,t}$ is the temperature,
+subject to the boundary conditions $\fnof{u}{0,t} = u_{0}$ and $\fnof{u}{L,t}
+= u_{1}$ and the initial conditions $\fnof{u}{x,0} = 0$. A finite difference
+approximation of this equation is obtained by defining a grid with spacing
+$\Delta x$ in the x-domain and $\Delta t$ in the time domain, as shown in
+\Figref{fig:findiff}.
+
+Grid points are labelled by the indices $i=0,1,\ldots,I$ (for the
+$x$-direction) and $n=0,1,\ldots,N$ (for the $t$-direction). The temperature at the
+grid point $\pbrac{i,n}$ is therefore labelled as
+\begin{equation}
+  \fnof{u}{x,t}=\fnof{u}{i\Delta x, n\Delta t}=u_{i}^{n}.
+  \label{eqn:temp}
+\end{equation}
+Finite difference equations are derived by writing Taylor Series expansions
+for $u_{i+1}^{n},u_{i-1}^{n}u_{i}^{n+1}$ about the grid point $\pbrac{i,n}$
+\begin{align}
+  u_{i+1}^{n}=u_{i}^{n} &+ \Delta x.\pbrac{\delby{u}{x}}_{i}^{n}
+  +\dfrac{1}{2} \Delta x^{2}.\pbrac{\deltwosqby{u}{x}}_{i}^{n}
+  +\frac{1}{6}\Delta x^{3}.\pbrac{\frac{\del^{3}u}{\del x^{3}}
+  }_{i}^{n}+\orderof{\Delta x^{4}} \label{eqn:Taylor1} \\ 
+  u_{i-1}^{n}=u_{i}^{n} &- \Delta x.\pbrac{\delby{u}{x}}_{i}^{n}
+  +\dfrac{1}{2} \Delta x^{2}.\pbrac{\deltwosqby{u}{x}}_{i}^{n}
+  -\frac{1}{6}\Delta x^{3}.\pbrac{\frac{\del^{3}u}{\del x^{3}}
+  }_{i}^{n}+\orderof{\Delta x^{4}} \label{eqn:Taylor2} \\
+  u_{i}^{n+1}=u_{i}^{n} &+ \Delta t.\pbrac{\delby{u}{t}}_{i}^{n}
+  +\orderof{\Delta t^{2}} \label{eqn:Taylor3}
+\end{align}
+where $\orderof{\Delta x^{4}}$ and $\orderof{\Delta t^{2}}$ represent all the
+remaining terms in the Taylor Series expansions.
+
+Adding \eqnrefs{eqn:Taylor1}{eqn:Taylor2} gives
+\begin{equation*}
+  u_{i+1}^{n}+u_{i-1}^{n} = 2u_{i}^{n} + \Delta x^{2}.\pbrac{
+    \deltwosqby{u}{x}}_{i}^{n}+\orderof{\Delta x^{4}}
+\end{equation*}  
+or
+\begin{equation}
+  \pbrac{\deltwosqby{u}{x}}_{i}^{n} = \dfrac{u_{i+1}^{n}
+    -2u_{i}^{n}+u_{i-1}^{n}}{\Delta x^{2}} + \orderof{\Delta x^{2}},
+  \label{eqn:expns}
+\end{equation} 
+which is a ``central difference'' approximation of the second order spatial
+derivative.
+
+Rearranging \eqnref{eqn:Taylor3} gives a ``difference'' approximation of the
+first order time derivative
+\begin{equation}
+  \pbrac{\delby{u}{t}}_{i}^{n} = \dfrac{u_{i}^{n+1} -u_{i}^{n}}{\Delta t}
+  + \orderof{\Delta t}.
+  \label{eqn:fordiff}
+\end{equation} 
+ 
+Substituting \eqnref{eqn:expns} and \eqnref{eqn:fordiff} into the transient heat
+equation \eqnref{eqn:1DHT} gives the finite difference approximation
+\begin{equation*}
+  \dfrac{u_{i}^{n+1}-u_{i}^{n}}{\Delta t} + \orderof{\Delta t}
+   = D\dfrac{u_{i+1}^{n}-2u_{i}^{n}+u_{i-1}^{n}}{\Delta x^{2}} 
+  + \orderof{\Delta x^{2}}
+\end{equation*}
+which is rearranged to give an expression for $u_{i}^{n+1}$ in terms of the
+values of $u$ at the $\nth{n}$ time step
+\begin{equation}
+  u_{i}^{n+1}  =  u_{i}^{n} + D \dfrac{\Delta t}{\Delta x^{2}}\pbrac{
+    u_{i+1}^{n} -2u_{i}^{n} +u_{i-1}^{n}} 
+  + \orderof{\Delta t^{2}, \Delta x^{2}}.
+  \label{eqn:rearr}
+\end{equation}
+ 
+\begin{figure} \centering
+ \input{figs/transient_heat_condn/findiff.pstex}
+ \caption{A finite difference grid for the solution of the transient 1D 
+   heat equation. The equation is centred at grid point $\pbrac{i,n}$ shown by the
+   $\mathbf{O}$. The lightly shaded region shows where the solution is known at
+   time step $n$. With central differences in $x$ and a forward difference in
+   $t$ an explicit finite difference formula gives the solution at time step
+   $n+1$ explicitly in terms of the solution at the three points below it at
+   step $n$, as indicated by the dark shading.}
+ \label{fig:findiff}
+\end{figure}
+
+Given the initial values of $u_{i}^{n}$ at $n=0$ (\ie $t=0$), the values of
+$u_{i}^{n+1}$ for the next time step are found from \eqnref{eqn:rearr} with
+$i=1,2,\ldots,I$. Applying \eqnref{eqn:rearr} iteratively for time steps
+$n=1,2,\ldots$ \etc yields the time dependent temperatures at the grid points
+(see \Figref{fig:findiff}). This is an \emph{ explicit} finite difference
+formula because the value of $u_{i}^{n}$ depends only on the values of
+$u_{i}^{n} \pbrac{i=1,2,\ldots,I}$ at the previous time step and not on the
+neighbouring terms $u_{i+1}^{n+1}$ and $u_{i-1}^{n+1}$ at the latest time
+step. The accuracy of the solution depends on the chosen values of $\Delta x$
+and $\Delta t$ and in fact the stability of the scheme depends on these
+satisfying the \emph{Courant} condition:
+\begin{equation}
+  D\dfrac{\Delta t}{\Delta x^{2}} \leq \frac{1}{2}.
+  \label{eqn:Courant}
+\end{equation}
+
+%%
+%% Von Neumann Stability Analysis
+%%
+\subsection{Von Neumann Stability Analysis}
+
+The concept behind the Von Neumann analysis is that all Fourier
+components decay as time advances or as they are processed by an iterative
+solver. Considering \eqnref{eqn:rearr}, we can rearrange this to be of the
+form,
+\begin{equation}
+  u_i^{n+1} = \Upsilon u_{i+1}^n  + (1-2\Upsilon)u_i^n + \Upsilon u_{i-1}^n
+\end{equation}
+where $\Upsilon=D\dfrac{\Delta t}{\Delta x^2}$. By subsituting the general Fourier
+component $u_j^n = A_k^n e^{i \pbrac{\frac{\pi kj\Delta x}{L}}}$, we obtain,
+\begin{equation}
+  A_k^{n+1}e^{i \pbrac{\frac{\pi kj \Delta x}{L}}} = 
+  A_k^n \sqbrac{\Upsilon e^{i \pbrac{\frac{\pi k(j+1)\Delta x}{L}}}
+   + \pbrac{1-2\Upsilon} e^{i \pbrac{\frac{\pi kj\Delta x}{L}}}
+    + \Upsilon e^{i \pbrac{\frac{\pi k(j-1) \Delta x}{L}}} }
+  \label{eqn:genfourier}
+\end{equation}
+%%
+If divide \eqnref{eqn:genfourier} by, 
+$A_k^n e^{i \pbrac{\frac{\pi kj \Delta x}{L}}}$ we obtain (no sum on $k$),
+%%
+\begin{equation}
+\begin{split}
+ \dfrac{A_k^{n+1}}{A_k^n} 
+   &= \pbrac{1-2\Upsilon} + \Upsilon e^{i \pbrac{\frac{\pi k \Delta x}{L}}} 
+      + \Upsilon e^{-i \pbrac{\frac{\pi k \Delta x}{L}}} \\
+   &= 1-2\Upsilon + 2\Upsilon cos\pbrac{\frac{\pi k \Delta x}{L}} \qquad
+   \text{using} \qquad cos(x)=\frac{e^{ix}+e^{-ix}}{2} \\
+   &= 1- 4\Upsilon sin^2\pbrac{\frac{\pi k \Delta x}{2L}} \qquad
+   \text{using} \qquad cos (2x) = 1 - 2 sin^{2} (x)
+\end{split}
+\label{eqn:stability}
+\end{equation}
+
+\Eqnref{eqn:stability} predicts the growth of any component (specified by $k$)
+admitted by the system. If all components are to decay,
+\begin{equation}
+  \abs{\dfrac{A_k^{n+1}}{A_k^n}} \leq 1 \qquad \text{for stability (no sum on $k$)}
+\end{equation}
+Since the $sin^2$ term in \eqnref{eqn:stability} is always between $0$ and $1$,
+we effectively have the stablity criteria that
+\begin{equation}
+  1 - 4 \Upsilon \leq 1 \qquad \text{and} \qquad 1 - 4 \Upsilon \geq -1
+\end{equation}
+The first inequality is trivially satisfied, since $\Upsilon \geq 0$ for
+positive values of $\Delta t$ and $D$, and the second condition will always
+hold if
+\begin{equation}
+   \Upsilon = D\dfrac{\Delta t}{\Delta x^2} \leq \dfrac{1}{2}
+\end{equation}
+Thus, to ensure stability, the time step should be chosen such that
+\begin{equation}
+   \Delta t \leq \dfrac{\Delta x^2}{2D} \qquad \text{The \emph{Courant}
+   condition}
+\end{equation}
+
+
+%%
+%% Higher Order Approximations
+%%
+\subsection{Higher Order Approximations}
+
+An improvement in accuracy and stability can be obtained by using a higher
+order approximation for the time derivative. For example, if a central
+difference approximation is used for $\delby{u}{t}$ by centering the equation
+at $(i \Delta x,\pbrac{n+\frac{1}{2}} \Delta t)$ rather than $\pbrac{i\Delta
+  x,n\Delta t}$ we get
+\begin{equation}
+  \pbrac{\delby{u}{t}}_{i}^{n+\frac{1}{2}} = \dfrac{u_{i}^{n+1}
+    -u_{i}^{n}}{\Delta t} + \orderof{\Delta t^{2}}
+  \label{eqn:centering}
+\end{equation}
+in place of \eqnref{eqn:fordiff} and \eqnref{eqn:1DHT} is approximated with the
+``Crank-Nicolson''formula
+\begin{equation}
+  \dfrac{u_{i}^{n+1}-u_{i}^{n}}{\Delta t}=D\bbrac{\dfrac{1}{2}\pbrac{
+      \deltwosqby{u}{x}}_{i}^{n+1} + \dfrac{1}{2}\pbrac{\deltwosqby{u}{x}}_{i}^{n}}
+  \label{eqn:C-N}
+\end{equation} 
+in which the spatial second derivative term is weighted by $\frac{1}{2}$ at the old
+time step $n$ and by $\frac{1}{2}$ at the new time step $n+1$. Notice that the
+finite difference time derivative has not changed - only the time position at
+which it is centred. The price paid for the better accuracy (for a given
+$\Delta t$) and unconditional stability (\ie stable for \textbf{any}
+$\Delta t$) is that \eqnref{eqn:C-N} is an \emph{implicit} scheme - the
+equations for the new time step are now coupled in that $u_{i}^{n+1}$ depends
+on the neighbouring terms $u_{i+1}^{n+1}$ and $u_{i-1}^{n+1}$. Thus each new
+time step requires the solution of a system of coupled equations.
+\begin{figure} \centering
+ \input{figs/transient_heat_condn/impfd.pstex}
+ \caption{An implicit finite difference scheme based
+   on central differences in $t$, as well as $x$, which tie together the 6
+   points shown by $\mathbf{x}$. The equation is centred at the point
+   ($i,n+\dfrac{1}{2}$) shown by the $\mathbf{O}$. The lightly shaded region shows
+   where the solution is known at time step $n$. The dark shading shows the
+   region of the coupled equations.}
+ \label{fig:impfd}
+\end{figure}
+
+%
+%
+% NOTE:
+%
+%\remark{In CMISS this is implemented as $\pbrac{1-\theta}
+%    \pbrac{\deltwosqby{u}{x}_{i}}^{n+1} + 
+%    \theta\pbrac{\deltwosqby{u}{x}_{i}}^{n}$}\\
+%
+%
+
+A generalization of \bref{eqn:C-N} is
+\begin{equation}
+  \frac{u_{i}^{n+1}-u_{i}^{n}}{\Delta t} =D\bbrac{\theta
+    \pbrac{\deltwosqby{u}{x}_{i}}^{n+1} + \pbrac{1-\theta}
+    \pbrac{\deltwosqby{u}{x}_{i}}^{n}}
+  \label{eqn:C-N2}
+\end{equation}
+in which the spatial second derivative of \eqnref{eqn:1DHT} has been weighted
+by $\theta$ at the new time step and by $\pbrac{1-\theta}$ at the old time step. The
+original explicit forward difference scheme \eqnref{eqn:rearr} is recovered
+when $\theta =0$ and the implicit central difference (Crank-Nicolson) scheme
+\bref{eqn:C-N2} when $\theta=\frac{1}{2}$. An implicit backward difference
+scheme is obtained when $\theta =1$.
+
+In the following section the transient heat equation is approximated for
+numerical analysis by using finite differences in time and finite elements in
+space. We also generalize the partial differential equation to include an
+advection term and a source term.
+
+
+\section{The Transient Advection-Diffusion Equation}
+\label{sec:transient}
+
+Consider a linear parabolic equation
+\begin{equation}
+  \delby{u}{t} +\dotprod{\vect{v}}{\grad u} = D\laplacian{u} + f
+  \label{eqn:lpe}
+\end{equation}
+where $u$ is a scalar variable (\eg the advection-diffusion
+equation\index{Advection-diffusion equation}, where $u$ is concentration or
+temperature; $\dotprod{\vect{v}}{\grad u}$ then represents advective transport
+by a velocity field $\vect{v}, D$ is the diffusivity and $f$ is source term.
+The ratio of advective to diffusive transport is characterised by the
+\emph{Peclet number} $VL/D$ where $V = \norm{\vect{v}}$ and $L$ is a
+characteristic length).
+
+Applying the Galerkin weighted residual method to \eqnref{eqn:lpe} with
+weight \vect{\omega} gives
+\begin{displaymath}
+  \goneint{\pbrac{\delby{u}{t} + \dotprod{\vect{v}}{\grad u} 
+    - D\laplacian{u}-f}\omega}{\Omega} =0
+  \label{eqn:Gal}
+\end{displaymath}
+or
+\begin{equation}
+  \goneint{\sqbrac{\pbrac{\delby{u}{t} + \dotprod{\vect{v}}{\grad u}} 
+    \omega + D\dotprod{\grad u}{\grad \omega}}}{\Omega}= \goneint{f\omega}{\Omega}
+  + D \gint{\del \Omega}{}{\delby{u}{n}\omega}{\Gamma}
+  \label{eqn:Gal2}
+\end{equation}
+where $\delby{ }{n}$is the normal derivative to the boundary $\del \Omega$.
+
+Putting $u=\lbfnsymb{n}u_{n}$ and  $\omega=\lbfnsymb{m}$ and summing
+the element contributions to the global equations, \eqnref{eqn:Gal2} can be 
+represented by a system of first order ordinary differential equations,
+\begin{equation}
+  \matr{M}\dby{\vect{u}}{t} + \matr{K}\vect{u} = \matr{K}\vect{u}_{\infty}
+  \label{eqn:orddiff}
+\end{equation}
+where $\matr{M}$ is the global mass matrix, $\matr{K}$ the global stiffness matrix
+and $\vect{u}$ a vector of global nodal unknowns with steady state values ($t
+\rightarrow\infty$) $\vect{u}_{\infty}$ . The element contributions to $\matr{M}$
+and $\matr{K}$ are given by
+\begin{equation}
+  M_{{mn}_{e}} = \gint{0}{1}{\lbfnsymb{m} \lbfnsymb{n} J}{\xi}
+ \label{eqn:elemcont}
+\end{equation}
+and
+\begin{equation}
+  K_{{mn}_{e}} = \gint{0}{1}{D\delby{\lbfnsymb{m}}{\xi_{i}}
+  \delby{\lbfnsymb{n}}{\xi_{j}}\cdot \delby{\xi_{i}}{x_{k}} 
+  \delby{\xi_{j}}{x_{k}}J}{\xi} + \gint{0}{1}{v_{j}\lbfnsymb{m}
+  \delby{\lbfnsymb{n}}{\xi_{i}}\delby{\xi_{i}}{x_{j}}J}{\xi}
+  \label{eqn:elemcont2}
+\end{equation}
+
+If the time domain is now discretized $\pbrac{t = n \Delta t, n = 0,1,2,\ldots}$
+\eqnref{eqn:orddiff} can be replaced by
+\begin{equation}
+  \matr{M}\dfrac{\vect{u}^{n+1}-\vect{u}^{n}}{\Delta t} +
+        \matr{K}\sqbrac{\theta \vect{u}^{n+1} + \pbrac{1-\theta}\vect{u}^{n}} =
+        \matr{K}\vect{u}_{\infty} \qquad 0 \leq \theta \leq 1
+  \label{eqn:elemcont3}
+\end{equation}
+where $\theta$ is a weighting factor discussed in \Secref{sec:finite}.
+Note that for $\theta = \dfrac{1}{2}$ the method is known as the
+\emph{Crank-Nicolson-Galerkin} method and errors arising from the time domain
+discretization are $\orderof{\Delta t^{2}}$. Rearranging \eqnref{eqn:elemcont3}
+as
+\begin{eqnarray}
+  \sqbrac{\matr{M} + \theta \Delta t \matr{K}}\vect{u}^{n+1}
+  =\sqbrac{\matr{M}-\pbrac{1-\theta}\Delta t\matr{K}}\vect{u}^{n} + \Delta t 
+  \matr{K}\vect{u}_{\infty}
+  \label{eqn:elemcont4}
+\end{eqnarray}
+gives a set of linear algebraic equations to solve at the new time step
+$\pbrac{n+1}\Delta t$ from the known solution $\vect{u}^{n}$ at the previous time
+step $n\Delta t$.
+
+The stability of the above scheme can be examined by expanding $\vect{u}$
+(assumed to be smoothly continuous in time) in terms of the eigenvectors
+$\vect{s}_{i}$ (with associated eigenvalues $\lambda_{i}$) of the matrix $\matr{A}
+= \matr{M}^{-1}\matr{K}$. Writing the initial conditions $\vect{u}(0) = \dsuml{i}{}
+a_{i}\vect{s}_{i}$ and steady state solution $\vect{u}_{\infty} = \dsuml{i}{}
+b_{i}\vect{s}_{i}$ , the set of ordinary differential equations
+\eqnref{eqn:orddiff} has solution
+\begin{equation}
+  \vect{u} = \dsuml{i}{} \sqbrac{b_{i} + \pbrac{a_{i}- b_{i}}e^{-\lambda_{i}t}}
+  \vect{s}_{i}
+\label{eqn:ordde}
+\end{equation}
+
+The time-difference scheme \eqnref{eqn:elemcont4} on the other hand, with
+$\vect{u}$ now replaced by a set of discrete values $\vect{u}^{n}$ at each time
+step $n\Delta t$, can be written as the recursion formula
+\begin{equation}
+  \sqbrac{\matr{I}+\theta \Delta t\matr{A}}\vect{u}^{n+1} = \sqbrac{\matr{I}-\pbrac{1-\theta} 
+    \Delta t\matr{A}}\vect{u}^{n} +\Delta t\matr{A} \vect{u}_{\infty}
+  \label{eqn:recform}
+\end{equation}
+with solution
+\begin{equation}
+  \vect{u}=\dsuml{i}{} \bbrac{b_{i} + \pbrac{a_{i}- b_{i}}\sqbrac{
+      \dfrac{1 - \Delta t\pbrac{1-\theta}\lambda_{i}}{1 + \Delta t \theta 
+        \lambda_{i}}}^{n}}\vect{s}_{i}
+  \label{eqn:wsol}
+\end{equation}
+(You can verify that \eqnref{eqn:ordde} and \eqnref{eqn:wsol} are indeed the
+solutions of \eqnref{eqn:orddiff} and \eqnref{eqn:elemcont3}, respectively, by
+substituting and using $\matr{A}\vect{s}_{i} = \lambda_{i}\vect{s}_{i}$.)
+
+Comparing \eqnref{eqn:ordde} and \eqnref{eqn:wsol} shows that replacing the
+ordinary differential equations \bref{eqn:orddiff} by the finite difference
+approximation \eqnref{eqn:elemcont3} is equivalent to replacing the exponential
+$e^{-\lambda_{i}t}$ in \eqnref{eqn:ordde} by the approximation
+\begin{equation}
+  e^{-\lambda_{i}t} \sim \sqbrac{\dfrac{1- \Delta t \pbrac{1-\theta}\lambda_{i}}
+    {1 + \Delta t \theta \lambda_{i}}}^{n}
+  \label{eqn:approx}
+\end{equation}
+or, with $t = n\Delta t$,
+\begin{equation}
+  e^{-\lambda_{i}t} \sim \dfrac{1 - \Delta t\pbrac{1-\theta}\lambda_{i}}{
+    1 + \Delta t\theta \lambda_{i}}=1-\dfrac{\Delta t \lambda_{i}}
+  {1+\Delta t \theta \lambda_{i}}
+  \label{eqn:approx2}
+\end{equation}
+
+The stability of the numerical time integration scheme can now be investigated
+by examining the behaviour of this approximation to the exponential. For
+stability we require
+\begin{equation}
+  -1 \leq 1 - \dfrac{\Delta t \lambda_{i}}{1 + \Delta t \theta 
+    \lambda_{i}} \leq 1
+  \label{eqn:stab}
+\end{equation}
+since this term appears in \eqnref{eqn:wsol} raised to the power $n$. The right
+hand inequality in \eqnref{eqn:stab} is trivially satisfied, since $\Delta
+t,\lambda_{i}$ and $\theta $ are all positive, and the left hand inequality
+gives
+\begin{equation}
+  \dfrac{\Delta t \lambda_{i}}{1 + \Delta t \theta \lambda_{i}} \leq 2 \qquad 
+  \text{or} \quad \Delta t \lambda_{i} \pbrac{1-2\theta} \leq 2
+\label{eqn:LHineq}
+\end{equation}
+
+A consequence of \eqnref{eqn:LHineq} is that the scheme is \emph{unconditionally
+  stable} if $\frac{1}{2} \leq \theta \leq 1$. For $\theta < \frac{1}{2}$ the
+\emph{stability criterion} is
+\begin{equation}
+  \Delta t \lambda_{i}< \dfrac{2}{1-2\theta}
+  \label{eqn:scrit}
+\end{equation}
+   
+If the exponential approximation given by \eqnref{eqn:approx2} is negative for
+any $\lambda_{i}$ the solution will contain components which change sign with
+each time step $n$. This \emph{oscillatory noise} can be avoided by choosing
+\begin{equation}
+  \Delta t < \dfrac{1}{\pbrac{1-\theta}\lambda_{\text{max}}},
+  \label{eqn:oscnoise}
+\end{equation}
+where $\lambda_{\text{max}}$ is the largest eigenvalue in the matrix $\matr{A}$,
+but in practice this imposes a limit which is too severe for $\Delta t$ and a small
+amount of oscillatory noise, associated with the high frequency vibration modes
+of the system, is tolerated.  Alternatively the oscillatory noise can be
+filtered out by averaging.
+
+These theoretical results are explored numerically with a
+Crank-Nicolson-Galerkin scheme ($\theta= \frac{1}{2}$) in \Figref{fig:annumsol},
+where the one-dimensional diffusion equation
+\begin{equation}
+  \begin{array}{rcl}
+    \delby{u}{t}= D  \deltwosqby{u}{x}   & \text{on} &0 \leq x \leq 1 \\\\
+    \mbox{subject to initial conditions} && \fnof{u}{x,0} = 0 \\
+    \mbox{and boundary conditions} && \fnof{u}{0,t} = 0 , \fnof{u}{1,t} = 1 
+  \end{array}
+  \label{1DDE}
+\end{equation}
+is solved for various time increments ($\Delta t$) and element lengths
+($\Delta x$) for both linear and cubic Hermite elements.
+\begin{figure} \centering
+ \input{figs/transient_heat_condn/annumsol.pstex}
+ \caption{Analytical and numerical solutions of the
+   transient 1D heat equation showing the effects of element size $\Delta x$
+   and time step size $\Delta t$. The top graph shows the exact and
+   approximate solutions as functions of $x$ at various times. The lower
+   graphs show the solution through time at the specified $x$ positions and
+   with various choices of $\Delta x$ and $\Delta t$ as indicated.}
+ \label{fig:annumsol}
+\end{figure}
+
+Decreasing $\Delta x$ from $0.25$ to $0.1$ with linear elements produces more
+oscillation because the system has more degrees of freedom and leads to greater
+oscillation. At a sufficiently small $\Delta t$ the oscillations are
+negligible (bottom right, \Figref{fig:annumsol}). With this value of $\Delta
+t$ (\nunit{0.01}{\s}) the numerical results agree well with the exact solution
+(top, \Figref{fig:annumsol}) given by
+\begin{equation}
+  \fnof{u}{x,t} = x + \dfrac{2}{\pi}\dsuml{n=1}{\infty}\dfrac{(-1)^{n}}{n}
+  e^{-n^{2}\pi^{2}t} \sin\pbrac{n\pi x}
+  \label{eqn:exact}
+\end{equation}
+
+\section{Mass lumping}
+\label{sec:mass}
+
+A technique known as \emph{mass lumping}\index{Mass lumping} is sometimes used
+in which the mass matrix $\matr{M}$ is replaced by a diagonal matrix having
+diagonal terms equal to the row sums. For example, consider the mass matrix
+(\eqnref{eqn:elemcont}) for a bilinear element (see \Figref{fig:2Dbbf} and
+\eqnref{eqn:2,3DE}).
+\begin{alignat*}{2}
+    M_{11} &= \iint{}{}{\pbrac{1-\xi_{1}}^{2}
+        \pbrac{1-\xi_{2}}^{2}}{\xi_{1}}{\xi_{2}} &&
+        = \evalat{-\dfrac{\pbrac{1-\xi_{1}}^{3}}{3}}{0}{1}
+        \evalat{-\dfrac{\pbrac{1-\xi_{2}}^{3}}{3}}{0}{1}=\dfrac{1}{3}\cdot
+        \dfrac{1}{3} = \frac{1}{9} \\ 
+    M_{22} &=
+      \iint{}{}{\xi_{1}^{2}\pbrac{1-\xi_{2}}^{2}}
+      {\xi_{1}}{\xi_{2}} &&=
+      \dfrac{1}{3}\cdot\dfrac{1}{3} = \dfrac{1}{9} 
+      \text{ and similarly $M_{33}$
+      and $M_{44}$.} \\ 
+    M_{12} &= \iint{}{}{\xi_{1}\pbrac{1-\xi_{1}}
+      \pbrac{1-\xi_{1}}^{2}}{\xi_{1}}{\xi_{2}} &&= \pbrac{-\dfrac{1}{2}
+      -\dfrac{1}{3}}\cdot\dfrac{1}{3} = \dfrac{1}{18} \\ 
+    M_{13} &= \iint{}{}{\pbrac{1-\xi_{1}}^{2}
+        \xi_{2}\pbrac{1-\xi_{2}}}{\xi_{1}}{\xi_{2}} &&= \dfrac{1}{18} \text{
+        and similarly $M_{34}$ and $M_{24}$.} \\ 
+    M_{14} &= \iint{}{}{\xi_{1}\pbrac{1-\xi_{1}}
+        \xi_{2}\pbrac{1-\xi_{2}}}{\xi_{1}}{\xi_{2}} 
+        &&= \dfrac{1}{36} \text{ and similarly $M_{23}$.}
+\end{alignat*}
+
+\begin{displaymath}
+  \text{therefore } \matr{M}=\begin{bmatrix}
+    \frac{1}{9} & \frac{1}{18} & \frac{1}{18} & \frac{1}{36} \\
+    \frac{1}{18} & \frac{1}{9} & \frac{1}{36} & \frac{1}{18} \\
+    \frac{1}{18} & \frac{1}{136} & \frac{1}{9} & \frac{1}{18} \\
+    \frac{1}{36} & \frac{1}{18} & \frac{1}{18} & \frac{1}{9} \\
+  \end{bmatrix}
+  \stackrel{\text{mass lumping}}{\longrightarrow} \begin{bmatrix}
+    \frac{1}{4} & 0 & 0 & 0 \\
+    0 & \frac{1}{4} & 0 & 0 \\
+    0 & 0 & \frac{1}{4} & 0 \\
+    0 & 0 & 0 & \frac{1}{4}
+  \end{bmatrix}
+\end{displaymath}
+
+The element mass is effectively lumped at the element vertices.  Such a scheme
+has computational advantages when $\theta = 0$ in \eqnref{eqn:elemcont4}
+because each component of the vector $\vect{u}^{n+1}$ is obtained directly
+without the need to solve a set of coupled equations. This \emph{explicit}
+time integration scheme, however, is only conditionally stable (see
+\bref{eqn:scrit}) and suffers from \emph{phase lag errors} - see below. For
+evenly spaced elements the finite element scheme with mass lumping is
+equivalent to finite differences with central spatial differences.
+
+In \Figref{fig:advection}, the finite element and finite differences (lumped
+f.e. mass matrix) solutions of the one-dimensional advection-diffusion
+equation \bref{eqn:lpe} with $V =$ \nunit{5}{\mps}, $D = 0.1$
+\units{m^{2}s^{-1}}, $f = 0$ are compared for the propogation and dispersion
+of an initial unit mass pulse at $x = 0$. The length of the solution domain is
+sufficient to avoid reflected end effects.
+\begin{figure} \centering
+ \input{figs/transient_heat_condn/advection.pstex}
+ \caption{Advection-diffusion of a unit mass pulse. The finite element
+   solutions (at $t$=\nunit{0.01}{\s}, \nunit{0.05}{\s}, \nunit{0.2}{\s} and
+   \nunit{0.4}{\s}) and finite difference solutions (at $t$=\nunit{0.4}{\s}
+   only) are compared with the exact solution.  $\Delta x$= 0.1, $\Delta t$ =
+   \nunit{0.001}{\s} for 0$<t<$\nunit{0.01}{\s} and $\Delta t$ = 0.01 for $t
+   \geq$ \nunit{0.01}{\s}.}
+ \label{fig:advection}
+\end{figure}
+
+The exact solution is a Gaussian distribution whose variance increases with
+time:
+\begin{equation}
+  \fnof{u}{x,t} =  \dfrac{M}{\sqrt{4\pi\Delta t}} 
+    e^{-\dfrac{\pbrac{x-Vt}^{2}}{4Dt}}
+ \label{eqn:Gdist}
+\end{equation}
+
+The finite element solution, using the Crank-Nicolson-Galerkin technique,
+shows excellent amplitude and phase characteristics when compared with the
+exact solution. The finite difference, or lumped mass, solution also using
+centered time differences, reproduces the amplitude of the pulse very well but
+shows a slight phase lag.
+
+\section{CMISS Examples}
+
+\begin{enumerate}
+\item   To solve for the transient heat flow in a plate run CMISS example $331$
+
+\item  To investigate the stability of time integration schemes run CMISS
+  examples $3321$ and $3322$.
+\end{enumerate}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "~/documents/notes/fembemnotes/fembemnotes"
+%%% End: 
+
+

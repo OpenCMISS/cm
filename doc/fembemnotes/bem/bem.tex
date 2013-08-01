@@ -1,0 +1,1514 @@
+\chapter{The Boundary Element Method} 
+
+\section{Introduction}
+
+Having developed the basic ideas behind the finite element method, we now
+develop the basic ideas of the boundary element method.  There are several key
+differences between these two methods, one of which involves the choice of
+weighting function (recall the Galerkin finite element method used as a
+weighting function one of the basis functions used to approximate the solution
+variable).  Before launching into the boundary element method we must briefly
+develop some ideas that are central to the weighting function used in the
+boundary element method.
+
+\section{The Dirac-Delta Function and Fundamental Solutions}
+
+\index{Dirac-Delta function|(}Before one applies the boundary element method
+to a particular problem one must obtain a \emph{fundamental
+  solution}\index{Fundamental solution} (which is similar to the idea of a
+particular solution in ordinary differential equations and is the weighting
+function). Fundamental solutions are tied to the Dirac\footnote{Paul A.M.
+  Dirac (1902-1994) was awarded the Nobel Prize (with Erwin Schrodinger) in
+  1933 for his work in quantum mechanics.  Dirac introduced the idea of the
+  ``Dirac Delta'' intuitively, as we will do here, around 1926-27.  It was
+  rigorously defined as a so-called generalised function by Schwartz in
+  1950-51, and strictly speaking we should talk about the ``Dirac Delta
+  Distribution''.} Delta function and we deal with both here.
+
+\subsection{Dirac-Delta function} 
+
+What we do here is very non-rigorous.  To gain an intuitive feel for this 
+unusual function, consider the following sequence of force distributions 
+applied to a large plate as shown in \Figref{fig:unitf}
+\begin{equation*}
+  \fnof{w_{n}}{x} = \left\{ \begin{matrix}
+      \frac{n}{2} & \abs{x} < \frac{1}{n} \\ 0 & \abs{x} > \frac{1}{n}
+    \end{matrix} \right.
+\end{equation*}
+Each has the property that
+\begin{equation*}
+    \gint{-\infty}{\infty}{\fnof{w_{n}}{x}}{x} = 1 \qquad 
+    \text{ (\ie the total force applied is unity)}
+\end{equation*}
+but as $n$ increases the area of force application decreases and the 
+force/unit area increases.
+
+\begin{figure}[htbp] \centering
+  \input{figs/bem/unitf.pstex}
+  \caption{Illustrations of unit force distributions $w_{n}$.}
+  \label{fig:unitf}
+\end{figure}
+
+As $n$ gets larger we can easily see that the area of application of the force
+becomes smaller and smaller, the magnitude of the force increases but the
+total force applied remains unity.  If we imagine letting $n \rightarrow
+\infty$ we obtain an idealised ``point'' force of unit strength, given the
+symbol $\fnof{\delta}{x}$, acting at $x$ = 0.  Thus, in a nonrigorous sense we have
+\begin{equation*}
+    \fnof{\delta}{x} = \displaystyle{\lim_{n \rightarrow \infty}}
+    \fnof{w_{n}}{x} \quad \text{the Dirac Delta``function''.}
+\end{equation*}
+
+This is not a function that we are used to dealing with because we have
+$\fnof{\delta}{x} = 0$ if $x \neq 0$ and ``$\fnof{\delta}{0} = \infty $'' \ie
+the ``function'' is zero everywhere except at the origin, where it is
+infinite.  However, we have $\gint{-\infty}{\infty}{\fnof{\delta}{x}}{x} = 1$
+since each $\gint{-\infty}{\infty}{\fnof{w_{n}}{x}}{x} = 1$.
+
+The Dirac delta ``function'' is not a function in the usual sense, and it is
+more correctly referred to as the Dirac delta distribution.  It also has the
+property that for any continuous function $\fnof{h}{x}$
+\begin{equation}
+  \gint{-\infty}{\infty}{\fnof{\delta}{x}\fnof{h}{x}}{x} = \fnof{h}{0}
+  \label{eqn:contfn}
+\end{equation}
+A rough proof of this is as follows
+  \begin{alignat*}{2}
+    \gint{-\infty}{\infty}{\fnof{\delta}{x}\fnof{h}{x}}{x} &=
+    \displaystyle{\lim_{n \rightarrow \infty}}
+    \gint{-\infty}{\infty}{\fnof{w_{n}}{x}\fnof{h}{x}}{x} \quad && \text{by
+      definition of $\fnof{\delta}{x}$} \\ 
+    &= \displaystyle{\lim_{n\rightarrow \infty}} \dfrac{n}{2}
+    \gint{-\frac{1}{n}}{\frac{1}{n}}{\fnof{h}{x}}{x} && \text{by definition
+      of $\fnof{w_{n}}{x}$} \\ &= \displaystyle{\lim_{n \rightarrow
+        \infty}} \dfrac{n}{2} \fnof{h}{\xi}\dfrac{2}{n} && \text{by the Mean
+      Value Theorem, where $\xi \in\pbrac{-\dfrac{1}{n},\dfrac{1}{n}}$} \\ &=
+    \fnof{h}{0} && \text{since $\xi \in\pbrac{-\dfrac{1}{n},\dfrac{1}{n}}$ and
+      as $n\rightarrow \infty,\medspace \xi \rightarrow 0$}
+  \end{alignat*}
+
+The above result (\Eqnref{eqn:contfn}) is often used as the defining property of
+the Dirac delta in more rigorous derivations.  One does not usually talk about
+the values of the Dirac delta at a particular point, but rather its integral
+behaviour. Some properties of the Dirac delta are listed below
+\begin{equation}
+  \gint{-\infty}{\infty}{\fnof{\delta}{\xi - x}\fnof{h}{x}}{x} = \fnof{h}{\xi}
+  \label{eqn:Ddelta}
+\end{equation} 
+(Note: $\fnof{\delta}{\xi - x}$ is the Dirac delta distribution centred at $x = \xi$
+instead of $x = 0$) 
+\begin{equation}
+  \fnof{\delta}{\xi - x} = \fnof{H'}{\xi - t} 
+  \label{eqn:Ddelta2}
+\end{equation}
+
+where \fnof{H}{\xi - t} = 
+   $\begin{cases}$
+     $0 & \text{if }  \xi<t \\$
+     $1 & \text{if }  \xi>t$
+   $\end{cases}$
+(\ie the Dirac Delta function is the slope of the Heaviside\footnote{Oliver 
+  Heaviside (1850-1925) was a British physicist, who pioneered the
+  mathematical study of electrical circuits and helped develop vector
+  analysis.} step function.)
+\begin{equation}
+  \fnof{\delta}{\xi - x,\eta - y} = \fnof{\delta}{\xi - x}\fnof{\delta}{\eta - y}
+  \label{eqn:Ddelta3}
+\end{equation}
+(\ie the two dimensional Dirac delta is just a product of two one-dimensional
+Dirac deltas.)\index{Dirac-Delta function|)}
+
+\subsection{Fundamental solutions}
+
+\index{Fundamental solution|(}We develop here the fundamental solution (also
+called the freespace Green's\footnote{George Green (1793-1841) was a
+  self-educated miller's son.  Most widely known for his integral theorem (the
+  Green-Gauss theorem).} function) for Laplace's Equation in two variables.
+The fundamental solution of a particular equation is the weighting function
+that is used in the boundary element formulation of that equation.  It is
+therefore important to be able to find the fundamental solution for a
+particular equation.  Most of the common equations have well-known fundamental
+solutions (see \Appendref{app:fundamentalsolutions}). We briefly illustrate
+here how to find a simple fundamental solution.
+
+Consider solving the Laplace Equation $\deltwosqby{u}{x} + \deltwosqby{u}{y} 
+= 0$ in some domain $\Omega \in \Re^{2}$. %Check this 
+\index{Fundamental solution!Laplace}
+
+The fundamental solution for this equation (analogous to a particular solution
+in ODE work) is a solution of
+\begin{equation}
+  \deltwosqby{\omega}{x} + \deltwosqby{\omega}{y} + \fnof{\delta}{\xi - x,\eta - y} = 0
+  \label{eqn:Fsoln}
+\end{equation}
+in $\Re^{2}$ (\ie we solve the above without reference to the original domain
+$\Omega$ or original boundary conditions). The method is to try and find
+solution to $\laplacian{\omega}=0$ in $\Re^{2}$ which contains a singularity at the
+point $\pbrac{\xi,\eta}$. This is not as difficult as it sounds.  We expect
+the solution to be symmetric about the point $\pbrac{\xi,\eta}$ since
+$\fnof{\delta}{\xi - x,\eta - y}$ is symmetric about this point.  So we adopt a
+local polar coordinate system about the \emph{singular point} $\pbrac{\xi,\eta}$.
+
+Let  
+\begin{equation*}
+  r = \sqrt{\pbrac{\xi - x}^{2} + \pbrac{\eta - y}^{2}}
+\end{equation*}      
+Then, from \Secref{sec:ccs-1.8} we have
+\begin{equation}
+  \laplacian{\omega} = \dfrac{1}{r}\delby{ }{r} \pbrac{r\delby{\omega}{r}}
+  + \dfrac{1}{r^{2}} \deltwosqby{\omega}{\theta}    
+  \label{eqn:Fsoln2}
+\end{equation}
+For $r > 0, \fnof{\delta}{\xi - x,\eta - y} = 0$ and owing to symmetry,
+$\deltwosqby{\omega}{\theta}$ is zero.  Thus \eqnref{eqn:Fsoln2} becomes
+\begin{equation*}
+  \dfrac{1}{r}\delby{ }{r}\pbrac{r\delby{\omega}{r}} = 0 
+\end{equation*}
+This can be solved by straight (one-dimensional) integration.  The solution is 
+\begin{equation}
+  \omega = A \log r + B
+  \label{eqn:Fsoln3}
+\end{equation}
+Note that this function is singular at $r = 0$ as required.
+
+To find $A$ and $B$ we make use of the integral property of the Delta
+function. From \eqnref{eqn:Fsoln} we must have
+\begin{equation}
+  \goneint{\laplacian{\omega}}{D} = - \goneint{\delta}{D} = -1
+  \label{eqn:Fsoln4}
+\end{equation}
+where $D$ is any domain containing $r = 0$.
+
+\begin{figure}[htbp] \centering
+  \input{figs/bem/domused.pstex}
+  \caption{Domain used to evaluate fundamental solution coefficients.}
+  \label{fig:domused}
+\end{figure}
+
+We choose a simple domain to allow us to evaluate the above integrals. If $D$
+is a small disk of radius $\varepsilon > 0$ centred at $r = 0$
+(\Figref{fig:domused}) then from the Green-Gauss theorem
+\begin{alignat*}{2}
+    \goneint{\laplacian{\omega}}{D} &= \gint{\del D}{}{\delby{\omega}{n}}{S}
+    \qquad && \text{$\del D$ is the surface of the disk $D$} \\
+    &= \gint{\del D}{}{\delby{\omega}{r}}{S} && 
+    \text{since $D$ is a disk centred at $r=0$ so $n$ and $r$ are in the 
+      same direction} \\ 
+    &= \dfrac{A}{\varepsilon} 2\pi \varepsilon && 
+   \text{from \eqnref{eqn:Fsoln3}, and the fact that $D$ is a disc of 
+      radius $\varepsilon$} \\
+    &=2 \pi A &&
+\end{alignat*}
+
+Therefore, from \eqnref{eqn:Fsoln4}
+\begin{equation*}
+  A = -\dfrac{1}{2 \pi}.
+\end{equation*}
+So we have  
+\begin{equation*}
+  \omega  =  - \dfrac{1}{2\pi}\log r  + B
+\end{equation*} 
+$B$ remains arbitrary but usually put equal to zero, so that the fundamental
+solution for the two-dimensional Laplace Equation is
+\begin{equation}
+  \omega  =  - \dfrac{1}{2\pi}\log r \quad \pbrac{= \dfrac{1}{2\pi}\log\dfrac{1}{r}}
+  \label{eqn:2dLe}
+\end{equation}
+where $r = \sqrt{\pbrac{\xi - x}^{2} + \pbrac{\eta - y}^{2}}$ (singular at the
+point $\pbrac{\xi,\eta}$).
+
+The fundamental solution for the three-dimensional Laplace Equation can be 
+found by a similar technique.  The result is
+\begin{equation*}
+  \omega = \dfrac{1}{4\pi r}
+\end{equation*}
+where $r$ is now a distance measured in three-dimensions.
+\index{Fundamental solution|)}
+
+\section{The Two-Dimensional Boundary Element Method}
+\label{sec:The2-Dbem}
+
+We are now at a point where we can develop the boundary element method for the
+solution of $\laplacian{u} = 0$ in a two-dimensional domain $\Omega$.
+The basic steps are in fact quite similar to those used for the finite element
+method (refer \Secref{sec:OdSSHC-2.1}).  We firstly must form an integral
+equation from the Laplace Equation by using a weighted integral equation and
+then use the Green-Gauss theorem.  From \secref{sec:2and3-DSSHC} we have
+seen that
+\begin{equation}
+  0 = \goneint{\laplacian{u}.\omega}{\Omega} 
+    = \gint{\del \Omega}{}{\delby{u}{n} \omega}{\Gamma}
+    - \goneint{\grad u. \grad \omega}{\Omega}
+  \label{eqn:2Dbe}
+\end{equation}
+
+This was the starting point for the finite element method. To derive the 
+starting equation for the boundary element method we use the Green-Gauss 
+theorem again on the second integral. This gives
+\begin{equation}
+  \begin{split}
+    0 &= \gint{\del\Omega}{}{\delby{u}{n} \omega}{\Gamma}
+    - \goneint{\grad u. \grad \omega}{\Omega} \\
+    &= \gint{\del\Omega}{}{\delby{u}{n} \omega}{\Gamma}
+    - \gint{\del\Omega}{}{u \delby{\omega}{n}}{\Gamma} 
+    + \goneint{u \laplacian{\omega}}{\Omega} 
+  \label{eqn:startingeq}
+  \end{split}
+\end{equation}
+For the Galerkin FEM we chose $\omega$, the weighting function, to be $\lbfnsymb{m}$,
+one of the basis functions used to approximate $u$.  For the boundary element
+method we choose $\omega$ to be the fundamental solution of Laplace's Equation
+derived in the previous section \ie
+\begin{equation*}
+  \omega = -\dfrac{1}{2\pi} \log r
+\end{equation*}
+where $r = \sqrt{\pbrac{\xi - x}^{2} + \pbrac{\eta - y}^{2}}$ (singular at the point
+$\pbrac{\xi,\eta}\in \Omega$).
+
+Then from \eqnref{eqn:startingeq}, using the property of the Dirac delta
+\begin{equation}
+  \goneint{u \laplacian{\omega}}{\Omega} = - \goneint{u \fnof{\delta}{\xi -
+      x,\eta - y}}{\Omega} = -\fnof{u}{\xi,\eta} \quad \pbrac{\xi,\eta} \in
+  \Omega
+  \label{eqn:propdd}
+\end{equation}
+\ie the domain integral has been replaced by a point value.
+
+Thus \eqnref{eqn:startingeq} becomes
+\begin{equation}
+  \fnof{u}{\xi,\eta} + \gint{\del\Omega}{}{u \delby{\omega}{n}}{\Gamma} =
+  \gint{\del \Omega}{}{\delby{u}{n} \omega}{\Gamma} \quad \pbrac{\xi,\eta} \in
+  \Omega
+  \label{eqn:seq2}
+\end{equation}
+This equation contains only boundary integrals (and no domain integrals as in
+Finite Elements) and is referred to as a boundary integral equation.  It
+relates the value of $u$ at some point inside the solution domain to integral
+expressions involving $u$ and $\delby{u}{n}$ over the boundary of the solution
+domain.  Rather than having an expression relating the value of $u$ at some
+point inside the domain to boundary integrals, a more useful expression would
+be one relating the value of $u$ at some point \emph{on the boundary} to
+boundary integrals.  We derive such an expression below.
+
+The previous equation (\Eqnref{eqn:seq2}) holds if $\pbrac{\xi,\eta} \in
+\Omega$ (\ie the singularity of Dirac Delta function is inside the domain). If
+$\pbrac{\xi,\eta}$ is outside $\Omega$ then
+\begin{equation*}
+  \goneint{u \laplacian{\omega}}{\Omega}  = 
+  - \goneint{u\fnof{\delta}{\xi - x,\eta - y}}{\Omega} = 0
+\end{equation*}
+since the integrand of the second integral is zero at every point except
+$\pbrac{\xi,\eta}$ and this point is outside the region of integration.  The
+case which needs special consideration is when the singular point
+$\pbrac{\xi,\eta}$ is on the boundary of the domain $\Omega$.  This case also
+happens to be the most important for numerical work as we shall see.  The
+integral expression we will ultimately obtain is simply \eqnref{eqn:seq2} with
+$\fnof{u}{\xi,\eta}$ replaced by $\dfrac{1}{2} \fnof{u}{\xi,\eta}$.  We can
+see this in a non-rigorous way as follows.  When $\pbrac{\xi,\eta}$ was inside
+the domain, we integrated around the entire singularity of the Dirac Delta to
+get $\fnof{u}{\xi,\eta}$ in \eqnref{eqn:seq2}.  When $\pbrac{\xi,\eta}$ is on
+the boundary we only have half of the singularity contained inside the domain,
+so we integrate around one-half of the singularity to get $\dfrac{1}{2}
+\fnof{u}{\xi,\eta}$.  Rigorous details of where this coefficient
+$\dfrac{1}{2}$ comes from are given below.
+
+Let $P$ denote the point $\pbrac{\xi,\eta} \in \Omega$.  In order to be able to
+evaluate $\goneint{u \laplacian{\omega}}{\Omega}$ in this case we
+enlarge $\Omega$ to include a disk of radius $\varepsilon$ about $P$
+(\Figref{fig:illus}).  We call this enlarged region $\Omega^{\prime}$ and
+let $\Gamma^{\prime} = \Gamma_{-\varepsilon} \cup \Gamma_{\varepsilon}$.
+
+\begin{figure}[htbp] \centering
+  \input{figs/bem/illus.pstex}
+  \caption{Illustration of enlarged domain when singular point is on the 
+    boundary.}
+  \label{fig:illus}
+\end{figure}
+
+Now, since $P$ is inside the enlarged region $\Omega^{\prime}$, \eqnref{eqn:seq2}
+holds for this enlarged domain \ie
+\begin{equation}
+  \fnof{u}{P}+ \gint{\Gamma_{-\varepsilon} \cup \Gamma_{\varepsilon}}{}{u  
+  \delby{\omega}{n}}{\Gamma} = \gint{\Gamma_{-\varepsilon} \cup 
+    \Gamma_{\varepsilon}}{}{\delby{u}{n}\omega}{\Gamma} 
+  \label{eqn:endom}
+\end{equation}
+We must now investigate this equation as $\limita{\varepsilon}{0}$.  There
+are $4$ integrals to consider, and we look at each of these in turn.
+
+Firstly consider 
+  \begin{alignat*}{2}
+    \gint{\Gamma_{\varepsilon}}{}{u \delby{\omega}{n}}{\Gamma} 
+    &= \gint{\Gamma_{\varepsilon}}{}{u \delby{ }{n} 
+    \pbrac{-\dfrac{1}{2 \pi} \log r}}{\Gamma} \qquad && 
+    \text{by definition of $\omega$} \\
+    &= \gint{\Gamma_{\varepsilon}}{}{u \delby{ }{r} 
+    \pbrac{-\dfrac{1}{2 \pi} \log r}}{\Gamma} &&
+    \text{since $\delby{ }{n} \equiv \delby{ }{ r}$ on 
+      $\Gamma_{\varepsilon}$} \\
+    &= -\dfrac{1}{2 \pi} \gint{\Gamma_{\varepsilon}}{}{\dfrac{u}{r}}{\Gamma} && \\
+    &= -\dfrac{1}{2 \pi} \dfrac{1}{\varepsilon} 
+    \gint{\Gamma_{\varepsilon}}{}{u}{\Gamma} && 
+    \text{since $r =\varepsilon$ on $\Gamma_{\varepsilon}$} \\ 
+    &\rightarrow -\dfrac{1}{2 \pi} \dfrac{1}{\varepsilon} \fnof{u}{P} \pi 
+    \varepsilon &&
+  \end{alignat*}
+by the mean value theorem for a surface with a unique tangent at $P$. 
+
+Thus
+\begin{equation}
+  \limita{\varepsilon}{0}\gint{\Gamma_{\varepsilon}}{}{u  
+  \delby{\omega}{n}}{\Gamma} =  \limita{\varepsilon}{0} 
+  \pbrac{-\dfrac{1}{2 \pi} \dfrac{\fnof{u}{P}}{\varepsilon} \pi{\varepsilon}} 
+  = - \dfrac{\fnof{u}{P}}{2} 
+  \label{eqn:integ1}
+\end{equation}
+By a similar process we obtain
+\begin{equation}
+  \limita{\varepsilon}{0}\gint{\Gamma_{\varepsilon}}{}{\omega  
+  \delby{u}{n}}{\Gamma} = \limita{\varepsilon}{0} 
+  \pbrac{-\dfrac{1}{2 \pi} \fnof{\delby{u}{n}}{P} \pi \varepsilon \log
+    \varepsilon} = 0 
+  \label{eqn:integ2}
+\end{equation}
+since $\limita{\varepsilon \log \varepsilon}{0}$ as $\limita{\varepsilon}{0}$.
+
+It only remains to consider the integrand over $\Gamma_{-\varepsilon}$.  For
+``nice'' integrals (which includes the integrals we are dealing with here) we
+have
+\begin{equation*}
+  \limita{\varepsilon}{0}\pbrac{\gint{\;\; \Gamma_{-\varepsilon}}{}
+    {\text{(nice integrand)}}{\Gamma}} = \gint{\Gamma}{}{\text{(nice
+    integrand)}}{\Gamma} 
+\end{equation*}
+since $\Gamma_{-\varepsilon} \rightarrow \Gamma$ as $\limita{\varepsilon}{0}$.
+
+\textbf{Note}: If the integrand is too badly behaved we cannot always
+replace $\Gamma_{-\varepsilon}$ by $\Gamma$ in the limit and one must deal
+with Cauchy Principal Values.  (refer \Secref{sec:BIE,sec4.10})
+
+Thus we have
+\begin{align}
+  \lim_{\varepsilon \rightarrow 0}\pbrac{\;\;\gint{\Gamma_{-\varepsilon}}{}
+    {\delby{u}{n} \omega}{\Gamma}} &= \gint{\Gamma}{}{\delby{u}{n} \omega}{\Gamma}  
+  \label{eqn:integ3} \\
+  \lim_{\varepsilon \rightarrow 0}\pbrac{\;\;\gint{\Gamma_{-\varepsilon}}{}
+    {\delby{\omega}{n} u}{\Gamma}} &= \gint{\Gamma}{}{\delby{\omega}{n} u}{\Gamma}  
+  \label{eqn:integ4}
+\end{align}
+
+Combining \eqnthrurefs{eqn:endom}{eqn:integ4} we get
+\begin{equation*}
+  \fnof{u}{P} + \goneint{u \delby{\omega}{n}}{\Gamma} 
+  = \dfrac{1}{2} \fnof{u}{P} + \goneint{\delby{u}{n} \omega}{\Gamma}
+\end{equation*} 
+or
+\begin{equation*}
+  \dfrac{1}{2} \fnof{u}{P} + \goneint{u \delby{\omega}{n}}{\Gamma}  = 
+  \goneint{\delby{u}{n} \omega}{\Gamma} 
+\end{equation*}
+where $P = \pbrac{\xi,\eta} \in \del \Omega$ (\ie singular point is on the boundary
+of the region).
+
+\textbf{Note}: The above is true if the point $P$ is at a smooth point (\ie
+a point with a unique tangent) on the boundary of $\Omega$.  If $P$ happens to
+lie at some nonsmooth point e.g. a corner, then the coefficient $\dfrac{1}{2}$
+is replaced by $\dfrac{\alpha}{2 \pi}$ where $\alpha$ is the internal angle at
+$P$ (\Figref{fig:intang}).
+
+\begin{figure}[htbp] \centering
+  \input{figs/bem/intang.pstex}
+  \caption{Illustration of internal angle $\alpha$.}
+  \label{fig:intang}
+\end{figure}
+
+Thus we get the boundary integral equation.
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P} + \goneint{u \delby{\omega}{n}}{\Gamma}  = 
+  \goneint{\delby{u}{n} \omega}{\Gamma}
+  \label{eqn:bie}
+\end{equation}
+where 
+\begin{align*}
+  \omega &= - \dfrac{1}{2 \pi} \log r \\
+  r &= \sqrt{\pbrac{\xi - x}^{2} + \pbrac{\eta - y}^{2}}\\
+  \fnof{c}{P} &= \left\{ \begin{array}{cll}
+      1 & & \text{if } P \in \Omega  \\
+      \frac{1}{2} & &\text{if } P \in \Gamma \text{ and $\Gamma$ smooth at $P$}\\
+      \dfrac{\text{internal angle}}{2 \pi} & & \text{if } P \in \Gamma 
+      \text{ and $\Gamma$ not smooth at $P$}
+    \end{array} \right.
+\end{align*}
+
+For three-dimensional problems, the boundary integral equation expression
+above is the same, with
+\begin{align*}
+  \omega &= \dfrac{1}{4 \pi r} \\
+  r &= \sqrt{\pbrac{\xi - x}^{2} + \pbrac{\eta - y}^{2} +\pbrac{\gamma - z}^{2}} \\
+  \fnof{c}{P} &= \left\{ \begin{array}{cll}
+      1 & & \text{if } P \in \Omega  \\
+      \frac{1}{2} & & \text{if } P \in \Gamma \text{ and $\Gamma$ smooth at $P$}\\
+      \dfrac{\text{inner solid angle}}{4 \pi} & & \text{if } P \in \Gamma  
+      \text{ and $\Gamma$ not smooth at $P$}
+    \end{array} \right.
+\end{align*}
+
+\Eqnref{eqn:bie} involves only the surface distributions of $u$ and
+$\delby{u}{n}$ and the value of $u$ at a point $P$.  Once the surface
+distributions of $u$ and $\delby{u}{n}$ are known, the value of $u$ at
+any point $P$ inside $\Omega$ can be found since all surface integrals in
+\eqnref{eqn:bie} are then known. The procedure is thus to use \eqnref{eqn:bie} to
+find the surface distributions of $u$ and $ \delby{u}{n}$ and then
+(if required) use \eqnref{eqn:bie} to find the solution at any point $P \in
+\Omega$ .  Thus we solve for the boundary data first, and find the volume data
+as a separate step.
+
+Since \eqnref{eqn:bie} only involves surface integrals, as opposed to volume
+integrals in a finite element formulation, the overall size of the problem has
+been reduced by one dimension (from volumes to surfaces).  This can result in
+huge savings for problems with large volume to surface ratios (\ie problems
+with large domains).  Also the effort required to produce a volume mesh of a
+complex three-dimensional object is far greater than that required to produce
+a mesh of the surface.  Thus the boundary element method offers some distinct
+advantages over the finite element method in certain situations.  It also has
+some disadvantages when compared to the finite element method and these will
+be discussed in \Secref{sec:The3-DBE}.  We now turn our attention to
+solving the boundary integral equation given in \eqnref{eqn:bie}.
+
+\section{Numerical Solution Procedures for the Boundary Integral Equation} 
+\label{sec:Numsol}
+
+The first step is to discretise the surface $\Gamma$ into some set of elements
+(hence the name boundary elements).
+\begin{equation}
+  \Gamma = \displaystyle\bigcup_{j=1}^{N} \Gamma_{j}
+  \label{eqn:ns1}
+\end{equation}
+
+\begin{figure}[htbp] \centering
+  \input{figs/bem/schemi.pstex}
+  \caption{Schematic illustration of a boundary element mesh (a) and a finite 
+    element mesh (b).}
+  \label{fig:schemi}
+\end{figure}
+
+Then \eqnref{eqn:bie} becomes
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P} + \dsuml{j=1}{N} \gint{\Gamma_{j}}{}{u \delby{\omega}{n}}  
+  {\Gamma}  = \dsuml{j=1}{N} \gint{\Gamma_{j}}{}{\delby{u}{n} \omega}{\Gamma}
+  \label{eqn:ns2}
+\end{equation}
+Over each element $\Gamma_{j}$ we introduce standard (finite element) 
+basis functions\index{Basis functions}
+\begin{equation}
+  u_{j} = \dsuml{\alpha}{} \lbfnsymb{\alpha} u_{j\alpha} \quad \text{and} \quad
+  q_{j} \equiv \delby{u_{j}}{ n} = \dsuml{\alpha}{} \lbfnsymb{\alpha} q_{j\alpha}
+  \label{eqn:febf}
+\end{equation}
+where $u_{j}, q_{j}$ are values of $u$ and $q$ on element $\Gamma_{j}$ and
+$u_{j\alpha}, q_{j\alpha}$ are values of $u$ and $q$ at node $\alpha$ on
+element $\Gamma_{j}$.
+
+These basis functions for $u$ and $q$ can be any of the standard
+one-dimensional finite element basis functions (although we are dealing with a
+two-dimensional problem, we only have to interpolate the functions over a
+one-dimensional element).  In general the basis functions used for $u$ and $q$
+do not have to be the same (typically they are) and these basis functions can
+even be different to the basis functions used for the geometry, but are
+generally taken to be the same (this is termed an 
+isoparametric formulation\index{Isoparametric formulation}).
+
+This gives
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P}+ \dsuml{j=1}{N} \dsuml{\alpha}{} u_{j\alpha} 
+  \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} \delby{\omega}{n}}{\Gamma} = 
+  \dsuml{j=1}{N}\dsuml{\alpha}{}
+  q_{j\alpha}\gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} \omega}{\Gamma}
+  \label{eqn:isopar}
+\end{equation}
+This equation holds for any point $P$ on the surface $\Gamma$.  We now
+generate one equation per node by putting the point $P$ to be at each node in
+turn.  If $P$ is at node $i$, say, then we have
+\begin{equation}
+  c_{i}u_{i}+\dsuml{j=1}{N} \dsuml{\alpha}{} u_{j\alpha} 
+  \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} \delby{\omega_i}{n}}{\Gamma}  = 
+  \dsuml{j=1}{N}\dsuml{\alpha}{} q_{j\alpha}\gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} 
+  \omega_{i}}{\Gamma}
+  \label{eqn:isopar2}
+\end{equation}
+where $\omega_{i}$ is the fundamental solution with the singularity at node $i$
+(recall $\omega$ is $-\dfrac{1}{2 \pi} \log r$ , where $r$ is the distance from the
+singularity point). We can write \eqnref{eqn:isopar2} in a more abbreviated form
+as
+\begin{equation}
+  c_{i} u_{i} + \dsuml{j=1}{N} \dsuml{\alpha}{} u_{j\alpha}a_{ij}^{\alpha} =
+  \dsuml{j=1}{N} \dsuml{\alpha}{} q_{j\alpha}b_{ij}^{\alpha}
+  \label{eqn:isopar3}
+\end{equation}
+where
+\begin{equation}
+  a_{ij}^{\alpha} = \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha}
+    \delby{\omega_i}{n}}{\Gamma} \quad \text{and} \quad  b_{ij}^{\alpha} = 
+  \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} \omega_{i}}{\Gamma}
+  \label{eqn:isopar4}
+\end{equation}
+\Eqnref{eqn:isopar3} is for node $i$ and if we have $L$ nodes, then we can
+generate $L$ equations.  
+
+We can assemble these equations into the matrix system
+\begin{equation}
+  \matr{A}\vect{u} = \matr{B}\vect{q}
+  \label{eqn:ms}
+\end{equation}
+(compare to the global finite element equations $\matr{K}\vect{u} = \vect{f}$)
+where the vectors $\vect{u}$ and $\vect{q}$ are the vectors of nodal values of
+$u$ and $q$.  Note that the \nth{ij} component of the $\matr{A}$ matrix in general
+is \emph{not} $a_{ij}^{\alpha}$ and similarly for $\matr{B}$.
+
+\index{Boundary conditions!application of}At each node, we must specify either
+a value of $u$ or $q$ (or some combination of these) to have a well-defined
+problem.  We therefore have $L$ equations (the number of nodes) and have $L$
+unknowns to find.  We need to rearrange the above system of equations to get
+\begin{equation}
+  \matr{C}\vect{x} = \vect{f}
+  \label{eqn:ms2}
+\end{equation}
+where $\vect{x}$ is the vector of unknowns.  This can be solved using standard
+linear equation solvers, although specialist solvers are required if the
+problem is large (refer \todo{todo : Section ???}).
+
+The matrices $\matr{A}$ and $\matr{B}$ (and hence $\matr{C}$) are fully populated
+and not symmetric (compare to the finite element formulation where the global
+stiffness matrix $\matr{K}$ is sparse and symmetric).  The size of the $\matr{A}$
+and $\matr{B}$ matrices are dependent on the number of surface nodes, while the
+matrix $\matr{K}$ is dependent on the number of finite element nodes (which
+include nodes in the domain). As mentioned earlier, it depends on the surface
+to volume ratio as to which method will generate the smallest and quickest
+solution.
+
+The use of the fundamental solution as a weight function ensures that the
+$\matr{A}$ and $\matr{B}$ matrices are generally well conditioned (see
+\Secref{sec:Numevalcoeff} for more on this).  In fact the $\matr{A}$ matrix is
+diagonally dominant (at least for Laplace's equation). The matrix $\matr{C}$ is
+therefore also well conditioned and \eqnref{eqn:ms2} can be solved reasonably
+easily.
+
+The vector $\vect{x}$ contains the unknown values of $\vect{u}$ and $\vect{q}$ on
+the boundary.  Once this has been found, all boundary values of $\vect{u}$ and
+$\vect{q}$ are known.  If a solution is then required at a point inside the
+domain, then we can use \eqnref{eqn:isopar3} with the singular point $P$ located
+at the required solution point \ie
+\begin{equation}
+  \fnof{u}{P} = \dsuml{j=1}{N} \dsuml{\alpha}{} q_{j\alpha}b_{Pj}^{\alpha}  - 
+  \dsuml{j=1}{N} \dsuml{\alpha}{} u_{j\alpha}a_{Pj}^{\alpha}
+  \label{eqn:rsp}
+\end{equation}
+The right hand side of \eqnref{eqn:rsp} contains no unknowns and only involves
+evaluating the surface integrals using the fundamental solution with the
+singular point located at $P$.
+
+\section{Numerical Evaluation of Coefficient Integrals}
+\label{sec:Numevalcoeff}
+
+We consider in detail here how one evaluates the $a_{ij}^{\alpha}$ and
+$b_{ij}^{\alpha}$ integrals for two-dimensional problems.  These integrals
+typically must be evaluated numerically, and require far more work and effort
+than the analogous finite element integrals.
+
+Recall that 
+\begin{equation*}
+  a_{ij}^{\alpha} = \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha}
+    \delby{\omega_i}{n}}{\Gamma} \quad \text{and} \quad b_{ij}^{\alpha} = 
+  \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} \omega_{i}}{\Gamma}
+\end{equation*}
+where 
+\begin{align*}
+  \omega_{i} &= - \dfrac{1}{2 \pi} \log r_{i}\\
+  r_{i} &= \text{distance measured from node $i$}
+\end{align*} 
+
+In terms of a local $\xi$ coordinate we have
+\begin{align}
+  b_{ij}^{\alpha} &= \gint{0}{1}{\lbfn{\alpha}{\xi} \fnof{\omega_{i}}{\xi}
+    \abs{\fnof{J}{\xi}}}{\xi} \\
+  a_{ij}^{\alpha} &= \gint{\Gamma_{j}}{}{\lbfn{\alpha}{\xi} 
+  \delby{\fnof{\omega_{i}}{\xi}}{n} \abs{\fnof{J}{\xi}}}{\xi} = \gint{0}{1} 
+  {\lbfn{\alpha}{\xi} \fnof{\delby{\omega_{i}}{r_{i}}}{\xi}  \dby{r_{i}}{n}
+    \abs{\fnof{J}{\xi}}}{\xi}
+\end{align}
+  
+The Jacobian $\fnof{J}{\xi}$ can be found by
+\begin{equation}
+  \fnof{J}{\xi} = \dby{\Gamma}{\xi} = \dby{s}{\xi} = 
+  \sqrt{\pbrac{\dby{x}{\xi}}^{2} + \pbrac{\dby{y}{\xi}}^{2}}
+  \label{eqn:Jacobian}
+\end{equation}
+where $s$ represents the arclength and $\dby{x}{\xi}$ and $\dby{y}{\xi}$ can be found by
+straight differentiation of the interpolation expression for $\fnof{x}{\xi}$ and
+$\fnof{y}{\xi}$.
+
+The fundamental solution is
+\begin{align*}
+  \omega_{i} &= -\dfrac{1}{2 \pi} \log \pbrac{\fnof{r_{i}}{\xi}} \\
+  \fnof{r_{i}}{\xi} &= \sqrt{\pbrac{\fnof{x}{\xi}-x_{i}}^{2}+
+    \pbrac{\fnof{y}{\xi}-y_{i}}^{2}}    
+\end{align*}
+where $\pbrac{x_{i},y_{i}}$ are the coordinates of node $i$.
+
+To find $\dby{r_{i}}{n}$  we note that  
+\begin{equation}
+  \dby{r_{i}}{n} = \dotprod{\grad r_{i}}{\hat{\vect{n}}}
+  \label{eqn:dridn}
+\end{equation}
+where $\hat{\vect{n}}$ is a unit outward normal vector.  To find a unit normal
+vector, we simply rotate the tangent vector (given by
+$\pbrac{\fnof{x'}{\xi},\fnof{y'}{\xi}}$ ) by $\dfrac{\pi}{2}$ in the
+appropriate direction and then normalise.
+
+Thus every expression in the integrands of the $a_{ij}^{\alpha}$ and
+$b_{ij}^{\alpha}$ integrals can be found at any value of $\xi$, and the
+integrals can therefore be evaluated numerically using some suitable
+quadrature schemes.
+
+If node $i$ is well removed from element $\Gamma_{j}$ then standard 
+\Index{Gaussian quadrature} can be used to evaluate these integrals.  However,
+if node $i$ is in $\Gamma_{j}$ (or close to it) we see that $r_{i}$ approaches
+0 and the fundamental solution $\omega_{i}$ tends to $\infty$.  The integral
+still exists, but the integrand becomes singular.  In such cases special care
+must be taken - either by using special quadrature schemes, large numbers of
+Gauss points or other special treatment.
+
+\begin{figure}[htbp] \centering
+  \input{figs/bem/decri.pstex}
+  \caption{Illustration of the decrease in $r_{i}$ as node $i$ approaches 
+    element $\Gamma_{j}$.}
+  \label{fig:decri}
+\end{figure}
+
+The integrals for which node $i$ lies in element $\Gamma_{j}$ are in general
+the largest in magnitude and lead to the diagonally dominant matrix equation.
+It is therefore important to ensure that these integrals are calculated as
+accurately as possible since these terms will have most influence on the
+solution.  This is one of the disadvantages of the BEM - the fact that
+singular integrands must be accurately integrated.
+
+A relatively straightforward way to evaluate all the integrals is simply to use
+Gaussian quadrature with varying number of quadrature points, depending on how
+close or far the singular point is from the current element.  This is not very
+elegant or efficient, but has the benefit that it is relatively easy to
+implement.  For the case when node $i$ is contained in the current element one
+can use special quadrature schemes which are designed to integrate log-type
+functions.  These are to be preferred when one is dealing with Laplace's
+equation.  However, these special log-type schemes cannot be so readily used
+on other types of fundamental solution so for a general purpose
+implementation, Gaussian quadrature is still the norm. It is possible to
+incorporate adaptive integration schemes that keep adding more quadrature
+points until some error estimate is small enough, or also to subdivide the
+current element into two or more smaller elements and evaluate the integral
+over each subelement.  It is also possible to evaluate the ``worst'' integrals
+by using simple solutions to the governing equation, and this technique is the
+norm for elasticity problems (\Secref{sec:BIE,sec4.10}). Details on each
+of these methods is given in \Secref{sec:MNI}.  It should be noted that
+research still continues in an attempt to find more efficient ways of
+evaluating the boundary element integrals.
+
+%\begin{example}{2D steady-state heat conduction inside an annulus}
+%  {2D steady-state heat conduction inside an annulus}
+  
+%  To determine the steady-state heat conduction inside an annulus run the
+%  CMISS example ``example34''.
+
+%  \label{xmp:2Dsshc} 
+%\end{example}
+
+\section{The Three-Dimensional Boundary Element Method}
+\label{sec:The3-DBE}
+
+The three-dimensional boundary element method is very similar to the
+two-dimensional boundary element method discussed above.  As noted above, the
+three-dimensional boundary integral equation is the same as the
+two-dimensional equation \bref{eqn:bie}, with $\omega$ and $\fnof{c}{P}$ being
+defined as in \Secref{sec:The2-Dbem}.  The numerical solution procedure also
+parallels that given in \Secref{sec:Numsol}, and the expressions given for
+$a_{ij}^{\alpha}$ and $b_{ij}^{\alpha}$ apply equally well to the
+three-dimensional case.  The only real difference between the two procedures
+is how to numerically evaluate the terms in each integrand of these
+coefficient integrals.
+
+As in \Secref{sec:Numevalcoeff} we illustrate how to evaluate each of the
+terms in the integrand of $a_{ij}^{\alpha}$ and $b_{ij}^{\alpha}$.  The
+relevant expressions are
+\begin{align}
+  a_{ij}^{\alpha} &= \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha}
+    \delby{\omega_{i}}{n}}{\Gamma} \nonumber \\ &=
+  \gint{0}{1}{\gint{0}{1}{\fnof{\lbfnsymb{\alpha}}{\xione,\xitwo}
+      \fnof{\delby{\omega_{i}}{r_{i}}}{\xione,\xitwo} \dby{r_{i}}{n}
+      \abs{\fnof{J}{\xione,\xitwo}}}{\xione}}{\xitwo} \\ 
+%%
+  b_{ij}^{\alpha}
+  &= \gint{\Gamma_{j}}{}{\lbfnsymb{\alpha} \omega_{i}}{\Gamma} \nonumber \\ 
+  &= \gint{0}{1}{\gint{0}{1}{\fnof{\lbfnsymb{\alpha}} {\xione,\xitwo}
+      \fnof{\omega_{i}}{\xione,\xitwo} \abs{\fnof{J}{\xione,\xitwo}}}
+    {\xione}}{\xitwo}
+\end{align}
+
+The fundamental solution is 
+\begin{alignat*}{2}
+  && \fnof{\omega_{i}}{\xione,\xitwo} &= \dfrac{1}{4 \pi
+    \fnof{r_{i}}{\xione,\xitwo}} \\ \text{where} && \fnof{r_{i}}{\xione,\xitwo}
+  &= \sqrt{\pbrac{\fnof{x}{\xione,\xitwo}-x_{i}}^{2} +
+    \pbrac{\fnof{y}{\xione,\xitwo}-y_{i}}^{2} +
+    \pbrac{\fnof{z}{\xione,\xitwo}-z_{i}}^{2}}
+\end{alignat*}
+where $\pbrac{x_{i},y_{i},z_{i}}$ are the coordinates of node $i$.  As before
+we use $\dby{r_{i}}{n} = \dotprod{\grad r_{i}}{\hat{\vect{n}}}$ to find
+$\dby{r_{i}}{n}$.  The unit outward normal $\hat{\vect{n}}$ is found by
+normalising the cross product of the two tangent vectors $\vect{t}_{1} =
+\pbrac{\delby{x}{\xi_{1}}, \delby{y}{\xi_{1}},\delby{z}{\xi_{1}}}$ and
+$\vect{t}_{2} = \pbrac{\delby{x}{\xi_{2}},\delby{y}{\xi_{2}},\delby{z}{\xi_{2}}
+}$ (it relies on the user of any BEM code to ensure that the elements
+have been defined with a consistent set of element coordinates $\xione$ and
+$\xitwo$).
+
+The Jacobian $\fnof{J}{\xione,\xitwo}$ is given by \lnorm{}{\vect{t}_{1} \times
+\vect{t}_{2}} (where $\vect{t}_{1}$ and $\vect{t}_{2}$ are the two tangent
+vectors).  Note that this is different for the determinant in a
+two-dimensional finite element code - in that case we are dealing with a
+two-dimensional surface in two-dimensional space, whereas here we have a
+(possibly curved) two-dimensional surface in three-dimensional space.
+
+The integrals are evaluated numerically using some suitable quadrature schemes
+(see \Secref{sec:MNI}) (typically a Gauss-type scheme in both the $\xione$
+and $\xitwo$ directions).
+
+%\begin{example}{3D steady-state heat conduction}
+%  {3D steady-state heat conduction}
+
+%  \todo{Yet to complete}
+
+%\end{example}
+
+\section{A Comparison of the FE and BE Methods}
+
+We comment here on some of the major differences between the two methods.
+Depending on the application some of these differences can either be
+considered as advantageous or disadvantageous to a particular scheme.
+
+\begin{enumerate}
+\item \textbf{FEM}: An entire domain mesh is required. \\ 
+  \textbf{BEM}: A mesh of the boundary only is required. \\ 
+  \textbf{Comment}: Because of the reduction in size of the mesh, one 
+  often hears of people saying that the problem size has been reduced by one
+  dimension.  This is one of the major pluses of the BEM - construction of
+  meshes for complicated objects, particularly in 3D, is a very time consuming
+  exercise. 
+\item \textbf{FEM}: Entire domain solution is calculated as part of the 
+  solution. \\
+  \textbf{BEM}: Solution on the boundary is calculated first, and then the 
+  solution at domain points (if required) are found as a separate step. \\ 
+  \textbf{Comment}: There are many problems where the details of interest occur 
+  on the boundary, or are localised to a particular part of the domain, and 
+  hence an entire domain solution is not required.
+\item \textbf{FEM}: Reactions on the boundary typically less accurate than the 
+  dependent variables. \\
+  \textbf{BEM}: Both $\vect{u}$ and $\vect{q}$ of the same accuracy.
+\item \textbf{FEM}: Differential Equation is being approximated. \\
+  \textbf{BEM}: Only boundary conditions are being approximated. \\ 
+  \textbf{Comment}: The use of the Green-Gauss theorem and a fundamental 
+  solution in the formulation means that the BEM involves no approximations 
+  of the differential Equation in the domain - only in its approximations 
+  of the boundary conditions.
+\item \textbf{FEM}: Sparse symmetric matrix generated. \\
+  \textbf{BEM}: Fully populated nonsymmetric matrices generated. \\
+  \textbf{Comment}: The matrices are generally of different sizes due to the 
+  differences in size of the domain mesh compared to the surface mesh.  There 
+  are problems where either method can give rise to the smaller system and 
+  quickest solution - it depends partly on the volume to surface ratio.  
+  For problems involving infinite or semi-infinite domains, BEM is to be 
+  favoured.
+\item \textbf{FEM}: Element integrals easy to evaluate. \\
+  \textbf{BEM}: Integrals are more difficult to evaluate, and some contain 
+  integrands that become singular. \\
+  \textbf{Comment}: BEM integrals are far harder to evaluate.  Also the 
+  integrals that are the most difficult (those containing singular integrands)
+  have a significant effect on the accuracy of the solution, so these integrals
+  need to be evaluated accurately.
+\item \textbf{FEM}: Widely applicable.  Handles nonlinear problems well. \\
+  \textbf{BEM}: Cannot even handle all linear problems. \\
+  \textbf{Comment}: A fundamental solution must be found (or at least an 
+  approximate one) before the BEM can be applied.  There are many linear 
+  problems (\eg virtually any nonhomogeneous equation) for which fundamental
+  solutions are not known.  There are certain areas in which the BEM is 
+  clearly superior, but it can be rather restrictive in its applicability.
+\item \textbf{FEM}: Relatively easy to implement. \\
+  \textbf{BEM}: Much more difficult to implement. \\
+  \textbf{Comment}: The need to evaluate integrals involving singular integrands
+  makes the BEM at least an order of magnitude more difficult to implement 
+  than a corresponding finite element procedure.
+\end{enumerate}
+
+%\begin{example}{CMISS comparison of 2d FEM and BEM calculations}
+%  {CMISS comparison of 2d FEM and BEM calculations}
+
+%  \todo{Yet to complete}
+
+%  \label{xmp:CMISScomp}
+%\end{example}
+
+%\begin{example}{CMISS comparison of 3d FEM and BEM calculations}
+%  {CMISS comparison of 3d FEM and BEM calculations}
+  
+%  \todo{Yet to complete (SS temp in a cube)}
+
+%  \label{xmp:CMISScomp2}
+%\end{example}
+
+\section{More on Numerical Integration}
+\label{sec:MNI}
+
+The BEM involves integrals whose integrands in generally become singular when
+the source point is contained in the element of integration.  If one uses
+constant or linear interpolation for the geometry and dependent variable, then
+it is possible to obtain analytic expressions to most (if not all) of the
+integrals that will appear in the BEM (at least for two-dimensional problems).
+The expressions can become quite lengthy to write down and evaluate, but
+benefit from the fact that they will be exact.  However, when one begins to
+use general curved elements and/or solve three-dimensional problems then the
+integrals will not be available as analytic expressions.  The basic tool for
+evaluation of these integrals is quadrature.  As discussed in
+\Secref{sec:Gquad} a one-dimensional integral is approximated by a sum in
+which the integrand is evaluated at certain discrete points or abscissa
+\begin{equation*}
+  \gint{0}{1}{\fnof{f}{\xi}}{\xi} \approx \dsuml{i=1}{N} \fnof{f}{\xi_{i}}w_{i}
+\end{equation*}
+where $w_{i}$ are the weights and $\xi_{i}$ are the abscissa.
+
+The weights and abscissa for the Gaussian quadrature scheme of order $N$ are
+chosen so that the above expression will exactly integrate any polynomial of
+degree $2N-1$ or less.  For the numerical evaluation of two or
+three-dimensional integrals, a Gaussian scheme can be used of each variable of
+integration if the region of integration is rectangular.  This is generally
+not the optimal choice for the weights and abscissae but it allows easy
+extension to higher order integration.
+
+\subsection{Logarithmic quadrature and other special schemes}
+
+Low order Gaussian schemes are generally sufficient for all FEM integrals, but
+that is not the case for BEM.  For a two-dimensional BEM solution of Laplace's
+equation, integrals of the form $\gint{0}{1}{\log \pbrac{\xi}\fnof{f}{\xi}}{\xi}$
+will be required.  It is relatively common to use logarithmic schemes for
+this.  These are obtained by approximating the integral as
+\begin{equation*} 
+  \gint{0}{1}{\log \pbrac{\xi}\fnof{f}{\xi}}{\xi} \approx
+  \dsuml{i=1}{N} \fnof{f}{\xi_{i}}w_{i}
+\end{equation*}   
+\ie the log function has been factored out.  
+
+In the same way as Gaussian quadrature schemes were developed in
+\Secref{sec:Gquad}, log quadrature schemes can be developed which will exactly
+integrate polynomial functions $\fnof{f}{\xi}$. Tables of these are given below
+\begin{table}[htbp] \centering
+  \begin{tabular}{ccccccccc}
+    \multicolumn{4}{c}{Abscissas = $r_{i}$} & \multicolumn{1}{c}{ } &
+    \multicolumn{4}{c}{Weight Factors = $w_{i}$} \\
+    $n$ & $\xi_{i}$ & $-w_{i}$ & $n$ &  $\xi_{i}$ & $-w_{i}$ & $n$ & 
+    $\xi_{i}$ & $-w_{i}$ \\
+    2 & 0.112009 & 0.718539 & 3 & 0.063891 & 0.513405 & 4 & 0.041448 &
+    0.383464 \\
+    & 0.602277 & 0.281461 & & 0.368997 & 0.391980 & & 0.245275 & 0.386875 \\
+    & & & & 0.766880 & 0.094615 & & 0.556165 & 0.190435 \\
+    & & & & & & & 0.848982 & 0.039225
+  \end{tabular}
+  \caption{Abscissas and weight factors for Gaussian integration for
+    integrands with a logarithmic singularity.}
+  \label{table:abscissas}
+\end{table}
+  
+It is possible to develop similar quadrature schemes for use in the BEM 
+solution of other PDEs, which use different fundamental solutions to the log 
+function.  The problem with this approach is the lack of generality - each new equation to be used requires its own special quadrature scheme.     
+
+\subsection{Special solutions}
+
+Another approach, particularly useful if Cauchy principal values are to be
+found (see \Secref{sec:BIE,sec4.10}) is to use special solutions of the
+governing equation to find one or more of the more difficult integrals.
+
+For example $u=x$ is a solution to Laplaces' equation (assuming the boundary
+conditions are set correctly). Thus if one sets both $u$ and $q$ in \eqnref{eqn:ms}
+at every node according to the solution $u=x$, one can then use this to solve
+for some entry in either the $\matr{A}$ or $\matr{B}$ matrix (typically the
+diagonal entry since this is the most important and difficult to
+find). Further solutions to Laplaces equation (\eg $u=x^2-y^2$) can be used to
+find the other matrix entries (or just used to check the accuracy of the matrices).
+
+
+\section{The Boundary Element Method Applied to other Elliptic PDEs}
+
+Helmholtz, modified Helmholtz (CMISS example) Poisson Equation (domain
+integral and MRM, DRM, Monte-carlo integration.
+
+
+\section{Solution of Matrix Equations}
+
+The standard BEM approach results in a system of equations of the form
+ $\matr{C}\vect{x} = \vect{f}$ (refer \eqref{eqn:ms2}).  As mentioned above the
+matrix $\matr{C}$ is generally well conditioned, fully populated and
+nonsymmetric.  For small problems, direct solution methods, based on LU
+factorisations, can be used.  As the problem size increases, the time taken for
+the matrix solution begins to dominate the matrix assembly stage.  This
+usually occurs when there is between $500$ and $1000$ degrees of freedom, although
+it is very dependent on the implementation of the BE method.  The current
+technique of favour in the BE community for solution of large BEM matrix
+equations is a preconditioned Conjugate Gradient solver. Preconditioners are
+generally problem dependent - what works well for one problem may not be so
+good for another problem.  The conjugate gradient technique is generally
+regarded as a solution technique for (sparse) symmetric matrix equations. 
+
+%\section{Sample BEM code}
+%\remark{to be added to}
+
+\section{Coupling the FE and BE techniques}
+
+There are undoubtably situations which favour FEM over BEM and vice versa.
+Often one problem can give rise to a model favouring one method in one region
+and the other method in another region, \eg in a detailed analysis of stresses
+around a foundation one needs FEM close to the foundation to handle
+nonlinearities, but to handle the semi-infinite domain (well removed from the
+foundation), BEM is better.  There has been a lot of research on coupling FE
+and BE procedures - we will only talk about the basic ideas and use Laplace's
+Equation to illustrate this.  There are at least two possible methods.  
+\begin{enumerate}
+\item Treat the BEM region as a finite element and combine with FEM
+\item Treat the FEM region as an equivalent boundary element and combine with
+  BEM
+\end{enumerate}
+
+Note that these are essentially equivalent - the use of one or the other
+depends on the problem, in the sense of which part is more dominant FEM or
+BEM)
+
+Consider the region shown in \Figref{fig:region}, where
+\begin{align*}
+  \Omega_{f} &= \text{FEM region}\\ \Omega_{B} &= \text{BEM region}\\ 
+  \Gamma_{f} &= \text{FEM boundary}\\ \Gamma_{B} &= \text{BEM
+    boundary}\\ \Gamma_{I} &= \text{interface boundary}
+\end{align*}
+\begin{figure} \centering
+  \input{figs/bem/region.pstex}
+  \caption{Coupled finite element/boundary element solution domain.}
+  \label{fig:region}
+\end{figure}
+The BEM matrices for $\Omega_{B}$ can be written as
+\begin{equation}
+  \matr{A}\vect{u} = \matr{B}\vect{q}
+  \label{eqn:BEM matrices}
+\end{equation}
+where $\vect{u}$ is a vector of the nodal values of $u$ and $\vect{q}$ is a vector
+of the nodal values of $\delby{u}{n}$
+
+The FEM matrices for $\Omega_{F}$ can be written as
+\begin{equation}
+  \matr{K}\vect{u} = \vect{f}
+  \label{eqn:FEM matrices}
+\end{equation}
+where $\matr{K}$ is the stiffness matrix and $\vect{f}$ is the load vector.  
+
+To apply method $1$ (\ie treating BEM as an equivalent FEM region) we get (from
+\eqnref{eqn:BEM matrices})
+\begin{equation}
+  \matr{B}^{-1}\matr{A}\vect{u}=\vect{q}
+  \label{eqn:appliedmethod}
+\end{equation}
+
+If we recall what the elements of $\vect{f}$ in \eqnref{eqn:FEM matrices}
+contained, then we can convert $\vect{q}$ in \eqnref{eqn:appliedmethod} to an
+equivalent load vector by weighting the nodal values of $\vect{q}$ by the
+appropriate basis functions, producing a matrix $\matr{M}$ \ie 
+$\vect{f}_{B}=\matr{M}\vect{q}$
+
+Therefore \eqnref{eqn:appliedmethod} becomes 
+\begin{equation*}
+  \matr{M}\pbrac{\matr{B}^{-1}\matr{A}}\vect{u}=  \matr{M}\vect{q} = \vect{f}_{B}
+\end{equation*}
+\ie 
+\begin{alignat*}{2}
+    && \matr{K}_{B}\vect{u} &= \vect{f}_{B} \\
+    \text{where} && \matr{K}_{B} &= \matr{M}\matr{B}^{-1}\matr{A}
+\end{alignat*}
+an equivalent stiffness matrix obtain from BEM.
+
+Therefore we can assemble this together with original FEM matrix to produce an
+FEM-type system for the entire region $\Omega_{B}$.
+
+\textbf{Notes}:
+\begin{enumerate}
+\item $\matr{K}_{B}$ is in general not symmetric and not sparse.  This means
+  that different matrix equation solvers must be used for solving the new
+  combined FEM-type system (most solvers in FEM codes assume sparse and
+  symmetric). Attempts have been made to ``symmetricise'' the $\matr{K}_{B}$
+  matrix - of doubtful quality. (\eg replace $\matr{K}_{B}$ by 
+  $\dfrac{1}{2}\pbrac{ \matr{K}_{B}-\matr{K}_{B}^{T}}$ - 
+  often yields inaccurate results).
+\item On $\Gamma_{I}$ nodal values of $\vect{u}$ and $\vect{q}$ are unknown.  One
+  must make use of the following
+  \begin{alignat*}{2}
+    \vect{u}_{B}^{I} &= \vect{u}_{F}^{I} && \text{($\vect{u}$ is continuous)}
+    \\ \delby{\vect{u}_{B}^{I}}{\vect{n}_{B}} &= -\delby{\vect{u}_{F}^{I}}
+    {\vect{n}_{F}} && \text{($\vect{q}$ is continuous, but $\Gamma_{B} =
+      -\Gamma_{F}$)}
+  \end{alignat*}
+\end{enumerate}
+
+To apply method $2$ (\ie to treat the FEM region as an equivalent BEM region)
+we firstly note that, as before, $\vect{f}=\matr{M}\vect{q}$. Applying this to
+\bref{eqn:FEM matrices} yields $\matr{K}\vect{u}=\matr{M}\vect{q}$ an
+equivalent BEM system.  This can be assembled into the existing BEM system
+(using compatability conditions) and use existing BEM matrix solvers.
+
+\textbf{Notes}:
+\begin{enumerate}
+\item This approach does not require any matrix inversion and is hence easier
+  (cheaper) to implement
+\item Existing BEM solvers will not assume symmetric or sparse matrices
+  therefore no new matrix solvers to be implemented
+\end{enumerate}
+
+\section{Other BEM techniques}
+
+What we have mentioned to date is the so-called singular (direct) BEM.  Given
+a BIE there are other ways of solving the Equation although these are not so
+widely used.
+
+\subsection{Trefftz method}
+
+\index{Trefftz method}Trefftz was the first person to perform a BEM
+calculation (in 1917 - calculated the value (numerical) of the contraction
+coefficient of a round jet issuing from an infinite tank - a nonlinear free
+surface problem).  This method basically uses a ``complete'' set of solutions
+instead of a Fundamental Solution.  \eg Consider Laplaces Equation in a
+(bounded) domain $\Omega$
+\begin{equation*}
+    \text{weighted residuals} \Rightarrow \gint{\del\Omega}{}{\omega 
+    \delby{u}{n}}{\Gamma} = \gint{\del\Omega}{}{u \delby{\omega}{n}}{\Gamma} 
+    \quad \text{if $\laplacian{\omega}=0$}
+\end{equation*}
+
+The procedure is to express $u$ as a series of (complete) functions satisfying
+Laplace's equation with coefficients which need to be numerically determined
+through utilisation of the boundary conditions.
+
+\textbf{Notes}:
+\begin{enumerate}
+\item Doesn't introduce singular functions so integrals are easy to evaluate
+\item Must find a (complete) set of functions (If you just use usual
+  approximations for $u$ matrix system is not diagonally dominant so not so
+  good)
+\item Method is not so popular - Green's functions more widely available that
+  complete systems
+\end{enumerate}
+
+\subsection{Regular BEM}
+
+\index{Regular BEM}Consider the BIE for Laplace's equation
+\begin{align*}
+  \fnof{c}{P} \fnof{u}{P} + \gint{\del\Omega}{}{u \delby{\omega}{n}}{\Gamma} &=
+  \gint{\del\Omega}{}{\delby{u}{n}\omega}{\Gamma} \\ \text{with } \quad \omega &=
+  -\dfrac{1}{2\pi} \log r
+\end{align*}
+The usual procedure is to put point $P$ at each solution variable node - creating
+an equation for each node. This leads to singular integrands.
+
+Another possibility is to put point $P$ outside of the domain $\Omega$ - this
+yields
+\begin{equation*}
+  \gint{\del\Omega}{}{u \delby{\omega_{p}}{n}}{\Gamma} = 
+  \gint{\del\Omega}{}{\delby{u}{n}_{p}}{\Gamma}
+\end{equation*}
+Following discretisation as before gives
+\begin{equation*}
+  \dsuml{j=1}{N} \dsuml{\alpha}{} u_{j\alpha} \gint{\Gamma_{j}}{}
+  {\lbfnsymb{\alpha} \delby{\omega_{p}}{n}}{\Gamma} =
+  \dsuml{j=1}{N} \dsuml{\alpha}{} q_{j\alpha} \gint{\Gamma_{j}}{}
+  {\lbfnsymb{\alpha}\omega_{p}}{\Gamma}
+\end{equation*}   
+- an equation involving $u$ and $q$ at each surface node.
+
+By placing the point $P$ (the singular point) at other distinct points outside
+$\Omega$ one can generate as many equations as there are unknowns (or more if
+required).
+
+\textbf{Notes}:
+\begin{enumerate}
+\item This method does not involve singular integrands, so that
+integrals are inexpensive to calculate.
+\item There is considerable choice for the location of the point $P$.  Often
+  the set of Equations generated are ill-conditioned unless $P$ chosen
+  carefully.  In practise $P$ is chosen along the unit outward normal of the
+  surface at each solution variable node. The distance along each node is
+  often found by experimentation - various research papers suggesting
+  ``ideal'' distances (Patterson \& Shiekh).
+\item This method is not very popular.
+\item The idea of placing the singularity point $P$ away from the solution
+  variable node is often of use in other situations \eg \emph{Exterior
+    Acoustic Problems}. For an acoustic problem (governed by Helmholtz Equation
+  $\laplacian{u} + k^{2}u=0$) in an unbounded region the system of Equations
+  produced by the usual (singular) BEM approach is singular for certain
+  ``fictitious'' frequencies (\ie certain values of $k$).  To overcome this
+  further equations are generated (by placing the singular point $P$ at
+  various locations outside $\Omega$). The system of equations are then
+  overdetermined and are solved in a least squares sense.
+\end{enumerate}
+
+\section{Symmetry}
+
+\begin{figure} \centering
+  \input{figs/bem/symcirc.pstex}
+  \caption{A problem exhibiting symmetry.} 
+  \label{fig:symcirc}
+\end{figure}
+
+Consider the problem given in \Figref{fig:symcirc} (the domain is
+\emph{outside} the circle).  Both the boundary conditions and the governing
+Equation exhibit symmetry about the vertical axis. \ie putting $x$ to $-x$
+makes no difference to the problem formulation.  Thus the solution
+$\fnof{H}{x,z}$ has the property that $\fnof{H}{x,z} = \fnof{H}{-x,z} \forall
+x$. This behaviour can be found in many problems and we can make use of this
+as follows. The Boundary Element Equation is (with $N=2M$ (\ie $N$ is even)
+\emph{constant} elements)
+
+\begin{equation}
+  \dfrac{1}{2} u_{i} + \dsuml{j=1}{N} u_{j} \gint{\Gamma_{j}}{}
+  {\delby{\omega_{i}}{n}}{\Gamma} = \dsuml{j=1}{N} q_{j}
+  \gint{\Gamma_{j}}{}{\omega_{i}}{\Gamma} \qquad i=1,\ldots,N
+  \label{eqn:bemeq}
+\end{equation}
+We have $N$ Equations and $N$ unknowns (allowing for the boundary conditions).
+From symmetry we know that (refer to \Figref{fig:symcirc2}).
+\begin{equation}
+  u_{i} = u_{n+1-i} \qquad i=1,\ldots,M
+  \label{eqn:symmetry}
+\end{equation}
+\begin{figure} \centering
+  \input{figs/bem/symcirc2.pstex}
+  \caption{Illustration of a symmetric mesh.}
+  \label{fig:symcirc2}
+\end{figure}
+So we can write
+\begin{equation}
+  \dfrac{1}{2} u_{i} + \dsuml{j=1}{M} u_{j} \bbrac{\gint{\Gamma_{j}}{}
+    {\delby{\omega_{i}}{n}}{\Gamma} + \gint{\Gamma_{N+1-j}}{}
+    {\negthickspace \delby{\omega_{i}}{n}}{\Gamma}} = \dsuml{j=1}{M} q_{j} 
+  \bbrac{\gint{\Gamma_{j}}{}{\omega_{i}}{\Gamma} 
+    + \gint{\Gamma_{N+1-j}}{}{\negthickspace \negthickspace\omega_{i}}{\Gamma}}
+  \label{eqn:nodes}
+\end{equation}
+for nodes $i=1,\ldots,M$. (The Equations for nodes $i=M+1,\ldots,N$ are the same as
+the Equations for nodes $i=1,\ldots,M$). The above $M$ Equations have only $M$
+unknowns.
+
+If we define
+\begin{align}
+    a_{ij} &= \gint{\Gamma_{j}}{}{\delby{\omega_{i}}{n}}{\Gamma} +
+    \gint{\Gamma_{N+1-j}}{}{\delby{\omega_{i}}{n}}{\Gamma} \\ 
+    b_{ij} &= \gint{\Gamma_{j}}{}{\omega_{i}}{\Gamma} + 
+    \gint{\Gamma_{N+1-j}}{}{\negthickspace\negthickspace\negthickspace\omega_{i}^{*}}{\Gamma}
+\end{align}
+then we can write \eqnref{eqn:nodes} as
+\begin{equation}
+  \dfrac{1}{2} u_{i} + \dsuml{j=1}{M} a_{ij}u_{j} = \dsuml{j=1}{M} b_{ij}q_{j} \quad
+  i=1,\ldots,M
+  \label{eqn:nodes2}
+\end{equation}
+and solve as before. (This procedure has halved the number of unknowns.)
+\newline Note: Since $i=1,\ldots,M$ this means that the integrals over the
+elements $\Gamma_{M+1}$ to $\Gamma_{N}$ will never contain a singularity
+arising from the fundamental solution, except possibly on the axis of symmetry
+if linear or higher order elements are used.
+
+An alternative approach to the method above arises from the implied no flux
+across the $z$ axis. This approach ignores the negative $x$ axis and considers
+the half plane problem shown.
+
+However now the surface to be discretised extends to infinity in the positive
+and negative $z$ directions and the resulting systems of equations produced is
+much larger.  
+
+Further examples of how symmetry can be used (\eg radial symmetry) are given
+in the next section.
+
+\section{Axisymmetric Problems}
+
+If a three-dimensional problem exhibits radial or axial symmetry (\ie
+$\fnof{u}{r,\theta_{1},z}=\fnof{u}{r,\theta_{2},z}$) it is possible to reduce the
+two-dimensional integrals appearing in the standard boundary Equation to
+one-dimensional line integrals and thus substantially reduce the amount of
+computer time that would otherwise be required to solve the fully
+three-dimensional problem. The first step in such a procedure is to write the
+standard boundary integral equation in terms of cylindrical polars
+$\pbrac{r,\theta,z}$ \ie
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P} +
+  \gint{\overline{\Gamma}}{}{u\pbrac{\gint{0}{2\pi}
+      {\delby{\omega_{p}}{n}}{\theta_{q}}}r_{q}}{\overline{\Gamma}} =
+    \gint{\overline{\Gamma}}{}{q \pbrac{\gint{0}{2 \pi}
+      {\omega_{p}}{\theta_{q}}} r_{q}}{\overline{\Gamma}}
+  \label{eqn:BoInteq}
+\end{equation}
+where $\pbrac{r_{p},\theta_{p},z_{p}}$ and $\pbrac{r_{q}, \theta_{q}, z_{q}}$ are the
+polar coordinates of $P$ and $Q$ respectively, and $\overline{\Gamma}$ is the
+intersection of $\Gamma$ and $\theta=0$ semi-plane (Refer
+\Figref{fig:cylinder}). (\nb $Q$ is a point on the surface being integrated
+over.)
+\begin{figure} \centering
+ \input{figs/bem/cylinder.pstex}
+ \caption{Illustration of surface $\overline{\Gamma}$ for an 
+  axisymmetric problem.}
+\label{fig:cylinder}
+\end{figure}
+
+For three-dimensional problems governed by Laplace's equation
+\begin{equation*}
+  \omega_{p} = \dfrac{1}{4 \pi r}
+\end{equation*}
+where $r_{p}$ is the distance from $P$ to $Q$. From \Figref{fig:rdiag}
+\begin{figure} \centering
+  \input{figs/bem/rdiag.pstex}
+  \caption{The distance from the source point ($P$) to the point of 
+   interest ($Q$) in terms of cylindrical polar coordinates.}
+ \label{fig:rdiag}
+\end{figure}
+\begin{align}
+  r_{1}^{2} &= r_{p}^{2} + r_{q}^{2} -2r_{p}r_{q}\cos\pbrac{\theta_{p}-
+  \theta_{q}} \nonumber \\ 
+  r^{2} &= \sqrt{r_{1}^{2} + r_{2}^{2}} \nonumber \\ 
+  r &= \sqrt{r_{p}^{2} + r_{q}^{2}-2r_{p}r_{q}\cos\pbrac{\theta_{p}-\theta_{q}}+
+    \pbrac{z_{p}-z_{q}}^2} \nonumber \\
+  &= \sqrt{a-b \cos\pbrac{\theta_{p}-\theta_{q}}+\pbrac{z_{p}-z_{q}}^2}
+  \label{eqn:diageq}
+\end{align}
+
+We define
+\begin{equation}
+  \overline{\omega}_{p} = \dfrac{1}{4 \pi} \gint{0}{2 \pi} 
+  {\omega_{p}}{\theta_{q}} \equiv \dfrac{\fnof{K}{m}}{\pi \sqrt{a+b}} \quad 
+  \text{where } m=\dfrac{2b}{a+b}
+  \label{eqn:defined}
+\end{equation}
+and $\fnof{K}{m}$ is the complete elliptic integral of the first kind.
+
+$\overline{\omega}_{p}$ is called the axisymmetric fundamental solution and is
+the Green's function for a ring source as opposed to a point source. \ie
+$\overline{\omega}_{p}$ is a solution of
+\begin{equation}
+  \laplacian{\omega}+\fnof{\delta}{r-r_{p}} =0
+  \label{eqn:solution}
+\end{equation}
+instead of
+\begin{equation}
+  \laplacian{\omega}+\delta_{p} =0
+  \label{eqn:notsol}
+\end{equation}
+where $\delta_{p}$ is the dirac delta centered at the point $P$ and
+$\fnof{\delta}{r-r_{P}}$ is the dirac delta centered on the ring $r=r_{p}$.
+
+Unlike the two- and three-dimensional cases, the axisymmetric fundamental
+solution cannot be written as simply a function of the distance between two
+points $P$ and $Q$, but it also depends upon the distance of these points to
+the axis of revolution.
+
+We also define
+\begin{equation}  
+  \overline{q}_{p}^{*} = \dfrac{1}{4 \pi}\gint{0}{2 \pi} 
+  {\delby{\omega_{p}}{n}}{\theta_{q}} \equiv \delby{\overline{\omega}_{p}}{n}
+ \label{eqn:qeq}
+\end{equation}
+For Laplace's equation \eqnref{eqn:qeq} becomes
+\begin{equation} 
+  \overline{q}_{p}^{*} = \dfrac{1}{\pi \sqrt{a+b}} \sqbrac{\dfrac{1}{2r_{q}}
+    \bbrac{\dfrac{r_{p}^{2}-r_{q}^{2} +\pbrac{z_{p}-z_{q}}}{a-b} \fnof{E}{m} -
+      \fnof{K}{m}} \fnof{n_{r}}{Q} + \dfrac{z_{p}-z_{q}}{a-b}
+    \fnof{E}{m}\fnof{n_{z}}{Q}} 
+  \label{eqn:number98}
+\end{equation}
+where $\fnof{E}{m}$ is the complete elliptic integral of the second kind.
+
+Using \eqnref{eqn:defined} and \eqnref{eqn:qeq} we can write \eqnref{eqn:BoInteq} as
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P} + \goneint{u \delby{\overline{\omega}_{p}}{n}}
+  {\overline{\Gamma}} = \goneint{q \overline{\omega}_{p}}{\overline{\Gamma}}
+  \label{eqn:BoInteq2}
+\end{equation}
+and the solution procedure for this Equation follows the same lines as the
+solution procedure given previously for the two-dimensional version of
+boundary element method.
+
+\section{Infinite Regions}
+
+The boundary integral equations we have been using have been derived assuming
+the domain $\Omega$ is bounded (although this was never stated). However all
+concepts presented thus far are also valid for infinite regular (\ie nice)
+regions provided the solution and its normal derivative behave appropriately
+as $\Gamma \rightarrow \infty$.
+
+Consider the problem of solving $\laplacian{u}=0$ outside some surface
+$\Gamma$.
+
+\begin{figure} \centering
+  \input{figs/bem/symm.pstex}
+  \caption{Derivation of infinite domain boundary integral equations.}
+  \label{fig:symm}
+\end{figure}
+
+$\overline{\Gamma}$ is the centre of a circle (or sphere in three dimensions) 
+of radius centred at some point $x_{0}$ on $\Gamma$ and surrounding $\Gamma$
+(see \Figref{fig:symm}).  The boundary integral equations for the bounded
+domain $\Omega_{R}$ can be written as
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P} + \goneint{u \delby{\omega_{P}}{n}}{\Gamma} +
+  \gint{\overline{\Gamma}}{}{u \delby{\omega_{P}}{n}}{\Gamma} =
+  \goneint{q \omega_{P}}{\Gamma} + \gint{\overline{\Gamma}}{} 
+  {q \omega_{P}}{\Gamma}
+  \label{eqn:boundinteg}
+\end{equation}
+
+If we let the radius $R \rightarrow \infty$ \eqnref{eqn:boundinteg}
+will only be valid for the points on $\Gamma$ if
+\begin{equation}
+  \lim_{R \rightarrow\infty}\gint{\overline{\Gamma}}{}{\pbrac{u 
+    \delby{\omega_{P}}{n} - q \omega_{P}}}{\Gamma} = 0
+  \label{eqn:limit}
+\end{equation}
+If this is satisfied, the boundary integral Equation for $\Omega$ will be as
+expected \ie
+\begin{equation}
+  \fnof{c}{P} \fnof{u}{P} + \goneint{u \delby{\omega_{P}}{n}}{\Gamma}
+  = \goneint{q \omega_{P}}{\Gamma}
+  \label{eqn:omega}
+\end{equation}
+
+For three-dimensional problems with $\omega^{*}=\dfrac{1}{4 \pi r}$
+\begin{alignat*}{2}
+  d\Gamma &= \abs{J} d\theta d\phi && \qquad \text{where } 
+          \abs{J} = \orderof{R^{2}} \\ 
+  \omega^{*} &= \orderof{R^{-1}} & & \\ 
+  \delby{\omega^{*}}{n} &= \orderof{R^{-2}} &&
+  \label{eqn:3-Dprob}
+\end{alignat*}
+where $\abs{J}$ is the Jacobian and $\orderof{}$ represents the asymptotic behaviour
+of the function as $R \rightarrow\infty$. In this case \eqnref{eqn:boundinteg}
+will be satisfied if $u$ behaves at most as $\orderof{R^{-1}}$ so that
+$q=\orderof{R^{-2}}$.  These are the regularity conditions at infinity and these
+ensure that each term in the integral \eqnref{eqn:boundinteg} behaves
+at most as $\orderof{R^{-1}}$ (\ie each term will $\rightarrow 0$ as $R
+\rightarrow\infty$)
+
+For two-dimensional problems with $\omega^{*}=\orderof{\log \pbrac{R}}$ we
+require $u$ to behave as $\log \pbrac{R}$ so that $q=\orderof{R^{-1}}$. For
+almost all well posed infinite domain problems the solution behaves
+appropriately at infinity.
+\clearpage
+\section{Appendix: Common Fundamental Solutions}
+\label{app:fundamentalsolutions}
+\subsection{Two-Dimensional equations}
+Here $r=\sqrt{\left(x_{1}^{2} + x_{2}^{2} \right)}$.\index{Fundamental solution}
+
+\begin{tabular}{llp{9cm}}
+  Laplace & Equation & $\deltwosqby{u^{*}}{x_1}+\deltwosqby{u^{*}}{x_2}+
+  \delta_{0}=0$ \\ & Solution &
+  $u^{*}=\dfrac{1}{2\pi}\log\pbrac{\dfrac{1}{r}}$ \\ \\ Helmholtz &
+  Equation\index{Fundamental solution!Helmholtz} &
+  $\deltwosqby{u^{*}}{x_1}+\deltwosqby{u^{*}}{x_2}+
+  \lambda^{2}u^{*}+\delta_{0}=0$  \\ 
+  & Solution & $u^{*}=\dfrac{1}{4i}H_{0}^{(2)}(\lambda r)$ \\
+  &&  where $H$ is the Hankel funtion.
+  \\ \\ 
+%
+  Wave & Equation\index{Fundamental solution!wave equation} &
+  $c^2\pbrac{\deltwosqby{u^{*}}{x_1}+
+    \deltwosqby{u^{*}}{x_2}}-\deltwosqby{u^{*}}{t}+ \fnof{\delta_{0}}{t} = 0$\\
+  && where $c$ is the wave speed. \\ 
+  & Solution & $u^{*}=
+  -\dfrac{\fnof{H}{ct-r}}{2\pi c \pbrac{c^{2}t^{2}-r^{2}}}$ \\ \\ 
+%
+  Diffusion & Equation\index{Fundamental solution!diffusion equation} &
+  $\deltwosqby{u^{*}}{x_1}+\deltwosqby{u^{*}}{x_2}
+  -\dfrac{1}{k}\delby{u^{*}}{t}=0$ \\
+  && where $k$ is the diffusivity.\\ 
+  & Solution & $u^{*}=-\dfrac{1}{\pbrac{4 \pi kt}^{\frac{3}{2}}}exp
+  \pbrac{-\dfrac{r^{2}}{4kt}}$ \\ \\ 
+%
+  Navier's & Equation\index{Fundamental solution!Navier} 
+        & $\delby{\sigma_{jk}^{*}}{x_{j}} + \delta_{l}=0$ for a point load 
+        in direction $l$. \\ 
+  & Solution & $p_{i}^{*}=p_{ji}^{*}e_{j}$ \\ 
+  && $p_{ji}^{*}=-\dfrac{1}{8 \pi \pbrac{1-\nu^{2}}r^{2}}$\\
+  && $\pbrac{ \delby{r}{n} 
+        \sqbrac{\pbrac{1-2\nu}\delta_{ij}+3r_{,i}r_{,j}}+
+        \pbrac{1-2\nu} \pbrac{n_{j}r_{,i}-n_{i}r_{,j}} }
+        e_{j}$\\ 
+  && for a traction in direction $k$ where $\nu$ is Poisson's ratio.
+\end{tabular}
+
+  \subsection{Three-Dimensional equations}
+
+Here $r=\sqrt{(x_{1}^{2} +x_{2}^{2} + x_{3}^{2})}$.
+
+\begin{tabular}{llp{9cm}}
+  Laplace & Equation & $\deltwosqby{u^{*}}{x_1}+\deltwosqby{u^{*}}{x_2}+
+  \deltwosqby{u^{*}}{x_3}+\delta_{0}=0$ \\
+  & Solution & $u^{*}=\dfrac{1}{4 \pi r}$ \\ \\
+%
+  Helmholtz & Equation & $\deltwosqby{u^{*}}{x_1}+\deltwosqby{u^{*}}{x_2}+
+  \deltwosqby{u^{*}}{x_3}+\lambda^{2}u^{*}+\delta_{0}=0$ \\
+  & Solution & $u^{*}=\dfrac{1}{4\pi r}\exp\pbrac{-i\lambda r}$ \\ \\
+%
+  Wave & Equation & $c^{2}\pbrac{\deltwosqby{u^{*}}{x_1}+
+    \deltwosqby{u^{*}}{x_2}+\deltwosqby{u^{*}}{x_3}}-
+  \deltwosqby{u^{*}}{t}+\delta_{t}=0$ \\
+  &&where $c$ is the wave speed. \\
+  & Solution & $u^{*}= \dfrac{\delta \pbrac{t-\dfrac{r}{c}}}{4 \pi r}$ \\ \\
+%
+  Navier's & Equation & $\delby{\sigma_{jk}^{*}}{x_{j}} + \delta_{l} = 0$ 
+  for a isotropic homogenenous Kelvin solution for a point load in direction
+  $l$. \\
+  & Solution & $u_{k}^{*} = u_{lk}^{*} e_{l}$ \\
+  && $u_{lk}^{*}= \dfrac{1}{16 \pi G\pbrac{1-\nu}} \pbrac{\dfrac{3-4\nu}{r}
+    \delta_{lk} + \delby{r}{x_{1}}\delby{r}{x_{2}}}$ \\
+  && for a displacement in direction $k$ where $\nu$ is Poisson's ratio
+  and $G$ is the shear modulus.
+\end{tabular}
+
+\subsection{Axisymmetric problems}
+
+\begin{tabular}{llp{10cm}}
+  Laplace && For $u^{*}$ see \eqnref{eqn:defined} and for $q^{*}$ 
+  see \eqnref{eqn:number98}
+\end{tabular}
+
+\section{CMISS Examples}
+
+\begin{enumerate}
+  \item  2D steady-state heat conduction inside an annulus
+    To determine the steady-state heat conduction inside an annulus run the
+    CMISS example $324$.
+    \label{xmp:2Dsshc} 
+
+  \item  3D steady-state heat conduction inside a sphere. To determine the
+    steady-state heat conduction inside a sphere run the
+    CMISS example $328$.
+
+  \item  CMISS comparison of 2-D FEM and BEM calculations
+    To determine the CMISS comparison of 2-D FEM and BEM calculations run
+    examples $324$ and $312$.
+    \label{xmp:CMISScomp}
+
+  \item  CMISS biopotential problems C4 and C5.
+    \label{xmp:CMISScomp2}
+
+\end{enumerate}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "/product/cmiss/documents/notes/fembemnots/fembemnotes"
+%%% End: 

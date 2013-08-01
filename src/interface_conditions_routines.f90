@@ -76,6 +76,8 @@ MODULE INTERFACE_CONDITIONS_ROUTINES
   PUBLIC INTERFACE_CONDITION_EQUATIONS_CREATE_FINISH,INTERFACE_CONDITION_EQUATIONS_CREATE_START
 
   PUBLIC INTERFACE_CONDITION_EQUATIONS_DESTROY
+  
+  PUBLIC InterfaceCondition_IntegrationTypeGet,InterfaceCondition_IntegrationTypeSet
 
   PUBLIC INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_FINISH,INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_START
 
@@ -194,13 +196,13 @@ CONTAINS
               !Assemble the elements
               !Allocate the element matrices 
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_START("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_START("InterfaceMatrices_ElementInitialise()")
 #endif
-              CALL INTERFACE_MATRICES_ELEMENT_INITIALISE(INTERFACE_MATRICES,ERR,ERROR,*999)
+              CALL InterfaceMatrices_ElementInitialise(INTERFACE_MATRICES,ERR,ERROR,*999)
               ELEMENTS_MAPPING=>LAGRANGE_FIELD%DECOMPOSITION%DOMAIN(LAGRANGE_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
                 & MAPPINGS%ELEMENTS
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_STOP("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_STOP("InterfaceMatrices_ElementInitialise()")
 #endif
               !Output timing information if required
               IF(INTERFACE_EQUATIONS%OUTPUT_TYPE>=INTERFACE_EQUATIONS_TIMING_OUTPUT) THEN
@@ -229,7 +231,7 @@ CONTAINS
 !#endif
                 ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
                 NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-                CALL INTERFACE_MATRICES_ELEMENT_CALCULATE(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
+                CALL InterfaceMatrices_ElementCalculate(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
                 CALL INTERFACE_CONDITION_FINITE_ELEMENT_CALCULATE(INTERFACE_CONDITION,ne,ERR,ERROR,*999)
                 CALL INTERFACE_MATRICES_ELEMENT_ADD(INTERFACE_MATRICES,ERR,ERROR,*999)
 !#ifdef TAUPROF
@@ -271,7 +273,7 @@ CONTAINS
               DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
                 ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
                 NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-                CALL INTERFACE_MATRICES_ELEMENT_CALCULATE(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
+                CALL InterfaceMatrices_ElementCalculate(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
                 CALL INTERFACE_CONDITION_FINITE_ELEMENT_CALCULATE(INTERFACE_CONDITION,ne,ERR,ERROR,*999)
                 CALL INTERFACE_MATRICES_ELEMENT_ADD(INTERFACE_MATRICES,ERR,ERROR,*999)
               ENDDO !element_idx
@@ -534,6 +536,11 @@ CONTAINS
                   NEW_INTERFACE_CONDITION%GEOMETRY%GEOMETRIC_FIELD=>GEOMETRIC_FIELD
                   NEW_INTERFACE_CONDITION%METHOD=INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD
                   NEW_INTERFACE_CONDITION%OPERATOR=INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR
+                  IF(ASSOCIATED(INTERFACE%pointsConnectivity)) THEN
+                    NEW_INTERFACE_CONDITION%integrationType=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION
+                  ELSE
+                    NEW_INTERFACE_CONDITION%integrationType=INTERFACE_CONDITION_GAUSS_INTEGRATION
+                  ENDIF
                   CALL INTERFACE_CONDITION_DEPENDENT_INITIALISE(NEW_INTERFACE_CONDITION,ERR,ERROR,*999)
                   !Add new interface condition into list of interface conditions in the interface
                   ALLOCATE(NEW_INTERFACE_CONDITIONS(INTERFACE%INTERFACE_CONDITIONS%NUMBER_OF_INTERFACE_CONDITIONS+1),STAT=ERR)
@@ -1147,9 +1154,81 @@ CONTAINS
     RETURN 1
   END SUBROUTINE INTERFACE_CONDITION_FINALISE
 
+!
+  !================================================================================================================================
+  !
+
+  !>Returns the interface condition integration type 
+  SUBROUTINE InterfaceCondition_IntegrationTypeGet(interfaceCondition,interfaceConditionIntegrationType,err,error,*)
+
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition to get the operator for
+    INTEGER(INTG), INTENT(OUT) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("InterfaceCondition_IntegrationTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(interfaceCondition)) THEN
+      IF(interfaceCondition%INTERFACE_CONDITION_FINISHED) THEN
+        interfaceConditionIntegrationType=interfaceCondition%integrationType
+      ELSE
+        CALL FLAG_ERROR("Interface condition has not been finished.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfaceCondition_IntegrationTypeGet")
+    RETURN
+999 CALL ERRORS("InterfaceCondition_IntegrationTypeGet",err,ERROR)
+    CALL EXITS("InterfaceCondition_IntegrationTypeGet")
+    RETURN 1
+  END SUBROUTINE InterfaceCondition_IntegrationTypeGet
+  
   !
   !================================================================================================================================
   !
+
+  !>Sets/changes the interface condition integration type 
+  SUBROUTINE InterfaceCondition_IntegrationTypeSet(interfaceCondition,interfaceConditionIntegrationType,err,error,*)
+
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition to set the operator for
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionIntegrationType !<The interface condition integration type to set. \see INTERFACE_CONDITIONS_IntegrationType,INTERFACE_CONDITIONS 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("InterfaceCondition_IntegrationTypeSet",err,error,*999)
+
+    IF(ASSOCIATED(interfaceCondition)) THEN
+      IF(interfaceCondition%INTERFACE_CONDITION_FINISHED) THEN
+        CALL FLAG_ERROR("Interface condition has been finished.",err,error,*999)
+      ELSE
+        SELECT CASE(interfaceConditionIntegrationType)
+        CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
+          interfaceCondition%integrationType=INTERFACE_CONDITION_GAUSS_INTEGRATION
+        CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
+          interfaceCondition%integrationType=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION
+        CASE DEFAULT
+          localError="The specified interface condition operator of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceConditionIntegrationType,"*",err,ERROR))//" is not valid."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfaceCondition_IntegrationTypeSet")
+    RETURN
+999 CALL ERRORS("InterfaceCondition_IntegrationTypeSet",err,ERROR)
+    CALL EXITS("InterfaceCondition_IntegrationTypeSet")
+    RETURN 1
+  END SUBROUTINE InterfaceCondition_IntegrationTypeSet
 
 
   !
@@ -1209,7 +1288,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE INTERFACE_CONDITION_GEOMETRY_INITIALISE
 
-   !
+  !
   !================================================================================================================================
   !
 
@@ -1406,9 +1485,9 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 DO component_idx=1,INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS
-                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD, &
                     & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO !component_idx
                 CALL FIELD_SCALING_TYPE_GET(INTERFACE_CONDITION%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
@@ -1776,13 +1855,13 @@ CONTAINS
               !Assemble the elements
               !Allocate the element matrices 
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_START("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_START("InterfaceMatrices_ElementInitialise()")
 #endif
-              CALL INTERFACE_MATRICES_ELEMENT_INITIALISE(INTERFACE_MATRICES,ERR,ERROR,*999)
+              CALL InterfaceMatrices_ElementInitialise(INTERFACE_MATRICES,ERR,ERROR,*999)
               ELEMENTS_MAPPING=>LAGRANGE_FIELD%DECOMPOSITION%DOMAIN(LAGRANGE_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
                 & MAPPINGS%ELEMENTS
 #ifdef TAUPROF
-              CALL TAU_STATIC_PHASE_STOP("INTERFACE_MATRICES_ELEMENT_INITIALISE()")
+              CALL TAU_STATIC_PHASE_STOP("InterfaceMatrices_ElementInitialise()")
 #endif
               !Output timing information if required
               IF(INTERFACE_EQUATIONS%OUTPUT_TYPE>=INTERFACE_EQUATIONS_TIMING_OUTPUT) THEN
@@ -1805,7 +1884,7 @@ CONTAINS
               DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
                 ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
                 NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-                CALL INTERFACE_MATRICES_ELEMENT_CALCULATE(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
+                CALL InterfaceMatrices_ElementCalculate(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
                 CALL INTERFACE_CONDITION_FINITE_ELEMENT_CALCULATE(INTERFACE_CONDITION,ne,ERR,ERROR,*999)
                 CALL INTERFACE_MATRICES_ELEMENT_ADD(INTERFACE_MATRICES,ERR,ERROR,*999)
               ENDDO !element_idx                  
@@ -1843,7 +1922,7 @@ CONTAINS
               DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
                 ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
                 NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
-                CALL INTERFACE_MATRICES_ELEMENT_CALCULATE(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
+                CALL InterfaceMatrices_ElementCalculate(INTERFACE_MATRICES,ne,ERR,ERROR,*999)
                 CALL INTERFACE_CONDITION_FINITE_ELEMENT_CALCULATE(INTERFACE_CONDITION,ne,ERR,ERROR,*999)
                 CALL INTERFACE_MATRICES_ELEMENT_ADD(INTERFACE_MATRICES,ERR,ERROR,*999)
               ENDDO !element_idx

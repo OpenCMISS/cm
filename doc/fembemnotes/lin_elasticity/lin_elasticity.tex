@@ -1,0 +1,1341 @@
+\chapter{Linear Elasticity} 
+\label{cha:linearelasticity}
+
+\section{Introduction}
+\label{sec:Intro}
+
+To analyse the stress in various elastic bodies we calculate the strain energy
+of the body in terms of nodal displacements and then minimize the strain
+energy with respect to these parameters - a technique known as the
+\index{Rayleigh-Ritz method}Rayleigh-Ritz. In fact, as we will show later, this leads to
+the same algebraic equations as would be obtained by the Galerkin method (now
+equivalent to virtual work) but the physical assumptions made (in neglecting
+certain strain energy terms) are exposed more clearly in the Rayleigh-Ritz
+method. We will first consider one-dimensional truss and beam elements, then
+two-dimensional plane stress and plane strain elements, and finally
+three-dimensional elasticity.
+
+In all cases the steps are:
+\begin{enumerate}
+  \item Evaluate the components of strain in terms of nodal displacements,
+  \item Evaluate the components of stress from strain using the elastic 
+   material constants,
+  \item  Evaluate the strain energy for each element by integrating the 
+   products of stress and strain components over the element volume,
+  \item  Evaluate the potential energy from the sum of total strain energy for
+   all elements together with the work done by applied boundary forces, 
+  \item  Apply the boundary conditions, \eg by fixing nodal displacements,
+  \item  Minimize the potential energy with respect to the unconstrained nodal
+   displacements,
+  \item  Solve the resulting system of equations for the unconstrained nodal 
+   displacements,
+  \item  Evaluate the stresses and strains using the nodal displacements and 
+   element basis functions,
+  \item  Evaluate the boundary reaction forces (or moments) at the nodes where
+   displacement is constrained. 
+\end{enumerate}
+
+\section{Truss Elements}
+
+\index{Truss elements|(}
+Consider the one-dimensional truss of undeformed length $L$ in
+\Figref{fig:unitf} with end points $\pbrac{0,0}$ and $\pbrac{x,y}$ and making 
+an angle $\theta$ with the x-axis. Under the action of forces in the $x$- and
+$y$- directions the right hand end of the truss displaces by $u$ in the 
+$x$-direction and $v$ in the $y$-direction, relative to the left hand end.
+
+\begin{figure}[htbp] \centering
+  \input{figs/lin_elasticity/truss.pstex}
+  \caption{A truss of initial length $L$ is stretched to a new length $l$.   
+    Displacements of the right hand end relative to the left hand end are $u$ 
+    and $v$ in the $x$- and $y$- directions, respectively.}
+  \label{fig:truss}
+\end{figure}
+                      
+The new length is $l$ with axial strain
+\begin{align*}
+  e=\dfrac{l}{L}-1 &= \dfrac{\sqrt{\pbrac{X+u}^{2} +
+      \pbrac{Y+v}^{2}}}{\sqrt{X^{2} + Y^{2}}} -1 \\ 
+&=\dfrac{\sqrt{L^{2}+2\pbrac{Xu+Yv}+u^{2}+v^{2}}}{L} - 1 \\ 
+&= \sqrt{1+2 \pbrac{\cos \theta . \dfrac{u}{L} + \sin \theta . \dfrac{v}{L}} +
+    \dfrac{u^{2}+v^{2}}{L^{2}}} - 1
+\end{align*}
+using $\dfrac{X}{L}=\cos \theta$ and $\dfrac{Y}{L}=\sin \theta$, where
+$\theta$ is defined to be positive in the anticlockwise direction. Neglecting
+second order terms in the binomial expansion $\sqrt{\pbrac{1+\varepsilon}} = 1 +
+\dfrac{1}{2}\varepsilon + \orderof{\varepsilon^{2}}$, the strain for small
+displacements $u$ and $v$ is
+\begin{equation}
+  e \cong \cos \theta .\dfrac{u}{L} + \sin \theta .\dfrac{v}{L}
+  \label{eqn:strain}
+\end{equation}
+
+The strain energy associated with this uniaxial stretch is 
+\begin{equation}
+  \text{SE} = \dfrac{1}{2} \gint{}{}{\sigma e}{V} = \dfrac{1}{2} A \gint{0}{L}
+  {\sigma e}{x} = \dfrac{1}{2} \gint{0}{L}{EAe^{2}}{x} = \dfrac{1}{2}  ALEe^{2}
+  \label{eqn:sen}
+\end{equation}
+where $\sigma=Ee$ is the stress in the truss (of cross-sectional area $A$),
+linearly related to the strain $e$ via Young's modulus $E$. We now substitute
+for $e$ from \eqnref{eqn:strain} into \eqnref{eqn:sen} and put $u=u_{2}-u_{1}$
+and $v=v_{2}-v_{1}$, where $\pbrac{u_{1},v_{1}}$ and $\pbrac{u_{2},v_{2}}$ are
+the nodal displacements of the two ends of the truss
+\begin{equation}
+  \text{SE}= \dfrac{1}{2} ALE \pbrac{\cos \theta . \dfrac{u_{2}-u_{1}}{L} + 
+    \sin \theta . \dfrac{v_{2}-v_{1}}{L}}^{2}
+  \label{eqn:tet}
+\end{equation}
+
+The potential energy is the combined strain energy from all trusses in the
+structure minus the work done on the structure by external forces. The
+Rayleigh-Ritz \index{Rayleigh-Ritz method} approach is to minimize this
+potential energy with respect to the nodal displacements once all displacement
+boundary conditions have been applied.
+
+For example, consider the system of three trusses shown in
+\Figref{fig:system}. A force of \nunit{100}{\kN} is applied in the $x$-direction 
+at node $1$.  Node $2$ is a sliding joint and has zero displacement in the
+y-direction only.  Node $3$ is a pivot and therefore has zero displacement in
+both $x$- and $y$- directions. The problem is to find all nodal displacements and
+the stress in the three trusses.
+
+\begin{figure}[htbp] \centering
+  \input{figs/lin_elasticity/system.pstex}
+  \caption{A system of three trusses.}
+  \label{fig:system}
+\end{figure}
+
+The strain in truss $1$ (joining nodes $1$ and $3$) is 
+\begin{displaymath}
+  \dfrac{u_{1}}{L}\cos 30+\dfrac{v_{1}}{L} \sin 30=
+  \dfrac{\sqrt{3}}{2}\dfrac{u_{1}}{L}+\dfrac{1}{2}\dfrac{v_{1}}{L}
+\end{displaymath}
+The strain in truss $2$ (joining nodes $1$ and $2$) is 
+\begin{displaymath}
+  \dfrac{\pbrac{u_{1}-u_{2}}}{L}\cos 90+\dfrac{v_{1}}{L}\sin 90=\dfrac{v_{1}}{L}
+\end{displaymath}
+The strain in truss $3$ (joining nodes $2$ and $3$) is 
+\begin{displaymath}
+  \frac{u_{2}}{L}\cos \pbrac{-30}=\dfrac{\sqrt{3}}{2}\dfrac{u_{2}}{L}
+\end{displaymath} 
+
+Since a force of \nunit{100}{\kN} acts at node $1$ in the $x$-direction, 
+the potential energy is
+\begin{displaymath}  
+  \text{PE} =\sum_{\text{trusses}} \dfrac{1}{2} ALEe^{2} - 100 u_{1} =
+  \dfrac{1}{2}\frac{AE}{L} \sqbrac{\pbrac{\dfrac{\sqrt{3}}{2} u_{1} +
+      \dfrac{1}{2} v_{1}}^{2}+\pbrac{\dfrac{\sqrt{3}}{2} u_{2}}^2 +
+      \pbrac{v_{1}}^{2}}- 100u_{1}
+\end{displaymath}
+[Note that if the force was applied in the negative $x$-direction, the final
+  term would be $+ 100 u_{1}$]
+
+Minimizing the potential energy with respect to the three unknowns $u_{1}$,
+$v_{1}$ and $u_{2}$  gives
+\begin{equation}
+  \delby{\text{PE}}{u_{1}} = \dfrac{AE}{L}\pbrac{\dfrac{\sqrt{3}}{2} 
+    u_{1} + \dfrac{1}{2} v_{1}}\dfrac{\sqrt{3}}{2} - 100=0
+  \label{eqn:poten1}
+\end{equation}
+\begin{equation}
+  \delby{\text{PE}}{v_{1}}  =  \dfrac{AE}{L}\sqbrac{\pbrac{
+    \dfrac{\sqrt{3}}{2} u_{1} + \dfrac{1}{2} v_{1}}\dfrac{1}{2} +v_{1}}=0
+  \label{eqn:poten2}
+\end{equation}
+\begin{equation}
+  \delby{\text{PE}}{u_{2}} =  \dfrac{AE}{L}\left( \dfrac{\sqrt{3}}{2} 
+    u_{2}\right)\dfrac{\sqrt{3}}{2}=0
+  \label{eqn:poten3}
+\end{equation}
+  
+If we choose $A =$ \nunit{5\times\tento{-3}}{\mtwo}, $E =$ \nunit{10}{\GPa} and
+ $L = $ \nunit{1}{\m} (\eg \nunit{100}{\mm} $\times$ \nunit{50}{\mm} timber truss) 
+ then $\dfrac{AE}{L} =$ \nunit{5 \times \tento{-3}}{\mtwo} 
+ \nunit{\times \tento{7}}{\kPa /\m} $ = $ \nunit{5 \times \tento{4}}{\kNpm}.
+
+\Eqnref{eqn:poten3} gives 
+\begin{displaymath}  
+  u_{2} = 0
+\end{displaymath} 
+\Eqnref{eqn:poten1} gives 
+\begin{displaymath}
+  3u_{1}+\sqrt{3}v_{1}=4\times\tento{2}/\pbrac{5\times\tento{4}}
+\end{displaymath}
+\Eqnref{eqn:poten2} gives for two dimensions
+\begin{displaymath}
+  v_{1} = -\dfrac{\sqrt{3}}{5}u_{1}
+\end{displaymath}
+Solving these last two equations gives $u_{1}=\nunit{3.34}{\mm}$ and
+$v_{1}=\nunit{-1.15}{\mm}$.  Thus the strain in truss $1$ is
+$(\dfrac{\sqrt{3}}{2}3.34-\dfrac{1}{2}1.15) \times \tento{-3} =0.232\%$, in
+truss $2$ is $-0.115\%$ and in truss $3$ is zero.
+
+The tension in truss $1$ is $A\sigma = AEe = \nunit{5\times\tento{-3}}{\mtwo}
+\nunit{\tento{7}}{\kPa} \times 0.232\times\tento{-2} = \nunit{116}{\kN}$ (tensile),
+in truss $2$ is \nunit{-57.5}{\kN} (compressive) and in truss $3$ is zero. The
+nodal reaction forces are shown in \Figref{fig:rf}.
+    
+\begin{figure}[htbp] \centering
+  \input{figs/lin_elasticity/reaction.pstex}
+  \caption{Reaction forces for the truss system of \Figref{fig:system}.}
+  \label{fig:rf}
+\end{figure}
+
+%\begin{example}{Solving a truss system}
+%  {Solving a truss system}
+
+%  \todo{example???}
+
+%  We solve the simple three truss system described above and shown in
+%  \Figref{fig:system}. 
+
+%  \label{xmp:Solving}
+%\end{example}
+
+
+%\begin{example}{Stresses in a bicycle frame modelled with truss elements}
+%  {Stresses in a bicycle frame modelled with truss elements}
+
+%  \todo{example???}
+
+%  \begin{figure}[htbp] \centering
+%    \input{figs/lin_elasticity/CMISSA.pstex}
+%  \end{figure}
+%  \label{xmp:stressesinabike}
+%\end{example}
+%\index{Truss elements|)}
+
+\section{Beam Elements}
+
+\index{Beam elements|(}
+Simple beam theory ignores all but axial strain $e_{x}$  and stress 
+$\sigma_{x}=Ee_{x}$  ($E=$ Young's modulus) along the beam (assumed here to be 
+in the x-direction). The axial strain is given by $e_{x} = \dfrac{z}{R}$ ,
+where $z$ is the lateral distance from the neutral axis in the plane of the 
+bending and $R$ is the radius of curvature in that plane. The bending moment 
+is given by $M= \gint{}{}{\sigma_{x} z}{A}$ , where $A$ is the beam crossectional 
+area. Thus 
+\begin{equation}
+  \sigma_{x} =  Ee_{x} = E\dfrac{z}{R}
+  \label{eqn:bem1}
+\end{equation}
+\begin{equation}
+  M  = \gint{}{}{\sigma_{x} z}{A} = \frac{E}{R} \gint{}{}{z^{2}}{A} 
+     = \dfrac{EI}{R}
+  \label{eqn:bem2}
+\end{equation}
+where $I = \gint{}{}{z^{2}}{A}$ is the second moment of area of the beam
+cross-section. Thus, $\dfrac{E}{R} = \dfrac{M}{I}$ and \eqnref{eqn:bem1} becomes
+\begin{equation}
+  \sigma_{x} = \dfrac{Mz}{I}
+  \label{eqn:bem3}
+\end{equation}
+The slope of the beam is  $\dby{w}{x} = \theta$  and the rate of change of 
+slope is the curvature 
+\begin{equation}
+  K=\dby{\theta}{x} = \dtwosqby{w}{x} = \dfrac{1}{R}
+  \label{eqn:slope}
+\end{equation}
+Thus the bending moment is 
+\begin{equation}
+  M=EI \dtwosqby{w}{x} = EIw''
+  \label{eqn:bmom}
+\end{equation}
+and a force balance gives the shear force
+\begin{equation}
+  V=-\dby{M}{x} = - \dby{ }{x}\pbrac{EIw''}
+  \label{eqn:shf}
+\end{equation}
+and the normal force (per unit length of beam)
+\begin{equation}
+  p=\dby{V}{x} = -\dtwosqby{ }{x}\pbrac{EIw''}
+  \label{eqn:normf}
+\end{equation}
+This last equation is the equilibrium equation for the beam, balancing the 
+loading forces $p$ with the axial stresses associated with beam flexure
+\begin{equation}
+  -\dtwosqby{ }{x} \pbrac{EI \dtwosqby{w}{x}} = p
+  \label{eqn:lasteq}
+\end{equation}
+
+The elastic strain energy stored in a bent beam is the sum of flexural strain
+energy and shear strain energy, but this latter is ignored in the simple beam
+theory considered here. Thus, the (flexural) strain energy is
+\begin{align*}
+  \text{SE} &= \dfrac{1}{2} \gint{x=0}{L}{\goneint{\sigma_{x}e_{x}}{A}}{x} =  
+  \dfrac{1}{2} \gint{x=0}{L}{E\goneint{e_{x}^{2}}{A}}{x} \\
+  &= \dfrac{1}{2} \gint{x=0}{L}{E \goneint{\pbrac{\dfrac{z}{R} 
+  }^{2}}{A}}{x} =  \dfrac{1}{2} \gint{x=0}{L}{EI\pbrac{w''}^{2}}{x}
+\end{align*}    
+where $x$ is taken along the beam and $A$ is the cross-sectional area of the 
+beam.
+
+The external work associated with forces $p$ acting normal to the beam and
+moving through a transverse displacement $w$ is $\gint{0}{L}{pw}{x}$.
+The potential energy is therefore
+\begin{equation}
+  \text{PE}=\dfrac{1}{2} \gint{0}{L}{EI\pbrac{w''}^{2}}{x} - \gint{0}{L}{pw}{x}.
+  \label{eqn:poten}
+\end{equation}
+
+The finite element approximation for the transverse displacement $w$ must be
+able to represent the second derivative $w''$. A linear basis function has a
+zero second derivative and therefore cannot represent the flexural strain. The
+natural choice of basis function for beam deflection is in fact cubic Hermite
+because the inter-element slope continuity of this basis ensures transmission
+of bending moment as well as shear force across element boundaries.
+
+The boundary conditions associated with the \nth{4} order equilibrium
+\eqnref{eqn:lasteq} or the equations arising from minimum potential energy
+\eqnref{eqn:poten} (which contain the square of $2^{\text{nd}}$ derivative terms) 
+are more complex than the simple temperature or flux boundary conditions for the
+(second order) heat equation. Three possible combinations of boundary
+condition with their associated reactions are
+
+\begin{tabular}{llll}
+  && \emph{Boundary conditions} & \emph{Reactions}\\
+  && \\
+  (i) &  Simply supported &  zero displacement $w=0$ &  shear force $V$\\
+  && zero moment $M = EIw'' = 0$ &  slope $\theta (= w')$\\
+  (ii) &  Cantilever & zero displacement $w=0$ &  shear force $V$\\
+  && zero slope  $\theta = w' = 0$ & moment $M$\\
+  (iii)&  Free end & zero shear force $V=-\dby{ }{x}\pbrac{EIw''} = 0$ & 
+  displacement $w$\\
+  && zero moment $M = EI'' = 0$ & slope $\theta$
+\end{tabular}
+
+%\begin{example}{Stresses in a bicycle frame modelled with beam elements}
+%  {Stresses in a bicycle frame modelled with beam elements.}
+
+%  \todo{example???}
+
+%  \begin{figure}[htbp] \centering
+%    \input{figs/CMISSA.pstex}
+%  \end{figure}
+
+%  \label{xmp:Sbfbe}
+%\end{example}
+%\index{Beam elements|)}
+
+\section{Plane Stress Elements}
+\vspace{-5mm}
+\index{Plane stress elements|(}
+For two-dimensional problems, we define the displacement vector 
+$\vect{u} = \begin{bmatrix} 
+  u \\ 
+  v 
+\end{bmatrix}$, strain vector $\vect{e} = \begin{bmatrix}
+  e_{x} \\
+  e_{y} \\ 
+  e_{xy}
+\end{bmatrix}$ and stress vector $\vect{\sigma} = \begin{bmatrix}
+  \sigma_{x} \\
+  \sigma_{y} \\
+  \sigma_{xy} 
+\end{bmatrix}$. The stress-strain relation for two-dimensional plane stress:
+\begin{gather}
+  \begin{aligned}
+    \sigma_{x} &= \dfrac{E}{1-\nu^{2}}\pbrac{e_{x}+\nu e_{y}} \\
+    \sigma_{y} &= \dfrac{E}{1-\nu^{2}}\pbrac{e_{y}+\nu e_{x}} \\
+    \sigma_{xy} &= \dfrac{E}{1+\nu}\pbrac{e_{xy}}
+  \end{aligned}
+  \label{eqn:planestress}
+\end{gather}
+can be written in matrix form
+\begin{displaymath}
+  \vect{\sigma}=\matr{E}\vect{e}
+\end{displaymath}
+where $\matr{E} = \dfrac{E}{1-\nu^{2}} \begin{bmatrix}
+  1 & \nu & 0\\
+  \nu & 1 & 0\\
+  0 & 0 & 1-\nu
+\end{bmatrix}$. 
+The strain components are given in terms of displacement gradients by
+\begin{equation}
+  \begin{array}{rcl}
+    e_{x} & = & \delby{u}{x} \\
+    e_{y} & = & \delby{v}{y} \\
+    e_{xy} & = & \dfrac{1}{2} \pbrac{\delby{u}{y} + \delby{v}{x}}
+  \end{array}
+  \label{eqn:stcom}
+\end{equation}
+
+The strain energy\index{Strain energy} is 
+\begin{align*}
+  \text{SE} &= \dfrac{1}{2} \goneint{\transpose{\vect{\sigma}}\vect{e}}{V} = \dfrac{1}{2}
+  \goneint{\pbrac{e_{x}\sigma_{x} + e_{y}\sigma_{y} + e_{xy}\sigma_{xy}}}{V} \\ &=
+  \dfrac{1}{2} \goneint{\transpose{\vect{e}}\matr{E}\vect{e}}{V} = \dfrac{1}{2}
+  \goneint{\dfrac{E}{1-\nu^{2}} \sqbrac{e_{x}^{2} + e_{y}^{2} + 2\nu e_{x}e_{y} +
+      \pbrac{1-\nu}e_{xy}^{2}}}{V}
+\end{align*}
+
+The potential energy\index{Potential energy} is
+\begin{equation}
+  \text{PE} = \text{SE} -\text{ external work }= \dfrac{1}{2}
+  \goneint{\transpose{\vect{e}}\matr{E}\vect{e}}{V} -
+  \goneint{\transpose{\vect{u}}\vect{l}}{A} 
+  \label{eqn:pe}
+\end{equation}
+where $\vect{l}$ represents the external loads (forces) acting on the elastic
+body.
+
+Following the steps outlined in \Secref{sec:Intro} we approximate the
+displacement field $\vect{u}$ with a finite element basis $u=\lbfnsymb{n} u_{n}$,
+$v=\lbfnsymb{n} v_{n}$ and calculate the strains
+\begin{gather}
+  \begin{aligned}
+    e_{x} &= \delby{u}{x} = \delby{\lbfnsymb{n}}{x} u_{n} \\
+    e_{y} &= \delby{v}{y} = \delby{\lbfnsymb{n}}{y} v_{n} \\
+    e_{xy} &= \dfrac{1}{2}\pbrac{\delby{u}{y}+ \delby{v}{x}} = 
+    \dfrac{1}{2} \pbrac{\delby{\lbfnsymb{n}}{y}u_{n} + 
+      \delby{\lbfnsymb{n}}{x}v_{n}}
+  \end{aligned}
+  \label{eqn:strains}
+\end{gather}
+or
+\begin{equation}
+  \vect{e} = \begin{bmatrix}
+    e_{x} \\
+    e_{y} \\
+    e_{xy}
+    \end{bmatrix} = \begin{bmatrix}
+      \delby{\lbfnsymb{n}}{x} & 0 \\
+      0 & \delby{\lbfnsymb{n}}{y} \\
+      \dfrac{1}{2}\delby{\lbfnsymb{n}}{y} & \dfrac{1}{2}\delby{\lbfnsymb{n}}{x}
+  \end{bmatrix} \begin{bmatrix}
+    u_{n} \\
+    v_{n} 
+  \end{bmatrix} = \matr{B}\vect{u}
+  \label{eqn:orstr}
+\end{equation}
+From \eqnref{eqn:pe} the potential energy is therefore
+\begin{align*}
+  \text{PE} &= \dfrac{1}{2}
+  \goneint{\transpose{\pbrac{\matr{B}\vect{u}}}\matr{E}\pbrac{\matr{B}\vect{u}}}{V} -
+  \goneint{\transpose{\vect{u}}\vect{l}}{A} \\ 
+  &= \dfrac{1}{2}\transpose{\vect{u}} \left[
+  \goneint{\transpose{\matr{B}}\matr{E}\matr{B}}{V} \right] \vect{u} - 
+  \goneint{\transpose{\vect{u}}\vect{l}}{A} \\
+  &= \dfrac{1}{2} \transpose{\vect{u}}\matr{K}\vect{u}-
+  \goneint{\transpose{\vect{u}}\vect{l}}{A}
+\end{align*}
+where $\matr{K} = \goneint{\transpose{\matr{B}}\matr{E}\matr{B}}{V}$ is the
+element stiffness matrix.
+
+We next minimize the potential energy with respect to the nodal parameters
+$u_{n}$ and $v_{n}$ giving
+\begin{equation}
+  \matr{K}\vect{u} = \vect{f}
+  \label{eqn:pennodpam}
+\end{equation}
+\index{Plane stress elements|)} 
+where $\vect{f} = \goneint{\vect{l}}{A}$ is a vector of nodal forces.
+
+\subsection{Notes on calculating nodal loads}
+\label{sec:noteoncalc}
+
+If a known stress acts normal to a given surface (\eg a surface pressure), it
+may be applied by calculating equivalent nodal forces. For example, consider a
+uniform load $\nunit{p}{\kNpm}$ applied to the edge of the plane stress
+element in \Figref{fig:uniformbound}a.
+
+The nodal load vector $\vect{f}$ in \eqnref{eqn:pennodpam} has components
+\begin{equation}
+  f_{n} = \goneint{p \lbfnsymb{n}}{x} = pL \gint{0}{1}{\lbfnsymb{n}}{\xi}
+  \label{eqn:nlv}
+\end{equation}  
+where $\xi$ is the normalized element coordinate along the side of length $L$
+loaded by the constant stress \nunit{p}{\kNpm}. If the element side has a
+linear basis, \eqnref{eqn:nlv} gives
+\begin{align*}
+  f_{1} &= pL\gint{0}{1}{\lbfnsymb{1}}{\xi} = pL\gint{0}{1}{\pbrac{1-\xi}}{\xi} =
+  \dfrac{1}{2} pL \\
+  f_{2} &= pL\gint{0}{1}{\lbfnsymb{2}}{\xi} = pL\gint{0}{1}{\xi}{\xi} = \dfrac{1}{2} pL
+\end{align*}
+as shown in \Figref{fig:uniformbound}b. If the element side has a
+quadratic basis, \eqnref{eqn:nlv} gives 
+\begin{align*}
+  f_{1} &= pL\gint{0}{1}{\lbfnsymb{1}}{\xi} =
+  pL\gint{0}{1}{2\pbrac{\dfrac{1}{2}-\xi}\pbrac{1-\xi}}{\xi} = \frac{1}{6} pL \\
+  f_{2} &= pL\gint{0}{1}{\lbfnsymb{2}}{\xi} = pL \gint{0}{1}{4\xi\pbrac{1-\xi}}{\xi}  
+  = \frac{2}{3} pL \\
+  f_{3} &= pL\gint{0}{1}{\lbfnsymb{3}}{\xi} = pL \gint{0}{1}{2\xi\pbrac{\xi -
+      \dfrac{1}{2}}}{\xi} = \frac{1}{6} pL
+\end{align*}
+as shown in \Figref{fig:uniformbound}c. A node common to two elements will
+receive contributions from both elements, as shown in
+\Figref{fig:uniformbound}d.
+
+\begin{figure}[htbp] \centering
+  \input{figs/lin_elasticity/uniformbound.pstex}
+  \caption{A uniform boundary stress applied to the element side in (a) is 
+   equivalent to nodal loads of $\frac{1}{2} pL$ and $\frac{1}{2} pL$ for the 
+   linear basis used in (b) and to  $\frac{1}{6}pL$,  $\frac{2}{3}pL$ and  
+   $\frac{1}{6}pL$ for the quadratic basis used in (c). Two adjacent quadratic
+   elements both contribute to a common node in (d), where the element 
+   length is now $\frac{L}{2}$.}
+  \label{fig:uniformbound}
+\end{figure}
+
+
+\section{Three-Dimensional Elasticity}
+\label{sec:3Delast}
+
+Consider a surface $\Gamma$ enclosing a volume $\Omega$ of material of mass
+density $\rho$.  Conservation of linear momentum over the domain $\Omega$
+results in the governing stress equilibrium equations
+\begin{equation}
+  \sigma_{ij,j} + b_{i} =  0 \qquad i,j=1,2,3
+  \label{eqn:equilib}
+\end{equation}
+where $\sigma_{ij}$ are the components of the stress tensor ($\sigma_{ij}$ is
+the component of the traction or stress vector in the $\nth{i}$ direction
+which is acting on the face of a rectangle whose normal is in the $\nth{j}$
+direction), and $b_{i}$ is the body force/unit volume (\eg $\vect{b} =
+\rho\vect{g}$). Note that the notation $\sigma_{ij,j} =
+\delby{\sigma_{ij}}{x_{j}}$ has been introduced to represent the derivative.
+
+Recall that the components of the linear (or small) strain tensor are
+\begin{equation}
+  e_{ij} =  \dfrac{1}{2}\pbrac{u_{i,j} + u_{j,i}} \qquad i,j=1,2,3
+  \label{eqn:sst}
+\end{equation}
+where $\vect{u}$ is the displacement vector (\ie $\vect{u}$ is the difference
+between the final and initial positions of a material point in
+question). Note: we are assuming here that the displacement gradients are
+small compared to unity, which is appropriate for many materials in solid
+mechanics.  However, for soft materials, such as rubber or biological tissue,
+then we need to use the exact finite strain tensor.
+
+The object of solving an elasticity problem is to find the distributions of
+stress and displacement in an elastic body, subject to a known set of body
+forces and prescribed stresses or displacements at the boundaries.  In the
+general three-dimensional case, this means finding $6$ stress components
+$\sigma_{ij}$ ($=\sigma_{ji}$ which arises from the conservation of angular
+momentum) and 3 displacements $u_{i}$ each as a function of position in the
+body. Currently we have $15$ unknowns ($6$ stresses, $6$ strains and $3$
+displacements), but only $9$ equations ($3$ equilibrium equations and $6$
+strain-displacement relations).
+
+To progress, we require an equation of state, \ie a stress-strain relation or
+constitutive law.  For a linear elastic material we may propose that the
+components of stress $\sigma_{ij}$ depend linearly on $e_{ij}$. \ie
+\begin{displaymath}
+  \sigma_{ij} = c_{ijkl}e_{kl}
+\end{displaymath}  
+where $c_{ijkl}$ are the $81$ components of a $\nth{4}$ order tensor, although
+symmetry of the strain and stress tensors reduces the number of independent
+components to $21$.
+
+If the material is assumed to be isotropic (\ie the material response is
+independent of orientation of the material element), then we end up with the
+generalized Hooke's Law.
+\begin{equation}
+  \sigma_{ij} = \lambda e_{kk} \delta_{ij} + 2 \mu e_{ij}
+  \label{eqn:genHook}
+\end{equation}
+or inversely
+\begin{displaymath}
+  e_{ij} = \dfrac{1}{2 \mu} \sigma_{ij} - \dfrac{\lambda}{2 \mu \pbrac{3 \lambda 
+    + 2 \mu}} \sigma_{kk} \delta_{ij}
+\end{displaymath}
+where $\lambda$, $\mu$ are Lam\'{e}s constants.
+
+Note: $\lambda$, $\mu$ are related to Young's modules $E$ and Poisson's 
+ratio $\nu$ by 
+\begin{displaymath}
+  E  =  \dfrac{\mu \pbrac{3 \lambda + 2 \mu}}{\lambda + \mu}
+\end{displaymath}
+\begin{displaymath}
+  \nu = \dfrac{\lambda}{2\pbrac{\lambda + \mu}}
+\end{displaymath}   
+
+Providing that the displacements are continuous functions of position, then
+\eqnref{eqn:equilib}, \eqnref{eqn:sst} and \eqnref{eqn:genHook} are sufficient
+to determine the $15$ unknown quantities.  This can often work with some
+smaller grouping or simplification of these equations, \eg if all boundary
+conditions are expressed in terms of displacements, substituting
+\eqnref{eqn:sst} into \eqnref{eqn:genHook} then into \eqnref{eqn:equilib}
+yields Navier's equation of motion.
+\begin{displaymath}
+  \mu u_{i,kk} + \pbrac{\lambda + \mu} u_{k,ki} + b_{i} = 0 \qquad i,k=1,2,3
+\end{displaymath}
+These $3$ equations can be solved for the unknown displacements. Then
+\eqnref{eqn:sst} can be used to determine the strains and \eqnref{eqn:genHook}
+to calculate the stresses.
+
+
+\subsection{Weighted Residual Integral Equation}
+Using weighted residuals as before we can write
+\begin{equation}
+  \goneint{\pbrac{\sigma_{ij,j} + b_{i}} u_{i}^{*}}{\Omega} = 0
+  \label{eqn:integral}
+\end{equation}
+where $\vect{u}^{*} = \pbrac{u_{i}^{*}}$ is a (vector) weighting field.  The
+$u_{i}^{*}$ are usually interpreted as a consistent set of virtual
+displacements (hence we use the notation $u$ instead of $w$).
+
+By the chain-rule
+\begin{displaymath}
+  \pbrac{\sigma_{ij}u_{i}^{*}}_{,j} = \sigma_{ij,j}u_{i}^{*} +
+  \sigma_{ij}u_{i,j}^{*}
+\end{displaymath}
+
+Therefore, the first term in the integrand of \eqnref{eqn:integral} can be
+re-written
+\begin{align}
+  \goneint{\sigma_{ij,j} u_{i}^{*}}{\Omega}
+  &= \goneint{(\sigma_{ij} u_{i}^{*})_{,j}}{\Omega} - 
+  \goneint{\sigma_{ij}u_{i,j}^{*}}{\Omega} \nonumber \\
+%%
+  &= \goneint{\diverg{\pbrac{\sigma_{ij} u_{i}^{*} }}}{\Omega}
+    - \goneint{\sigma_{ij} u_{i,j}^{*}}{\Omega} \nonumber\\
+%%
+  &= \gint{\del \Omega}{}{\sigma_{ij} u_{i}^{*}n_{j}}{\Gamma}
+  - \goneint{\sigma_{ij} u_{i,j}^{*}}{\Omega}
+  \label{eqn:divtheory}
+\end{align}
+where the domain integral involving ``$\diverg{} = \delby{}{x_{j}}$'' has been
+transformed into a surface integral using the divergence theorem
+\begin{displaymath}
+  \goneint{\diverg{\vect{g}}}{\Omega} = \gint{\del
+  \Omega}{}{\dotprod{\vect{g}}{\vect{n}}}{\Gamma} \qquad \text{or} \qquad
+  \goneint{g_{j,j}}{\Omega} = \gint{\del \Omega}{}{g_{j} n_{j}}{\Gamma}
+\end{displaymath}
+where $\vect{n} = n_{j}\vect{i}_{j}$ is the outward normal vector to the
+surface $\Gamma$.
+
+Thus, combining \eqnref{eqn:integral} and \eqnref{eqn:divtheory} we have
+\begin{align}
+  \goneint{\sigma_{ij} u_{i,j}^{*}}{\Omega} &=
+  \goneint{b_{i} u_{i}^{*}}{\Omega} + \gint{\del \Omega}{}
+  {\sigma_{ij} n_{j}u_{i}^{*}}{\Gamma} \nonumber \\ &= \goneint
+  {b_{i} u_{i}^{*}}{\Omega} + \gint{\del \Omega}{}{t_{i} u_{i}^{*}}{\Gamma}
+  \label{eqn:virtws}
+\end{align}
+where $t_{i}$ are the components of the internal stress vector (\vect{t}) and
+are related to the components of the stress tensor ($\sigma_{ij}$) by Cauchy's
+formula
+\begin{equation}
+\vect{t} = \sigma_{ij}n_{j}\vect{i}_{i}
+\label{eqn:cauchyseqn}
+\end{equation}
+
+To arrive at this point, we have used weighted residuals to tie in with
+\chapref{cha:steadystate}, however \eqnref{eqn:virtws} is more usually derived
+using the principle of virtual work (below). Note that the weighted integral
+\eqnref{eqn:virtws} is independent of the constitutive law of the material.
+
+
+\subsection{The Principle of Virtual Work}
+
+The governing equations for elastostatics can also be derived from a
+physically appealing argument. Let $\vect{s}$ be the external traction vector
+(\ie force per unit surface area).  For equilibrium, the work done by the
+external surface forces $\vect{s} = s_{i}\vect{i}_{i}$, in moving through a
+virtual displacement $\vect{u}^{*} = u_{i}^{*}\vect{i}_{i}$ is equal to the
+work done by the stress vector $\vect{t} = t_{i}\vect{i}_{i}$ in moving
+through a compatible set of virtual displacements $\vect{u}^{*}$. In
+mathematical terms, the principle of virtual work can be written
+\begin{equation}
+  \gint{\del \Omega}{}{s_{i} u_{i}^{*}}{\Gamma} = \gint{\del \Omega}{}{t_{i} u_{i}^{*}}{\Gamma} 
+  = \gint{\del \Omega}{}{\sigma_{ij}n_{j} u_{i}^{*}}{\Gamma}
+  \label{eqn:virtwork1}
+\end{equation}
+using Cauchy's formula (\eqnref{eqn:cauchyseqn}).
+
+The Green-Gauss theorem (\eqnref{eqn:nabla_eq}) is now used to replace the
+right hand surface integral in \eqnref{eqn:virtwork1} by a volume integral,
+giving
+\begin{equation}
+  \gint{\del \Omega}{}{s_{i} u_{i}^{*}}{\Gamma} = \goneint{\pbrac{
+  \sigma_{ij,j} u_{i}^{*} + \sigma_{ij} u_{i,j}^{*} }}{\Omega}
+\end{equation}
+
+Substituting the equilibrium relation (\eqnref{eqn:equilib}) into the first
+integrand on the right hand side, yields the \emph{virtual work} equation
+\begin{equation}
+  \goneint{\sigma_{ij} u_{i,j}^{*}}{\Omega} = \goneint{b_{i}
+  u_{i}^{*}}{\Omega} + \gint{\del \Omega}{}{s_{i} u_{i}^{*}}{\Gamma}
+  \label{eqn:virtwork2}
+\end{equation}
+where the internal work done due to the stress field is equated to the work
+due to internal body forces and external surface forces.  Note that
+\eqnref{eqn:virtwork2} is equivalent to \eqnref{eqn:virtws} via
+\eqnref{eqn:virtwork1}. In practice, \eqnref{eqn:virtwork2} is in a more
+useful form than \eqnref{eqn:virtws}, because the right hand side integrals
+can be expressed in terms of the known body forces and the applied boundary
+conditions (surface traction forces or stresses).
+
+
+\subsection{The Finite Element Approximation}
+
+Let $\Omega = \bigcup\thinspace\Omega_{e}$ and interpolate the virtual
+displacements $u_{i}^{*}$ from their nodal values. \ie
+\begin{gather}
+  \begin{aligned}
+    u_{i}^{*} &= \lbfnsymb{m} \dot (u_{i}^{m})^{*} \\
+    \text{so }\quad u_{i,j}^{*} &= \delby{\lbfnsymb{m}}{x_{j}} \dot (u_{i}^{m})^{*} \\
+    &= \lbfnsymb{m,k} \delby{\xi_{k}}{x_{j}} \dot (u_{i}^{m})^{*}    
+  \end{aligned}
+  \label{eqn:virtdisplapprox}
+\end{gather}
+where $(u_{i}^{m})^{*} = (U_{i}^{\triangle(m,e)})^{*}$, $\triangle(m,e)$ is
+the global node number of local node $m$ on element $e$, and the shorthand
+$\lbfnsymb{m,k}=\delby{\lbfnsymb{m}}{\xi_{k}}$ has been introduced.
+
+Substituting this into \eqnref{eqn:virtwork2} gives
+\begin{equation*}
+  \sum_{e} \pbrac{
+    \gint{\thickspace\Omega_{e}}{}{\sigma_{ij}\lbfnsymb{m,k}\delby{\xi_{k}}{x_{j}}}
+    {\Omega} } \pbrac{ U_{i}^{\triangle(m,e)} }^{*} = \sum_{e} \pbrac{
+    \gint{\Omega_{e}}{}{b_{i}\lbfnsymb{m}}{\Omega} + \gint{\del
+    \Omega_{e}}{}{s_{i}\lbfnsymb{m}}{\Gamma} } \pbrac{U_{i}^{\triangle(m,e)}
+    }^{*}
+\end{equation*}
+and since the virtual displacements are arbitrary we get
+\begin{equation}
+  \sum_{e}\gint{\Omega_{e}}{}{\sigma_{ij}\lbfnsymb{m,k}\delby{\xi_{k}}{x_{j}}}{\Omega}
+    = \sum_{e} \pbrac{\gint{\Omega_{e}}{}{b_{i}\lbfnsymb{m}}{\Omega} 
+    + \gint{\del \Omega_{e}}{}{s_{i}\lbfnsymb{m}}{\Gamma}}
+  \label{eqn:intequilib}
+\end{equation}
+
+The next step is to express the stress components $\sigma_{ij}$ in terms of
+the virtual displacements and their finite element approximation by
+substituting \eqnref{eqn:virtdisplapprox} into \eqnref{eqn:sst} (the
+strain-displacement relation) and in turn into \eqnref{eqn:genHook} (the
+generalized Hooke's law).
+
+We first introduce the finite element approximation for the displacement field
+$u_{j}=\lbfnsymb{n}u_{j}^{n}$ which gives
+\begin{equation}
+  e_{ij} = \frac{1}{2}\pbrac{\hdelby{\lbfnsymb{n}u_{i}^{n}}{x_{j}} +
+  \hdelby{\lbfnsymb{n}u_{j}^{n}}{x_{i}}} =
+  \frac{1}{2}\pbrac{\delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{j}}u_{i}^{n}
+  + \delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{i}}u_{j}^{n}}
+\end{equation}
+and
+\begin{equation*}
+  e_{kk} = u_{k,k} = \delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{k}}u_{k}^{n}
+\end{equation*}
+Thus
+\begin{equation*}
+  \sigma_{ij} = \lambda \delta_{ij}
+  \delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{k}}u_{k}^{n} + 2\mu \pbrac{
+  \frac{1}{2}\delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{j}}u_{i}^{n} +
+  \frac{1}{2}\delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{i}}u_{j}^{n}}
+\end{equation*}
+which, due to symmetry of the stress tensor, simplifies to
+\begin{align}
+  \sigma_{ij} &= \lambda \delta_{ij}
+  \delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{k}}u_{k}^{n} + 2\mu 
+  \delby{\lbfnsymb{n}}{\xi_{l}}\delby{\xi_{l}}{x_{i}}u_{j}^{n} \nonumber \\
+              &= \pbrac{\lambda \delta_{i(j)}
+  \lbfnsymb{n,l}\delby{\xi_{l}}{x_{j}} + 2\mu 
+  \lbfnsymb{n,l}\delby{\xi_{l}}{x_{i}}}u_{j}^{n}
+  \label{eqn:stresscmpts}
+\end{align}
+where the summation index $k$ has been replaced with $j$, but the parenthesis
+in $\delta_{i(j)}$ implies that there is no sum with respect to that
+particular index.
+
+Substituting this expression into \eqnref{eqn:intequilib} and simplifying, we
+get for each element
+\begin{equation}
+    u_{j}^{n} \gint{\Omega_{e}}{}{\pbrac{ \lambda
+       \lbfnsymb{n,l}\delby{\xi_{l}}{x_{j}}
+       \lbfnsymb{m,k}\delby{\xi_{k}}{x_{i}} + 2\mu
+       \lbfnsymb{n,l}\delby{\xi_{l}}{x_{i}}
+       \lbfnsymb{m,k}\delby{\xi_{k}}{x_{j}}}}{\Omega} = f_{im}
+  \label{eqn:linelasfem}
+\end{equation}
+where $f_{im}$ denotes the right hand side terms in
+\eqnref{eqn:intequilib}. (Note that there has been some careful manipulation
+of summation indices with the substitution of \eqnref{eqn:stresscmpts} to
+arrive at \eqnref{eqn:linelasfem}.)
+
+So for each element
+\begin{equation*}
+  E_{imjn} u_{j}^{n} = f_{im}
+\end{equation*}
+where
+\begin{gather}
+  \begin{aligned}
+    E_{imjn} &= \iiint\limits_{0}^{1} \pbrac{ \lambda
+       \delby{\xi_{l}}{x_{j}}\delby{\xi_{k}}{x_{i}} + 2\mu
+       \delby{\xi_{l}}{x_{i}}\delby{\xi_{k}}{x_{j}}} 
+       \lbfnsymb{n,l} \lbfnsymb{m,k} J(\xione,\xitwo,\xithree) d\xione
+       d\xitwo d\xithree \\ 
+    f_{im} &= \iiint\limits_{0}^{1} b_{i}\lbfnsymb{m}
+       J(\xione,\xitwo,\xithree) d\xione d\xitwo d\xithree +
+       \iint\limits_{0}^{1} s_{i}\lbfnsymb{m} 
+       J_{2D}(\xione,\xitwo) d\xione d\xitwo
+  \end{aligned}
+\end{gather}
+where the Jacobians $J(\xione,\xitwo,\xithree)$ and $J_{2D}(\xione,\xitwo)$
+have been used to transform volume and surface integrals so that they can be
+can be calculated using $\xi$-coordinates. (Note: without loss of generality,
+the above definition of $f_{im}$ assumes that $(\xione,\xitwo)$ are defined to
+lie in the surface $\Gamma$.)
+
+So in summary, the finite element approximation leads to element stiffness
+matrix components that can be calculated from the known material parameters,
+the chosen interpolation functions, and the geometry of the material (note
+that the element stiffness components are independent of the unknown
+displacement parameters).  Element stiffness components are then assembled
+into the global stiffness matrix in the usual manner (as described
+previously).  Note that this is implicitly a Galerkin formulation, since the
+unknown displacement fields are interpolated using the same basis functions as
+those used to weight the integral equations.
+
+%\begin{example}{Stresses in a plate with a hole}
+%  {Stresses in a plate with a hole}
+  
+%  \todo{example???}
+
+%  A common problem in structural mechanics is to find the stress concentration
+%  produced by a hole in an otherwise uniformly loaded structural component.
+%  Consider the plate below loaded by horizontal forces of \nunit{100}{\kNpm}.
+%  The plate is \nunit{1}{\m} thick and made of steel (Young's modulus
+%  \nunit{100}{\GPa}, Poisson's ratio $0.3$).
+
+%  \begin{figure}[htbp] \centering
+%    \input{figs/lin_elasticity/CMISSB.pstex}
+%  \end{figure}
+
+%  \label{xmp:stressesinplate}
+%\end{example}
+
+
+\section{Linear Elasticity with Boundary Elements}
+\label{sec:Lewbe-4.8}
+
+\Eqnref{eqn:virtws} is the starting point for the general finite element
+formulation (\Secref{sec:3Delast}). In the above derivation, we have 
+essentially used the Green-Gauss theorem once to move from \eqnref{eqn:integral} 
+to \eqnref{eqn:virtws} (as was done for the derivation of the FEM equation for
+Laplace's equation). To continue, we firstly note that
+\begin{align*}
+  \sigma_{ij}e_{ij}^{*} &= \dfrac{1}{2}\sigma_{ij}u_{i,j}^{*} +
+  \dfrac{1}{2}\sigma_{ij}u_{j,i}^{*}\\ 
+  &= \dfrac{1}{2}\sigma_{ij}u_{i,j}^{*} + \dfrac{1}{2}\sigma_{ji}u_{j,i} ^{*} \\ 
+  &= \dfrac{1}{2}\sigma_{ij}u_{i,j}^{*} + \dfrac{1}{2}\sigma_{ij}u_{i,j} ^{*} \\ 
+  &= \sigma_{ij} u_{i,j}^{*}
+\end{align*}
+where $e_{ij}^{*}$ are the virtual strains corresponding to the virtual
+displacements.
+
+Using the constitutive law for linearly elastic materials
+(\eqnref{eqn:genHook}) we have
+\begin{align*}
+  \goneint{\sigma_{ij}u_{i,j}^{*}}{\Omega} &=
+  \goneint{\sigma_{ij} e_{ij}^{*}}{\Omega} \\ 
+  &= \lambda\goneint{e_{kk} e_{ij}^{*} \delta_{ij}}{\Omega} + 
+  2\mu\goneint{e_{ij} e_{ij}^{*}}{\Omega} \\ 
+  &= \lambda\goneint{e_{kk} e_{kk}^{*}}{\Omega} + 
+  2\mu \goneint{e_{ij} e_{ij}^{*}}{\Omega} \\ 
+  &= \goneint{e_{ij} \sigma_{ij}^{*}}{\Omega}
+\end{align*}
+due to symmetry.
+
+Thus from the virtual work statement, \eqnref{eqn:virtws} and the above
+symmetry we have
+\begin{equation}
+  \goneint{b_{i}u_{i}^{*}}{\Omega} + \gint{\del \Omega}{} 
+  {t_{i}u_{i}^{*}}{\Gamma} = \goneint{b_{i}^{*}u_{i}}{\Omega} + 
+  \gint{\del \Omega}{}{t_{i}^{*} u_{i}}{\Gamma}
+  \label{eqn:Bsrwt}
+\end{equation}
+This is known as Betti's second reciprical work theorem or the Maxwell-Betti
+reciprocity relationship between two different elastic problems (the starred
+and unstarred variables) established on the same domain.
+
+Note that $b_{i}^{*} = -\sigma_{ij,j} ^{*}$  (\ie $\sigma_{ij,j} ^{*} +
+b_{i}^{*} =  0$). Therefore \eqnref{eqn:Bsrwt} can be written as
+\begin{equation}
+  \goneint{\pbrac{\sigma_{ij,j} ^{*}} u_{i}}{\Omega} + 
+  \goneint{b_{i} u_{i}^{*}}{\Omega} = 
+  \gint{\del \Omega}{}{t_{i}^{*} u_{i}}{\Gamma} - 
+  \gint{\del \Omega}{}{t_{i} u_{i}^{*}}{\Gamma}
+  \label{eqn:eqnD}
+\end{equation}
+($\sigma_{ij} ^{*},e_{ij}^{*},t_{i}^{*}$ represents the equilibrium state
+corresponding to the virtual displacements $u_{i}^{*}$).
+
+Note: What we have essentially done is use integration of parts to get
+\eqnref{eqn:virtws}, then use it again to get \eqnref{eqn:Bsrwt} above (after
+noting the reciprocity between $\sigma_{ij}$ and $e_{ij}$).
+
+Since the body forces, $b_{i}$, are known functions, the second domain
+integral on the left hand side of \eqnref{eqn:eqnD} does not introduce any
+unknowns into the problem (more about this later). The first domain integral
+contains unknown displacements in $\Omega$ and it is this integral we wish to
+remove.
+ 
+We choose the virtual displacements such that
+\begin{equation}
+  \sigma_{ij,j}^{*} + e_{i} \delta = 0 
+  \label{eqn:FundSol}
+\end{equation}
+(or equivalently $- b_{i}^{*} + e_{i} \delta = 0$), where $e_{i}$ is the \nth{i}
+component of a unit vector in the \nth{i} direction and $e_{i}\delta =
+e_{i}\fnof{\delta}{\vect{x} - P}$. We can interpret this as the body force
+components which correspond to a positive unit point load applied at a point
+$P \in \Omega$ in each of the three orthogonal directions.
+
+Therefore
+
+\begin{displaymath}
+  \gint{\Omega}{}{\sigma_{ij,j}^{*} u_{i}}{\Omega} = -
+  \gint{\Omega}{}{\fnof{\delta}{\vect{x} - P} e_{i} u_{i}}{\Omega} = - u_{i}(P)e_{i}
+\end{displaymath}
+\ie the volume integral is replaced with a point value (as for Laplace's 
+equation).
+
+Therefore, \eqnref{eqn:eqnD} becomes
+\begin{equation}
+  \fnof{u_{i}}{P}e_{i}  = \gint{\del \Omega}{}{t_{j} u_{j}^{*}}{\Gamma}  -  
+  \gint{\del \Omega}{}{t_{j}^{*} u_{j}}{\Gamma} + 
+  \goneint{b_{j} u_{j}^{*}}{\Omega} \qquad P \in \Omega
+  \label{eqn:eqnE}
+\end{equation}
+
+If each point load is taken to be independent then $u_{j}^{*}$ and $t_{j}^{*}$
+can be written as
+\begin{align}
+  u_{j}^{*} &= \fnof{u_{ij}^{*}}{P,x} e_{i} \\
+  t_{j}^{*} &= \fnof{t_{ij}^{*}}{P,x} e_{i}
+\end{align}
+where $\fnof{u_{ij}^{*}}{P,x}$ and $\fnof{t_{ij}^{*}}{P,x}$ represent the
+displacements and tractions in the $\nth{j}$ direction at $x$ corresponding to
+a unit point force acting in the $\nth{i}$ direction ($e_{i}$) applied at $P$.
+Substituting these into \eqnref{eqn:eqnE} (and equating components in each
+$e_{i}$ direction) yields
+\begin{multline}
+  \fnof{u_{i}}{P} = \gint{\del \Omega}{}{\fnof{u_{ij}^{*}}{P,x}
+    \fnof{t_{j}}{x}}{\fnof{\Gamma}{x}} - \gint{\del
+    \Omega}{}{\fnof{t_{ij}^{*}}{P,x} \fnof{u_{j}}{x}}{\fnof{\Gamma}{x}} \\ 
+  + \gint{\Omega}{}{\fnof{u_{ij}^{*}}{P,x}
+    \fnof{b_{j}}{x}}{\fnof{\Omega}{x}}
+ \label{eqn:eqnF}
+\end{multline}
+
+where $P \in \Omega$ (see later for $P \in \del\Omega$).
+
+This is known as Somigliana's \footnote{Somigliana was an Italian
+  Mathematician who published this result around 1894-1902.} identity for
+displacement.
+
+\section{Fundamental Solutions}
+
+Recall from \eqnref{eqn:FundSol} that $\sigma_{ij}^{*}$ satisfied
+\begin{equation}
+  \sigma_{ij,j}^{*} + \fnof{\delta}{\vect{x} - P}e_{i}  = 0 
+\end{equation} 
+or equivalently
+\begin{displaymath}
+  b_{i}^{*} = e_{i} \fnof{\delta}{\vect{x} - P}
+\end{displaymath}
+Navier's equation for the displacements $u_{i}^{*}$ is
+\begin{displaymath}
+  G\;u_{i,kk}^{*}  +  \dfrac{G}{1-2\nu}u_{k,ki}^{*}  + b_{i}^{*} = 0 
+\end{displaymath}
+where $G$ = shear Modulus.
+
+Thus $u_{i}^{*}$ satisfy
+\begin{equation}
+  G\;u_{i,kk}^{*}  +  \dfrac{G}{1-2\nu}u_{k,ki}^{*} + \fnof{\delta}{\vect{x} -
+    P}e_{i} = 0 
+  \label{eqn:satisfy}
+\end{equation}
+
+The solutions to the above equation in either two or three dimensions are
+known as Kelvin~\footnote{Lord Kelvin (1824-1907) Scottish physicist who made
+  great contributions to the science of thermodynamics}'s fundamental
+solutions\index{Fundamental solution!Kelvin} and are given by
+\begin{equation}
+  \fnof{u_{ij}^{*}}{P,\vect{x}} = \dfrac{1}{16\pi\pbrac{1 - \nu}Gr}\bbrac{\pbrac{3
+    -4\nu} \delta_{ij} + r_{,i}r_{,j}}
+  \label{eqn:Kelvin}
+\end{equation}
+for three-dimensions and for two-dimensional plane strain problems,
+\begin{equation}
+  \fnof{u_{ij}^{*}}{P,\vect{x}} = \dfrac{-1}{8\pi\pbrac{1 -
+      \nu}G}\bbrac{\pbrac{3 -4\nu} \delta_{ij} \log r - r_{,i}r_{,j}}
+  \label{eqn:threeD}
+\end{equation}
+and 
+\begin{equation}
+  \fnof{t_{ij}^{*}}{P,\vect{x}} = \dfrac{-1}{4 \alpha \pi\pbrac{1 - \nu}r^{\alpha}}
+  \bbrac{\pbrac{\pbrac{1-2\nu} \delta_{ij} + \beta r_{,i}r_{,j}} 
+      \delby{r}{n} - \pbrac{1-2\nu}\pbrac{r_{,i}n_{j} -r_{,j}n_{i}}} 
+  \label{eqn:twoD}
+\end{equation}
+where $\alpha = 1,2; \beta = 2,3$ for two-dimensional plane strain and
+three-dimensional problems respectively.
+
+Here $r\equiv \fnof{r}{P,\vect{x}}$, the distance between load point ($P$) and
+field point ($\vect{x}$), 
+$r_{i}  = \fnof{x_{i}}{\vect{x}}-\fnof{x_{i}}{P}$ and
+$r_{,i} = \delby{r}{\fnof{x_{i}}{\vect{x}}}= \dfrac{r_{i}}{r}$.
+
+In addition the strains at an point $\vect{x}$ due to a unit point load applied
+at $P$ in the $\nth{i}$ direction are given by
+\begin{displaymath}
+  \fnof{e_{jki}^{*}}{P,\vect{x}} = \dfrac{-1}{8 \alpha \pi \pbrac{1-\nu}
+    Gr^{\alpha}} \bbrac{\pbrac{1-2\nu}\pbrac{r_{,k} \delta_{ij} +r_{,j} \delta
+    _{ik}} - r_{,i} \delta_{jk} + \beta r_{,i} r_{,j}r_{,k}}
+\end{displaymath}
+and the stresses are given by
+\begin{displaymath}
+  \fnof{\sigma_{ijk}^{*}}{P,\vect{x}} = \dfrac{-1}{4 \alpha \pi \pbrac{1-\nu}
+    r^{\alpha}} \bbrac{\pbrac{1-2\nu}\pbrac{r_{,k} \delta_{ij} +r_{,j} \delta
+      _{ki} - r_{,i} \delta_{jk}} + \beta r_{,i} r_{,j}r_{,k}}
+\end{displaymath}
+where $\alpha$ and $\beta$ are defined above.
+
+The plane strain expressions are valid for plane stress if $\nu$ is replaced
+by $\overline{\nu} = \dfrac{\nu}{1 + \nu}$ (This is a mathematical equivalence
+of plane stress and plane strain - there are obviously physical differences.
+What the mathematical equivalence allows us to do is to use one program to
+solve both types of problems - all we have to do is modify the values of the
+elastic constants).
+
+Note that in three dimensions
+\begin{displaymath}
+  u_{ij}^{*} = \orderof{\frac{1}{r}}\hspace{0.5in} t_{ij}^{*} = 
+  \orderof{\frac{1}{r^{2}}}
+\end{displaymath}
+ and for two dimensions
+\begin{displaymath}
+  u_{ij}^{*} = \orderof{\log r}\hspace{0.5in}  t_{ij}^{*} = \orderof{\frac{1}{r}}.
+\end{displaymath}
+
+
+Somigliana's identity (\eqnref{eqn:eqnF}) is a continuous representation of
+displacements at any point $P \in \Omega$.  Consequently, one can find the
+stress at any $P \in \Omega$ firstly by combining derivatives of
+\bref{eqn:eqnF} to produce the strains and then substituting into Hooke's law.
+Details can be found in \citeasnoun{brebbia:1984} pp 190--191, 255--258.
+
+This yields
+\begin{align*}
+  \fnof{\sigma_{ij}}{P} &= \gint{\Gamma}{}{\fnof{u_{ijk}^{*}}{P,\vect{x}}
+    \fnof{t_{k}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} -
+    \gint{\Gamma}{}{\fnof{t_{ijk}^{*}}{P,\vect{x}}
+    \fnof{u_{k}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} \\ 
+  &+ \gint{\Omega}{}{\fnof{u_{ijk}^{*}}{P,\vect{x}}
+    \fnof{b_{k}}{\vect{x}}}{\fnof{\Omega}{\vect{x}}}
+\end{align*}
+
+Note: One can find internal stress via numerical differentiation as in FE/FD
+but these are not as accurate as the above expressions.
+
+Expressions for the new tensors $ u_{ijk}^{*}$ and $t_{ijk}^{*}$ are on page
+191 in \cite{brebbia:1984}.
+
+\section{Boundary Integral Equation}
+\label{sec:BIE,sec4.10}
+
+Just as we did for Laplace's equation we need to consider the limiting case of
+\eqnref{eqn:eqnF} as $P$ is moved to $\del \Omega$. (\ie we need to find the
+equivalent of $\fnof{c}{P}$ (in section 3) - called here $\fnof{c_{ij}}{P}$.)
+We use the same procedure as for Laplace's equation but here things are not so
+easy.
+
+If  $P \in \del \Omega$ we enlarge $\Omega$ to $\Omega^{\prime}$ as 
+shown.
+
+\begin{figure}[htbp] \centering
+  \input{figs/lin_elasticity/illus.pstex}
+  \caption{Illustration of enlarged domain when singular point is on the 
+    boundary.}
+\end{figure}
+Then \eqnref{eqn:eqnF} can be written as
+\begin{multline}
+  \fnof{u_{i}}{P} = \gint{\Gamma_{-\varepsilon} +\Gamma_{\varepsilon}}{}
+  {\fnof{u_{ij}^{*}}{P,\vect{x}}
+    \fnof{t_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} -
+  \gint{\Gamma_{-\varepsilon}+
+    \Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}
+    \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} \\ +
+    \gint{\Omega^{\prime}}{}{\fnof{u_{ij}^*}{P,\vect{x}} \fnof{b_{j}}{\vect{x}}}
+    {\fnof{\Omega}{\vect{x}}} 
+  \label{eqn:Fwrit}
+\end{multline} 
+
+We need to look at each integral in turn as $\varepsilon^{\downarrow}0$ (\ie
+$\varepsilon \rightarrow 0$ from above).  The only integral that presents a
+problem is the second integral. This can be written as
+\begin{multline}
+  \gint{\Gamma_{-\varepsilon}+\Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}} \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} =
+  \gint{\Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}
+    \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} \\ +
+  \gint{\Gamma_{-\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}
+    \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}}
+  \label{eqn:2ndint}
+\end{multline} 
+
+The first integral on the right hand side can be written as
+\begin{multline}
+  \gint{\Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}
+    \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} =
+  \underbrace{\gint{\Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}
+      \sqbrac{\fnof{u_{j}}{\vect{x}}-\fnof{u_{j}}{P}}}{\Gamma(x)}}_{\text{$0$
+      by continuity of $\fnof{u_{j}}{x}$}} \\ + \fnof{u_{j}}{P}
+  \gint{\Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}}
+  {\fnof{\Gamma}{\vect{x}}}
+\label{eqn:1stint}
+\end{multline}  
+  
+Let
+\begin{equation}
+  \fnof{c_{ij}}{P} = \delta_{ij} + \lim_{\varepsilon \downarrow 0}
+   \gint{\Gamma_{\varepsilon}}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}}
+   {\fnof{\Gamma}{\vect{x}}}
+ \label{eqn:eqnG}
+\end{equation}
+
+As $\varepsilon^{\downarrow} 0$, $\Gamma_{-\varepsilon}\rightarrow \Gamma$ and
+we write the second integral of \eqnref{eqn:2ndint} as $\gint{\Gamma}{}
+{\fnof{t_{ij}^{*}}{P,\vect{x}}
+  \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}}$ where we interpret this in
+the Cauchy Principal Value\footnote{What is a Cauchy Principle Value? 
+                \newline Consider $\fnof{f}{x} = \dfrac{1}{x}$ on
+    $\Gamma_{-\varepsilon} = \sqbrac{-2,-\varepsilon) \cup (\varepsilon,2}$
+   \newline Then
+      \begin{alignat*}{2}
+        \gint{\Gamma_{-\varepsilon}}{}{\fnof{f}{x}}{x} &=
+        \gint{-2}{-\varepsilon}{\dfrac{1}{x}}{x} +
+        \gint{\varepsilon}{2}{\dfrac{1}{x}}{x} 
+        = \evalat{\ln \abs{x}}{{-2}}^{-\varepsilon} + 
+          \evalat{\ln\abs{x}}{{\varepsilon}}^{2} && \\ 
+          &= \ln \varepsilon -\ln 2 + \ln 2
+        - \ln \varepsilon=0 \;\;\forall \varepsilon>0 && \\ & \Rightarrow
+        \displaystyle{\lim_{\varepsilon \rightarrow 0}}
+        \gint{\Gamma_{-\varepsilon}}{}{\fnof{f}{x}}{x} = 0 && 
+                                \text{This is the Cauchy Principle Value of}
+                        \gint{\Gamma}{}{\fnof{f}{x}}{x}
+%%                                \label{eqn:CPV}
+      \end{alignat*}
+   But if we replace $\Gamma_{-\varepsilon}$  by 
+   $\displaystyle{\lim_{\varepsilon\rightarrow 0}}\Gamma_{-\varepsilon} = 
+   \sqbrac{-2,2}  = \Gamma$ then 
+   \begin{align*}
+        \gint{\Gamma}{}{\dfrac{1}{x}}{x} = \gint{-2}{2}
+        {\dfrac{1}{x}}{x} = \pbrac{\displaystyle{\lim_{\varepsilon_{1} 
+              \rightarrow 0}}\gint{-2}{\varepsilon_{1}}{\dfrac{1}{x}}{x}}  +
+        \pbrac{\displaystyle{\lim_{\varepsilon_{2} 
+              \rightarrow 0}}\gint{-\varepsilon_{2}}{2}{\dfrac{1}{x}}{x}}
+        &\text{(by definition of improper integration)}
+%        \label{eqn:bydefn}
+    \end{align*}
+    \newline which does NOT exist. \ie the integral does not exist in the
+    proper sense, but it does in the Cauchy Principal Value sense. However, if
+    an integral exists in the proper sense, then it exists in the Cauchy
+    Principal Value sense and the two values are the same.}sense. 
+
+Thus as $\varepsilon^{\downarrow}0$ we get the boundary integral equation
+\begin{multline}
+  \fnof{c_{ij}}{P} \fnof{u_{j}}{P} +
+  \gint{\Gamma}{}{\fnof{t_{ij}^{*}}{P,\vect{x}}
+    \fnof{u_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} \\
+  = \gint{\Gamma}{}{\fnof{u_{ij}^{*}}{P,\vect{x}}
+    \fnof{t_{j}}{\vect{x}}}{\fnof{\Gamma}{\vect{x}}} 
+  + \goneint{\fnof{u_{ij}^{*}}{P,\vect{x}} \fnof{b_{j}}{\vect{x}}}{\Omega}
+  \label{eqn:eqnH}
+\end{multline}
+(or, in brief (no body force), $c_{ij} u_{j} + \gint{\Gamma}{}{t_{ij}^{*}
+u_{j}}{\Gamma} = \gint{\Gamma}{}{u_{ij}^{*} t_{j}}{\Gamma} $) where the
+integral on the left hand side is interpreted in the Cauchy Principal sense.
+In practical applications $c_{ij}$ and the principal value integral can be
+found indirectly from using \eqnref{eqn:eqnH} to represent rigid-body
+movements.
+
+The numerical implementation of \eqnref{eqn:eqnH} is similar to the numerical 
+implementation of an elliptic equation (\eg Laplace's Equation).  However, whereas
+with Laplace's equation the unknowns were $u$ and $\delby{u}{n}$ (scalar 
+quantities) here the unknowns are vector quantities. Thus it is more 
+convenient to work with matrices instead of indicial notation.
+\newline \ie use
+\begin{displaymath}
+  \vect{u} = \begin{bmatrix}
+    u_{1} \\
+    u_{2} \\
+    u_{3}
+  \end{bmatrix}, \qquad 
+  \vect{t} = \begin{bmatrix}
+    t_{1} \\ 
+    t_{2} \\
+    t_{3}
+  \end{bmatrix}
+\end{displaymath}
+\begin{displaymath}
+  \vect{u}^{*} = \begin{bmatrix}
+    u_{11}^{*} &  u_{12}^{*} &  u_{13}^{*}\\
+    u_{21}^{*} &  u_{22}^{*} &  u_{23}^{*}\\
+    u_{31}^{*} &  u_{32}^{*} &  u_{33}^{*}
+  \end{bmatrix}, \qquad
+  \vect{t}^{*} = \begin{bmatrix}
+    t_{11}^{*} &  t_{12}^{*} &  t_{13}^{*}\\
+    t_{21}^{*} &  t_{22}^{*} &  t_{23}^{*}\\
+    t_{31}^{*} &  t_{32}^{*} &  t_{33}^{*}
+  \end{bmatrix}
+\end{displaymath}
+Then (in absence of a body force) we can write \eqnref{eqn:eqnH} as 
+\begin{equation}
+  \vect{cu} + \goneint{\vect{t}^{*}\vect{u}}{\Gamma} =
+  \goneint{\vect{u}^{*}\vect{t}}{\Gamma}
+  \label{eqn:eqnH*}
+\end{equation}
+
+We can discretise the boundary as before and put $P$, the singular point, at
+each node (each node has $6$ unknowns - $3$ displacements and $3$ tractions - we get
+$3$ equations per node). The overall matrix equation
+\begin{equation}
+  \matr{A}\vect{U}=\matr{B}\vect{T}
+  \label{eqn:matrix}
+\end{equation}
+where $\vect{U} = 
+\begin{bmatrix}
+  \vect{u}_{1} \\ 
+  \vect{u}_{2} \\ 
+  \vdots \\ 
+  \vect{u}_{n}
+\end{bmatrix} $ and  $ \vect{t} = 
+\begin{bmatrix}
+  \vect{t}_{1} \\
+  \vect{t}_{2} \\ 
+  \vdots \\
+  \vect{t}_{n}
+\end{bmatrix}$ where $n$ is the number nodes.
+
+The diagonal elements of the $\matr{A}$ matrix in \eqnref{eqn:matrix} 
+(for three-dimensions, a $3$ x $3$
+matrix) contains principal value components. If we have a rigid-body
+displacement of a \emph{finite} body in any one direction then we get
+\begin{equation*}
+  \matr{A}\vect{I}_{l} = \vect{0}
+\end{equation*}
+($\vect{I}_{l}$ = vector defining a rigid body displacement in direction $l$)
+\begin{displaymath}
+    \Rightarrow a_{ii} = -\dsuml{i\neq j}{}a_{ij} \qquad \text{(no sum on $i$)} 
+\end{displaymath} 
+\ie the diagonal entries of $\matr{A}$ (the $c_{ij}$'s) do not need to be
+determined explicitly. There is a similar result for an infinite body.
+
+\section{Body Forces (and Domain Integrals in General)}
+
+The body force gives rise to a domain integral although it does not give rise
+to any further unknowns in the system of equations.  (This is because the body
+force is known - the fundamental solution was chosen so that it removed all
+unknowns appearing in domain integrals).
+
+Thus \eqnref{eqn:eqnH} is still classed as a Boundary Integral Equation.
+Integrals over the domain containing known functions (eg body force integral)
+appear in many situations \eg the Poisson equation $\laplacian{u}=f$ yields a
+domain integral involving $f$.
+
+The question is how do we evaluate domain integrals such as those appearing in
+the boundary integral forumalation of such equations?  Since the functions are
+known a \emph{coarse} domain mesh may work.(\nb Since the integral also
+contains the fundamental solution and $\Omega$ may not be a ``nice'' region it
+is unlikely that it can be evaluated analytically). However, a domain mesh
+nullifies one of the advantages of BEM - that of having to prepare only a
+boundary mesh.
+
+In some cases domain integrals must be used but there are techniques
+developing to avoid many of them.  In some standard situations a domain
+integral can be transformed to a boundary integral. \eg a body force arising
+from a constant gravitational load, or a centrifugal load due to rotation
+about a fixed axis or the effect of a steady state thermal load can all be
+transformed to a boundary integral.
+
+Firstly, let $G_{ij}^{*}$ (the Galerkin tension) be related to $u_{ij}^{*}$ by
+\begin{align*}
+    u_{ij}^{*} &= G_{ij,kk}^{*} -  \dfrac{1}{2\pbrac{1-\nu}}G_{ik,kj}^{*} \\
+    \Rightarrow G_{ij} &=
+    \left\{ \begin{array}{ll}
+        \dfrac{1}{8 \pi G} r \delta_{ij} & \text{ (3D)}\\
+        \dfrac{1}{8 \pi G}  r^{2} \log \pbrac{\dfrac{1}{r}} \delta_{ij}
+        & \text{ (2D)}
+      \end{array} \right.
+\end{align*}
+
+Then
+\begin{displaymath}
+  B_{i}  =  \goneint{u_{ij}^{*} b_{j}}{\Omega} =   
+  \goneint{\pbrac{G_{ij,kk}^{*} -\dfrac{1}{2\pbrac{1-\nu}} G_{ik,kj}^{*}}
+  b_{j}}{\Omega}
+\end{displaymath} 
+
+Under a constant gravitational load $\vect{g}=\pbrac{g_{j}}$
+\begin{align*}
+  b_{j} &= \rho g_{j}\\
+  \Rightarrow B_{i} &= \rho g_{j} \goneint{\pbrac{G_{ik,j}^{*} 
+  -\dfrac{1}{2\pbrac{1-\nu}} G_{ik,kj}^{*}}}{\Omega} \\
+  &= \rho g_{j} \goneint{\bbrac{G_{ij,k}^{*} -\dfrac{1}{2\pbrac{1-\nu\}} 
+  G_{ik,j}^{*}}}n_{k}}{\Gamma}
+\end{align*}
+which is a boundary integral. 
+
+Unless the domain integrand is ``nice'' the above simple application of
+Green's theorem won't work in general. There has been a considerable amount of
+research on domain integrals in BEM which has produced techniques for
+overcoming some domain methods. The two integrals of note are the DRM, dual
+reciprocity method, developed around 1982 and the MRM, multiple reciprocity
+method, developed around 1988.
+
+\clearpage 
+\section{CMISS Examples}
+
+\begin{enumerate}
+\item   To solve a truss system run CMISS example $411$
+  This solves the simple three truss system shown in
+  \Figref{fig:system}. 
+  \label{xmp:Solving}
+
+\item  To solve stresses in a bicycle frame modelled with truss elements 
+  run CMISS example $412$.
+  \begin{figure}[htbp] \centering
+    \input{figs/lin_elasticity/CMISSA.pstex}
+  \end{figure}
+  \label{xmp:stressesinabike}
+\end{enumerate}
+
+%\begin{example}{Stresses in a bicycle frame modelled with beam elements}
+%  {Stresses in a bicycle frame modelled with beam elements.}
+%  \todo{example???}
+
+%  \begin{figure}[htbp] \centering
+%    \input{figs/CMISSA.pstex}
+%  \end{figure}
+%  \label{xmp:Sbfbe}
+%\end{example}
+%\index{Beam elements|)}
+
+%\begin{example}{Stresses in a plate with a hole}
+%  {Stresses in a plate with a hole}
+  
+%  \todo{example???}
+
+%  A common problem in structural mechanics is to find the stress concentration
+%  produced by a hole in an otherwise uniformly loaded structural component.
+%  Consider the plate below loaded by horizontal forces of \nunit{100}{\kNpm}.
+%  The plate is \nunit{1}{\m} thick and made of steel (Young's modulus
+%  \nunit{100}{\GPa}, Poisson's ratio $0.3$).
+
+%  \begin{figure}[htbp] \centering
+%    \input{figs/lin_elasticity/CMISSB.pstex}
+%  \end{figure}
+%  \label{xmp:stressesinplate}
+%\end{example}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "/product/cmiss/documents/notes/fembemnotes/fembemnotes"
+%%% End: 
+
