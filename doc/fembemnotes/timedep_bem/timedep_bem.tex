@@ -1,0 +1,409 @@
+\chapter{The BEM for Parabolic PDES}
+
+\section{Time-Stepping Methods}
+
+Several approaches have been proposed for applying the BEM to parabolic
+problems.  These methods can be broadly classified into two main approaches.
+Either some form of time-stepping procedure is used to advance the solution
+in time, or a semi-analytic technique is used which can directly calculate
+a solution at a specified time. In this section time-stepping procedures
+will be considered.
+
+Time-stepping approaches discretise the time domain in some manner and use
+some form of time marching scheme to advance the solution from one discrete
+time to the next.  The two most commonly used time-stepping methods are the
+coupled finite difference - BEM and the direct time integration method.
+These two methods will be outlined in this section for the diffusion
+equation 
+\begin{equation}
+  \laplacian{\fnof{u}{\vect{x},t}} = \dfrac{1}{\kappa}
+  \delby{\fnof{u}{\vect{x},t}}{t}
+\end{equation}
+where the diffusivity $\kappa$ is a material parameter which can be a
+constant or a function of position.
+
+\subsection{Coupled Finite Difference - Boundary Element Method}
+\label{sec:fdbem}
+
+\index{Coupled finite difference - boundary element method}
+This approach discretises the time-domain in a finite difference form.
+Consider the variation between a time $t^{m}$ and a time $t^{m+1} =
+t^{m} + \Delta t$.  The most common approach \cite{brebbia:1984} is to
+assume that, for sufficiently small $\Delta t$, the time derivative can be
+approximated using a first-order fully implicit finite difference scheme 
+\begin{equation}
+  \delby{\fnof{u}{\vect{x},t^{m+1}}}{t} =
+  \dfrac{\fnof{u}{\vect{x},t^{m+1}} - \fnof{u}{\vect{x},t^{m}}}{\Delta t}
+\label{eq:fdapprox}
+\end{equation}
+which allows the diffusion equation in this time-range to be approximated as
+\begin{equation}
+\laplacian{\fnof{u}{\vect{x},t^{m+1}}} - \dfrac{1}{\kappa \Delta t}
+\fnof{u}{\vect{x},t^{m+1}} + \dfrac{1}{\kappa \Delta t} \fnof{u}{\vect{x},t^{m}} = 0
+\label{eq:diffdapprox}
+\end{equation}
+Using this finite difference approximation the original parabolic equation
+has been reduced to an elliptic equation.  Using the weighted residuals
+method an integral equation can be generated from \eqnref{eq:diffdapprox}. 
+\begin{equation}
+\fnof{c}{\vect{\xi}}u^{m+1} + \goneint{u^{m+1} \delby{\omega}{n}}{\Gamma} =
+\goneint{q^{m+1} \omega d\Gamma + \dfrac{1}{\kappa \Delta t}
+\dintl{\Omega}{} u^{m} \omega}{\Omega}
+\label{eq:fdbem}
+\end{equation}
+where $u^{m+1} = \fnof{u}{\vect{x},t^{m+1}}$ and $u^{m} = \fnof{u}{\vect{x},t^{m}}$.
+The fundamental solution $\omega$ is a solution of the modified
+Helmholtz equation
+\begin{equation}
+\laplacian{\fnof{\omega}{\vect{x},\vect{\xi}}} - \dfrac{1}{\kappa \Delta t}
+\fnof{\omega}{\vect{x},\vect{\xi}} + \fnof{\delta}{\vect{\xi}} = 0 
+\end{equation}
+applied at some source point $\xi$.  The fundamental solution of the
+modified Helmholtz equation is known in both two and three dimensions.  If
+an internal solution is required at a specific time this can be determined
+explicitly from \eqnref{eq:fdbem} where the fundamental solution is applied
+at internal point $\xi$ and $\fnof{c}{\vect{\xi}} = 1$.
+
+Unfortunately \eqnref{eq:fdbem} contains a domain integral.  This integral is
+generally evaluated by using a domain mesh \cite{brebbia:1984}.  The domain
+integral does not include any problem unknowns so a fairly coarse domain
+mesh will generally suffice. Applying the BEM to \eqnref{eq:fdbem} gives
+\begin{equation}
+\matr{H} \vect{u^{m+1}} - \matr{G} \vect{q^{m+1}} = \matr{B} \vect{u^{m}}
+\label{eq:fdbemsys}
+\end{equation}
+where $\matr{B}$ is a matrix containing the influence coefficients due to the
+domain integral.  Using \eqnref{eq:fdbemsys} the solution
+can be advanced in time.  $\matr{u^{0}}$ is known from the initial
+conditions so a solution can be calculated at $t = t_{0} + \Delta t$.  A
+solution at internal nodes can then be calculated.  The time-stepping
+procedure can be repeated using the internal solution at  $t = t_{0} +
+\Delta t$ as pseudo-initial conditions for the next time-step.  
+
+If a constant time-step is used the matrices $\matr{H}$, $\matr{G}$ and
+$\matr{B}$ can be calculated once and stored. The boundary conditions can be
+applied to form a solution system of the form $\matr{A} \vect{x^{m+1}} =
+\vect{\tau}$ where $\vect{x^{m+1}}$ is the vector of unknown nodal values
+at time $t^{m+1}$ and $\vect{\tau}$ is a vector constructed from known
+nodal values from the previous time-step.  For a problem with
+time-independent boundary conditions at each time-step it is only necessary
+to update $\vect{\tau}$ and solve the system for $\vect{x^{m+1}}$.  If a
+problem has time-dependent boundary conditions the solution system needs to
+be reformed at each time-step.
+
+This coupled finite difference - boundary element method (FD-BEM) was first
+proposed by \citeasnoun{walker:1980} for the diffusion equation. It was
+implemented and investigated by \citeasnoun{curran:1980}.  They found that
+this method will only produce accurate results if \eqnref{eq:fdapprox}
+accurately approximates the time derivative.  This will generally require
+small time-steps to be adopted.  \citename{curran:1980} investigated the use
+of a higher-order approximation to the time-derivative.  They found that
+this improved the accuracy of the method.  Unfortunately it lead to a
+deterioration in convergence behaviour.
+
+\citeasnoun{tanaka:1994} proposed a generalised version of this time-stepping
+scheme.  They approximated the time variation within an interval as
+\begin{equation}
+\fnof{u}{\vect{x},t} = \phi \fnof{u}{\vect{x},t^{m+1}} + \pbrac{1-\phi}
+\fnof{u}{\vect{x},t^{m}}
+\end{equation}
+where $\phi$, termed the time-scheme parameter, is a constant in the range
+$0 < \phi \leq 1$.  Substituting this approximation and a first-order
+finite difference approximation of the time derivative into the diffusion
+equation gives
+\begin{equation}
+  \phi \laplacian{u^{m+1}} + \pbrac{1 - \phi} \laplacian{u^{m}} = \dfrac{u^{m+1} -
+    u^{m}}{\kappa \Delta t}
+\label{eq:tandiffapprox}
+\end{equation}
+If $\phi = 1$ this approximation of the diffusion equation is
+equivalent to the standard FD-BEM discussed earlier.  An integral equation
+can be derived from \eqnref{eq:tandiffapprox}.  \citename{tanaka:1994}
+implemented this method and found it gave accurate results for a range of
+diffusion problems.  They tested the accuracy for a Crank-Nicolson scheme
+($\phi = \frac{1}{2}$), a Galerkin scheme ($\phi = \frac{2}{3}$) and a
+fully implicit scheme ($\phi = 1$). They found that the best results were
+achieved using a Crank-Nicolson scheme. 
+
+\subsection{Direct Time-Integration Method}
+
+\index{Direct time-integration method}
+Instead of converting the original parabolic equation to an elliptic
+equation the problem can be treated directly in the time domain by directly
+integrating over both time and space.  The weighted residual statement
+using this approach is
+\begin{equation}
+  \gint{t_{0}}{t_{F}}{\goneint{\sqbrac{\laplacian{\fnof{u}{\vect{x},t}} -
+        \dfrac{1}{\kappa} \delby{\fnof{u}{\vect{x},t}}{t}}
+      \fnof{\omega}{\xi,\vect{x},t_{F},t}}{\Omega}}{t} = 0
+\end{equation}
+Integrating in time once and in space twice gives
+\begin{equation}
+  \fnof{c}{\xi} \fnof{u}{\xi,t_{F}} + \kappa \gint{t_{0}}{t_{F}}
+  {\goneint{u \delby{\omega}{n}}{\Gamma}}{t} = \kappa
+  \gint{t_{0}}{t_{F}}{\goneint{q \omega}{\Gamma}}{t} +
+  \goneint{\fnof{u}{\vect{x},t_{0}} \omega}{\Omega}
+\label{eq:tdfs}
+\end{equation}
+where the fundamental solution $\omega$ satisfies
+\begin{equation}
+  \kappa \laplacian{\fnof{\omega}{\xi,\vect{x},t_{F},t}} 
+  + \delby{\fnof{\omega}{\xi,\vect{x},t_{F},t}}{t} 
+  + \fnof{\delta}{\xi} \fnof{\delta}{t_{F}} = 0
+\end{equation}
+This time dependent fundamental solution is known in two and three
+dimensions.  Physically this fundamental solution represents the effect at
+a field point $\vect{x}$ at time $t$ of a unit point source applied at a
+point $\xi$ at time $t_{F}$.  If an internal solution is required at a
+specific time this can be determined from \eqnref{eq:tdfs} with $\fnof{c}{\xi} = 1$.
+
+The variation of $u$ and $q$ with time is unknown so it is still necessary
+to step in time.  However, as the time dependence is included in the
+fundamental solution, accurate results can be achieved using larger
+time-steps than with the FD-BEM.  Two different time-stepping schemes can
+be used.  Similarly to the FD-BEM, each time-step can be treated as a new
+problem so that an internal solution is constructed at the end of each
+time-step to be used as pseudo-initial conditions for the next time-step.
+Alternatively the time integration process can be restarted at $t_{0}$ with
+increasing numbers of intermediate steps used.  These two time-stepping
+approaches are discussed in detail in \citeasnoun{brebbia:1984}.
+
+The first method requires a new domain integral to be calculated after each
+time-step due to the updated pseudo-initial conditions.  The second
+time-stepping procedure involves only a domain integral at $t_{0}$ so,
+ideally, a domain integral only needs to be calculated once. This, however,
+will still require the user to create a domain mesh. As mentioned by
+\citeasnoun{brebbia:1984}, in many practical cases the domain integral can
+be avoided. If the initial conditions are $u_{0} = 0$ throughout the body
+the domain integral equals zero. If the initial conditions satisfy
+Laplace's equation $\laplacian{u_{0}} = 0$ then a Galerkin vector can be found
+and the domain integral can be expressed as equivalent boundary integrals.
+This includes many practical cases such as constant initial temperature or
+an initial linear temperature profile.
+
+Unfortunately, in practice it is not always feasible to restart the
+integration process at $t_{0}$. At each time-step new $\matr{H}$ and
+$\matr{G}$ matrices are required so if many time-steps are required the
+storage capacity of the computer is likely to be exceeded.  This requires
+the procedure to be restarted at some time where an internal solution is
+constructed and used as pseudo-initial conditions to repeat the process.
+Therefore, in practice, both time-stepping methods are likely to require
+domain integration.
+
+\section{Laplace Transform Method}
+
+\index{Laplace transform method}
+An alternative approach which avoids time-stepping is to solve the problem
+in a transform domain which removes the time dependence of the problem.
+The parabolic PDE is thus converted to an elliptic problem for which the
+boundary element method has been shown to generally produce accurate
+results.  Once the solution to the elliptic problem is determined in the
+transform space a solution in the original space can be attained using an
+inverse transform procedure.  The most appropriate transform approach for
+parabolic problems is the Laplace transform.
+
+Consider the diffusion equation
+\begin{equation}
+  \laplacian{\fnof{u}{\vect{x},t}} = \dfrac{1}{\kappa}
+  \delby{\fnof{u}{\vect{x},t}}{t}
+\label{eq:lap_diff}
+\end{equation}
+with appropriate boundary and initial conditions.  The Laplace transform
+of $\fnof{u}{\vect{x},t}$ will be symbolised as $\fnof{U}{\vect{x},\lambda}$ and is
+defined as
+\begin{equation}
+  \fnof{U}{\vect{x},\lambda} = \gint{0}{\infty}{e^{-\lambda t}
+  \fnof{u}{\vect{x},t}}{t}
+\end{equation}
+Applying Laplace transforms to \eqnref{eq:lap_diff} gives
+\begin{equation}
+  \laplacian{\fnof{U}{\vect{x},\lambda}} = \dfrac{1}{\kappa} \pbrac{\lambda
+    \fnof{U}{\vect{x},\lambda} - \fnof{u_{0}}{\vect{x}}}
+\label{eq:laptrans}
+\end{equation}
+with transformed boundary conditions. $\fnof{u_{0}}{\vect{x}}$ is the initial
+conditions of $u$. \eqnref{eq:laptrans} is an elliptic PDE which can be
+readily solved using the boundary element method.  Once the solution is
+determined in Laplace transform space this solution can be inverted to give
+a solution in the time-domain. This inversion procedure requires solutions
+to be generated for several values of the transform parameter $\lambda$.
+
+This method was first proposed by \citeasnoun{rizzo:1970} and has since
+been successfully used by other practitioners \cite{moridis:1991}
+\cite{zhu:1994}.  \citeasnoun{liggett:1979} compared the Laplace transform
+method with the time-dependent Green's function method. They noted that the
+direct method is simpler to apply.  However, due to its greater efficiency,
+they recommended the Laplace transform method for solving diffusion
+problems.
+
+One limitation of the Laplace transform method is that \eqnref{eq:laptrans}
+is inhomogeneous so that applying the standard BEM will generate a domain
+integral involving the initial conditions.  Traditionally this domain
+integral has been calculated by using a domain discretisation
+\cite{brebbia:1984}.  However, recently \citeasnoun{zhu:1994} proposed
+using the DR-BEM to convert this domain integral term to equivalent
+boundary integrals.  They chose to apply the DR-BEM based on the known
+fundamental solution to the Laplace operator.  Considering
+\eqnref{eq:laptrans} this means that the DR-BEM will be used to convert the
+right-hand-side to equivalent domain integrals.  Therefore the required
+DR-BEM approximation is
+\begin{equation}
+  \dfrac{1}{\kappa} \pbrac{\lambda \fnof{U}{\vect{x},\lambda} -
+    \fnof{u_{0}}{\vect{x}}} = \dsuml{j=1}{N+L} f_{j}\alpha_{j}
+\label{eq:drmapprox}
+\end{equation}
+The DR-BEM can now be applied to \eqnref{eq:laptrans}, giving a matrix
+system of the form
+\begin{equation}
+  \pbrac{\matr{H} - \dfrac{\lambda}{\kappa}\matr{S}} \vect{U} - \matr{G}
+  \vect{q} = -\dfrac{1}{\kappa} \matr{S} \vect{u_{0}}
+\end{equation}
+which can be reduced to a square system by applying boundary conditions.
+Once the solution is determined for this elliptic equation in the transform
+space a solution at a given time can be constructed using an inversion
+process.
+
+This Laplace transform dual reciprocity method (LT-DRM) can easily be
+extended to equations of the form
+\begin{equation}
+  \laplacian{\fnof{u}{\vect{x},t}} = \dfrac{1}{\kappa}
+  \delby{\fnof{u}{\vect{x},t}}{t} + \fnof{b}{\vect{x},u}
+\end{equation}
+in which case a matrix expression of the form 
+\begin{equation}
+  \pbrac{\matr{H} -\matr{R} - \dfrac{\lambda}{\kappa}\matr{S}} \vect{U}
+  - \matr{G} \vect{q} = -\dfrac{1}{\kappa} \matr{S} \vect{u_{0}}
+\end{equation}
+is generated.  Zhu and his colleagues have successfully extended the LT-DRM
+to solve diffusion problems with nonlinear source terms.
+
+\section{The DR-BEM For Transient Problems}
+\label{sec:drmtrans}
+
+\index{Dual reciprocity boundary element method@Dual reciprocity
+  BEM!transient problems}
+The DR-BEM can also be applied to parabolic problems. Consider, 
+for example, the diffusion equation
+\begin{equation}
+\laplacian{u}  = \dfrac{1}{\kappa} \delby{u}{t}
+\end{equation}
+where the thermal diffusivity, $\kappa$, is a constant.  In this case the
+global approximation of $b$ implies a separation of variables such that
+\begin{equation}
+\delby{u}{t} = \dsuml{j=1}{M} \fnof{f_{j}}{\vect{x}} \fnof{\alpha_{j}}{t}
+\label{eq:sovapprox}
+\end{equation}
+Using \eqnref{eq:sovapprox}, \eqnref{eq:drmsystem} becomes
+\begin{equation}
+  \matr{H} \vect{u} - \matr{G} \vect{q} = \dfrac{1}{\kappa} \pbrac{\matr{H}
+    \matr{\hat{U}} - \matr{G} \matr{\hat{Q}}} \matr{F}^{-1}
+  \vect{\delby{u}{t}}
+\end{equation}
+or
+\begin{equation}
+  \matr{C} \vect{\delby{u}{t}} + \matr{H} \vect{u} = \matr{G}
+  \vect{q}\quad\text{where }\matr{C} = -\dfrac{1}{\kappa}
+  \pbrac{\matr{H} \vect{\hat{U}} - \matr{G} \matr{\hat{Q}}} \matr{F}^{-1}
+\label{eq:drmtransient}
+\end{equation}
+\Eqnref{eq:drmtransient} can be solved using a standard direct
+time-integration method.
+
+\citeasnoun{partridge:1990} recommended using a first-order finite difference
+approximation to the time derivative 
+\begin{equation}
+\delby{u}{t} = \dfrac{u^{m+1} - u^{m}}{\Delta t}
+\end{equation}
+and linear approximations to $u$ and $q$ within a time-step.
+\begin{align}
+u & = \pbrac{1 - \phi_{u}} u^{m} + \phi_{u} u^{m+1} \\
+q & = \pbrac{1 - \phi_{q}} q^{m} + \phi_{q} q^{m+1}
+\end{align}
+where $\phi_{u}$ and $\phi_{q}$ are weighting parameters with values in the
+range $\brac{(}{0,1}{]}$ and the time-step is between times $t^{m}$ and $t^{m+1} =
+t^{m} + \Delta t$.  Substituting these approximations into
+\eqnref{eq:drmtransient} an expression at $t^{m+1}$ can be derived in terms
+of values at $t^{m}$.
+\begin{equation}
+  \sqbrac{\dfrac{1}{\Delta t} \matr{C} + \phi_{u} \matr{H}} \vect{u^{m+1}} -
+  \phi_{q} \matr{G} \vect{q^{m+1}} = \sqbrac{\dfrac{\vect{C}}{\Delta t} -
+    \pbrac{1-\phi_{u}} \matr{H}} \vect{u^{m}} + \pbrac{1 - \phi_{q}} \matr{G}
+  \vect{q^{m}}
+\end{equation}
+The values of $u^{0}$ and $q^{0}$ are known from the initial conditions so
+a time-stepping procedure can be used.  If a constant time-step is used the
+matrices $\matr{C}$, $\matr{H}$ and $\matr{G}$ only need to be constructed
+once.  Using this two-level time-integration scheme the most common choice
+of time-scheme parameters is $\phi_{u} = 0.5, \phi_{q} = 1.0$.
+
+\section{The MRM for Transient Problems}
+
+\index{Multiple reciprocity method!diffusion equation}The MRM can be applied
+to the diffusion equation $\laplacian{u} = \dfrac{1}{\kappa} \delby{u}{t}$
+using the fundamental solution of Laplace's equation.  In this case the
+forcing function becomes $b_{0} = \dfrac{1}{\kappa} \delby{u}{t}$ and the
+recurrence relationship defined by \eqnref{eq:recurr} becomes
+\begin{equation}
+u_{j+1} = \laplacian{u_{j}} = \dfrac{\del^{j} u}{\del t^{j}}
+\end{equation}
+The higher-order fundamental solutions are known for Laplace's equation.
+In this case the MRM formulation becomes
+\begin{equation}
+  \fnof{c}{\xi} \fnof{u}{\xi} + \dsuml{j=0}{\infty}
+  \goneint{\delby{\omega}{n} \dfrac{\del^{j} u}{\del t^{j}}}{\Gamma} =
+  \dsuml{j=0}{\infty} \goneint{\omega \dfrac{\del^{j} q}{\del t^{j}}}{\Gamma}
+\end{equation}
+
+The standard BEM numerical procedure can be applied to this boundary
+integral equation.  This gives the matrix system
+\begin{equation}
+  \matr{H_{0}} \vect{u} + \matr{H_{1}} \vect{\dot{u}} + \matr{H_{2}}
+  \vect{\ddot{u}} + \ldots = \matr{G_{0}} \vect{q} + \matr{G_{1}} \vect{\dot{q}} +
+  \matr{G_{2}} \vect{\ddot{q}} + \ldots
+\label{eq:infsystem}
+\end{equation}
+where the matrices $\matr{H_{1}},\matr{G_{1}}$ etc are the influence
+coefficient matrices relating to the higher-order fundamental solutions.
+This equation can be solved using a time-integration procedure.
+
+The most common approach is to solve this system numerically by
+discretising the time domain and using a time-stepping procedure.  This
+requires some interpolation between the two time-levels marked by $m$ and
+$m+1$.  This most common approach is to use a linear approximation to
+$u$ and $q$ in this time-range
+\begin{align}
+u & = \pbrac{1 - \phi} u^{m} + \phi u^{m+1} \\
+q & = \pbrac{1 - \phi} q^{m} + \phi q^{m+1}
+\end{align}
+where $\phi$ has a value in the range 0 to 1.  Differentiating these linear
+approximations gives
+\begin{align}
+\dot{u} & = \dfrac{u^{m+1} - u^{m}}{\Delta t^{m}} \\
+\dot{q} & = \dfrac{q^{m+1} - q^{m}}{\Delta t^{m}}
+\end{align}
+and all the other derivatives vanish.
+
+This allows \eqnref{eq:infsystem} to be simplified to
+\begin{equation}
+\matr{H_{l}} \vect{u^{m+1}} - \matr{G_{l}} \vect{q^{m+1}} = - \matr{H_{r}} \vect{u^{m}} + \matr{G_{r}} \vect{q^{m}}
+\label{eq:firstorder}
+\end{equation}
+where $\matr{H_{l}} = \dfrac{1}{\Delta t^{m}} \matr{H_{1}} + \phi
+\matr{H_{0}}$, $\matr{H_{r}} = - \dfrac{1}{\Delta t^{m}} \matr{H_{1}} +
+\pbrac{1-\phi} \matr{H_{0}}$, $\matr{G_{l}} = \dfrac{1}{\Delta t^{m}}
+\matr{G_{1}} + \phi \matr{G_{0}}$, $\matr{G_{r}} = - \dfrac{1}{\Delta t^{m}}
+\matr{G_{1}}+ \pbrac{1-\phi} \matr{G_{0}}$.  This approach is termed a first-order
+approach as it removes all but the first derivatives.  A second order approach
+can be formulated by using quadratic interpolation of $u$ and $q$ within the
+time-range.
+
+Using \eqnref{eq:firstorder} the solution can be advanced in time.  If a
+constant time-step is used the matrices $\matr{H_{l}}, \matr{H_{r}},
+\matr{G_{l}}$ and $\matr{G_{r}}$ only need to be constructed once outside the
+time-stepping loop.  If the boundary conditions are not time-dependent the
+boundary conditions only need to be applied once.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

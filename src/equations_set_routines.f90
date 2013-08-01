@@ -6039,8 +6039,8 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
-    INTEGER(INTG) :: variable_idx,variable_type,dirichlet_idx,dirichlet_dof_idx
-    INTEGER(INTG) :: pressure_incremented_idx, pressure_incremented_dof_idx,MY_COMPUTATIONAL_NODE_NUMBER
+    INTEGER(INTG) :: variable_idx,variable_type,dirichlet_idx,dirichlet_dof_idx,neumann_point_dof
+    INTEGER(INTG) :: condition_idx, condition_global_dof, condition_local_dof, MY_COMPUTATIONAL_NODE_NUMBER
     REAL(DP), POINTER :: FULL_LOADS(:),CURRENT_LOADS(:), PREV_LOADS(:)
     REAL(DP) :: FULL_LOAD, CURRENT_LOAD, NEW_LOAD, PREV_LOAD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -6148,6 +6148,41 @@ CONTAINS
                     ENDIF
                   ENDIF
 
+                  ! Also increment any incremented Neumann point conditions
+                  IF(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)>0) THEN
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%neumannBoundaryConditions)) THEN
+                      ! The boundary conditions parameter set contains the full values and the
+                      ! current incremented values are transferred to the point values vector
+                      WRITE(*,*) "Incrementing  Neumann point conditions"
+                      DO condition_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)+ &
+                          & BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+                        condition_global_dof=BOUNDARY_CONDITIONS_VARIABLE%neumannBoundaryConditions%setDofs(condition_idx)
+                        ! condition_global_dof could be for non-incremented point Neumann condition
+                        IF(BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES(condition_global_dof)/= &
+                          & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) CYCLE
+                        IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(condition_global_dof)%DOMAIN_NUMBER(1)== &
+                          & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                          condition_local_dof=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(condition_global_dof)% &
+                            & LOCAL_NUMBER(1)
+                          neumann_point_dof=BOUNDARY_CONDITIONS_VARIABLE%neumannBoundaryConditions%pointDofMapping% &
+                            & GLOBAL_TO_LOCAL_MAP(condition_idx)%LOCAL_NUMBER(1)
+                          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                            & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,condition_local_dof,FULL_LOAD,ERR,ERROR,*999)
+                          CALL DISTRIBUTED_VECTOR_VALUES_SET(BOUNDARY_CONDITIONS_VARIABLE%neumannBoundaryConditions% &
+                            & pointValues,neumann_point_dof,FULL_LOAD*(REAL(ITERATION_NUMBER)/REAL(MAXIMUM_NUMBER_OF_ITERATIONS)), &
+                            & ERR,ERROR,*999)
+                        END IF
+                      END DO
+                    ELSE
+                      LOCAL_ERROR="Neumann boundary conditions for variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" are not associated even though"// &
+                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                        & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED), &
+                        & '*',ERR,ERROR))//" conditions of this type has been counted."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END IF
+                  END IF
+
                   !There might also be pressure incremented conditions
                   IF (BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_PRESSURE_INCREMENTED)>0) THEN
                     ! handle pressure incremented boundary conditions
@@ -6166,67 +6201,67 @@ CONTAINS
                       !Calculate the new load, update the old load
                       IF(ITERATION_NUMBER==1) THEN
                         !On the first iteration, FIELD_PRESSURE_VALUES_SET_TYPE actually contains the full load
-                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                        DO condition_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
                             & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                           !Global dof index
-                          pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
-                            & (pressure_incremented_idx)
+                          condition_global_dof=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
+                            & (condition_idx)
                           !Must convert into local dof index
-                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)%DOMAIN_NUMBER(1)== &
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(condition_global_dof)%DOMAIN_NUMBER(1)== &
                             & MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                            pressure_incremented_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)% &
+                            condition_local_dof=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(condition_global_dof)% &
                               & LOCAL_NUMBER(1)
-                            IF(0<pressure_incremented_dof_idx.AND.pressure_incremented_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
-                              NEW_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
+                            IF(0<condition_local_dof.AND.condition_local_dof<DOMAIN_MAPPING%GHOST_START) THEN
+                              NEW_LOAD=CURRENT_LOADS(condition_local_dof)
                               NEW_LOAD=NEW_LOAD/MAXIMUM_NUMBER_OF_ITERATIONS
-!if (pressure_incremented_idx==1) write(*,*) "new load=",new_load
+!if (condition_idx==1) write(*,*) "new load=",new_load
                               !Update current and previous loads
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                                & FIELD_PRESSURE_VALUES_SET_TYPE,condition_local_dof,NEW_LOAD,ERR,ERROR,*999)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,0.0_dp,ERR,ERROR,*999)
+                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,condition_local_dof,0.0_dp,ERR,ERROR,*999)
                               IF(DIAGNOSTICS1) THEN
                                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
-                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                    & condition_local_dof,ERR,ERROR,*999)
                                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
-                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                    & CURRENT_LOADS(condition_local_dof),ERR,ERROR,*999)
                                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
                               ENDIF
                             ENDIF !Non-ghost dof
                           ENDIF !Current domain
-                        ENDDO !pressure_incremented_idx
+                        ENDDO !condition_idx
                       ELSE
                         !Calculate the new load, keep the current load
-                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
+                        DO condition_idx=1,BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS( &
                             & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                           !This is global dof idx
-                          pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
-                            & (pressure_incremented_idx)
+                          condition_global_dof=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
+                            & (condition_idx)
                           !Must convert into local dof index
-                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)%DOMAIN_NUMBER(1)== &
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(condition_global_dof)%DOMAIN_NUMBER(1)== &
                             & MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                            pressure_incremented_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)% &
+                            condition_local_dof=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(condition_global_dof)% &
                               & LOCAL_NUMBER(1)
-                            IF(0<pressure_incremented_dof_idx.AND.pressure_incremented_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
-                              PREV_LOAD=PREV_LOADS(pressure_incremented_dof_idx)
-                              CURRENT_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
+                            IF(0<condition_local_dof.AND.condition_local_dof<DOMAIN_MAPPING%GHOST_START) THEN
+                              PREV_LOAD=PREV_LOADS(condition_local_dof)
+                              CURRENT_LOAD=CURRENT_LOADS(condition_local_dof)
                               NEW_LOAD=CURRENT_LOAD+(CURRENT_LOAD-PREV_LOAD)  !This may be subject to numerical errors...
-!if (pressure_incremented_idx==1) write(*,*) "new load=",new_load
+!if (condition_idx==1) write(*,*) "new load=",new_load
                           !Update current and previous loads
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                                & FIELD_PRESSURE_VALUES_SET_TYPE,condition_local_dof,NEW_LOAD,ERR,ERROR,*999)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
+                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,condition_local_dof,CURRENT_LOAD,ERR,ERROR,*999)
                               IF(DIAGNOSTICS1) THEN
                                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
-                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                    & condition_local_dof,ERR,ERROR,*999)
                                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
-                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                    & CURRENT_LOADS(condition_local_dof),ERR,ERROR,*999)
                                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
                               ENDIF
                             ENDIF !Non-ghost dof
                           ENDIF !Current domain
-                        ENDDO !pressure_incremented_idx
+                        ENDDO !condition_idx
                       ENDIF
                       !Restore the vector handles
                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
