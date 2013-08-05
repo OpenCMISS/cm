@@ -393,7 +393,7 @@ CONTAINS
 
               !\todo check if interface mesh connectivity basis has same number of gauss points as interface geometric field IF(INTERFACE_CONDITION%INTERFACE%MESH_CONNECTIVITY%BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI/=)
  
-              !Note There is no need to check that the dependent variables have the same number of components. 
+              !Note There is no need to check that the dependent variables have the same number of components.
               !The user will need to set a fixed BC on the interface dof relating to the field components 
               !not present in each of the coupled bodies, eliminating this dof from the solver matrices
               SELECT CASE(INTERFACE_CONDITION%OPERATOR)
@@ -406,20 +406,13 @@ CONTAINS
                   DO variable_idx=2,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
                     FIELD_VARIABLE=>INTERFACE_DEPENDENT%FIELD_VARIABLES(variable_idx)%PTR
                     IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                      IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS/=NUMBER_OF_COMPONENTS) THEN
-                        LOCAL_ERROR="Inconsistent dependent variable number of components. Dependent variable index "// &
-                          & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//" has "// &
-                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
-                          & " components and dependent variable index 1 has "// &
-                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
+                      !do nothing
                     ELSE
                       LOCAL_ERROR="The interface condition field variables is not associated for variable index "// &
                         & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                  ENDDO !variable_idx                  
+                  ENDDO !variable_idx 
                 ELSE
                   CALL FLAG_ERROR("Interface field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -1359,6 +1352,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: LagrangeFieldUVariableNumberOfComponents,LagrangeFieldDelUDelNVariableNumberOfComponents
     
     CALL ENTERS("INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -1372,6 +1366,14 @@ CONTAINS
             CALL FIELD_CREATE_FINISH(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,ERR,ERROR,*999)
           ENDIF
           INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FINISHED=.TRUE.
+          !\todo test following condition using some other method since FIELD_NUMBER_OF_COMPONENTS_GET requires the field to be finished which is what occurs above, but below condition needs to be checked before this.
+          CALL FIELD_NUMBER_OF_COMPONENTS_GET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_U_VARIABLE_TYPE, &
+            & LagrangeFieldUVariableNumberOfComponents,ERR,ERROR,*999)
+          CALL FIELD_NUMBER_OF_COMPONENTS_GET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+            & LagrangeFieldDelUDelNVariableNumberOfComponents,ERR,ERROR,*999)
+          IF (LagrangeFieldUVariableNumberOfComponents /= LagrangeFieldDelUDelNVariableNumberOfComponents) THEN
+            CALL FLAG_ERROR("Interface Lagrange field U and DelUDelN variable components do not match.",ERR,ERROR,*999)
+          ENDIF
         ENDIF
       ELSE
         CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)

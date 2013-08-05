@@ -930,6 +930,28 @@ CONTAINS
             ENDIF
           ENDDO !gauss_idx
 
+          !Scale factor update
+          IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+            element_dof_idx=0
+            DO component_idx=1,NUMBER_OF_DIMENSIONS
+              DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+              IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
+                DEPENDENT_BASIS=>DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY% &
+                  & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
+                  element_dof_idx=element_dof_idx+1
+                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
+                    & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)*DEPENDENT_INTERPOLATED_POINT% &
+                    & INTERPOLATION_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                ENDDO ! parameter_idx (residual vector loop)
+              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN
+                !Will probably never be used
+                CALL FLAG_ERROR("Finite elasticity with element based interpolation is not implemented.",ERR,ERROR,*999)
+              ENDIF
+            ENDDO ! component_idx
+          ENDIF
+
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
           IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
