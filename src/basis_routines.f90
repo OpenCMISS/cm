@@ -2659,7 +2659,7 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: NEW_SCHEME,SCHEME
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: NEW_SCHEMES(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: MAX_NUM_FACE_GAUSS,face_idx,NORMAL,FACE_XI(2)
+    INTEGER(INTG) :: MAX_NUM_FACE_GAUSS,face_idx,NORMAL,FACE_XI(2),numberOfFaceXiCoordinates
 
     NULLIFY(NEW_SCHEME)
     NULLIFY(NEW_SCHEMES)
@@ -2891,6 +2891,64 @@ CONTAINS
               ENDDO !nk
             ENDDO !nn
           ENDDO !ng
+          !Create face quadrature scheme, if requested
+          IF(BASIS%QUADRATURE%EVALUATE_FACE_GAUSS) THEN
+            IF(BASIS%NUMBER_OF_XI==3) THEN
+              !Find maximum number of face gauss points and allocate the arrays
+              MAX_NUM_FACE_GAUSS=PRODUCT(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI))
+              MAX_NUM_FACE_GAUSS=MAX_NUM_FACE_GAUSS/MINVAL(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI))
+              ALLOCATE(NEW_SCHEME%NUMBER_OF_FACE_GAUSS(BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of face gauss",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_POSITIONS(BASIS%NUMBER_OF_XI_COORDINATES,MAX_NUM_FACE_GAUSS, &
+                & BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss positions",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_WEIGHTS(MAX_NUM_FACE_GAUSS,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss weights",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_BASIS_FNS(BASIS%NUMBER_OF_ELEMENT_PARAMETERS,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES, &
+                & MAX_NUM_FACE_GAUSS,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss basis function values array",ERR,ERROR,*999)
+              !Zero them out just to be safe
+              NEW_SCHEME%FACE_GAUSS_POSITIONS=0.0_DP
+              NEW_SCHEME%FACE_GAUSS_WEIGHTS=0.0_DP
+              NEW_SCHEME%FACE_GAUSS_BASIS_FNS=0.0_DP
+              !Populate face_gauss_positions, weights, basis_fn
+              DO face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
+                !The number of face xi coordinates will be 3 for triangular face on a tet
+                numberOfFaceXiCoordinates = BASIS%NUMBER_OF_XI
+                !Set up the gauss point arrays for the face
+                CALL GAUSS_SIMPLEX(BASIS%QUADRATURE%GAUSS_ORDER,numberOfFaceXiCoordinates, &
+                  & NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx),GSX,GSW,ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Gauss basis functions",ERR,ERROR,*999)
+                NEW_SCHEME%FACE_GAUSS_POSITIONS(1:numberOfFaceXiCoordinates,1:NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx), &
+                  & face_idx)=GSX(1:numberOfFaceXiCoordinates,1:NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx))
+                NEW_SCHEME%FACE_GAUSS_WEIGHTS(1:NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx),face_idx)= &
+                  & GSW(1:NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx))
+
+                DO ng=1,NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx)
+                  ns=0
+                  DO nn=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(face_idx)
+                    DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                      ns=ns+1
+                      DO nu=1,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES
+                        SELECT CASE(BASIS%TYPE)
+                        CASE(BASIS_SIMPLEX_TYPE)
+                          NEW_SCHEME%FACE_GAUSS_BASIS_FNS(ns,nu,ng,face_idx)= &
+                            & BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,nn,nu, &
+                            & NEW_SCHEME%FACE_GAUSS_POSITIONS(1:numberOfFaceXiCoordinates,ng,face_idx),ERR,ERROR)
+                          IF(ERR/=0) GOTO 999                        
+                        CASE DEFAULT
+                          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+                        END SELECT
+                      ENDDO !nu
+                    ENDDO !nk
+                  ENDDO !nn
+                ENDDO !ng
+
+              ENDDO !face_idx
+            ELSE
+              CALL FLAG_ERROR("Cannot evaluate face quadrature schemes for a non three dimensional element.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
         CASE DEFAULT
           LOCAL_ERROR="Quadrature type "//TRIM(NUMBER_TO_VSTRING(BASIS%QUADRATURE%TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)

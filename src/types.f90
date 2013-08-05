@@ -1292,7 +1292,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DOF_ORDER_TYPE !<The order of the DOF's in the field variable \see FIELD_ROUTINES_DOFOrderTypes,FIELD_ROUTINES
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
-    INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS_VERSION !<The maximum number of interpolation parameters in an element for a field variable with versions. 
     INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
@@ -1383,7 +1382,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure type of the element matrix. \see EQUATIONS_MATRICES_ROUTINES_EquationsMatrixStructureTypes,EQUATIONS_MATRICES_ROUTINES
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element matrix.
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The current number of columns in the element matrix.
-    LOGICAL :: VERSION_MATRIX_EXTENSION !<Is .TRUE. if there is a version
     INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element matrix.
     INTEGER(INTG) :: MAX_NUMBER_OF_COLUMNS !<The maximu (allocated) number of columns in the element matrix.
     INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element matrix belongs to.
@@ -1394,11 +1392,31 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information for an element vector.
   TYPE ELEMENT_VECTOR_TYPE
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element vector
-    LOGICAL :: VERSION_MATRIX_EXTENSION !<Is .TRUE. if there is a version 
     INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element vecotr
     INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element vector belongs to
     REAL(DP), ALLOCATABLE :: VECTOR(:) !<VECTOR(i). The value of the i'th row of the element vector
   END TYPE ELEMENT_VECTOR_TYPE
+
+  !>Contains information for an nodal matrix.
+  TYPE NodalMatrixType
+    INTEGER(INTG) :: equationsMatrixNumber !<The equations matrix number that this nodal matrix belongs to.
+    INTEGER(INTG) :: structureType !<The structure type of the nodal matrix. \see EQUATIONS_MATRICES_ROUTINES_EquationsMatrixStructureTypes,EQUATIONS_MATRICES_ROUTINES
+    INTEGER(INTG) :: numberOfRows !<The current number of rows in the nodal matrix.
+    INTEGER(INTG) :: numberOfColumns !<The current number of columns in the nodal matrix.
+    INTEGER(INTG) :: maxNumberOfRows !<The maximum (allocated) number of rows in the nodal matrix.
+    INTEGER(INTG) :: maxNumberOfColumns !<The maximum (allocated) number of columns in the nodal matrix.
+    INTEGER(INTG), ALLOCATABLE :: rowDofs(:) !<rowDofx(i). The equations row that the i'th row of the nodal matrix belongs to.
+    INTEGER(INTG), ALLOCATABLE :: columnDofs(:) !<columnDofs(j). The equations column that the j'th column of the nodal matrix bleongs to.
+    REAL(DP), ALLOCATABLE :: matrix(:,:) !<matrix(i,j). The vlaue of the i'th row and the j'th column of the nodal matrix.
+  END TYPE NodalMatrixType
+
+  !>Contains information for an nodal vector.
+  TYPE NodalVectorType
+    INTEGER(INTG) :: numberOfRows !<The current number of rows in the nodal vector
+    INTEGER(INTG) :: maxNumberOfRows !<The maximum (allocated) number of rows in the nodal vecotr
+    INTEGER(INTG), ALLOCATABLE :: rowDofs(:) !<rowDofs(i). The equations row that the i'th row of the nodal vector belongs to
+    REAL(DP), ALLOCATABLE :: vector(:) !<vector(i). The value of the i'th row of the nodal vector
+  END TYPE NodalVectorType
 
   !>Contains information about an equations matrix.
   TYPE EQUATIONS_MATRIX_TYPE
@@ -1413,6 +1431,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this equations matrix has not been assembled
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed equations matrix data
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this equations matrix
+    TYPE(NodalMatrixType) :: NodalMatrix !<The nodal matrix for this equations matrix
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TEMP_VECTOR !<Temporary vector used for assembly. 
   END TYPE EQUATIONS_MATRIX_TYPE
 
@@ -1432,6 +1451,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_JACOBIAN !<The element matrix for this Jacobian matrix. This is not used if the Jacobian is not supplied.
+    TYPE(NodalMatrixType) :: NodalJacobian !<The nodal matrix for this Jacobian matrix. This is not used if the Jacobian is not supplied.
     INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The calculation type (analytic of finite difference) of the Jacobian.
   END TYPE EQUATIONS_JACOBIAN_TYPE
 
@@ -1464,6 +1484,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this residual vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
+    TYPE(NodalVectorType) :: NodalResidual !<The nodal residual information for nonlinear equations.
+    INTEGER(INTG) :: NodalResidualCalculated !<The number of the nodal the residual is calculated for, or zero if it isn't calculated
     INTEGER(INTG) :: ELEMENT_RESIDUAL_CALCULATED !<The number of the element the residual is calculated for, or zero if it isn't calculated
   END TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
 
@@ -1474,6 +1496,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this rhs vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data \todo rename this RHS_VECTOR
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
+    TYPE(NodalVectorType) :: NodalVector !<The nodal rhs information
   END TYPE EQUATIONS_MATRICES_RHS_TYPE
   
   !>Contains information of the source vector for equations matrices
@@ -1483,6 +1506,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this source vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed source vector data \todo rename this SOURCE_VECTOR
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element source information
+    TYPE(NodalVectorType) :: NodalVector !<The nodal source information
   END TYPE EQUATIONS_MATRICES_SOURCE_TYPE
   
   !>Contains information on the equations matrices and vectors

@@ -1550,6 +1550,15 @@ CONTAINS
                               & " is not valid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT !EQUATIONS_SET%CLASS
+                        CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
+                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+                            !Pre residual evaluate not used
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
+                              & " is not valid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT !EQUATIONS_SET%CLASS
                         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -1672,6 +1681,15 @@ CONTAINS
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
                               & " is not valid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT !EQUATIONS_SET%CLASS
+                        CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
+                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+                            !Post residual evaluate not used
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
+                              & " is not valid with the nodal solution method."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT !EQUATIONS_SET%CLASS
                         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
@@ -3498,8 +3516,11 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   IF(CTX%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
+                    CALL DISTRIBUTED_MATRIX_OVERRIDE_SET_ON(SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX,A,ERR,ERROR,*999)
                     CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES_JACOBIAN_ONLY,SOLVER_MATRICES,ERR,ERROR,*998)
+                    CALL DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF(SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX,ERR,ERROR,*999)
                   ENDIF
+
                 ELSE
                   CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
                 ENDIF

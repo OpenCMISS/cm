@@ -590,7 +590,9 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVERS_SOLVER_GET
 
-  PUBLIC SOLVER_NEWTON_CELLML_EVALUATOR_CREATE,SOLVER_LINKED_SOLVER_ADD,SOLVER_CELLML_EVALUATOR_FINALISE
+  PUBLIC SOLVER_NEWTON_CELLML_EVALUATOR_CREATE,SOLVER_CELLML_EVALUATOR_FINALISE
+
+  PUBLIC SOLVER_LINKED_SOLVER_ADD,SOLVER_LINKED_SOLVER_REMOVE
 
 CONTAINS
 
@@ -1941,34 +1943,43 @@ CONTAINS
               DO WHILE(TIME<=END_TIME)
                 DO dof_idx=1,N
                   model_idx=MODELS_DATA(dof_idx)
-                  MODEL=>CELLML%MODELS(model_idx)%PTR
-                  IF(ASSOCIATED(MODEL)) THEN
-                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
-                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
-                    
+                  IF(model_idx==0) THEN
+                    ! Do nothing- empty model index specified
+                  ELSE IF(model_idx > 0 .AND. model_idx <= CELLML%NUMBER_OF_MODELS) THEN
+                    MODEL=>CELLML%MODELS(model_idx)%PTR
+                    IF(ASSOCIATED(MODEL)) THEN
+                      NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                      NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                      NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                      STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                      STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                      INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                      INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                      PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                      PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
-                      & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      & PARAMETER_END_DOF))
+                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                        & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF), &
+                        & PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
-                    STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
-                      & TIME_INCREMENT*RATES(1:NUMBER_STATES)
-                    
+                      STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                        & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+
+                    ELSE
+                      LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                        & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                        & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ELSE
-                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                    LOCAL_ERROR="Invalid CellML model index: "// &
+                      & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//". The specified index should be between 1 and "// &
+                      & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF                  
+                  ENDIF
                 ENDDO !dof_idx
                 TIME=TIME+TIME_INCREMENT
               ENDDO !time              
@@ -4613,10 +4624,11 @@ CONTAINS
       ELSE
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-          
+
+          CALL SOLVER_LINKED_SOLVER_REMOVE(SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
           CALL SOLVER_FINALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
           CALL SOLVER_FINALISE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-          
+
           SELECT CASE(LINEARITY_TYPE)
           CASE(SOLVER_DYNAMIC_LINEAR)
             ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
@@ -6913,10 +6925,15 @@ CONTAINS
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
-      IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
-        & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-      IF(ALLOCATED(SOLVER%LINKED_SOLVER_TYPE_MAP)) DEALLOCATE(SOLVER%LINKED_SOLVER_TYPE_MAP)
-      IF(ALLOCATED(SOLVER%LINKED_SOLVERS)) DEALLOCATE(SOLVER%LINKED_SOLVERS)
+      IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+         CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+      ENDIF
+      IF(ALLOCATED(SOLVER%LINKED_SOLVER_TYPE_MAP)) THEN
+         DEALLOCATE(SOLVER%LINKED_SOLVER_TYPE_MAP)
+      ENDIF
+      IF(ALLOCATED(SOLVER%LINKED_SOLVERS)) THEN
+         DEALLOCATE(SOLVER%LINKED_SOLVERS)
+      ENDIF
       DEALLOCATE(SOLVER)
     ENDIF 
         
@@ -6950,7 +6967,11 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       NULLIFY(NONLINEAR_SOLVER)
-      NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+      IF(ASSOCIATED(SOLVER%DYNAMIC_SOLVER)) THEN
+        NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
+      ELSE
+        NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+      ENDIF
       IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
         NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
@@ -12777,8 +12798,26 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
+        ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
+          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+              IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+                CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
+                  & CALL FLAG_ERROR("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Dynamic nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The Dynamic nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
@@ -15872,10 +15911,17 @@ CONTAINS
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
                                         & ERR,ERROR,*999)
-                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
                                     ELSE
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
                                         & ERR,ERROR,*999)
                                       DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
                                         & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
@@ -15894,10 +15940,24 @@ CONTAINS
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
                                         & ERR,ERROR,*999)
-                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
+                                        & (DELTA_T*DELTA_T*DELTA_T/6.0_DP)*SOLVER_VALUE
                                     ELSE
                                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                         & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                        & ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
                                         & ERR,ERROR,*999)
                                       DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
                                         & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
@@ -17117,6 +17177,52 @@ CONTAINS
     CALL EXITS("SOLVER_LINKED_SOLVER_ADD")
     RETURN 1
   END SUBROUTINE SOLVER_LINKED_SOLVER_ADD
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds a linked solver to the solver. Also sets the solver type for the linked solver, als well as its linking solver.
+  SUBROUTINE SOLVER_LINKED_SOLVER_REMOVE(SOLVER,SOLV_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to add the linked solver to.
+    INTEGER(INTG), INTENT(IN) :: SOLV_TYPE !<The solver type of the solver to be linked.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: solver_idx
+
+    CALL ENTERS("SOLVER_LINKED_SOLVER_REMOVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLV_TYPE>=1 .AND. SOLV_TYPE<=SOLVER_NUMBER_OF_SOLVER_TYPES) THEN
+        !Check if there is any linked solvers
+        IF(SOLVER%NUMBER_OF_LINKED_SOLVERS>0.AND.SOLVER%NUMBER_OF_LINKED_SOLVERS<=SOLVER_NUMBER_OF_SOLVER_TYPES) THEN
+          !Check if a solver of the same type has already been linked
+          DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
+            IF(SOLVER%LINKED_SOLVERS(solver_idx)%PTR%SOLVE_TYPE==SOLV_TYPE) THEN
+              DEALLOCATE(SOLVER%LINKED_SOLVERS)
+              SOLVER%NUMBER_OF_LINKED_SOLVERS=SOLVER%NUMBER_OF_LINKED_SOLVERS-1
+            ENDIF
+          ENDDO !solver_idx
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The specified solver type is "//TRIM(NUMBER_TO_VSTRING(SOLV_TYPE,"*",ERR,ERROR))//&
+          & " but should be between 1 and "//TRIM(NUMBER_TO_VSTRING(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_LINKED_SOLVER_REMOVE")
+    RETURN
+999 CALL ERRORS("SOLVER_LINKED_SOLVER_REMOVE",ERR,ERROR)
+    CALL EXITS("SOLVER_LINKED_SOLVER_REMOVE")
+    RETURN 1
+  END SUBROUTINE SOLVER_LINKED_SOLVER_REMOVE
 
   !
   !================================================================================================================================
