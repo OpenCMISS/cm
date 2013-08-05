@@ -1512,6 +1512,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
     INTEGER(INTG) :: fixedBodyIdx,projectionBodyIdx,dataPointIdx,coordIdx
     INTEGER(INTG) :: elementNumber,numberOfGeometricComponents
+    INTEGER(INTG) :: coupledMeshFaceLineNumber,component
   
     CALL ENTERS("InterfacePointsConnectivity_DataReprojection",err,error,*999)
     
@@ -1526,10 +1527,10 @@ CONTAINS
         IF(ASSOCIATED(interfacePointsConnectivity)) THEN
           dataPoints=>interface%DATA_POINTS
           IF(ASSOCIATED(dataPoints)) THEN
-            !######################################################################################################################
+
             !Evaluate data points positions
             dependentFieldFixed=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(fixedBodyIdx)%PTR%FIELD
-            IF(ASSOCIATED(dependentFieldFixed)) THEN 
+            IF(ASSOCIATED(dependentFieldFixed)) THEN
               numberOfGeometricComponents=dependentFieldFixed%GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
               CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(dependentFieldFixed,interpolationParameters,err,error,*999, &
                 & FIELD_GEOMETRIC_COMPONENTS_TYPE)
@@ -1539,19 +1540,22 @@ CONTAINS
               DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
                 elementNumber=interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
                   & coupledMeshElementNumber
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber, &
+                coupledMeshFaceLineNumber=dependentFieldFixed%DECOMPOSITION%TOPOLOGY%ELEMENTS% &
+                  & ELEMENTS(elementNumber)% &
+                  & ELEMENT_FACES(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
+                  & elementLineFaceNumber)
+                CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,coupledMeshFaceLineNumber, &
                   & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
-                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
-                  & xi,interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
-                DO coordIdx=1,numberOfGeometricComponents
-                  dataPoints%DATA_POINTS(dataPointIdx)%position(coordIdx)=interpolatedPoint%VALUES(coordIdx,NO_PART_DERIV)
-                ENDDO !coordIdx
+                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,interfacePointsConnectivity%pointsConnectivity(dataPointIdx, &
+                  & fixedBodyIdx)%reducedXi(:),interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE) !Interpolate contact data points on each surface
+                DO component=1,numberOfGeometricComponents
+                  dataPoints%DATA_POINTS(dataPointIdx)%position(component) = interpolatedPoint%VALUES(component,NO_PART_DERIV)
+                ENDDO !component
               ENDDO !dataPointIdx
             ELSE
               CALL FLAG_ERROR("Fixed dependent field is not associated.",err,error,*999)
-            ENDIF          
+            ENDIF
             
-            !######################################################################################################################
             !Data reprojection and update points connectivity information with the projection results
             dataProjection=>dataPoints%DATA_PROJECTIONS(projectionBodyIdx+1)%PTR 
             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ProjectedBodyDataProjectionLabel",ERR,ERROR,*999)
