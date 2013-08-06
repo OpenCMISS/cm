@@ -3,7 +3,7 @@
 %{
 #include "stdlib.h"
 #include "opencmiss.h"
-#define MAX_OUTPUT_STRING_SIZE 200
+#define MAX_OUTPUT_STRING_SIZE 300
 %}
 
 /* Use numpy for input/output of arrays
