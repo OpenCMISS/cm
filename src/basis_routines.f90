@@ -281,10 +281,22 @@ MODULE BASIS_ROUTINES
   PUBLIC BASES_FINALISE,BASES_INITIALISE
 
   PUBLIC BASIS_USER_NUMBER_FIND
-    
-  PUBLIC BASIS_COLLAPSED_XI_GET,BASIS_INTERPOLATION_XI_GET,BASIS_NUMBER_OF_XI_GET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET, &
-    & BASIS_QUADRATURE_ORDER_GET,BASIS_QUADRATURE_TYPE_GET,BASIS_TYPE_GET
 
+  PUBLIC BASIS_COLLAPSED_XI_GET
+
+  PUBLIC BASIS_INTERPOLATION_XI_GET
+
+  PUBLIC BASIS_NUMBER_OF_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET, BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_ORDER_GET 
+
+  PUBLIC BASIS_QUADRATURE_TYPE_GET
+
+  PUBLIC BASIS_TYPE_GET
 
 
 CONTAINS
@@ -1338,7 +1350,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: MAX_NUM_NODES,NUMBER_OF_DERIVATIVES,ni,ni1,ni2,ni3,nk,nn,nnl,ns,OLD_NUMBER_OF_DERIVATIVES, &
       & POSITION(4),MAXIMUM_NODE_EXTENT(3),COLLAPSED_XI(3),NUMBER_OF_NODES,NUMBER_OF_LOCAL_LINES,NODE_COUNT, &
-      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),nnf,NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT,ef, NUMBER_OF_ELEMENT_FACES
+      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT,ef
     INTEGER, TARGET :: nn1,nn2,nn3,nn4
     LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:)
     !move to types.f90
@@ -3322,11 +3334,143 @@ CONTAINS
     CALL EXITS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET_PTR")
     RETURN 1
   END SUBROUTINE BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET_PTR
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the xi positions of a Gauss point on a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureGaussXiGet
+  SUBROUTINE BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET(BASIS,SCHEME,GAUSS_POINT,GAUSS_XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: SCHEME !<The quadrature scheme to return the Gauss points for
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT !<The Gauss point to return the element xi position for.
+    REAL(DP), INTENT(OUT) :: GAUSS_XI(:) !<On return, GAUSS_XI(xi_direction) the xi position of the specified Gauss point for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(SCHEME)%PTR
+          IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
+            IF(SIZE(GAUSS_XI)==BASIS%NUMBER_OF_XI) THEN
+              IF(GAUSS_POINT>0.AND.GAUSS_POINT<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                GAUSS_XI(:)=QUADRATURE_SCHEME%GAUSS_POSITIONS(:,GAUSS_POINT)
+              ELSE
+                LOCAL_ERROR="The specified Gauss point number of "// & 
+                  & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT,"*",ERR,ERROR))//" is invalid for the specified "// &
+                  & "quadrature scheme of the specified element for this field which has "// &
+                  & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The number of xi values to return is invalid and needs to be "// &
+                & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" for the specified basis."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The specified quadrature scheme is not associated for this basis.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Quadrature basis is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET")
+    RETURN
+  END SUBROUTINE BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET
 
   !
   !================================================================================================================================
   !
   
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by a pointer. If no Gauss points are specified then xi positions of all Gauss points are returned. \see OPENCMISS::CMISSBasisQuadratureGaussXiGet
+  SUBROUTINE BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET(BASIS,SCHEME,GAUSS_POINTS,GAUSS_XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: SCHEME !<The quadrature scheme to return the Gauss points for
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINTS(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GAUSS_XI(:,:) !<On return, GAUSS_XI(xi_direction,Gauss_point) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: Gauss_point
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(SCHEME)%PTR
+          IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
+            IF(SIZE(GAUSS_XI,1)==BASIS%NUMBER_OF_XI) THEN
+              IF(SIZE(GAUSS_POINTS)==0) THEN !Return all Gauss point xi locations.
+                IF(SIZE(GAUSS_XI,2)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                  GAUSS_XI=QUADRATURE_SCHEME%GAUSS_POSITIONS
+                ELSE
+                  LOCAL_ERROR="The number of Gauss Points to return the xi values for is invalid and needs to be "// &
+                    & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE !Return only specified Gauss point xi locations.
+                DO Gauss_point=1,SIZE(GAUSS_POINTS)
+                  IF(GAUSS_POINTS(Gauss_point)>0.AND.GAUSS_POINTS(Gauss_point)<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                    GAUSS_XI(:,Gauss_point)=QUADRATURE_SCHEME%GAUSS_POSITIONS(:,GAUSS_POINTS(Gauss_point))
+                  ELSE
+                    LOCAL_ERROR="The specified Gauss point number of "// & 
+                      & TRIM(NUMBER_TO_VSTRING(GAUSS_POINTS(Gauss_point),"*",ERR,ERROR))//" is invalid for the specified "// &
+                      & "quadrature scheme of the specified element for this field which has "// &
+                      & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDDO
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The number of xi values to return is invalid and needs to be "// &
+                & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" for the specified basis."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The specified quadrature scheme is not associated for this basis.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Quadrature basis is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET")
+    RETURN
+  END SUBROUTINE BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get the order of a quadrature for a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureOrderGet
   SUBROUTINE BASIS_QUADRATURE_ORDER_GET(BASIS,QUADRATURE_ORDER,ERR,ERROR,*)
 
