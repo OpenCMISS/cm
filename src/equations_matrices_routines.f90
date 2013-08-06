@@ -872,14 +872,14 @@ CONTAINS
 
   !>Sets up the element matrix for the row and column field variables.
   SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(elementMatrix,rowsFieldVariable,columnsFieldVariable, &
-      & rowsNumberOfElements,colsNumberOfElements,err,error,*)
+    & rowsNumberOfElements,colsNumberOfElements,err,error,*)
 
     !Argument variables
     TYPE(ELEMENT_MATRIX_TYPE) :: elementMatrix !<The element matrix to setup
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: rowsFieldVariable !<A pointer to the field variable associated with the rows
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: columnsFieldVariable !<A pointer to the field variable associated with the columns
-    INTEGER(INTG), INTENT(IN)  :: rowsNumberOfElements !Number of elements in the row variables whose dofs are present in this element matrix
-    INTEGER(INTG), INTENT(IN)  :: colsNumberOfElements !Number of elements in the col variables whose dofs are present in this element matrix
+    INTEGER(INTG), INTENT(IN)  :: rowsNumberOfElements !<Number of elements in the row variables whose dofs are present in this element matrix
+    INTEGER(INTG), INTENT(IN)  :: colsNumberOfElements !<Number of elements in the col variables whose dofs are present in this element matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
