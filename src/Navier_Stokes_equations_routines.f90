@@ -2320,8 +2320,8 @@ CONTAINS
             CASE(1)
               ! DAE solver- set time
               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,currentTime,timeIncrement,ERR,ERROR,*999)
-              currentTime=0.001*currentTime
-              timeIncrement=0.001*timeIncrement
+              ! currentTime=0.001*currentTime
+              ! timeIncrement=0.001*timeIncrement
               CALL SOLVER_DAE_TIMES_SET(SOLVER,currentTime,currentTime + timeIncrement,ERR,ERROR,*999)
             CASE(2)
               ! Characteristic solver
@@ -2389,7 +2389,8 @@ CONTAINS
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
-            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)            
+            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             ! do nothing ???
             CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -3307,7 +3308,7 @@ CONTAINS
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_BIF(4),A_BIF(4),Q_PRE(4),A_PRE(4),area,pressure
     REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
-    REAL(DP), POINTER :: dependentParameters(:)
+    REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
     LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
@@ -3381,6 +3382,7 @@ CONTAINS
     NULLIFY(RHS_VECTOR)
     NULLIFY(STIFFNESS_MATRIX, DAMPING_MATRIX)
     NULLIFY(DEPENDENT_FIELD,INDEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD)
+    NULLIFY(dependentParameters,materialsParameters)
     NULLIFY(FIELD_VARIABLE)
     NULLIFY(QUADRATURE_SCHEME)
     NULLIFY(QUADRATURE_SCHEME1, QUADRATURE_SCHEME2)
@@ -4017,16 +4019,6 @@ CONTAINS
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(10,NO_PART_DERIV)
               H0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(10,FIRST_PART_DERIV)
               Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
-
-              nodeNumber=FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(ng)
-              versionIdx=FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%ELEMENTS%DOMAIN%TOPOLOGY%ELEMENTS% &
-                & ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,ng)
-              CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & versionIdx,1,nodeNumber,8,A0_PARAM,err,error,*999)
-              CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & versionIdx,1,nodeNumber,9,E_PARAM,err,error,*999) 
-              CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & versionIdx,1,nodeNumber,10,H0_PARAM,err,error,*999)  
              
               mhs=0
               !Loop Over Element Rows
@@ -4114,37 +4106,58 @@ CONTAINS
 
                 ENDDO !ms
               ENDDO !mh
-              
-              !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
-              variableType=DEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE 
-              fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & dependentParameters,err,error,*999)
-              nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(ng)
-              versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,ng)
-              local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)% &
-                      & VERSIONS(versionIdx)
-              area=dependentParameters(local_ny)
-              pressure=(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
-              CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & versionIdx,1,nodeNumber,1,pressure,err,error,*999)
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & dependentParameters,err,error,*999)
-                 
             ENDIF
           ENDDO !ng
 
-          !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
             IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-
               numberOfElementNodes=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS%NUMBER_OF_NODES
               numberOfParameters=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
               firstNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
               lastNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(numberOfElementNodes)
               derivativeIdx=1
 
+              !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
+              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & dependentParameters,err,error,*999)
+              CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & materialsParameters,err,error,*999)
+                
+              !Loop over the element nodes and versions
+              DO nodeIdx=1,numberOfElementNodes
+                nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
+                DO versionIdx=1,ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)% &
+                  & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                  !Get current Area values
+                  variableType=DEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+                  area=dependentParameters(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)% &
+                        & DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  !Get current Materials values
+                  variableType=MATERIALS_FIELD%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+                  As=materialsParameters(fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
+                  A0_PARAM=materialsParameters(fieldVariable%COMPONENTS(8)%PARAM_TO_DOF_MAP% &
+                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  E_PARAM=materialsParameters(fieldVariable%COMPONENTS(9)%PARAM_TO_DOF_MAP% &
+                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  H0_PARAM=materialsParameters(fieldVariable%COMPONENTS(10)%PARAM_TO_DOF_MAP% &
+                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  !Pressure equation
+                  pressure=65.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
+                  !Update the dependent field
+                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & versionIdx,derivativeIdx,nodeNumber,1,pressure,err,error,*999)
+                ENDDO
+              ENDDO
+              !Restore the field parameters
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & dependentParameters,err,error,*999)
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & materialsParameters,err,error,*999)
+                
+              !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
               DO nodeIdx=1,numberOfElementNodes
                 nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
                 numberOfVersions=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)% &
@@ -4901,6 +4914,7 @@ CONTAINS
                   & " is invalid for Coupled1D-DAE Navier-Stokes problem."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
               CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
@@ -5778,9 +5792,9 @@ CONTAINS
                           ELSE IF(outletNode) THEN
                             componentIdx=2
                             versionIdx=1
-                            CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx, &
-                              & W(componentIdx,versionIdx),err,error,*999)
+                            ! CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                            !   & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx, &
+                            !   & W(componentIdx,versionIdx),err,error,*999)
                             nonReflecting=.TRUE.
  
                             areaCalculated = (((W(1,1)-W(2,1))/4.0_DP)**4.0_DP)* &
@@ -9798,7 +9812,7 @@ CONTAINS
                 ! U p d a t e  A r e a 
                 !--------------------------------------------------
                 ! update area based on the pressure-area condition p-pext = Beta(sqrt(a) -sqrt(a0))
-                aBoundary  = ((((pCellML-pExternal)*133.32_DP)/Beta + SQRT(A0_PARAM))**2.0_DP)/As
+                aBoundary  = ((((pCellML-pExternal))/Beta + SQRT(A0_PARAM))**2.0_DP)/As
                 versionIdx=1
                 componentIdx=2
                 CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -9814,7 +9828,7 @@ CONTAINS
                 W(oneDComponent) = qBoundary/aBoundary+normalWave(oneDComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
                 W0 = qBoundary/aBoundary+normalWave(returnComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
                 W(returnComponent) = W0 + qBoundary/aBoundary + normalWave(returnComponent)*(16.0_DP*Fr)* &
-                 & (SQRT((pCellML-pExternal+pVesselWall)*133.32_DP) - SQRT(pVesselWall))
+                 & (SQRT((pCellML-pExternal+pVesselWall)) - SQRT(pVesselWall))
 
                 versionIdx=1
                 DO componentIdx=1,2
