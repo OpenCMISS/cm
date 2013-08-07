@@ -4443,6 +4443,8 @@ CONTAINS
         FIELD_IO_GET_FIELD_INFO_LABEL="field general type"
       CASE(FIELD_MATERIAL_TYPE)
         FIELD_IO_GET_FIELD_INFO_LABEL="field material type"
+       CASE(FIELD_GEOMETRIC_GENERAL_TYPE)
+        FIELD_IO_GET_FIELD_INFO_LABEL="field geometric general type"
       CASE DEFAULT
         FIELD_IO_GET_FIELD_INFO_LABEL="unknown field type"
     END SELECT
@@ -4551,6 +4553,22 @@ CONTAINS
         FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_material,  field,  second time derivative of variable"
       CASE DEFAULT
         FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE(FIELD_GEOMETRIC_GENERAL_TYPE)
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+!kmith - 17.10.08: Fixing general field label
+        !FIELD_IO_GET_VARIABLE_INFO_LABEL="general_variabe,  field,  string"
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="geometric general,  field,  rectangular cartesian"
+!kmith - 17.10.08:
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_dev_variable,  field,  string"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_variable,  field,  first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_variable,  field,  second time derivative of variable"
+      CASE DEFAULT
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  real"
       END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
     CASE DEFAULT
       SELECT CASE(VARIABLE%VARIABLE_TYPE)

@@ -3,7 +3,7 @@
 %{
 #include "stdlib.h"
 #include "opencmiss.h"
-#define MAX_OUTPUT_STRING_SIZE 200
+#define MAX_OUTPUT_STRING_SIZE 300
 %}
 
 /* Use numpy for input/output of arrays
@@ -20,18 +20,18 @@
 %}
 
 /* Apply numpy macros using const int for the dim type */
-%numpy_typemaps(unsigned char     , NPY_UBYTE    , const int)
-%numpy_typemaps(short             , NPY_SHORT    , const int)
-%numpy_typemaps(unsigned short    , NPY_USHORT   , const int)
-%numpy_typemaps(int               , NPY_INT      , const int)
-%numpy_typemaps(unsigned int      , NPY_UINT     , const int)
-%numpy_typemaps(long              , NPY_LONG     , const int)
-%numpy_typemaps(unsigned long     , NPY_ULONG    , const int)
-%numpy_typemaps(long long         , NPY_LONGLONG , const int)
+%numpy_typemaps(unsigned char , NPY_UBYTE , const int)
+%numpy_typemaps(short , NPY_SHORT , const int)
+%numpy_typemaps(unsigned short , NPY_USHORT , const int)
+%numpy_typemaps(int , NPY_INT , const int)
+%numpy_typemaps(unsigned int , NPY_UINT , const int)
+%numpy_typemaps(long , NPY_LONG , const int)
+%numpy_typemaps(unsigned long , NPY_ULONG , const int)
+%numpy_typemaps(long long , NPY_LONGLONG , const int)
 %numpy_typemaps(unsigned long long, NPY_ULONGLONG, const int)
-%numpy_typemaps(float             , NPY_FLOAT    , const int)
-%numpy_typemaps(double            , NPY_DOUBLE   , const int)
-%numpy_typemaps(double            , NPY_DOUBLE   , const int)
+%numpy_typemaps(float , NPY_FLOAT , const int)
+%numpy_typemaps(double , NPY_DOUBLE , const int)
+%numpy_typemaps(double , NPY_DOUBLE , const int)
 
 /**** Macros ****/
 
