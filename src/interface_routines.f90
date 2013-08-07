@@ -1,5 +1,5 @@
 !> \file
-!> \author David Nordsletten
+!> \author Chris Bradley
 !> \brief This module contains all interface routines.
 !>
 !> \section LICENSE
@@ -26,7 +26,7 @@
 !> Auckland, the University of Oxford and King's College, London.
 !> All Rights Reserved.
 !>
-!> Contributor(s): Chris Bradley
+!> Contributor(s): David Nordsletten, Thiranja Prasad Babarenda Gamage
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -46,6 +46,7 @@ MODULE INTERFACE_ROUTINES
 
   USE BASE_ROUTINES
   USE DATA_POINT_ROUTINES
+  USE DATA_PROJECTION_ROUTINES
   USE FIELD_ROUTINES
   USE GENERATED_MESH_ROUTINES
   USE INPUT_OUTPUT
@@ -92,6 +93,8 @@ MODULE INTERFACE_ROUTINES
 
   PUBLIC INTERFACE_LABEL_GET,INTERFACE_LABEL_SET
 
+  PUBLIC INTERFACE_NODES_GET
+
   PUBLIC INTERFACE_MESH_CONNECTIVITY_CREATE_START, INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH
 
   PUBLIC INTERFACE_USER_NUMBER_FIND
@@ -100,9 +103,11 @@ MODULE INTERFACE_ROUTINES
 
   PUBLIC INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET, INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET
 
-  PUBLIC INTERFACE_MESH_CONNECTIVITY_SET_BASIS
+  PUBLIC INTERFACE_MESH_CONNECTIVITY_BASIS_SET
   
   PUBLIC InterfacePointsConnectivity_CreateStart,InterfacePointsConnectivity_CreateFinish
+  
+  PUBLIC InterfacePointsConnectivity_DataReprojection
   
   PUBLIC InterfacePointsConnectivity_ElementNumberGet,InterfacePointsConnectivity_ElementNumberSet
   
@@ -244,9 +249,9 @@ CONTAINS
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Interface :",ERR,ERROR,*999)      
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  User number = ",INTERFACE%USER_NUMBER,ERR,ERROR,*999)      
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Global number = ",INTERFACE%GLOBAL_NUMBER,ERR,ERROR,*999)      
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Interface :",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  User number = ",INTERFACE%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Global number = ",INTERFACE%GLOBAL_NUMBER,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Label = ",INTERFACE%LABEL,ERR,ERROR,*999)
       IF(ASSOCIATED(INTERFACE%INTERFACES)) THEN
         IF(ASSOCIATED(INTERFACE%INTERFACES%PARENT_REGION)) THEN
@@ -283,10 +288,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,interface_idx
+    INTEGER(INTG) :: interface_idx
     TYPE(INTERFACE_TYPE), POINTER :: NEW_INTERFACE
     TYPE(INTERFACE_PTR_TYPE), POINTER :: NEW_INTERFACES(:)
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR,LOCAL_STRING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR,LOCAL_STRING
 
     NULLIFY(NEW_INTERFACE)
     NULLIFY(NEW_INTERFACES)
@@ -334,7 +339,7 @@ CONTAINS
     CALL EXITS("INTERFACE_CREATE_START")
     RETURN
 999 IF(ASSOCIATED(NEW_INTERFACES)) DEALLOCATE(NEW_INTERFACES)
-    CALL INTERFACE_FINALISE(INTERFACE,DUMMY_ERR,DUMMY_ERROR,*998)
+    CALL INTERFACE_FINALISE(INTERFACE,ERR,ERROR,*998)
 998 CALL ERRORS("INTERFACE_CREATE_START",ERR,ERROR)
     CALL EXITS("INTERFACE_CREATE_START")
     RETURN 1
@@ -660,7 +665,7 @@ CONTAINS
     CALL ENTERS("INTERFACE_LABEL_GET_VS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE)) THEN
-      !CPB 20/2/07 The following line crashes the AIX compiler unless it has a VAR_STR(CHAR()) around it
+      !\todo The following line crashes the AIX compiler unless it has a VAR_STR(CHAR()) around it
       LABEL=VAR_STR(CHAR(INTERFACE%LABEL))
     ELSE
       CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
@@ -744,7 +749,47 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialises a meshes connectivity for an interface.
+  !>Returns a pointer to the nodes for a interface. \see OPENCMISS::CMISSInterfaceNodesGet
+  SUBROUTINE INTERFACE_NODES_GET(INTERFACE,NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to get the nodes for
+    TYPE(NODES_TYPE), POINTER :: NODES !<On exit, a pointer to the nodes for the interface. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("INTERFACE_NODES_GET",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN 
+        IF(ASSOCIATED(NODES)) THEN
+          CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
+        ELSE
+          NODES=>INTERFACE%NODES
+          IF(.NOT.ASSOCIATED(NODES)) CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface has not been finished.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("INTERFACE_NODES_GET")
+    RETURN
+999 NULLIFY(NODES)
+998 CALL ERRORS("INTERFACE_NODES_GET",ERR,ERROR)
+    CALL EXITS("INTERFACE_NODES_GET")
+    RETURN 1
+    
+  END SUBROUTINE INTERFACE_NODES_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a meshes connectivity for an interface.
   SUBROUTINE INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*) 
 
     !Argument variables
@@ -752,19 +797,35 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-     
+    INTEGER(INTG) :: InterfaceElementIdx,CoupledMeshIdx
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH",ERR,ERROR,*999)
 
-     IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) THEN
-       IF(INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
-         CALL FLAG_ERROR("Interface meshes connectivity has already been finished.",ERR,ERROR,*999)
-       ELSE
-         INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED=.TRUE.
-       ENDIF
-     ELSE
-       CALL FLAG_ERROR("Interface meshes connectivity is not associated.",ERR,ERROR,*999)
-     ENDIF
-    
+    IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) THEN
+      IF(INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
+        CALL FLAG_ERROR("Interface meshes connectivity has already been finished.",ERR,ERROR,*999)
+      ELSE
+        !Check if connectivity from each interface element to an appropriate element in the coupled meshes has been setup
+        DO InterfaceElementIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS
+          DO CoupledMeshIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES
+            IF (INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)% &
+              & COUPLED_MESH_ELEMENT_NUMBER==0) THEN
+              LOCAL_ERROR="The connectivity from interface element " &
+                //TRIM(NUMBER_TO_VSTRING(InterfaceElementIdx,"*",ERR,ERROR))//" to an element in coupled mesh " & 
+                //TRIM(NUMBER_TO_VSTRING(CoupledMeshIdx,"*",ERR,ERROR))//" has not been defined."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDDO !CoupledMeshIdx
+        ENDDO !InterfaceElementIdx
+        !Calculate line or face numbers for coupled mesh elements that are connected to the interface mesh
+        CALL INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*999)
+        INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED=.TRUE.
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface meshes connectivity is not associated.",ERR,ERROR,*999)
+    ENDIF
+
     CALL EXITS("INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH")
     RETURN
 999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH",ERR,ERROR)
@@ -786,8 +847,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_CREATE_START",ERR,ERROR,*999)
 
@@ -848,82 +907,140 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalises the meshes connectivity and deallocates all memory
-  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_SET_BASIS(MESH_CON,BASIS,ERR,ERROR,*)
+  !>Sets the interface mesh connectivity basis
+  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_BASIS_SET(INTERFACE_MESH_CONNECTIVITY,BASIS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CON !<A pointer to interface mesh connectivity to set the element number of elements for.
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY !<A pointer to interface mesh connectivity to set the element number of elements for.
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
-    CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_SET_BASIS",ERR,ERROR,*999)
+    !Local Variables
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
+    INTEGER(INTG) :: InterfaceElementIdx,CoupledMeshIdx,NumberOfInterfaceElementNodes,NumberOfCoupledMeshXiDirections
 
-    ! Preliminary error checks to verify user input information
-    IF(.NOT.ASSOCIATED(MESH_CON)) CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
-    IF(MESH_CON%MESH_CONNECTIVITY_FINISHED) CALL FLAG_ERROR("Interface mesh connectivity already been finished.",ERR,ERROR,*999)
-    IF(ASSOCIATED(MESH_CON%BASIS)) CALL FLAG_ERROR("Mesh connectivity basis already associated.",ERR,ERROR,*999)
-    IF(.NOT.ASSOCIATED(BASIS)) CALL FLAG_ERROR("Basis to set mesh connectivity not associated.",ERR,ERROR,*999)
+    CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_BASIS_SET",ERR,ERROR,*999)
 
-    MESH_CON%BASIS=>BASIS
+    IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) THEN
+      IF(INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
+        CALL FLAG_ERROR("Interface mesh connectivity already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY%BASIS)) THEN
+          CALL FLAG_ERROR("Mesh connectivity basis already associated.",ERR,ERROR,*999)
+        ELSE
+          IF(ASSOCIATED(BASIS)) THEN
+            INTERFACE_MESH_CONNECTIVITY%BASIS=>BASIS
+            !Now that the mesh connectivity basis is set the number of interface element nodes can be determined and now MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)%XI can be allocated
+            !\todo NumberOfCoupledMeshXiDirections currently set to the number of interface mesh xi directions + 1. Restructure ELEMENT_CONNECTIVITY type see below
+            NumberOfCoupledMeshXiDirections=INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_DIMENSIONS+1
+            NumberOfInterfaceElementNodes=INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_NODES
+            DO InterfaceElementIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS
+              DO CoupledMeshIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES
+                ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)
+                !\todo Update mesh component index to look at the number of mesh components in each element. 
+                !\todo Currently this defaults to the first mesh component ie %XI(NumberOfInterfaceMeshXi,1,NumberOfInterfaceElementNodes)). 
+                !\todo The interface mesh types will also need to be restructured.
+                !eg. INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)%MESH_COMPONENT(MeshComponentIdx)%XI(NumberOfCoupledMeshXiDirections,NumberOfInterfaceElementNodes) and adding appropriate initialize/finialize routines
+                ALLOCATE(ELEMENT_CONNECTIVITY%XI(NumberOfCoupledMeshXiDirections,1,NumberOfInterfaceElementNodes),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface element connectivity.",ERR,ERROR,*999)
+                ELEMENT_CONNECTIVITY%XI=0.0_DP
+              ENDDO !CoupledMeshIdx
+            ENDDO !InterfaceElementIdx
+          ELSE
+            CALL FLAG_ERROR("Basis to set mesh connectivity not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
+    ENDIF
 
-    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_SET_BASIS")
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_BASIS_SET")
     RETURN
-999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_SET_BASIS",ERR,ERROR)
-    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_SET_BASIS")
+999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_BASIS_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_BASIS_SET")
     RETURN 1
     
-  END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_SET_BASIS
+  END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_BASIS_SET
 
   !
   !================================================================================================================================
   !
     
-  !>Finalises the meshes connectivity and deallocates all memory
-  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(MESH_CON,INT_ELEM,COUPLED_MESHID,COUPLED_ELEM,LOCAL_NODE, &
-    & COMP_NO,XI,ERR,ERROR,*)
+  !>Sets the mapping from an xi position of a coupled mesh element to a node of an interface mesh element
+  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(INTERFACE_MESH_CONNECTIVITY,INTERFACE_MESH_ELEMENT_NUMBER, &
+    & COUPLED_MESH_INDEX,COUPLED_MESH_ELEMENT_NUMBER,INTERFACE_MESH_LOCAL_NODE_NUMBER,INTERFACE_MESH_COMPONENT_NUMBER,XI, &
+    & ERR,ERROR,*)
 
     !Argument variables
-    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CON !<A pointer to interface mesh connectivity to set the element number of elements for.
-    INTEGER(INTG), INTENT(IN) :: INT_ELEM !<
-    INTEGER(INTG), INTENT(IN) :: COUPLED_MESHID !<The index of the coupled mesh in the interface to set the number of elements for.
-    INTEGER(INTG), INTENT(IN) :: COUPLED_ELEM !<
-    INTEGER(INTG), INTENT(IN) :: LOCAL_NODE !<
-    INTEGER(INTG), INTENT(IN) :: COMP_NO !<
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY !<A pointer to the interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: INTERFACE_MESH_ELEMENT_NUMBER !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: COUPLED_MESH_INDEX !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: COUPLED_MESH_ELEMENT_NUMBER !<The coupled mesh element to define the element xi connectivity from
+    INTEGER(INTG), INTENT(IN) :: INTERFACE_MESH_LOCAL_NODE_NUMBER !<The interface mesh node to assign the coupled mesh element xi to
+    INTEGER(INTG), INTENT(IN) :: INTERFACE_MESH_COMPONENT_NUMBER !<The interface mesh node's component to assign the coupled mesh element xi to
     REAL(DP), INTENT(IN) :: XI(:) !<XI(xi_idx). The xi value for the xi_idx'th xi direction in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: I, K !< Dummy index
-    INTEGER(INTG) :: XI_DIR !<Number of XI directions of the coupled mesh
+    INTEGER(INTG) :: coupled_mesh_number_of_xi
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
     
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET",ERR,ERROR,*999)
 
-    ! Preliminary error checks to verify user input information
-    IF(.NOT.ASSOCIATED(MESH_CON)) CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
-    IF(MESH_CON%MESH_CONNECTIVITY_FINISHED) CALL FLAG_ERROR("Interface mesh connectivity already been finished.",ERR,ERROR,*999)
-    IF (.NOT.ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY)) CALL FLAG_ERROR("Interface elements connectivity array not allocated.", &
-      & ERR,ERROR,*999)
-    IF((INT_ELEM > MESH_CON%NUMBER_INT_ELEM).OR.(INT_ELEM < 0)) CALL FLAG_ERROR("Interface mesh element number out of range.", &
-      & ERR,ERROR,*999)
-    IF((COUPLED_MESHID > MESH_CON%NUMBER_INT_DOM).OR.(COUPLED_MESHID < 0)) CALL FLAG_ERROR("Interface coupled mesh index number &
-      & out of range.",ERR,ERROR,*999)
-    IF((COUPLED_ELEM>MESH_CON%INTERFACE%COUPLED_MESHES(COUPLED_MESHID)%PTR%NUMBER_OF_ELEMENTS).OR.(COUPLED_ELEM<0))THEN
-      CALL FLAG_ERROR("Coupled mesh element number out of range.",ERR,ERROR,*999)
-    END IF
-    IF((COMP_NO<0).OR.(COMP_NO>MESH_CON%INTERFACE_MESH%NUMBER_OF_COMPONENTS+1)) CALL FLAG_ERROR("Interface component number is &
-      & out of range.",ERR,ERROR,*999)
-    IF((LOCAL_NODE<0).OR.(LOCAL_NODE> MESH_CON%BASIS%NUMBER_OF_NODES))THEN
-      CALL FLAG_ERROR("Interface local node number is out of range.",ERR,ERROR,*999)   
-    END IF
-
-    ! Core routine 
-    IF(MESH_CON%ELEMENTS_CONNECTIVITY(INT_ELEM,COUPLED_MESHID)%COUPLED_MESH_ELEMENT_NUMBER/=COUPLED_ELEM)THEN
-      CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",ERR,ERROR,*999)
+    IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) THEN
+      IF(INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
+        CALL FLAG_ERROR("Interface mesh connectivity already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY)) THEN
+          IF((INTERFACE_MESH_ELEMENT_NUMBER>0).AND. &
+            & (INTERFACE_MESH_ELEMENT_NUMBER<=INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS)) THEN
+            IF((COUPLED_MESH_INDEX>0).AND.(COUPLED_MESH_INDEX<=INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES)) THEN
+              IF((COUPLED_MESH_ELEMENT_NUMBER>0).AND.(COUPLED_MESH_ELEMENT_NUMBER<= &
+                & INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(COUPLED_MESH_INDEX)%PTR%NUMBER_OF_ELEMENTS))THEN
+                IF((INTERFACE_MESH_COMPONENT_NUMBER>0).AND. &
+                  & (INTERFACE_MESH_COMPONENT_NUMBER<=INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_COMPONENTS)) THEN
+                  IF((INTERFACE_MESH_LOCAL_NODE_NUMBER>0).AND.(INTERFACE_MESH_LOCAL_NODE_NUMBER<= &
+                    & INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_NODES))THEN
+                    ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY% &
+                      & ELEMENT_CONNECTIVITY(INTERFACE_MESH_ELEMENT_NUMBER,COUPLED_MESH_INDEX)
+                    IF(ELEMENT_CONNECTIVITY%COUPLED_MESH_ELEMENT_NUMBER==COUPLED_MESH_ELEMENT_NUMBER)THEN
+                      coupled_mesh_number_of_xi = INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(COUPLED_MESH_INDEX)%PTR% & 
+                        & TOPOLOGY(1)%PTR%ELEMENTS%ELEMENTS(COUPLED_MESH_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI
+                      IF(SIZE(XI)==coupled_mesh_number_of_xi) THEN
+                        !\todo the ELEMENT_CONNECTIVITY%XI array needs to be restructured to efficiently utilize memory when coupling bodies with 2xi directions to bodies with 3xi directions using an interface.
+                        ELEMENT_CONNECTIVITY%XI(1:coupled_mesh_number_of_xi,INTERFACE_MESH_COMPONENT_NUMBER, &
+                          & INTERFACE_MESH_LOCAL_NODE_NUMBER)=XI(1:coupled_mesh_number_of_xi)
+                      ELSE
+                        CALL FLAG_ERROR("The size of the xi array provided does not match the coupled mesh element's' number"// &
+                          & " of xi.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Interface local node number is out of range.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Interface component number is out of range.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Coupled mesh element number out of range.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Interface coupled mesh index number out of range.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface mesh element number out of range.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface elements connectivity array not allocated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
     ELSE
-      MESH_CON%ELEMENTS_CONNECTIVITY(INT_ELEM,COUPLED_MESHID)%XI(:,COMP_NO,LOCAL_NODE)=XI(:)
-    END IF
-    
+      CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
+    ENDIF
+
     CALL EXITS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET")
     RETURN
 999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET",ERR,ERROR)
@@ -936,47 +1053,42 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Finalises the meshes connectivity and deallocates all memory
-  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(MESH_CON,INT_MESH_ELEM,COUPLED_MESHID,NO_ELEM,ERR,ERROR,*)
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
+  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(INTERFACE_MESH_CONNECTIVITY,INTERFACE_MESH_ELEMENT_NUMBER, &
+      & COUPLED_MESH_INDEX,COUPLED_MESH_ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CON !<A pointer to interface mesh connectivity to set the element number of elements for.
-    TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH !<A pointer to the interface mesh to set the number of elements for
-    INTEGER(INTG), INTENT(IN) :: INT_MESH_ELEM !<Interface mesh element number
-    INTEGER(INTG), INTENT(IN) :: COUPLED_MESHID !<The index of the coupled mesh in the interface to set the number of elements for.
-    INTEGER(INTG), INTENT(IN) :: NO_ELEM !<The number of domain element
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY !<A pointer to the interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: INTERFACE_MESH_ELEMENT_NUMBER !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: COUPLED_MESH_INDEX !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: COUPLED_MESH_ELEMENT_NUMBER !<The coupled mesh element to be connected to the interface
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: I !< Dummy index
-    INTEGER(INTG) :: XI_DIR !<Number of XI directions of the coupled mesh
-    INTEGER(INTG) :: LOCAL_NODE !<Number of local nodes in the interface
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
     
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(MESH_CON)) THEN
-      IF(MESH_CON%MESH_CONNECTIVITY_FINISHED) THEN
+    IF(ASSOCIATED(INTERFACE_MESH_CONNECTIVITY)) THEN
+      IF(INTERFACE_MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
         CALL FLAG_ERROR("Interface mesh connectivity has already been finished.",ERR,ERROR,*999)
       ELSE
-        IF ((INT_MESH_ELEM > MESH_CON%NUMBER_INT_ELEM).OR.(INT_MESH_ELEM < 0)) THEN
-          CALL FLAG_ERROR("Interface mesh element number out of range.",ERR,ERROR,*999)
-        ELSE
-          IF ((COUPLED_MESHID > MESH_CON%NUMBER_INT_DOM).OR.(COUPLED_MESHID < 0)) THEN
-             CALL FLAG_ERROR("Interface coupled mesh index number out of range.",ERR,ERROR,*999)
+        IF((INTERFACE_MESH_ELEMENT_NUMBER>0).AND.(INTERFACE_MESH_ELEMENT_NUMBER<= &
+          & INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS)) THEN
+          IF((COUPLED_MESH_INDEX>0).AND.(COUPLED_MESH_INDEX<=INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES)) THEN
+            IF (ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY)) THEN
+              ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY% &
+                & ELEMENT_CONNECTIVITY(INTERFACE_MESH_ELEMENT_NUMBER,COUPLED_MESH_INDEX)
+              ELEMENT_CONNECTIVITY%COUPLED_MESH_ELEMENT_NUMBER=COUPLED_MESH_ELEMENT_NUMBER
+            ELSE
+              CALL FLAG_ERROR("Interface elements connectivity array not allocated.",ERR,ERROR,*999)
+            ENDIF
           ELSE
-             IF (ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY)) THEN
-               MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%COUPLED_MESH_ELEMENT_NUMBER=NO_ELEM
-               XI_DIR=MESH_CON%INTERFACE_MESH%NUMBER_OF_DIMENSIONS+1
-               LOCAL_NODE=MESH_CON%BASIS%NUMBER_OF_NODES
-               IF(.NOT.ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI)) THEN
-                 ALLOCATE(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI(XI_DIR,XI_DIR,LOCAL_NODE))
-               ENDIF
-               MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI=0.0_DP
-             ELSE
-               CALL FLAG_ERROR("Interface elements connectivity array not allocated.",ERR,ERROR,*999)
-             END IF
-          END IF
-        END IF
+            CALL FLAG_ERROR("Interface coupled mesh index number out of range.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface mesh element number out of range.",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
@@ -993,6 +1105,73 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Calculate line or face numbers for coupled mesh elements that are connected to the interface mesh
+  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY !<A pointer to interface mesh connectivity to calculate line or face numbers for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    REAL(DP) :: XiDifference
+    INTEGER(INTG) :: CoupledMeshIdx,InterfaceElementIdx,CoupledMeshXiIdx,NumberOfInterfaceElementNodes,NumberOfInterfaceMeshXi
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE",ERR,ERROR,*999)
+    
+    DO CoupledMeshIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES
+      DO InterfaceElementIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS
+        ELEMENT_CONNECTIVITY=>INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)
+        NumberOfInterfaceElementNodes=INTERFACE_MESH_CONNECTIVITY%BASIS%NUMBER_OF_NODES
+        NumberOfInterfaceMeshXi=INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_DIMENSIONS
+        SELECTCASE(NumberOfInterfaceMeshXi)
+        CASE(1) !Lines
+          DO CoupledMeshXiIdx=1,INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(CoupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
+            ! Calculate difference between first node and last node of an element
+            XiDifference=ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,1)- &
+              & ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)
+            IF(XiDifference==0.0_DP) THEN
+              IF(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)==0.0_DP) THEN
+                ELEMENT_CONNECTIVITY%CONNECTED_LINE=3-(CoupledMeshXiIdx-1)*2
+              ELSE
+                ELEMENT_CONNECTIVITY%CONNECTED_LINE=4-(CoupledMeshXiIdx-1)*2
+              ENDIF
+            ENDIF
+          ENDDO
+        CASE(2) !Faces
+          DO CoupledMeshXiIdx=1,INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(CoupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
+            XiDifference=ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,1)- &
+              & ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)
+            IF(XiDifference==0.0_DP) THEN
+              IF(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)==0.0_DP) THEN
+                ELEMENT_CONNECTIVITY%CONNECTED_FACE=(CoupledMeshXiIdx-1)*2+2
+              ELSE
+                ELEMENT_CONNECTIVITY%CONNECTED_FACE=(CoupledMeshXiIdx-1)*2+1
+              ENDIF
+            ENDIF
+          ENDDO
+        CASE DEFAULT 
+          LOCAL_ERROR="Number of interface mesh dimension of "//TRIM(NUMBER_TO_VSTRING(NumberOfInterfaceMeshXi,"*",ERR,ERROR))// &
+            & "is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDSELECT
+      ENDDO
+    ENDDO
+    
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE")
+    RETURN
+    
+999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE",ERR,ERROR)
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE")
+    RETURN 1
+  
+  END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
 
   !>Finalises the meshes connectivity and deallocates all memory
   SUBROUTINE INTERFACE_MESH_CONNECTIVITY_FINALISE(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*)
@@ -1002,7 +1181,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: coupled_mesh_idx,element_idx
      
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_FINALISE",ERR,ERROR,*999)
 
@@ -1010,8 +1188,8 @@ CONTAINS
     NULLIFY(INTERFACE_MESH_CONNECTIVITY%INTERFACE)
     NULLIFY(INTERFACE_MESH_CONNECTIVITY%INTERFACE_MESH)
     NULLIFY(INTERFACE_MESH_CONNECTIVITY%BASIS)
-    INTERFACE_MESH_CONNECTIVITY%NUMBER_INT_ELEM=0
-    INTERFACE_MESH_CONNECTIVITY%NUMBER_INT_DOM=0
+    INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS=0
+    INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES=0
        
     CALL EXITS("INTERFACE_MESH_CONNECTIVITY_FINALISE")
     RETURN
@@ -1034,9 +1212,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: I, K, DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
-     
+
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE)) THEN
@@ -1318,6 +1494,109 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Reproject data points for points connectivity
+  SUBROUTINE InterfacePointsConnectivity_DataReprojection(interface,interfaceCondition,err,error,*) 
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface where data reprojection is performed
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface where data reprojection is performed
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity
+    TYPE(FIELD_TYPE), POINTER :: dependentFieldFixed,dependentFieldProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    INTEGER(INTG) :: fixedBodyIdx,projectionBodyIdx,dataPointIdx,coordIdx
+    INTEGER(INTG) :: elementNumber,numberOfGeometricComponents
+    INTEGER(INTG) :: coupledMeshFaceLineNumber,component
+  
+    CALL ENTERS("InterfacePointsConnectivity_DataReprojection",err,error,*999)
+    
+    NULLIFY(interpolatedPoints)
+    NULLIFY(interpolationParameters)
+    fixedBodyIdx=2 !\todo: need to generalise
+    projectionBodyIdx=1
+
+    IF(ASSOCIATED(interface)) THEN
+      IF(ASSOCIATED(interfaceCondition)) THEN
+        interfacePointsConnectivity=>interface%pointsConnectivity
+        IF(ASSOCIATED(interfacePointsConnectivity)) THEN
+          dataPoints=>interface%DATA_POINTS
+          IF(ASSOCIATED(dataPoints)) THEN
+
+            !Evaluate data points positions
+            dependentFieldFixed=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(fixedBodyIdx)%PTR%FIELD
+            IF(ASSOCIATED(dependentFieldFixed)) THEN
+              numberOfGeometricComponents=dependentFieldFixed%GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
+              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(dependentFieldFixed,interpolationParameters,err,error,*999, &
+                & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoints,err,error,*999, &
+                & FIELD_GEOMETRIC_COMPONENTS_TYPE)
+              interpolatedPoint=>interpolatedPoints(FIELD_U_VARIABLE_TYPE)%PTR
+              DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS
+                elementNumber=interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
+                  & coupledMeshElementNumber
+                coupledMeshFaceLineNumber=dependentFieldFixed%DECOMPOSITION%TOPOLOGY%ELEMENTS% &
+                  & ELEMENTS(elementNumber)% &
+                  & ELEMENT_FACES(interfacePointsConnectivity%pointsConnectivity(dataPointIdx,fixedBodyIdx)% &
+                  & elementLineFaceNumber)
+                CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,coupledMeshFaceLineNumber, &
+                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
+                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,interfacePointsConnectivity%pointsConnectivity(dataPointIdx, &
+                  & fixedBodyIdx)%reducedXi(:),interpolatedPoint,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE) !Interpolate contact data points on each surface
+                DO component=1,numberOfGeometricComponents
+                  dataPoints%DATA_POINTS(dataPointIdx)%position(component) = interpolatedPoint%VALUES(component,NO_PART_DERIV)
+                ENDDO !component
+              ENDDO !dataPointIdx
+            ELSE
+              CALL FLAG_ERROR("Fixed dependent field is not associated.",err,error,*999)
+            ENDIF
+            
+            !Data reprojection and update points connectivity information with the projection results
+            dataProjection=>dataPoints%DATA_PROJECTIONS(projectionBodyIdx+1)%PTR 
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ProjectedBodyDataProjectionLabel",ERR,ERROR,*999)
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,dataProjection%label,ERR,ERROR,*999)
+            IF(ASSOCIATED(dataProjection)) THEN
+              dependentFieldProjection=>interfaceCondition%DEPENDENT%FIELD_VARIABLES(projectionBodyIdx)%PTR%FIELD
+              IF(ASSOCIATED(dependentFieldProjection)) THEN
+                !Projection the data points (with know spatial positions) on the projection dependent field 
+                CALL DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE(dataProjection,dependentFieldProjection,err,error,*999)
+                CALL InterfacePointsConnectivity_UpdateFromProjection(InterfacePointsConnectivity,dataProjection, &
+                  & projectionBodyIdx,err,error,*999) 
+              ELSE
+                CALL FLAG_ERROR("Projection dependent field is not associated.",err,error,*999)
+              ENDIF       
+            ELSE
+              CALL FLAG_ERROR("Interface data projection is not associated.",err,error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface data points is not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfacePointsConnectivity_DataReprojection")
+    RETURN
+999 CALL ERRORS("InterfacePointsConnectivity_DataReprojection",err,error)
+    CALL EXITS("InterfacePointsConnectivity_DataReprojection")
+    RETURN 1
+  END SUBROUTINE InterfacePointsConnectivity_DataReprojection
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Destroy interface points connectivity
   SUBROUTINE InterfacePointsConnectivity_Destroy(interfacePointsConnectivity,err,error,*) 
 
@@ -1361,8 +1640,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(MESH_TYPE), POINTER :: interfaceMesh
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
-    LOGICAL :: dataPointExists,elementExists
+    INTEGER(INTG) :: dataPointGlobalNumber
+    LOGICAL :: dataPointExists
 
     CALL ENTERS("InterfacePointsConnectivity_ElementNumberGet",err,error,*999)
     
@@ -1371,10 +1650,8 @@ CONTAINS
         & dataPointGlobalNumber,err,error,*999)
       IF(dataPointExists) THEN
         interfaceMesh=>pointsConnectivity%interfaceMesh
-        elementGlobalNumber=pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
+        coupledMeshUserElementNumber=pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
           & coupledMeshElementNumber
-        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(elementGlobalNumber,coupledMeshUserElementNumber, &
-          & interfaceMesh%TOPOLOGY(meshComponentNumber)%PTR%ELEMENTS,err,error,*999)
       ELSE
         CALL FLAG_ERROR("Data point with user number ("//TRIM(NUMBER_TO_VSTRING &
           & (dataPointUserNumber,"*",err,error))//") does not exist.",err,error,*999)
@@ -1759,13 +2036,12 @@ CONTAINS
     
   !>Gets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
   SUBROUTINE InterfacePointsConnectivity_PointXiGet(pointsConnectivity,dataPointUserNumber,coupledMeshIndexNumber, &
-    & coupledMeshUserElementNumber,xi,err,error,*)
+    & xi,err,error,*)
 
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to interface points connectivity to set the element number of elements for.
     INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The index of the data point.
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh in the interface to set the number of elements for.
-    INTEGER(INTG), INTENT(IN) :: coupledMeshUserElementNumber !<The coupled mesh element user number
     REAL(DP), INTENT(OUT) :: xi(:) !<xi(xi_idx). The full xi location in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
@@ -1811,20 +2087,18 @@ CONTAINS
     
   !>Sets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
   SUBROUTINE InterfacePointsConnectivity_PointXiSet(pointsConnectivity,dataPointUserNumber,coupledMeshIndexNumber, &
-    & coupledMeshUserElementNumber,xi,err,error,*)
+    & xi,err,error,*)
 
     !Argument variables
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to interface points connectivity to set the element number of elements for.
     INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The index of the data point.
     INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh in the interface to set the number of elements for.
-    INTEGER(INTG), INTENT(IN) :: coupledMeshUserElementNumber !<The coupled mesh element user number
     REAL(DP), INTENT(IN) :: xi(:) !<xi(xi_idx). The full xi location in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
-    INTEGER(INTG) :: meshComponentNumber=1 !\todo: not required once the element topology is mesh component invariant.
-    LOGICAL :: dataPointExists,elementExists
+    INTEGER(INTG) :: dataPointGlobalNumber
+    LOGICAL :: dataPointExists
     
     CALL ENTERS("InterfacePointsConnectivity_PointXiSet",err,error,*999)
     
@@ -1840,24 +2114,12 @@ CONTAINS
             IF ((coupledMeshIndexNumber>pointsConnectivity%interface%NUMBER_OF_COUPLED_MESHES).OR.(coupledMeshIndexNumber<0)) THEN
               CALL FLAG_ERROR("Interface coupled mesh index number out of range.",err,error,*999)
             ELSE
-              CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
-                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementGlobalNumber,err,error,*999)       
-              IF(elementExists) THEN
-                IF(pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
-                    & coupledMeshElementNumber==elementGlobalNumber) THEN
-                  IF(SIZE(pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%xi,1)== &
-                      & SIZE(xi,1)) THEN
-                    pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
-                      & xi(:)=xi(:) 
-                  ELSE
-                    CALL FLAG_ERROR("Input xi dimension does not match full coupled mesh xi dimension.",err,error,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",err,error,*999)
-                ENDIF
+              IF(SIZE(pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%xi,1)== &
+                  & SIZE(xi,1)) THEN
+                pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)% &
+                  & xi(:)=xi(:) 
               ELSE
-                CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
-                  & (coupledMeshUserElementNumber,"*",err,error))//") does not exist.",err,error,*999)
+                CALL FLAG_ERROR("Input xi dimension does not match full coupled mesh xi dimension.",err,error,*999)
               ENDIF
             ENDIF
           ELSE
@@ -1903,6 +2165,7 @@ CONTAINS
     IF(ASSOCIATED(InterfacePointsConnectivity)) THEN
       IF(ASSOCIATED(dataProjection)) THEN
         IF(dataProjection%DATA_PROJECTION_FINISHED) THEN
+          WRITE(*,*) "InterfacePointsConnectivity_UpdateFromProjection"
           DO dataPointIdx=1,SIZE(dataProjection%DATA_PROJECTION_RESULTS,1) !Update reduced xi location, projection element number and element face/line number with projection result
             dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
             InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIndex)%reducedXi(:)= &
@@ -2135,8 +2398,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
      
     CALL ENTERS("INTERFACES_INITIALISE",ERR,ERROR,*998)
 
@@ -2158,7 +2420,7 @@ CONTAINS
     
     CALL EXITS("INTERFACES_INITIALISE")
     RETURN
-999 CALL INTERFACES_FINALISE(REGION%INTERFACES,DUMMY_ERR,DUMMY_ERROR,*998)
+999 CALL INTERFACES_FINALISE(REGION%INTERFACES,ERR,ERROR,*998)
 998 CALL ERRORS("INTERFACES_INITIALISE",ERR,ERROR)
     CALL EXITS("INTERFACES_INITIALISE")
     RETURN 1
@@ -2168,53 +2430,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE INTERFACE_REGION_LMHOST_SET(INTERFACE,REGION_ID,ERR,ERROR,*)   
-
-    !Argument variables
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the region to finish the creation of
-    INTEGER(INTG), INTENT(IN) :: REGION_ID !<The integer user code for the host region
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-     
-    CALL ENTERS("INTERFACE_REGION_LMHOST_SET",ERR,ERROR,*999)
-
-    CALL EXITS("INTERFACE_REGION_LMHOST_SET")
-    RETURN
-999 CALL ERRORS("INTERFACE_REGION_LMHOST_SET",ERR,ERROR)
-    CALL EXITS("INTERFACE_REGION_LMHOST_SET")
-    RETURN 1
-  END SUBROUTINE INTERFACE_REGION_LMHOST_SET
-
-  !
-  !================================================================================================================================
-  !
-
-
-  SUBROUTINE INTERFACE_TYPE_SET(INTERFACE,INTERFACETYPE,COUPLING_TYPE,ERR,ERROR,*) 
-
-    !Argument variables
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE  !<A pointer to the interface to set the type for
-    INTEGER(INTG), INTENT(IN) :: INTERFACETYPE  
-    INTEGER(INTG), INTENT(IN) :: COUPLING_TYPE 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-     
-    CALL ENTERS("INTERFACE_TYPE_SET",ERR,ERROR,*999)
-    
-    CALL EXITS("INTERFACE_TYPE_SET")
-    RETURN
-999 CALL ERRORS("INTERFACE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("INTERFACE_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE INTERFACE_TYPE_SET  
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialises the interface mesh connectivity.
+  !>Initialises the interface element connectivity.
   SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_INITIALISE(INTERFACE,ERR,ERROR,*)
 
     !Argument variables
@@ -2222,28 +2438,40 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: I, J, K
+    INTEGER(INTG) :: InterfaceElementIdx,CoupledMeshIdx
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: ELEMENT_CONNECTIVITY
      
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE)) THEN
       IF(ASSOCIATED(INTERFACE%MESH_CONNECTIVITY)) THEN
-        IF(ALLOCATED(INTERFACE%MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY)) THEN
+        IF(ALLOCATED(INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY)) THEN
           CALL FLAG_ERROR("Interface mesh element connectivity is already allocated.",ERR,ERROR,*999)
         ELSE
-          IF(INTERFACE%NUMBER_OF_COUPLED_MESHES<=0) CALL FLAG_ERROR("Interface coupled meshes are not associated.",ERR,ERROR,*999)
-          IF(INTERFACE%MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_ELEMENTS<=0) CALL FLAG_ERROR("Interface coupled meshes are not & 
-            & associated.",ERR,ERROR,*999)
-          INTERFACE%MESH_CONNECTIVITY%NUMBER_INT_ELEM=INTERFACE%MESHES%MESHES(1)%PTR%NUMBER_OF_ELEMENTS
-          INTERFACE%MESH_CONNECTIVITY%NUMBER_INT_DOM=INTERFACE%NUMBER_OF_COUPLED_MESHES
-          ALLOCATE(INTERFACE%MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(INTERFACE%MESH_CONNECTIVITY%NUMBER_INT_ELEM, &
-            & INTERFACE%MESH_CONNECTIVITY%NUMBER_INT_DOM))
-          DO I = 1, INTERFACE%MESH_CONNECTIVITY%NUMBER_INT_ELEM
-            DO J = 1, INTERFACE%MESH_CONNECTIVITY%NUMBER_INT_DOM
-              INTERFACE%MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(I,J)%COUPLED_MESH_ELEMENT_NUMBER=0
-            ENDDO! J
-          ENDDO! I
-        END IF
+          IF(INTERFACE%NUMBER_OF_COUPLED_MESHES>0) THEN
+            IF(INTERFACE%MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_ELEMENTS>0) THEN
+              INTERFACE%MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS=INTERFACE%MESHES%MESHES(1)%PTR%NUMBER_OF_ELEMENTS
+              INTERFACE%MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES=INTERFACE%NUMBER_OF_COUPLED_MESHES
+              ALLOCATE(INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(INTERFACE%MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS, &
+                & INTERFACE%MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface element connectivity.",ERR,ERROR,*999)
+              DO InterfaceElementIdx=1,INTERFACE%MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS
+                DO CoupledMeshIdx=1,INTERFACE%MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES
+                  ELEMENT_CONNECTIVITY=>INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)
+                  ELEMENT_CONNECTIVITY%COUPLED_MESH_ELEMENT_NUMBER=0
+                  ELEMENT_CONNECTIVITY%CONNECTED_FACE=0
+                  ELEMENT_CONNECTIVITY%CONNECTED_LINE=0
+                  ! Note that ELEMENT_CONNECTIVITY%XI(NumberOfCoupledMeshXiDirections,1,NumberOfInterfaceElementNodes) is allocated after the basis for the mesh connectivity has been specified in INTERFACE_MESH_CONNECTIVITY_BASIS_SET where the number of NumberOfInterfaceElementNodes can be determined.
+                  !\todo see corresponding todo in regarding updating the structure of ELEMENT_CONNECTIVITY%XI
+                ENDDO !CoupledMeshIdx
+              ENDDO !InterfaceElementIdx
+            ELSE
+              CALL FLAG_ERROR("Interface coupled meshes are not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface coupled meshes are not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
       ELSE
         CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -2258,7 +2486,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_INITIALISE
 
-
   !
   !================================================================================================================================
   !
@@ -2271,21 +2498,25 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: I, J 
+    INTEGER(INTG) :: InterfaceElementIdx,CoupledMeshIdx
      
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_FINALISE",ERR,ERROR,*999)
 
-    DO I = 1,INTERFACE_MESH_CONNECTIVITY%NUMBER_INT_ELEM  !<Loop over all the interface mesh elements
-      DO J = 1,INTERFACE_MESH_CONNECTIVITY%NUMBER_INT_DOM  !<Loop over all coupled domains 
-        IF (.NOT.ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY)) CALL FLAG_ERROR("Interface mesh connectivity &
-          & element connectivity is being deallocated before allocation.",ERR,ERROR,*999)
-        INTERFACE_MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(I,J)%COUPLED_MESH_ELEMENT_NUMBER=0
-        IF(ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(I,J)%XI)) DEALLOCATE(INTERFACE_MESH_CONNECTIVITY% &
-          & ELEMENTS_CONNECTIVITY(I,J)%XI)
-      ENDDO ! END J - Loop over all coupled domains
-    ENDDO ! END I - Loop over all interface elements
+    DO InterfaceElementIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_INTERFACE_ELEMENTS  
+      DO CoupledMeshIdx=1,INTERFACE_MESH_CONNECTIVITY%NUMBER_OF_COUPLED_MESHES
+        IF(ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY)) THEN
+          INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)%COUPLED_MESH_ELEMENT_NUMBER=0
+          IF(ALLOCATED(INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)%XI)) THEN
+            DEALLOCATE(INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(InterfaceElementIdx,CoupledMeshIdx)%XI)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface mesh connectivity element connectivity is being deallocated before allocation.", &
+            & ERR,ERROR,*999)
+        ENDIF
+      ENDDO !InterfaceElementIdx
+    ENDDO !CoupledMeshIdx
 
-    DEALLOCATE(INTERFACE_MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY)
+    DEALLOCATE(INTERFACE_MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY)
     
     CALL EXITS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_FINALISE")
     RETURN
