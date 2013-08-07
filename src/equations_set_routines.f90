@@ -3039,6 +3039,7 @@ CONTAINS
     TYPE(ELEMENT_VECTOR_TYPE) :: elementVector
     INTEGER(INTG) :: componentIdx,localNy,version,derivativeIdx,derivative,nodeIdx,node,column
     INTEGER(INTG) :: componentInterpolationType
+    INTEGER(INTG) :: numberOfRows
     REAL(DP) :: delta,origDepVar
 
     CALL ENTERS("EquationsSet_FiniteElementJacobianEvaluateFD",err,error,*999)
@@ -3067,6 +3068,10 @@ CONTAINS
           ! For non coupled problems these two variables will be the same
           columnVariable=>nonlinearMapping%RESIDUAL_VARIABLES(jacobianNumber)%PTR
           parameters=>columnVariable%PARAMETER_SETS%PARAMETER_SETS(FIELD_VALUES_SET_TYPE)%PTR%PARAMETERS  ! vector of dependent variables, basically
+          numberOfRows=nonlinearMatrices%JACOBIANS(jacobianNumber)%PTR%ELEMENT_JACOBIAN%NUMBER_OF_ROWS
+          IF(numberOfRows/=nonlinearMatrices%ELEMENT_RESIDUAL%NUMBER_OF_ROWS) THEN
+            CALL FlagError("Element matrix number of rows does not match element residual vector size.",err,error,*999)
+          END IF
           ! determine step size
           CALL DistributedVector_L2Norm(parameters,delta,err,error,*999)
           delta=(1.0_DP+delta)*1E-7_DP
@@ -3094,8 +3099,8 @@ CONTAINS
                   CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
                   CALL DISTRIBUTED_VECTOR_VALUES_SET(parameters,localNy,origDepVar,err,error,*999)
                   column=column+1
-                  nonlinearMatrices%JACOBIANS(jacobianNumber)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                      & (nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR-elementVector%VECTOR)/delta
+                  nonlinearMatrices%JACOBIANS(jacobianNumber)%PTR%ELEMENT_JACOBIAN%MATRIX(1:numberOfRows,column)= &
+                      & (nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(1:numberOfRows)-elementVector%VECTOR(1:numberOfRows))/delta
                 ENDDO !derivativeIdx
               ENDDO !nodeIdx
             CASE (FIELD_ELEMENT_BASED_INTERPOLATION)
@@ -3107,8 +3112,8 @@ CONTAINS
               CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
               CALL DISTRIBUTED_VECTOR_VALUES_SET(parameters,localNy,origDepVar,err,error,*999)
               column=column+1
-              nonlinearMatrices%JACOBIANS(jacobianNumber)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                  & (nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR-elementVector%VECTOR)/delta
+              nonlinearMatrices%JACOBIANS(jacobianNumber)%PTR%ELEMENT_JACOBIAN%MATRIX(1:numberOfRows,column)= &
+                  & (nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(1:numberOfRows)-elementVector%VECTOR(1:numberOfRows))/delta
             CASE DEFAULT
               CALL FLAG_ERROR("Unsupported type of interpolation.",err,error,*999)
             END SELECT
