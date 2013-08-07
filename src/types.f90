@@ -2607,6 +2607,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
     TYPE(PetscSnesLineSearchType) :: snesLineSearch !<The PETSc SNES line search object
+    LOGICAL :: linesearchMonitorOutput !<Flag to determine whether to enable/disable linesearch monitor output.
   END TYPE NEWTON_LINESEARCH_SOLVER_TYPE
   
   !>Contains information for a Newton trust region nonlinear solver
@@ -2622,6 +2623,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information about the convergence test for a newton solver
   TYPE NewtonSolverConvergenceTest
     REAL(DP) :: energyFirstIter !<The energy for the first iteration
+    REAL(DP) :: normalisedEnergy !<The normalized energy for the subsequent iterations
   END TYPE NewtonSolverConvergenceTest
 
   !>Contains information for a Newton nonlinear solver
