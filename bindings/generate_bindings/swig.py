@@ -147,7 +147,7 @@ def parameter_swig_lines(parameter):
                 apply_to = ('const int %(name)sSize, '
                     'const %(type_name)s *%(name)s' % properties)
             else:
-                typemap = ('const int DIM1, const %(type)s *IN_ARRAY1' %
+                typemap = ('const int DIM1, %(type)s *IN_ARRAY1' %
                     properties)
                 apply_to = ('const int %(name)sSize, const %(type)s *%(name)s'
                     % properties)
@@ -158,7 +158,7 @@ def parameter_swig_lines(parameter):
             if (parameter.var_type in
                     (Parameter.INTEGER, Parameter.DOUBLE, Parameter.FLOAT)):
                 typemap = ('const int DIM1, const int DIM2, '
-                    'const %(type)s *IN_FARRAY2' % properties)
+                    '%(type)s *IN_FARRAY2' % properties)
                 apply_to = ('const int %(name)sSize1, const int '
                     '%(name)sSize2, const %(type)s *%(name)s' % properties)
         elif parameter.array_dims == 2 and parameter.required_sizes < 2:
