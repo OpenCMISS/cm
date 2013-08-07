@@ -136,6 +136,7 @@ CONTAINS
       & VARIABLE_LIST_ITEM(3),variable_position_idx,variable_type, &
       & numberRowEquationsRows,numberColEquationsCols,rowEquationsRowIdx,colEquationsColIdx, &
       & globalDofCouplingNumber,equationsRow,eqnLocalDof
+    INTEGER(INTG) :: temp_offset, solver_variable_idx_temp
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_SET_VARIABLES(:,:),EQUATIONS_VARIABLES(:,:),INTERFACE_EQUATIONS_LIST(:,:), &
       & INTERFACE_VARIABLES(:,:),RANK_GLOBAL_ROWS_LIST(:,:),RANK_GLOBAL_COLS_LIST(:,:),solver_local_dof(:)
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_VARIABLE_GLOBAL_SOLVER_DOFS(:),NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS(:), &
@@ -2237,9 +2238,26 @@ CONTAINS
               DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
                 
                 DO solver_variable_idx=1,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES
-                  
-                  GLOBAL_DOFS_OFFSET=solver_global_dof
-                  LOCAL_DOFS_OFFSET=solver_local_dof(rank)
+
+                  IF (SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS>0) THEN
+                    ! Ensure that the dof_offset is calculated as a sum of the number of dofs in the diagonal entries of the solver
+                    ! matrix (ie the sum of the number of solver dofs in each equation set).
+                    ! Note that this may not work when running problems in parallel, however, note that interfaces can not currently
+                    ! be used in parallel either, and the following code only executes if there are interface conditions present.
+                    temp_offset = 0
+                    DO solver_variable_idx_temp=1,solver_variable_idx
+                      DO global_dof=1,SIZE(DOF_MAP(solver_variable_idx_temp)%PTR)
+                        IF (DOF_MAP(solver_variable_idx_temp)%PTR(global_dof)>0) THEN
+                          temp_offset=temp_offset+1
+                        ENDIF
+                      ENDDO
+                    ENDDO
+                    GLOBAL_DOFS_OFFSET=temp_offset
+                    LOCAL_DOFS_OFFSET=temp_offset
+                  ELSE
+                    GLOBAL_DOFS_OFFSET=solver_global_dof
+                    LOCAL_DOFS_OFFSET=solver_local_dof(rank)
+                  ENDIF
                   
                   variable_type=SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%VARIABLES(solver_variable_idx)%VARIABLE_TYPE
                   
@@ -5289,6 +5307,10 @@ CONTAINS
                           number_of_interface_matrices=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
                         CASE(INTERFACE_CONDITION_PENALTY_METHOD)
                           number_of_interface_matrices=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES-1
+                        CASE DEFAULT
+                          LOCAL_ERROR="The interface condition method of "// &
+                            & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDSELECT
                         DO interface_matrix_idx=1,number_of_interface_matrices
                           EQUATIONS_SET=>INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx)%EQUATIONS_SET
@@ -6833,7 +6855,7 @@ CONTAINS
         newSize=solverDofCouplings%capacity*2
       END IF
       ALLOCATE(newDofCouplings(newSize),stat=err)
-      IF(err/=0) CALL FlagError("Could not allocate new DOF couplings array.",err,error,*998)
+      IF(err/=0) CALL FlagError("Could not allocate new DOF couplings array.",err,error,*999)
       IF(solverDofCouplings%capacity>0) THEN
         newDofCouplings(1:solverDofCouplings%numberOfCouplings)= &
           & solverDofCouplings%dofCouplings(1:solverDofCouplings%numberOfCouplings)
