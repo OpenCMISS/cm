@@ -851,6 +851,7 @@ CONTAINS
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,versionIdx2,componentIdx,columnIdx,componentIdx2
     INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
+    INTEGER(INTG) :: userNodeNumber
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,sum
     LOGICAL :: updateStiffnessMatrix, updateRhsVector,updateNonlinearResidual
     TYPE(VARYING_STRING) :: localError
@@ -922,7 +923,8 @@ CONTAINS
       ! Get the number of versions at this node
       derivativeIdx=1
       numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-
+      userNodeNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(nodeNumber)
+      
       !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
       normalWave=0.0_DP
       CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -947,67 +949,19 @@ CONTAINS
         !Material Values at the node - material field variable 1, components 1-10, type U
         ! First 7 components constant, 8-10 node-based (so will vary with version#)
 
-        ! Element-based material parameters for coupled problems
-        IF(dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-           & NODES%NODES(nodeNumber)%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
-          elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-           & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(1)
-          DO versionIdx=1,numberOfVersions
-            parameterIdx=8
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-            parameterIdx=9
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-            parameterIdx=10
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-              & (3.0_DP*A0_PARAM(versionIdx))            
-          ENDDO
-        ! For branching flows, this gets the elements converging on the node and associates them 
-        ! with their specific version number: versionElementNumber(version)
-        ELSE
-          !Loop over the elements surrounding the current node
-          DO elementIdx=1,dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-            & NODES%NODES(nodeNumber)%NUMBER_OF_SURROUNDING_ELEMENTS
-            ! get the user number for the current element
-            elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-             & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(elementIdx)
-            ! loop over the nodes on this (surrounding) element
-            DO elementNodeIdx=1,equations%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-              & PTR%ELEMENTS%ELEMENTS(elementNumber)%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-              !get the node number for this node
-              elementNodeNumber=equations%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                & PTR%ELEMENTS%ELEMENTS(elementNumber)%MESH_ELEMENT_NODES(elementNodeIdx)
-              ! check that this node is the same as the current iterative node
-              IF(elementNodeNumber==nodeNumber) THEN
-                ! Loop over the versions to find the element index that matches the version
-                DO versionIdx=1,numberOfVersions
-                  ! the version number for the local element node
-                  elementNodeVersion=equations%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                    & PTR%ELEMENTS%ELEMENTS(elementNumber)% &
-                    & USER_ELEMENT_NODE_VERSIONS(derivativeIdx,elementNodeIdx)
-                  IF(elementNodeVersion==versionIdx) THEN
-                    !Get the element based material parameters for the surrounding elements
-                    versionElementNumber(versionIdx)=elementNumber
-                    parameterIdx=8
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-                    parameterIdx=9
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-                    parameterIdx=10
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-                    Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-                      & (3.0_DP*A0_PARAM(versionIdx))                 
-                  ENDIF
-                ENDDO
-              ENDIF
-            ENDDO
-          ENDDO
-        ENDIF
+        DO versionIdx=1,numberOfVersions
+          parameterIdx=8
+          CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,1,userNodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
+          parameterIdx=9
+          CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,1,userNodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
+          parameterIdx=10
+          CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,1,userNodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
+          Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+            & (3.0_DP*A0_PARAM(versionIdx))            
+        ENDDO
 
         CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & materialsParameters,err,error,*999)
@@ -1162,6 +1116,7 @@ CONTAINS
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,baseIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
+    INTEGER(INTG) :: userNodeNumber
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
     LOGICAL :: updateJacobianMatrix
     TYPE(VARYING_STRING) :: localError
@@ -1228,6 +1183,7 @@ CONTAINS
       ! Set derivative to 1 and get the number of versions at this node
       derivativeIdx=1
       numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+      userNodeNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(nodeNumber)
       ! Check if this is a standard node or a branching/coupled node (branch/coupled has >1 version)
       ! (if standard, the returned nodal nodal vector from this routine will be 0)
 
@@ -1255,67 +1211,19 @@ CONTAINS
         !Material Values at the node - material field variable 1, components 1-10, type U
         ! First 7 components constant, 8-10 node-based (so will vary with version#)
 
-        ! Element-based material parameters for coupled problems
-        IF(dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-           & NODES%NODES(nodeNumber)%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
-          elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-           & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(1)
-          DO versionIdx=1,numberOfVersions
-            parameterIdx=8
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-            parameterIdx=9
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-            parameterIdx=10
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-              & (3.0_DP*A0_PARAM(versionIdx))                 
-          ENDDO
-        ! For branching flows, this gets the elements converging on the node and associates them 
-        ! with their specific version number: versionElementNumber(version)
-        ELSE
-          !Loop over the elements surrounding the current node
-          DO elementIdx=1,dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-            & NODES%NODES(nodeNumber)%NUMBER_OF_SURROUNDING_ELEMENTS
-            ! get the user number for the current element
-            elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-             & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(elementIdx)
-            ! loop over the nodes on this (surrounding) element
-            DO elementNodeIdx=1,equations%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-              & PTR%ELEMENTS%ELEMENTS(elementNumber)%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-              !get the node number for this node
-              elementNodeNumber=equations%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                & PTR%ELEMENTS%ELEMENTS(elementNumber)%MESH_ELEMENT_NODES(elementNodeIdx)
-              ! check that this node is the same as the current iterative node
-              IF(elementNodeNumber==nodeNumber) THEN
-                ! Loop over the versions to find the element index that matches the version
-                DO versionIdx=1,numberOfVersions
-                  ! the version number for the local element node
-                  elementNodeVersion=equations%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
-                    & PTR%ELEMENTS%ELEMENTS(elementNumber)% &
-                    & USER_ELEMENT_NODE_VERSIONS(derivativeIdx,elementNodeIdx)
-                  IF(elementNodeVersion==versionIdx) THEN
-                    !Get the element based material parameters for the surrounding elements
-                    versionElementNumber(versionIdx)=elementNumber
-                    parameterIdx=8
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-                    parameterIdx=9
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-                    parameterIdx=10
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-                    Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-                      & (3.0_DP*A0_PARAM(versionIdx))          
-                  ENDIF
-                ENDDO
-              ENDIF
-            ENDDO
-          ENDDO
-        ENDIF
+        DO versionIdx=1,numberOfVersions
+          parameterIdx=8
+          CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,1,userNodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
+          parameterIdx=9
+          CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,1,userNodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
+          parameterIdx=10
+          CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,1,userNodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
+          Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+            & (3.0_DP*A0_PARAM(versionIdx))                 
+        ENDDO
 
         CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & materialsParameters,err,error,*999)
@@ -1328,7 +1236,6 @@ CONTAINS
         Fr=materialsParameters(local_ny)
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & materialsParameters,err,error,*999)
-
 
         !!!--  D E P E N D E N T   P A R A M E T E R S   ( Q , A ) --!!!
         !Current Q and A Values at the nodes - dependent field variable 1, components 1-2, type U
