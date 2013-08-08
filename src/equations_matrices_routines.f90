@@ -640,8 +640,8 @@ CONTAINS
                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                   CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
                     decompositionData=>ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%DECOMPOSITION%TOPOLOGY%dataPoints
-                    DO dataPointIdx=1,decompositionData%elementDataPoint(colElementNumber)%numberOfProjectedData
-                      localDataPointNumber=decompositionData%elementDataPoint(colElementNumber)% &
+                    DO dataPointIdx=1,decompositionData%elementDataPoint(rowElementNumber)%numberOfProjectedData
+                      localDataPointNumber=decompositionData%elementDataPoint(rowElementNumber)% &
                         & dataIndices(dataPointIdx)%localNumber
                       local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP% &
                         & DATA_POINTS(localDataPointNumber)
@@ -837,6 +837,8 @@ CONTAINS
     
     CALL ENTERS("EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE",ERR,ERROR,*999)
 
+    ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=0
+    ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=0
     IF(ALLOCATED(ELEMENT_MATRIX%ROW_DOFS)) DEALLOCATE(ELEMENT_MATRIX%ROW_DOFS)
     IF(ALLOCATED(ELEMENT_MATRIX%COLUMN_DOFS)) DEALLOCATE(ELEMENT_MATRIX%COLUMN_DOFS)
     IF(ALLOCATED(ELEMENT_MATRIX%MATRIX)) DEALLOCATE(ELEMENT_MATRIX%MATRIX)
@@ -882,7 +884,7 @@ CONTAINS
 
   !>Sets up the element matrix for the row and column field variables.
   SUBROUTINE EQUATIONS_MATRICES_ELEMENT_MATRIX_SETUP(elementMatrix,rowsFieldVariable,columnsFieldVariable, &
-        & rowsNumberOfElements,colsNumberOfElements,err,error,*)
+    & rowsNumberOfElements,colsNumberOfElements,err,error,*)
 
     !Argument variables
     TYPE(ELEMENT_MATRIX_TYPE) :: elementMatrix !<The element matrix to setup
@@ -900,10 +902,18 @@ CONTAINS
 
     IF(ASSOCIATED(rowsFieldVariable)) THEN
       IF(ASSOCIATED(columnsFieldVariable)) THEN
-        elementMatrix%MAX_NUMBER_OF_ROWS=rowsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & rowsFieldVariable%NUMBER_OF_COMPONENTS*rowsNumberOfElements
-        elementMatrix%MAX_NUMBER_OF_COLUMNS=columnsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-          & columnsFieldVariable%NUMBER_OF_COMPONENTS*colsNumberOfElements
+        elementMatrix%MAX_NUMBER_OF_ROWS = 0
+        DO componentIdx=1,rowsFieldVariable%NUMBER_OF_COMPONENTS
+          elementMatrix%MAX_NUMBER_OF_ROWS=elementMatrix%MAX_NUMBER_OF_ROWS+ &
+            & rowsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+        ENDDO
+        elementMatrix%MAX_NUMBER_OF_ROWS=elementMatrix%MAX_NUMBER_OF_ROWS*rowsNumberOfElements
+        elementMatrix%MAX_NUMBER_OF_COLUMNS = 0
+        DO componentIdx=1,columnsFieldVariable%NUMBER_OF_COMPONENTS
+          elementMatrix%MAX_NUMBER_OF_COLUMNS=elementMatrix%MAX_NUMBER_OF_COLUMNS+ &
+            & columnsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+        ENDDO
+        elementMatrix%MAX_NUMBER_OF_COLUMNS=elementMatrix%MAX_NUMBER_OF_COLUMNS*colsNumberOfElements
         IF(ALLOCATED(elementMatrix%ROW_DOFS)) THEN
           CALL FLAG_ERROR("Element matrix row dofs already allocated.",err,error,*999)
         ELSE
@@ -2581,11 +2591,7 @@ CONTAINS
         DO matrix_idx=1,DYNAMIC_MATRICES%NUMBER_OF_DYNAMIC_MATRICES
           EQUATIONS_MATRIX=>DYNAMIC_MATRICES%MATRICES(matrix_idx)%PTR
           IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-            EQUATIONS_MATRIX%ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=0
-            EQUATIONS_MATRIX%ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=0
-            IF(ALLOCATED(EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS)) DEALLOCATE(EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS)
-            IF(ALLOCATED(EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS)) DEALLOCATE(EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS)
-            IF(ALLOCATED(EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX)) DEALLOCATE(EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX)
+            CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE(EQUATIONS_MATRIX%ELEMENT_MATRIX,ERR,ERROR,*999)
           ELSE
             LOCAL_ERROR="Equations matrix for dynamic matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
               & " is not associated."
@@ -2599,11 +2605,7 @@ CONTAINS
         DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
           EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR
           IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-            EQUATIONS_MATRIX%ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS=0
-            EQUATIONS_MATRIX%ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS=0
-            IF(ALLOCATED(EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS)) DEALLOCATE(EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS)
-            IF(ALLOCATED(EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS)) DEALLOCATE(EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS)
-            IF(ALLOCATED(EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX)) DEALLOCATE(EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX)
+            CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_FINALISE(EQUATIONS_MATRIX%ELEMENT_MATRIX,ERR,ERROR,*999)
           ELSE
             LOCAL_ERROR="Equations matrix for linear matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
               & " is not associated."
