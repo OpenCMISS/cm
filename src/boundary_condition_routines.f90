@@ -2533,7 +2533,7 @@ CONTAINS
         CALL FLAG_ERROR("Field variable for RHS boundary conditions is not associated.",err,error,*999)
       END IF
 
-      CALL Field_DependentGeometricFieldGet(rhsVariable%field,.TRUE.,geometricField,dependentGeometry,err,error,*999)
+      CALL Field_GeometricGeneralFieldGet(rhsVariable%field,geometricField,dependentGeometry,err,error,*999)
 
       CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(neumannConditions%integrationMatrix,0.0_DP,err,error,*999)
 
