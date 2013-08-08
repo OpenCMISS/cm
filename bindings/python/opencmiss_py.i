@@ -15,6 +15,7 @@
 #define SWIG_FILE_WITH_INIT
 %}
 %include "numpy.i"
+%include "numpy_extra.i"
 %init %{
   import_array();
 %}
@@ -31,7 +32,18 @@
 %numpy_typemaps(unsigned long long, NPY_ULONGLONG, const int)
 %numpy_typemaps(float , NPY_FLOAT , const int)
 %numpy_typemaps(double , NPY_DOUBLE , const int)
-%numpy_typemaps(double , NPY_DOUBLE , const int)
+/* And extra typemaps defined for OpenCMISS */
+%numpy_extra_typemaps(unsigned char , NPY_UBYTE , const int)
+%numpy_extra_typemaps(short , NPY_SHORT , const int)
+%numpy_extra_typemaps(unsigned short , NPY_USHORT , const int)
+%numpy_extra_typemaps(int , NPY_INT , const int)
+%numpy_extra_typemaps(unsigned int , NPY_UINT , const int)
+%numpy_extra_typemaps(long , NPY_LONG , const int)
+%numpy_extra_typemaps(unsigned long , NPY_ULONG , const int)
+%numpy_extra_typemaps(long long , NPY_LONGLONG , const int)
+%numpy_extra_typemaps(unsigned long long, NPY_ULONGLONG, const int)
+%numpy_extra_typemaps(float , NPY_FLOAT , const int)
+%numpy_extra_typemaps(double , NPY_DOUBLE , const int)
 
 /**** Macros ****/
 
@@ -52,7 +64,7 @@
 
   output_pointer = SWIG_NewPointerObj(*$1, $*1_descriptor, 0);
 
-  APPEND_TO_RESULT(output_pointer)
+  $result = SWIG_Python_AppendOutput($result,output_pointer);
 }
 
 /* CMISS*TypeFinalise routines. Convert SWIG pointer input. Can't modify the input pointer to nullify it though */
@@ -85,7 +97,7 @@
   PyObject *output_string;
 
   output_string = PyString_FromString($2);
-  APPEND_TO_RESULT(output_string)
+  $result = SWIG_Python_AppendOutput($result,output_string);
 }
 
 /**** Scalars ****/
@@ -98,7 +110,7 @@
   PyObject *output_int;
 
   output_int = PyInt_FromLong((long) *$1);
-  APPEND_TO_RESULT(output_int)
+  $result = SWIG_Python_AppendOutput($result,output_int);
 }
 
 /* Float output */
@@ -109,7 +121,7 @@
   PyObject *output_double;
 
   output_double = PyFloat_FromDouble((double) *$1);
-  APPEND_TO_RESULT(output_double)
+  $result = SWIG_Python_AppendOutput($result,output_double);
 }
 
 %typemap(in,numinputs=0) (float *DummyOutputScalar)(float temp) {
@@ -119,7 +131,7 @@
   PyObject *output_double;
 
   output_double = PyFloat_FromDouble((double) *$1);
-  APPEND_TO_RESULT(output_double)
+  $result = SWIG_Python_AppendOutput($result,output_double);
 }
 
 /* Boolean input */
@@ -135,7 +147,7 @@
   PyObject *output_bool;
 
   output_bool = PyBool_FromLong((long) *$1);
-  APPEND_TO_RESULT(output_bool)
+  $result = SWIG_Python_AppendOutput($result,output_bool);
 }
 
 /**** Arrays ****/
