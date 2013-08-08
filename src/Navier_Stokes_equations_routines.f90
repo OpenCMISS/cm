@@ -8661,28 +8661,18 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: geometricField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
-    TYPE(DECOMPOSITION_TYPE), POINTER :: geometricDecomposition
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: decompElement
     TYPE(BASIS_TYPE), POINTER :: dependentBasis
-    TYPE(BASIS_TYPE), POINTER :: dependentBasis1
-    TYPE(BASIS_TYPE), POINTER :: dependentBasis2
-    TYPE(BASIS_TYPE), POINTER :: geometricFaceBasis
     TYPE(EQUATIONS_TYPE), POINTER :: equations
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
     TYPE(DECOMPOSITION_FACE_TYPE), POINTER :: face
     TYPE(BASIS_TYPE), POINTER :: faceBasis
-    TYPE(BASIS_TYPE), POINTER :: faceBasis1
-    TYPE(BASIS_TYPE), POINTER :: faceBasis2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: dependentInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: dependentInterpolationParameters
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme1
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: geometricInterpolationParameters
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics
-    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
-    TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(FIELD_TYPE), POINTER :: dependentField
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
@@ -8693,11 +8683,8 @@ CONTAINS
     INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
     INTEGER(INTG) :: numberOfDimensions,boundaryID
     REAL(DP) :: normalProjection,normalProjection2,pressureGauss,mu,sumDelU,jacobianGaussWeights
-    REAL(DP) :: normalMagnitude,boundaryValue,boundaryFlux
     REAL(DP) :: areaJacobian,volumeJacobian
-    REAL(DP) :: resistanceProximal,faceNormal2(3)
-    REAL(DP) :: elementNormal(3),velocityGauss(3),faceNormal(3),unitNormal(3),delUGauss(3,3),dXi_dX(3,3)
-    LOGICAL :: elementIsMultidomainBoundary
+    REAL(DP) :: delUGauss(3,3),dXi_dX(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP), POINTER :: geometricParameters(:)
@@ -8705,23 +8692,15 @@ CONTAINS
     CALL ENTERS("NavierStokes_FiniteElementFaceIntegrate",err,error,*999)
 
     NULLIFY(decomposition)
-    NULLIFY(geometricDecomposition)
     NULLIFY(decompElement)
     NULLIFY(dependentBasis)
-    NULLIFY(dependentBasis1)
-    NULLIFY(dependentBasis2)
-    NULLIFY(geometricFaceBasis)
     NULLIFY(geometricVariable)
     NULLIFY(geometricParameters)
     NULLIFY(equations)
     NULLIFY(equationsMatrices)
     NULLIFY(face)
     NULLIFY(faceBasis)
-    NULLIFY(faceBasis1)
-    NULLIFY(faceBasis2)
     NULLIFY(faceQuadratureScheme)
-    NULLIFY(faceQuadratureScheme1)
-    NULLIFY(faceQuadratureScheme2)
     NULLIFY(dependentInterpolatedPoint)
     NULLIFY(dependentInterpolationParameters)
     NULLIFY(geometricInterpolatedPoint)
@@ -8730,8 +8709,6 @@ CONTAINS
     NULLIFY(nonlinearMatrices)
     NULLIFY(dependentField)
     NULLIFY(geometricField)
-    NULLIFY(equationsEquationsSetField)
-    NULLIFY(equationsSetField)
 
     IF(ASSOCIATED(equationsSet)) THEN
       equations=>equationsSet%EQUATIONS
@@ -8753,202 +8730,140 @@ CONTAINS
 
     SELECT CASE(equationsSet%SUBTYPE)
     CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
-      !Get the element boundary normal values (zeroes if not a Coupled Multidomain Method boundary)
-      equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
-      IF(ASSOCIATED(equationsEquationsSetField)) THEN
-        equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
-        IF(ASSOCIATED(equationsSetField)) THEN
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,5,elementNormal(1),err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,6,elementNormal(2),err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,7,elementNormal(3),err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,8,boundaryValue,err,error,*999)
-          boundaryID=NINT(boundaryValue)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,9,boundaryFlux,err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,10,resistanceProximal,err,error,*999)
-          !Check if boundary element is a multidomain boundary element
-          elementIsMultidomainBoundary=.FALSE.
-          normalMagnitude=L2NORM(elementNormal)
-          IF(normalMagnitude>ZERO_TOLERANCE) THEN
-            elementIsMultidomainBoundary=.TRUE.
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Equations set field (EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
-        END IF
-      ELSE
-        CALL FLAG_ERROR("Equations set field (EQUATIONS_EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
-      END IF
 
-      IF(elementIsMultidomainBoundary .AND. boundaryID > 1) THEN
-        !Get the mesh decomposition and basis
-        decomposition=>dependentVariable%FIELD%DECOMPOSITION
-        !Check that face geometric parameters have been calculated
-        IF(decomposition%CALCULATE_FACES) THEN
-          meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementNumber)%BASIS
+      !Get the mesh decomposition and basis
+      decomposition=>dependentVariable%FIELD%DECOMPOSITION
+      !Check that face geometric parameters have been calculated
+      IF(decomposition%CALCULATE_FACES) THEN
+        meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+        dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
+          & ELEMENTS(elementNumber)%BASIS
 
-          meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          dependentBasis1=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementNumber)%BASIS
-          meshComponentNumber=dependentVariable%COMPONENTS(2)%MESH_COMPONENT_NUMBER
-          dependentBasis2=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementNumber)%BASIS
+        decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
+        !Get the dependent interpolation parameters
+        dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
+          & dependentVariable%VARIABLE_TYPE)%PTR
+        dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
+          & dependentVariable%VARIABLE_TYPE)%PTR
+        !Get the geometric interpolation parameters
+        geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
+          & FIELD_U_VARIABLE_TYPE)%PTR
+        geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
+        CALL FIELD_NUMBER_OF_COMPONENTS_GET(geometricField,FIELD_U_VARIABLE_TYPE,numberOfDimensions,ERR,ERROR,*999)
+        !Get access to geometric coordinates
+        CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,ERR,ERROR,*999)
+        meshComponentNumber=geometricVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+        !Get the geometric distributed vector
+        CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & geometricParameters,ERR,ERROR,*999)
+        fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
 
-          decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
-          !Get the dependent interpolation parameters
-          dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
-            & dependentVariable%VARIABLE_TYPE)%PTR
-          dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
-            & dependentVariable%VARIABLE_TYPE)%PTR
-          !Get the geometric interpolation parameters
-          geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
-            & FIELD_U_VARIABLE_TYPE)%PTR
-!          geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-          geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
-          CALL FIELD_NUMBER_OF_COMPONENTS_GET(geometricField,FIELD_U_VARIABLE_TYPE,numberOfDimensions,ERR,ERROR,*999)
-          !Get access to geometric coordinates
-          CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,ERR,ERROR,*999)
-          meshComponentNumber=geometricVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          geometricDecomposition=>geometricField%DECOMPOSITION
-          !Get the geometric distributed vector
-          CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & geometricParameters,ERR,ERROR,*999)
-          fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+        DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
+          !Get the face normal and quadrature information
+          IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
+            faceNumber=decompElement%ELEMENT_FACES(faceIdx)
+          ELSE
+            CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
+          END IF
+          face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
+          !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
+          !correspond to the other element.
+          IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
 
-          DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
-            !Get the face normal and quadrature information
-            IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
-              faceNumber=decompElement%ELEMENT_FACES(faceIdx)
-            ELSE
-              CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
-            END IF
-            face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
-            !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
-            !correspond to the other element.
-            IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
+          SELECT CASE(dependentBasis%TYPE)
+          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+            normalComponentIdx=ABS(face%XI_DIRECTION)
+          CASE DEFAULT
+            LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+              & " is not yet implemented for Navier-Stokes."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
 
-            SELECT CASE(dependentBasis%TYPE)
-            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-              normalComponentIdx=ABS(face%XI_DIRECTION)
-              !How does this differentiate between wall and in/outlet boundaries? Try:
-              IF(ABS(elementNormal(normalComponentIdx))< (ZERO_TOLERANCE)) CYCLE
-            CASE DEFAULT
-              LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
-                & " is not yet implemented for Navier-Stokes."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+          CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
+            & dependentInterpolationParameters,err,error,*999)
 
-            CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
-              & dependentInterpolationParameters,err,error,*999)
+          faceBasis=>decomposition%DOMAIN(1)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+          faceQuadratureScheme=>faceBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 
-            faceBasis1=>decomposition%DOMAIN(1)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-            faceBasis2=>decomposition%DOMAIN(2)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-            faceQuadratureScheme1=>faceBasis1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-            faceQuadratureScheme2=>faceBasis2%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+          DO gaussIdx=1,faceQuadratureScheme%NUMBER_OF_GAUSS
+            !Get interpolated geometry
+            geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
+              & geometricInterpolatedPoint,err,error,*999)
+            !Get interpolated velocity and pressure 
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
+              & dependentInterpolatedPoint,err,error,*999)
+            pressureGauss=0.0_DP
+            delUGauss=0.0_DP
+            pressureGauss=dependentInterpolatedPoint%values(4,NO_PART_DERIV) 
+            delUGauss(1:3,1)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S1)
+            delUGauss(1:3,2)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S2)
+            delUGauss(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
+            !Materials parameters
+            mu=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
 
-            DO gaussIdx=1,faceQuadratureScheme1%NUMBER_OF_GAUSS
-              !Get interpolated geometry
-              geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-              CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
-                & geometricInterpolatedPoint,err,error,*999)
-              !Get interpolated velocity and pressure 
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
-                & dependentInterpolatedPoint,err,error,*999)
-              ! CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
-              !   & geometricInterpolatedPoint,err,error,*999)
-              velocityGauss=0.0_DP
-              pressureGauss=0.0_DP
-              delUGauss=0.0_DP
-              velocityGauss=dependentInterpolatedPoint%values(1:3,NO_PART_DERIV)
-              pressureGauss=dependentInterpolatedPoint%values(4,NO_PART_DERIV) 
-              delUGauss(1:3,1)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S1)
-              delUGauss(1:3,2)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S2)
-              delUGauss(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
-              !Materials parameters
-              mu=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+            !Calculate point metrics
+            pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE,pointMetrics,err,error,*999)
+            areaJacobian=pointMetrics%Jacobian
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
+            volumeJacobian=pointMetrics%Jacobian
+            dXi_dX=0.0_DP
+            dXi_dX=pointMetrics%DXI_DX(:,:)
+            elementBaseDofIdx=0
 
-              !Calculate point metrics
-              pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE,pointMetrics,err,error,*999)
-              areaJacobian=pointMetrics%Jacobian
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
-              volumeJacobian=pointMetrics%Jacobian
-              dXi_dX=0.0_DP
-              dXi_dX=pointMetrics%DXI_DX(:,:)
-              elementBaseDofIdx=0
+            !Loop over field components
+            DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+              !Work out the first index of the rhs vector for this element - (i.e. the number of previous)
+              elementBaseDofIdx=dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
 
-              DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                normalProjection2=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DXI_DX(componentIdx,:))
-                IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
-                IF(face%XI_DIRECTION<0) THEN
-                  normalProjection=-normalProjection
-                  normalProjection2=-normalProjection2
-                END IF
-                faceNormal(componentIdx)=normalProjection
-                faceNormal2(componentIdx)=normalProjection2
-              ENDDO
-              unitNormal=faceNormal/L2NORM(faceNormal)
+              normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
+              normalProjection2=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DXI_DX(componentIdx,:))
+              IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
+              IF(face%XI_DIRECTION<0) THEN
+                normalProjection=-normalProjection
+                normalProjection2=-normalProjection2
+              END IF
 
-              !Loop over field components
-              DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                !Work out the first index of the rhs vector for this element - (i.e. the number of previous)
-                elementBaseDofIdx=dependentBasis1%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
+              !Jacobian and Gauss weighting term
+              jacobianGaussWeights=faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)*pointMetrics%JACOBIAN
 
-                normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                normalProjection2=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DXI_DX(componentIdx,:))
-                IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
-                IF(face%XI_DIRECTION<0) THEN
-                  normalProjection=-normalProjection
-                  normalProjection2=-normalProjection2
-                END IF
+              sumDelU=0.0_DP  
+              DO xiIdx=1,dependentBasis%NUMBER_OF_XI
+                sumDelU=sumDelU+ &
+                 & ((delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,1)) + &
+                 &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,2)) + &
+                 &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,3)))
+              ENDDO !xiIdx
 
-                !Jacobian and Gauss weighting term
-                jacobianGaussWeights=faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*pointMetrics%JACOBIAN
+              DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
+                elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
+                DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
+                  nodeDerivativeIdx=1
+                  parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
+                  faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
+                  elementDofIdx=elementBaseDofIdx+parameterIdx
 
-                sumDelU=0.0_DP  
-                DO xiIdx=1,dependentBasis1%NUMBER_OF_XI
-                  sumDelU=sumDelU+ &
-                   & ((delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,1)) + &
-                   &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,2)) + &
-                   &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,3)))
-                ENDDO !xiIdx
+                  rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
+                    &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                    &  faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                    &  faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
 
-                DO faceNodeIdx=1,faceBasis1%NUMBER_OF_NODES
-                  elementNodeIdx=dependentBasis1%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
-                  DO faceNodeDerivativeIdx=1,faceBasis1%NUMBER_OF_DERIVATIVES(faceNodeIdx)
-                    nodeDerivativeIdx=1
-                    parameterIdx=dependentBasis1%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
-                    faceParameterIdx=faceBasis1%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
-                    elementDofIdx=elementBaseDofIdx+parameterIdx
-!                    IF(boundaryID > 1) THEN
-                    rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
-                      &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
-                      &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
-                      &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
+                  ! nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
+                  !   & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) + &
+                  !   &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                  !   &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                  !   &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
+                END DO !nodeDerivativeIdx
+              END DO !faceNodeIdx
+            ENDDO !componentIdx
+          ENDDO !gaussIdx
+        ENDDO !faceIdx
 
-                    ! nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
-                    !   & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) + &
-                    !   &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
-                    !   &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
-                    !   &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
-                  END DO !nodeDerivativeIdx
-                END DO !faceNodeIdx
-              ENDDO !componentIdx
-            ENDDO !gaussIdx
-          ENDDO !faceIdx
-
-          !Restore the distributed geometric data used for the normal calculation
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & geometricParameters,ERR,ERROR,*999)
-        END IF !decomposition%calculate_faces
-      ENDIF !elementIsMultidomainBoundary
+        !Restore the distributed geometric data used for the normal calculation
+        CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & geometricParameters,ERR,ERROR,*999)
+      END IF !decomposition%calculate_faces
 
     CASE DEFAULT
       ! Do nothing for other equation set subtypes
