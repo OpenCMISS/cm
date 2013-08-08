@@ -252,7 +252,7 @@ OBJECTS += $(MACHINE_OBJECTS)
 
 preliminaries: $(OBJECT_DIR)/.directory \
 	$(INC_DIR)/.directory \
-	$(LIB_DIR)/.directory
+	$(LIB_DIR)/.directory 
 
 $(LIBRARY) : $(OBJECTS) $(LIB_DIR)/.directory
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
