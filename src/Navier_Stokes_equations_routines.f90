@@ -566,7 +566,7 @@ CONTAINS
                   & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                  DO component_idx=1,NUMBER_OF_DEPENDENT_COMPONENTS
+                  DO component_idx=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                       & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, & 
@@ -5271,12 +5271,12 @@ CONTAINS
                                               number_of_nodes_xic(3)=1
                                             ENDIF
 !\todo: change definitions as soon as adjacent elements / boundary elements calculation works for simplex
-                                            IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
-                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
-                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
-                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
-                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
-                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==64.) THEN
+                                            IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4 .OR. &
+                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==9 .OR. &
+                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==16 .OR. &
+                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==8 .OR. &
+                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==27 .OR. &
+                                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
                                                 DO K=1,number_of_nodes_xic(3)
                                                   DO J=1,number_of_nodes_xic(2)
                                                     DO I=1,number_of_nodes_xic(1)
@@ -7334,7 +7334,6 @@ CONTAINS
     !Local variables
     REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
     REAL(DP) :: period
-    REAL(DP) :: R,position
     REAL(DP) :: boundaryNormal(3),amplitude,offset
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 

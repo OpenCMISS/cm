@@ -2527,8 +2527,8 @@ CONTAINS
             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
               CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-              ROW_INDICES=>PETSC_MATRIX%ROW_INDICES
-              COLUMN_INDICES=>PETSC_MATRIX%COLUMN_INDICES
+              ROW_INDICES=>DISTRIBUTED_MATRIX%PETSC%ROW_INDICES
+              COLUMN_INDICES=>DISTRIBUTED_MATRIX%PETSC%COLUMN_INDICES
             CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
               CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -2638,10 +2638,11 @@ CONTAINS
                           PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS=0
                           ALLOCATE(PETSC_MATRIX%ROW_INDICES(PETSC_MATRIX%M+1),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix row indices.",ERR,ERROR,*999)
-                          PETSC_MATRIX%ROW_INDICES=ROW_INDICES(1:PETSC_MATRIX%M+1)
+                          PETSC_MATRIX%ROW_INDICES(1:PETSC_MATRIX%M+1)=ROW_INDICES(1:PETSC_MATRIX%M+1)
                           ALLOCATE(PETSC_MATRIX%COLUMN_INDICES(PETSC_MATRIX%NUMBER_NON_ZEROS),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix column indices.",ERR,ERROR,*999)
-                          PETSC_MATRIX%COLUMN_INDICES=COLUMN_INDICES(1:PETSC_MATRIX%NUMBER_NON_ZEROS)
+                          PETSC_MATRIX%COLUMN_INDICES(1:PETSC_MATRIX%NUMBER_NON_ZEROS)= &
+                            & COLUMN_INDICES(1:PETSC_MATRIX%NUMBER_NON_ZEROS)
                           !Check the column indices are correct and calculate number of diagonal and off-diagonal columns
                           global_row_start=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(1)
                           global_row_finish=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(PETSC_MATRIX%M)
