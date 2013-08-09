@@ -4374,8 +4374,6 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-! !     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
-! !     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
 
@@ -4395,196 +4393,172 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE)
-!               do nothing
-            CASE(PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE)
-!               do nothing
-            CASE(PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE)
-              IF(SOLVER%GLOBAL_NUMBER==1) THEN
-                !only read in data if it is the fitting problem
-!                 CONTROL_TIME_LOOP=>CONTROL_LOOP%PARENT_LOOP
-                CONTROL_TIME_LOOP=>CONTROL_LOOP
-                CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-!                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read input data xxxxxxxxxx... ",ERR,ERROR,*999)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                     !Set pressure field to zero     
-                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                      CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
-                      !this is the current time step
-!\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
-                      INPUT_TYPE=1
-                      INPUT_OPTION=1
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_VALUES_SET_TYPE,INPUT_VEL_NEW_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_NEW_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                    ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                    END IF
+          CASE(PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE)
+            !               do nothing
+          CASE(PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE)
+            !               do nothing
+          CASE(PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE)
+            IF(SOLVER%GLOBAL_NUMBER==1) THEN
+              !only read in data if it is the fitting problem
+              CONTROL_TIME_LOOP=>CONTROL_LOOP
+              CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                IF(ASSOCIATED(EQUATIONS)) THEN
+                  EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    !Set pressure field to zero     
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    !this is the current time step
+                    !\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
+                    INPUT_TYPE=1
+                    INPUT_OPTION=1
+                    CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_VALUES_SET_TYPE,INPUT_VEL_NEW_DATA,ERR,ERROR,*999)
+                    CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_NEW_DATA, & 
+                      & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF                
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  END IF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF 
-              ELSE IF(SOLVER%GLOBAL_NUMBER==2) THEN
-                !this is the interior flag
-!                 CONTROL_TIME_LOOP=>CONTROL_LOOP%PARENT_LOOP
-                CONTROL_TIME_LOOP=>CONTROL_LOOP
-                CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-!                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read input data xxxxxxxxxx... ",ERR,ERROR,*999)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                     !Set pressure field to zero     
-                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                      CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
-                      !this is the current time step
-!\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
-                      INPUT_TYPE=1
-                      INPUT_OPTION=3
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_LABEL_SET_TYPE,INPUT_VEL_LABEL_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_LABEL_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the reference U velocity
-                      INPUT_TYPE=1
-                      INPUT_OPTION=4
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_VEL1_SET_TYPE,INPUT_VEL_U_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_U_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the reference V velocity
-                      INPUT_TYPE=1
-                      INPUT_OPTION=5
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_VEL2_SET_TYPE,INPUT_VEL_V_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_V_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the reference W velocity
-                      INPUT_TYPE=1
-                      INPUT_OPTION=6
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_VEL3_SET_TYPE,INPUT_VEL_W_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_W_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                    ENDIF
+                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                END IF
+              ELSE
+                CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+              END IF
+            ELSE IF(SOLVER%GLOBAL_NUMBER==2) THEN
+              !this is the interior flag
+              CONTROL_TIME_LOOP=>CONTROL_LOOP
+              CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                IF(ASSOCIATED(EQUATIONS)) THEN
+                  EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    !Set pressure field to zero     
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    !this is the current time step
+                    !\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
+                    INPUT_TYPE=1
+                    INPUT_OPTION=3
+                    CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_INPUT_LABEL_SET_TYPE,INPUT_VEL_LABEL_DATA,ERR,ERROR,*999)
+                    CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_LABEL_DATA, & 
+                      & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                    !this is the reference U velocity
+                    INPUT_TYPE=1
+                    INPUT_OPTION=4
+                    CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_INPUT_VEL1_SET_TYPE,INPUT_VEL_U_DATA,ERR,ERROR,*999)
+                    CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_U_DATA, & 
+                      & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                    !this is the reference V velocity
+                    INPUT_TYPE=1
+                    INPUT_OPTION=5
+                    CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_INPUT_VEL2_SET_TYPE,INPUT_VEL_V_DATA,ERR,ERROR,*999)
+                    CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_V_DATA, & 
+                      & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                    !this is the reference W velocity
+                    INPUT_TYPE=1
+                    INPUT_OPTION=6
+                    CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_INPUT_VEL3_SET_TYPE,INPUT_VEL_W_DATA,ERR,ERROR,*999)
+                    CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_W_DATA, & 
+                      & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
                   ENDIF
                 ENDIF
               ENDIF
-            CASE(PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE,PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
-              & PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE)
-                CONTROL_TIME_LOOP=>CONTROL_LOOP%PARENT_LOOP
-                CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read input data... ",ERR,ERROR,*999)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-!                      !Set pressure field to zero     
-!                       CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-!                         & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-!                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-!                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-!                       !Set pressure reference point in order to solve for absolute pressure
-!                       IF(BOUNDARY_UPDATE) THEN
-! !\todo: Let user determine when to change reference value
-!                         IF(CURRENT_TIME<0.35_DP) THEN
-!                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-!                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,10000.0_DP,ERR,ERROR,*999)
-!                         ELSE
-!                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-!                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-!                         ENDIF
-!                           CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-!                             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-!                           CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-!                             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-!                       ENDIF
-                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                      CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
-                      !this is the current time step
-!\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
-                      INPUT_TYPE=1
-                      INPUT_OPTION=1
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_DATA1_SET_TYPE,INPUT_VEL_NEW_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_NEW_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the previous time step
-!\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
-                      INPUT_TYPE=1
-                      INPUT_OPTION=2
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_DATA2_SET_TYPE,INPUT_VEL_OLD_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_OLD_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the interior flag
-                      INPUT_TYPE=1
-                      INPUT_OPTION=3
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_LABEL_SET_TYPE,INPUT_VEL_LABEL_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_LABEL_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the reference U velocity
-                      INPUT_TYPE=1
-                      INPUT_OPTION=4
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_VEL1_SET_TYPE,INPUT_VEL_U_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_U_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the reference V velocity
-                      INPUT_TYPE=1
-                      INPUT_OPTION=5
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_VEL2_SET_TYPE,INPUT_VEL_V_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_V_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                      !this is the reference W velocity
-                      INPUT_TYPE=1
-                      INPUT_OPTION=6
-                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_INPUT_VEL3_SET_TYPE,INPUT_VEL_W_DATA,ERR,ERROR,*999)
-                      CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_W_DATA, & 
-                        & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
-                    ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                    END IF
-                  ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF                
+            ENDIF
+          CASE(PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE,PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
+            & PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE)
+            CONTROL_TIME_LOOP=>CONTROL_LOOP%PARENT_LOOP
+            CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read input data... ",ERR,ERROR,*999)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+              IF(ASSOCIATED(EQUATIONS)) THEN
+                EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                  CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
+                  !this is the current time step
+                  !\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
+                  INPUT_TYPE=1
+                  INPUT_OPTION=1
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_INPUT_DATA1_SET_TYPE,INPUT_VEL_NEW_DATA,ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_NEW_DATA, & 
+                    & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                  !this is the previous time step
+                  !\todo: Provide possibility for user to define input type and option (that's more or less an IO question)
+                  INPUT_TYPE=1
+                  INPUT_OPTION=2
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_INPUT_DATA2_SET_TYPE,INPUT_VEL_OLD_DATA,ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_OLD_DATA, & 
+                    & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                  !this is the interior flag
+                  INPUT_TYPE=1
+                  INPUT_OPTION=3
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_INPUT_LABEL_SET_TYPE,INPUT_VEL_LABEL_DATA,ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_LABEL_DATA, & 
+                    & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                  !this is the reference U velocity
+                  INPUT_TYPE=1
+                  INPUT_OPTION=4
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_INPUT_VEL1_SET_TYPE,INPUT_VEL_U_DATA,ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_U_DATA, & 
+                    & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                  !this is the reference V velocity
+                  INPUT_TYPE=1
+                  INPUT_OPTION=5
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_INPUT_VEL2_SET_TYPE,INPUT_VEL_V_DATA,ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_V_DATA, & 
+                    & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                  !this is the reference W velocity
+                  INPUT_TYPE=1
+                  INPUT_OPTION=6
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_INPUT_VEL3_SET_TYPE,INPUT_VEL_W_DATA,ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_W_DATA, & 
+                    & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF 
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Poisson type of a classical field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-               & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-               & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-               & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
-               & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                END IF
+              ELSE
+                CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+            END IF
+          CASE DEFAULT
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              & " is not valid for a Poisson type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+          CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+            & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+            & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+          CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+            & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
+          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
+            & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -4594,6 +4568,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
+    
     CALL EXITS("POISSON_PRE_SOLVE_UPDATE_INPUT_DATA")
     RETURN
 999 CALL ERRORS("POISSON_PRE_SOLVE_UPDATE_INPUT_DATA",ERR,ERROR)

@@ -1132,8 +1132,8 @@ CONTAINS
             ! Calculate difference between first node and last node of an element
             XiDifference=ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,1)- &
               & ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)
-            IF(XiDifference==0.0_DP) THEN
-              IF(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)==0.0_DP) THEN
+            IF(ABS(XiDifference)<ZERO_TOLERANCE) THEN
+              IF(ABS(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes))<ZERO_TOLERANCE) THEN
                 ELEMENT_CONNECTIVITY%CONNECTED_LINE=3-(CoupledMeshXiIdx-1)*2
               ELSE
                 ELEMENT_CONNECTIVITY%CONNECTED_LINE=4-(CoupledMeshXiIdx-1)*2
@@ -1144,8 +1144,8 @@ CONTAINS
           DO CoupledMeshXiIdx=1,INTERFACE_MESH_CONNECTIVITY%INTERFACE%COUPLED_MESHES(CoupledMeshIdx)%PTR%NUMBER_OF_DIMENSIONS
             XiDifference=ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,1)- &
               & ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)
-            IF(XiDifference==0.0_DP) THEN
-              IF(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes)==0.0_DP) THEN
+            IF(ABS(XiDifference)<ZERO_TOLERANCE) THEN
+              IF(ABS(ELEMENT_CONNECTIVITY%XI(CoupledMeshXiIdx,1,NumberOfInterfaceElementNodes))<ZERO_TOLERANCE) THEN
                 ELEMENT_CONNECTIVITY%CONNECTED_FACE=(CoupledMeshXiIdx-1)*2+2
               ELSE
                 ELEMENT_CONNECTIVITY%CONNECTED_FACE=(CoupledMeshXiIdx-1)*2+1
@@ -1510,7 +1510,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
-    INTEGER(INTG) :: fixedBodyIdx,projectionBodyIdx,dataPointIdx,coordIdx
+    INTEGER(INTG) :: fixedBodyIdx,projectionBodyIdx,dataPointIdx
     INTEGER(INTG) :: elementNumber,numberOfGeometricComponents
     INTEGER(INTG) :: coupledMeshFaceLineNumber,component
   
@@ -1816,7 +1816,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: dataPointIdx,xiIdx,interfaceMeshDimensions,coupledMeshDimensions
+    INTEGER(INTG) :: dataPointIdx,interfaceMeshDimensions,coupledMeshDimensions
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(InterfacePointConnectivityType), POINTER :: pointConnectivity
     TYPE(MESH_TYPE), POINTER :: interfaceMesh,coupledMesh
@@ -2005,8 +2005,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface to initialise the points connectivity for
     INTEGER(INTG) :: dummyErr !<The error code
     TYPE(VARYING_STRING)  :: dummyError !<The error string
      
@@ -2046,8 +2044,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
-    LOGICAL :: dataPointExists,elementExists
+    INTEGER(INTG) :: dataPointGlobalNumber
+    LOGICAL :: dataPointExists
     
     CALL ENTERS("InterfacePointsConnectivity_PointXiGet",err,error,*999)
     
@@ -2239,12 +2237,12 @@ CONTAINS
                CASE(2)
                  DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
                    DO xiIdx=1,coupledMeshDimensions
-                     IF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
-                         & xi(xiIdx)==0.0_DP) THEN
+                     IF(ABS(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(xiIdx)) &
+                       & < ZERO_TOLERANCE) THEN
                        InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=4-(xiIdx-1)*2 !Calculate line number
                        EXIT
-                     ELSEIF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
-                         & xi(xiIdx)==1.0_DP) THEN
+                     ELSEIF(ABS(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(xiIdx)-1.0_DP) &
+                       & < ZERO_TOLERANCE) THEN
                        InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=3-(xiIdx-1)*2 !Calculate line number
                        EXIT
                      ENDIF
@@ -2256,12 +2254,12 @@ CONTAINS
                CASE(3)
                  DO dataPointIdx=1,interface%DATA_POINTS%NUMBER_OF_DATA_POINTS
                    DO xiIdx=1,coupledMeshDimensions
-                     IF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
-                         & xi(xiIdx)==0.0_DP) THEN
+                     IF(ABS(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(xiIdx)) &
+                       & < ZERO_TOLERANCE) THEN
                        InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=(xiIdx-1)*2+2 !Calculate face number
                        EXIT
-                     ELSEIF(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)% &
-                         & xi(xiIdx)==1.0_DP) THEN
+                     ELSE IF(ABS(InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%xi(xiIdx)-1.0_DP) &
+                       & > ZERO_TOLERANCE) THEN
                        InterfacePointsConnectivity%pointsConnectivity(dataPointIdx,meshIdx)%elementLineFaceNumber=(xiIdx-1)*2+1 !Calculate face number
                        EXIT
                      ENDIF

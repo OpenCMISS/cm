@@ -1268,9 +1268,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,interfaceConditionIdx,solver_matrix_idx
+    INTEGER(INTG) :: equations_set_idx,solver_matrix_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_equations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -1378,9 +1377,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,interfaceConditionIdx,solver_matrix_idx
+    INTEGER(INTG) :: equations_set_idx,solver_matrix_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
     TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER,LINKING_SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -3042,8 +3040,8 @@ CONTAINS
     TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER :: simpleLoop
     TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: fixedLoop
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: whileLoop
-    INTEGER(INTG) :: componentIdx,versionIdx,derivativeIdx,nodeIdx,solverIdx,noGeomComp
-    INTEGER(INTG) :: localNodeNumber,userNodeNumber,incrementIdx,iterationNumber,matrixIdx
+    INTEGER(INTG) :: componentIdx,versionIdx,derivativeIdx,nodeIdx,noGeomComp
+    INTEGER(INTG) :: localNodeNumber,userNodeNumber,incrementIdx,iterationNumber
     REAL(DP) :: nodalParameters(3),nodalParametersTrans(3),transformationMatrix(4,4)
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
@@ -4367,7 +4365,7 @@ SUBROUTINE Problem_SolverNonlinearMonitorPETSC(SNES,iterationNumber,residualNorm
   !Local Variables
   TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
   TYPE(SOLVER_TYPE), POINTER :: solver
-  TYPE(VARYING_STRING) :: error,localError
+  TYPE(VARYING_STRING) :: error
 
   IF(ASSOCIATED(context)) THEN
     nonlinearSolver=>context%NONLINEAR_SOLVER
