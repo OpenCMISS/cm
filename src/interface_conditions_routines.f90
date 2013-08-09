@@ -2307,7 +2307,6 @@ CONTAINS
     !Local Variables
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: interfaceEquations !<A pointer to the interface equations
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: interfaceMatrices !<A pointer to the interface matrices
-    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: interfaceMatrix !<A pointer to the interface matrix
     TYPE(ELEMENT_MATRIX_TYPE), POINTER :: elementMatrix !<A pointer to the interface element matrix
     INTEGER(INTG) :: interfaceMatrixIdx
     TYPE(VARYING_STRING) :: localError

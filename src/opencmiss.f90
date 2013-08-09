@@ -12566,7 +12566,7 @@ CONTAINS
     CALL EXTRACT_ERROR_MESSAGE(errorMessage,err,error,*999)
 
     RETURN
-999 RETURN 1
+999 RETURN
 
   END SUBROUTINE CMISSExtractErrorMessageC
 
@@ -12585,7 +12585,7 @@ CONTAINS
     CALL EXTRACT_ERROR_MESSAGE(errorMessage,err,error,*999)
 
     RETURN
-999 RETURN 1
+999 RETURN
 
   END SUBROUTINE CMISSExtractErrorMessageVS
 
@@ -21416,7 +21416,6 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelGetCInterfaceNumber",ERR,error,*999)
 
@@ -21467,7 +21466,6 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelGetVSInterfaceNumber",ERR,error,*999)
 
@@ -21515,7 +21513,6 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelGetCRegionNumber",ERR,error,*999)
 
@@ -21555,7 +21552,6 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelGetVSRegionNumber",ERR,error,*999)
 
@@ -21650,7 +21646,6 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelSetCInterfaceNumber",ERR,error,*999)
 
@@ -21701,7 +21696,6 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelSetVSInterfaceNumber",ERR,error,*999)
 
@@ -21749,7 +21743,6 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelSetCRegionNumber",ERR,error,*999)
 
@@ -21789,7 +21782,6 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
     CALL ENTERS("CMISSDataProjection_LabelSetVSRegionNumber",ERR,error,*999)
 
@@ -42159,7 +42151,6 @@ CONTAINS
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR,*999)
  
@@ -42208,7 +42199,6 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR,*999)
  
@@ -42260,8 +42250,6 @@ CONTAINS
     TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
   
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
     
@@ -55881,8 +55869,6 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSFieldML_OutputWriteVS",err,error,*999)
 
