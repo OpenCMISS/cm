@@ -109,15 +109,11 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface 
     TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the interface points connectivity
     TYPE(DecompositionElementDataPointsType), POINTER :: decompositionElementData !<A pointer to the decomposition data point topology
-    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: interpolatedPointsMetrics(:)
     TYPE(BASIS_TYPE), POINTER :: coupledMeshDependentBasis
     TYPE(FIELD_TYPE), POINTER :: coupledMeshGeometricField
     INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp,numberOfInterfaceMeshXi,numberOfCoupledMeshXi, &
       & numberOfMatrixCoupledElements
-    INTEGER(INTG) :: dataPointIdx,localElementNumber,localFaceLineNumber,matrixElementIdx
+    INTEGER(INTG) :: dataPointIdx,localElementNumber,matrixElementIdx
     INTEGER(INTG) :: matrixCoefficients(2),interfaceelementnumber
 
     CALL ENTERS("FieldContinuity_FiniteElementCalculate",err,error,*999)
@@ -536,7 +532,7 @@ CONTAINS
     TYPE(ELEMENT_MATRIX_TYPE), POINTER :: interfaceElementMatrix
     TYPE(INTERFACE_MATRIX_TYPE), POINTER :: penaltyMatrix
     INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp,numberOfInterfaceMeshXi,numberOfCoupledMeshXi, &
-      & numberOfMatrixCoupledElements,localDof,globalDof
+      & numberOfMatrixCoupledElements,localDof
     INTEGER(INTG) :: dataPointIdx,coupledMeshIdx,xiIdx,localElementNumber,localFaceLineNumber,matrixElementIdx,rowComponentIdx, &
       & rowParameterIdx,rowIdx,colIdx,componentIdx,globalDataPointNumber
     INTEGER(INTG) :: matrixCoefficients(2)
@@ -585,8 +581,8 @@ CONTAINS
                   DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
                     globalDataPointNumber=decompositionElementData%dataIndices(dataPointIdx)%globalNumber
                     DO xiIdx=1,SIZE(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)%reducedXi,1)
-                      IF(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)%reducedXi(xiIdx) &
-                          & == 0.0_DP) THEN
+                      IF(ABS(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)%reducedXi(xiIdx)) &
+                          & < ZERO_TOLERANCE) THEN
                         orthogonallyProjected(dataPointIdx)=.FALSE.
                       ENDIF
                     ENDDO !xiIdx

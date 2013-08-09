@@ -794,7 +794,8 @@ CONTAINS
               ALLOCATE(DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data projection data projection results "// &
                 & "("//TRIM(NUMBER_TO_VSTRING (data_point_idx,"*",ERR,ERROR))//") xi.",ERR,ERROR,*999)
-              DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%XI=DATA_PROJECTION%STARTING_XI
+              DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%XI(1:DATA_PROJECTION%NUMBER_OF_XI)= &
+                & DATA_PROJECTION%STARTING_XI(1:DATA_PROJECTION%NUMBER_OF_XI)
             ENDDO !data_point_idx
           ELSE
             CALL FLAG_ERROR("Data projection data points have not been finished.",ERR,ERROR,*999)
@@ -1223,7 +1224,8 @@ CONTAINS
                 ! find the globally closest distances in the current domain
                 DO data_point_idx=1,NUMBER_OF_DATA_POINTS
                   CALL BUBBLE_ISORT(GLOBAL_CLOSEST_DISTANCES(data_point_idx,:),SORTING_IND_1,ERR,ERROR,*999)
-                  SORTING_IND_1=SORTING_IND_1-GLOBAL_MPI_DISPLACEMENTS(MY_COMPUTATIONAL_NODE+1) !shift the index to current computational node
+                  SORTING_IND_1(1:TOTAL_NUMBER_OF_CLOSEST_CANDIDATES)=SORTING_IND_1(1:TOTAL_NUMBER_OF_CLOSEST_CANDIDATES)- &
+                    & GLOBAL_MPI_DISPLACEMENTS(MY_COMPUTATIONAL_NODE+1) !shift the index to current computational node
                   GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)=0
                   DO ne=1,REDUCED_NUMBER_OF_CLOSEST_CANDIDATES
                     !sorted index indicates it is in the current computational domain
@@ -1317,7 +1319,7 @@ CONTAINS
                 !sort the computational node/rank from 0 to number of computational node
                 CALL BUBBLE_ISORT(PROJECTED_DISTANCE(2,:),SORTING_IND_2,ERR,ERROR,*999)
                 DO ncn=0,(NUMBER_COMPUTATIONAL_NODES-1)
-                  GLOBAL_NUMBER_OF_PROJECTED_POINTS(ncn+1)=COUNT(PROJECTED_DISTANCE(2,:).EQ.ncn)
+                  GLOBAL_NUMBER_OF_PROJECTED_POINTS(ncn+1)=COUNT(ABS(PROJECTED_DISTANCE(2,:)-REAL(ncn))<ZERO_TOLERANCE)
                 ENDDO !ncn
                 start_idx=SUM(GLOBAL_NUMBER_OF_PROJECTED_POINTS(1:MY_COMPUTATIONAL_NODE))+1
                 finish_idx=start_idx+GLOBAL_NUMBER_OF_PROJECTED_POINTS(MY_COMPUTATIONAL_NODE+1)-1
@@ -1353,7 +1355,8 @@ CONTAINS
                   DATA_PROJECTION%DATA_PROJECTION_RESULTS(SORTING_IND_2(data_point_idx))%ELEMENT_NUMBER=PROJECTED_ELEMENT( &
                     & data_point_idx)
                   DATA_PROJECTION%DATA_PROJECTION_RESULTS(data_point_idx)%DISTANCE=PROJECTED_DISTANCE(1,data_point_idx)
-                  DATA_PROJECTION%DATA_PROJECTION_RESULTS(SORTING_IND_2(data_point_idx))%XI=PROJECTED_XI(:,data_point_idx)
+                  DATA_PROJECTION%DATA_PROJECTION_RESULTS(SORTING_IND_2(data_point_idx))%XI(1:DATA_PROJECTION%NUMBER_OF_XI)= &
+                    & PROJECTED_XI(1:DATA_PROJECTION%NUMBER_OF_XI,data_point_idx)
                 ENDDO !data_point_idx
                 PROJECTED_XI(:,SORTING_IND_2)=PROJECTED_XI
                 PROJECTED_ELEMENT(SORTING_IND_2)=PROJECTED_ELEMENT       
@@ -1749,9 +1752,9 @@ CONTAINS
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))       
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
-            IF(XI(1)==0.0_DP) THEN
+            IF(ABS(XI(1))<ZERO_TOLERANCE) THEN
               BOUND=-1 !bound at negative direction             
-            ELSEIF(XI(1)==1.0_DP) THEN
+            ELSEIF(ABS(XI(1)-1.0_DP)<ZERO_TOLERANCE) THEN
               BOUND=1 !bound at positive direction
             ELSE !inside the bounds
               BOUND=0
@@ -1910,9 +1913,9 @@ CONTAINS
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
             DO ni=1,2 
-              IF(XI(ni)==0.0_DP) THEN
+              IF(ABS(XI(ni))<ZERO_TOLERANCE) THEN
                 BOUND(ni)=-1 !bound at negative direction             
-              ELSEIF(XI(ni)==1.0_DP) THEN
+              ELSEIF(ABS(XI(ni)-1.0_DP)<ZERO_TOLERANCE) THEN
                 BOUND(ni)=1 !bound at positive direction
               ELSE !inside the bounds
                 BOUND(ni)=0
@@ -2123,9 +2126,9 @@ CONTAINS
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
             DO ni=1,3
-              IF(XI(ni)==0.0_DP) THEN
+              IF(ABS(XI(ni))<ZERO_TOLERANCE) THEN
                 BOUND(ni)=-1 !bound at negative direction             
-              ELSEIF(XI(ni)==1.0_DP) THEN
+              ELSEIF(ABS(XI(ni)-1.0_DP)<ZERO_TOLERANCE) THEN
                 BOUND(ni)=1 !bound at positive direction
               ELSE !inside the bounds
                 BOUND(ni)=0
@@ -2423,9 +2426,9 @@ CONTAINS
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
             DO ni=1,2 
-              IF(XI(ni)==0.0_DP) THEN
+              IF(ABS(XI(ni))<ZERO_TOLERANCE) THEN
                 BOUND(ni)=-1 !bound at negative direction             
-              ELSEIF(XI(ni)==1.0_DP) THEN
+              ELSEIF(ABS(XI(ni)-1.0_DP)<ZERO_TOLERANCE) THEN
                 BOUND(ni)=1 !bound at positive direction
               ELSE !inside the bounds
                 BOUND(ni)=0
@@ -2635,9 +2638,9 @@ CONTAINS
           FUNCTION_VALUE=DOT_PRODUCT(DISTANCE_VECTOR(1:REGION_DIMENSIONS),DISTANCE_VECTOR(1:REGION_DIMENSIONS))       
           main_loop: DO itr1=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(outer loop)
             !Check for bounds [0,1]
-            IF(XI(1)==0.0_DP) THEN
+            IF(ABS(XI(1))<ZERO_TOLERANCE) THEN
               BOUND=-1 !bound at negative direction             
-            ELSEIF(XI(1)==1.0_DP) THEN
+            ELSEIF(ABS(XI(1)-1.0_DP)<ZERO_TOLERANCE) THEN
               BOUND=1 !bound at positive direction
             ELSE !inside the bounds
               BOUND=0
@@ -2933,15 +2936,15 @@ CONTAINS
           ALLOCATE(STARTING_XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate starting xi.",ERR,ERROR,*999)
           IF(DATA_PROJECTION%NUMBER_OF_XI>SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
-            STARTING_XI(1:SIZE(DATA_PROJECTION%STARTING_XI,1))=DATA_PROJECTION%STARTING_XI
+            STARTING_XI(1:SIZE(DATA_PROJECTION%STARTING_XI,1))=DATA_PROJECTION%STARTING_XI(1:SIZE(DATA_PROJECTION%STARTING_XI,1))
             STARTING_XI(SIZE(DATA_PROJECTION%STARTING_XI,1):DATA_PROJECTION%NUMBER_OF_XI)=0.5_DP
           ELSE
-            STARTING_XI=DATA_PROJECTION%STARTING_XI(1:DATA_PROJECTION%NUMBER_OF_XI)
+            STARTING_XI(1:SIZE(DATA_PROJECTION%STARTING_XI,1))=DATA_PROJECTION%STARTING_XI(1:DATA_PROJECTION%NUMBER_OF_XI)
           ENDIF
           DEALLOCATE(DATA_PROJECTION%STARTING_XI)
           ALLOCATE(DATA_PROJECTION%STARTING_XI(DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data projection starting xi.",ERR,ERROR,*999)
-          DATA_PROJECTION%STARTING_XI=STARTING_XI
+          DATA_PROJECTION%STARTING_XI(1:DATA_PROJECTION%NUMBER_OF_XI)=STARTING_XI(1:DATA_PROJECTION%NUMBER_OF_XI)
         ENDIF
       ENDIF
     ELSE
@@ -3100,7 +3103,7 @@ CONTAINS
             ENDIF
           ENDDO
           IF(VALID_INPUT) THEN
-            DATA_PROJECTION%STARTING_XI=STARTING_XI
+            DATA_PROJECTION%STARTING_XI(1:SIZE(STARTING_XI))=STARTING_XI(1:SIZE(STARTING_XI))
           ELSE
             CALL FLAG_ERROR("Data projection starting xi must be between 0 and 1.",ERR,ERROR,*999)
           ENDIF
@@ -3134,9 +3137,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER,ELEMENT_GLOBAL_NUMBER
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER=1!<TODO:mesh component is harded coded to be 1, need to be generalised
-    LOGICAL :: DATA_POINT_EXISTS,ELEMENT_EXISTS
+    INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
+    LOGICAL :: DATA_POINT_EXISTS
     
     CALL ENTERS("DATA_PROJECTION_ELEMENT_SET",err,error,*999)
 
@@ -3176,7 +3178,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_RESULT_DISTANCE_GET",ERR,ERROR,*999)
 
@@ -3347,8 +3348,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+   
     CALL ENTERS("DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
@@ -3391,7 +3391,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET",ERR,ERROR,*999)
 
@@ -3441,7 +3440,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET",ERR,ERROR,*999)
 
@@ -3490,7 +3488,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_RESULT_EXIT_TAG_GET",ERR,ERROR,*999)
 
@@ -3533,7 +3530,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_RESULT_XI_GET",ERR,ERROR,*999)
 
@@ -3584,7 +3580,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DATA_POINT_GLOBAL_NUMBER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_RESULT_XI_SET",ERR,ERROR,*999)
 
@@ -3594,7 +3589,8 @@ CONTAINS
           CALL DATA_PROJECTION_DATA_POINTS_GLOBAL_NUMBER_GET(DATA_PROJECTION,DATA_POINT_USER_NUMBER, &
             & DATA_POINT_GLOBAL_NUMBER,ERR,ERROR,*999)
           IF(SIZE(PROJECTION_XI,1)==SIZE(DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI,1)) THEN
-            DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI=PROJECTION_XI
+            DATA_PROJECTION%DATA_PROJECTION_RESULTS(DATA_POINT_GLOBAL_NUMBER)%XI(1:SIZE(PROJECTION_XI,1))= &
+              & PROJECTION_XI(1:SIZE(PROJECTION_XI,1))
           ELSE
             CALL FLAG_ERROR("projection xi has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(PROJECTION_XI,1),"*",ERR,ERROR))// &
               & "but it needs to have size of "// &

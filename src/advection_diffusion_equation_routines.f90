@@ -3897,7 +3897,6 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    REAL(DP) :: CURRENT_TIME !,TIME_INCREMENT
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS
     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION
@@ -3996,11 +3995,9 @@ CONTAINS
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
 
 !\todo: Reduce number of variable used
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
+    INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE,node_idx
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS
-    INTEGER(INTG) :: variable_idx,local_ny,component_idx,deriv_idx,dim_idx,global_ny
-    INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
-    REAL(DP) :: X(3)
+    INTEGER(INTG) :: local_ny,global_ny
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     INTEGER(INTG), POINTER :: BOUNDARY_NODES(:)
 

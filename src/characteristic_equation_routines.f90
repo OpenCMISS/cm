@@ -1160,7 +1160,7 @@ CONTAINS
     REAL(DP), POINTER :: materialsParameters(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType,startColumn2
-    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,baseIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
+    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
     LOGICAL :: updateJacobianMatrix
