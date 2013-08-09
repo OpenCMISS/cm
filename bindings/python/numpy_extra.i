@@ -264,11 +264,31 @@
 %typemap(argout)
   (DIM_TYPE* DIM1, DATA_TYPE** ARGINOUTVIEW_ARRAY1)
 {
-  /* Update the input NumPy array data and size */
+  /* Update the input NumPy array.
+   *
+   * We only ever expect to have either the same array out again or a
+   * null pointer. If the output is null then the input
+   * array needs to know it can no longer access its data.
+   * We can't alter the numpy array's pointer to the data
+   * but by setting the size to zero it will not try to access the data.
+   */
   PyArray_DIMS(tempArray$argnum)[0] = dim1_temp$argnum;
-  PyArray_BYTES(tempArray$argnum) = (char *)data_temp$argnum;
 }
 
 %enddef
+
+/* Concrete instances of the %numpy_extra_typemaps() macro
+ */
+%numpy_extra_typemaps(unsigned char , NPY_UBYTE , int)
+%numpy_extra_typemaps(short , NPY_SHORT , int)
+%numpy_extra_typemaps(unsigned short , NPY_USHORT , int)
+%numpy_extra_typemaps(int , NPY_INT , int)
+%numpy_extra_typemaps(unsigned int , NPY_UINT , int)
+%numpy_extra_typemaps(long , NPY_LONG , int)
+%numpy_extra_typemaps(unsigned long , NPY_ULONG , int)
+%numpy_extra_typemaps(long long , NPY_LONGLONG , int)
+%numpy_extra_typemaps(unsigned long long, NPY_ULONGLONG, int)
+%numpy_extra_typemaps(float , NPY_FLOAT , int)
+%numpy_extra_typemaps(double , NPY_DOUBLE , int)
 
 #endif /* SWIGPYTHON */
