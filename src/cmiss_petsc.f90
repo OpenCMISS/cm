@@ -6434,8 +6434,8 @@ CONTAINS
   SUBROUTINE Petsc_VecDot(x,y,dotProduct,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: x !<The vector x
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: y !<The vector y
+    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: x !<The vector x
+    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: y !<The vector y
     REAL(DP), INTENT(OUT) :: dotProduct !<The dot product 
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
