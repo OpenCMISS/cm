@@ -3325,7 +3325,7 @@ CONTAINS
         IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN          
           IF(SIZE(NUMBER_OF_GAUSS_XI,1)==BASIS%NUMBER_OF_XI) THEN
             IF(ANY(NUMBER_OF_GAUSS_XI<1)) CALL FLAG_ERROR("Invalid number of gauss values.",ERR,ERROR,*999)
-            BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(BASIS%NUMBER_OF_XI)=NUMBER_OF_GAUSS_XI(BASIS%NUMBER_OF_XI)
+            BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI)=NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI)
             !Check the number of gauss points is sufficient for the interpolation order and flag a warning if not
             DO ni=1,BASIS%NUMBER_OF_XI
               SELECT CASE(BASIS%INTERPOLATION_XI(ni))
