@@ -48,6 +48,10 @@ You may also like to install additional packages for your Linux distribution to 
   - lapack-devel and lapack-static
   - omniORB-devel
   - papi-devel and papi-static
+  - MUMPS-devel
+  - SuperLU-devel
+  - suitesparse-devel and suitesparse-static
+  - scotch-devel
   - For MPICH2 (recommended for Fedora)
     - mpich2-devel
     - blacs-mpich2-devel and blacs-mpich2-static
