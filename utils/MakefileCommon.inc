@@ -264,14 +264,21 @@ ifeq ($(OPERATING_SYSTEM),linux)
         ELFLAGS += -pg
       endif
       ifeq ($(MPIPROF),true)
-        ifeq ($(MPI),mpich2)
+        ifeq ($(MPI),mpich)
           C_FLGS += -Wl,--export-dynamic
           DBGC_FLGS += -Wl,--export-dynamic
           F_FLAS += -Wl,--export-dynamic
           DBGF_FLGS += -Wl,--export-dynamic
         else
-          F_FLGS += -tcollect
-          C_FLGS += -tcollect
+          ifeq ($(MPI),mpich2)
+            C_FLGS += -Wl,--export-dynamic
+            DBGC_FLGS += -Wl,--export-dynamic
+            F_FLAS += -Wl,--export-dynamic
+            DBGF_FLGS += -Wl,--export-dynamic
+          else
+            F_FLGS += -tcollect
+            C_FLGS += -tcollect
+          endif
         endif
       endif
       # turn on preprocessing,
