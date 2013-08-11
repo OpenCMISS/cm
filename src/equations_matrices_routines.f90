@@ -1616,7 +1616,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: componentIdx
     INTEGER(INTG) :: localRow,globalRow,localColumn,globalColumn
-    INTEGER(INTG) :: numberOfNodes,numberOfDerivatives,numberOfVersions,nodeIdx,versionIdx,derivativeIdx
+    INTEGER(INTG) :: numberOfDerivatives,numberOfVersions,versionIdx,derivativeIdx
     TYPE(DOMAIN_NODES_TYPE), POINTER :: nodesTopology
     TYPE(VARYING_STRING) :: localError
 
@@ -1826,7 +1826,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     INTEGER(INTG) :: componentIdx,localRow
-    INTEGER(INTG) :: numberOfNodes,numberOfDerivatives,numberOfVersions,versionIdx,derivativeIdx
+    INTEGER(INTG) :: numberOfDerivatives,numberOfVersions,versionIdx,derivativeIdx
     TYPE(DOMAIN_NODES_TYPE), POINTER :: nodesTopology
     TYPE(VARYING_STRING) :: localError
     
@@ -2516,7 +2516,6 @@ CONTAINS
     INTEGER(INTG) :: jacobianMatrixIdx
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: jacobianMatrix
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
     TYPE(VARYING_STRING) :: localError
     
 #ifdef TAUPROF
@@ -3099,7 +3098,6 @@ CONTAINS
     INTEGER(INTG) :: jacobian_matrix_idx
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
 #ifdef TAUPROF
@@ -3159,7 +3157,6 @@ CONTAINS
     INTEGER(INTG) :: jacobian_matrix_idx
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("EQUATIONS_MATRICES_JACOBIAN_OUTPUT",ERR,ERROR,*999)

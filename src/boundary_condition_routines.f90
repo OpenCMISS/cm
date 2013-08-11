@@ -171,7 +171,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS,COUNT
     INTEGER(INTG) :: variable_idx,dof_idx, equ_matrix_idx, dirichlet_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
-    INTEGER(INTG) :: col_idx,equations_set_idx,parameterSetIdx,interface_condition_idx,interface_matrix_idx
+    INTEGER(INTG) :: col_idx,equations_set_idx,parameterSetIdx
     INTEGER(INTG) :: pressureIdx,neumannIdx
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
@@ -187,10 +187,6 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATION_MATRIX
-    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
-    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
-    TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES
-    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: INTERFACE_MATRIX
     TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
     TYPE(LIST_TYPE), POINTER :: SPARSE_INDICES
     TYPE(LinkedList),POINTER :: LIST(:)
@@ -3111,8 +3107,8 @@ CONTAINS
     IF(err/=0) CALL FlagError("Could not allocate constraint coefficients array.",err,error,*999)
     dofConstraint%globalDof=globalDof
     dofConstraint%numberOfDofs=numberOfDofs
-    dofConstraint%dofs=dofs
-    dofConstraint%coefficients=coefficients
+    dofConstraint%dofs(1:numberOfDofs)=dofs(1:numberOfDofs)
+    dofConstraint%coefficients(1:numberOfDofs)=coefficients(1:numberOfDofs)
 
     !Add new DOF constraint to new array
     newConstraints(dofConstraints%numberOfConstraints+1)%ptr=>dofConstraint

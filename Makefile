@@ -252,7 +252,7 @@ OBJECTS += $(MACHINE_OBJECTS)
 
 preliminaries: $(OBJECT_DIR)/.directory \
 	$(INC_DIR)/.directory \
-	$(LIB_DIR)/.directory
+	$(LIB_DIR)/.directory 
 
 $(LIBRARY) : $(OBJECTS) $(LIB_DIR)/.directory
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
@@ -1802,7 +1802,7 @@ $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIP
 	$(SOURCE_DIR)/opencmiss.f90 $(BINDINGS_DIR)/python/extra_content.py
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
 
-$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
+$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
 # Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
 	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm opencmiss_swig.py )
 
@@ -1865,7 +1865,7 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo "	MPI=(mpich2|intel|openmpi|mvapich2|cray)"
+	@echo "	MPI=(mpich|mpich2|intel|openmpi|mvapich2|cray)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
