@@ -53,6 +53,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
   USE EQUATIONS_SET_CONSTANTS
+  USE INTERFACE_CONDITIONS_CONSTANTS
   USE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
@@ -77,6 +78,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_DOF_FREE=0 !<The dof is free. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_DOF_FIXED=1 !<The dof is fixed as a boundary condition. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_DOF_MIXED=2 !<The dof is set as a mixed boundary condition. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_DOF_CONSTRAINED=3 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
   !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
   !> \brief Boundary conditions types. These may be specific to a particular equation type and the solver routines should not need to use these.
@@ -100,9 +102,11 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE=18 !<The dof is fixed as a boundary condition, to be used with load increment loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_IMPERMEABLE_WALL=19 !<The dof is set such that (via penalty formulation): velocity * normal = 0. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_LINEAR_CONSTRAINT=21 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED=22!<A Neumann point boundary condition that is incremented inside a load increment control loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=20 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=22 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
 
   !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_SparsityTypes BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
   !> \brief Storage type for matrices used by boundary conditions.
@@ -129,14 +133,15 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     MODULE PROCEDURE BOUNDARY_CONDITIONS_SET_LOCAL_DOFS
   END INTERFACE !BOUNDARY_CONDITIONS_SET_LOCAL_DOF
 
-  PUBLIC BOUNDARY_CONDITION_DOF_FREE,BOUNDARY_CONDITION_DOF_FIXED,BOUNDARY_CONDITION_DOF_MIXED
+  PUBLIC BOUNDARY_CONDITION_DOF_FREE,BOUNDARY_CONDITION_DOF_FIXED,BOUNDARY_CONDITION_DOF_MIXED,BOUNDARY_CONDITION_DOF_CONSTRAINED
 
   PUBLIC BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FIXED_INLET,&
     & BOUNDARY_CONDITION_FIXED_OUTLET,BOUNDARY_CONDITION_FIXED_WALL,BOUNDARY_CONDITION_MOVED_WALL,BOUNDARY_CONDITION_FREE_WALL,&
     & BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_DIRICHLET,BOUNDARY_CONDITION_NEUMANN_POINT, &
     & BOUNDARY_CONDITION_CAUCHY,BOUNDARY_CONDITION_ROBIN,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE,&
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
-    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
+    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
+    & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED
 
   PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -147,6 +152,8 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
 
   PUBLIC BOUNDARY_CONDITIONS_SET_CONSTANT,BOUNDARY_CONDITIONS_SET_LOCAL_DOF,BOUNDARY_CONDITIONS_SET_ELEMENT, &
     & BOUNDARY_CONDITIONS_SET_NODE,BoundaryConditions_NeumannIntegrate,BoundaryConditions_NeumannSparsityTypeSet
+
+  PUBLIC BoundaryConditions_ConstrainNodeDofsEqual
 
 CONTAINS  
 
@@ -196,7 +203,7 @@ CONTAINS
         IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
           IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>0) THEN
             !Transfer all the boundary conditions to all the computational nodes.
- !!TODO \todo Look at this. ?????
+            !\todo Look at this.
             DO variable_idx=1,BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
               BOUNDARY_CONDITION_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
               IF(ASSOCIATED(BOUNDARY_CONDITION_VARIABLE)) THEN
@@ -205,8 +212,8 @@ CONTAINS
                   VARIABLE_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
                   IF(ASSOCIATED(VARIABLE_DOMAIN_MAPPING)) THEN
                     SEND_COUNT=VARIABLE_DOMAIN_MAPPING%NUMBER_OF_GLOBAL
-!!This operation is a little expensive as we are doing an unnecessary sum across all the ranks in order to combin
-!!the data from each rank into all ranks. We will see how this goes for now.
+                    !\todo This operation is a little expensive as we are doing an unnecessary sum across all the ranks in order to combin
+                    !\todo the data from each rank into all ranks. We will see how this goes for now.
                     CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%DOF_TYPES, &
                       & SEND_COUNT,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                     CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
@@ -248,8 +255,10 @@ CONTAINS
                     CALL BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_INITIALISE(BOUNDARY_CONDITION_VARIABLE,ERR,ERROR,*999)
                     BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED=>BOUNDARY_CONDITION_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
                   END IF
+
                   ! Set up Neumann condition information if there are any Neumann conditions
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0) THEN
+                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0.OR. &
+                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)>0) THEN
                     CALL BoundaryConditions_NeumannInitialise(BOUNDARY_CONDITION_VARIABLE,ERR,ERROR,*999)
                   END IF
 
@@ -260,14 +269,16 @@ CONTAINS
                     IF(BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)== BOUNDARY_CONDITION_PRESSURE_INCREMENTED) THEN
                       BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED%PRESSURE_INCREMENTED_DOF_INDICES(pressureIdx)=dof_idx
                       pressureIdx=pressureIdx+1
-                    ELSE IF(BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                    ELSE IF(BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                        & BOUNDARY_CONDITION_VARIABLE%CONDITION_TYPES(dof_idx)==BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                       BOUNDARY_CONDITION_VARIABLE%neumannBoundaryConditions%setDofs(neumannIdx)=dof_idx
                       neumannIdx=neumannIdx+1
                     END IF
                   END DO
 
                   ! Now that we know where Neumann point DOFs are, we can calculate matrix structure
-                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0) THEN
+                  IF(BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)>0.OR. &
+                      & BOUNDARY_CONDITION_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)>0) THEN
                     CALL BoundaryConditions_NeumannMatricesInitialise(BOUNDARY_CONDITION_VARIABLE,ERR,ERROR,*999)
                   END IF
 
@@ -285,7 +296,7 @@ CONTAINS
                         ENDIF
                       ENDDO
 
-                      ! Store Dirichlet dof indices
+                      !Store Dirichlet dof indices
                       SOLVER_EQUATIONS=>BOUNDARY_CONDITIONS%SOLVER_EQUATIONS
                       IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                         IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
@@ -298,7 +309,7 @@ CONTAINS
                                 IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
                                   LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
                                   IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-                                    ! Iterate through equations matrices
+                                    !Iterate through equations matrices
                                     DO equ_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
                                       EQUATION_MATRIX=>LINEAR_MATRICES%MATRICES(equ_matrix_idx)%PTR
                                       CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATION_MATRIX%MATRIX,STORAGE_TYPE,ERR,ERROR,*999)
@@ -313,25 +324,24 @@ CONTAINS
                                         CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
                                           CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
                                         CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                          ! Get Sparsity pattern, number of non zeros, number of rows
+                                          !Get Sparsity pattern, number of non zeros, number of rows
                                           CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATION_MATRIX%MATRIX,ROW_INDICES, &
                                             & COLUMN_INDICES,ERR,ERROR,*999)
                                           CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(EQUATION_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
                                             & ERR,ERROR,*999)
-                                          ! Get the matrix stored as a linked list
+                                          !Get the matrix stored as a linked list
                                           CALL DISTRIBUTED_MATRIX_LINKLIST_GET(EQUATION_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
                                           NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
-                                          ! Initialise sparsity indices arrays
+                                          !Initialise sparsity indices arrays
                                           CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
                                             & LINEAR_SPARSITY_INDICES(equations_set_idx,equ_matrix_idx)%PTR, &
                                             & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
-
-                                          ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+                                          !Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
                                           NULLIFY(SPARSITY_INDICES)
                                           SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES( &
-                                              & equations_set_idx,equ_matrix_idx)%PTR
+                                            & equations_set_idx,equ_matrix_idx)%PTR
                                           IF(ASSOCIATED(SPARSITY_INDICES)) THEN
-                                            ! Setup list for storing dirichlet non zero indices
+                                            !Setup list for storing dirichlet non zero indices
                                             NULLIFY(SPARSE_INDICES)
                                             CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
                                             CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
@@ -339,7 +349,6 @@ CONTAINS
                                               & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS*( &
                                               & NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
                                             CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
-
                                             COUNT=0
                                             SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
                                             LAST=1
@@ -379,7 +388,7 @@ CONTAINS
 
                                   DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
                                   IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
-                                    ! Iterate through equations matrices
+                                    !Iterate through equations matrices
                                     DO equ_matrix_idx=1,DYNAMIC_MATRICES%NUMBER_OF_DYNAMIC_MATRICES
                                       EQUATION_MATRIX=>DYNAMIC_MATRICES%MATRICES(equ_matrix_idx)%PTR
                                       CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATION_MATRIX%MATRIX,STORAGE_TYPE,ERR,ERROR,*999)
@@ -394,20 +403,19 @@ CONTAINS
                                         CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
                                           CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
                                         CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                          ! Get Sparsity pattern, number of non zeros, number of rows
+                                          !Get Sparsity pattern, number of non zeros, number of rows
                                           CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATION_MATRIX%MATRIX,ROW_INDICES, &
                                             & COLUMN_INDICES,ERR,ERROR,*999)
                                           CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(EQUATION_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
                                             & ERR,ERROR,*999)
-                                          ! Sparse matrix in a list
+                                          !Sparse matrix in a list
                                           CALL DISTRIBUTED_MATRIX_LINKLIST_GET(EQUATION_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
                                           NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
-                                          ! Intialise sparsity indices arrays
+                                          !Intialise sparsity indices arrays
                                           CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
                                             & DYNAMIC_SPARSITY_INDICES(equations_set_idx,equ_matrix_idx)%PTR, &
                                             & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
-
-                                          ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+                                          !Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
                                           NULLIFY(SPARSITY_INDICES)
                                           SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%DYNAMIC_SPARSITY_INDICES( &
                                               & equations_set_idx,equ_matrix_idx)%PTR
@@ -420,15 +428,14 @@ CONTAINS
                                               & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS*( &
                                               & NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
                                             CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
-
                                             COUNT=0
                                             SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
                                             LAST=1
                                             DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
-                                              ! Dirichlet columns
+                                              !Dirichlet columns
                                               DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
                                               CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
-                                              ! The row indices
+                                              !The row indices
                                               DO row_idx=1,size(column_array)
                                                 CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
                                                  COUNT=COUNT+1
@@ -473,6 +480,103 @@ CONTAINS
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !equations_set_idx
+                          !\todo Update interface sparsity structure calculate first then update code below.
+!                          !Loop over interface conditions. Note that only linear interface matrices implemented so far.
+!                          DO interface_condition_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+!                            INTERFACE_CONDITION=>SOLVER_EQUATIONS%SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+!                            IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+!                              INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+!                              IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+!                                INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
+!                                IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
+!                                  !Iterate through equations matrices
+!                                  DO interface_matrix_idx=1,INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
+!                                    INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR
+!                                    IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
+!                                      CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(INTERFACE_MATRIX%MATRIX,STORAGE_TYPE,ERR,ERROR,*999)
+!                                      SELECT CASE(STORAGE_TYPE)
+!                                      CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+!                                        !Do nothing
+!                                      CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+!                                        !Do nothing
+!                                      CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for column major storage.",ERR,ERROR,*999)
+!                                      CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
+!                                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+!                                        !Get Sparsity pattern, number of non zeros, number of rows
+!                                        CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(INTERFACE_MATRIX%MATRIX,ROW_INDICES, &
+!                                          & COLUMN_INDICES,ERR,ERROR,*999)
+!                                        CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(INTERFACE_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
+!                                          & ERR,ERROR,*999)
+!                                        !Get the matrix stored as a linked list
+!                                        CALL DISTRIBUTED_MATRIX_LINKLIST_GET(INTERFACE_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
+!                                        NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
+!                                        !Initialise sparsity indices arrays
+!                                        CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
+!                                          & LINEAR_SPARSITY_INDICES(interface_condition_idx,interface_matrix_idx)%PTR, &
+!                                          & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
+!                                        !Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+!                                        NULLIFY(SPARSITY_INDICES)
+!                                        SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES( &
+!                                            & interface_condition_idx,interface_matrix_idx)%PTR
+!                                        IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+!                                          !Setup list for storing dirichlet non zero indices
+!                                          NULLIFY(SPARSE_INDICES)
+!                                          CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
+!                                          CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
+!                                          CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
+!                                            & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
+!                                          CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
+!                                          COUNT=0
+!                                          SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
+!                                          LAST=1
+!                                          DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+!                                            DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
+!                                            CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+!                                              DO row_idx=1,size(column_array)
+!                                                CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
+!                                                COUNT=COUNT+1
+!                                                LAST=row_idx+1
+!                                              ENDDO
+!                                            SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
+!                                          ENDDO
+!                                          CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
+!                                            & ERR,ERROR,*999)
+!                                          DO col_idx =1,NUMBER_OF_ROWS
+!                                            CALL LINKEDLIST_DESTROY(list(col_idx))
+!                                          ENDDO
+!                                        ELSE
+!                                          LOCAL_ERROR="Sparsity indices arrays are not associated for this interface matrix."
+!                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                        ENDIF
+!                                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for compressed column storage.",ERR,ERROR,*999)
+!                                      CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+!                                        CALL FLAG_ERROR("Not implemented for row column storage.",ERR,ERROR,*999)
+!                                      CASE DEFAULT
+!                                        LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR)) &
+!                                          //" is invalid."
+!                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                      END SELECT
+!                                    ELSE
+!                                      CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
+!                                    ENDIF
+!                                  ENDDO
+!                                ELSE
+!                                  LOCAL_ERROR="Interface matrices is not associated for these interface equations."
+!                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                ENDIF
+!                              ELSE
+!                                LOCAL_ERROR="Interface equations is not associated for this interface condition."
+!                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                              ENDIF
+!                            ELSE
+!                              LOCAL_ERROR="Interface condition is not associated for boundary conditions variable "// &
+!                                & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
+!                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                            ENDIF
+!                          ENDDO !interface_condition_idx
                         ELSE
                           LOCAL_ERROR="Solver equations solver mapping is not associated."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -494,6 +598,9 @@ CONTAINS
                         & parameterSetIdx,ERR,ERROR,*999)
                     END IF
                   END DO
+
+                  !Finish creating the boundary conditions DOF constraints
+                  CALL BoundaryConditions_DofConstraintsCreateFinish(boundary_condition_variable,err,error,*999)
                 ELSE
                   LOCAL_ERROR="Field variable is not associated for variable index "// &
                     & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
@@ -504,6 +611,7 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//".",ERR,ERROR,*999)
               ENDIF
             ENDDO ! variable_idx
+
           ENDIF
           !Set the finished flag
           BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.TRUE.
@@ -670,7 +778,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,equations_set_idx
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx,variable_type,equations_set_idx,interface_condition_idx
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -678,6 +786,10 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING
+    TYPE(INTERFACE_MAPPING_RHS_TYPE), POINTER :: INTERFACE_RHS_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
     CALL ENTERS("BOUNDARY_CONDITIONS_INITIALISE",ERR,ERROR,*998)
@@ -710,7 +822,7 @@ CONTAINS
                           LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                           IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                             DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                              VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
+                              variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
                               IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
                                 CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
                                   & LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE,ERR,ERROR,*999)
@@ -804,6 +916,62 @@ CONTAINS
               CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
             ENDIF
           ENDDO !equations_set_idx
+          DO interface_condition_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+            INTERFACE_CONDITION=>SOLVER_EQUATIONS%SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+            IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+              INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+              IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+                IF(INTERFACE_EQUATIONS%INTERFACE_EQUATIONS_FINISHED) THEN
+                  INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
+                  IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+                    IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
+                      INTERFACE_CONDITION%BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                      !Only linear interface equations implemented at the moment
+                      SELECT CASE(INTERFACE_EQUATIONS%TIME_DEPENDENCE)
+                      CASE(INTERFACE_CONDITION_STATIC,INTERFACE_CONDITION_QUASISTATIC)
+                        SELECT CASE(INTERFACE_EQUATIONS%LINEARITY)
+                        CASE(INTERFACE_CONDITION_LINEAR)
+                          INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
+                          IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+                            variable_type=INTERFACE_MAPPING%LAGRANGE_VARIABLE_TYPE
+                            IF(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES>0) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & INTERFACE_MAPPING%LAGRANGE_VARIABLE,ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Interface mapping mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                          INTERFACE_RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
+                          IF(ASSOCIATED(INTERFACE_RHS_MAPPING)) THEN
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & INTERFACE_RHS_MAPPING%RHS_VARIABLE,ERR,ERROR,*999)
+                          ENDIF
+                        CASE DEFAULT
+                          LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*", &
+                                & ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      CASE DEFAULT
+                        LOCAL_ERROR="The equations time dependence type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+                    ELSE
+                      CALL FLAG_ERROR("Interface mapping has not been finished.",ERR,ERROR,*998)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*998)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Interface equations has not been finished.",ERR,ERROR,*998)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*998)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Interface condition not associated.",ERR,ERROR,*998)
+            ENDIF
+          ENDDO !interface_condition_idx
         ELSE
           CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*998)
         ENDIF
@@ -1072,6 +1240,9 @@ CONTAINS
                           ! get the RHS variable value
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
+                        CASE(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
+                          CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                            & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
                           ! For integrated Neumann condition, integration is already done, so set the RHS
                           ! dof value directly
@@ -1248,6 +1419,9 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
+                        CASE(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                            & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
@@ -1313,11 +1487,11 @@ CONTAINS
 
   !> Checks the boundary condition type and sets the boundary condition type and dof type for the boundary conditions.
   !> Makes sure any field parameter sets required are created, and sets the parameter set required array value.
-  SUBROUTINE BoundaryConditions_SetConditionType(boundaryConditionsVariable,dofIndex,condition,err,error,*)
+  SUBROUTINE BoundaryConditions_SetConditionType(boundaryConditionsVariable,globalDof,condition,err,error,*)
 
     !Argument variables
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable !<A pointer to the boundary conditions variable to set the boundary condition for
-    INTEGER(INTG), INTENT(IN) :: dofIndex !<The local dof index to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: globalDof !<The globalDof to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: condition !<The boundary condition type to set \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
@@ -1335,6 +1509,8 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FREE
     CASE(BOUNDARY_CONDITION_FIXED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
+    CASE(BOUNDARY_CONDITION_LINEAR_CONSTRAINT)
+      dofType=BOUNDARY_CONDITION_DOF_CONSTRAINED
     CASE(BOUNDARY_CONDITION_FIXED_INLET)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE(BOUNDARY_CONDITION_FIXED_OUTLET)
@@ -1377,7 +1553,7 @@ CONTAINS
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,err,error,*999)
       boundaryConditionsVariable%parameterSetRequired(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)=.TRUE.
-    CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
+    CASE(BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
@@ -1389,14 +1565,14 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE DEFAULT
       CALL FLAG_ERROR("The specified boundary condition type for dof number "// &
-        & TRIM(NUMBER_TO_VSTRING(dofIndex,"*",err,error))//" of "// &
+        & TRIM(NUMBER_TO_VSTRING(globalDof,"*",err,error))//" of "// &
         & TRIM(NUMBER_TO_VSTRING(condition,"*",err,error))//" is invalid.", &
         & err,error,*999)
     END SELECT
 
     !We have a valid boundary condition type
     !Update condition type counts
-    previousCondition=boundaryConditionsVariable%CONDITION_TYPES(dofIndex)
+    previousCondition=boundaryConditionsVariable%CONDITION_TYPES(globalDof)
     IF(previousCondition/=condition) THEN
       ! DOF_COUNTS array doesn't include a count for BOUNDARY_CONDITION_FREE, which equals zero
       IF(previousCondition/=BOUNDARY_CONDITION_FREE) THEN
@@ -1409,20 +1585,18 @@ CONTAINS
       END IF
     END IF
     !Update Dirichlet DOF count
-    previousDof=boundaryConditionsVariable%DOF_TYPES(dofIndex)
-    IF(dofType==BOUNDARY_CONDITION_DOF_FIXED.AND.previousDof==BOUNDARY_CONDITION_DOF_FREE) THEN
+    previousDof=boundaryConditionsVariable%DOF_TYPES(globalDof)
+    IF(dofType==BOUNDARY_CONDITION_DOF_FIXED.AND.previousDof/=BOUNDARY_CONDITION_DOF_FIXED) THEN
       boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS= &
         & boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS+1
-    ELSE IF(dofType==BOUNDARY_CONDITION_DOF_FREE.AND.previousDof==BOUNDARY_CONDITION_DOF_FIXED) THEN
+    ELSE IF(dofType/=BOUNDARY_CONDITION_DOF_FIXED.AND.previousDof==BOUNDARY_CONDITION_DOF_FIXED) THEN
       boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS= &
         & boundaryConditionsVariable%NUMBER_OF_DIRICHLET_CONDITIONS-1
-    ELSE IF(dofType==BOUNDARY_CONDITION_DOF_MIXED.OR.previousDof==BOUNDARY_CONDITION_DOF_MIXED) THEN
-      CALL FLAG_ERROR("Mixed condition DOFs are not implemented.",err,error,*999)
     END IF
 
     !Set the boundary condition type and DOF type
-    boundaryConditionsVariable%CONDITION_TYPES(dofIndex)=condition
-    boundaryConditionsVariable%DOF_TYPES(dofIndex)=dofType
+    boundaryConditionsVariable%CONDITION_TYPES(globalDof)=condition
+    boundaryConditionsVariable%DOF_TYPES(globalDof)=dofType
 
     CALL EXITS("BoundaryConditions_SetConditionType")
     RETURN
@@ -1552,7 +1726,8 @@ CONTAINS
       END IF
     CASE(BOUNDARY_CONDITION_NEUMANN_POINT, &
         & BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
+        & BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
+        & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
@@ -1621,10 +1796,13 @@ CONTAINS
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_FIXED)
             validEquationsSetFound=.TRUE.
+          CASE(BOUNDARY_CONDITION_LINEAR_CONSTRAINT)
+            validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_FIXED_INLET, &
               & BOUNDARY_CONDITION_FIXED_OUTLET)
             IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
                 & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                & equationsSet%TYPE==EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE.OR. &
                 & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF
@@ -1659,7 +1837,7 @@ CONTAINS
                 & equationsSet%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF
-          CASE(BOUNDARY_CONDITION_NEUMANN_POINT)
+          CASE(BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
             validEquationsSetFound=.TRUE.
@@ -1839,7 +2017,8 @@ CONTAINS
     CALL ENTERS("BoundaryConditions_NeumannInitialise",err,error,*998)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
-      numberOfValues=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+      numberOfValues=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)+ &
+        & boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       ALLOCATE(boundaryConditionsVariable%neumannBoundaryConditions,stat=err)
       IF(err/=0) CALL FLAG_ERROR("Could not allocate Neumann Boundary Conditions",err,error,*998)
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
@@ -1888,10 +2067,12 @@ CONTAINS
     TYPE(DOMAIN_LINE_TYPE), POINTER :: line
     TYPE(DOMAIN_FACE_TYPE), POINTER :: face
     TYPE(LIST_TYPE), POINTER :: columnIndicesList, rowColumnIndicesList
-    INTEGER(INTG) :: numberOfPointDofs, numberNonZeros, numberRowEntries, neumannConditionNumber
+    INTEGER(INTG) :: myComputationalNodeNumber
+    INTEGER(INTG) :: numberOfPointDofs, numberNonZeros, numberRowEntries, neumannConditionNumber, localNeumannConditionIdx
     INTEGER(INTG) :: neumannIdx, globalDof, localDof, localDofNyy, domainIdx, numberOfDomains, domainNumber, componentNumber
     INTEGER(INTG) :: nodeIdx, derivIdx, nodeNumber, versionNumber, derivativeNumber, columnNodeNumber, lineIdx, faceIdx, columnDof
     INTEGER(INTG), ALLOCATABLE :: rowIndices(:), columnIndices(:), localDofNumbers(:)
+    REAL(DP) :: pointValue
     INTEGER(INTG) :: dummyErr
     TYPE(VARYING_STRING) :: dummyError
 
@@ -1901,7 +2082,8 @@ CONTAINS
       rhsVariable=>boundaryConditionsVariable%variable
       IF(.NOT.ASSOCIATED(rhsVariable)) &
         & CALL FLAG_ERROR("RHS boundary conditions variable field variable is not associated.",err,error,*999)
-      numberOfPointDofs=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+      numberOfPointDofs=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT) + &
+        & boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
       IF(ASSOCIATED(boundaryConditionsNeumann)) THEN
         ! For rows we can re-use the RHS variable row mapping
@@ -2025,7 +2207,8 @@ CONTAINS
                   ! Only one column used, as this is the same as setting an integrated
                   ! value so no other DOFs are affected
                   globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(localDof)
-                  IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                  IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                      & boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                     ! Find the Neumann condition number
                     neumannConditionNumber=0
                     DO neumannIdx=1,numberOfPointDofs
@@ -2053,7 +2236,9 @@ CONTAINS
                         columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                           & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
                         globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                            & boundaryConditionsVariable%CONDITION_TYPES(globalDof)== &
+                            & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                           neumannConditionNumber=0
                           DO neumannIdx=1,numberOfPointDofs
                             IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
@@ -2083,7 +2268,9 @@ CONTAINS
                         columnDof=rhsVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                           & NODES(columnNodeNumber)%DERIVATIVES(derivativeNumber)%VERSIONS(versionNumber)
                         globalDof=rhsVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(columnDof)
-                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        IF(boundaryConditionsVariable%CONDITION_TYPES(globalDof)==BOUNDARY_CONDITION_NEUMANN_POINT.OR. &
+                            & boundaryConditionsVariable%CONDITION_TYPES(globalDof)== &
+                            & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED) THEN
                           neumannConditionNumber=0
                           DO neumannIdx=1,numberOfPointDofs
                             IF(boundaryConditionsNeumann%setDofs(neumannIdx)==globalDof) THEN
@@ -2163,8 +2350,26 @@ CONTAINS
 
         CALL DISTRIBUTED_MATRIX_CREATE_FINISH(boundaryConditionsNeumann%integrationMatrix,err,error,*999)
 
+        !Set up vector of Neumann point values
         CALL DISTRIBUTED_VECTOR_CREATE_START(pointDofMapping,boundaryConditionsNeumann%pointValues,err,error,*999)
         CALL DISTRIBUTED_VECTOR_CREATE_FINISH(boundaryConditionsNeumann%pointValues,err,error,*999)
+        myComputationalNodeNumber=COMPUTATIONAL_NODE_NUMBER_GET(err,error)
+        !Set point values vector from boundary conditions field parameter set
+        DO neumannIdx=1,numberOfPointDofs
+          globalDof=boundaryConditionsNeumann%setDofs(neumannIdx)
+          IF(rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(globalDof)%DOMAIN_NUMBER(1)==myComputationalNodeNumber) THEN
+            localDof=rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(globalDof)%LOCAL_NUMBER(1)
+            ! Set point DOF vector value
+            localNeumannConditionIdx=boundaryConditionsNeumann%pointDofMapping%GLOBAL_TO_LOCAL_MAP(neumannIdx)%LOCAL_NUMBER(1)
+            CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
+              & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,localDof,pointValue,err,error,*999)
+            CALL DISTRIBUTED_VECTOR_VALUES_SET(boundaryConditionsNeumann%pointValues, &
+              & localNeumannConditionIdx,pointValue,err,error,*999)
+          END IF
+        END DO
+        CALL DISTRIBUTED_VECTOR_UPDATE_START(boundaryConditionsNeumann%pointValues,err,error,*999)
+        CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(boundaryConditionsNeumann%pointValues,err,error,*999)
+
       ELSE
         CALL FLAG_ERROR("The boundary condition Neumann is not associated",err,error,*998)
       END IF
@@ -2276,12 +2481,12 @@ CONTAINS
 
     !Local variables
     INTEGER(INTG) :: componentNumber,globalDof,localDof,neumannDofIdx,myComputationalNodeNumber
-    INTEGER(INTG) :: numberOfNeumann,neumannLocalDof,neumannDofNyy,localNeumannConditionIdx
+    INTEGER(INTG) :: numberOfNeumann,neumannLocalDof,neumannDofNyy
     INTEGER(INTG) :: neumannGlobalDof,neumannNodeNumber,neumannLocalNodeNumber,neumannLocalDerivNumber
     INTEGER(INTG) :: faceIdx,lineIdx,nodeIdx,derivIdx,gaussIdx
     INTEGER(INTG) :: faceNumber,lineNumber
     INTEGER(INTG) :: ms,os,nodeNumber,derivativeNumber,versionNumber
-    REAL(DP) :: integratedValue,pointValue,phim,phio
+    REAL(DP) :: integratedValue,phim,phio
     TYPE(BoundaryConditionsNeumannType), POINTER :: neumannConditions
     TYPE(BASIS_TYPE), POINTER :: basis
     TYPE(FIELD_TYPE), POINTER :: geometricField
@@ -2319,9 +2524,9 @@ CONTAINS
       END IF
 
       CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(neumannConditions%integrationMatrix,0.0_DP,err,error,*999)
-      CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(neumannConditions%pointValues,0.0_DP,err,error,*999)
 
-      numberOfNeumann=rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)
+      numberOfNeumann=rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT) + &
+        & rhsBoundaryConditions%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
       myComputationalNodeNumber=COMPUTATIONAL_NODE_NUMBER_GET(err,error)
 
       ! Initialise field interpolation parameters for the geometric field, which are required for the
@@ -2337,12 +2542,6 @@ CONTAINS
         neumannGlobalDof=neumannConditions%setDofs(neumannDofIdx)
         IF(rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(neumannGlobalDof)%DOMAIN_NUMBER(1)==myComputationalNodeNumber) THEN
           neumannLocalDof=rhsVariable%DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(neumannGlobalDof)%LOCAL_NUMBER(1)
-          ! Set point DOF vector value
-          localNeumannConditionIdx=neumannConditions%pointDofMapping%GLOBAL_TO_LOCAL_MAP(neumannDofIdx)%LOCAL_NUMBER(1)
-          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-            & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,neumannLocalDof,pointValue,err,error,*999)
-          CALL DISTRIBUTED_VECTOR_VALUES_SET(neumannConditions%pointValues, &
-            & localNeumannConditionIdx,pointValue,err,error,*999)
           ! Get Neumann DOF component and topology for that component
           neumannDofNyy=rhsVariable%DOF_TO_PARAM_MAP%DOF_TYPE(2,neumannLocalDof)
           componentNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(4,neumannDofNyy)
@@ -2359,8 +2558,6 @@ CONTAINS
             neumannNodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,neumannDofNyy)
             SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
             CASE(1)
-              CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE, &
-                & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,neumannLocalDof,pointValue,err,error,*999)
               CALL DISTRIBUTED_MATRIX_VALUES_SET(neumannConditions%integrationMatrix,neumannLocalDof,neumannDofIdx, &
                 & 1.0_DP,err,error,*999)
             CASE(2)
@@ -2574,13 +2771,12 @@ CONTAINS
         END IF
       END DO
 
-      CALL DISTRIBUTED_VECTOR_UPDATE_START(neumannConditions%pointValues,err,error,*999)
       CALL DISTRIBUTED_MATRIX_UPDATE_START(neumannConditions%integrationMatrix,err,error,*999)
-      CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(neumannConditions%pointValues,err,error,*999)
       CALL DISTRIBUTED_MATRIX_UPDATE_FINISH(neumannConditions%integrationMatrix,err,error,*999)
 
       CALL FIELD_PARAMETER_SET_VECTOR_GET(rhsVariable%field,rhsVariable%variable_type,FIELD_INTEGRATED_NEUMANN_SET_TYPE, &
         & integratedValues,err,error,*999)
+      CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(integratedValues,0.0_DP,err,error,*999)
       ! Perform matrix multiplication, f = N q, to calculate force vector from integration matrix and point values
       CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
         & neumannConditions%integrationMatrix,neumannConditions%pointValues,integratedValues, &
@@ -2721,6 +2917,473 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Constrain multiple equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE BoundaryConditions_ConstrainDofsEqual(boundaryConditions,fieldVariable,globalDofs,err,error,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER, INTENT(IN) :: boundaryConditions !<The boundary conditions for the solver equations in which to constrain the DOF.
+    TYPE(FIELD_VARIABLE_TYPE), POINTER, INTENT(IN) :: fieldVariable !<A pointer to the field variable containing the DOFs.
+    INTEGER(INTG), INTENT(IN) :: globalDofs(:) !<The global DOFs to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message.
+    !Local variables
+    INTEGER(INTG) :: numberOfDofs,dofIdx,dofIdx2
+
+    CALL Enters("BoundaryConditions_ConstrainDofsEqual",err,error,*999)
+
+    numberOfDofs=SIZE(globalDofs,1)
+    IF(numberOfDofs<2) THEN
+      CALL FlagError("Cannot constrain zero or 1 DOF to be equal.",err,error,*999)
+    END IF
+
+    !Check for duplicate DOFs
+    DO dofIdx=1,numberOfDofs
+      DO dofIdx2=dofIdx+1,numberOfDofs
+        IF(globalDofs(dofIdx)==globalDofs(dofIdx2)) THEN
+          CALL FlagError("DOF number "//TRIM(NumberToVstring(globalDofs(dofIdx),"*",err,error))// &
+            & " is duplicated in the DOFs constrained to be equal.",err,error,*999)
+        END IF
+      END DO
+    END DO
+
+    !Add new DOF constraints
+    !We set all DOFs except the first to be equal to 1.0 * the first DOF
+    !The first DOF is left unconstrained
+    DO dofIdx=2,numberOfDofs
+      CALL BoundaryConditions_DofConstraintSet( &
+        & boundaryConditions,fieldVariable,globalDofs(dofIdx),[globalDofs(1)],[1.0_DP],err,error,*999)
+    END DO
+
+    CALL Exits("BoundaryConditions_ConstrainDofsEqual")
+    RETURN
+999 CALL Errors("BoundaryConditions_ConstrainDofsEqual",err,error)
+    CALL Exits("BoundaryConditions_ConstrainDofsEqual")
+    RETURN 1
+  END SUBROUTINE BoundaryConditions_ConstrainDofsEqual
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE BoundaryConditions_ConstrainNodeDofsEqual( &
+      & boundaryConditions,field,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER, INTENT(IN) :: boundaryConditions !<The solver equations boundary conditions to constrain the DOFs for.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message.
+    !Local variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    INTEGER(INTG) :: numberOfNodes, nodeIdx, dof
+    INTEGER(INTG), ALLOCATABLE :: globalDofs(:)
+
+    CALL Enters("BoundaryConditions_ConstrainNodeDofsEqual",err,error,*998)
+
+    NULLIFY(fieldVariable)
+
+    IF(.NOT.ASSOCIATED(boundaryConditions)) THEN
+      CALL FlagError("Boundary conditions are not associated.",err,error,*998)
+    END IF
+
+    numberOfNodes=SIZE(nodes,1)
+    ALLOCATE(globalDofs(numberOfNodes),stat=err)
+    IF(err/=0) CALL FlagError("Could not allocate equal global DOFs array.",err,error,*998)
+    !Get field DOFs for nodes
+    DO nodeIdx=1,numberOfNodes
+      CALL FIELD_COMPONENT_DOF_GET_USER_NODE(field,fieldVariableType,versionNumber,derivativeNumber,nodes(nodeIdx), &
+        & component,dof,globalDofs(nodeIdx),err,error,*999)
+    END DO
+    !Get the field variable and boundary conditions variable for the field
+    CALL FIELD_VARIABLE_GET(field,fieldVariableType,fieldVariable,err,error,*999)
+
+    !Now set DOF constraint
+    CALL BoundaryConditions_ConstrainDofsEqual(boundaryConditions,fieldVariable,globalDofs,err,error,*999)
+
+    DEALLOCATE(globalDofs)
+
+    CALL Exits("BoundaryConditions_ConstrainNodeDofsEqual")
+    RETURN
+999 IF(ALLOCATED(globalDofs)) DEALLOCATE(globalDofs)
+998 CALL Errors("BoundaryConditions_ConstrainNodeDofsEqual",err,error)
+    CALL Exits("BoundaryConditions_ConstrainNodeDofsEqual")
+    RETURN 1
+  END SUBROUTINE BoundaryConditions_ConstrainNodeDofsEqual
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain a DOF to be a linear combination of other DOFs.
+  SUBROUTINE BoundaryConditions_DofConstraintSet(boundaryConditions,fieldVariable,globalDof,dofs,coefficients,err,error,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER, INTENT(IN) :: boundaryConditions !<The boundary conditions for the solver equations in which to constrain the DOF.
+    TYPE(FIELD_VARIABLE_TYPE), POINTER, INTENT(IN) :: fieldVariable !<A pointer to the field variable containing the DOFs.
+    INTEGER(INTG), INTENT(IN) :: globalDof !<The global DOF to set the constraint on.
+    INTEGER(INTG), INTENT(IN) :: dofs(:) !<The global DOFs that this DOF is constrained to depend on.
+    REAL(DP), INTENT(IN) :: coefficients(:) !<The coefficient values in the DOF constraint.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message.
+    !Local variables
+    INTEGER(INTG) :: numberOfDofs,dofIdx,dofIdx2
+    TYPE(BoundaryConditionsDofConstraintPtrType), ALLOCATABLE :: newConstraints(:)
+    TYPE(Boundary_Conditions_Variable_Type), POINTER :: boundaryConditionsVariable
+    TYPE(BoundaryConditionsDofConstraintsType), POINTER :: dofConstraints
+    TYPE(BoundaryConditionsDofConstraintType), POINTER :: dofConstraint
+
+    NULLIFY(dofConstraint)
+    NULLIFY(dofConstraints)
+
+    CALL Enters("BoundaryConditions_DofConstraintSet",err,error,*998)
+
+    !Check pointers for association
+    IF(.NOT.ASSOCIATED(boundaryConditions)) THEN
+      CALL FlagError("Boundary conditions are not associated.",err,error,*998)
+    END IF
+    IF(boundaryConditions%boundary_conditions_finished) THEN
+      CALL FlagError("The boundary conditions have already been finished.",err,error,*998)
+    END IF
+    IF(.NOT.ASSOCIATED(fieldVariable)) THEN
+      CALL FlagError("Field variable is not associated.",err,error,*998)
+    END IF
+    CALL boundary_conditions_variable_get(boundaryConditions,fieldVariable,boundaryConditionsVariable,err,error,*998)
+    IF(.NOT.ASSOCIATED(boundaryConditionsVariable)) THEN
+      CALL FlagError("Boundary conditions variable is not associated.",err,error,*998)
+    END IF
+    dofConstraints=>boundaryConditionsVariable%dofConstraints
+    IF(.NOT.ASSOCIATED(dofConstraints)) THEN
+      CALL FlagError("Boundary conditions DOF constraints are not associated.",err,error,*998)
+    END IF
+
+    numberOfDofs=SIZE(dofs,1)
+    IF(numberOfDofs==0) THEN
+      CALL FlagError("Empty DOFs list.",err,error,*998)
+    ELSE IF(numberOfDofs/=SIZE(coefficients,1)) THEN
+      CALL FlagError("Length of coefficients does not match length of DOFs array.",err,error,*998)
+    ELSE IF(numberOfDofs>1) THEN
+      CALL FlagError("Support for constraining an equations DOF to be depended on multiple "// &
+        & "other DOFs is not yet implemented.",err,error,*998)
+    END IF
+
+    !Check for duplicate DOFs
+    DO dofIdx=1,numberOfDofs
+      DO dofIdx2=dofIdx+1,numberOfDofs
+        IF(dofs(dofIdx)==dofs(dofIdx2)) THEN
+          CALL FlagError("DOF number "//TRIM(NumberToVstring(dofs(dofIdx),"*",err,error))// &
+            & " is duplicated in the DOF constraint.",err,error,*998)
+        END IF
+      END DO
+    END DO
+
+    !Check DOFs are free
+    DO dofIdx=1,numberOfDofs
+      IF(boundaryConditionsVariable%dof_types(dofs(dofIdx))/=BOUNDARY_CONDITION_DOF_FREE) THEN
+        CALL FlagError("DOF number "//TRIM(NumberToVstring(dofs(dofIdx),"*",err,error))// &
+          & " is not free in the boundary conditions.",err,error,*998)
+      END IF
+    END DO
+
+    !Allocate new DOF constraints and copy over old constraints
+    ALLOCATE(newConstraints(dofConstraints%numberOfConstraints+1),stat=err)
+    IF(err/=0) CALL FlagError("Could not allocate new DOF constraints array.",err,error,*998)
+    IF(dofConstraints%numberOfConstraints>0) THEN
+      newConstraints(1:dofConstraints%numberOfConstraints)= &
+        & dofConstraints%constraints(1:dofConstraints%numberOfConstraints)
+    END IF
+
+    !Set the new DOF constraint
+    ALLOCATE(dofConstraint,stat=err)
+    IF(err/=0) CALL FlagError("Could not allocate new DOF constraint.",err,error,*999)
+    ALLOCATE(dofConstraint%dofs(numberOfDofs),stat=err)
+    IF(err/=0) CALL FlagError("Could not allocate constraint DOFs array.",err,error,*999)
+    ALLOCATE(dofConstraint%coefficients(numberOfDofs),stat=err)
+    IF(err/=0) CALL FlagError("Could not allocate constraint coefficients array.",err,error,*999)
+    dofConstraint%globalDof=globalDof
+    dofConstraint%numberOfDofs=numberOfDofs
+    dofConstraint%dofs(1:numberOfDofs)=dofs(1:numberOfDofs)
+    dofConstraint%coefficients(1:numberOfDofs)=coefficients(1:numberOfDofs)
+
+    !Add new DOF constraint to new array
+    newConstraints(dofConstraints%numberOfConstraints+1)%ptr=>dofConstraint
+    !Replace old DOF constraints with new ones
+    CALL MOVE_ALLOC(newConstraints,dofConstraints%constraints)
+    dofConstraints%numberOfConstraints=dofConstraints%numberOfConstraints+1
+
+    !Set the DOF type and BC type of the constrained DOF
+    CALL BoundaryConditions_SetConditionType(boundaryConditionsVariable,globalDof,BOUNDARY_CONDITION_LINEAR_CONSTRAINT, &
+      & err,error,*999)
+
+    CALL Exits("BoundaryConditions_DofConstraintSet")
+    RETURN
+999 IF(ASSOCIATED(dofConstraint)) THEN
+      IF(ALLOCATED(dofConstraint%dofs)) DEALLOCATE(dofConstraint%dofs)
+      IF(ALLOCATED(dofConstraint%coefficients)) DEALLOCATE(dofConstraint%coefficients)
+      DEALLOCATE(dofConstraint)
+    END IF
+    IF(ALLOCATED(newConstraints)) DEALLOCATE(newConstraints)
+998 CALL Errors("BoundaryConditions_DofConstraintSet",err,error)
+    CALL Exits("BoundaryConditions_DofConstraintSet")
+    RETURN 1
+  END SUBROUTINE BoundaryConditions_DofConstraintSet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of the dof constraints for a boundary conditions variable
+  SUBROUTINE BoundaryConditions_DofConstraintsCreateFinish(boundaryConditionsVariable,err,error,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable !<A pointer to boundary conditions variable to finish the dof constraints for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: constraintIdx,dofIdx,thisDofDomain,otherDofDomain
+    INTEGER(INTG) :: globalDof,globalDof2,localDof,localDof2
+    INTEGER(INTG) :: numberOfCoupledDofs
+    INTEGER(INTG), ALLOCATABLE :: newCoupledGlobalDofs(:),newCoupledLocalDofs(:)
+    REAL(DP), ALLOCATABLE :: newCoefficients(:)
+    TYPE(BoundaryConditionsDofConstraintsType), POINTER :: dofConstraints
+    TYPE(BoundaryConditionsDofConstraintType), POINTER :: dofConstraint
+    TYPE(BoundaryConditionsCoupledDofsType), POINTER :: dofCoupling
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: variableDomainMapping
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+
+    CALL Enters("BoundaryConditions_DofConstraintsCreateFinish",err,error,*998)
+
+    NULLIFY(dofCoupling)
+
+    !We have a list of DOF constraints, which give the values for a field variable
+    !DOF as a linear combination of other DOFs.
+    !In order to be able to construct the solver matrices in the solver mapping routines,
+    !we create a set of couplings, where a coupling is a set of field variable DOFs
+    !mapped to a single solver row or column.
+
+    IF(ASSOCIATED(boundaryConditionsVariable)) THEN
+      fieldVariable=>boundaryConditionsVariable%variable
+      IF(ASSOCIATED(fieldVariable)) THEN
+        IF(ASSOCIATED(boundaryConditionsVariable%dofConstraints)) THEN
+          dofConstraints=>boundaryConditionsVariable%dofConstraints
+        ELSE
+          CALL FlagError("Boundary conditions DOF constraints are not associated.",err,error,*998)
+        END IF
+
+        variableDomainMapping=>fieldVariable%domain_mapping
+        IF(.NOT.ASSOCIATED(variableDomainMapping)) THEN
+          CALL FlagError("Field variable domain mapping is not associated for variable type "// &
+            & TRIM(NumberToVstring(fieldVariable%variable_type,"*",err,error))//".",err,error,*998)
+        END IF
+
+        !Allocate an array of pointers to DOF couplings
+        IF(dofConstraints%numberOfConstraints>0) THEN
+          ALLOCATE(dofConstraints%dofCouplings(fieldVariable%number_of_global_dofs),stat=err)
+          IF(err/=0) CALL FlagError( &
+            & "Could not allocate dof constraints dof couplings array.",err,error,*998)
+          dofConstraints%numberOfDofs=fieldVariable%number_of_global_dofs
+          DO dofIdx=1,fieldVariable%number_of_global_dofs
+            NULLIFY(dofConstraints%dofCouplings(dofIdx)%ptr)
+          END DO
+        END IF
+
+        !Loop over all constraints
+        DO constraintIdx=1,dofConstraints%numberOfConstraints
+          dofConstraint=>dofConstraints%constraints(constraintIdx)%ptr
+          IF(.NOT.ASSOCIATED(dofConstraint)) THEN
+            CALL FlagError("DOF constraint number "// &
+              & TRIM(NumberToVstring(constraintIdx,"*",err,error))// &
+              & " is not associated.",err,error,*999)
+          END IF
+
+          globalDof=dofConstraint%globalDof
+          localDof=variableDomainMapping%global_to_local_map(globalDof)%local_number(1)
+          thisDofDomain=variableDomainMapping%global_to_local_map(globalDof)%domain_number(1)
+
+          !Check that the constrained DOFs are still set to be constrained, as
+          !subsequently setting a boundary condition would change the DOF type but
+          !not update the DOF constraints structure.
+          IF(boundaryConditionsVariable%dof_types(globalDof)/=BOUNDARY_CONDITION_DOF_CONSTRAINED) THEN
+            CALL FlagError("Global DOF number "//TRIM(NumberToVstring(globalDof,"*",err,error))// &
+              & " is part of a linear constraint but the DOF type has been changed"// &
+              & " by applying a boundary condition.",err,error,*999)
+          END IF
+
+          DO dofIdx=1,dofConstraint%numberOfDofs
+            globalDof2=dofConstraint%dofs(dofIdx)
+            localDof2=variableDomainMapping%global_to_local_map(globalDof2)%local_number(1)
+            !Check a Dirichlet conditions hasn't also been set on this DOF
+            IF(boundaryConditionsVariable%dof_types(globalDof2)/=BOUNDARY_CONDITION_DOF_FREE) THEN
+              CALL FlagError("A Dirichlet boundary condition has been set on DOF number "// &
+                & TRIM(NumberToVstring(globalDof2,"*",err,error))// &
+                & " which is part of a linear constraint.",err,error,*999)
+            END IF
+
+            !Check we don't have DOF constraints that are split over domains
+            !\todo Implement support for DOF constraints that are split over domains
+            IF(variableDomainMapping%number_of_domains>1) THEN
+              otherDofDomain=variableDomainMapping%global_to_local_map(globalDof2)%domain_number(1)
+              IF(thisDofDomain/=otherDofDomain) THEN
+                CALL FlagError("An equal DOF constraint is split over multiple domains, "// &
+                  & "support for this has not yet been implemented.",err,error,*999)
+              END IF
+            END IF
+
+            !Add to the DOFs that are coupled with globalDof2
+            !This might be quite inefficient if there are many dofs mapped to a single row/column
+            !due to the reallocation at each step
+            IF(ASSOCIATED(dofConstraints%dofCouplings(globalDof2)%ptr)) THEN
+              numberOfCoupledDofs=dofConstraints%dofCouplings(globalDof2)%ptr%numberOfDofs
+              ALLOCATE(newCoupledGlobalDofs(numberOfCoupledDofs+1),stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling global DOFs.",err,error,*999)
+              ALLOCATE(newCoupledLocalDofs(numberOfCoupledDofs+1),stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling local DOFs.",err,error,*999)
+              ALLOCATE(newCoefficients(numberOfCoupledDofs+1),stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling values.",err,error,*999)
+              newCoupledGlobalDofs(1:numberOfCoupledDofs)=dofCoupling%globalDofs(1:numberOfCoupledDofs)
+              newCoupledLocalDofs(1:numberOfCoupledDofs)=dofCoupling%localDofs(1:numberOfCoupledDofs)
+              newCoefficients(1:numberOfCoupledDofs)=dofCoupling%coefficients(1:numberOfCoupledDofs)
+            ELSE
+              !Set up a a new dofCoupling and set globalDof2 as the first DOF
+              ALLOCATE(dofConstraints%dofCouplings(globalDof2)%ptr,stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling type.",err,error,*999)
+              ALLOCATE(newCoupledGlobalDofs(2),stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling global DOFs.",err,error,*999)
+              ALLOCATE(newCoupledLocalDofs(2),stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling local DOFs.",err,error,*999)
+              ALLOCATE(newCoefficients(2),stat=err)
+              IF(err/=0) CALL FlagError("Could not allocate new DOF coupling values.",err,error,*999)
+              newCoupledGlobalDofs(1)=globalDof2
+              newCoupledLocalDofs(1)=localDof2
+              newCoefficients(1)=1.0_DP
+              numberOfCoupledDofs=1
+            END IF
+            dofCoupling=>dofConstraints%dofCouplings(globalDof2)%ptr
+            newCoupledGlobalDofs(numberOfCoupledDofs+1)=globalDof
+            newCoupledLocalDofs(numberOfCoupledDofs+1)=localDof
+            newCoefficients(numberOfCoupledDofs+1)=dofConstraint%coefficients(dofIdx)
+            CALL MOVE_ALLOC(newCoupledGlobalDofs,dofCoupling%globalDofs)
+            CALL MOVE_ALLOC(newCoupledLocalDofs,dofCoupling%localDofs)
+            CALL MOVE_ALLOC(newCoefficients,dofCoupling%coefficients)
+            dofCoupling%numberOfDofs=numberOfCoupledDofs+1
+          END DO !dofIdx
+        END DO !constraintIdx
+      ELSE
+        CALL FlagError("Field variable is not associated for this boundary conditions variable",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Boundary conditions variable is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("BoundaryConditions_DofConstraintsCreateFinish")
+    RETURN
+999 IF(ALLOCATED(newCoupledGlobalDofs)) DEALLOCATE(newCoupledGlobalDofs)
+    IF(ALLOCATED(newCoupledLocalDofs)) DEALLOCATE(newCoupledLocalDofs)
+    IF(ALLOCATED(newCoefficients)) DEALLOCATE(newCoefficients)
+    CALL BoundaryConditions_DofConstraintsFinalise(dofConstraints,err,error,*999)
+998 CALL Errors("BoundaryConditions_DofConstraintsCreateFinish",err,error)
+    CALL Exits("BoundaryConditions_DofConstraintsCreateFinish")
+    RETURN 1
+
+  END SUBROUTINE BoundaryConditions_DofConstraintsCreateFinish
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise the DOF constraints structure
+  SUBROUTINE BoundaryConditions_DofConstraintsFinalise(dofConstraints,err,error,*)
+
+    !Argument variables
+    TYPE(BoundaryConditionsDofConstraintsType), POINTER :: dofConstraints !<A pointer to the dof constraints to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: constraintIdx,dofIdx
+
+    CALL Enters("BoundaryConditions_DofConstraintsFinalise",err,error,*999)
+
+    IF(ASSOCIATED(dofConstraints)) THEN
+      IF(ALLOCATED(dofConstraints%constraints)) THEN
+        DO constraintIdx=1,dofConstraints%numberOfConstraints
+          IF(ASSOCIATED(dofConstraints%constraints(constraintIdx)%ptr)) THEN
+            IF(ALLOCATED(dofConstraints%constraints(constraintIdx)%ptr%dofs)) THEN
+              DEALLOCATE(dofConstraints%constraints(constraintIdx)%ptr%dofs)
+            END IF
+            IF(ALLOCATED(dofConstraints%constraints(constraintIdx)%ptr%coefficients)) THEN
+              DEALLOCATE(dofConstraints%constraints(constraintIdx)%ptr%coefficients)
+            END IF
+            DEALLOCATE(dofConstraints%constraints(constraintIdx)%ptr)
+          END IF
+        END DO
+        DEALLOCATE(dofConstraints%constraints)
+      END IF
+      IF(ALLOCATED(dofConstraints%dofCouplings)) THEN
+        DO dofIdx=1,dofConstraints%numberOfDofs
+          IF(ASSOCIATED(dofConstraints%dofCouplings(dofIdx)%ptr)) THEN
+            IF(ALLOCATED(dofConstraints%dofCouplings(dofIdx)%ptr%globalDofs)) THEN
+              DEALLOCATE(dofConstraints%dofCouplings(dofIdx)%ptr%globalDofs)
+            END IF
+            IF(ALLOCATED(dofConstraints%dofCouplings(dofIdx)%ptr%localDofs)) THEN
+              DEALLOCATE(dofConstraints%dofCouplings(dofIdx)%ptr%localDofs)
+            END IF
+            IF(ALLOCATED(dofConstraints%dofCouplings(dofIdx)%ptr%coefficients)) THEN
+              DEALLOCATE(dofConstraints%dofCouplings(dofIdx)%ptr%coefficients)
+            END IF
+          END IF
+        END DO
+        DEALLOCATE(dofConstraints%dofCouplings)
+      END IF
+    ELSE
+      CALL FlagError("dofConstraints pointer is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("BoundaryConditions_DofConstraintsFinalise")
+    RETURN
+999 CALL Errors("BoundaryConditions_DofConstraintsFinalise",err,error)
+    CALL Exits("BoundaryConditions_DofConstraintsFinalise")
+    RETURN 1
+
+  END SUBROUTINE BoundaryConditions_DofConstraintsFinalise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise the DOF constraints structure
+  SUBROUTINE BoundaryConditions_DofConstraintsInitialise(dofConstraints,err,error,*)
+
+    !Argument variables
+    TYPE(BoundaryConditionsDofConstraintsType), POINTER :: dofConstraints !<A pointer to the dof constraints to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("BoundaryConditions_DofConstraintsInitialise",err,error,*999)
+
+    IF(ASSOCIATED(dofConstraints)) THEN
+      dofConstraints%numberOfConstraints=0
+      dofConstraints%numberOfDofs=0
+    ELSE
+      CALL FlagError("dofConstraints pointer is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("BoundaryConditions_DofConstraintsInitialise")
+    RETURN
+999 CALL Errors("BoundaryConditions_DofConstraintsInitialise",err,error)
+    CALL Exits("BoundaryConditions_DofConstraintsInitialise")
+    RETURN 1
+
+  END SUBROUTINE BoundaryConditions_DofConstraintsInitialise
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finalise the boundary conditions variable and deallocate all memory.
   SUBROUTINE BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*)
 
@@ -2752,6 +3415,10 @@ CONTAINS
       CALL BoundaryConditions_NeumannFinalise(BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
       IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) &
         & DEALLOCATE(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)
+      IF(ASSOCIATED(boundary_conditions_variable%dofConstraints)) THEN
+        CALL BoundaryConditions_DofConstraintsFinalise(boundary_conditions_variable%dofConstraints,err,error,*999)
+        DEALLOCATE(boundary_conditions_variable%dofConstraints)
+      END IF
       DEALLOCATE(BOUNDARY_CONDITIONS_VARIABLE)
     ENDIF
        
@@ -2871,7 +3538,11 @@ CONTAINS
             CALL MOVE_ALLOC(NEW_BOUNDARY_CONDITIONS_VARIABLES,BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)
             BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES= &
                 & BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES+1
-          ENDIF
+
+            ALLOCATE(boundary_conditions_variable%DofConstraints,stat=err)
+            IF(err/=0) CALL FlagError("Could not allocate boundary conditions dof constraints.",err,error,*999)
+            CALL BoundaryConditions_DofConstraintsInitialise(boundary_conditions_variable%DofConstraints,err,error,*999)
+          END IF
         ELSE
           CALL FLAG_ERROR("Field variable domain mapping is not associated.",ERR,ERROR,*998)
         ENDIF
@@ -2915,22 +3586,30 @@ CONTAINS
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-        VARIABLE_FOUND=.FALSE.
-        variable_idx=1
-        DO WHILE(variable_idx<=BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES.AND..NOT.VARIABLE_FOUND)
-          VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR%VARIABLE
-          IF(ASSOCIATED(VARIABLE)) THEN
-            IF(VARIABLE%VARIABLE_TYPE==FIELD_VARIABLE%VARIABLE_TYPE.AND. &
-                & VARIABLE%FIELD%USER_NUMBER==FIELD_VARIABLE%FIELD%USER_NUMBER.AND. &
-                & VARIABLE%FIELD%REGION%USER_NUMBER==FIELD_VARIABLE%FIELD%REGION%USER_NUMBER) THEN
-              VARIABLE_FOUND=.TRUE.
-              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
+        IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
+          VARIABLE_FOUND=.FALSE.
+          variable_idx=1
+          DO WHILE(variable_idx<=BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES.AND..NOT.VARIABLE_FOUND)
+            VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR%VARIABLE
+            IF(ASSOCIATED(VARIABLE)) THEN
+              IF(VARIABLE%VARIABLE_TYPE==FIELD_VARIABLE%VARIABLE_TYPE.AND. &
+                & VARIABLE%FIELD%USER_NUMBER==FIELD_VARIABLE%FIELD%USER_NUMBER) THEN
+                IF(ASSOCIATED(VARIABLE%FIELD%REGION)) THEN
+                  IF(VARIABLE%FIELD%REGION%USER_NUMBER==FIELD_VARIABLE%FIELD%REGION%USER_NUMBER) THEN
+                    VARIABLE_FOUND=.TRUE.
+                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
+                  ENDIF
+                ELSEIF(ASSOCIATED(VARIABLE%FIELD%INTERFACE)) THEN
+                  IF(VARIABLE%FIELD%INTERFACE%USER_NUMBER==FIELD_VARIABLE%FIELD%INTERFACE%USER_NUMBER) THEN
+                    VARIABLE_FOUND=.TRUE.
+                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
+                  ENDIF
+                ENDIF
+              ENDIF
+              variable_idx=variable_idx+1
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("Boundary conditions variable field variable is not associated.",ERR,ERROR,*999)
-          ENDIF
-          variable_idx=variable_idx+1
-        ENDDO
+          ENDDO
+        ENDIF
       ELSE
         CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
       ENDIF
