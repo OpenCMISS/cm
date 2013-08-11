@@ -3045,7 +3045,7 @@ CONTAINS
     REAL(DP) :: nodalParameters(3),nodalParametersTrans(3),transformationMatrix(4,4)
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
-    TYPE(LOGICAL) :: transformBC=.FALSE.,sameBases=.TRUE.
+    LOGICAL :: transformBC=.FALSE.,sameBases=.TRUE.
     
     CALL ENTERS("Problem_SolverGeometricTransformationSolve",err,error,*999) 
     
