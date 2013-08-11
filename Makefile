@@ -1865,7 +1865,7 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo "	MPI=(mpich2|intel|openmpi|mvapich2|cray)"
+	@echo "	MPI=(mpich|mpich2|intel|openmpi|mvapich2|cray)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
