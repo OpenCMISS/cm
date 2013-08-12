@@ -393,14 +393,17 @@ class Interface(CodeObject):
         all_subroutines = []
         routine_re = re.compile(
             r'^\s*MODULE PROCEDURE ([A-Z0-9_]+)', re.IGNORECASE)
-        varying_string_re = re.compile(
+        varying_string_re1 = re.compile(
             r'VSC*(Obj|Number|)[0-9]*$', re.IGNORECASE)
+        varying_string_re2 = re.compile(
+            r'VSC*(Obj|Number|Region|Interface|)*$', re.IGNORECASE)
 
         for line in self.lines:
             match = routine_re.search(line)
             if match:
                 routine_name = match.group(1)
-                if varying_string_re.search(routine_name):
+                if (varying_string_re1.search(routine_name) or 
+                        varying_string_re2.search(routine_name)):
                     # Don't include routines using varying_string parameters
                     pass
                 else:

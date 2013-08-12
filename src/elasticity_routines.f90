@@ -88,7 +88,7 @@ MODULE ELASTICITY_ROUTINES
 
   PUBLIC ELASTICITY_PRE_SOLVE,ELASTICITY_POST_SOLVE
 
-  PUBLIC ELASTICITY_CONTROL_LOOP_PRE_LOOP,ELASTICITY_CONTROL_LOOP_POST_LOOP
+  PUBLIC ELASTICITY_CONTROL_LOOP_PRE_LOOP,Elasticity_ControlLoopPostLoop
 
   PUBLIC ELASTICITY_LOAD_INCREMENT_APPLY
 
@@ -503,10 +503,14 @@ CONTAINS
 
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_EQUATION_TYPE)
-      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+      CASE(PROBLEM_LINEAR_ELASTICITY_TYPE)
         CALL LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+      CASE(PROBLEM_FINITE_ELASTICITY_TYPE)
         CALL FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+      CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
+        CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+      CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
+        CALL FiniteElasticity_ContactProblemSubtypeSet(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
@@ -542,10 +546,14 @@ CONTAINS
 
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%TYPE)
-      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+      CASE(PROBLEM_LINEAR_ELASTICITY_TYPE)
         CALL LINEAR_ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+      CASE(PROBLEM_FINITE_ELASTICITY_TYPE)
         CALL FINITE_ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+      CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
+        CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+      CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
+        CALL FiniteElasticity_ContactProblemSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
@@ -585,6 +593,10 @@ CONTAINS
         !Do Nothing
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
         CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+      CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
+        !Do Nothing
+      CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
+        !Do Nothing
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
@@ -625,6 +637,10 @@ CONTAINS
         !Do Nothing
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
         CALL FINITE_ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+      CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
+        !Do Nothing
+      CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
+        !Do Nothing
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
@@ -693,6 +709,55 @@ CONTAINS
     CALL EXITS("ELASTICITY_CONTROL_LOOP_PRE_LOOP")
     RETURN 1
   END SUBROUTINE ELASTICITY_CONTROL_LOOP_PRE_LOOP
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Executes after each loop of a control loop
+  SUBROUTINE Elasticity_ControlLoopPostLoop(controlLoop,err,error,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("Elasticity_ControlLoopPostLoop",err,error,*999)
+
+    IF(ASSOCIATED(controlLoop)) THEN
+      problem=>controlLoop%PROBLEM
+      IF(ASSOCIATED(problem)) THEN
+        SELECT CASE(controlLoop%LOOP_TYPE)
+        CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+          SELECT CASE(PROBLEM%TYPE)
+          CASE(PROBLEM_LINEAR_ELASTICITY_TYPE,PROBLEM_FINITE_ELASTICITY_TYPE,PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
+            !Do nothing
+          CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
+            CALL FiniteElasticity_ControlLoadIncrementLoopPostLoop(controlLoop,err,error,*999)
+          CASE DEFAULT
+            localError="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",err,error))// &
+              & " is not valid for a elasticity problem class."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END SELECT
+        CASE DEFAULT
+          !do nothing
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("Elasticity_ControlLoopPostLoop")
+    RETURN
+999 CALL ERRORS("Elasticity_ControlLoopPostLoop",err,error)
+    CALL EXITS("Elasticity_ControlLoopPostLoop")
+    RETURN 1
+  END SUBROUTINE Elasticity_ControlLoopPostLoop
 
   !
   !================================================================================================================================

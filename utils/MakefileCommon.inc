@@ -183,6 +183,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
   olist_args = $1
   # Set the flags for the various different CC compilers
   ifeq ($(COMPILER),gnu)
+    ifdef COMPILER_VERSION
+      COMPILER_MINOR_VERSION_GE_8 = $(shell expr $(COMPILER_MINOR_VERSION) \>= 8)
+    endif
     # Position independent code is required for the Python bindings
     C_FLGS += -pipe -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
@@ -216,6 +219,10 @@ ifeq ($(OPERATING_SYSTEM),linux)
       else
         # For any more recent versions
         DBGF_FLGS += -fcheck=all
+        ifeq ($(shell expr $(COMPILER_MINOR_VERSION) \>= 8),1)
+           DBGF_FLGS += -finit-real=snan -Wextra -Wsurprising -Wrealloc-lhs-all
+	   #DBGF_FLGS += -Warray-temporaries
+	endif
       endif
     endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
@@ -257,14 +264,21 @@ ifeq ($(OPERATING_SYSTEM),linux)
         ELFLAGS += -pg
       endif
       ifeq ($(MPIPROF),true)
-        ifeq ($(MPI),mpich2)
+        ifeq ($(MPI),mpich)
           C_FLGS += -Wl,--export-dynamic
           DBGC_FLGS += -Wl,--export-dynamic
           F_FLAS += -Wl,--export-dynamic
           DBGF_FLGS += -Wl,--export-dynamic
         else
-          F_FLGS += -tcollect
-          C_FLGS += -tcollect
+          ifeq ($(MPI),mpich2)
+            C_FLGS += -Wl,--export-dynamic
+            DBGC_FLGS += -Wl,--export-dynamic
+            F_FLAS += -Wl,--export-dynamic
+            DBGF_FLGS += -Wl,--export-dynamic
+          else
+            F_FLGS += -tcollect
+            C_FLGS += -tcollect
+          endif
         endif
       endif
       # turn on preprocessing,
