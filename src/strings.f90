@@ -889,7 +889,7 @@ CONTAINS
         IF(NUMBER>=0.0_SP) THEN
           IF((NUMBER<10.0_SP**(i0-1)).AND.(NUMBER>=0.1_SP**(MIN(i0-2,5)))) THEN
             IF(NUMBER>1.0_SP) THEN
-              i1=i0-2-LOG10(NUMBER)
+              i1=i0-2-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,LOCAL_FORMAT) i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -909,7 +909,7 @@ CONTAINS
         ELSE
           IF((-NUMBER<10.0_SP**(i0-2)).AND.(-NUMBER>=0.01_SP**(MIN(i0-2,5)))) THEN
             IF(-NUMBER>=1.0_SP) THEN
-              i1=i0-3-LOG10(NUMBER)
+              i1=i0-3-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,'(I2)') i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -982,7 +982,7 @@ CONTAINS
         IF(NUMBER>=0.0_DP) THEN
           IF((NUMBER<10.0_DP**(i0-1)).AND.(NUMBER>=0.1_DP**(MIN(i0-2,5)))) THEN
             IF(NUMBER>1.0_DP) THEN
-              i1=i0-2-LOG10(NUMBER)
+              i1=i0-2-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,LOCAL_FORMAT) i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -1002,7 +1002,7 @@ CONTAINS
         ELSE
           IF((-NUMBER<10.0_DP**(i0-2)).AND.(-NUMBER>=0.01_DP**(MIN(i0-2,5)))) THEN
             IF(-NUMBER>=1.0_DP) THEN
-              i1=i0-3-LOG10(NUMBER)
+              i1=i0-3-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,'(I2)') i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -1164,7 +1164,7 @@ CONTAINS
         IF(NUMBER>=0.0_SP) THEN
           IF((NUMBER<10.0_SP**(i0-1)).AND.(NUMBER>=0.1_SP**(MIN(i0-2,5)))) THEN
             IF(NUMBER>1.0_SP) THEN
-              i1=i0-2-LOG10(NUMBER)
+              i1=i0-2-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,LOCAL_FORMAT) i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -1184,7 +1184,7 @@ CONTAINS
         ELSE
           IF((-NUMBER<10.0_SP**(i0-2)).AND.(-NUMBER>=0.01_SP**(MIN(i0-2,5)))) THEN
             IF(-NUMBER>=1.0_SP) THEN
-              i1=i0-3-LOG10(NUMBER)
+              i1=i0-3-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,'(I2)') i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -1263,7 +1263,7 @@ CONTAINS
         IF(NUMBER>=0.0_DP) THEN
           IF((NUMBER<10.0_DP**(i0-1)).AND.(NUMBER>=0.1_DP**(MIN(i0-2,5)))) THEN
             IF(NUMBER>1.0_DP) THEN
-              i1=i0-2-LOG10(NUMBER)
+              i1=i0-2-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,LOCAL_FORMAT) i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"
@@ -1283,7 +1283,7 @@ CONTAINS
         ELSE
           IF((-NUMBER<10.0_DP**(i0-2)).AND.(-NUMBER>=0.01_DP**(MIN(i0-2,5)))) THEN
             IF(-NUMBER>=1.0_DP) THEN
-              i1=i0-3-LOG10(NUMBER)
+              i1=i0-3-FLOOR(LOG10(NUMBER))
               LOCAL_FORMAT="(I2)"
               WRITE(CI1,'(I2)') i1
               LOCAL_FORMAT="(F"//CI0(1:LEN_TRIM(CI0))//"."//CI1(1:LEN_TRIM(CI1))//")"

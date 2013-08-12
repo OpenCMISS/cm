@@ -164,7 +164,7 @@ contains
     real(dp) :: t, dt, activ
     real(dp), dimension(:), pointer :: celldata, activdata
 
-    integer(intg) :: ncells, i, d, nodeno
+    integer(intg) :: ncells, i, d
     type(domain_ptr_type), pointer :: domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: CELLS_VARIABLE, ACTIV_VARIABLE
 
@@ -250,7 +250,7 @@ contains
     real(dp), intent(in) :: t  !< current time 
     real(dp), intent(in) :: activ  !< activation factor. 1 for default stimulus current, 0 for none
 
-    real(dp),parameter :: period=1000, activate=1
+    real(dp),parameter :: period=1000
     real(dp) :: Ca_i_bufc, Ca_sr_bufsr, Ca_ss_bufss, E_Ca, E_K, E_Ks, E_Na, O, alpha_K1, alpha_d, alpha_m, alpha_xr1, alpha_xr2,&
     & alpha_xs, beta_K1, beta_d, beta_m, beta_xr1, beta_xr2, beta_xs, d_inf, f2_inf, fCass_inf, f_inf, gamma_d, h_inf, i_CaL,&
     & i_K1, i_Kr, i_Ks, i_Na, i_NaCa, i_NaK, i_Stim, i_b_Ca, i_b_Na, i_leak, i_p_Ca, i_p_K, i_rel, i_to, i_up, i_xfer, j_inf, k1,&
@@ -377,7 +377,7 @@ contains
     real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0, prev_v
     real(dp), dimension(:), pointer :: celldata, activdata
 
-    integer(intg) :: ncells, i, d, nodeno
+    integer(intg) :: ncells, i, d
     type(domain_ptr_type), pointer :: domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: CELLS_VARIABLE, ACTIV_VARIABLE
 
