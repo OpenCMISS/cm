@@ -1740,8 +1740,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDataPoints_LabelGet,CMISSDataPoints_LabelSet
 
-  PUBLIC CMISSDataPoints_ProjectionDistanceGet,CMISSDataPoints_ProjectionElementNumberGet
-
   PUBLIC CMISSDataPoints_ProjectionElementFaceNumberGet,CMISSDataPoints_ProjectionElementLineNumberGet
 
   PUBLIC CMISSDataPoints_ProjectionExitTagGet,CMISSDataPoints_ProjectionXiGet
@@ -1969,18 +1967,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_ResultXiSetNumber
     MODULE PROCEDURE CMISSDataProjection_ResultXiSetObj
   END INTERFACE !CMISSDataProjection_ResultXiSet
-
-  !>Gets the element number for a projected data point.
-  INTERFACE CMISSDataProjection_ElementGet
-    MODULE PROCEDURE CMISSDataProjection_ElementGetRegionNumber
-    MODULE PROCEDURE CMISSDataProjection_ElementGetObj
-  END INTERFACE !CMISSDataProjection_ElementGet
-
-  !>Gets the distance for a projected data point.
-  INTERFACE CMISSDataProjection_DistanceGet
-    MODULE PROCEDURE CMISSDataProjection_DistanceGetRegionNumber
-    MODULE PROCEDURE CMISSDataProjection_DistanceGetObj
-  END INTERFACE !CMISSDataProjection_DistanceGet
 
   PUBLIC CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
 
@@ -4928,6 +4914,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDecomposition_TypeGet,CMISSDecomposition_TypeSet
 
+  PUBLIC CMISSDecomposition_NodeDomainGet
+
   PUBLIC CMISSMesh_CreateFinish,CMISSMesh_CreateStart
 
   PUBLIC CMISSMesh_Destroy
@@ -4944,15 +4932,13 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshElements_CreateFinish,CMISSMeshElements_CreateStart
 
-  PUBLIC CMISSMesh_ElementsGet
-
   PUBLIC CMISSMeshElements_NodesGet,CMISSMeshElements_NodesSet
 
   PUBLIC CMISSMeshElements_UserNumberGet,CMISSMeshElements_UserNumberSet
 
-  PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
+  PUBLIC CMISSMesh_ElementsGet
 
-  PUBLIC CMISSDecomposition_NodeDomainGet
+  PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
 
   PUBLIC CMISSMesh_SurroundingElementsCalculateSet
   
@@ -21934,152 +21920,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the element number for a projected data point identified by a region user number.
-  SUBROUTINE CMISSDataProjection_ElementGetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,elementNumber,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the element for
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to get the element for 
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set get the element for
-    INTEGER(INTG), INTENT(OUT) :: elementNumber !<the element number to get
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
-
-    CALL ENTERS("CMISSDataProjection_ElementGetRegionNumber",ERR,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    NULLIFY(DATA_PROJECTION)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
-      CALL DataProjection_ElementGet(DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataProjection_ElementGetRegionNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataProjection_ElementGetRegionNumber",err,error)
-    CALL EXITS("CMISSDataProjection_ElementGetRegionNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataProjection_ElementGetRegionNumber
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the element for a projected data point identified an object.
-  SUBROUTINE CMISSDataProjection_ElementGetObj(dataProjection,dataPointNumber,elementNumber,err)
-
-    !Argument variables
-    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the element for.
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to get the element for
-    INTEGER(INTG), INTENT(OUT) :: elementNumber !<the element number to get
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataProjection_ElementGetObj",err,error,*999)
-
-    CALL DataProjection_ElementGet(dataProjection%DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
-
-    CALL EXITS("CMISSDataProjection_ElementGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataProjection_ElementGetObj",err,error)
-    CALL EXITS("CMISSDataProjection_ElementGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataProjection_ElementGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the distance number for a projected data point identified by a region user number.
-  SUBROUTINE CMISSDataProjection_DistanceGetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,distance,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the distance for
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to get the distance for 
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set get the distance for
-    REAL(DP), INTENT(OUT) :: distance !<the distance number to get
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
-
-    CALL ENTERS("CMISSDataProjection_DistanceGetRegionNumber",ERR,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    NULLIFY(DATA_PROJECTION)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
-      CALL DataProjection_DistanceGet(DATA_PROJECTION,dataPointNumber,distance,err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataProjection_DistanceGetRegionNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataProjection_DistanceGetRegionNumber",err,error)
-    CALL EXITS("CMISSDataProjection_DistanceGetRegionNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataProjection_DistanceGetRegionNumber
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the distance for a projected data point identified an object.
-  SUBROUTINE CMISSDataProjection_DistanceGetObj(dataProjection,dataPointNumber,distance,err)
-
-    !Argument variables
-    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the distance for.
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to get the distance for
-    REAL(DP), INTENT(OUT) :: distance !<the distance number to get
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataProjection_DistanceGetObj",err,error,*999)
-
-    CALL DataProjection_DistanceGet(dataProjection%DATA_PROJECTION,dataPointNumber,distance,err,error,*999)
-
-    CALL EXITS("CMISSDataProjection_DistanceGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataProjection_DistanceGetObj",err,error)
-    CALL EXITS("CMISSDataProjection_DistanceGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataProjection_DistanceGetObj
-  
-  !
-  !================================================================================================================================
-  !
-
   !>Get the character string label of a data projection identified by a region user number.
   SUBROUTINE CMISSDataProjection_LabelGetCInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
     & label,err)
@@ -22117,7 +21957,7 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSDataProjection_XiSetInterfaceNumber")
+    CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetCInterfaceNumber",err,error)
     CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")

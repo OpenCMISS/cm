@@ -144,8 +144,6 @@ MODULE DATA_PROJECTION_ROUTINES
   
   PUBLIC DATA_PROJECTION_LABEL_GET,DATA_PROJECTION_LABEL_SET
 
-  PUBLIC DataProjection_ElementGet,DataProjection_DistanceGet
-
 CONTAINS
 
   !
@@ -3166,84 +3164,6 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_PROJECTION_ELEMENT_SET
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the element a data point is projected on.
-  SUBROUTINE DataProjection_ElementGet(dataProjection,dataPointNumber,elementNumber,err,error,*)
-
-    !Argument variables
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection to set the element for
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<data point number
-    INTEGER(INTG), INTENT(OUT) :: elementNumber !<the element number to set
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-    
-    CALL ENTERS("DataProjection_ElementGet",err,error,*999)
-
-    IF(ASSOCIATED(dataProjection)) THEN
-      IF(dataProjection%data_projection_finished) THEN
-        IF((dataPointNumber<=dataProjection%data_points%number_of_data_points) .AND. (dataPointNumber>0))  THEN
-          elementNumber = dataProjection%DATA_PROJECTION_RESULTS(dataPointNumber)%element_number
-        ELSE
-          CALL FLAG_ERROR("Data point number out of range.",err,error,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
-    ENDIF
-    
-    CALL EXITS("DataProjection_ElementGet")
-    RETURN
-999 CALL ERRORS("DataProjection_ElementGet",err,error)    
-    CALL EXITS("DataProjection_ElementGet")
-    RETURN 1
-
-  END SUBROUTINE DataProjection_ElementGet
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Gets the distance from a data point projection.
-  SUBROUTINE DataProjection_DistanceGet(dataProjection,dataPointNumber,distance,err,error,*)
-
-    !Argument variables
-    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection !<A pointer to the data projection to get the distance for
-    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<data point number
-    REAL(DP), INTENT(OUT) :: distance !<the distance to return
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-    
-    CALL ENTERS("DataProjection_DistanceGet",err,error,*999)
-
-    IF(ASSOCIATED(dataProjection)) THEN
-      IF(dataProjection%data_projection_finished) THEN
-        IF((dataPointNumber<=dataProjection%data_points%number_of_data_points) .AND. (dataPointNumber>0))  THEN
-          distance = dataProjection%DATA_PROJECTION_RESULTS(dataPointNumber)%distance
-        ELSE
-          CALL FLAG_ERROR("Data point number out of range.",err,error,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Data projection is not associated.",err,error,*999)
-    ENDIF
-    
-    CALL EXITS("DataProjection_DistanceGet")
-    RETURN
-999 CALL ERRORS("DataProjection_DistanceGet",err,error)    
-    CALL EXITS("DataProjection_DistanceGet")
-    RETURN 1
-
-  END SUBROUTINE DataProjection_DistanceGet
 
   !
   !================================================================================================================================
