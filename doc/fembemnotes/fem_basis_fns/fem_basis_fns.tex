@@ -1,0 +1,818 @@
+\chapter{Finite Element Basis Functions}
+
+\section{Representing a One-Dimensional Field}
+
+Consider the problem of finding a mathematical expression $\fnof{u}{x}$ to
+represent a one-dimensional field \eg measurements of temperature $u$
+against distance $x$ along a bar, as shown in \figref{fig:1Dfield}a.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/1Dfield.pstex}
+  \caption{(a) Temperature distribution $\fnof{u}{x}$ along a bar. 
+    The points are the measured temperatures. (b) A least-squares polynomial
+    fit to the data, showing the unacceptable oscillation between data points.}
+  \label{fig:1Dfield}
+\end{figure} 
+
+One approach would be to use a polynomial expression $\fnof{u}{x} = a + bx +
+cx^{2} + dx^{3} + \ldots$ and to estimate the values of the parameters
+$a$, $b$, $c$ and $d$ from a least-squares fit to the data.  As the degree of the
+polynomial is increased the data points are fitted with increasing accuracy
+and polynomials provide a very convenient form of expression because they can
+be differentiated and integrated readily. For low degree polynomials this is a
+satisfactory approach, but if the polynomial order is increased further to
+improve the accuracy of fit a problem arises: the polynomial can be made to
+fit the data accurately, but it oscillates unacceptably between the data
+points, as shown in \figref{fig:1Dfield}b.  
+
+To circumvent this, while retaining the advantages of low degree polynomials,
+we divide the bar into three subregions and use low order polynomials over
+each subregion - called \emph{elements}. For later generality we also
+introduce a parameter $s$ which is a measure of distance along the bar. $u$ is
+plotted as a function of this arclength in \figref{fig:Tempmeas}a.
+\figref{fig:Tempmeas}b shows three linear polynomials in $s$ fitted by
+least-squares separately to the data in each element. 
+%\todo{ref data fitting chapter}
+%(we return to least-squares data fitting in \Chapref{cha:datafitting}).
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/Tempmeas.pstex}
+  \caption{(a) Temperature measurements replotted against arclength 
+    parameter $s$. (b) The $s$ domain is divided into three subdomains,
+    \emph{elements}, and linear polynomials are independently fitted to the data
+    in each subdomain.}
+  \label{fig:Tempmeas}
+\end{figure}
+
+\section{Linear Basis Functions}
+
+\index{Basis functions|(}\index{Basis functions!Lagrange!linear|(}A new
+problem has now arisen in \figref{fig:Tempmeas}b: the piecewise linear
+polynomials are not continuous in $u$ across the boundaries between elements.
+One solution would be to constrain the parameters $a$, $b$, $c$ \etc to 
+ensure continuity of $u$ across the element boundaries, but a better solution 
+is to replace the parameters $a$ and $b$ in the first element with parameters
+$u_{1}$ and $u_{2}$, which are the values of $u$ at the two ends of that
+element. We then define a linear variation between these two values by
+\begin{equation*}
+  \fnof{u}{\xi} = \pbrac{1-\xi}u_{1} + \xi u_{2}
+\end{equation*}
+where $\xi (0 \leq \xi \leq 1)$ is a normalized measure of distance along the
+curve.
+
+We define 
+\begin{align*}
+    \lbfn{1}{\xi} &= 1-\xi  \\ 
+    \lbfn{2}{\xi} &= \xi
+\end{align*}
+such that 
+\begin{equation*}
+  \fnof{u}{\xi} = \lbfn{1}{\xi} u_{1} + \lbfn{2}{\xi} u_{2}            
+\end{equation*}
+and refer to these expressions as the \emph{basis} functions associated with
+the \emph{nodal} parameters $u_{1}$ and $u_{2}$. The basis functions
+$\lbfn{1}{\xi}$ and $\lbfn{2}{\xi}$ are straight lines varying between $0$ and $1$
+as shown in \figref{fig:Linearbf}.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/Linearbf.pstex}
+  \caption{Linear basis functions $\lbfn{1}{\xi}=1-\xi$ and 
+    $\lbfn{2}{\xi}=\xi$.}
+  \label{fig:Linearbf}
+\end{figure}
+   
+It is convenient always to associate the nodal quantity $u_{n}$ with
+\emph{element node} $n$ and to map the temperature $U_{\Delta}$ defined at
+\emph{global node} $\Delta$ onto local node $n$ of element $e$ by using a
+connectivity matrix $\fnof{\Delta}{n,e}$ \ie
+\begin{equation*}
+  u_{n} = U_{\fnof{\Delta}{n,e}}
+\end{equation*}
+where $\fnof{\Delta}{n,e}$ = global node number of local node $n$ of element $e$.
+This has the advantage that the interpolation 
+\begin{equation*}
+  \fnof{u}{\xi} = \lbfn{1}{\xi} u_{1} + \lbfn{2}{\xi} u_{2}
+\end{equation*}
+holds for any element provided that $u_{1}$ and $u_{2}$ are correctly identified
+with their global counterparts, as shown in \figref{fig:Relationship}.
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/Relationship.pstex}
+  \caption{The relationship between global nodes and element nodes.}
+  \label{fig:Relationship}
+\end{figure}
+Thus, in the first element
+\begin{equation}
+  \fnof{u}{\xi} = \lbfn{1}{\xi}u_{1} + \lbfn{2}{\xi}u_{2}
+  \label{eqn:1stelement}
+\end{equation}
+with $u_{1}=U_{1}$ and $u_{2}=U_{2}$.
+
+In the second element $u$ is interpolated by
+\begin{equation}
+  \fnof{u}{\xi}  =  \lbfn{1}{\xi}u_{1} + \lbfn{2}{\xi}u_{2}
+  \label{eqn:2ndelement}
+\end{equation}
+with $u_{1}=U_{2}$ and $u_{2}=U_{3}$, since the parameter $U_{2}$ is shared
+between the first and second elements the temperature field $u$ is implicitly
+continuous. Similarly, in the third element $u$ is interpolated by
+\begin{equation}
+  \fnof{u}{\xi} = \lbfn{1}{\xi}u_{1} + \lbfn{2}{\xi}u_{2}
+  \label{eqn:3rdelement}
+\end{equation}
+with $u_{1}=U_{3}$ and $u_{2}=U_{4}$, with the parameter $U_{3}$ being shared
+between the second and third elements. \Figref{fig:Weighting} shows the
+temperature field defined by the three interpolations
+\bref{eqn:1stelement}--\bref{eqn:3rdelement}. \index{Basis functions!Lagrange!linear|)}
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/Tmfit.pstex}
+  \caption{Temperature measurements fitted with nodal parameters and linear 
+    basis functions.  The fitted temperature field is now continuous across
+    element boundaries.}
+  \label{fig:Tmfit}
+\end{figure}
+
+\section{Basis Functions as Weighting Functions}
+
+It is useful to think of the basis functions as weighting functions on the
+nodal parameters.  Thus, in element 1
+\begin{equation*}
+  \text{at } \xi=0 \qquad \fnof{u}{0} = \pbrac{1-0}u_{1} + 0u_{2} = u_{1}
+\end{equation*}
+which is the value of $u$ at the left hand end of the element and has no
+dependence on $u_{2}$
+\begin{equation*}
+  \text{at } \xi=\frac14 \qquad   \fnof{u}{\frac14} = \pbrac{1-\frac14} u_{1} +
+  \frac14 u_{2} = \frac34 u_{1}+\frac14 u_{2}
+\end{equation*}
+which depends on $u_{1}$ and $u_{2}$, but is weighted more towards $u_{1}$
+than $u_{2}$
+\begin{equation*}
+  \text{at } \xi=\frac12 \qquad \fnof{u}{\frac12} = \pbrac{1-\frac12} u_{1}+
+  \frac12 u_{2} = \frac12 u_{1}+\frac12 u_{2}
+\end{equation*}
+which depends equally on $u_{1}$ and $ u_{2}$
+\begin{equation*}
+  \text{at } \xi=\frac34   \qquad \fnof{u}{\frac34} = \pbrac{1-\frac34} u_{1}
+  + \frac34 u_{2} = \frac14 u_{1}+\frac34 u_{2}
+\end{equation*}
+which depends on $u_{1}$ and $u_{2}$ but is weighted more towards $u_{2}$
+than $u_{1}$
+\begin{equation*}
+    \text{at } \xi=1   \qquad \fnof{u}{1} = \pbrac{1- 1}u_{1} +{1}u_{2} = u_{2}
+\end{equation*}
+which is the value of $u$ at the right hand end of the region and has no
+dependence on $u_{1}$.
+
+Moreover, these weighting functions can be considered as \emph{global} 
+functions, as shown in \figref{fig:Weighting}, where the weighting function
+$w_{n}$ associated with global node $n$ is constructed from the basis functions 
+in the elements adjacent to that node.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/Weighting.pstex}
+  \caption{(a) $\ldots$ (d) The weighting functions $w_{n}$ associated with 
+    the global nodes $n=1\ldots4$, respectively. Notice the linear fall off 
+    in the elements adjacent to a node.  Outside the immediately adjacent 
+    elements, the weighting functions are defined to be zero.}
+  \label{fig:Weighting}
+\end{figure}
+
+For example, $w_{2}$ weights the global parameter $U_{2}$ and the influence of
+$U_{2}$ falls off linearly in the elements on either side of node 2.
+
+We now have a continuous piecewise parametric description of the temperature
+field $\fnof{u}{\xi}$ but in order to define $\fnof{u}{x}$ we need to define
+the relationship between $x$ and $\xi$ for each element. A convenient way to
+do this is to define $x$ as an interpolation of the nodal values of $x$.
+
+For example, in element 1
+\begin{equation}
+  \fnof{x}{\xi} = \lbfn{1}{\xi}x_{1} + \lbfn{2}{\xi}x_{2}
+\end{equation}
+and similarly for the other two elements. The dependence of temperature on $x$,
+$\fnof{u}{x}$, is therefore defined by the parametric expressions
+\begin{align*}
+  \fnof{u}{\xi} &= \dsuml{n}{} \lbfn{n}{\xi} u_{n} \\
+  x(\xi) &= \dsuml{n}{} \lbfn{n}{\xi} x_{n}
+\end{align*}
+where summation is taken over all element nodes (in this case only $2$) and
+the parameter $\xi$ (the ``element coordinate'') links temperature $u$ to
+physical position $x$. $\fnof{x}{\xi}$ provides the mapping between the
+mathematical space $0 \leq \xi \leq 1$ and the physical space $x_{1} \leq x \leq
+x_{2}$, as illustrated in \figref{fig:xandurel}.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/xandurel.pstex}
+  \caption{Illustrating how $x$ and $u$ are related through the normalized 
+    element coordinate $\xi$. The values of $\fnof{x}{\xi}$ and $\fnof{u}{\xi}$ are 
+    obtained from a linear interpolation of the nodal variables and then 
+    plotted as $\fnof{u}{x}$. The points at $\xi=0.2$ are emphasized.}
+  \label{fig:xandurel}
+\end{figure}
+
+\section{Quadratic Basis Functions}
+
+\index{Basis functions!Lagrange!quadratic|(}The essential property of the 
+basis functions defined above is that the basis function associated with a 
+particular node takes the value of $1$ when evaluated at that node and is zero at
+every other node in the element (only one other in the case of linear basis 
+functions). This ensures the linear independence of the basis functions. 
+It is also the key to establishing the form of the basis functions for higher order
+interpolation.  For example, a quadratic variation of $u$ over an element
+requires three nodal parameters $u_{1}$, $u_{2}$ and $u_{3}$
+\begin{equation}
+  \fnof{u}{\xi} = \lbfn{1}{\xi}u_{1} + \lbfn{2}{\xi}u_{2} + \lbfn{3}{\xi}u_{3}  
+  \label{eqn:Qbf}
+\end{equation}
+The quadratic basis functions are shown, with their mathematical expressions,
+in \figref{fig:1DQbf}. Notice that since $\lbfn{1}{\xi}$ must be zero at
+$\xi=0.5$ (node $2$), $\lbfn{1}{\xi}$ must have a factor $\pbrac{\xi-0.5}$
+and since it is also zero at $\xi=1$ (node $3$), another factor is
+$\pbrac{\xi-1}$.  Finally, since $\lbfn{1}{\xi}$ is $1$ at $\xi=0$ (node $1$)
+we have $\lbfn{1}{\xi} = 2\pbrac{\xi-1}\pbrac{\xi-0.5}$.  Similarly for the
+other two basis functions.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/1DQbf.pstex}
+  \caption{One-dimensional quadratic basis functions.}
+  \label{fig:1DQbf}
+\end{figure}
+\index{Basis functions!Lagrange!quadratic|)}
+
+\section{Two- and Three-Dimensional Elements}
+
+\index{Basis functions!Lagrange!bilinear|(}Two-dimensional bilinear 
+basis functions are constructed from the products of the above 
+one-dimensional linear functions as follows
+
+Let   
+\begin{equation*}
+  \fnof{u}{\xione,\xitwo} = \lbfn{1}{\xione,\xitwo}u_{1} +
+  \lbfn{2}{\xione,\xitwo}u_{2} +
+  \lbfn{3}{\xione,\xitwo}u_{3} + \lbfn{4}{\xione,\xitwo}u_{4}
+\end{equation*}
+where  
+\begin{equation}
+\begin{split}
+    \lbfn{1}{\xione,\xitwo} &= \pbrac{1- \xione}\pbrac{1- \xitwo} \\
+    \lbfn{2}{\xione,\xitwo} &= \xione\pbrac{1- \xitwo} \\ 
+    \lbfn{3}{\xione,\xitwo} &= \pbrac{1- \xione}\xitwo \\
+    \lbfn{4}{\xione,\xitwo} &= \xione\xitwo
+  \end{split}
+  \label{eqn:2,3DE}
+\end{equation}
+
+Note that
+\lbfn{1}{\xione,\xitwo} = \lbfn{1}{\xione}\lbfn{1}{\xitwo} 
+where \lbfn{1}{\xione} and \lbfn{1}{\xitwo} are the one-dimensional linear basis
+functions. Similarly, \lbfn{2}{\xione,\xitwo} =
+\lbfn{2}{\xione}\lbfn{1}{\xitwo} \ldots \etc
+
+These four bilinear basis functions are illustrated in \figref{fig:2Dbbf}.
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/2Dbbf.pstex}
+  \caption{Two-dimensional bilinear basis functions.}
+  \label{fig:2Dbbf}
+\end{figure}
+
+Notice that $\lbfn{n}{\xione,\xitwo}$ is $1$ at node $n$ and zero at the
+other three nodes.  This ensures that the temperature
+$\fnof{u}{\xione,\xitwo}$ receives a contribution from each nodal parameter
+$u_{n}$ weighted by $\lbfn{n}{\xione,\xitwo}$ and that when
+$\fnof{u}{\xione,\xitwo}$ is evaluated at node $n$ it takes on the value
+$u_{n}$.
+
+As before the geometry of the element is defined in terms of the node
+positions $\pbrac{x_{n},y_{n}}$, $n=1,\ldots,4$ by
+\begin{align*}
+  x &= \dsuml{n}{} \lbfn{n}{\xione,\xitwo} x_{n} \\ 
+  y &= \dsuml{n}{} \lbfn{n}{\xione,\xitwo} y_{n}
+\end{align*}
+which provide the mapping between the mathematical space $\pbrac{\xione, \xitwo}$
+(where $0 \leq \xione,  \xitwo \leq 1$) and the physical space $\pbrac{x,y}$.
+
+%\begin{example}{Defining a 2D bilinear finite element mesh}
+%  {Defining a 2D bilinear finite element mesh}
+
+%  To define a 2D bilinear finite element mesh run the CMISS example number
+%  $111$.  The nodes should be position as shown in \figref{fig:example111_node}.
+%  After defining elements the mesh should appear like the one shown in
+%  \figref{fig:example111_elem}
+
+%  \begin{figure}[htbp] \centering
+%    \input{figs/fem_basis_fns/egdiag1.pstex}
+%    \caption{Node positions for example $111$.}
+%    \label{fig:example111_node}
+%  \end{figure}
+%   \begin{figure}[hbtp] \centering
+%    \input{figs/fem_basis_fns/egdiag2.pstex}
+%    \caption{2D bilinear finite element mesh for example $111$.}
+%    \label{fig:example111_elem}
+%  \end{figure} 
+%  \label{xmp:Def2D}
+%\end{example}
+
+%\begin{example}{Refining a mesh}
+%  {Refining a mesh} 
+%  To refine a mesh run the CMISS example $113$. After the first refine the
+%  mesh should appear like the one shown in \figref{fig:example113}.  
+%\begin{figure}[htbp] \centering
+%    \input{figs/fem_basis_fns/egdiag3.pstex}
+%    \caption{Refined mesh.}
+%    \label{fig:example113}
+%  \end{figure}
+%  \label{xmp:Refining}
+%\end{example}
+
+\index{Basis functions!Lagrange!bilinear} 
+
+Higher order 2D basis functions can be similarly constructed from products
+of the appropriate 1D basis functions. For example, a six-noded
+(see \figref{fig:6node}) quadratic-linear element (quadratic in $\xione$ and
+linear in $\xitwo$) would have 
+\begin{equation*} u=\dsuml{n=1}{6}
+  \lbfn{n}{\xione,\xitwo}u_{n}
+\end{equation*}
+where
+  \begin{alignat}{2}
+    \lbfn{1}{\xione,\xitwo} &=
+    2\pbrac{\xione-1}\pbrac{\xione-0.5}\pbrac{1-\xitwo} &\qquad
+    \lbfn{2}{\xione,\xitwo} &= 4\xione\pbrac{1-\xione}\pbrac{1-\xitwo} \\
+    \lbfn{3}{\xione,\xitwo} &=
+    2\xione\pbrac{\xione-0.5}\pbrac{1-\xitwo} &\qquad
+    \lbfn{4}{\xione,\xitwo} &=
+    2\pbrac{\xione-1}\pbrac{\xione-0.5}\xitwo \\ 
+    \lbfn{5}{\xione,\xitwo} &= 4\xione\pbrac{1-\xione}\xitwo &\qquad
+    \lbfn{6}{\xione,\xitwo} &= 2\xione\pbrac{\xione-0.5}\xitwo
+  \label{eqn:QLE}
+  \end{alignat}
+
+
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/6node.pstex}
+  \caption{A $6$-node quadratic-linear element (node numbers circled).}
+  \label{fig:6node}
+\end{figure} 
+
+Three-dimensional basis functions are formed similarly, \eg a trilinear
+element basis has eight nodes (see \figref{fig:8nte}) with basis functions
+\begin{alignat}{2}
+        \lbfn{1}{\xione,\xitwo,\xithree} &=
+        \pbrac{1-\xione}\pbrac{1-\xitwo}\pbrac{1-\xithree} 
+        &\qquad \lbfn{2}{\xione,\xitwo,\xithree}
+        &=\xione\pbrac{1-\xitwo}\pbrac{1-\xithree} \\
+        \lbfn{3}{\xione,\xitwo,\xithree} &=\pbrac{1-\xione}\xitwo\pbrac{1-\xithree} 
+        &\qquad \lbfn{4}{\xione,\xitwo,\xithree} &=\xione\xitwo\pbrac{1-\xithree} \\
+        \lbfn{5}{\xione,\xitwo,\xithree} &=\pbrac{1-\xione}\pbrac{1-\xitwo}\xithree 
+        &\qquad \lbfn{6}{\xione,\xitwo,\xithree} &=\xione\pbrac{1-\xitwo}\xithree \\
+        \lbfn{7}{\xione,\xitwo,\xithree} &=\pbrac{1-\xione}\xitwo\xithree          
+        &\lbfn{8}{\xione,\xitwo,\xithree} &=\xione\xitwo\xithree
+        \label{eqn:trilinear}
+\end{alignat}
+
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/8nte.pstex}
+  \caption{An $8$-node trilinear element.}
+  \label{fig:8nte}
+\end{figure}
+
+%\begin{example}{Defining a quadratic-linear element mesh}
+%  {Defining a quadratic-linear element mesh.} 
+%  To define a quadratic-linear element run the cmiss example $115$.
+%  \label{xmp:Defining_quadlin}
+%\end{example}
+
+%\begin{example}{Defining a 3D trilinear element mesh}
+%  {Defining a 3D trilinear element mesh} 
+%  To define a 3D trilinear element run CMISS example $121$.
+%  \label{xmp:Def3D}
+%\end{example}
+
+\section{Higher Order Continuity}
+\index{Basis functions!Hermite|(}\index{Basis functions!Hermite!cubic|(}
+All the basis functions mentioned so far are \emph{Lagrange}\footnote{Joseph-Louis
+Lagrange (1736-1813).} basis functions\index{Basis functions!Lagrange} and provide continuity of $u$ across element boundaries 
+but not higher order continuity.  Sometimes it is desirable to use basis
+functions which also preserve continuity of the derivative of $u$ with respect
+to $\xi$ across element boundaries. A convenient way to achieve this is by
+defining two additional nodal parameters $\pbrac{\dby{u}{\xi}}_{n}$.  The basis
+functions are chosen to ensure that 
+\begin{equation*}
+ \evalat{\dby{u}{\xi}}{\xi=0} =\pbrac{\dby{u}{\xi}}_{1} = u'_{1} \text{ and }
+ \evalat{\dby{u}{\xi}}{\xi=1} =\pbrac{\dby{u}{\xi}}_{2} = u'_{2}
+\end{equation*}
+and since $u_n$ is shared between adjacent elements derivative continuity is 
+ensured.  Since the number of element parameters is 4 the basis functions must
+be cubic in $\xi$.  To derive these
+cubic \emph{Hermite}\footnote{Charles Hermite (1822-1901).} basis functions
+let
+\begin{align*}
+  \fnof{u}{\xi} &= a + b\xi + c\xi^2 + d\xi^3 , \\
+  \dby{u}{\xi} &= b + 2c\xi + 3d\xi^2 ,
+\end{align*}
+and impose the constraints    
+\begin{alignat*}{2}
+  \fnof{u}{0} &= a \quad &&= u_{1} \\ 
+  \fnof{u}{1} &= a + b + c + d \quad &&= u_{2} \\
+  \fnof{\dby{u}{\xi}}{0} &= b \quad &&= u_{1}^{'}\\
+  \fnof{\dby{u}{\xi}}{1} &= b + 2c + 3d \quad &&= u_{2}^{'}
+\end{alignat*}
+These four equations in the four unknowns $a$, $b$, $c$ and $d$ are solved to
+give
+\begin{align*}
+    a &= u_{1} \\   
+    b &= u'_{1} \\
+    c &= 3u_{2} - 3u_{1} - 2 u'_{1} -  u'_{2}   \\
+    d &= u'_{1} + u'_{2}  + 2u_{1}  - 2u_{2}
+\end{align*}
+Substituting $a$, $b$, $c$ and $d$ back into the original cubic then gives 
+\begin{equation*}
+  \fnof{u}{\xi} =u_{1} + u'_{1}\xi + \pbrac{3u_{2} - 3u_{1} - 2u'_{1} -
+    u'_{2}}\xi^2 + \pbrac{u'_{1} + u'_{2}  + 2u_{1} - 2u_{2}}\xi^3 
+\end{equation*}
+or, rearranging,
+\begin{equation}
+  \fnof{u}{\xi} =\chbfn{1}{0}{\xi}u_{1} + \chbfn{1}{1}{\xi}u'_{1} +
+  \chbfn{2}{0}{\xi}u_{2} + \chbfn{2}{1}{\xi}u'_{2} 
+  \label{eqn:Hoc}
+\end{equation}
+where the four cubic Hermite basis functions are drawn in \figref{fig:cubic}.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/cubic.pstex}
+  \caption{Cubic Hermite basis functions.}
+  \label{fig:cubic}
+\end{figure}
+
+One further step is required to make cubic Hermite basis functions useful in
+practice. The derivative $\pbrac{\dby{u}{\xi}}_{n}$ defined at node $n$
+is dependent upon the element $\xi$-coordinate in the two adjacent elements.
+It is much more useful to define a global node derivative
+ $\pbrac{\dby{u}{s}}_{n}$ where $s$ is arclength and then use
+\begin{equation}
+  \pbrac{\dby{u}{\xi}}_{n}=\pbrac{\dby{u}{s}}_{\fnof{\Delta}{n,e}} \cdot
+  \pbrac{\dby{s}{\xi}}_{n} 
+  \label{eqn:cubichbf}
+\end{equation}
+where $\pbrac{\dby{s}{\xi}}_{n}$ is an element \emph{scale factor} which scales
+the arclength derivative of global node $\Delta$ to the $\xi$-coordinate
+derivative of element node $n$. Thus $\dby{u}{s}$ is constrained to be
+continuous across element boundaries rather than $\dby{u}{\xi}$.\index{Basis
+  functions!Hermite!cubic|)} \index{Basis functions!Hermite!bicubic|)}A two-
+dimensional bicubic Hermite basis requires four derivatives per node
+\begin{equation*}
+  u, \delby{u}{\xione}, \delby{u}{\xitwo} \text{ and }
+  \deltwoby{u}{\xione}{\xitwo}
+\end{equation*}
+The need for the second-order cross-derivative term can be explained as
+follows; If $u$ is cubic in $\xione$ and cubic in $\xitwo$, then
+$\delby{u}{\xione}$ is quadratic in $\xione$ and cubic in $\xitwo$ , and
+$\delby{u}{\xitwo}$ is cubic in $\xione$ and quadratic in $\xitwo$ . Now
+consider the side 1--3 in \figref{fig:interpol}. The cubic variation of $u$
+with $\xitwo$ is specified by the four nodal parameters $u_{1}$,
+$\pbrac{\delby{u}{\xitwo}}_{1}$, $u_{3}$ and $\pbrac{\delby{u}{\xitwo}}_{3}$.
+But since $\delby{u}{\xione}$ (the normal derivative) is also cubic in
+$\xitwo$ along that side and is entirely independent of these four parameters,
+four additional parameters are required to specify this cubic. Two of these
+are specified by $\pbrac{\delby{u}{\xione}}_{1}$ and
+$\pbrac{\delby{u}{\xione}}_{3}$, and the remaining two by
+$\pbrac{\deltwoby{u}{\xione}{\xitwo}}_{1}$ and
+$\pbrac{\deltwoby{u}{\xione}{\xitwo}}_{3}$.
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/interpol.pstex}
+  \caption{Interpolation of nodal derivative $\delby{u}{\xione}$ along side 
+    1--3.}
+  \label{fig:interpol}
+\end{figure}
+The bicubic interpolation of these nodal parameters is given by
+\begin{gather}
+  \begin{aligned}
+    \fnof{u}{\xione,\xitwo} &= \chbfn{1}{0}{\xione}\chbfn{1}{0}{\xitwo}u_{1} +
+    \chbfn{2}{0}{\xione}\chbfn{1}{0}{\xitwo}u_{2} \\ 
+    &+ \chbfn{1}{0}{\xione}\chbfn{2}{0}{\xitwo}u_{3} +
+    \chbfn{2}{0}{\xione}\chbfn{2}{0}{\xitwo}u_{4} \\ &+
+    \chbfn{1}{1}{\xione}\chbfn{1}{0}{\xitwo}\pbrac{\delby{u}{\xione}}_{1} +
+    \chbfn{2}{1}{\xione}\chbfn{1}{0}{\xitwo}\pbrac{\delby{u}{\xione}}_{2} \\ &+
+    \chbfn{1}{1}{\xione}\chbfn{2}{0}{\xitwo}\pbrac{\delby{u}{\xione}}_{3} +
+    \chbfn{2}{1}{\xione}\chbfn{2}{0}{\xitwo}\pbrac{\delby{u}{\xione}}_{4} \\ &+
+    \chbfn{1}{0}{\xione}\chbfn{1}{1}{\xitwo}\pbrac{\delby{u}{\xitwo}}_{1} +
+    \chbfn{2}{0}{\xione}\chbfn{1}{1}{\xitwo}\pbrac{\delby{u}{\xitwo}}_{2} \\ &+
+    \chbfn{1}{0}{\xione}\chbfn{2}{1}{\xitwo}\pbrac{\delby{u}{\xitwo}}_{3} +
+    \chbfn{2}{0}{\xione}\chbfn{2}{1}{\xitwo}\pbrac{\delby{u}{\xitwo}}_{4} \\ &+
+    \chbfn{1}{1}{\xione}\chbfn{1}{1}{\xitwo}
+    \pbrac{\deltwoby{u}{\xione}{\xitwo}}_{1} +
+    \chbfn{2}{1}{\xione}\chbfn{1}{1}{\xitwo}
+    \pbrac{\deltwoby{u}{\xione}{\xitwo}}_{2} \\ &+ 
+    \chbfn{1}{1}{\xione}\chbfn{2}{1}{\xitwo}
+    \pbrac{\deltwoby{u}{\xione}{\xitwo}}_{3} +
+    \chbfn{2}{1}{\xione}\chbfn{2}{1}{\xitwo}
+    \pbrac{\deltwoby{u}{\xione}{\xitwo}}_{4}  
+  \end{aligned}
+  \label{eqn:bicubic}
+\end{gather}
+where
+\begin{gather}
+  \begin{aligned}
+    \chbfn{1}{0}{\xi} \quad &= \quad 1-3\xi^2+2\xi^3 \\ 
+    \chbfn{1}{1}{\xi} \quad &= \quad \xi\pbrac{\xi -1}^2 \\
+    \chbfn{2}{0}{\xi} \quad &= \quad \xi^2\pbrac{3-2\xi} \\
+    \chbfn{2}{1}{\xi} \quad &= \quad \xi^2\pbrac{\xi -1}
+  \end{aligned}
+\end{gather}
+are the one-dimensional cubic Hermite basis functions (see \figref{fig:cubic}).
+
+As in the one-dimensional case above, to preserve derivative continuity in
+physical x-coordinate space as well as in $\xi$-coordinate space the global
+node derivatives need to be specified with respect to physical arclength.
+There are now two arclengths to consider: $s_{1}$, measuring arclength along
+the $\xione$-coordinate, and $s_{2}$, measuring arclength along the 
+$\xitwo$-coordinate. Thus
+\begin{gather}
+  \begin{aligned}
+    \pbrac{\delby{u}{\xione}}_{n} &=
+    \pbrac{\delby{u}{s_{1}}}_{\fnof{\Delta}{n,e}} \cdot
+    \pbrac{\delby{s_{1}}{\xione}}_{n} \\ \pbrac{\delby{u}{\xitwo}}_{n} &=
+    \pbrac{\delby{u}{s_{2}}}_{\fnof{\Delta}{n,e}} \cdot
+    \pbrac{\delby{s_{2}}{\xitwo}}_{n} \\ 
+    \pbrac{\deltwoby{u}{\xione}{\xitwo}}_{n} &=
+    \pbrac{\deltwoby{u}{s_{1}}{s_{2}}}_ {\fnof{\Delta}{n,e}} \cdot
+    \pbrac{\dby{s_{1}}{\xione}}_{n} \cdot \pbrac{\dby{s_{2}}{\xitwo}}_{n}
+  \end{aligned}
+  \label{eqn:Hbf}
+\end{gather}
+where $\pbrac{\dby{s_{1}}{\xione}}_{n}$ and $\pbrac{\dby{s_{2}}{\xitwo}}_{n}$
+are element \emph{scale factors} which scale the arclength derivatives of
+global node $\Delta$ to the $\xi$-coordinate derivatives of element node $n$.
+
+The bicubic Hermite basis is a powerful shape descriptor for curvilinear
+surfaces.  \figref{fig:surface} shows a four element bicubic Hermite
+surface in 3D space where each node has the following twelve parameters
+\begin{equation*}
+   x,\/ \delby{x}{s_{1}},\/ \delby{x}{s_{2}},\/
+   \deltwoby{x}{s_{1}}{s_{2}},\/y,\/ \delby{y}{s_{1}},\/\delby{y}{s_{2}},\/
+   \deltwoby{y}{s_{1}}{s_{2}},\/  z,\/
+   \delby{z}{s_{1}},\/ \delby{z}{s_{2}} \text{ and } \deltwoby{z}{s_{1}}{s_{2}}
+\end{equation*}
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/surface.pstex}
+  \caption{A surface formed by four bicubic Hermite elements.}
+  \label{fig:surface}
+\end{figure}
+
+
+%\begin{example}{Defining a 2D cubic Hermite-linear finite element mesh}
+%  {Defining a 2D cubic Hermite-linear finite element mesh}  
+%  To define a 2D cubic Hermite-linear finite element mesh run example 114
+%  \label{sec:Def2Db}
+%\end{example}
+
+\index{Basis functions!Hermite!bicubic|)}\index{Basis functions!Hermite|)}
+
+\section{Triangular Elements} \index{Triangular elements|(}
+Triangular elements cannot use the $\xione$ and $\xitwo$ coordinates defined 
+above for \emph{tensor product} elements (\ie
+two- and three- dimensional elements whose basis functions are formed as the
+product of one-dimensional basis functions). The natural coordinates for
+triangles are based on area ratios and are called \emph{Area Coordinates}
+\index{Area Coordinates}.  
+Consider the ratio of the area formed from the points $2$, $3$ and 
+ $\fnof{P}{x,y}$ in \figref{fig:areacoord} to the total area of the triangle
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/areacoord.pstex}
+  \caption{Area coordinates for a triangular element.}
+  \label{fig:areacoord}
+\end{figure}
+
+\begin{equation*}
+  L_{1}=\dfrac{\text{Area $<P23>$}}{\text{Area $<123>$}}=\frac12
+    \begin{vmatrix}
+            1 & x & y\\
+            1 & x_{2} & y_{2}\\
+            1 & x_{3} & y_{3}
+    \end{vmatrix}
+  / \Delta = \pbrac{a_{1} + b_{1}x + c_{1}y}/ \pbrac{2 \Delta}
+\end{equation*}
+where $ \Delta = \frac12             
+    \begin{vmatrix}
+            1 & x_{1} & y_{1}\\
+            1 & x_{2} & y_{2}\\
+            1 & x_{3} & y_{3}
+    \end{vmatrix}$ 
+    is the area of the triangle with vertices $123$, and $a_{1} = x_{2} y_{3}
+    - x_{3} y_{2}, b_{1} = y_{2} - y_{3}, c_{1} = x_{3} - x_{2}$.
+
+  Notice that $L_{1}$ is linear in $x$ and $y$. Similarly, area coordinates for
+  the other two triangles containing $P$ and two of the element vertices are
+\begin{equation*}
+  L_{2}=\dfrac{\text{Area $<P13>$}}{\text{Area $<123>$}}=\frac12
+    \begin{vmatrix}
+            1 & x & y\\
+            1 & x_{3} & y_{3}\\
+            1 & x_{1} & y_{1}
+    \end{vmatrix}
+  / \Delta = \pbrac{a_{2} + b_{2}x + c_{2}y}/ \pbrac{2 \Delta}
+\end{equation*}
+\begin{equation*}
+  L_{3}=\dfrac{\text{Area $<P12>$}}{\text{Area $<123>$}}=\frac12
+    \begin{vmatrix}
+            1 & x & y\\
+            1 & x_{1} & y_{1}\\
+            1 & x_{2} & y_{2}
+    \end{vmatrix}
+  / \Delta = \pbrac{a_{3} + b_{3}x + c_{3}y}/ \pbrac{2 \Delta}
+\end{equation*}
+where $a_{2} = x_{3} y_{1} - x_{1} y_{3}, b_{2} = y_{3} - y_{1}, c_{2} = x_{1}
+- x_{3}$ and $a_{3} = x_{1} y_{2} - x_{2} y_{1}, b_{3} = y_{1} - y_{2}, c_{3}
+= x_{2} - x_{1}$.
+
+Notice that $L_{1} + L_{2} + L_{3} =1$.
+
+Area coordinate $L_{1}$ varies linearly from $L_{1}=0$ when $P$ lies at node $2$
+or $3$ to $L_{1}=1$ when $P$ lies at node $1$ and can therefore be used directly as
+the basis function for node $1$ for a three node triangle.  Thus, interpolation
+over the triangle is given by
+\begin{equation*}
+  \fnof{u}{x,y} = \lbfn{1}{x,y}u_{1} + \lbfn{2}{x,y}u_{2} + \lbfn{3}{x,y}u_{3}
+\end{equation*} %reference needed???
+where $\lbfnsymb{1} = L_{1}$, $\lbfnsymb{2} = L_{2}$ and $\lbfnsymb{3} = L_{3}
+= 1 - L_{1} - L_{2}$.
+
+Six node quadratic triangular elements are constructed as shown in 
+\figref{fig:6nodeqt}.
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/6nodeqt.pstex}
+  \caption{Basis functions for a six node quadratic triangular element.}
+  \label{fig:6nodeqt}
+\end{figure}
+
+%\begin{example}{Defining a triangular element mesh}
+%  {Defining a triangular element mesh}
+%  \begin{figure}[htbp] \centering
+%    \input{figs/fem_basis_fns/egdiag5.pstex}
+%    \label{fig:egdiag5}
+%  \end{figure} 
+%  \label{sec:Deftem} 
+%\end{example}
+\index{Triangular elements|)}\index{Basis functions|)}
+
+\section{Curvilinear Coordinate Systems}
+\label{sec:ccs-1.8}
+\index{Curvilinear coordinate systems|(}
+It is sometimes convenient to model the geometry of the region (over which a 
+finite element solution is sought) using an orthogonal curvilinear coordinate 
+system. A 2D circular annulus, for example, can be modelled geometrically 
+using one element with cylindrical polar $\pbrac{r,\theta}$-coordinates, \eg 
+the annular plate in \figref{fig:dca}a has two global nodes, the first with 
+$r=r_{1}$ and the second with $r=r_{2}$.
+
+\begin{figure}[htbp] \centering
+ \input{figs/fem_basis_fns/defca.pstex}
+  \caption{Defining a circular annulus with one cylindrical polar element. 
+    Notice that element vertices $1$ and $2$ in $\pbrac{r,\theta}$-space or
+    $\pbrac{\xione,\xitwo}$-space, as shown in (b) and (c), respectively, map onto
+    the single global node $1$ in $\pbrac{x ,y}$-space in (a).  Similarly, element
+    vertices $3$ and $4$ map onto global node $2$.}
+  \label{fig:dca}
+\end{figure}
+ 
+Global nodes $1$ and $2$, shown in $\pbrac{x,y}$-space in \figref{fig:dca}a, each 
+map to two element vertices in $\pbrac{r,\theta}$-space, as shown in
+\figref{fig:dca}b, and in $\pbrac{\xione,\xitwo}$-space, as shown in
+\figref{fig:dca}c. The $\pbrac{r,\theta}$ coordinates at any
+$\pbrac{\xione,\xitwo}$ point are given by a bilinear interpolation of the nodal
+coordinates $r_{n}$ and $\theta_{n}$ as
+\begin{align*}
+  r &= \dotprod{\lbfn{n}{\xione,\xitwo}}{r_{n}}\\
+  \theta &= \dotprod{\lbfn{n}{\xione,\xitwo}}{\theta_{n}} 
+\end{align*}
+where the basis functions $\lbfn{n}{\xione,\xitwo}$ are given by \bref{eqn:2,3DE}.
+
+%\begin{example}{Defining a bilinear mesh in cylindrical polar coordinates}
+%  {Defining a bilinear mesh in cylindrical polar coordinates}
+%  \label{sec:Defbm}
+%\end{example} 
+
+Three orthogonal curvilinear coordinate systems are defined here for use in
+later sections.
+
+\begin{description}
+\item \textbf{Cylindrical polar\index{Curvilinear coordinate
+      systems!Cylindrical polar} $\pbrac{r,\theta, z}$ :} 
+  \begin{equation}
+    \begin{split}
+      x & = r \cos\theta \\
+      y & = r \sin\theta \\
+      z & = z 
+    \end{split}
+  \end{equation}
+
+\item \textbf{Spherical polar\index{Curvilinear coordinate
+      systems!Spherical polar} $\pbrac{r,\theta, \phi}$ :}
+  \begin{equation}
+    \begin{split}
+      x & = r \cos\theta \cos\phi \\
+      y & = r \sin\theta \cos\phi \\
+      z & = r \sin\phi 
+    \end{split}
+  \end{equation}
+  
+\item \textbf{Prolate spheroidal\index{Curvilinear coordinate
+      systems!Prolate spheroidal} $\pbrac{\lambda, \mu, \theta}$ :}
+  \begin{equation}
+    \begin{split}
+      x & = d \cosh\lambda \cos\mu \\ 
+      y & = d \sinh\lambda \sin\mu \cos\theta \\ 
+      z & = d \sinh\lambda \sin\mu \sin\theta 
+    \end{split}
+  \end{equation}
+\end{description}
+
+
+\begin{figure}[htbp] \centering
+  \input{figs/fem_basis_fns/Psc.pstex}
+  \caption{Prolate spheroidal coordinates.}
+  \label{fig:psc}
+\end{figure}
+
+
+The prolate spheroidal coordinates rae illustrated in \figref{fig:psc} and a single prolate spheroidal element is shown in \figref{fig:spse}. The
+coordinates $\pbrac{\lambda, \mu, \theta}$ are all trilinear in
+$\pbrac{\xione,\xitwo,\xithree}$.  Only four global nodes are required provided
+the four global nodes map to eight element nodes as shown in \figref{fig:spse}.
+
+\begin{figure}[H] \centering
+  \input{figs/fem_basis_fns/spse.pstex}
+  \caption{A single prolate spheroidal element, shown (a) in 
+    $\pbrac{x,y,z}$-coordinates, (c) in $\pbrac{\lambda, \mu,
+      \theta}$-coordinates and (d) in
+    $\pbrac{\xione,\xitwo,\xithree}$-coordinates, (b) shows the orientation
+    of the $\xi_{i}$-coordinates on the prolate spheroid.}
+  \label{fig:spse}
+\end{figure}
+\index{Curvilinear coordinate systems|)}
+
+\clearpage
+
+\section{CMISS Examples}
+
+\begin{enumerate}
+\item  To define a 2D bilinear finite element mesh run the CMISS example number
+  $111$.  The nodes should be positioned as shown in \figref{fig:example111_node}.
+  After defining elements the mesh should appear like the one shown in
+  \figref{fig:example111_elem}.
+
+  \begin{figure}[htbp] \centering
+    \input{figs/fem_basis_fns/egdiag1.pstex}
+    \caption{Node positions for example $111$.}
+    \label{fig:example111_node}
+  \end{figure}
+
+   \begin{figure}[hbtp] \centering
+    \input{figs/fem_basis_fns/egdiag2.pstex}
+    \caption{2D bilinear finite element mesh for example $111$.}
+    \label{fig:example111_elem}
+  \end{figure} 
+  \label{xmp:Def2D}
+
+\item  To refine a mesh run the CMISS example $113$. After the first refine the
+  mesh should appear like the one shown in \figref{fig:example113}.  
+  \begin{figure}[htbp] \centering
+    \input{figs/fem_basis_fns/egdiag3.pstex}
+    \caption{First refined mesh for example $113$}
+    \label{fig:example113}
+  \end{figure}
+  \begin{figure}[htbp] \centering
+    \input{figs/fem_basis_fns/egdiag4.pstex}
+    \caption{Second refined mesh for example $113$}
+    \label{fig:example113b}
+  \end{figure}
+  \label{xmp:Refining}
+
+\item  To define a quadratic-linear element run the cmiss example $115$.
+\item  To define a 3D trilinear element run CMISS example $121$.
+\item  To define a 2D cubic Hermite-linear finite element mesh run 
+    example $114$.
+
+\item  To define a triangular element mesh run CMISS example $116$ (see \figref{fig:example116}).
+  \begin{figure}[htbp] \centering
+    \input{figs/fem_basis_fns/egdiag5.pstex}
+    \label{fig:egdiag5}
+    \caption{Defining a triangular mesh for example $116$}
+    \label{fig:example116}
+  \end{figure} 
+  \label{sec:Deftem} 
+
+\item  To define a bilinear mesh in cylindrical polar coordinates run CMISS
+  example $122$.
+  \label{sec:Defbm}
+\end{enumerate}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "/product/cmiss/documents/notes/fembemnotes/fembemnotes"
+%%% End: 

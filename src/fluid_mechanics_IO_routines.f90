@@ -575,9 +575,10 @@ CONTAINS
       CALL FIELD_PARAMETER_SET_DATA_GET(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_ANALYTIC_VALUES_SET_TYPE,ANALYTIC_VALUES, &
         & ERR,ERROR,*999)
     ENDIF
-NumberOfDimensions=1
-    DO I=1,NumberOfElements
 
+    DO I=1,NumberOfElements
+      NumberOfDimensions=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_xi
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
 
@@ -593,24 +594,23 @@ NumberOfDimensions=1
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
 !          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
 !          & %ptr%number_of_nodes_xi(2)-1.0)
-!    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-!      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_BIFURCATION_NAVIER_STOKES_SUBTYPE.OR. &
-!      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)THEN
-        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
-!    ELSE
-!        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-!          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
-!          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-!          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
-!    ENDIF
+        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)THEN
+           XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+             & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
+        ELSE
+          XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
+            & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
+        ENDIF
         IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
-!          XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-!            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
-!            & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-!            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(2)-1.0)
           XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
+            & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(2)-1.0)
+          ! XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          ! & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
         END IF
         IF(NumberOfDimensions==3)THEN
           XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
@@ -622,66 +622,66 @@ NumberOfDimensions=1
 !Start: This is a hack for 3D simplex elements
         IF(NumberOfDimensions==2)THEN
           IF (NodesPerElement(1)==3) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:2)=[0.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:2)=[1.0_DP,0.0_DP]
+            IF(J==3)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==6) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/0.5_DP,0.5_DP/)
-            IF(J==5)  XI_COORDINATES=(/1.0_DP,0.5_DP/)
-            IF(J==6)  XI_COORDINATES=(/0.5_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:2)=[0.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:2)=[1.0_DP,0.0_DP]
+            IF(J==3)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP]
+            IF(J==4)  XI_COORDINATES(1:2)=[0.5_DP,0.5_DP]
+            IF(J==5)  XI_COORDINATES(1:2)=[1.0_DP,0.5_DP]
+            IF(J==6)  XI_COORDINATES(1:2)=[0.5_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==10) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-            IF(J==5)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-            IF(J==6)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP/)
-            IF(J==7)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==8)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==9)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP/)
-            IF(J==10)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:2)=[0.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:2)=[1.0_DP,0.0_DP]
+            IF(J==3)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP]
+            IF(J==4)  XI_COORDINATES(1:2)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+            IF(J==5)  XI_COORDINATES(1:2)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+            IF(J==6)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP/3.0_DP]
+            IF(J==7)  XI_COORDINATES(1:2)=[1.0_DP,2.0_DP/3.0_DP]
+            IF(J==8)  XI_COORDINATES(1:2)=[2.0_DP/3.0_DP,1.0_DP]
+            IF(J==9)  XI_COORDINATES(1:2)=[1.0_DP/3.0_DP,1.0_DP]
+            IF(J==10)  XI_COORDINATES(1:2)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP]
           ENDIF
         ELSE IF(NumberOfDimensions==3)THEN
           IF (NodesPerElement(1)==4) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:3)=[0.0_DP,1.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:3)=[1.0_DP,0.0_DP,1.0_DP]
+            IF(J==3)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.0_DP]
+            IF(J==4)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==10) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
-            IF(J==5)  XI_COORDINATES=(/0.5_DP,0.5_DP,1.0_DP/)
-            IF(J==6)  XI_COORDINATES=(/0.5_DP,1.0_DP,0.5_DP/)
-            IF(J==7)  XI_COORDINATES=(/0.5_DP,1.0_DP,1.0_DP/)
-            IF(J==8)  XI_COORDINATES=(/1.0_DP,0.5_DP,0.5_DP/)
-            IF(J==9)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.5_DP/)
-            IF(J==10)  XI_COORDINATES=(/1.0_DP,0.5_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:3)=[0.0_DP,1.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:3)=[1.0_DP,0.0_DP,1.0_DP]
+            IF(J==3)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.0_DP]
+            IF(J==4)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP]
+            IF(J==5)  XI_COORDINATES(1:3)=[0.5_DP,0.5_DP,1.0_DP]
+            IF(J==6)  XI_COORDINATES(1:3)=[0.5_DP,1.0_DP,0.5_DP]
+            IF(J==7)  XI_COORDINATES(1:3)=[0.5_DP,1.0_DP,1.0_DP]
+            IF(J==8)  XI_COORDINATES(1:3)=[1.0_DP,0.5_DP,0.5_DP]
+            IF(J==9)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.5_DP]
+            IF(J==10)  XI_COORDINATES(1:3)=[1.0_DP,0.5_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==20) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
-            IF(J==5)  XI_COORDINATES=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==6)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-            IF(J==7)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==8)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-            IF(J==9)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-            IF(J==10)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-            IF(J==11)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-            IF(J==12)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-            IF(J==13)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-            IF(J==14)  XI_COORDINATES=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==15)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-            IF(J==16)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==17)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-            IF(J==18)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==19)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==20)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:3)=[0.0_DP,1.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:3)=[1.0_DP,0.0_DP,1.0_DP]
+            IF(J==3)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.0_DP]
+            IF(J==4)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP]
+            IF(J==5)  XI_COORDINATES(1:3)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+            IF(J==6)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP]
+            IF(J==7)  XI_COORDINATES(1:3)=[1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+            IF(J==8)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP]
+            IF(J==9)  XI_COORDINATES(1:3)=[1.0_DP/3.0_DP,1.0_DP,1.0_DP]
+            IF(J==10)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP]
+            IF(J==11)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+            IF(J==12)  XI_COORDINATES(1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+            IF(J==13)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP/3.0_DP]
+            IF(J==14)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,2.0_DP/3.0_DP]
+            IF(J==15)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP/3.0_DP,1.0_DP]
+            IF(J==16)  XI_COORDINATES(1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP]
+            IF(J==17)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
+            IF(J==18)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+            IF(J==19)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+            IF(J==20)  XI_COORDINATES(1:3)=[1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
           ENDIF
         ENDIF
 
@@ -691,9 +691,9 @@ NumberOfDimensions=1
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
 
         IF(NumberOfDimensions==3)THEN
-          COORDINATES=(/1,1,1/)
+          COORDINATES(1:3)=[1,1,1]
         ELSE IF(NumberOfDimensions==2)THEN
-          COORDINATES=(/1,1/)
+          COORDINATES(1:2)=[1,1]
         END IF
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
@@ -1218,7 +1218,7 @@ NumberOfDimensions=1
         !K is global node number
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
 
-        COORDINATES=(/1,1,1/)
+        COORDINATES(1:3)=[1,1,1]
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
@@ -1932,7 +1932,7 @@ NumberOfDimensions=1
         !K is global node number
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
 
-        COORDINATES=(/1,1,1/)
+        COORDINATES(1:3)=[1,1,1]
 ! ! ! 
 ! ! !         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
 ! ! !           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
@@ -3820,7 +3820,7 @@ NumberOfDimensions=1
         MESH_INFO(I)%X(J,1:3)=TEMP(1:3)
 !	WRITE(*,*) MESH_INFO(I)%X(J,1:3)
 !        READ(1,*,END=35) sebo_test_array(J,1:3)
-!	sebo_test_array(J,1:3)=(/1,2,3/)
+!	sebo_test_array(J,1:3)=[1,2,3]
       END DO
     END DO
     CLOSE(1)

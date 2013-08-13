@@ -1,0 +1,985 @@
+\chapter{Steady-State Heat Conduction}
+\label{cha:steadystate}
+
+\section{One-Dimensional Steady-State Heat Conduction}
+\label{sec:OdSSHC-2.1}
+
+Our first example of solving a partial differential equation by finite
+elements is the one-dimensional steady-state heat equation. The equation
+arises from a simple heat balance over a region of conducting material:
+
+\begin{sloppypar}
+  \begin{center}
+    Rate of change of heat flux = heat source per unit volume
+  \end{center}
+  or
+  \begin{equation*}
+    \dby{ }{x}\text{ (heat flux) + heat sink per unit volume = 0}
+  \end{equation*}
+  or
+  \begin{equation*}
+    \dby{ }{x}\pbrac{-k \dby{u}{x}} + \fnof{q}{u,x} = 0
+  \end{equation*}
+  where $u$ is temperature, $\fnof{q}{u,x}$ the heat sink and $k$ the thermal 
+  conductivity (\units{Watts/m/\degree C}).
+\end{sloppypar}
+
+Consider the case where $q=u$ 
+\begin{equation}
+  -\dby{ }{x}\pbrac{k\dby{u}{x}} + u = 0 \quad 0<x<1
+  \label{eqn:heat_sink}
+\end{equation}
+subject to boundary conditions: $\fnof{u}{0}=0$ and $\fnof{u}{1}=1$. 
+
+This equation (with $k=1$) has an exact solution
+\begin{equation}
+  \fnof{u}{x} = \dfrac{e}{e^{2}-1} \pbrac{e^{x} -e^{-x}}
+  \label{eqn:h.s.solutn}
+\end{equation}
+with which we can compare the approximate finite element solutions.
+
+To solve \eqnref{eqn:heat_sink} by the finite element method requires the 
+following steps:
+\begin{enumerate}
+\item Write down the integral equation form of the heat equation.
+\item Integrate by parts (in 1D) or use Green's Theorem (in 2D or 3D) to
+  reduce the order of derivatives.
+\item Introduce the finite element approximation for the temperature field 
+  with nodal parameters and element basis functions.
+\item Integrate over the elements to calculate the element stiffness
+  matrices and RHS vectors.
+\item Assemble the global equations.
+\item Apply the boundary conditions.
+\item Solve the global equations.
+\item Evaluate the fluxes.
+\end{enumerate}
+
+\subsection{Integral equation}
+
+Rather than solving \eqnref{eqn:heat_sink} directly, we form the 
+weighted residual \index{Weighted residual} 
+\begin{equation}
+  \dint R\omega.dx = 0
+  \label{eqn:integral_eqn}
+\end{equation}
+where $R$ is the residual 
+\begin{equation}
+   R = -\dby{ }{x}\pbrac{k\dby{u}{x}} + u 
+   \label{eqn:int_equation_2}
+\end{equation}
+for an approximate solution $u$ and $\omega$ is a weighting function
+\index{Weighting function} to be chosen below. If $u$ were an exact solution
+over the whole domain, the residual $R$ would be zero everywhere. But, given
+that in real engineering problems this will not be the case, we try to obtain
+an approximate solution $u$ for which the residual or error (\ie the amount
+by which the differential equation is not satisfied exactly at a point) is
+distributed evenly over the domain.  Substituting \eqnref{eqn:int_equation_2}
+into \eqnref{eqn:integral_eqn} gives
+\begin{equation}
+  \gint{0}{1}{\bbrac{- \dby{ }{x}\pbrac{k\dby{u}{x}}\omega + u\omega}}{x} = 0
+  \label{eqn:substitution}
+\end{equation}
+This formulation of the governing equation can be thought of as forcing the
+residual or error to be zero in a spatially averaged sense.  More precisely,
+$\omega$ is chosen such that the residual is kept orthogonal to the space of
+functions used in the approximation of $u$ (see step 3 below).
+
+
+\subsection{Integration by parts}
+
+A major advantage of the integral equation is that the order of the
+derivatives inside the integral can be reduced from two to one by integrating
+by parts (or, equivalently for 2D problems, by applying Green's theorem - see
+later).  Thus, substituting $f=\omega$ and $g=-k\dby{u}{x}$ into the
+\emph{integration by parts}\index{integration by parts} formula
+\begin{equation*}
+  \gint{0}{1}{f\dby{g}{x}}{x} = \inteval{f.g}{0}{1}- \gint{0}{1}{g\dby{f}{x}}{x}
+\end{equation*}
+gives
+\begin{equation*}
+  \gint{0}{1}{\omega\dby{ }{x}\pbrac{-k\dby{u}{x}}}{x} 
+  = \inteval{\omega\pbrac{-k\dby{u}{x}}}{0}{1}-
+  \gint{0}{1}{\pbrac{-k\dby{u}{x}\dby{\omega}{x}}}{x}
+\end{equation*}
+and \eqnref{eqn:substitution} becomes 
+\begin{equation}
+  \gint{0}{1}{\pbrac{k \dby{u}{x}\dby{\omega}{x}+u\omega}}{x} = \inteval{k\dby{u}{x}\omega}{0}{1}
+  \label{eqn:integration_by_parts}
+\end{equation}
+
+\subsection{Finite element approximation}
+
+We divide the domain  $0<x<1$ into 3 equal length elements and replace the 
+continuous field variable $\fnof{u}{x}$ within each element by the parametric
+finite element approximation
+\begin{align*}
+  \fnof{u}{\xi}&=\lbfn{1}{\xi}u_{1}+\lbfn{2}{\xi}u_{2}=\lbfn{n}{\xi}u_{n}\\
+  \fnof{x}{\xi}&=\lbfn{1}{\xi}x_{1}+\lbfn{2}{\xi}x_{2}=\lbfn{n}{\xi}x_{n}
+\end{align*}
+(summation implied by repeated index)
+where $\lbfn{1}{\xi}=1-\xi$ and $\lbfn{2}{\xi}=\xi$ are the linear basis 
+functions for both $u$ and $x$. 
+
+We also choose $\omega=\lbfnsymb{m}$ (called the
+\emph{Galerkin}\footnote{Boris G. Galerkin (1871-1945). 
+    Galerkin was a Russian engineer who published his
+    first technical paper on the buckling of bars while imprisoned in 1906 by
+    the Tzar in pre-revolutionary Russia. In many Russian
+    texts the Galerkin finite element method is known as the
+    Bubnov-Galerkin method.
+    He published a paper using this idea in 1915. The method was also attributed
+    to I.G. Bubnov in 1913.}
+assumption). This forces the
+residual $R$ to be orthogonal to the space of functions used to represent the
+dependent variable $u$, thereby ensuring that the residual, or error, is
+monotonically reduced as the finite element mesh is refined (see later for a
+more complete justification of this very important step)
+\index{Galerkin formulation}.
+
+The domain integral in \eqnref{eqn:integration_by_parts} can now be 
+replaced by the sum of integrals taken separately over the three elements
+\begin{equation*}
+  \gint{0}{1}{\cdot}{x}=\gint{0}{\frac13}{\cdot}{x} + \gint{\frac13}{\frac23}{\cdot}{x} +
+  \gint{\frac23}{1}{\cdot}{x}
+\end{equation*}
+and each element integral is then taken over $\xi$-space
+\begin{equation*}
+  \gint{x_{1}}{x_{2}}{\cdot}{x} = \gint{0}{1}{\cdot J}{\xi}
+\end{equation*}
+where $J =\abs{\dby{x}{\xi}}$ is the Jacobian of the transformation 
+from $x$ coordinates to $\xi$ coordinates.
+
+\subsection{Element integrals}
+
+The element integrals arising from the LHS of \eqnref{eqn:integration_by_parts}
+have the form
+\begin{equation}
+  \gint{0}{1}{\pbrac{k\dby{u}{x}\dby{\omega}{x} + u\omega}J}{\xi}
+  \label{eqn:element_integrals_1}
+\end{equation}
+where $u = \lbfnsymb{n}u_{n}$ and $\omega = \lbfnsymb{m}$. Since $\lbfnsymb{n}$ and
+$\lbfnsymb{m}$ are both functions of $\xi$ the derivatives with respect to $x$
+need to be converted to derivatives with respect to $\xi$.  Thus
+\eqnref{eqn:element_integrals_1} becomes
+\begin{equation}
+  u_{n}\gint{0}{1}{\pbrac{k\dby{\lbfnsymb{n}}{\xi}\dby{\xi}{x}
+    \dby{\lbfnsymb{m}}{\xi}\dby{\xi}{x}+\lbfnsymb{n}\lbfnsymb{m}}J}{\xi}
+  \label{eqn:element_integrals_2}
+\end{equation}
+Notice that $u_{n}$ has been taken outside the integral because it is not a
+function of $\xi$. The term $\dby{\xi}{x}$ is evaluated by substituting the
+finite element approximation $\fnof{x}{\xi}=\lbfnsymb{n}.x_{n}$. In this case
+ $x=\dfrac13\xi$ or $\dby{\xi}{x}= 3$ and the Jacobian is
+$J=\dby{x}{\xi}=\frac13$. The term multiplying the nodal parameters $u_{n}$ is
+called the element stiffness matrix\index{element stiffness matrix}, $E_{mn}$
+\begin{equation*}
+  E_{mn}=\gint{0}{1}{\pbrac{k\dby{\lbfnsymb{m}}{\xi}\dby{\xi}{x}
+    \dby{\lbfnsymb{n}}{\xi}\dby{\xi}{x}+\lbfnsymb{m}\lbfnsymb{n}}J}{\xi}
+    =\gint{0}{1}{\pbrac{k\dby{\lbfnsymb{m}}{\xi}3\dby{\lbfnsymb{n}}{\xi}3
+    +\lbfnsymb{m}\lbfnsymb{n}}\frac13}{\xi}
+\end{equation*}
+where the indices $m$ and $n$ are $1$ or $2$. To evaluate $E_{mn}$ we substitute 
+the basis functions
+\begin{alignat*}{2}
+  \lbfn{1}{\xi}&= 1-\xi &\quad\text{ or } \dby{\lbfnsymb{1}}{\xi}&= -1 \\
+  \lbfn{2}{\xi}&= \xi &\quad\text{ or } \dby{\lbfnsymb{2}}{\xi}&= 1
+\end{alignat*}
+Thus,
+\begin{equation*}
+  E_{11}=\frac13\gint{0}{1}{\pbrac{9k\pbrac{\dby{\lbfnsymb{1}}{\xi}}^{2}
+    +\pbrac{\lbfnsymb{1}}^{2}}}{\xi}=\frac13\gint{0}{1}{\pbrac{9k\pbrac{-1}^{2}+
+    \pbrac{1-\xi}^{2}}}{\xi}=\frac13 \pbrac{9k+\frac13}
+\end{equation*}
+and, similarly, 
+\begin{align*}
+  E_{12} &= E_{21} =\frac13 \pbrac{-9k + \frac16} \\
+  E_{22} &= \frac13 \pbrac{9k+\frac13} \\ 
+  E_{mn} &=
+  \begin{bmatrix}
+    \frac13 \pbrac{9k+\frac13} & \frac13 \pbrac{-9k+\frac16} \\
+    \frac13 \pbrac{-9k+\frac16} & \frac13 \pbrac{9k+\frac13}
+  \end{bmatrix}
+\end{align*}
+Notice that the element stiffness matrix is symmetric. Notice also that 
+the stiffness matrix, in this particular case, is the same for all elements. 
+For simplicity we put $k=1$ in the following steps.
+
+\subsection{Assembly}
+
+The three element stiffness matrices (with $k=1$) are assembled into one
+global stiffness matrix\index{Global stiffness matrix}. This process is
+illustrated in \figref{fig:asfig} where rows $1, .. , 4$ of the global
+stiffness matrix (shown here multiplied by the vector of global unknowns) are
+generalised from the weight function associated with nodes $1, .. , 4$.
+\begin{figure} \centering
+ \input{figs/heat_conduction/assembly.pstex}
+ \caption{The rows of the global stiffness matrix are generated from the
+   global weight functions. The bar is shown at the top divided into three
+   elements.}
+ \label{fig:asfig}
+\end{figure}
+ 
+Note how each element stiffness matrix (the smaller square brackets in
+\figref{fig:asfig}) overlaps with its neighbour because they share a common
+global node. The assembly process gives
+\begin{equation*}
+  \begin{bmatrix}
+    \frac{28}{9} & -\frac{53}{18} & 0 & 0 \\
+    -\frac{53}{18} & \frac{28}{9}+\frac{28}{9} & -\frac{53}{18} & 0 \\
+    0 & -\frac{53}{18} & \frac{28}{9}+\frac{28}{9} & -\frac{53}{18} \\
+    0 & 0 &-\frac{53}{18} & \frac{28}{9}
+  \end{bmatrix}
+  \begin{bmatrix}
+    U_{1} \\
+    U_{2} \\
+    U_{3} \\
+    U_{4}
+  \end{bmatrix}
+\end{equation*}
+Notice that the first row (generating heat flux at node $1$) has zeros
+multiplying $U_{3}$ and $ U_{4}$ since nodes $3$ and $4$ have no direct connection
+through the basis functions to node $1$. Finite element matrices are always
+\emph{sparse} matrices - containing many zeros - since the basis functions are
+local to elements.
+
+The RHS of \eqnref{eqn:integration_by_parts} is 
+\begin{equation}
+  \inteval{k\dby{u}{x}\omega}{x=0}{x=1}=\evalat{\pbrac{k\dby{u}{x}\omega}}{x=1}
+    -\evalat{\pbrac{k\dby{u}{x}\omega}}{x=0}
+  \label{eqn:a1}
+\end{equation}
+To evaluate these expressions consider the weighting function $\omega$
+corresponding to each global node (see Fig.1.6). For node $1$ $\omega_{1}$ is
+obtained from the basis function $\lbfnsymb{1}$ associated with the first node of
+element $1$ and therefore $\evalat{\omega_{1}}{x=0}=1$. Also, since $\omega_{1}$ is
+identically zero outside element $1$, $\evalat{\omega_{1}}{x=1}=0$. Thus
+\eqnref{eqn:a1} for node $1$ reduces to
+\begin{equation*}
+  \inteval{k\dby{u}{x}\omega_{1}}{x=0}{x=1}=-\evalat{\pbrac{k\dby{u}{x}}}{x=0}
+    \text{= flux entering node $1$.}
+\end{equation*}
+Similarly,
+\begin{equation*}
+  \inteval{k\dby{u}{x}\omega_{n}}{x=0}{x=1}=0\quad\quad\text{(nodes $2$ and $3$)}
+\end{equation*}
+and
+\begin{equation*}
+  \inteval{k\dby{u}{x}\omega_{4}}{x=0}{x=1}=\evalat{\pbrac{k\dby{u}{x}}}{x=1}
+    \mbox{= flux entering node $4$.}
+\end{equation*}
+Note: $k$ has been left in these expressions to emphasise that they are heat 
+fluxes.
+
+Putting these global equations together we get
+\begin{equation}
+  \begin{bmatrix}    
+    \frac{28}{9} & -\frac{53}{18} & 0 & 0 \\
+    -\frac{53}{18} & \frac{28}{9}+\frac{28}{9} & -\frac{53}{18} & 0 \\
+    0 & -\frac{53}{18} & \frac{28}{9}+\frac{28}{9} & -\frac{53}{18} \\
+    0 & 0 &-\frac{53}{18} & \frac{28}{9}
+  \end{bmatrix}
+  \begin{bmatrix}
+    U_{1} \\
+    U_{2} \\
+    U_{3} \\
+    U_{4}
+  \end{bmatrix} =
+  \begin{bmatrix}
+    -\evalat{\pbrac{k\dby{u}{x}}}{x=0} \\
+    0 \\
+    0 \\
+    \evalat{\pbrac{k\dby{u}{x}}}{x=1}
+  \end{bmatrix}
+  \label{eqn:globaleqn}
+\end{equation}    
+or
+\begin{equation*}
+  \matr{K}\vect{u}=\vect{f}
+\end{equation*}
+where $\matr{K}$ is the global ``stiffness'' matrix, $\vect{u}$ the vector of
+unknowns and $\vect{f}$ the global ``load'' vector.
+
+Note that if the governing differential equation had included a distributed 
+source term that was independent of $u$, this term would appear - via its 
+weighted integral - on the RHS of \eqnref{eqn:globaleqn} rather than on the LHS
+as here. Moreover, if the source term was a function of $x$, the contribution 
+from each element would be different - as shown in the next section.
+
+\subsection{Boundary conditions}
+
+\index{Boundary conditions!application of}The boundary conditions
+$\fnof{u}{0}=0$ and $\fnof{u}{1}=1$ are applied directly to the first and last
+nodal values: \ie $U_{1}=0$ and $U_{4}=1$.  These so-called \emph{essential}
+boundary conditions then replace the first and last rows in the global
+\eqnref{eqn:globaleqn}, where the flux terms on the RHS are at present
+unknown
+\begin{equation*}
+  \begin{array}{lrrrrl}
+    \mbox{$1^{\text{st}}$ equation} & U_{1} & & & & = 0 \\ 
+    \mbox{$2^{\text{nd}}$ equation} & -\frac{53}{18}U_{1} & +\frac{56}{9}U_{2}
+    & -\frac{53}{18}U_{3} & & = 0 \\
+    \mbox{$3^{\text{rd}}$ equation}& & -\frac{53}{18}U_{2} & +\frac{56}{9}U_{3}
+    & -\frac{53}{18}U_{4} &= 0 \\
+    \mbox{$4^{\text{th}}$ equation}& & & & U_{4} & =1
+  \end{array}
+\end{equation*}
+
+Note that, if a flux boundary condition had been applied, rather than an 
+essential boundary condition, the known value of flux would enter the 
+appropriate RHS term and the value of $U$ at that node would remain an unknown 
+in the system of equations. An applied boundary flux of zero, corresponding to 
+an insulated boundary, is termed a \emph{natural} boundary condition, since 
+effectively no additional constraint is applied to the global equation. At
+least one essential boundary condition must be applied.
+
+\subsection{Solution}
+ 
+Solving these equations gives: $U_{2} = 0.2885$ and $U_{3} = 0.6098$.  From
+\eqnref{eqn:h.s.solutn} the exact solutions at these points are $0.2889$ and
+ $0.6102$, respectively. The finite element solution is shown in
+\figref{fig:f.e.soln}.
+\begin{figure} \centering
+  \input{figs/heat_conduction/fesoln.pstex}
+  \caption{Finite element solution of one-dimensional heat equation.}
+  \label{fig:f.e.soln}
+\end{figure}
+
+\subsection{Fluxes}
+
+The fluxes at nodes $1$ and $4$ are evaluated by substituting the nodal solutions
+$U_{1}=0$, $U_{2}=0.2885$, $U_{3}=0.6098$ and $U_{4}=1$ into \eqnref{eqn:globaleqn}
+\begin{alignat*}{2}
+  \text{flux entering node $1$} &= -\evalat{\pbrac{k\dby{u}{x}}}{x=0} = -0.8496
+        && \quad \text{ ($k=1$; exact solution $0.8509$)}\\      
+  \text{flux entering node $4$} &= \evalat{\pbrac{k\dby{u}{x}}}{x=1} = 1.3157
+        && \quad \text{ ($k=1$; exact solution $1.3131$)}
+\end{alignat*}       
+These fluxes are shown in \figref{fig:f.e.soln} as heat entering node $4$ 
+and leaving node $1$, consistent with heat flow down the temperature gradient.
+
+\section{An $x$-Dependent Source Term}
+
+Consider the addition of a source term dependent on $x$ in 
+\eqnref{eqn:heat_sink}:
+\begin{equation*}
+    -\dby{ }{x}\pbrac{k\dby{u}{x}}+u-x=0 \quad 0<x<1
+\end{equation*}    
+\eqnref{eqn:integration_by_parts} now becomes
+\begin{equation}
+  \gint{0}{1}{\pbrac{k\dby{u}{x}\dby{\omega}{x} + u\omega}}{x} 
+    = \inteval{k\dby{u}{x}\omega}{0}{1} +\gint{0}{1}{x\omega}{x}        
+  \label{eqn:source_term_dep}
+\end{equation}
+where the $x$-dependent source term appears on the RHS because it is not 
+dependent on $u$. Replacing the domain integral for this source term by the
+sum of three element integrals
+\begin{equation*}
+  \gint{0}{1}{x\omega}{x}=\gint{0}{\frac13}{x\omega}{x} 
+   + \gint{\frac13}{\frac23}{x\omega}{x} + \gint{\frac23}{1}{x\omega}{x}
+\end{equation*}
+and putting $x$ in terms of $\xi$ gives (with $\dby{x}{\xi}=\dfrac13 $ 
+for all three elements)
+\begin{equation}
+  \gint{0}{1}{x\omega}{x}=\dfrac13\gint{0}{1}{\dfrac{\xi}{3}\omega}{\xi}
+    + \dfrac13\gint{0}{1}{\dfrac{\pbrac{1+\xi}}{3}\omega}{\xi} +
+    \dfrac13\gint{0}{1}{\dfrac{\pbrac{2+\xi}}{3}\omega}{\xi}
+  \label{eqn:x-d.s.t.}
+\end{equation}
+where $\omega$ is chosen to be the appropriate basis function within each element. 
+For example, the first term on the RHS of \bref{eqn:x-d.s.t.} corresponding to 
+element $1$ is $\dfrac{1}{9}\gint{0}{1}{\xi\lbfnsymb{m}}{\xi}$,
+where $\lbfnsymb{1}=1 -\xi$ and $\lbfnsymb{2}=\xi$ . Evaluating these expressions, 
+\begin{equation*}
+  \gint{0}{1}{\dfrac{1}{9}\xi\pbrac{1-\xi}}{\xi} = \dfrac{1}{54}
+\end{equation*}
+and
+\begin{equation*}
+  \gint{0}{1}{\dfrac{1}{9} \xi^{2}}{\xi} = \dfrac{1}{27}
+\end{equation*}
+Thus, the contribution to the element $1$ RHS vector from the source term is
+$\begin{bmatrix}
+  \frac{1}{54} \\
+  \frac{1}{27}
+\end{bmatrix}$.
+
+Similarly, for element $2$,  
+\begin{equation*}
+  \gint{0}{1}{\dfrac{1}{9}\pbrac{1+\xi}\pbrac{1-\xi}}{\xi}=\dfrac{2}{27}
+  \mbox{ and }\gint{0}{1}{\dfrac{1}{9}\pbrac{1+\xi}\xi}{\xi}=\dfrac{5}{54}
+  \mbox{ gives }
+  \begin{bmatrix}  
+    \frac{2}{27} \\
+    \frac{5}{54}
+  \end{bmatrix}
+\end{equation*}
+and for element $3$,
+\begin{equation*}
+  \gint{0}{1}{\dfrac{1}{9}\pbrac{2+\xi}\pbrac{1-\xi}}{\xi}=\dfrac{7}{54}
+  \mbox{ and }\gint{0}{1}{\dfrac{1}{9}\pbrac{2+\xi}\xi}{\xi}=\dfrac{5}{54}
+  \mbox{ gives }
+  \begin{bmatrix}
+    \frac{7}{54} \\
+    \frac{5}{54}
+  \end{bmatrix}
+\end{equation*}
+Assembling these into the global RHS vector, \eqnref{eqn:globaleqn} becomes
+\begin{equation*}
+  \begin{bmatrix}
+    \frac{28}{9} & -\frac{53}{18} & 0 & 0 \\
+    -\frac{53}{18} & \frac{56}{9} & -\frac{53}{18} & 0 \\
+    0 & -\frac{53}{18} & \frac{56}{9} & -\frac{53}{18} \\
+    0 & 0 &-\frac{53}{18} & \frac{28}{9}
+  \end{bmatrix}
+  \begin{bmatrix}
+    U_{1} \\
+    U_{2} \\
+    U_{3} \\
+    U_{4}
+  \end{bmatrix} =
+  \begin{bmatrix}
+    -\evalat{\pbrac{k\dby{u}{x}}}{x=0} \\
+    0 \\
+    0 \\
+    \evalat{\pbrac{k\dby{u}{x}}}{x=1}
+  \end{bmatrix} + 
+  \begin{bmatrix}
+    \frac{1}{54} \\
+    \frac{1}{27} + \frac{2}{27} \\
+    \frac{5}{54}+\frac{7}{54} \\
+    \frac{5}{54}
+  \end{bmatrix}
+\end{equation*}
+
+\section{The Galerkin Weight Function Revisited}
+
+\index{Galerkin formulation}A key idea in the Galerkin finite element method
+is the choice of weighting functions which are orthogonal to the equation
+residual (thought of here as the error or amount by which the equation fails
+to be exactly zero).  This idea is illustrated in \figref{fig:galerkin}.
+\begin{figure} \centering
+  \input{figs/heat_conduction/galerkin.pstex}
+  \caption{Showing how the Galerkin method maintains orthogonality between the 
+    residual vector $\vect{R}$ and the set of basis vectors
+    $\vect{\lbfnsymb{i}}$ as
+    $i$ is increased from (a) $1$ to (b) $2$ to (c) $3$.}
+  \label{fig:galerkin}
+\end{figure}
+
+In \figref{fig:galerkin}a an exact vector $\vect{u}_{e}$ (lying in 3D space)
+is approximated by a vector $\vect{u}=\vect{u_{1}\lbfnsymb{1}}$ where
+$\vect{\lbfnsymb{1}}$ is a basis vector along the first coordinate axis
+(representing one degree of freedom in the system). The difference between the
+exact vector $\vect{u_{e}}$ and the approximate vector $\vect{u}$ is the error
+or residual $\vect{R}=\vect{u_{e}}-\vect{u}$ (shown by the broken line in
+\figref{fig:galerkin}a).  The Galerkin technique minimises this residual by
+making it orthogonal to $\lbfnsymb{1}$ and hence to the approximating vector
+$\vect{u}$.  If a second degree of freedom (in the form of another coordinate
+axis in \figref{fig:galerkin}b) is added, the approximating vector is
+$\vect{u}=u_{1}\vect{\lbfnsymb{1}}+u_{2}\vect{\lbfnsymb{2}}$ and the residual
+is now \emph{also} made orthogonal to $\lbfnsymb{2}$ and hence to $\vect{u}$.
+Finally, in \figref{fig:galerkin}c, a third degree of freedom (a third axis in
+\figref{fig:galerkin}c) is permitted in the approximation
+$\vect{u}=u_{1}\lbfnsymb{1}+u_{2}\lbfnsymb{2}+u_{3}\lbfnsymb{3}$ with the
+result that the residual (now also orthogonal to $\lbfnsymb{3}$) is reduced to
+zero and $\vect{u}=\vect{u_{e}}$. For a 3D vector space we only need three
+axes or basis vectors to represent the true vector $\vect{u}$, but in the
+infinite dimensional vector space associated with a spatially continuous field
+$\fnof{u}{x}$ we need to impose the equivalent orthogonality condition
+$\pbrac{\dint R\lbfnsymb{} dx = 0}$ for every basis function $\lbfnsymb{}$ used in
+the approximate representation of $\fnof{u}{x}$. The key point is that in this
+analogy the residual is made orthogonal to the current set of basis vectors -
+or, equivalently, in finite element analysis, to the set of basis functions
+used to represent the dependent variable. This ensures that the error or
+residual is minimal (in a least-squares sense) for the current number of
+degrees of freedom and that as the number of degrees of freedom is increased
+(or the mesh refined) the error decreases monotonically.
+
+\section{Two and Three-Dimensional Steady-State Heat Conduction}
+\label{sec:2and3-DSSHC}
+Extending \eqnref{eqn:heat_sink} to two or three spatial dimensions 
+introduces some additional complexity which we examine here. Consider the
+three-dimensional steady-state heat equation with no source terms:
+\begin{equation*}
+  -\delby{ }{x}\pbrac{k_{x}\delby{u}{x}} -\delby{ }{y}\pbrac{k_{y}\delby{u}{y}}
+  -\delby{ }{z}\pbrac{k_{z}\delby{u}{z}}=0
+\end{equation*}       
+where $k_{x},k_{y}$ and $k_{z}$ are the thermal diffusivities along the $x$, $y$
+and $z$ axes respectively. If the material is assumed to be isotropic, $k_{x}
+= k_{y} = k_{z} = k$, and the above equation can be written
+as
+\begin{equation}
+  -\diverg{\pbrac{k \grad u}} = 0
+  \label{eqn:S-SH}
+\end{equation}
+and, if $k$ is spatially constant (in the case of a homogeneous material), this reduces to Laplace's equation 
+$k\laplacian{u}=0$. Here we consider the solution of \eqnref{eqn:S-SH} over the 
+region $\Omega$, subject to boundary conditions on $\Gamma$ (see \figref{fig:regionbdy}).
+\pstexfigure{figs/heat_conduction/regionbdy.pstex}{}{The region $\Omega$ and
+  the boundary $\Gamma$.}{fig:regionbdy}
+
+The weighted integral equation, corresponding to \eqnref{eqn:S-SH}, is
+\begin{equation}
+  \goneint{-\diverg{\pbrac{k\grad u}}\omega}{\Omega} = 0
+  \label{eqn:weighted_integral}
+\end{equation}
+
+The multi-dimensional equivalent of integration by parts is the Green-Gauss
+theorem:
+\begin{equation}
+  \goneint{\pbrac{f\diverg{\grad g}+\dotprod{\grad f}{\grad g}}}{\Omega} =
+  \goneint{f \delby{g}{n}}{\Gamma}
+  \label{eqn:nabla_eq}
+\end{equation}
+(see p553 in Advanced Engineering Mathematics'' by E. Kreysig, 7th edition,
+Wiley, 1993).
+
+This is used (with $f=\omega$, $g=-ku$ and assuming that $k$ is constant) 
+to reduce the derivative order from two to one as follows:
+\begin{equation}
+  \goneint{-\diverg{\pbrac{k\grad u}}\omega}{\Omega} 
+  = \goneint{k \dotprod{\grad u}{\grad  \omega}}{\Omega} 
+  - \goneint{k\delby{u}{n} \omega}{\Gamma}      
+  \label{eqn:Green-Gauss}
+\end{equation}
+\cf Integration by parts is $\goneint{-\dby{ }{x}\pbrac{k\dby{u}{x}}\omega}{x} =
+\goneint{k \dby{u}{x} \dby{\omega}{x}}{x} - \inteval{k\dby{u}{x}\omega}{x_{1}}{x_{2}}$.
+
+Using \eqnref{eqn:Green-Gauss} in \eqnref{eqn:weighted_integral} gives the 
+two-dimensional equivalent of \eqnref{eqn:integration_by_parts} 
+(but with no source term):
+\begin{equation}
+  \goneint{k \dotprod{\grad u}{\grad \omega}}{\Omega}
+  = \goneint{k \delby{u}{n}\omega}{\Gamma}
+  \label{eqn:2-D_equiv}
+\end{equation}
+subject to $u$ being given on one part of the boundary and $\delby{u}{n}$
+being given on another part of the boundary.
+
+The integrand on the LHS of \bref{eqn:2-D_equiv} is evaluated using
+\begin{equation}
+  \dotprod{\grad u}{\grad \omega} = \dotprod{\delby{u}{x_{k}}}{\delby{\omega}{x_{k}}} = 
+  \dotprod{\delby{u}{\xi_{i}} \delby{\xi_{i}}{x_{k}}}{\delby{\omega}{\xi_{j}} 
+  \delby{\xi_{j}}{x_{k}}}
+  \label{eqn:integrand}
+\end{equation}
+        
+where $u=\lbfnsymb{n}u_{n}$ and $\omega=\lbfnsymb{m}$, as before, and the geometric terms
+$\delby{\xi_{i}}{x_{k}}$ are found from the inverse matrix
+\begin{equation*}
+  \sqbrac{\delby{\xi_{i}}{x_{k}}}=\sqbrac{\delby{x_{k}}{\xi_{i}}}^{-1} 
+\end{equation*} 
+or, for a two-dimensional element,
+\begin{equation*}
+  \begin{bmatrix}
+    \delby{\xi_{1}}{x} & \delby{\xi_{1}}{y} \\
+    \delby{\xi_{2}}{x} & \delby{\xi_{2}}{y}
+  \end{bmatrix} =
+  \begin{bmatrix}
+    \delby{x}{\xi_{1}} & \delby{x}{\xi_{2}} \\
+    \delby{y}{\xi_{1}} & \delby{y}{\xi_{2}}
+  \end{bmatrix}^{-1} =
+  \dfrac{1}{\delby{x}{\xi_1}\delby{y}{\xi_2}- \delby{x}{\xi_2}\delby{y}
+    {\xi_1}}
+  \begin{bmatrix}
+    \delby{y}{\xi_{2}} & -\delby{x}{\xi_{2}}\\
+    -\delby{y}{\xi_{1}} & \delby{x}{\xi_{1}}
+  \end{bmatrix}
+\end{equation*}
+
+%\begin{example}{2D steady-state heat conduction}
+%  {2D steady-state heat conduction}
+
+%  \todo{example31}
+
+%  \label{xmp:2DSSH}
+%\end{example}
+
+%\remark{Inserted new text here}
+%inserted file :chapter2/test.txt Jan 20 1997
+
+\section{Basis Functions - Element Discretisation}
+%Example,
+
+Let $\Omega = \displaystyle{\bigcup^{I}_{i=1}} \medspace \Omega_{i}$, \ie the
+solution region is the union of the individual elements. In each $\Omega_{i}$ let $u =
+\lbfnsymb{n}u_{n} = \lbfnsymb{1}u_{1} + \lbfnsymb{2}u_{2} + \ldots + 
+\lbfnsymb{N}u_{N}$ and map each $\Omega_{i}$ to the $\xi_{1}, \xi_{2}$
+plane. \figref{fig:mapping} shows an example of this mapping. 
+\pstexfigure{figs/heat_conduction/mapping.pstex}{}{Mapping each $\Omega$ to the
+  $\xi_{1},\xi_{2}$ plane in a $2 \times 2$ element plane.}{fig:mapping}
+
+For each element, the basis functions and their derivatives are:
+\begin{alignat}{2}
+  \lbfnsymb{1} &= (1-\xi_{1})(1-\xi_{2})  
+  &\qquad \delby{\lbfnsymb{1}}{\xi_{1}}&=-(1-\xi_{2})\\ 
+  &&\delby{\lbfnsymb{1}}{\xi_{2}}
+  &=-(1-\xi_{1})\\\\
+%%line2
+  \lbfnsymb{2}&=\xi_{1}(1-\xi_{2}) &\quad \delby{\lbfnsymb{2}}{\xi_{1}}&=1-\xi_{2}\\ 
+  &&\delby{\lbfnsymb{1}}{\xi_{2}}&=-\xi_{1} \\\\ 
+%%line3
+  \lbfnsymb{3}&=(1-\xi_{1})\xi_{2} &\quad \delby{\lbfnsymb{3}}{\xi_{1}}&=-\xi_{2}\\ 
+  &&\delby{\lbfnsymb{3}}{\xi_{2}}&=1-\xi_{1} \\\\  
+%%line4
+  \lbfnsymb{4}&=\xi_{1}\xi_{2} &\quad \delby{\lbfnsymb{4}}{\xi_{1}}&=\xi_{2}\\ 
+  &&\delby{\lbfnsymb{4}}{\xi_{2}}&=\xi_{1} 
+%%
+\end{alignat}
+
+\section{Integration}
+
+The equation is 
+\begin{equation}
+  \goneint{k\dotprod{\grad u}{\grad \omega}}{\Omega} 
+     = \goneint{k\delby{u}{n}\omega}{\Gamma}
+\end{equation}
+\ie
+\begin{equation}
+  \goneint{k\pbrac{\delby{u}{x}\delby{\omega}{x} + 
+    \delby{u}{y}\delby{\omega}{y}}}{\Omega} = \goneint{k\delby{u}{n}\omega}{\Gamma}
+\end{equation}
+
+u has already been approximated by $\lbfnsymb{n}u_{n}$ and $\omega$ is a weight 
+function but what should this be chosen to be?
+For a \emph{Galerkin} formulation choose $\omega = \lbfnsymb{m}$
+\ie weight function is one of the basis functions used to approximate the
+dependent variable.
+
+This gives
+\begin{equation}
+  \sum_{i}u_{n}
+\goneint{k\pbrac{ \delby{\lbfnsymb{n}}{x}\delby{\lbfnsymb{m}}{x}
+      +\delby{\lbfnsymb{n}}{y}\delby{\lbfnsymb{m}}{y} }}{\Omega} 
+= \goneint{k\delby{u}{n}\lbfnsymb{m}}{\Gamma}
+\end{equation}
+
+where the stiffness matrix is $E_{mn}$ where $m=1,\dots,4$ and $n=1,\ldots,4$
+and $F_{m}$ is the (element) load vector. 
+
+The names originated from earlier finite element applications and extension of spring
+systems, \ie $F=kx$ where $k$ is the stiffness of spring and $F$ is the force/load.
+
+This yields the system of equations $E_{mn}u_{n} = F_{m}$. \eg heat flow in a
+unit square (see \figref{fig:heatflow}).
+\pstexfigure{figs/heat_conduction/heatflow.pstex}{}{Considering heat flow in a unit square.}
+   {fig:heatflow}
+
+The first component $E_{11}$ is calculated as
+\begin{align*}
+E_{11} &= k \giint{0}{1}{0}{1}{ (1-y)^{2}+(1-x)^{2} }{x}{y}\\ 
+       &= \dfrac{2}{3}k
+\end{align*}
+and similarly for the other components of the matrix.
+
+Note that if the element was not the unit square we would need to transform
+from $(x,y)$ to $(\xi_{1},\xi_{2})$ coordinates. In this case we would have to
+include the Jacobian of the transformation and also use the chain rule to
+calculate $\delby{\lbfnsymb{i}}{x_{j}}$. \eg 
+$\delby{\lbfnsymb{n}}{x} = 
+   \delby{\lbfnsymb{n}}{\xi_{1}}\delby{\xi_{1}}{x} + 
+   \delby{\lbfnsymb{n}}{\xi_{2}}\delby{\xi_{2}}{x}
+   =\delby{\lbfnsymb{n}}{\xi_{i}}\delby{\xi_{i}}{x}$.
+
+The system of $E_{mn}u_{n}=F_{m}$ becomes
+
+\begin{equation}
+  k
+  \begin{bmatrix}
+    \frac{2}{3} & -\frac{1}{6} & -\frac{1}{6} & -\frac{1}{3} \\
+    -\frac{1}{6} & \frac{2}{3} & -\frac{1}{3} & -\frac{1}{6} \\
+    -\frac{1}{6} & -\frac{1}{3} & \frac{2}{3} & -\frac{1}{6} \\
+    -\frac{1}{3} & -\frac{1}{6} & -\frac{1}{6} & \frac{2}{3}
+  \end{bmatrix}
+  \begin{bmatrix}
+    u_{1} \\
+    u_{2} \\
+    u_{3} \\
+    u_{4} 
+  \end{bmatrix}
+  = RHS \qquad \text{(Right Hand Side)}
+\end{equation}
+
+Note that the Galerkin formulation generates a symmetric stiffness matrix (this is
+true for self adjoint operators which are the most common).
+
+Given that boundary conditions can be applied and it is possible to solve for 
+unknown nodal temperatures or fluxes. 
+However, typically there is more than one element and so the next step is required.
+
+\section{Assemble Global Equations}
+
+Each element stiffness matrix must be assembled into a global stiffness
+matrix.  For example, consider $4$ elements (each of unit size) and nine nodes. Each
+element has the same element stiffness matrix as that given above. This is
+because each element is the same size, shape and interpolation.
+
+
+\pstexfigure{figs/heat_conduction/assemble.pstex}{}{Assembling $4$ unit sized elements into a
+  global stiffness matrix.}
+   {fig:assemble}
+\begin{equation}
+  \begin{bmatrix}
+    \frac{2}{3} &-\frac{1}{6} &\frac{}{} &-\frac{1}{6} 
+          &-\frac{1}{3} 
+          &\frac{}{} &\frac{}{} &\frac{}{} &\frac{}{} \\
+%line2
+    -\frac{1}{6} &\frac{2}{3}+\frac{2}{3} &-\frac{1}{6} &-\frac{1}{3} 
+          &-\frac{1}{6}-\frac{1}{6} 
+          &-\frac{1}{3} &\frac{}{} &\frac{}{} &\frac{}{} \\
+%line3
+    \frac{}{} &-\frac{1}{6} &\frac{2}{3} &\frac{}{} 
+          &-\frac{1}{3} 
+          &-\frac{1}{6} &\frac{}{} &\frac{}{} &\frac{}{} \\
+%line4
+    -\frac{1}{6} &-\frac{1}{3} &\frac{}{} &\frac{2}{3}+\frac{2}{3} 
+          &-\frac{1}{6}-\frac{1}{6} 
+          &\frac{}{} &-\frac{1}{6} &-\frac{1}{3} &\frac{}{} \\
+%line5
+    -\frac{1}{3} &-\frac{1}{6}-\frac{1}{6} &-\frac{2}{3} &-\frac{1}{6}-\frac{1}{6} 
+          & \frac{2}{3}+\frac{2}{3}+\frac{2}{3}+\frac{2}{3} 
+          & -\frac{1}{6}-\frac{1}{6}
+          &-\frac{1}{3} &-\frac{1}{6}-\frac{1}{6} &-\frac{1}{3} \\
+%line6
+    \frac{}{} &-\frac{1}{3} &-\frac{1}{6} &\frac{}{} 
+          &-\frac{1}{6}-\frac{1}{6}
+          &\frac{2}{3}+\frac{2}{3} &\frac{}{} &-\frac{1}{3} &-\frac{1}{6} \\
+%line7
+    \frac{}{} &\frac{}{} &\frac{}{} &-\frac{1}{6} 
+          &-\frac{1}{3} 
+          &\frac{}{} &\frac{2}{3} &-\frac{1}{6} &\frac{}{} \\
+%line8
+    \frac{}{} &\frac{}{} &\frac{}{} &-\frac{1}{3} 
+          &-\frac{1}{6}-\frac{1}{6} 
+          &-\frac{1}{3} &-\frac{1}{6} &\frac{2}{3}+\frac{2}{3} &-\frac{1}{6} \\
+%line9
+    \frac{}{} &\frac{}{} &\frac{}{} &\frac{}{} 
+          &-\frac{1}{3} 
+          &-\frac{1}{6} &\frac{}{} &-\frac{1}{6} &\frac{2}{3}
+  \end{bmatrix}
+  \begin{bmatrix}
+    U_{1} \\
+    U_{2} \\
+    U_{3} \\
+    U_{4} \\
+    U_{5} \\
+    U_{6} \\
+    U_{7} \\
+    U_{8} \\
+    U_{9}
+  \end{bmatrix}
+  = RHS
+\end{equation}
+This yields the system of equations 
+\begin{equation*}
+  \begin{bmatrix}
+    \frac{2}{3} &-\frac{1}{6} &\frac{}{} &-\frac{1}{6} &-\frac{1}{3} 
+          &\frac{}{} &\frac{}{} &\frac{}{} &\frac{}{} \\
+%line2
+    -\frac{1}{6} &\frac{4}{3} &-\frac{1}{6} &-\frac{1}{3} &-\frac{1}{3} 
+          &-\frac{1}{3} &\frac{}{} &\frac{}{} &\frac{}{} \\
+%line3
+    \frac{}{} &-\frac{1}{6} &\frac{2}{3} &\frac{}{} &-\frac{1}{3} 
+          &-\frac{1}{6} &\frac{}{} &\frac{}{} &\frac{}{} \\
+%line4
+    -\frac{1}{6} &-\frac{1}{3} &\frac{}{} &\frac{4}{3} &-\frac{1}{3} 
+          &\frac{}{} &-\frac{1}{6} &-\frac{1}{3} &\frac{}{} \\
+%line5
+    -\frac{1}{3} &-\frac{1}{3} &-\frac{1}{3} &-\frac{1}{3} &\frac{8}{3} 
+          &-\frac{1}{3} &-\frac{1}{3} &-\frac{1}{3} &-\frac{1}{3} \\
+%line6
+    \frac{}{} &-\frac{1}{3} &-\frac{1}{6} &\frac{}{} &-\frac{1}{3} 
+          &\frac{4}{3} &\frac{}{} &-\frac{1}{3} &-\frac{1}{6} \\
+%line7
+    \frac{}{} &\frac{}{} &\frac{}{} &-\frac{1}{6} &-\frac{1}{3} 
+          &\frac{}{} &\frac{2}{3} &-\frac{1}{6} &\frac{}{} \\
+%line8
+    \frac{}{} &\frac{}{} &\frac{}{} &-\frac{1}{3} &-\frac{1}{3} 
+          &-\frac{1}{3} &-\frac{1}{6} &\frac{4}{3} &-\frac{1}{6} \\
+%line9
+    \frac{}{} &\frac{}{} &\frac{}{} &\frac{}{} &-\frac{1}{3} 
+          &-\frac{1}{6} &\frac{}{} &-\frac{1}{6} &\frac{2}{3}
+   \end{bmatrix}
+   \begin{bmatrix}
+     U_{1} \\
+     U_{2} \\
+     U_{3} \\
+     U_{4} \\
+     U_{5} \\
+     U_{6} \\
+     U_{6} \\
+     U_{7} \\
+     U_{8} \\
+     U_{9} \\
+   \end{bmatrix}
+   = RHS
+\end{equation*}
+Note that the matrix is symmetric. It should also be clear that the matrix
+will be sparse (i.e. contains many zeros) if there is a larger number of elements.
+
+From this system of equations, boundary conditions can be applied and the
+equations solved. To solve, firstly boundary conditions are applied to reduce
+the size of the system.
+
+If at global node $i$, $U_{i}$ is known, we can remove the \nth{i} equation
+and replace it with the known value of $U_{i}$. This is because the RHS at
+node $i$ is unknown, but the RHS equation is uncoupled from other equations so these
+equation can be removed.
+Therefore the size of the system is reduced. The final system to solve is only
+as big as the number of unknown values of $U$. 
+
+As an example to illustrate this consider fixing the temperature ($U$) at the
+left and right sides of the plate in \figref{fig:assemble} and insulating the top (node
+ $8$) and the bottom (node $2$). 
+This means that there are only $3$ unknown values of $U$ at nodes (2,5 and 8), 
+therefore there is a $3 \times 3$ matrix to solve. The RHS is known at these
+three nodes (see below). We can then solve the $3 \times 3$ matrix and then multiply out
+the original matrix to find the unknown RHS values.
+
+The RHS is $0$ at nodes $2$ and $8$ because it is insulated.
+To find out what the RHS is at node $5$ we need to examine the RHS expression
+ $\goneint{\delby{u}{n}\omega}{\Gamma} = 0$ at node $5$. This is zero as flux is always $0$ at
+internal nodes. This can be explained in two ways.
+\pstexfigure{figs/heat_conduction/zeroflux.pstex}{}{``Cancelling'' of flux in internal nodes.}
+   {fig:zeroflux} 
+\begin{description}
+   \item [Correct way:] $\Gamma$ does not pass through node $5$ and each
+     basis function that is
+     not zero at $5$ is zero on $\Gamma$
+   \item [Other way:] $\delby{u}{n}$ is opposite in neighbouring elements so
+     it cancels (see \figref{fig:zeroflux}).
+\end{description}
+
+%Located on the University Macintosh system is the program \emph{Phebe} - The
+%Finite Element/Boundary Element Tutorial Package. This program can calculate
+%the elemental stiffness matrix, assemble the global matrix and apply boundary
+%conditions to solve for steady state diffusion. It calculates these step by
+%step to show the user how each step occurs.
+
+
+\section{Gaussian Quadrature}
+\label{sec:Gquad}
+
+\index{Gaussian quadrature|(} The element integrals arising from two- or
+three-dimensional problems can seldom be evaluated analytically. Numerical
+integration or \emph{quadrature} is therefore required and the most efficient
+scheme for integrating the expressions that arise in the finite element method
+is Gauss-Legendre quadrature.
+
+Consider first the problem of integrating $\fnof{f}{\xi}$ between the limits
+$0$ and $1$ by the sum of weighted samples of $\fnof{f}{\xi}$ taken at points
+$\xi_{1},\xi_{2},\ldots,\xi_{I}$ (see \figref{eqn:integral_eqn}):
+\begin{equation*}
+  \gint{0}{1}{\fnof{f}{\xi}}{\xi} = \dsuml{i=1}{I}W_{i}\fnof{f}{\xi_{i}} + E
+\end{equation*}
+Here $W_{i}$ are the weights associated with sample points $\xi_{i}$ -
+called \emph{Gauss points} - and $E$ is the error in the approximation of the
+integral. We now choose the Gauss points and weights to exactly integrate a
+polynomial of degree $2I-1$ (since a general polynomial of degree $2I-1$ has
+$2I$ arbitrary coefficients and there are $2I$ unknown Gauss points and
+weights).
+\begin{figure} \centering
+  \input{figs/heat_conduction/Gaussq.pstex}
+  \caption{Gaussian quadrature. $\fnof{f}{\xi}$ is sampled at $I$ Gauss points 
+  $\xi_{1},\xi_{2} \ldots \xi_{I}.$}
+  \label{fig:Gaussian_quadrature}
+\end{figure}
+
+For example, with $I=2$ we can exactly integrate a polynomial of degree 3:
+
+\begin{equation*}
+  \text{Let}\quad\gint{0}{1}{\fnof{f}{\xi}}{\xi}=W_{1}\fnof{f}{\xione}+
+  W_{2}\fnof{f}{\xitwo} 
+\end{equation*}
+and choose $\fnof{f}{\xi} = a + b\xi + c\xi^{2} + d\xi^{3}$. Then 
+\begin{equation}
+  \gint{0}{1}{\fnof{f}{\xi}}{\xi} = a\gint{0}{1}{}{\xi} + 
+  b\gint{0}{1}{\xi}{\xi} + c\gint{0}{1}{\xi^{2}}{\xi} + 
+  d\gint{0}{1}{\xi^{3}}{\xi} 
+  \label{eqn:Gq1}
+\end{equation}
+Since $a$, $b$, $c$ and $d$ are arbitrary coefficients, each integral on the RHS of 
+\ref{eqn:Gq1} must be integrated exactly. Thus,
+\begin{align}
+\gint{0}{1}{}{\xi} &= 1 = W_{1}.1 + W_{2}.1 \label{eqn:Gq2} \\
+\gint{0}{1}{\xi}{\xi} &= \dfrac12 = W_{1}.\xi_{1} + W_{2}.\xi_{2} \label{eqn:Gq3}\\
+\gint{0}{1}{\xi^{2}}{\xi} &= \dfrac13 = W_{1}.\xi_{1}^{2} + W_{2}.\xi_{2}^{2} \label{eqn:Gq4}\\
+\gint{0}{1}{\xi^{3}}{\xi} &= \dfrac14 = W_{1}.\xi_{1}^{3} + W_{2}.\xi_{2}^{3} \label{eqn:Gq5}
+\end{align}
+
+These four equations yield the solution for the two Gauss points and weights
+as follows: 
+
+From symmetry and \eqnref{eqn:Gq2}, 
+\begin{equation*}
+  W_{1} = W_{2} =  \dfrac{1}{2}. 
+\end{equation*}
+Then, from \bref{eqn:Gq3}, 
+\begin{equation*}
+  \xi_{2}=1-\xi_{1}
+\end{equation*}
+and, substituting in \bref{eqn:Gq4},
+\begin{equation*}
+  \xi_{1}^{2} + \pbrac{1- \xi_{1}}^{2} = \dfrac{2}{3}
+\end{equation*}
+\begin{equation*}
+  2\xi_{1}^{2} - 2\xi_{1} + \dfrac{1}{3} = 0,
+\end{equation*}  
+giving  
+\begin{equation*}
+  \xi_{1} = \dfrac{1}{2} \pm \dfrac{1}{2\sqrt{3}} .
+\end{equation*}
+\Eqnref{eqn:Gq5} is satisfied identically. Thus, the two Gauss points are 
+given by 
+\begin{equation}
+\begin{split}
+    \xi_{1} &= \dfrac12 - \dfrac{1}{2\sqrt{3}}, \\
+    \xi_{2} &= \dfrac12 + \dfrac{1}{2\sqrt{3}}, \\
+    W_{1} &= W_{2} = \dfrac12
+  \label{eqn:2Gp}
+\end{split}
+\end{equation}
+A similar calculation for a \nth{5} degree polynomial using three Gauss points gives
+\begin{alignat}{2}
+  \xi_1 &= \dfrac12 - \dfrac12\sqrt{\dfrac35},&\qquad W_{1} &= \dfrac{5}{18}
+  \notag \\ \xi_{2} &= \dfrac12, \;\; &\qquad\quad \qquad W_{2} &=
+  \dfrac{4}{9} \\ \xi_{3} &= \dfrac12 + \dfrac12\sqrt{\dfrac{3}{5}},&\qquad
+  W_{3} &= \dfrac{5}{18} \notag
+  \label{eqn:3Gp}
+\end{alignat}
+For two- or three-dimensional Gaussian quadrature the Gauss point positions
+are simply the values given above along each $\xi_{i}$-coordinate with the
+weights scaled to sum to $1$ \eg for $2$x$2$ Gauss quadrature the $4$ weights
+are all $\dfrac{1}{4}$ . The number of Gauss points chosen for each
+$\xi_{i}$-direction is governed by the complexity of the integrand in the
+element integral \bref{eqn:element_integrals_2}. In general two- and
+three-dimensional problems the integral is not polynomial (owing to the
+$\delby{\xi_{i}}{x_{j}}$ terms which come from the inverse of the matrix
+$\sqbrac{\delby{x_{i}}{\xi_{j}}}$) and no attempt is made to achieve exact
+integration. The quadrature error must be balanced against the discretization
+error. 
+% (see \secref{sec:Aoe}) 
+For example, if the two-dimensional basis is
+cubic in the $\xione$-direction and linear in the $\xitwo$-direction, three
+Gauss points would be used in the $\xione$-direction and two in the
+$\xitwo$-direction. \index{Gaussian quadrature|)}
+
+%\section{Analysis of Error and Convergence Rate}
+%\label{sec:Aoe}
+
+\section{CMISS Examples}
+
+\begin{enumerate}
+\item  To solve for the steady state temperature distribution inside  a plate run CMISS example $311$ 
+\item   To solve for the steady state temperature distribution inside  
+an annulus run CMISS example $312$
+ \item   To investigate the convergence of the steady state temperature
+   distribution with mesh refinement  run CMISS examples $3141$, $3142$, $3143$
+   and $3144$.
+\end{enumerate}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "/product/cmiss/documents/notes/fembemnotes/fembemnotes"
+%%% End: 

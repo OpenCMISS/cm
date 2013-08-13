@@ -1,0 +1,367 @@
+ \chapter{Modal Analysis}
+
+\section{Introduction}
+
+The system of ordinary differential equations which results from the
+application of the Galerkin finite element (or other) discretization of the
+spatial domain to linear parabolic or hyperbolic equations can either be
+integrated directly - as in the last section for parabolic equations - or
+analysed by \emph{mode superposition}. That is, the time-dependent solution
+is expressed as the superposition of the natural (or resonant) modes of the
+system. To find these modes requires the solution of an eigenvalue problem.
+
+\section{Free Vibration Modes}
+
+Consider an extension of \eqnref{eqn:orddiff} which includes second order
+time derivatives (\eg nodal point accelerations)
+\begin{equation}
+  \matr{M}\fnof{\ddot{\vect{u}}}{t} + \matr{C}\fnof{\dot{\vect{u}}}{t}
+         + \matr{K}\fnof{\vect{u}}{t} = \fnof{\vect{f}}{t}
+  \label{eqn:npa}
+\end{equation}
+$\matr{M},\matr{C}$ and $\matr{K}$ are the mass, damping and stiffness
+matrices, respectively, $\fnof{\vect{f}}{t}$ is the external load vector
+and $\fnof{\vect{u}}{t}$ is the vector of $n$ nodal unknowns. In direct
+time integration methods $\fnof{\ddot{\vect{u}}}{t}$ and
+$\fnof{\dot{\vect{u}}}{t}$ are replaced by finite differences and the
+resulting system of algebraic equations is solved at successive time steps.
+For a small number of steps this is the most economical method of solution
+but, if a solution is required over a long time period, or for a large
+number of different load  vectors $\fnof{\vect{f}}{t}$, a suitable transformation
+\begin{equation}
+  \fnof{\vect{u}}{t}=\matr{P}\fnof{\vect{x}}{t}
+  \label{eqn:suittrans}
+\end{equation}
+applied to \eqnref{eqn:npa} can result in the matrices of the transformed system
+\begin{equation}
+  \transpose{\matr{P}}\matr{M}\matr{P}\fnof{\ddot{\vect{x}}}{t} +
+  \transpose{\matr{P}}\matr{C}\matr{P}\fnof{\dot{\vect{x}}}{t} +
+  \transpose{\matr{P}}\matr{K}\matr{P}\fnof{\vect{x}}{t}
+        = \transpose{\matr{P}}\vect{f}
+  \label{eqn:tsyst}
+\end{equation}
+having a much smaller bandwidth than in the original system and hence being
+more economical to solve. In fact, if damping is neglected, $\matr{P}$ can be
+chosen to diagonalize $\matr{M}$ and $\matr{K}$ and thereby uncouple the equations
+entirely.  This transformation (which is still applicable when damping is
+included but does not then result in an uncoupled system unless further
+simplications are made) is found by solving the free vibration problem
+\begin{equation}
+  \matr{M}\fnof{\ddot{\vect{u}}}{t} + \matr{K}\fnof{\vect{u}}{t} 
+        = \vect{0}
+  \label{eqn:vibprob}
+\end{equation}
+\textbf{Proof}: Consider a solution to \eqnref{eqn:vibprob} of the form
+\begin{equation}
+  \fnof{\vect{u}}{t}=\vect{s} \sin \omega \pbrac{t-t_{0}},
+  \label{eqn:sineq}
+\end{equation}
+where $\omega$ and $t_{0}$ are constants and $\vect{s}$ is a vector of order $n$. 
+Substituting \eqnref{eqn:sineq} into \eqnref{eqn:vibprob} gives the
+\emph{generalized eigenproblem}
+\begin{equation}
+  \matr{K}\vect{s}=\omega^{2}\matr{M}\vect{s}
+  \label{eqn:gene}
+\end{equation}
+having $n$ \emph{eigensolutions} $\pbrac{\omega_{1}^{2}\vect{s}_{1}},
+\pbrac{\omega_{2}^{2}\vect{s}_{2}},\ldots,\pbrac{\omega_{n}^{2}\vect{s}_{n}}$.
+If $\matr{K}$ is a symmetric matrix (as is the case when the original partial
+differential operator is self-adjoint) the eigenvectors are orthogonal and can
+be ``\emph{normalized}'' such that
+\begin{equation}
+  \transpose{\vect{s}_{i}}\matr{M}\vect{s}_{j}= \left\{
+    \begin{array}{cc}
+      1 & i=j\\
+      0 & i \neq j
+    \end{array} \right.
+  \label{eqn:norm}
+\end{equation}
+(the eigenvectors are said to be $M$-\emph{orthonormalised}). Combining the
+$n$ eigenvectors into a matrix $\matr{S} = \sqbrac{\vect{s}_{1}, \vect{s}_{2},\ldots,
+\vect{s}_{n}}$ - the \emph{modal matrix} - rewriting \eqnref{eqn:norm} as
+\begin{equation}
+  \transpose{\matr{S}}\matr{M}\matr{S} = \matr{I}
+  \label{eqn:mm}
+\end{equation}
+where $\matr{I}$ is the identity matrix, \eqref{eqn:gene} becomes
+\begin{equation}
+  \matr{K}\matr{S} = \matr{M}\matr{S}\matr{\Lambda}
+  \label{eqn:id}
+\end{equation}
+where
+\begin{equation}
+  \matr{\Lambda} = \begin{bmatrix}
+    \omega_{1}^{2} &  &  & 0 \\
+    & \omega_{2}^{2} & & \\
+    & & \ddots & \\
+    0 & & & \omega_{n}^{2}
+  \end{bmatrix}
+  \label{eqn:lambda}
+\end{equation} 
+or
+\begin{equation}
+  \transpose{\matr{S}}\matr{K}\matr{S} =
+  \transpose{\matr{S}}\matr{M}\matr{S}\matr{\Lambda} = \matr{I}\matr{\Lambda}
+  = \matr{\Lambda} 
+  \label{eqn:oreq}
+\end{equation}
+
+Thus the modal matrix - whose columns are the $M$-orthonormalised eigenvectors
+of $\matr{K}$ (\ie satisfying \eqnref{eqn:gene}) - can be used as the
+transformation matrix $\matr{P}$ in \eqnref{eqn:suittrans} required to reduce the
+original system of equations \bref{eqn:npa} to the \emph{canonical} form
+\begin{equation}
+  \fnof{\ddot{\vect{x}}}{t} + 
+        \transpose{\matr{S}}\matr{C}\matr{S}\fnof{\dot{\vect{x}}}{t} +
+  \matr{\Lambda}\fnof{\vect{x}}{t} 
+        = \transpose{\matr{S}}\fnof{\vect{f}}{t}
+  \label{eqn:canon}
+\end{equation}
+With damping neglected equation \eqnref{eqn:canon} becomes a system of
+uncoupled equations
+\begin{equation}
+  \fnof{\ddot{x}_{i}}{t} + \omega_{i}^{2}\fnof{x_{i}}{t} = \fnof{r_{i}}{t}
+  \qquad i=1,2,\ldots, n
+  \label{eqn:uncoup}
+\end{equation}
+where $x_{i}$ is the \nth{i} component of $\vect{x}$ and $r_{i}$ is the \nth{i}
+component of the vector $\transpose{\matr{S}}\vect{f}$. The solution of this
+system is given by the Duhamel integral  
+\begin{equation}
+  \fnof{x_{i}}{t}=\dfrac{1}{\omega_{i}}\gint{0}{t}
+  {\fnof{r_{i}}{\tau}\sin\fnof{\omega_{i}}{t-\tau}}{\tau}
+  +\alpha_{i}\sin\omega_{i}t+\beta_{i}\cos\omega_{i} d\tau
+ \label{eqn:Duh}
+\end{equation}
+where the constants $\alpha_{i}$ and $\beta_{i}$ are determined from the
+initial conditions
+\begin{gather}
+  \begin{aligned}
+    \evalat{\fnof{x_{i}}{0}}{t=0} &= \transpose{{s}_{i}}\matr{M}
+      \evalat{\fnof{\vect{u}}{0}}{t=0} \\
+    \evalat{\fnof{\dot{x}_{i}}{0}}{t=0} &= \evalat{\fnof{x_{i}}{0}}{t=0} 
+                = \transpose{{s}_{i}}\matr{M}\evalat{\fnof{\vect{u}}{0}}{t=0} 
+      \transpose{{s}_{i}}\matr{M}\evalat{\fnof{\vect{u}}{0}}{t=0}
+  \label{eqn:incond}
+  \end{aligned}
+\end{gather}
+
+%
+%
+% Note :
+%
+%
+%\remark{I think the $\dot{x}_{i}$ expression is wrong}
+%
+%
+
+\section{An Analytic Example}
+
+As an example, consider the equilibrium equations $\matr{M}\ddot{\vect{u}} +
+\matr{K}\vect{u}=\vect{f}$ where
+\begin{displaymath}
+ \matr{M}=\begin{bmatrix}
+   2 & 0 \\
+   0 & 1
+ \end{bmatrix}, \quad
+ \matr{K}=\begin{bmatrix}
+   6 & -2 \\
+   -2 & 4
+ \end{bmatrix}\quad\text{and}\quad
+ \vect{f}=\begin{bmatrix}
+   0 \\
+   10
+ \end{bmatrix}
+\end{displaymath}
+To find the solution by modal analysis we first solve the generalised
+eigenproblem $\matr{K}\vect{s} = \omega^{2}\matr{M}\vect{s}$ \ie
+\begin{displaymath}
+  \begin{bmatrix}
+   6-2\omega^{2} & -2 \\
+   -2 & 4-\omega^{2}
+ \end{bmatrix}\vect{s}=0
+\end{displaymath}   
+has a solution when $\det \sqbrac{\matr{K}-\omega^{2}\matr{M}} = 0$ or $\omega^{4} -
+7\omega^{2} + 10= 0$. This \emph{characteristic polynomial} has solutions
+$\omega^{2} = 2,5$ with corresponding eigenvectors $\transpose{\vect{s}}_{1} = a
+\begin{bmatrix} 1 & 1 \end{bmatrix},\transpose{\vect{s}}_{1} =
+b\begin{bmatrix} -1 & 2 \end{bmatrix}$. To find the magnitude of the
+eigenvectors we use \eqnref{eqn:norm}, \ie
+\begin{displaymath}
+  a^{2}\begin{bmatrix} 1 & 1 \end{bmatrix}
+  \begin{bmatrix}
+    2 & 0 \\
+    0 & 1
+  \end{bmatrix} 
+  \begin{bmatrix}
+     1 \\
+     1
+  \end{bmatrix}
+  = 1 \Rightarrow a=\dfrac{1}{\sqrt{3}} \qquad b^{2}
+  \begin{bmatrix} -1 & 2 \end{bmatrix} 
+  \begin{bmatrix}
+    2 & 0 \\
+    0 & 1
+  \end{bmatrix} \begin{bmatrix}
+    -1 \\
+    2
+  \end{bmatrix}=1 \Rightarrow b=\dfrac{1}{\sqrt{3}}
+\end{displaymath}
+
+(Notice that the orthogonality condition is satisfied: 
+$ab\begin{bmatrix} 1 & 1 \end{bmatrix}
+\begin{bmatrix}
+  2 & 0\\
+  0 & 1
+\end{bmatrix} 
+\begin{bmatrix}
+  -1 \\
+  2
+\end{bmatrix}=0$).
+
+The $M$-orthognormalised eigenvectors are now
+$\transpose{\vect{s}}_{1}=\begin{bmatrix} \dfrac{1}{\sqrt{3}} &
+  \dfrac{1}{\sqrt{3}}\end{bmatrix}$ and $\transpose{\vect{s}}_{2}=
+\begin{bmatrix} -\dfrac{1}{\sqrt{6}} &
+  \dfrac{2}{\sqrt{6}}\end{bmatrix}$, giving the modal matrix
+$\matr{S}=\begin{bmatrix} 
+  \dfrac{1}{\sqrt{3}} & -\dfrac{1}{\sqrt{6}} \\ 
+  \dfrac{1}{\sqrt{3}} & \dfrac{2}{\sqrt{6}}
+ \end{bmatrix}$
+ which, when used as the transformation matrix, reduces the stiffness matrix
+ to
+\begin{displaymath}
+  \transpose{\matr{S}}\matr{K}\matr{S}=\begin{bmatrix}
+    \dfrac{1}{\sqrt{3}} & \dfrac{1}{\sqrt{3}}\\
+   -\dfrac{1}{\sqrt{6}} & \dfrac{2}{\sqrt{6}}
+ \end{bmatrix}\begin{bmatrix}
+   6  & -2 \\
+   -2 & 4
+ \end{bmatrix}\begin{bmatrix}
+   \dfrac{1}{\sqrt{3}} & -\dfrac{1}{\sqrt{6}} \\
+   \dfrac{1}{\sqrt{3}} & \dfrac{2}{\sqrt{6}}
+ \end{bmatrix} = \begin{bmatrix}
+   2 & 0 \\
+   0 & 5
+ \end{bmatrix} = \matr{\Lambda}
+\end{displaymath}
+and the mass matrix to
+\begin{displaymath}
+  \transpose{\matr{S}}\matr{M}\matr{S}=\begin{bmatrix}
+    \dfrac{1}{\sqrt{3}} & \dfrac{1}{\sqrt{3}} \\
+    -\dfrac{1}{\sqrt{6}} & \dfrac{2}{\sqrt{6}}
+ \end{bmatrix}\begin{bmatrix}
+   2 & 0 \\
+   0 & 1
+ \end{bmatrix}\begin{bmatrix}
+   \dfrac{1}{\sqrt{3}} & -\dfrac{1}{\sqrt{6}}\\
+   \dfrac{1}{\sqrt{3}} & \dfrac{2}{\sqrt{6}}
+ \end{bmatrix} = \begin{bmatrix}
+   1 & 0\\
+   0 & 1
+ \end{bmatrix} = \matr{I}
+\end{displaymath}
+Thus the natural modes of the system are given by
+\begin{displaymath}
+ \fnof{\vect{u}_{1}}{t} = \begin{bmatrix}
+   \dfrac{1}{\sqrt{3}}\\
+   \dfrac{1}{\sqrt{3}}
+ \end{bmatrix}
+ \sin \sqrt{2}\pbrac{t-t_{0}}\quad \text{and} \quad
+ \fnof{\vect{u}_{2}}{t} = \begin{bmatrix}
+   -\dfrac{1}{\sqrt{6}} \\
+   \dfrac{2}{\sqrt{6}}
+ \end{bmatrix} \sin \sqrt{5}\pbrac{t-t'_{0}}.
+\end{displaymath}      
+The solution of the non-homogeneous system, subject to given initial
+conditions, is found by solving the uncoupled equations
+\begin{displaymath}
+ \fnof{\ddot{\vect{x}}}{t} + \begin{bmatrix}
+   2 & 0 \\
+   0 & 5
+ \end{bmatrix} \fnof{\vect{x}}{t} = \begin{bmatrix}
+   \dfrac{1}{\sqrt{3}} & \dfrac{1}{\sqrt{3}} \\
+   -\dfrac{1}{\sqrt{6}} & \dfrac{2}{\sqrt{6}}
+ \end{bmatrix}\begin{bmatrix}
+   0 \\
+   10
+ \end{bmatrix} = \begin{bmatrix}
+   \dfrac{10}{\sqrt{3}}\\
+   \dfrac{20}{\sqrt{6}}
+ \end{bmatrix} 
+\end{displaymath}
+by means of the Duhamel integral \bref{eqn:Duh} (in this case with $\vect{r}$
+constant) and then, from \eqnref{eqn:suittrans} with
+$\matr{P} \equiv \matr{S} = [(\vect{s}_{1}, \vect{s}_{2}, \ldots ,\vect{s}_{n}]$
+\begin{equation}
+  \fnof{\vect{u}}{t} = \matr{S}\fnof{\vect{x}}{t} = \dsuml{i=1}{n}
+  \vect{s}_{i}\fnof{x_{i}}{t} 
+  \label{eqn:Duhint}
+\end{equation}
+
+Notice that the solution is expressed in \eqnref{eqn:Duhint} as the superposition
+of the natural modes (eigenvectors) of the homogeneous equations. If the
+forcing function (load vector) is close to one of these modes the
+corresponding coefficient $x_{i}$ will be large and will dominate the response
+- if it coincides then resonance will occur. Very often it is unnecessary to
+evaluate all $n$ eigenvectors of the system; the higher frequency modes can be
+ignored and the solution adequately represented by superposition of the $p$
+eigenvectors associated with the $p$ lowest eigenvalues, where $p<n$.
+
+\section{Proportional Damping}
+
+When element damping terms are included in the original dynamic equations
+\bref{eqn:npa} the transformation to a lower bandwidth system is still based
+on the model matrix $\matr{S}$ but \eqnref{eqn:canon} is then not a system of
+uncoupled equations. One simplification often made in order to retain the
+diagonal nature of \eqnref{eqn:canon} is to approximate the overall energy
+dissipation of the finite element system with \emph{proportional damping}
+
+\begin{equation}
+  \transpose{\vect{{s}_{i}}}\matr{C}\vect{s}_{j} = 2\omega_{i}\xi_{i}\delta_{ij},
+ \label{eqn:propd}
+\end{equation}
+where $\xi_{i}$ is a modal damping parameter and $\delta_{ij}$ is the
+Kronecker delta. \Eqnref{eqn:canon} now reduces to $n$ equations of the
+form
+\begin{equation}
+  \fnof{\ddot{x}_{i}}{t} + 2 \omega_{i}\xi_{i}\fnof{\dot{x}_{i}}{t} +
+  \omega_{1}^{2}\fnof{x_{1}}{t} = \fnof{r_{i}}{t}
+ \label{eqn:form}
+\end{equation}
+with solution (the Duhamel integral)
+\begin{equation}
+  \fnof{x_{i}}{t}=\dfrac{1}{\overline{\omega}_{i}}\gint{0}{t}
+  {\fnof{r_{i}}{\tau}.e^{\xi_{i}\omega_{i}\pbrac{t-\tau}}.
+  \sin\fnof{\overline{\omega}_{i}}{t-\tau}}{t}
+  +e^{-\xi_{i}\omega_{i}t}\bbrac{\alpha_{i}\sin\overline{\omega}_{i}t
+    +\beta_{i}\cos\overline{\omega}_{i}t}
+ \label{eqn:calc}
+\end{equation}
+where $\overline{\omega}_{i}=\omega_{i}\sqrt{1-\xi_{i}^{2}}$. $\alpha_{i}$ and
+$\beta_{i}$ are calculated from the initial conditions \eqnref{eqn:incond}.
+Once the components $\fnof{x_{i}}{t}$ have been found from \eqnref{eqn:calc} (or
+alternative time integration methods applied to \eqref{eqn:form}), the
+solution $\fnof{\vect{u}}{t}$ is expressed as a superposition of the mode shapes 
+$\vect{s}_{i}$ by \eqnref{eqn:Duhint}.
+
+\section{CMISS Examples}
+
+%\begin{tabular}{ll}
+%(a) & Vibration modes of a rectangular plate\\
+%(b) & Vibration modes of a circular plate\\
+%(c) & Vibration modes of a guitar top plate
+%\end{tabular}
+% LC no longer exist ? 3/3/97
+
+\begin{enumerate}
+  \item To analyse a plane stress modal analysis run CMISS example 451
+  \item To analyse a clamped beam modal analysis run CMISS example 452
+  \item To analyse a steel-framed building modal analysis run CMISS example 453
+\end{enumerate}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "~/documents/notes/fembemnotes/fembemnotes"
+%%% End: 

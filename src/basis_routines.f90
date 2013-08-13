@@ -281,10 +281,22 @@ MODULE BASIS_ROUTINES
   PUBLIC BASES_FINALISE,BASES_INITIALISE
 
   PUBLIC BASIS_USER_NUMBER_FIND
-    
-  PUBLIC BASIS_COLLAPSED_XI_GET,BASIS_INTERPOLATION_XI_GET,BASIS_NUMBER_OF_XI_GET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET, &
-    & BASIS_QUADRATURE_ORDER_GET,BASIS_QUADRATURE_TYPE_GET,BASIS_TYPE_GET
 
+  PUBLIC BASIS_COLLAPSED_XI_GET
+
+  PUBLIC BASIS_INTERPOLATION_XI_GET
+
+  PUBLIC BASIS_NUMBER_OF_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET, BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET
+
+  PUBLIC BASIS_QUADRATURE_ORDER_GET 
+
+  PUBLIC BASIS_QUADRATURE_TYPE_GET
+
+  PUBLIC BASIS_TYPE_GET
 
 
 CONTAINS
@@ -584,11 +596,11 @@ CONTAINS
         NEW_BASIS%NUMBER_OF_XI=3
         ALLOCATE(NEW_BASIS%INTERPOLATION_XI(3),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis interpolation xi",ERR,ERROR,*999)
-        NEW_BASIS%INTERPOLATION_XI=[BASIS_LINEAR_LAGRANGE_INTERPOLATION,BASIS_LINEAR_LAGRANGE_INTERPOLATION, &
+        NEW_BASIS%INTERPOLATION_XI(1:3)=[BASIS_LINEAR_LAGRANGE_INTERPOLATION,BASIS_LINEAR_LAGRANGE_INTERPOLATION, &
           & BASIS_LINEAR_LAGRANGE_INTERPOLATION]
         ALLOCATE(NEW_BASIS%COLLAPSED_XI(3),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis collapsed xi",ERR,ERROR,*999)
-        NEW_BASIS%COLLAPSED_XI=BASIS_NOT_COLLAPSED
+        NEW_BASIS%COLLAPSED_XI(1:3)=BASIS_NOT_COLLAPSED
         !Initialise the basis quadrature
         NULLIFY(NEW_BASIS%QUADRATURE%BASIS)
         CALL BASIS_QUADRATURE_INITIALISE(NEW_BASIS,ERR,ERROR,*999)
@@ -1303,7 +1315,7 @@ CONTAINS
             CALL FLAG_ERROR("Invalid basis type or not implemented",ERR,ERROR,*999)
           END SELECT
           !Set the interpolation xi
-          BASIS%INTERPOLATION_XI=INTERPOLATION_XI
+          BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         ELSE
           LOCAL_ERROR="The size of the interpolation xi array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATION_XI,1),"*",ERR,ERROR))//") does not match the number of xi directions ("// &
@@ -1338,7 +1350,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: MAX_NUM_NODES,NUMBER_OF_DERIVATIVES,ni,ni1,ni2,ni3,nk,nn,nnl,ns,OLD_NUMBER_OF_DERIVATIVES, &
       & POSITION(4),MAXIMUM_NODE_EXTENT(3),COLLAPSED_XI(3),NUMBER_OF_NODES,NUMBER_OF_LOCAL_LINES,NODE_COUNT, &
-      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),nnf,NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT,ef, NUMBER_OF_ELEMENT_FACES
+      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT,ef
     INTEGER, TARGET :: nn1,nn2,nn3,nn4
     LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:)
     !move to types.f90
@@ -2869,8 +2881,9 @@ CONTAINS
           ALLOCATE(NEW_SCHEME%GAUSS_BASIS_FNS(BASIS%NUMBER_OF_ELEMENT_PARAMETERS,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES, &
             & NEW_SCHEME%NUMBER_OF_GAUSS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Gauss basis functions.",ERR,ERROR,*999)
-          NEW_SCHEME%GAUSS_POSITIONS=GSX(1:BASIS%NUMBER_OF_XI_COORDINATES,1:NEW_SCHEME%NUMBER_OF_GAUSS)
-          NEW_SCHEME%GAUSS_WEIGHTS=GSW(1:NEW_SCHEME%NUMBER_OF_GAUSS)
+          NEW_SCHEME%GAUSS_POSITIONS(1:BASIS%NUMBER_OF_XI_COORDINATES,1:NEW_SCHEME%NUMBER_OF_GAUSS)= &
+            & GSX(1:BASIS%NUMBER_OF_XI_COORDINATES,1:NEW_SCHEME%NUMBER_OF_GAUSS)
+          NEW_SCHEME%GAUSS_WEIGHTS(1:NEW_SCHEME%NUMBER_OF_GAUSS)=GSW(1:NEW_SCHEME%NUMBER_OF_GAUSS)
           DO ng=1,NEW_SCHEME%NUMBER_OF_GAUSS
             ns=0
             DO nn=1,BASIS%NUMBER_OF_NODES
@@ -3312,7 +3325,7 @@ CONTAINS
         IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN          
           IF(SIZE(NUMBER_OF_GAUSS_XI,1)==BASIS%NUMBER_OF_XI) THEN
             IF(ANY(NUMBER_OF_GAUSS_XI<1)) CALL FLAG_ERROR("Invalid number of gauss values.",ERR,ERROR,*999)
-            BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI=NUMBER_OF_GAUSS_XI
+            BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI)=NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI)
             !Check the number of gauss points is sufficient for the interpolation order and flag a warning if not
             DO ni=1,BASIS%NUMBER_OF_XI
               SELECT CASE(BASIS%INTERPOLATION_XI(ni))
@@ -3380,11 +3393,143 @@ CONTAINS
     CALL EXITS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET_PTR")
     RETURN 1
   END SUBROUTINE BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET_PTR
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the xi positions of a Gauss point on a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureGaussXiGet
+  SUBROUTINE BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET(BASIS,SCHEME,GAUSS_POINT,GAUSS_XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: SCHEME !<The quadrature scheme to return the Gauss points for
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT !<The Gauss point to return the element xi position for.
+    REAL(DP), INTENT(OUT) :: GAUSS_XI(:) !<On return, GAUSS_XI(xi_direction) the xi position of the specified Gauss point for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(SCHEME)%PTR
+          IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
+            IF(SIZE(GAUSS_XI)==BASIS%NUMBER_OF_XI) THEN
+              IF(GAUSS_POINT>0.AND.GAUSS_POINT<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                GAUSS_XI(:)=QUADRATURE_SCHEME%GAUSS_POSITIONS(:,GAUSS_POINT)
+              ELSE
+                LOCAL_ERROR="The specified Gauss point number of "// & 
+                  & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT,"*",ERR,ERROR))//" is invalid for the specified "// &
+                  & "quadrature scheme of the specified element for this field which has "// &
+                  & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The number of xi values to return is invalid and needs to be "// &
+                & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" for the specified basis."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The specified quadrature scheme is not associated for this basis.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Quadrature basis is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET")
+    RETURN
+  END SUBROUTINE BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET
 
   !
   !================================================================================================================================
   !
   
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by a pointer. If no Gauss points are specified then xi positions of all Gauss points are returned. \see OPENCMISS::CMISSBasisQuadratureGaussXiGet
+  SUBROUTINE BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET(BASIS,SCHEME,GAUSS_POINTS,GAUSS_XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: SCHEME !<The quadrature scheme to return the Gauss points for
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINTS(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GAUSS_XI(:,:) !<On return, GAUSS_XI(xi_direction,Gauss_point) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: Gauss_point
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(SCHEME)%PTR
+          IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
+            IF(SIZE(GAUSS_XI,1)==BASIS%NUMBER_OF_XI) THEN
+              IF(SIZE(GAUSS_POINTS)==0) THEN !Return all Gauss point xi locations.
+                IF(SIZE(GAUSS_XI,2)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                  GAUSS_XI=QUADRATURE_SCHEME%GAUSS_POSITIONS
+                ELSE
+                  LOCAL_ERROR="The number of Gauss Points to return the xi values for is invalid and needs to be "// &
+                    & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE !Return only specified Gauss point xi locations.
+                DO Gauss_point=1,SIZE(GAUSS_POINTS)
+                  IF(GAUSS_POINTS(Gauss_point)>0.AND.GAUSS_POINTS(Gauss_point)<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                    GAUSS_XI(:,Gauss_point)=QUADRATURE_SCHEME%GAUSS_POSITIONS(:,GAUSS_POINTS(Gauss_point))
+                  ELSE
+                    LOCAL_ERROR="The specified Gauss point number of "// & 
+                      & TRIM(NUMBER_TO_VSTRING(GAUSS_POINTS(Gauss_point),"*",ERR,ERROR))//" is invalid for the specified "// &
+                      & "quadrature scheme of the specified element for this field which has "// &
+                      & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDDO
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The number of xi values to return is invalid and needs to be "// &
+                & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" for the specified basis."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The specified quadrature scheme is not associated for this basis.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Quadrature basis is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET")
+    RETURN
+  END SUBROUTINE BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get the order of a quadrature for a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureOrderGet
   SUBROUTINE BASIS_QUADRATURE_ORDER_GET(BASIS,QUADRATURE_ORDER,ERR,ERROR,*)
 
@@ -3706,7 +3851,7 @@ CONTAINS
           END SELECT
         CASE(2)
           BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=6
-          SELECT CASE(BASIS%INTERPOLATION_XI(1))
+          SELECT CASE(BASIS%INTERPOLATION_XI(2))
           CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
             BASIS%INTERPOLATION_TYPE(1)=BASIS_SIMPLEX_INTERPOLATION
             BASIS%INTERPOLATION_ORDER(1)=BASIS_LINEAR_INTERPOLATION_ORDER
@@ -4685,7 +4830,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,ni,ni2,FACE_XI(2),FACE_XI2(2)
-    INTEGER(INTG) :: nic,nic2,FACE_XIC(3),FACE_XIC2(3)
     LOGICAL :: LINE_BASIS_DONE,FACE_BASIS_DONE
     TYPE(BASIS_TYPE), POINTER :: NEW_SUB_BASIS
     TYPE(VARYING_STRING) :: DUMMY_ERROR
@@ -4734,42 +4878,37 @@ CONTAINS
         
         IF(BASIS%NUMBER_OF_XI>2) THEN
           !Set up face basis functions
-          ALLOCATE(BASIS%FACE_BASES(BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis face bases",ERR,ERROR,*999)
-          DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES
-            !Determine the other face xi directions that lie in this xi direction
-            FACE_XIC(1)=OTHER_XI_DIRECTIONS4(nic,1)
-            FACE_XIC(2)=OTHER_XI_DIRECTIONS4(nic,2)
-            FACE_XIC(3)=OTHER_XI_DIRECTIONS4(nic,3)
+          ALLOCATE(BASIS%FACE_BASES(BASIS%NUMBER_OF_XI),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis face bases.",ERR,ERROR,*999)
+          DO ni=1,BASIS%NUMBER_OF_XI
+            !Determine the face xi directions that lie in this xi direction
+            FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
+            FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
             FACE_BASIS_DONE=.FALSE.
             NULLIFY(NEW_SUB_BASIS)
-            DO nic2=1,nic-1
-              FACE_XIC2(1)=OTHER_XI_DIRECTIONS4(nic2,1)
-              FACE_XIC2(2)=OTHER_XI_DIRECTIONS4(nic2,2)
-              FACE_XIC2(3)=OTHER_XI_DIRECTIONS4(nic2,3)
-              IF(BASIS%INTERPOLATION_XI(FACE_XIC2(1))==BASIS%INTERPOLATION_XI(FACE_XIC(1)).AND. &
-                & BASIS%INTERPOLATION_XI(FACE_XIC2(2))==BASIS%INTERPOLATION_XI(FACE_XIC(2)).AND. &
-                & BASIS%INTERPOLATION_XI(FACE_XIC2(3))==BASIS%INTERPOLATION_XI(FACE_XIC(3)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XIC2(1))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XIC(1)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XIC2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XIC(2)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XIC2(3))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XIC(3))) THEN
+            DO ni2=1,ni-1
+              FACE_XI2(1)=OTHER_XI_DIRECTIONS3(ni2,2,1)
+              FACE_XI2(2)=OTHER_XI_DIRECTIONS3(ni2,3,1)
+              IF(BASIS%INTERPOLATION_XI(FACE_XI2(1))==BASIS%INTERPOLATION_XI(FACE_XI(1)).AND. &
+                & BASIS%INTERPOLATION_XI(FACE_XI2(2))==BASIS%INTERPOLATION_XI(FACE_XI(2)).AND. &
+                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(1))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1)).AND. &
+                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))) THEN
                 FACE_BASIS_DONE=.TRUE.
                 EXIT
               ENDIF
-            ENDDO !nic2
+            ENDDO !ni2
             IF(FACE_BASIS_DONE) THEN
-              BASIS%FACE_BASES(nic)%PTR=>BASIS%FACE_BASES(nic2)%PTR
+              BASIS%FACE_BASES(ni)%PTR=>BASIS%FACE_BASES(ni2)%PTR
             ELSE
               !Create the new sub-basis
-              CALL BASIS_SUB_BASIS_CREATE(BASIS,3,(/FACE_XIC(1),FACE_XIC(2),FACE_XIC(3)/),NEW_SUB_BASIS,ERR,ERROR,*999)
+              CALL BASIS_SUB_BASIS_CREATE(BASIS,2,[FACE_XI(1),FACE_XI(2)],NEW_SUB_BASIS,ERR,ERROR,*999)
               !Fill in the basis information
               CALL BASIS_SIMPLEX_BASIS_CREATE(NEW_SUB_BASIS,ERR,ERROR,*999)
-              NEW_SUB_BASIS%LINE_BASES(1)%PTR=>BASIS%LINE_BASES(FACE_XIC(1))%PTR
-              NEW_SUB_BASIS%LINE_BASES(2)%PTR=>BASIS%LINE_BASES(FACE_XIC(2))%PTR
-              NEW_SUB_BASIS%LINE_BASES(3)%PTR=>BASIS%LINE_BASES(FACE_XIC(3))%PTR
-              BASIS%FACE_BASES(nic)%PTR=>NEW_SUB_BASIS
+              NEW_SUB_BASIS%LINE_BASES(1)%PTR=>BASIS%LINE_BASES(FACE_XI(1))%PTR
+              NEW_SUB_BASIS%LINE_BASES(2)%PTR=>BASIS%LINE_BASES(FACE_XI(2))%PTR
+              BASIS%FACE_BASES(ni)%PTR=>NEW_SUB_BASIS
             ENDIF            
-          ENDDO !nic
+          ENDDO !ni
         ELSE
           ALLOCATE(BASIS%FACE_BASES(1),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis face bases.",ERR,ERROR,*999)
@@ -5147,7 +5286,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: basis_idx,ni,NUMBER_COLLAPSED,NUMBER_END_COLLAPSED,numberOfXiCoordinates,numberOfXi
+    INTEGER(INTG) :: basis_idx,ni,NUMBER_COLLAPSED,NUMBER_END_COLLAPSED
     TYPE(BASIS_TYPE), POINTER :: NEW_SUB_BASIS    
     TYPE(BASIS_PTR_TYPE), POINTER :: NEW_SUB_BASES(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5162,156 +5301,71 @@ CONTAINS
         CALL FLAG_ERROR("The sub-basis is already associated",ERR,ERROR,*999)
       ELSE
         IF(NUMBER_OF_XI>0.AND.NUMBER_OF_XI<4) THEN
-          IF(PARENT_BASIS%TYPE==BASIS_SIMPLEX_TYPE .AND. (NUMBER_OF_XI==3)) THEN
-            ! For simplex faces type, NUMBER_OF_XI,XI_DIRECTIONS are actually used to pass 
-            ! xi coordinates (number xic, face_xic) 
-            numberOfXiCoordinates = NUMBER_OF_XI
-            numberOfXi = numberOfXiCoordinates - 1
-            IF(ANY(XI_DIRECTIONS<1).OR.ANY(XI_DIRECTIONS>4)) CALL FLAG_ERROR("Invalid xi coordinates specified",ERR,ERROR,*999)
-            IF(SIZE(XI_DIRECTIONS,1)/=numberOfXiCoordinates) &
-              & CALL FLAG_ERROR("The size of the xi directions array must be the same as the number of xi directions", &
-              & ERR,ERROR,*999)
-            ALLOCATE(NEW_SUB_BASIS,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis",ERR,ERROR,*999)
-            NEW_SUB_BASIS%USER_NUMBER=PARENT_BASIS%USER_NUMBER
-            NEW_SUB_BASIS%GLOBAL_NUMBER=PARENT_BASIS%GLOBAL_NUMBER
-            NEW_SUB_BASIS%FAMILY_NUMBER=PARENT_BASIS%NUMBER_OF_SUB_BASES+1
-            NEW_SUB_BASIS%NUMBER_OF_SUB_BASES=0
-            NULLIFY(NEW_SUB_BASIS%SUB_BASES)
-            NEW_SUB_BASIS%PARENT_BASIS=>PARENT_BASIS
-            NEW_SUB_BASIS%NUMBER_OF_XI=numberOfXi
-            NEW_SUB_BASIS%NUMBER_OF_XI_COORDINATES=numberOfXiCoordinates
-            NEW_SUB_BASIS%TYPE=PARENT_BASIS%TYPE
-            ALLOCATE(NEW_SUB_BASIS%INTERPOLATION_XI(numberOfXi),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis interpolation xi",ERR,ERROR,*999)
-            ALLOCATE(NEW_SUB_BASIS%COLLAPSED_XI(numberOfXi),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis collapsed xi",ERR,ERROR,*999)        
-            NUMBER_COLLAPSED=0
-            NUMBER_END_COLLAPSED=0
-            DO ni=1,numberOfXi
-              !Temporary interpolation_xi fix?
-              IF(PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni))>BASIS_CUBIC_SIMPLEX_INTERPOLATION .OR. &
-                & PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni))<1) THEN
-                IF(ni==1) THEN
-                   NEW_SUB_BASIS%INTERPOLATION_XI(ni)=PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni+1))
-                ELSE
-                   NEW_SUB_BASIS%INTERPOLATION_XI(ni)=PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni-1))
-                ENDIF
-              ELSE
-                NEW_SUB_BASIS%INTERPOLATION_XI(ni)=PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni))
-              ENDIF
-              NEW_SUB_BASIS%COLLAPSED_XI(ni)=PARENT_BASIS%COLLAPSED_XI(XI_DIRECTIONS(ni))
-              IF(NEW_SUB_BASIS%COLLAPSED_XI(ni)==BASIS_XI_COLLAPSED) THEN
-                NUMBER_COLLAPSED=NUMBER_COLLAPSED+1
-              ELSE IF(NEW_SUB_BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI0.OR.NEW_SUB_BASIS%COLLAPSED_XI(ni)== &
-                & BASIS_COLLAPSED_AT_XI1) THEN
-                NUMBER_END_COLLAPSED=NUMBER_END_COLLAPSED+1
-              ENDIF
-            ENDDO !ni
-            IF(NUMBER_COLLAPSED==0.OR.NUMBER_END_COLLAPSED==0) NEW_SUB_BASIS%COLLAPSED_XI(1:numberOfXi)=BASIS_NOT_COLLAPSED
-            NULLIFY(NEW_SUB_BASIS%QUADRATURE%BASIS)
-            CALL BASIS_QUADRATURE_INITIALISE(NEW_SUB_BASIS,ERR,ERROR,*999)
-            NEW_SUB_BASIS%QUADRATURE%TYPE=PARENT_BASIS%QUADRATURE%TYPE
-            DO ni=1,numberOfXi
-              NEW_SUB_BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=PARENT_BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(XI_DIRECTIONS(ni))
-            ENDDO !ni
-            NEW_SUB_BASIS%BASIS_FINISHED=.TRUE.
-            IF(numberOfXi>1) THEN
-              ALLOCATE(NEW_SUB_BASIS%LINE_BASES(numberOfXi),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis line bases",ERR,ERROR,*999)
-              IF(numberOfXi>2) THEN
-                ALLOCATE(NEW_SUB_BASIS%FACE_BASES(numberOfXiCoordinates),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis face bases",ERR,ERROR,*999)
-              ELSE
-                ALLOCATE(NEW_SUB_BASIS%FACE_BASES(1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis face bases",ERR,ERROR,*999)
-                NEW_SUB_BASIS%FACE_BASES(1)%PTR=>NEW_SUB_BASIS
-              ENDIF
-            ELSE
-              ALLOCATE(NEW_SUB_BASIS%LINE_BASES(1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis line bases",ERR,ERROR,*999)
-              NEW_SUB_BASIS%LINE_BASES(1)%PTR=>NEW_SUB_BASIS
-              NULLIFY(NEW_SUB_BASIS%FACE_BASES)          
+          IF(ANY(XI_DIRECTIONS<1).OR.ANY(XI_DIRECTIONS>3)) CALL FLAG_ERROR("Invalid xi directions specified",ERR,ERROR,*999)
+          IF(SIZE(XI_DIRECTIONS,1)/=NUMBER_OF_XI) &
+            & CALL FLAG_ERROR("The size of the xi directions array must be the same as the number of xi directions",ERR,ERROR,*999)
+          ALLOCATE(NEW_SUB_BASIS,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis",ERR,ERROR,*999)
+          NEW_SUB_BASIS%USER_NUMBER=PARENT_BASIS%USER_NUMBER
+          NEW_SUB_BASIS%GLOBAL_NUMBER=PARENT_BASIS%GLOBAL_NUMBER
+          NEW_SUB_BASIS%FAMILY_NUMBER=PARENT_BASIS%NUMBER_OF_SUB_BASES+1
+          NEW_SUB_BASIS%NUMBER_OF_SUB_BASES=0
+          NULLIFY(NEW_SUB_BASIS%SUB_BASES)
+          NEW_SUB_BASIS%PARENT_BASIS=>PARENT_BASIS
+          NEW_SUB_BASIS%NUMBER_OF_XI=NUMBER_OF_XI
+          NEW_SUB_BASIS%TYPE=PARENT_BASIS%TYPE
+          ALLOCATE(NEW_SUB_BASIS%INTERPOLATION_XI(NUMBER_OF_XI),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis interpolation xi",ERR,ERROR,*999)
+          ALLOCATE(NEW_SUB_BASIS%COLLAPSED_XI(NUMBER_OF_XI),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis collapsed xi",ERR,ERROR,*999)        
+          NUMBER_COLLAPSED=0
+          NUMBER_END_COLLAPSED=0
+          DO ni=1,NUMBER_OF_XI
+            NEW_SUB_BASIS%INTERPOLATION_XI(ni)=PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni))
+            NEW_SUB_BASIS%COLLAPSED_XI(ni)=PARENT_BASIS%COLLAPSED_XI(XI_DIRECTIONS(ni))
+            IF(NEW_SUB_BASIS%COLLAPSED_XI(ni)==BASIS_XI_COLLAPSED) THEN
+              NUMBER_COLLAPSED=NUMBER_COLLAPSED+1
+            ELSE IF(NEW_SUB_BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI0.OR.NEW_SUB_BASIS%COLLAPSED_XI(ni)== &
+              & BASIS_COLLAPSED_AT_XI1) THEN
+              NUMBER_END_COLLAPSED=NUMBER_END_COLLAPSED+1
             ENDIF
-            !Add the new sub-basis to the list of sub-bases in the parent basis
-            ALLOCATE(NEW_SUB_BASES(PARENT_BASIS%NUMBER_OF_SUB_BASES+1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new sub-bases",ERR,ERROR,*999)
-            DO basis_idx=1,PARENT_BASIS%NUMBER_OF_SUB_BASES
-              NEW_SUB_BASES(basis_idx)%PTR=>PARENT_BASIS%SUB_BASES(basis_idx)%PTR
-            ENDDO !basis_idx
-            NEW_SUB_BASES(PARENT_BASIS%NUMBER_OF_SUB_BASES+1)%PTR=>NEW_SUB_BASIS
-            PARENT_BASIS%NUMBER_OF_SUB_BASES=PARENT_BASIS%NUMBER_OF_SUB_BASES+1
-            IF(ASSOCIATED(PARENT_BASIS%SUB_BASES)) DEALLOCATE(PARENT_BASIS%SUB_BASES)
-            PARENT_BASIS%SUB_BASES=>NEW_SUB_BASES
-            SUB_BASIS=>NEW_SUB_BASIS
+          ENDDO !ni
+          IF(NUMBER_COLLAPSED==0.OR.NUMBER_END_COLLAPSED==0) NEW_SUB_BASIS%COLLAPSED_XI(1:NUMBER_OF_XI)=BASIS_NOT_COLLAPSED
+          NULLIFY(NEW_SUB_BASIS%QUADRATURE%BASIS)
+          CALL BASIS_QUADRATURE_INITIALISE(NEW_SUB_BASIS,ERR,ERROR,*999)
+          NEW_SUB_BASIS%QUADRATURE%TYPE=PARENT_BASIS%QUADRATURE%TYPE
+          DO ni=1,NUMBER_OF_XI
+            NEW_SUB_BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=PARENT_BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(XI_DIRECTIONS(ni))
+          ENDDO !ni
+          NEW_SUB_BASIS%BASIS_FINISHED=.TRUE.
+          IF(NUMBER_OF_XI>1) THEN
+            ALLOCATE(NEW_SUB_BASIS%LINE_BASES(NUMBER_OF_XI),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis line bases",ERR,ERROR,*999)
+            IF(NUMBER_OF_XI>2) THEN
+              ALLOCATE(NEW_SUB_BASIS%FACE_BASES(NUMBER_OF_XI),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis face bases",ERR,ERROR,*999)
+            ELSE
+              ALLOCATE(NEW_SUB_BASIS%FACE_BASES(1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis face bases",ERR,ERROR,*999)
+              NEW_SUB_BASIS%FACE_BASES(1)%PTR=>NEW_SUB_BASIS
+            ENDIF
           ELSE
-            IF(ANY(XI_DIRECTIONS<1).OR.ANY(XI_DIRECTIONS>3)) CALL FLAG_ERROR("Invalid xi directions specified",ERR,ERROR,*999)
-            IF(SIZE(XI_DIRECTIONS,1)/=NUMBER_OF_XI) &
-              & CALL FLAG_ERROR("The size of the xi directions array must be the same as the number of xi directions", &
-              & ERR,ERROR,*999)
-            ALLOCATE(NEW_SUB_BASIS,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis",ERR,ERROR,*999)
-            NEW_SUB_BASIS%USER_NUMBER=PARENT_BASIS%USER_NUMBER
-            NEW_SUB_BASIS%GLOBAL_NUMBER=PARENT_BASIS%GLOBAL_NUMBER
-            NEW_SUB_BASIS%FAMILY_NUMBER=PARENT_BASIS%NUMBER_OF_SUB_BASES+1
-            NEW_SUB_BASIS%NUMBER_OF_SUB_BASES=0
-            NULLIFY(NEW_SUB_BASIS%SUB_BASES)
-            NEW_SUB_BASIS%PARENT_BASIS=>PARENT_BASIS
-            NEW_SUB_BASIS%NUMBER_OF_XI=NUMBER_OF_XI
-            NEW_SUB_BASIS%TYPE=PARENT_BASIS%TYPE
-            ALLOCATE(NEW_SUB_BASIS%INTERPOLATION_XI(NUMBER_OF_XI),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis interpolation xi",ERR,ERROR,*999)
-            ALLOCATE(NEW_SUB_BASIS%COLLAPSED_XI(NUMBER_OF_XI),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis collapsed xi",ERR,ERROR,*999)        
-            NUMBER_COLLAPSED=0
-            NUMBER_END_COLLAPSED=0
-            DO ni=1,NUMBER_OF_XI
-              NEW_SUB_BASIS%INTERPOLATION_XI(ni)=PARENT_BASIS%INTERPOLATION_XI(XI_DIRECTIONS(ni))
-              NEW_SUB_BASIS%COLLAPSED_XI(ni)=PARENT_BASIS%COLLAPSED_XI(XI_DIRECTIONS(ni))
-              IF(NEW_SUB_BASIS%COLLAPSED_XI(ni)==BASIS_XI_COLLAPSED) THEN
-                NUMBER_COLLAPSED=NUMBER_COLLAPSED+1
-              ELSE IF(NEW_SUB_BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI0.OR.NEW_SUB_BASIS%COLLAPSED_XI(ni)== &
-                & BASIS_COLLAPSED_AT_XI1) THEN
-                NUMBER_END_COLLAPSED=NUMBER_END_COLLAPSED+1
-              ENDIF
-            ENDDO !ni
-            IF(NUMBER_COLLAPSED==0.OR.NUMBER_END_COLLAPSED==0) NEW_SUB_BASIS%COLLAPSED_XI(1:NUMBER_OF_XI)=BASIS_NOT_COLLAPSED
-            NULLIFY(NEW_SUB_BASIS%QUADRATURE%BASIS)
-            CALL BASIS_QUADRATURE_INITIALISE(NEW_SUB_BASIS,ERR,ERROR,*999)
-            NEW_SUB_BASIS%QUADRATURE%TYPE=PARENT_BASIS%QUADRATURE%TYPE
-            DO ni=1,NUMBER_OF_XI
-              NEW_SUB_BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=PARENT_BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(XI_DIRECTIONS(ni))
-            ENDDO !ni
-            NEW_SUB_BASIS%BASIS_FINISHED=.TRUE.
-            IF(NUMBER_OF_XI>1) THEN
-              ALLOCATE(NEW_SUB_BASIS%LINE_BASES(NUMBER_OF_XI),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis line bases",ERR,ERROR,*999)
-              IF(NUMBER_OF_XI>2) THEN
-                ALLOCATE(NEW_SUB_BASIS%FACE_BASES(NUMBER_OF_XI),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis face bases",ERR,ERROR,*999)
-              ELSE
-                ALLOCATE(NEW_SUB_BASIS%FACE_BASES(1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub-basis face bases",ERR,ERROR,*999)
-                NEW_SUB_BASIS%FACE_BASES(1)%PTR=>NEW_SUB_BASIS
-              ENDIF
-            ELSE
-              ALLOCATE(NEW_SUB_BASIS%LINE_BASES(1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis line bases",ERR,ERROR,*999)
-              NEW_SUB_BASIS%LINE_BASES(1)%PTR=>NEW_SUB_BASIS
-              NULLIFY(NEW_SUB_BASIS%FACE_BASES)          
-            ENDIF
-            !Add the new sub-basis to the list of sub-bases in the parent basis
-            ALLOCATE(NEW_SUB_BASES(PARENT_BASIS%NUMBER_OF_SUB_BASES+1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new sub-bases",ERR,ERROR,*999)
-            DO basis_idx=1,PARENT_BASIS%NUMBER_OF_SUB_BASES
-              NEW_SUB_BASES(basis_idx)%PTR=>PARENT_BASIS%SUB_BASES(basis_idx)%PTR
-            ENDDO !basis_idx
-            NEW_SUB_BASES(PARENT_BASIS%NUMBER_OF_SUB_BASES+1)%PTR=>NEW_SUB_BASIS
-            PARENT_BASIS%NUMBER_OF_SUB_BASES=PARENT_BASIS%NUMBER_OF_SUB_BASES+1
-            IF(ASSOCIATED(PARENT_BASIS%SUB_BASES)) DEALLOCATE(PARENT_BASIS%SUB_BASES)
-            PARENT_BASIS%SUB_BASES=>NEW_SUB_BASES
-            SUB_BASIS=>NEW_SUB_BASIS
+            ALLOCATE(NEW_SUB_BASIS%LINE_BASES(1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis line bases",ERR,ERROR,*999)
+            NEW_SUB_BASIS%LINE_BASES(1)%PTR=>NEW_SUB_BASIS
+            NULLIFY(NEW_SUB_BASIS%FACE_BASES)          
           ENDIF
+          !Add the new sub-basis to the list of sub-bases in the parent basis
+          ALLOCATE(NEW_SUB_BASES(PARENT_BASIS%NUMBER_OF_SUB_BASES+1),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new sub-bases",ERR,ERROR,*999)
+          DO basis_idx=1,PARENT_BASIS%NUMBER_OF_SUB_BASES
+            NEW_SUB_BASES(basis_idx)%PTR=>PARENT_BASIS%SUB_BASES(basis_idx)%PTR
+          ENDDO !basis_idx
+          NEW_SUB_BASES(PARENT_BASIS%NUMBER_OF_SUB_BASES+1)%PTR=>NEW_SUB_BASIS
+          PARENT_BASIS%NUMBER_OF_SUB_BASES=PARENT_BASIS%NUMBER_OF_SUB_BASES+1
+          IF(ASSOCIATED(PARENT_BASIS%SUB_BASES)) DEALLOCATE(PARENT_BASIS%SUB_BASES)
+          PARENT_BASIS%SUB_BASES=>NEW_SUB_BASES
+          SUB_BASIS=>NEW_SUB_BASIS
         ELSE
           LOCAL_ERROR="Invalid number of xi directions specified ("// &
             & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_XI,"*",ERR,ERROR))//"). You must specify between 1 and 3 xi directions"
@@ -5640,7 +5694,7 @@ CONTAINS
                   ENDIF
                 ENDDO
               ENDIF
-              BASIS%COLLAPSED_XI=COLLAPSED_XI
+              BASIS%COLLAPSED_XI(1:BASIS%NUMBER_OF_XI)=COLLAPSED_XI(1:BASIS%NUMBER_OF_XI)
             ELSE
               LOCAL_ERROR="The size of the xi collapsed array ("// &
                 & TRIM(NUMBER_TO_VSTRING(SIZE(COLLAPSED_XI,1),"*",ERR,ERROR))//") does not match the number of xi directions ("// &

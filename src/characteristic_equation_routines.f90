@@ -989,8 +989,8 @@ CONTAINS
             parameterIdx=10
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-            Beta(versionIdx) = (4.0*(PI**0.5)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-              & (3.0*A0_PARAM(versionIdx))            
+            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+              & (3.0_DP*A0_PARAM(versionIdx))            
           ENDDO
         ! For branching flows, this gets the elements converging on the node and associates them 
         ! with their specific version number: versionElementNumber(version)
@@ -1027,8 +1027,8 @@ CONTAINS
                     parameterIdx=10
                     CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-                    Beta(versionIdx) = (4.0*(PI**0.5)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-                      & (3.0*A0_PARAM(versionIdx))                 
+                    Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+                      & (3.0_DP*A0_PARAM(versionIdx))                 
                   ENDIF
                 ENDDO
               ENDIF
@@ -1132,7 +1132,7 @@ CONTAINS
                 ELSE
                   nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
                     & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                    & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
+                    & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
                     & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
                 ENDIF
               ENDIF
@@ -1187,7 +1187,7 @@ CONTAINS
     REAL(DP), POINTER :: materialsParameters(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType,startColumn2
-    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,baseIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
+    INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
     LOGICAL :: updateJacobianMatrix
@@ -1297,8 +1297,8 @@ CONTAINS
             parameterIdx=10
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-            Beta(versionIdx) = (4.0*(PI**0.5)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-              & (3.0*A0_PARAM(versionIdx))                 
+            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+              & (3.0_DP*A0_PARAM(versionIdx))                 
           ENDDO
         ! For branching flows, this gets the elements converging on the node and associates them 
         ! with their specific version number: versionElementNumber(version)
@@ -1335,8 +1335,8 @@ CONTAINS
                     parameterIdx=10
                     CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
-                    Beta(versionIdx) = (4.0*(PI**0.5)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-                      & (3.0*A0_PARAM(versionIdx))          
+                    Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+                      & (3.0_DP*A0_PARAM(versionIdx))          
                   ENDIF
                 ENDDO
               ENDIF
@@ -1437,17 +1437,19 @@ CONTAINS
                 IF (ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                   IF(columnIdx==1) THEN
                     ! dP/dQ
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0/(2.0_DP*Fr*Beta(1)))*(Q_BIF(1)/(A_BIF(1)**2.0_DP))
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr*Beta(1)))* &
+                      & (Q_BIF(1)/(A_BIF(1)**2.0_DP))
                     ! dP/dA
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1/(2.0_DP*SQRT(A_BIF(1))) - (1.0/(2.0_DP*Fr*Beta(1)))* &
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1.0_DP/(2.0_DP*SQRT(A_BIF(1))) - &
+                      & (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                       & ((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
                   ELSE IF(columnIdx2==rowIdx) THEN
                     ! dP/dQ
-                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-1.0/(2.0_DP*Fr*Beta(1)))* &
+                    jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                       & (Q_BIF(versionIdx)/(A_BIF(versionIdx)**2.0_DP))
                     ! dP/dA
                     jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=-Beta(versionIdx)/Beta(1)* &
-                     & (1/(2.0_DP*SQRT(A_BIF(versionIdx)))) + (1.0/(2.0_DP*Fr*Beta(1)))* &
+                     & (1/(2.0_DP*SQRT(A_BIF(versionIdx)))) + (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
                      & (Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP)
                   ELSE
                     jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP
