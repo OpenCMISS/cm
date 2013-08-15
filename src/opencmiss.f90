@@ -84,6 +84,8 @@ MODULE OPENCMISS
   USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_CONDITIONS_ROUTINES
   USE INTERFACE_EQUATIONS_ROUTINES
+  USE INTERFACE_MATRICES_CONSTANTS
+  USE INTERFACE_MATRICES_ROUTINES
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
@@ -180,7 +182,7 @@ MODULE OPENCMISS
 
   !>Contains information for a fields defined on a region.
   TYPE CMISSFieldsType
-    PRIVATE
+    !PRIVATE
     TYPE(FIELDS_TYPE), POINTER :: FIELDS
   END TYPE CMISSFieldsType
 
@@ -2382,6 +2384,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE !<Standard Monodomain Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE =  &
     & EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE !<Coupled 1D Monodomain 3D Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
+    & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE !<Finite Elasticity Navier Stokes ALE equations set subtype \see OPENCMISS_EquationsSetSubtype,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -2685,7 +2689,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_BURGERS_SUBTYPE,CMISS_EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE, &
     & CMISS_EQUATIONS_SET_STATIC_BURGERS_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE
+    & CMISS_EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE,CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE
 
 
   PUBLIC CMISS_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE, CMISS_EQUATIONS_SET_CELLML_REAC_NO_SPLIT_REAC_DIFF_SUBTYPE, &
@@ -4074,6 +4078,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementNumberSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
   END INTERFACE !CMISSInterfaceMeshConnectivity_ElementNumberSet
+  
+  !>Sets the coupled node numbers
+  INTERFACE CMISSInterfaceMeshConnectivity_NodeNumberSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_NodeNumberSetObj
+  END INTERFACE
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivity_BasisSet
@@ -4153,6 +4163,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceMeshConnectivity_Destroy, CMISSInterfaceMeshConnectivity_BasisSet
 
   PUBLIC CMISSInterfaceMeshConnectivity_ElementNumberSet, CMISSInterfaceMeshConnectivity_ElementXiSet
+  
+  PUBLIC CMISSInterfaceMeshConnectivity_NodeNumberSet
   
   PUBLIC CMISSInterfacePointsConnectivity_CreateFinish,CMISSInterfacePointsConnectivity_CreateStart
   
@@ -4374,6 +4386,35 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceEquations_SparsityGet,CMISSInterfaceEquations_SparsitySet
 
   PUBLIC CMISSInterfaceEquations_OutputTypeGet,CMISSInterfaceEquations_OutputTypeSet
+  
+!!==================================================================================================================================
+!!
+!! INTERFACE MATRICES ROUTINES
+!!
+!!==================================================================================================================================
+  
+  !Module parameters
+
+  !> \addtogroup INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes INTERFACE_MATRICES_ROUTINES::InterfaceMatricesTimeDependenceTypes
+  !> \brief Interface matrices time dependency types
+  !> \see INTERFACE_MATRICES_ROUTINES
+  !>@{
+  INTEGER, PARAMETER :: CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES=NUMBER_OF_INTERFACE_MATRIX_TYPES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_STATIC=INTERFACE_MATRIX_STATIC !<Interface matrix is of static type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_QUASI_STATIC=INTERFACE_MATRIX_QUASI_STATIC !<Interface matrix is of quasi-static type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC=INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC !<Interface matrix is of first order dynamic type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_SECOND_ORDER_DYNAMIC=INTERFACE_MATRIX_SECOND_ORDER_DYNAMIC !<Interface matrix is of second order dynamic type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  !>@}
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+  PUBLIC CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES,CMISS_INTERFACE_MATRIX_STATIC,CMISS_INTERFACE_MATRIX_QUASI_STATIC, &
+    & CMISS_INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC,CMISS_INTERFACE_MATRIX_SECOND_ORDER_DYNAMIC
+  
+  PUBLIC CMISSInterfaceMatrices_TimeDependenceTypeSet,CMISSInterfaceMatrices_TimeDependenceTypeGet
 
 !!==================================================================================================================================
 !!
@@ -5080,6 +5121,8 @@ MODULE OPENCMISS
     & PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE = & 
     & PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
+    & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE !<Coupled Finite Elasticity Navier Stokes moving mesh subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5206,7 +5249,8 @@ MODULE OPENCMISS
    & CMISS_PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,CMISS_PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE, &
    & CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE, CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE, &
    & CMISS_PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE,CMISS_PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE, &
-   & CMISS_PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,CMISS_PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE
+   & CMISS_PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,CMISS_PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE, &
+   & CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE,CMISS_PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE
 !!==================================================================================================================================
@@ -35356,6 +35400,80 @@ CONTAINS
 
   END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
 
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber(regionUserNumber,interfaceUserNumber, &
+     &  interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface meshe connectivity.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error,*999)
+
+    CALL FLAG_ERROR("Not implemented yet.",err,error,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the connectivity between nodes in coupled meshes to nodes in the interface mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetObj(interfaceMeshConnectivity,interfaceNodeNumbers, &
+     &  firstCoupledMeshIndexNumber,firstCoupledMeshNodeNumbers,secondCoupledMeshIndexNumber,secondCoupledMeshNodeNumbers,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: interfaceNodeNumbers(:)  !<The interface mesh node numbers to which the specified coupled mesh nodes would be connected
+    INTEGER(INTG), INTENT(IN) :: firstCoupledMeshIndexNumber,secondCoupledMeshIndexNumber !<The index of the coupled meshes at the interface to set the node connectivity for
+    INTEGER(INTG), INTENT(IN) :: firstCoupledMeshNodeNumbers(:),secondCoupledMeshNodeNumbers(:) !<The coupled meshes nodes to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error,*999)
+    
+    IF(SIZE(interfaceNodeNumbers(:))==SIZE(firstCoupledMeshNodeNumbers(:)) &
+      & .AND.SIZE(interfaceNodeNumbers(:))==SIZE(secondCoupledMeshNodeNumbers(:))) THEN
+      !TODO Check pointers
+      !Set interface mesh connectivity node connectivity
+      CALL INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY%INTERFACE%NODES, &
+        & interfaceNodeNumbers,firstCoupledMeshIndexNumber,firstCoupledMeshNodeNumbers, &
+        & secondCoupledMeshIndexNumber,secondCoupledMeshNodeNumbers,err,error,*999)
+    ELSE
+      LOCAL_ERROR="Interface number of nodes does not match coupled meshes number of nodes."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetObj
+
   !
   !================================================================================================================================
   !
@@ -50818,6 +50936,95 @@ CONTAINS
 
   END SUBROUTINE CMISSSolverEquations_InterfaceConditionAddObj
 
+  !
+  !================================================================================================================================
+  !
+  
+  !>Set the time dependence type of interface matrices
+  SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeSet(interfaceCondition, &
+    & interfaceMatrixIndex,hasTranspose,timeDependenceTypes,Err)
+    
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
+    INTEGER(INTG), INTENT(IN) :: timeDependenceTypes(:) !<Time dependence types for the given interface matrix and it's transpose (if any). \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: interfaceMatrixIndex
+    LOGICAL, INTENT(IN) :: hasTranspose
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error,*999)
+    
+    IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
+    IF(timeDependenceTypes(1)>0.AND.timeDependenceTypes(1)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES) THEN
+      CALL InterfaceMatrix_TimeDependenceTypeSet(interfaceCondition%INTERFACE_CONDITION, &
+        & interfaceMatrixIndex,.FALSE.,timeDependenceTypes(1),err,error,*999)
+      IF(hasTranspose.AND.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+        CALL InterfaceMatrix_TimeDependenceTypeSet(interfaceCondition%INTERFACE_CONDITION, &
+          & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
+      ELSE
+        IF(.NOT.hasTranspose) THEN
+          !ok)
+        ELSEIF(hasTranspose.AND. &
+          & .NOT.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+          LOCAL_ERROR="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(interfaceMatrixIndex,"*",err,error))// &
+            & " has transpose but invalid time dependence type of "//TRIM(NUMBER_TO_VSTRING(timeDependenceTypes(1), &
+            & "*",err,error))//" ."
+          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      LOCAL_ERROR="Interface matrix time dependence type of "//TRIM(NUMBER_TO_VSTRING(timeDependenceTypes(1),"*",err,error))// &
+        & " is invalid for interface matrix number "//TRIM(NUMBER_TO_VSTRING(interfaceMatrixIndex,"*",err,error))// &
+        & " ."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error)
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeSet
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Get the time dependence type of interface matrices
+  SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeGet(interfaceCondition, &
+    & interfaceMatrixIndex,hasTranspose,timeDependenceTypes,Err)
+    
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
+    INTEGER(INTG), INTENT(OUT) :: timeDependenceTypes(:) !<Time dependence types for the given interface matrix and it's transpose (if any). \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: interfaceMatrixIndex
+    LOGICAL, INTENT(IN) :: hasTranspose
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error,*999)
+    
+    IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
+    CALL InterfaceMatrix_TimeDependenceTypeGet(interfaceCondition%INTERFACE_CONDITION, &
+      & interfaceMatrixIndex,.FALSE.,timeDependenceTypes(1),err,error,*999)
+    IF(hasTranspose) THEN
+      CALL InterfaceMatrix_TimeDependenceTypeGet(interfaceCondition%INTERFACE_CONDITION, &
+        & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error)
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeGet
+  
   !
   !================================================================================================================================
   !

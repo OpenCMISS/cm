@@ -360,6 +360,7 @@ MODULE TYPES
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
     TYPE(NODE_TYPE), ALLOCATABLE :: NODES(:) !<NODES(nodes_idx). The nodal information for the nodes_idx'th global node.
+    INTEGER(INTG), ALLOCATABLE :: COUPLED_NODES(:,:) !<Coupled meshes nodes numbers
     TYPE(TREE_TYPE), POINTER :: NODES_TREE !<The tree for user to global node mapping
   END TYPE NODES_TYPE
 
@@ -1899,6 +1900,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in this interface matrix
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of rows in this interface matrix
+    INTEGER(INTG) :: INTERFACE_MATRIX_TIME_DEPENDENCE_TYPE !<Determines where the interface matrix is mapped to
+    INTEGER(INTG) :: INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE !<Determines where the transpose of the interface matrix is mapped to
     LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this interface matrix is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this interface matrix has not been assembled
     LOGICAL :: HAS_TRANSPOSE !<Is .TRUE. if this interface matrix has has transpose
@@ -2404,6 +2407,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: EXPLICIT !<Is .TRUE. if the dynamic scheme is an explicit scheme, .FALSE. if not.
     LOGICAL :: RESTART !<Is .TRUE. if the dynamic scheme is to be restarted (i.e., recalculate values at the current time step), .FALSE. if not.
     LOGICAL :: ALE !<Is .TRUE. if the dynamic scheme is an ALE scheme, .FALSE. if not.
+    LOGICAL :: FSI !<Is .TRUE. if the dynamic scheme is an FSI scheme and updates geometric fields, .FALSE. if not
     LOGICAL :: UPDATE_BC !<Is .TRUE. if the dynamic scheme has changing bc, .FALSE. if not.
     REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver.
     REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for.

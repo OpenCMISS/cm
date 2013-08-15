@@ -2305,11 +2305,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,loop_idx
+    INTEGER(INTG) :: equations_set_idx,loop_idx,interface_condition_idx
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_TIME_LOOP
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -2331,8 +2332,16 @@ CONTAINS
               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                  IF(DYNAMIC_SOLVER%RESTART.OR..NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                    !If we need to restart or we haven't initialised yet, make sure the equations sets are up to date
+                  !TODO hard-coded (AH) introduce user-call
+            !      IF(SOLVER_EQUATIONS%SOLVER%SOLVERS%CONTROL_LOOP%PROBLEM%CLASS==PROBLEM_MULTI_PHYSICS_CLASS &
+            !        & .AND.SOLVER_EQUATIONS%SOLVER%SOLVERS%CONTROL_LOOP%PROBLEM%TYPE== &
+            !        & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE &
+            !        & .AND.SOLVER_EQUATIONS%SOLVER%SOLVERS%CONTROL_LOOP%PROBLEM%SUBTYPE== &
+            !        & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE) THEN
+            !        DYNAMIC_SOLVER%FSI=.TRUE.
+            !      ENDIF
+                  IF(DYNAMIC_SOLVER%RESTART.OR..NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN!.OR.DYNAMIC_SOLVER%FSI) THEN
+                    !If we need to restart or we haven't initialised yet or we have an FSI scheme, make sure the equations sets are up to date
                     EQUATIONS=>EQUATIONS_SET%EQUATIONS
                     IF(ASSOCIATED(EQUATIONS)) THEN
                       SELECT CASE(EQUATIONS%LINEARITY)
@@ -2355,6 +2364,11 @@ CONTAINS
                     ENDIF
                   ENDIF
                 ENDDO !equations_set_idx
+                !Make sure the interface matrices are up to date
+                DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+                  INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+                  CALL INTERFACE_CONDITION_ASSEMBLE(INTERFACE_CONDITION,ERR,ERROR,*999)
+                ENDDO !interface_condition_idx
                 !Get current control loop times. The control loop may be a sub loop below a time loop, so iterate up
                 !through loops checking for the time loop
                 CONTROL_TIME_LOOP=>CONTROL_LOOP

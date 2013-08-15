@@ -272,6 +272,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS_ITERATION
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS
+  PUBLIC FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
+  PUBLIC FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS
   PUBLIC FLUID_MECHANICS_IO_READ_DATA
 
   PUBLIC FLUID_MECHANICS_IO_WRITE_CMGUI
@@ -4190,7 +4192,136 @@ CONTAINS
 !         WRITE(*,*)'TEST_OUTPUT',BOUNDARY_VALUES(ENDI+1),PI,TIME
     RETURN
 
-  END SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS 
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS
+  !
+  !================================================================================================================================
+  !
+  !> Updates the boundary condition for a given node and component
+  
+  SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(GeometricField,SolverType,InletNodes, &
+    & BoundaryValues,BoundaryCondition,Option,Time,StopTime)
+    
+    INTEGER(INTG) :: Err
+    TYPE(VARYING_STRING) :: Error
+    TYPE(FIELD_TYPE), POINTER :: GeometricField
+    INTEGER(INTG) :: SolverType,Option
+    REAL(DP) :: Value
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: BoundaryValues(:)
+    INTEGER(INTG) :: BoundaryCondition,MaterialSpecification,arraySize,NodeNumber,I
+    INTEGER(INTG), PARAMETER :: Plate2D=2
+    INTEGER(INTG),PARAMETER :: Plate3D=3
+    INTEGER(Intg), ALLOCATABLE, INTENT(OUT) :: InletNodes(:)
+    REAL(DP) :: Time,StopTime
+    
+    MaterialSpecification=Option
+    
+    IF(SolverType==3) THEN
+      SELECT CASE(MaterialSpecification)
+      CASE(Plate2D,Plate3D)
+        IF(MaterialSpecification==Plate2D) THEN
+          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
+            & status='old', action='read')
+        ELSE
+          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate3DinletBC.txt', &
+            & status='old', action='read')
+        ENDIF
+        READ(1,*), arraySize
+        IF(arraySize==0) STOP "Number of boundary conditions for fluid domain is zero. Invalid."
+        ALLOCATE(InletNodes(arraySize))
+        ALLOCATE(BoundaryValues(arraySize))
+        READ(1,*) InletNodes(:)
+        arraySize=0
+        CLOSE(1)
+        BoundaryValues=0.0_DP
+        DO I=1,SIZE(InletNodes)
+          NodeNumber=InletNodes(I)
+          CALL FIELD_PARAMETER_SET_GET_NODE(GeometricField,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,2,Value,Err,Error,*999)
+          BoundaryValues(I)=1.5_DP*0.01_DP/5.0_DP/5.0_DP*(2.0_DP*5.0_DP*Value-Value*Value)*Time/StopTime
+        ENDDO
+      CASE DEFAULT
+        STOP "Invalid input option for position dependent boundary conditions in FSI problem."
+      END SELECT
+    ELSE
+      STOP "Not implemented."
+    ENDIF
+    
+    RETURN
+999 RETURN 1
+  END SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
+   
+  !
+  !================================================================================================================================
+  !
+  !> Reads boundary conditions from a file
+  SUBROUTINE FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS(GEOMETRIC_FIELD, &
+    & SOLVER_TYPE,BOUNDARY_VALUES,NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION, & 
+    & OPTION,TIME_STEP,TIME,STOP_TIME,LENGTH_SCALE)
+
+    INTEGER(INTG) :: Err !<The error code
+    TYPE(VARYING_STRING) :: Error !<The error string
+    TYPE(FIELD_TYPE), POINTER  :: GEOMETRIC_FIELD
+    INTEGER(INTG):: SOLVER_TYPE,I,OPTION, TIME_STEP
+    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
+    INTEGER(INTG):: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION,NUM_BC_NODES
+    REAL(DP):: LENGTH_SCALE,TIME,Y,Value,STOP_TIME
+
+    CHARACTER(34) :: INPUT_FILE
+    INTEGER(INTG):: ENDI,arraySize,NodeNumber
+    INTEGER(INTG), PARAMETER :: Blood=1
+    INTEGER(INTG), PARAMETER :: Plate2D=2
+    INTEGER(INTG), PARAMETER :: Plate3D=3
+    INTEGER(INTG) :: MaterialSpecification
+    INTEGER(Intg), PARAMETER :: Nodes(5)=(/11,21,31,41,52/)
+    INTEGER(Intg), PARAMETER :: NodeMappings(5)=(/29,7,43,13,58/)
+    INTEGER(Intg), ALLOCATABLE :: BoundaryNodes(:)
+    
+
+    ENDI=SIZE(BOUNDARY_VALUES(:))/NUMBER_OF_DIMENSIONS
+    MaterialSpecification=OPTION
+    
+    IF(SOLVER_TYPE==3) THEN!Dynamic
+      SELECT CASE(MaterialSpecification)
+      CASE(Blood)
+        BOUNDARY_VALUES(:)=0.0_DP
+        Y=0.0_DP
+        DO I=1,SIZE(NodeMappings)
+          Y=Y+0.5_DP
+          !BOUNDARY_VALUES(Nodes(I))=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*TIME/4.0_DP)*LENGTH_SCALE/10.0_DP)
+          BOUNDARY_VALUES(NodeMappings(I))=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*TIME/4.0_DP)*LENGTH_SCALE*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
+        ENDDO
+      CASE(Plate2D,Plate3D)
+        IF(MaterialSpecification==Plate2D) THEN
+          !TODO Generalise path names
+          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
+            & status='old', action='read')
+        ELSE
+          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate3DinletBC.txt', &
+            & status='old', action='read')
+        ENDIF
+        READ(1,*), arraySize
+        IF(arraySize==0) STOP "Number of boundary conditions for fluid domain is zero. Invalid."
+        ALLOCATE(BoundaryNodes(arraySize))
+        READ(1,*) BoundaryNodes(:)
+        arraySize=0
+        CLOSE(1)
+        BOUNDARY_VALUES(:)=0.0_DP
+        DO I=1,SIZE(BoundaryNodes)
+          NodeNumber=BoundaryNodes(I)
+          CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,2,Value,Err,Error,*999)
+          BOUNDARY_VALUES(NodeNumber)=1.5_DP*0.01_DP/5.0_DP/5.0_DP*(2.0_DP*5.0_DP*Value-Value*Value)*TIME/STOP_TIME
+        ENDDO
+      CASE DEFAULT
+        STOP "Invalid input option for position dependent boundary conditions in FSI problem."
+      END SELECT
+    ELSE
+      STOP "Not implemented."
+    ENDIF
+    
+    RETURN
+999 RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS 
 
   ! OK
   !================================================================================================================================
