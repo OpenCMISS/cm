@@ -2286,7 +2286,6 @@ CONTAINS
                 CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
               ENDIF              
           CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
             SOLVER_NUMBER_NAVIER_STOKES=2
             !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
@@ -2315,13 +2314,14 @@ CONTAINS
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(Problem_Coupled1dDaeNavierStokesSubtype)
             SELECT CASE(SOLVER%GLOBAL_NUMBER)
             CASE(1)
               ! DAE solver- set time
               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,currentTime,timeIncrement,ERR,ERROR,*999)
-              currentTime=0.001*currentTime
-              timeIncrement=0.001*timeIncrement
+              ! currentTime=0.001*currentTime
+              ! timeIncrement=0.001*timeIncrement
               CALL SOLVER_DAE_TIMES_SET(SOLVER,currentTime,currentTime + timeIncrement,ERR,ERROR,*999)
             CASE(2)
               ! Characteristic solver
@@ -2389,7 +2389,8 @@ CONTAINS
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
-            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)            
+            CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             ! do nothing ???
             CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -3307,7 +3308,7 @@ CONTAINS
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_BIF(4),A_BIF(4),Q_PRE(4),A_PRE(4),area,pressure
     REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
-    REAL(DP), POINTER :: dependentParameters(:)
+    REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
     LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
@@ -3381,6 +3382,7 @@ CONTAINS
     NULLIFY(RHS_VECTOR)
     NULLIFY(STIFFNESS_MATRIX, DAMPING_MATRIX)
     NULLIFY(DEPENDENT_FIELD,INDEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD)
+    NULLIFY(dependentParameters,materialsParameters)
     NULLIFY(FIELD_VARIABLE)
     NULLIFY(QUADRATURE_SCHEME)
     NULLIFY(QUADRATURE_SCHEME1, QUADRATURE_SCHEME2)
@@ -4017,16 +4019,6 @@ CONTAINS
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(10,NO_PART_DERIV)
               H0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(10,FIRST_PART_DERIV)
               Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
-
-              nodeNumber=FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(ng)
-              versionIdx=FIELD_VARIABLE%COMPONENTS(1)%DOMAIN%TOPOLOGY%ELEMENTS%DOMAIN%TOPOLOGY%ELEMENTS% &
-                & ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,ng)
-              CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & versionIdx,1,nodeNumber,8,A0_PARAM,err,error,*999)
-              CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & versionIdx,1,nodeNumber,9,E_PARAM,err,error,*999) 
-              CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & versionIdx,1,nodeNumber,10,H0_PARAM,err,error,*999)  
              
               mhs=0
               !Loop Over Element Rows
@@ -4114,37 +4106,64 @@ CONTAINS
 
                 ENDDO !ms
               ENDDO !mh
-              
-              !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
-              variableType=DEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE 
-              fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & dependentParameters,err,error,*999)
-              nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(ng)
-              versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,1,ng)
-              local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)% &
-                      & VERSIONS(versionIdx)
-              area=dependentParameters(local_ny)
-              pressure=(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
-              CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & versionIdx,1,nodeNumber,1,pressure,err,error,*999)
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & dependentParameters,err,error,*999)
-                 
             ENDIF
           ENDDO !ng
 
-          !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
             IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-
               numberOfElementNodes=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS%NUMBER_OF_NODES
               numberOfParameters=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
               firstNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
               lastNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(numberOfElementNodes)
               derivativeIdx=1
 
+              !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
+              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & dependentParameters,err,error,*999)
+              CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & materialsParameters,err,error,*999)
+                
+              !Loop over the element nodes and versions
+              DO nodeIdx=1,numberOfElementNodes
+                nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
+                DO versionIdx=1,ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)% &
+                  & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                  !Get current Area values
+                  variableType=DEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+                  area=dependentParameters(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)% &
+                        & DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  !Get current Materials values
+                  variableType=MATERIALS_FIELD%VARIABLES(1)%VARIABLE_TYPE 
+                  fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(variableType)%PTR
+                  As=materialsParameters(fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
+                  A0_PARAM=materialsParameters(fieldVariable%COMPONENTS(8)%PARAM_TO_DOF_MAP% &
+                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  E_PARAM=materialsParameters(fieldVariable%COMPONENTS(9)%PARAM_TO_DOF_MAP% &
+                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  H0_PARAM=materialsParameters(fieldVariable%COMPONENTS(10)%PARAM_TO_DOF_MAP% &
+                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx))
+                  !Pressure equation
+                  pressure=65.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
+                  !Update the dependent field
+                  USER_ELEMENT_EXISTS=.FALSE.
+                  GHOST_ELEMENT=.TRUE.
+                  CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY, &
+                    & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
+                  IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
+                    CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & versionIdx,derivativeIdx,nodeNumber,1,pressure,err,error,*999)
+                  ENDIF
+                ENDDO
+              ENDDO
+              !Restore the field parameters
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & dependentParameters,err,error,*999)
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & materialsParameters,err,error,*999)
+                
+              !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
               DO nodeIdx=1,numberOfElementNodes
                 nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
                 numberOfVersions=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)% &
@@ -4901,6 +4920,7 @@ CONTAINS
                   & " is invalid for Coupled1D-DAE Navier-Stokes problem."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
               CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
@@ -4992,7 +5012,7 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx,dof_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),TOTAL_NUMBER_OF_ELEMENTS
-    INTEGER(INTG) :: bif_idx,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: bif_idx,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_DOFS,numberOfLocalNodes,nodeNumber
     LOGICAL :: inletNode,outletNode,fixedNode,nonReflecting,solverCharacteristicFlag,solverNavierStokesFlag
 
     NULLIFY(SOLVER_EQUATIONS)
@@ -5548,21 +5568,20 @@ CONTAINS
                       NULLIFY(independentParameters)
 
                       TOTAL_NUMBER_OF_NODES=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+                      numberOfLocalNodes=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NUMBER_OF_NODES
                       TOTAL_NUMBER_OF_DOFS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
                       TOTAL_NUMBER_OF_ELEMENTS=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
                       bif_idx=0
                       dof_idx=0
 
-                      !!!--  L o o p   O v e r   N o d e s  --!!!
-                      DO nodeIdx=1,TOTAL_NUMBER_OF_NODES
+                      !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
+                      DO nodeIdx=1,numberOfLocalNodes
+                        nodeNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(nodeIdx)
                         !number of versions at this node
                         numberOfVersions=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
                           & DERIVATIVES(1)%NUMBER_OF_VERSIONS
-                        !DOF Number of the Bifurcation Nodes
-                        dof_idx=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
-                          & DERIVATIVES(1)%DOF_INDEX(1)
+
                         derivativeIdx=1
-                      
                         inletNode=.FALSE.
                         outletNode=.FALSE.
                         fixedNode=.FALSE.
@@ -5600,8 +5619,9 @@ CONTAINS
                             DO elementIdx=1,DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
                               & NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
                               ! get the user number for the current element
-                              elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-                                & NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(elementIdx)
+                              elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP &
+                                & (DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                                & SURROUNDING_ELEMENTS(elementIdx))
                               ! loop over the nodes on this (surrounding) element
                               DO elementNodeIdx=1,EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
                                 & PTR%ELEMENTS%ELEMENTS(elementNumber)%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
@@ -5609,7 +5629,7 @@ CONTAINS
                                 elementNodeNumber=EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD%DECOMPOSITION%MESH%TOPOLOGY(1)% &
                                   & PTR%ELEMENTS%ELEMENTS(elementNumber)%MESH_ELEMENT_NODES(elementNodeIdx)
                                 ! check that this node is the same as the current iterative node
-                                IF(elementNodeNumber==nodeIdx) THEN
+                                IF(elementNodeNumber==nodeNumber) THEN
                                   ! Loop over the versions to find the element index that matches the version
                                   DO versionIdx=1,numberOfVersions
                                     ! the version number for the local element node
@@ -5621,15 +5641,15 @@ CONTAINS
                                       versionElementNumber(versionIdx)=elementNumber
                                       materialIdx=8
                                       CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeIdx,materialIdx,A0_PARAM(versionIdx), &
+                                        & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeNumber,materialIdx,A0_PARAM(versionIdx), &
                                         & err,error,*999)
                                       materialIdx=9
                                       CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeIdx,materialIdx,E_PARAM(versionIdx), &
+                                        & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeNumber,materialIdx,E_PARAM(versionIdx), &
                                         & err,error,*999)   
                                       materialIdx=10
                                       CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeIdx,materialIdx,H0_PARAM(versionIdx), &
+                                        & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeNumber,materialIdx,H0_PARAM(versionIdx), &
                                         & err,error,*999)            
                                       Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
                                         & (3.0_DP*A0_PARAM(versionIdx))
@@ -5667,8 +5687,9 @@ CONTAINS
                           ! ---  C o u p l e d    N o d e  ---
                           ELSE
 
-                            elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-                              & NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(1)
+                            elementNumber=DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP &
+                              & (DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
+                              & SURROUNDING_ELEMENTS(1))
                             BOUNDARY_CONDITIONS=>CONTROL_LOOP%SOLVERS%SOLVERS(2)%PTR%SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                               CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_FIELD% &
@@ -5680,7 +5701,7 @@ CONTAINS
                                 parameterIdx=2
                                 versionIdx=1
                                 local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-                                  & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                                  & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                                 BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
                                   & CONDITION_TYPES(local_ny)
                                 IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
@@ -5691,25 +5712,25 @@ CONTAINS
                                   fixedNode=.TRUE.
                                 ELSE
                                   CALL FLAG_ERROR("Please set 1D-0D coupled boundary for node "//TRIM(NUMBER_TO_VSTRING( &
-                                    & nodeIdx,"*",ERR,ERROR))//" as inlet or outlet.",ERR,ERROR,*999)
+                                    & nodeNumber,"*",ERR,ERROR))//" as inlet or outlet.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
                                 CALL FLAG_ERROR("No boundary condition variable at coupled node "//TRIM(NUMBER_TO_VSTRING( &
-                                  & nodeIdx,"*",ERR,ERROR)),ERR,ERROR,*999)
+                                  & nodeNumber,"*",ERR,ERROR)),ERR,ERROR,*999)
                               ENDIF
                             ELSE
                               CALL FLAG_ERROR("Please set a boundary condition at coupled node "//TRIM(NUMBER_TO_VSTRING( &
-                                & nodeIdx,"*",ERR,ERROR)),ERR,ERROR,*999)
+                                & nodeNumber,"*",ERR,ERROR)),ERR,ERROR,*999)
                             ENDIF
                             materialIdx=8
                             CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE &
-                              & ,versionIdx,1,nodeIdx,materialIdx,A0_PARAM(versionIdx),err,error,*999)
+                              & ,versionIdx,1,nodeNumber,materialIdx,A0_PARAM(versionIdx),err,error,*999)
                             materialIdx=9
                             CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE &
-                              & ,versionIdx,1,nodeIdx,materialIdx,E_PARAM(versionIdx),err,error,*999)   
+                              & ,versionIdx,1,nodeNumber,materialIdx,E_PARAM(versionIdx),err,error,*999)   
                             materialIdx=10
                             CALL FIELD_PARAMETER_SET_GET_NODE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE &
-                              & ,versionIdx,1,nodeIdx,materialIdx,H0_PARAM(versionIdx),err,error,*999)            
+                              & ,versionIdx,1,nodeNumber,materialIdx,H0_PARAM(versionIdx),err,error,*999)            
                             Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
                               & (3.0_DP*A0_PARAM(versionIdx))              
  
@@ -5717,10 +5738,10 @@ CONTAINS
                             parameterIdx=1
                             versionIdx = 1
                             CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                             & versionIdx,derivativeIdx,nodeIdx,parameterIdx,Q_EX(versionIdx),err,error,*999)
+                             & versionIdx,derivativeIdx,nodeNumber,parameterIdx,Q_EX(versionIdx),err,error,*999)
                             parameterIdx=2
                             CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                             & versionIdx,derivativeIdx,nodeIdx,parameterIdx,A_EX(versionIdx),err,error,*999)
+                             & versionIdx,derivativeIdx,nodeNumber,parameterIdx,A_EX(versionIdx),err,error,*999)
  
                           ENDIF ! Differentiate b/t coupled/branch node
 
@@ -5773,14 +5794,14 @@ CONTAINS
                             componentIdx=1
                             versionIdx=1
                             CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx, &
+                              & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,componentIdx, &
                               & W(componentIdx,versionIdx),err,error,*999)
                           ELSE IF(outletNode) THEN
                             componentIdx=2
                             versionIdx=1
-                            CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx, &
-                              & W(componentIdx,versionIdx),err,error,*999)
+                            ! CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                            !   & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,componentIdx, &
+                            !   & W(componentIdx,versionIdx),err,error,*999)
                             nonReflecting=.TRUE.
  
                             areaCalculated = (((W(1,1)-W(2,1))/4.0_DP)**4.0_DP)* &
@@ -8639,28 +8660,18 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: geometricField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
-    TYPE(DECOMPOSITION_TYPE), POINTER :: geometricDecomposition
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: decompElement
     TYPE(BASIS_TYPE), POINTER :: dependentBasis
-    TYPE(BASIS_TYPE), POINTER :: dependentBasis1
-    TYPE(BASIS_TYPE), POINTER :: dependentBasis2
-    TYPE(BASIS_TYPE), POINTER :: geometricFaceBasis
     TYPE(EQUATIONS_TYPE), POINTER :: equations
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
     TYPE(DECOMPOSITION_FACE_TYPE), POINTER :: face
     TYPE(BASIS_TYPE), POINTER :: faceBasis
-    TYPE(BASIS_TYPE), POINTER :: faceBasis1
-    TYPE(BASIS_TYPE), POINTER :: faceBasis2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: dependentInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: dependentInterpolationParameters
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme1
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: geometricInterpolationParameters
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics
-    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
-    TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(FIELD_TYPE), POINTER :: dependentField
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
@@ -8671,11 +8682,8 @@ CONTAINS
     INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
     INTEGER(INTG) :: numberOfDimensions,boundaryID
     REAL(DP) :: normalProjection,normalProjection2,pressureGauss,mu,sumDelU,jacobianGaussWeights
-    REAL(DP) :: normalMagnitude,boundaryValue,boundaryFlux
     REAL(DP) :: areaJacobian,volumeJacobian
-    REAL(DP) :: resistanceProximal,faceNormal2(3)
-    REAL(DP) :: elementNormal(3),velocityGauss(3),faceNormal(3),unitNormal(3),delUGauss(3,3),dXi_dX(3,3)
-    LOGICAL :: elementIsMultidomainBoundary
+    REAL(DP) :: delUGauss(3,3),dXi_dX(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP), POINTER :: geometricParameters(:)
@@ -8683,23 +8691,15 @@ CONTAINS
     CALL ENTERS("NavierStokes_FiniteElementFaceIntegrate",err,error,*999)
 
     NULLIFY(decomposition)
-    NULLIFY(geometricDecomposition)
     NULLIFY(decompElement)
     NULLIFY(dependentBasis)
-    NULLIFY(dependentBasis1)
-    NULLIFY(dependentBasis2)
-    NULLIFY(geometricFaceBasis)
     NULLIFY(geometricVariable)
     NULLIFY(geometricParameters)
     NULLIFY(equations)
     NULLIFY(equationsMatrices)
     NULLIFY(face)
     NULLIFY(faceBasis)
-    NULLIFY(faceBasis1)
-    NULLIFY(faceBasis2)
     NULLIFY(faceQuadratureScheme)
-    NULLIFY(faceQuadratureScheme1)
-    NULLIFY(faceQuadratureScheme2)
     NULLIFY(dependentInterpolatedPoint)
     NULLIFY(dependentInterpolationParameters)
     NULLIFY(geometricInterpolatedPoint)
@@ -8708,8 +8708,6 @@ CONTAINS
     NULLIFY(nonlinearMatrices)
     NULLIFY(dependentField)
     NULLIFY(geometricField)
-    NULLIFY(equationsEquationsSetField)
-    NULLIFY(equationsSetField)
 
     IF(ASSOCIATED(equationsSet)) THEN
       equations=>equationsSet%EQUATIONS
@@ -8731,202 +8729,140 @@ CONTAINS
 
     SELECT CASE(equationsSet%SUBTYPE)
     CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
-      !Get the element boundary normal values (zeroes if not a Coupled Multidomain Method boundary)
-      equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
-      IF(ASSOCIATED(equationsEquationsSetField)) THEN
-        equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
-        IF(ASSOCIATED(equationsSetField)) THEN
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,5,elementNormal(1),err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,6,elementNormal(2),err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,7,elementNormal(3),err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,8,boundaryValue,err,error,*999)
-          boundaryID=NINT(boundaryValue)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,9,boundaryFlux,err,error,*999)
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementNumber,10,resistanceProximal,err,error,*999)
-          !Check if boundary element is a multidomain boundary element
-          elementIsMultidomainBoundary=.FALSE.
-          normalMagnitude=L2NORM(elementNormal)
-          IF(normalMagnitude>ZERO_TOLERANCE) THEN
-            elementIsMultidomainBoundary=.TRUE.
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Equations set field (EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
-        END IF
-      ELSE
-        CALL FLAG_ERROR("Equations set field (EQUATIONS_EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
-      END IF
 
-      IF(elementIsMultidomainBoundary .AND. boundaryID > 1) THEN
-        !Get the mesh decomposition and basis
-        decomposition=>dependentVariable%FIELD%DECOMPOSITION
-        !Check that face geometric parameters have been calculated
-        IF(decomposition%CALCULATE_FACES) THEN
-          meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementNumber)%BASIS
+      !Get the mesh decomposition and basis
+      decomposition=>dependentVariable%FIELD%DECOMPOSITION
+      !Check that face geometric parameters have been calculated
+      IF(decomposition%CALCULATE_FACES) THEN
+        meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+        dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
+          & ELEMENTS(elementNumber)%BASIS
 
-          meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          dependentBasis1=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementNumber)%BASIS
-          meshComponentNumber=dependentVariable%COMPONENTS(2)%MESH_COMPONENT_NUMBER
-          dependentBasis2=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementNumber)%BASIS
+        decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
+        !Get the dependent interpolation parameters
+        dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
+          & dependentVariable%VARIABLE_TYPE)%PTR
+        dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
+          & dependentVariable%VARIABLE_TYPE)%PTR
+        !Get the geometric interpolation parameters
+        geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
+          & FIELD_U_VARIABLE_TYPE)%PTR
+        geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
+        CALL FIELD_NUMBER_OF_COMPONENTS_GET(geometricField,FIELD_U_VARIABLE_TYPE,numberOfDimensions,ERR,ERROR,*999)
+        !Get access to geometric coordinates
+        CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,ERR,ERROR,*999)
+        meshComponentNumber=geometricVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+        !Get the geometric distributed vector
+        CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & geometricParameters,ERR,ERROR,*999)
+        fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
 
-          decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
-          !Get the dependent interpolation parameters
-          dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
-            & dependentVariable%VARIABLE_TYPE)%PTR
-          dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
-            & dependentVariable%VARIABLE_TYPE)%PTR
-          !Get the geometric interpolation parameters
-          geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
-            & FIELD_U_VARIABLE_TYPE)%PTR
-!          geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-          geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
-          CALL FIELD_NUMBER_OF_COMPONENTS_GET(geometricField,FIELD_U_VARIABLE_TYPE,numberOfDimensions,ERR,ERROR,*999)
-          !Get access to geometric coordinates
-          CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,ERR,ERROR,*999)
-          meshComponentNumber=geometricVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          geometricDecomposition=>geometricField%DECOMPOSITION
-          !Get the geometric distributed vector
-          CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & geometricParameters,ERR,ERROR,*999)
-          fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+        DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
+          !Get the face normal and quadrature information
+          IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
+            faceNumber=decompElement%ELEMENT_FACES(faceIdx)
+          ELSE
+            CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
+          END IF
+          face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
+          !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
+          !correspond to the other element.
+          IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
 
-          DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
-            !Get the face normal and quadrature information
-            IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
-              faceNumber=decompElement%ELEMENT_FACES(faceIdx)
-            ELSE
-              CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
-            END IF
-            face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
-            !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
-            !correspond to the other element.
-            IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
+          SELECT CASE(dependentBasis%TYPE)
+          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+            normalComponentIdx=ABS(face%XI_DIRECTION)
+          CASE DEFAULT
+            LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+              & " is not yet implemented for Navier-Stokes."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
 
-            SELECT CASE(dependentBasis%TYPE)
-            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-              normalComponentIdx=ABS(face%XI_DIRECTION)
-              !How does this differentiate between wall and in/outlet boundaries? Try:
-              IF(ABS(elementNormal(normalComponentIdx))< (ZERO_TOLERANCE)) CYCLE
-            CASE DEFAULT
-              LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
-                & " is not yet implemented for Navier-Stokes."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+          CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
+            & dependentInterpolationParameters,err,error,*999)
 
-            CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
-              & dependentInterpolationParameters,err,error,*999)
+          faceBasis=>decomposition%DOMAIN(1)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+          faceQuadratureScheme=>faceBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 
-            faceBasis1=>decomposition%DOMAIN(1)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-            faceBasis2=>decomposition%DOMAIN(2)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-            faceQuadratureScheme1=>faceBasis1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-            faceQuadratureScheme2=>faceBasis2%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+          DO gaussIdx=1,faceQuadratureScheme%NUMBER_OF_GAUSS
+            !Get interpolated geometry
+            geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
+              & geometricInterpolatedPoint,err,error,*999)
+            !Get interpolated velocity and pressure 
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
+              & dependentInterpolatedPoint,err,error,*999)
+            pressureGauss=0.0_DP
+            delUGauss=0.0_DP
+            pressureGauss=dependentInterpolatedPoint%values(4,NO_PART_DERIV) 
+            delUGauss(1:3,1)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S1)
+            delUGauss(1:3,2)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S2)
+            delUGauss(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
+            !Materials parameters
+            mu=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
 
-            DO gaussIdx=1,faceQuadratureScheme1%NUMBER_OF_GAUSS
-              !Get interpolated geometry
-              geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-              CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
-                & geometricInterpolatedPoint,err,error,*999)
-              !Get interpolated velocity and pressure 
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
-                & dependentInterpolatedPoint,err,error,*999)
-              ! CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
-              !   & geometricInterpolatedPoint,err,error,*999)
-              velocityGauss=0.0_DP
-              pressureGauss=0.0_DP
-              delUGauss=0.0_DP
-              velocityGauss=dependentInterpolatedPoint%values(1:3,NO_PART_DERIV)
-              pressureGauss=dependentInterpolatedPoint%values(4,NO_PART_DERIV) 
-              delUGauss(1:3,1)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S1)
-              delUGauss(1:3,2)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S2)
-              delUGauss(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
-              !Materials parameters
-              mu=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+            !Calculate point metrics
+            pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE,pointMetrics,err,error,*999)
+            areaJacobian=pointMetrics%Jacobian
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
+            volumeJacobian=pointMetrics%Jacobian
+            dXi_dX=0.0_DP
+            dXi_dX=pointMetrics%DXI_DX(:,:)
+            elementBaseDofIdx=0
 
-              !Calculate point metrics
-              pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE,pointMetrics,err,error,*999)
-              areaJacobian=pointMetrics%Jacobian
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
-              volumeJacobian=pointMetrics%Jacobian
-              dXi_dX=0.0_DP
-              dXi_dX=pointMetrics%DXI_DX(:,:)
-              elementBaseDofIdx=0
+            !Loop over field components
+            DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+              !Work out the first index of the rhs vector for this element - (i.e. the number of previous)
+              elementBaseDofIdx=dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
 
-              DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                normalProjection2=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DXI_DX(componentIdx,:))
-                IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
-                IF(face%XI_DIRECTION<0) THEN
-                  normalProjection=-normalProjection
-                  normalProjection2=-normalProjection2
-                END IF
-                faceNormal(componentIdx)=normalProjection
-                faceNormal2(componentIdx)=normalProjection2
-              ENDDO
-              unitNormal=faceNormal/L2NORM(faceNormal)
+              normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
+              normalProjection2=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DXI_DX(componentIdx,:))
+              IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
+              IF(face%XI_DIRECTION<0) THEN
+                normalProjection=-normalProjection
+                normalProjection2=-normalProjection2
+              END IF
 
-              !Loop over field components
-              DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                !Work out the first index of the rhs vector for this element - (i.e. the number of previous)
-                elementBaseDofIdx=dependentBasis1%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
+              !Jacobian and Gauss weighting term
+              jacobianGaussWeights=faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)*pointMetrics%JACOBIAN
 
-                normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                normalProjection2=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DXI_DX(componentIdx,:))
-                IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
-                IF(face%XI_DIRECTION<0) THEN
-                  normalProjection=-normalProjection
-                  normalProjection2=-normalProjection2
-                END IF
+              sumDelU=0.0_DP  
+              DO xiIdx=1,dependentBasis%NUMBER_OF_XI
+                sumDelU=sumDelU+ &
+                 & ((delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,1)) + &
+                 &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,2)) + &
+                 &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,3)))
+              ENDDO !xiIdx
 
-                !Jacobian and Gauss weighting term
-                jacobianGaussWeights=faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*pointMetrics%JACOBIAN
+              DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
+                elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
+                DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
+                  nodeDerivativeIdx=1
+                  parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
+                  faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
+                  elementDofIdx=elementBaseDofIdx+parameterIdx
 
-                sumDelU=0.0_DP  
-                DO xiIdx=1,dependentBasis1%NUMBER_OF_XI
-                  sumDelU=sumDelU+ &
-                   & ((delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,1)) + &
-                   &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,2)) + &
-                   &  (delUGauss(componentIdx,xiIdx)*pointMetrics%dXi_dX(xiIdx,3)))
-                ENDDO !xiIdx
+                  rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
+                    &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                    &  faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                    &  faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
 
-                DO faceNodeIdx=1,faceBasis1%NUMBER_OF_NODES
-                  elementNodeIdx=dependentBasis1%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
-                  DO faceNodeDerivativeIdx=1,faceBasis1%NUMBER_OF_DERIVATIVES(faceNodeIdx)
-                    nodeDerivativeIdx=1
-                    parameterIdx=dependentBasis1%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
-                    faceParameterIdx=faceBasis1%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
-                    elementDofIdx=elementBaseDofIdx+parameterIdx
-!                    IF(boundaryID > 1) THEN
-                    rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) + &
-                      &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
-                      &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
-                      &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
+                  ! nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
+                  !   & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) + &
+                  !   &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
+                  !   &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                  !   &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
+                END DO !nodeDerivativeIdx
+              END DO !faceNodeIdx
+            ENDDO !componentIdx
+          ENDDO !gaussIdx
+        ENDDO !faceIdx
 
-                    ! nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) = &
-                    !   & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(elementDofIdx) + &
-                    !   &  (mu*sumDelU*normalProjection2 - pressureGauss*normalProjection)* &
-                    !   &  faceQuadratureScheme1%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
-                    !   &  faceQuadratureScheme1%GAUSS_WEIGHTS(gaussIdx)*volumeJacobian
-                  END DO !nodeDerivativeIdx
-                END DO !faceNodeIdx
-              ENDDO !componentIdx
-            ENDDO !gaussIdx
-          ENDDO !faceIdx
-
-          !Restore the distributed geometric data used for the normal calculation
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & geometricParameters,ERR,ERROR,*999)
-        END IF !decomposition%calculate_faces
-      ENDIF !elementIsMultidomainBoundary
+        !Restore the distributed geometric data used for the normal calculation
+        CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & geometricParameters,ERR,ERROR,*999)
+      END IF !decomposition%calculate_faces
 
     CASE DEFAULT
       ! Do nothing for other equation set subtypes
@@ -9480,7 +9416,7 @@ CONTAINS
 
     INTEGER(INTG) :: iterationIdx,maxIterations,nodeIdx,dofIdx
     INTEGER(INTG) :: boundaryIdx,local_ny
-    INTEGER(INTG) :: numberOfVersions,numberOfNodes1D,numberOfDofs1D,numberOfElements1D,numberOfElementNodes
+    INTEGER(INTG) :: numberOfVersions,numberOfNodes1D,numberOfLocalNodes1D,numberOfElements1D,numberOfElementNodes,nodeNumber
     INTEGER(INTG) :: boundaryConditionCheckVariable,componentIdx,derivativeIdx,elementNumber,returnComponent,oneDComponent
     INTEGER(INTG) :: numberOfSurroundingElements,parameterIdx,variableType,versionIdx
     INTEGER(INTG) :: solverCharacteristicNumber,solver1dNavierStokesNumber,solverDaeNumber 
@@ -9489,7 +9425,7 @@ CONTAINS
     REAL(DP) :: A_PRE(3),Q_PRE(3),Q_EX(3),A_EX(3),A0_PARAM,normalWave(2),W(2),W0
     REAL(DP) :: pCellML,pPrevious,pVesselWall,pExternal,qBoundary,aBoundary,qPrevious
     REAL(DP) :: Kr,Beta,pTest,qTest,E_PARAM,H0_PARAM
-    LOGICAL :: converged,inletNode,outletNode,updateArea
+    LOGICAL :: converged,inletNode,outletNode,updateArea,boundaryNode
 
     !Nullify pointers
     NULLIFY(solverEquations)
@@ -9627,7 +9563,7 @@ CONTAINS
         END SELECT
 
         numberOfNodes1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
-        numberOfDofs1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%DOFS%NUMBER_OF_DOFS
+        numberOfLocalNodes1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NUMBER_OF_NODES
         numberOfElements1D=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
         numberOfElementNodes=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%ELEMENTS%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS
         nodeIdx=0
@@ -9636,20 +9572,23 @@ CONTAINS
         converged=.TRUE. ! false when find node that hasn't converged values across 1D-0D interface
 
         ! Loop over 1D nodes to find coupled nodes and update characteristic values
-        DO nodeIdx=1,numberOfNodes1D
+        DO nodeIdx=1,numberOfLocalNodes1D
+          nodeNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(nodeIdx)
           numberOfVersions=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
             & DERIVATIVES(1)%NUMBER_OF_VERSIONS
           numberOfSurroundingElements=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
               & NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
+          boundaryNode=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
+              & NODES%NODES(nodeIdx)%BOUNDARY_NODE
 
           derivativeIdx=1
           versionIdx=1
           DO componentIdx=1,2
             CALL FIELD_PARAMETER_SET_GET_NODE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, & 
-             & derivativeIdx,nodeIdx,componentIdx,normalWave(componentIdx),err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,normalWave(componentIdx),err,error,*999)
           ENDDO
           !check for non-zero wave direction
-          IF(ABS(normalWave(1))>ZERO_TOLERANCE .AND. numberOfSurroundingElements==1) THEN
+          IF(ABS(normalWave(1))>ZERO_TOLERANCE .AND. boundaryNode) THEN
 
             inletNode=.FALSE.
             outletNode=.FALSE.
@@ -9665,7 +9604,7 @@ CONTAINS
                 derivativeIdx=1
                 versionIdx=1
                 local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-                 & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                 & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                 boundaryConditionCheckVariable=boundaryConditionsVariable% &
                  & CONDITION_TYPES(local_ny)
                 IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
@@ -9710,15 +9649,15 @@ CONTAINS
             ! A0
             componentIdx=8
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,derivativeIdx,nodeIdx,componentIdx,A0_PARAM,err,error,*999)  
+             & versionIdx,derivativeIdx,nodeNumber,componentIdx,A0_PARAM,err,error,*999)  
             ! E
             componentIdx=9
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,derivativeIdx,nodeIdx,componentIdx,E_PARAM,err,error,*999)                
+             & versionIdx,derivativeIdx,nodeNumber,componentIdx,E_PARAM,err,error,*999)                
             ! H0
             componentIdx=10
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,derivativeIdx,nodeIdx,componentIdx,H0_PARAM,err,error,*999)                
+             & versionIdx,derivativeIdx,nodeNumber,componentIdx,H0_PARAM,err,error,*999)                
             Beta = (4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
          
             ! --- D e p e n d e n t   P a r a m e t e r s --- !
@@ -9726,40 +9665,40 @@ CONTAINS
             versionIdx=1
             componentIdx=1
             CALL FIELD_PARAMETER_SET_GET_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,qBoundary,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,qBoundary,err,error,*999)
             ! Get qPrevious- previous 1D q value at node
             CALL FIELD_PARAMETER_SET_GET_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,qPrevious,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,qPrevious,err,error,*999)
             ! Get aBoundary- 1D area value at node
             componentIdx=2
             CALL FIELD_PARAMETER_SET_GET_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,aBoundary,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,aBoundary,err,error,*999)
 
             ! Get W- characteristic wave values calculated by the characteristic equations (V dependent variable)
             versionIdx=1
             DO componentIdx=1,2
               CALL FIELD_PARAMETER_SET_GET_NODE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-               & derivativeIdx,nodeIdx,componentIdx,W(componentIdx),err,error,*999)
+               & derivativeIdx,nodeNumber,componentIdx,W(componentIdx),err,error,*999)
             ENDDO
 
             ! Get pCellML- pressure returned from CellML 0D model
             componentIdx=1
             CALL FIELD_PARAMETER_SET_GET_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,pCellML,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,pCellML,err,error,*999)
             ! Get pPrevious- previous pressure set by CellML
             CALL FIELD_PARAMETER_SET_GET_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,pPrevious,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,pPrevious,err,error,*999)
 
             ! --- M a t e r i a l s   P a r a m e t e r s --- !
             ! Get pVesselWall- intrinsic material parameter based on vessel
             versionIdx=1
             componentIdx=1
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,pVesselWall,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,pVesselWall,err,error,*999)
             componentIdx=2
             ! Get pExternal - pressure external to the given vessel
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,pExternal,err,error,*999)
+             & derivativeIdx,nodeNumber,componentIdx,pExternal,err,error,*999)
 
             ! Check whether p values have converged, w values need to be recalculated, or we need to exit after maximum iterations
             IF(ABS(pPrevious) > ZERO_TOLERANCE) THEN
@@ -9785,23 +9724,23 @@ CONTAINS
               componentIdx=1
               qPrevious=qBoundary
               CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-               & versionIdx,derivativeIdx,nodeIdx,componentIdx,qPrevious,err,error,*999)
+               & versionIdx,derivativeIdx,nodeNumber,componentIdx,qPrevious,err,error,*999)
               versionIdx=1
               componentIdx=1 
               pPrevious=pCellML !current p will be pPrevious for next iteration
               CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-               & versionIdx,derivativeIdx,nodeIdx,componentIdx,pPrevious,err,error,*999)
+               & versionIdx,derivativeIdx,nodeNumber,componentIdx,pPrevious,err,error,*999)
 
               updateArea=.TRUE.
               IF (updateArea) THEN
                 ! U p d a t e  A r e a 
                 !--------------------------------------------------
                 ! update area based on the pressure-area condition p-pext = Beta(sqrt(a) -sqrt(a0))
-                aBoundary  = ((((pCellML-pExternal)*133.32_DP)/Beta + SQRT(A0_PARAM))**2.0_DP)/As
+                aBoundary  = ((((pCellML-pExternal))/Beta + SQRT(A0_PARAM))**2.0_DP)/As
                 versionIdx=1
                 componentIdx=2
                 CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & versionIdx,derivativeIdx,nodeIdx,componentIdx,aBoundary,err,error,*999)
+                 & versionIdx,derivativeIdx,nodeNumber,componentIdx,aBoundary,err,error,*999)
               ENDIF
 
               ! C a l c u l a t e   B o u n d a r y    C h a r a c t e r i s t i c 
@@ -9813,12 +9752,12 @@ CONTAINS
                 W(oneDComponent) = qBoundary/aBoundary+normalWave(oneDComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
                 W0 = qBoundary/aBoundary+normalWave(returnComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
                 W(returnComponent) = W0 + qBoundary/aBoundary + normalWave(returnComponent)*(16.0_DP*Fr)* &
-                 & (SQRT((pCellML-pExternal+pVesselWall)*133.32_DP) - SQRT(pVesselWall))
+                 & (SQRT((pCellML-pExternal+pVesselWall)) - SQRT(pVesselWall))
 
                 versionIdx=1
                 DO componentIdx=1,2
                   CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_V_VARIABLE_TYPE, &
-                   & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx,W(componentIdx),ERR,ERROR,*999)
+                   & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,componentIdx,W(componentIdx),ERR,ERROR,*999)
                 ENDDO
               ENDIF
 
@@ -9830,11 +9769,12 @@ CONTAINS
           ENDIF ! check for multiple versions (could be coupled or bifurcation)
         ENDDO ! loop over nodes 
 
-        IF(converged .AND. boundaryIdx==0) THEN
-          LOCAL_ERROR="1D-0D coupling has been called but no boundaries have been found over "// &
-            & TRIM(NUMBER_TO_VSTRING(numberOfNodes1D,"*",ERR,ERROR))//" 1D nodes."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)           
-        ENDIF ! check if converged for this node                        
+        ! !This is a nice check for serial but can easily have no boundaries set on a given rank in parallel problems
+        ! IF(converged .AND. boundaryIdx==0) THEN
+        !   LOCAL_ERROR="1D-0D coupling has been called but no boundaries have been found over "// &
+        !     & TRIM(NUMBER_TO_VSTRING(numberOfNodes1D,"*",ERR,ERROR))//" 1D nodes."
+        !   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)           
+        ! ENDIF ! check if converged for this node                        
 
         ! If the global P,Q values at the 1D-0D interface have converged, exit the routine and continue on to the
         ! next timestep and 1D solution. Otherwise re-solve the 1D problem with new characteristic values to generate
