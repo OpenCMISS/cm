@@ -3708,7 +3708,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP,globalElementNumber
+    INTEGER(INTG) :: COMP_NUMBER,derivativeIdx,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP,globalElementNumber,nodeIdx,numParameters
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION    
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -3769,17 +3769,28 @@ CONTAINS
                 FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(COMPONENT_NUMBER,VARIABLE_TYPE)
               SELECT CASE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE)
               CASE(FIELD_CONSTANT_INTERPOLATION)
-                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=1
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters=1
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=0
               CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=1
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters=1
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=0
               CASE(FIELD_NODE_BASED_INTERPOLATION)
-                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=-1
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters=-1
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                   BASIS=>DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
                   IF(BASIS%NUMBER_OF_ELEMENT_PARAMETERS>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                    & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS) FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                    & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                    & maxNumberElementInterpolationParameters) FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
+                    & maxNumberElementInterpolationParameters=BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 ENDDO !ne
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=-1
+                DO nodeIdx=1,DOMAIN%TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
+                  numParameters=0
+                  DO derivativeIdx=1,DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                    numParameters=numParameters+DOMAIN%TOPOLOGY%NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                  ENDDO !derivativeIdx
+                  IF(numParameters>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters) &
+                    & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=numParameters
+                ENDDO !nodeIdx
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)             
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION) ! ?
@@ -3789,17 +3800,19 @@ CONTAINS
                   NGP = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
                   IF(NGP > MAXINTERP) MAXINTERP = NGP
                 ENDDO
-                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS = MAXINTERP
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters = MAXINTERP
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters = 0
               CASE(FIELD_DATA_POINT_BASED_INTERPOLATION) 
-                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=-1
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters=-1
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                   globalElementNumber=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
                   IF(DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)> &
-                      & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS) THEN
-                    FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS= &
+                      & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters) THEN
+                    FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters= &
                       &  DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)
                   ENDIF
                 ENDDO
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=0
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                   & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -4006,6 +4019,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: componentIdx,parameterSetIdx,scalingIdx,variableIdx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_CREATE_FINISH",ERR,ERROR,*999)
@@ -4042,12 +4056,77 @@ CONTAINS
     ENDIF
 
     IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Field number : ",FIELD%USER_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number       = ",FIELD%GLOBAL_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Dependent type      = ",FIELD%DEPENDENT_TYPE,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Field type          = ",FIELD%TYPE,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of variables = ",FIELD%NUMBER_OF_VARIABLES,ERR,ERROR,*999)
-   ENDIF
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"",FIELD%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Field number : ",FIELD%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Global number = ",FIELD%GLOBAL_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  User number = ",FIELD%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Label = ",FIELD%LABEL,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Dependent type = ",FIELD%DEPENDENT_TYPE,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Field type = ",FIELD%TYPE,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of variables = ",FIELD%NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+      IF(DIAGNOSTICS2) THEN
+        DO variableIdx=1,FIELD%NUMBER_OF_VARIABLES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Variable : ",variableIdx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Variable Type = ",variableIdx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Variable Label = ",FIELD%VARIABLES(variableIdx)%VARIABLE_LABEL, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Dimension = ",FIELD%VARIABLES(variableIdx)%DIMENSION, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Data type = ",FIELD%VARIABLES(variableIdx)%DATA_TYPE, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      DOF order type = ",FIELD%VARIABLES(variableIdx)%DOF_ORDER_TYPE, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Max num element interpolation parameters = ",FIELD% &
+            & VARIABLES(variableIdx)%maxNumberElementInterpolationParameters,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Max num node interpolation parameters = ",FIELD% &
+            & VARIABLES(variableIdx)%maxNumberNodeInterpolationParameters,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of DOFs = ",FIELD%VARIABLES(variableIdx)% &
+            & NUMBER_OF_DOFS,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Total number of DOFs = ",FIELD%VARIABLES(variableIdx)% &
+            & TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of global DOFs = ",FIELD%VARIABLES(variableIdx)% &
+            & NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of components = ",FIELD%VARIABLES(variableIdx)% &
+            & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+          IF(DIAGNOSTICS3) THEN
+            DO componentIdx=1,FIELD%VARIABLES(variableIdx)%NUMBER_OF_COMPONENTS
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Component : ",componentIdx,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Component label = ",FIELD%VARIABLES(variableIdx)% &
+                COMPONENTS(componentIdx)%COMPONENT_LABEL,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Interpolation type = ",FIELD%VARIABLES(variableIdx)% &
+                COMPONENTS(componentIdx)%INTERPOLATION_TYPE,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Mesh component number = ",FIELD%VARIABLES(variableIdx)% &
+                COMPONENTS(componentIdx)%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Scaling index = ",FIELD%VARIABLES(variableIdx)% &
+                COMPONENTS(componentIdx)%SCALING_INDEX,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Max num element interpolation parameters = ",FIELD% &
+                & VARIABLES(variableIdx)%COMPONENTS(componentIdx)%maxNumberElementInterpolationParameters,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Max num node interpolation parameters = ",FIELD% &
+                & VARIABLES(variableIdx)%COMPONENTS(componentIdx)%maxNumberNodeInterpolationParameters,ERR,ERROR,*999)         
+            ENDDO !componentIdx
+          ENDIF
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of parameter sets = ",FIELD%VARIABLES(variableIdx)% &
+            & PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS,ERR,ERROR,*999)
+          IF(DIAGNOSTICS3) THEN
+            DO parameterSetIdx=1,FIELD%VARIABLES(variableIdx)%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Parameter set index : ",parameterSetIdx,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Set type : ",FIELD%VARIABLES(variableIdx)% &
+                & PARAMETER_SETS%PARAMETER_SETS(parameterSetIdx)%PTR%SET_TYPE,ERR,ERROR,*999)
+            ENDDO !parameterSetIdx
+          ENDIF
+        ENDDO !variableIdx
+      ENDIF
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Scaling type = ",FIELD%SCALINGS%SCALING_TYPE,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of scaling indices = ",FIELD%SCALINGS%NUMBER_OF_SCALING_INDICES, &
+        & ERR,ERROR,*999)
+      IF(DIAGNOSTICS2) THEN
+        DO scalingIdx=1,FIELD%SCALINGS%NUMBER_OF_SCALING_INDICES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Scaling index : ",scalingIdx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Mesh component number : ",FIELD%SCALINGS%SCALINGS(scalingIdx)% &
+            & MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+        ENDDO !scalingIdx
+      ENDIF
+    ENDIF
 
     CALL EXITS("FIELD_CREATE_FINISH")
     RETURN
@@ -7420,12 +7499,12 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
           ALLOCATE(INTERPOLATION_PARAMETERS%NUMBER_OF_PARAMETERS(numberOfComponents),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interpolation type.",ERR,ERROR,*999)
-          ALLOCATE(INTERPOLATION_PARAMETERS%PARAMETERS(FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS, &
+          ALLOCATE(INTERPOLATION_PARAMETERS%PARAMETERS(FIELD_VARIABLE%maxNumberElementInterpolationParameters, &
             & numberOfComponents),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate parameters.",ERR,ERROR,*999)
           INTERPOLATION_PARAMETERS%PARAMETERS=0.0_DP
           IF(FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            ALLOCATE(INTERPOLATION_PARAMETERS%SCALE_FACTORS(FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS, &
+            ALLOCATE(INTERPOLATION_PARAMETERS%SCALE_FACTORS(FIELD_VARIABLE%maxNumberElementInterpolationParameters, &
               & numberOfComponents),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate scale factors.",ERR,ERROR,*999)
             INTERPOLATION_PARAMETERS%SCALE_FACTORS=0.0_DP
@@ -27096,12 +27175,17 @@ CONTAINS
               & " is invalid. The number must be > 0."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
-          FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=-1
+          FIELD_VARIABLE%maxNumberElementInterpolationParameters=-1
+          FIELD_VARIABLE%maxNumberNodeInterpolationParameters=-1
           DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-            IF(FIELD_VARIABLE%COMPONENTS(component_idx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS> &
-              & FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS) FIELD_VARIABLE% &
-              & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS=FIELD_VARIABLE%COMPONENTS(component_idx)% &
-              & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+            IF(FIELD_VARIABLE%COMPONENTS(component_idx)%maxNumberElementInterpolationParameters> &
+              & FIELD_VARIABLE%maxNumberElementInterpolationParameters) FIELD_VARIABLE% &
+              & maxNumberElementInterpolationParameters=FIELD_VARIABLE%COMPONENTS(component_idx)% &
+              & maxNumberElementInterpolationParameters
+            IF(FIELD_VARIABLE%COMPONENTS(component_idx)%maxNumberNodeInterpolationParameters> &
+              & FIELD_VARIABLE%maxNumberNodeInterpolationParameters) FIELD_VARIABLE% &
+              & maxNumberNodeInterpolationParameters=FIELD_VARIABLE%COMPONENTS(component_idx)% &
+              & maxNumberNodeInterpolationParameters
           ENDDO !component_idx
           FIELD_VARIABLE%NUMBER_OF_DOFS=0
           FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS=0

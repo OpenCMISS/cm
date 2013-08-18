@@ -905,13 +905,13 @@ CONTAINS
         elementMatrix%MAX_NUMBER_OF_ROWS = 0
         DO componentIdx=1,rowsFieldVariable%NUMBER_OF_COMPONENTS
           elementMatrix%MAX_NUMBER_OF_ROWS=elementMatrix%MAX_NUMBER_OF_ROWS+ &
-            & rowsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+            & rowsFieldVariable%COMPONENTS(componentIdx)%maxNumberElementInterpolationParameters
         ENDDO
         elementMatrix%MAX_NUMBER_OF_ROWS=elementMatrix%MAX_NUMBER_OF_ROWS*rowsNumberOfElements
         elementMatrix%MAX_NUMBER_OF_COLUMNS = 0
         DO componentIdx=1,columnsFieldVariable%NUMBER_OF_COMPONENTS
           elementMatrix%MAX_NUMBER_OF_COLUMNS=elementMatrix%MAX_NUMBER_OF_COLUMNS+ &
-            & columnsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+            & columnsFieldVariable%COMPONENTS(componentIdx)%maxNumberElementInterpolationParameters
         ENDDO
         elementMatrix%MAX_NUMBER_OF_COLUMNS=elementMatrix%MAX_NUMBER_OF_COLUMNS*colsNumberOfElements
         IF(ALLOCATED(elementMatrix%ROW_DOFS)) THEN
@@ -1120,7 +1120,7 @@ CONTAINS
       elementVector%MAX_NUMBER_OF_ROWS = 0
       DO componentIdx=1,rowsFieldVariable%NUMBER_OF_COMPONENTS
         elementVector%MAX_NUMBER_OF_ROWS=elementVector%MAX_NUMBER_OF_ROWS+ &
-          & rowsFieldVariable%COMPONENTS(componentIdx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+          & rowsFieldVariable%COMPONENTS(componentIdx)%maxNumberElementInterpolationParameters
       ENDDO
       IF(ALLOCATED(elementVector%ROW_DOFS)) THEN
         CALL FLAG_ERROR("Element vector row dofs is already allocated.",err,error,*999)
@@ -2209,9 +2209,9 @@ CONTAINS
 
     IF(ASSOCIATED(rowsFieldVariable)) THEN
       IF(ASSOCIATED(colsFieldVariable)) THEN
-        nodalMatrix%maxNumberOfRows=rowsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+        nodalMatrix%maxNumberOfRows=rowsFieldVariable%maxNumberNodeInterpolationParameters* &
           & rowsFieldVariable%NUMBER_OF_COMPONENTS
-        nodalMatrix%maxNumberOfColumns=colsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+        nodalMatrix%maxNumberOfColumns=colsFieldVariable%maxNumberNodeInterpolationParameters* &
           & colsFieldVariable%NUMBER_OF_COMPONENTS
         IF(ALLOCATED(nodalMatrix%rowDofs)) THEN
           CALL FLAG_ERROR("Nodal matrix row dofs already allocated.",err,error,*999)
@@ -2265,7 +2265,7 @@ CONTAINS
     CALL ENTERS("EquationsMatrices_NodalVectorSetup",err,error,*998)
 
     IF(ASSOCIATED(rowsFieldVariable)) THEN
-      nodalVector%maxNumberOfRows=rowsFieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+      nodalVector%maxNumberOfRows=rowsFieldVariable%maxNumberNodeInterpolationParameters* &
         & rowsFieldVariable%NUMBER_OF_COMPONENTS
       IF(ALLOCATED(nodalVector%rowDofs)) THEN
         CALL FLAG_ERROR("Nodal vector row dofs is already allocated.",err,error,*999)        
@@ -4603,7 +4603,7 @@ CONTAINS
                                       CALL LIST_DATA_TYPE_SET(columnIndicesLists(local_ny)%PTR,LIST_INTG_TYPE,err,error,*999)
                                       CALL LIST_INITIAL_SIZE_SET(columnIndicesLists(local_ny)%PTR,domainNodes%NODES(np)% &
                                         & NUMBER_OF_SURROUNDING_ELEMENTS*fieldVariable%COMPONENTS(nh)% &
-                                        & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS,err,error,*999)
+                                        & maxNumberElementInterpolationParameters,err,error,*999)
                                       CALL LIST_CREATE_FINISH(columnIndicesLists(local_ny)%PTR,err,error,*999)
                                       !Loop over all elements containing the dof
                                       DO elementIdx=1,domainNodes%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
@@ -4803,7 +4803,7 @@ CONTAINS
 
                                       CALL LIST_INITIAL_SIZE_SET(columnIndicesLists(localDofIdx)%PTR, &
                                         & fieldVariable%NUMBER_OF_COMPONENTS* &
-                                        & fieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS,err,error,*999)
+                                        & fieldVariable%maxNumberElementInterpolationParameters,err,error,*999)
 
                                       CALL LIST_CREATE_FINISH(columnIndicesLists(localDofIdx)%PTR,err,error,*999)
                                       !Loop over all components,nodes,derivatives, and versions
@@ -5083,7 +5083,7 @@ CONTAINS
                                           CALL LIST_DATA_TYPE_SET(columnIndicesLists(local_ny)%PTR,LIST_INTG_TYPE,err,error,*999)
                                           CALL LIST_INITIAL_SIZE_SET(columnIndicesLists(local_ny)%PTR,domainNodes%NODES(np)% &
                                             & NUMBER_OF_SURROUNDING_ELEMENTS*rowVariable%COMPONENTS(nh)% &
-                                            & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS,err,error,*999)
+                                            & maxNumberElementInterpolationParameters,err,error,*999)
                                           CALL LIST_CREATE_FINISH(columnIndicesLists(local_ny)%PTR,err,error,*999)
                                           !Loop over all elements containing the dof
                                           DO elementIdx=1,domainNodes%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
@@ -5143,7 +5143,7 @@ CONTAINS
                                           CALL LIST_CREATE_START(columnIndicesLists(local_ny)%PTR,err,error,*999)
                                           CALL LIST_DATA_TYPE_SET(columnIndicesLists(local_ny)%PTR,LIST_INTG_TYPE,err,error,*999)
                                           CALL LIST_INITIAL_SIZE_SET(columnIndicesLists(local_ny)%PTR, &
-                                            & rowVariable%COMPONENTS(nh)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS+1, &
+                                            & rowVariable%COMPONENTS(nh)%maxNumberElementInterpolationParameters+1, &
                                             & err,error,*999) ! size = all nodal dofs + itself
                                           CALL LIST_CREATE_FINISH(columnIndicesLists(local_ny)%PTR,err,error,*999)
                                           DO nh2=1,fieldVariable%NUMBER_OF_COMPONENTS
@@ -5337,7 +5337,7 @@ CONTAINS
 
                                           CALL LIST_INITIAL_SIZE_SET(columnIndicesLists(localDofIdx)%PTR, &
                                             & fieldVariable%NUMBER_OF_COMPONENTS* &
-                                            & fieldVariable%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS,err,error,*999)
+                                            & fieldVariable%maxNumberElementInterpolationParameters,err,error,*999)
 
                                           CALL LIST_CREATE_FINISH(columnIndicesLists(localDofIdx)%PTR,err,error,*999)
                                           !Loop over all components,nodes,derivatives, and versions
@@ -5396,7 +5396,7 @@ CONTAINS
                                         DEALLOCATE(columns)
                                       ENDDO !localDofIdx
                                       IF(DIAGNOSTICS1) THEN
-                                        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Jacobian matrix structure:",err,error,*999)
+                                        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Jacobian matrix structure :",err,error,*999)
                                         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of rows = ", &
                                           & dependentDofsDomainMapping%TOTAL_NUMBER_OF_LOCAL,err,error,*999)
                                         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of columns = ", &

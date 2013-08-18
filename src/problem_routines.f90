@@ -3411,8 +3411,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Problem control loop is not associated.",err,error,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solvers is not associated.",err,error,*999)
       ENDIF
       !Nonlinear solve monitor--progress output if required
       IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -3443,7 +3441,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !> Output fields at Newton iterations
+  !> Output fields at Newton iterations. This is in temporarily for debug output. It may be removed at a later date.
   SUBROUTINE Problem_SolverNewtonFieldsOutput(solver,iterationNumber,err,error,*)
 
     !Argument variables
