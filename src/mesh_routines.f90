@@ -310,6 +310,7 @@ CONTAINS
                 & " has already been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ELSE
+              !\todo Split this into an initialise and create start.
               ALLOCATE(NEW_DECOMPOSITION,STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition.",ERR,ERROR,*999)
               !Set default decomposition properties
@@ -332,6 +333,7 @@ CONTAINS
               NULLIFY(NEW_DECOMPOSITION%DOMAIN)
               !Nullify the topology
               NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
+              !\todo change this to use move alloc.
               !Add new decomposition into list of decompositions on the mesh
               ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions.",ERR,ERROR,*999)
@@ -541,7 +543,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: number_elem_indicies,elem_index,elem_count,ne,nn,my_computational_node_number,number_computational_nodes, &
       & no_computational_node,ELEMENT_START,ELEMENT_STOP,MY_ELEMENT_START,MY_ELEMENT_STOP,NUMBER_OF_ELEMENTS, &
-      & MY_NUMBER_OF_ELEMENTS,MPI_IERROR,MAX_NUMBER_ELEMENTS_PER_NODE,component_idx
+      & MY_NUMBER_OF_ELEMENTS,MPI_IERROR,MAX_NUMBER_ELEMENTS_PER_NODE,component_idx,minNumberXi
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_COUNT(:),ELEMENT_PTR(:),ELEMENT_INDICIES(:),ELEMENT_DISTANCE(:),DISPLACEMENTS(:), &
       & RECEIVE_COUNTS(:)
     INTEGER(INTG) :: ELEMENT_WEIGHT(1),WEIGHT_FLAG,NUMBER_FLAG,NUMBER_OF_CONSTRAINTS, &
@@ -630,9 +632,11 @@ CONTAINS
               elem_index=0
               elem_count=0
               ELEMENT_PTR(0)=0
+              minNumberXi=99999
               DO ne=MY_ELEMENT_START,MY_ELEMENT_STOP
                 elem_count=elem_count+1
                 BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
+                IF(BASIS%NUMBER_OF_XI<minNumberXi) minNumberXi=BASIS%NUMBER_OF_XI
                 DO nn=1,BASIS%NUMBER_OF_NODES
                   ELEMENT_INDICIES(elem_index)=MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)% &
                     & MESH_ELEMENT_NODES(nn)-1 !C numbering
@@ -646,7 +650,11 @@ CONTAINS
               ELEMENT_WEIGHT(1)=1 !Isn't used due to weight flag
               NUMBER_FLAG=0 !C Numbering as there is a bug with Fortran numbering
               NUMBER_OF_CONSTRAINTS=1
-              NUMBER_OF_COMMON_NODES=2
+              IF(minNumberXi==1) THEN
+                NUMBER_OF_COMMON_NODES=1
+              ELSE
+                NUMBER_OF_COMMON_NODES=2
+              ENDIF
               !ParMETIS now has doule precision for these
               !TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
               !UBVEC=1.05_SP

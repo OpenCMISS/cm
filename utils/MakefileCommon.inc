@@ -285,7 +285,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
       # turn on warnings,
       # warn about non-standard Fortran 95
       F_FLGS += -cpp -warn all -m$(ABI) -fPIC
-      DBGF_FLGS += -O0 -check all -traceback -debug all
+      DBGF_FLGS += -O0 -check all -traceback -debug all -fpe-all=0
       OPTF_FLGS = -O3
 #     MP_FLGS = -openmp
       ELFLAGS += -nofor_main -m$(ABI) -traceback
