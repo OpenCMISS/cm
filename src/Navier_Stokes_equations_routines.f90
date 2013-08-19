@@ -9700,6 +9700,11 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
              & derivativeIdx,nodeNumber,componentIdx,pExternal,err,error,*999)
 
+            IF((pCellML-pExternal+pVesselWall)<ZERO_TOLERANCE) THEN
+              LOCAL_ERROR="Zero or negative pressure at node "//TRIM(NUMBER_TO_VSTRING(nodeNumber,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+            
             ! Check whether p values have converged, w values need to be recalculated, or we need to exit after maximum iterations
             IF(ABS(pPrevious) > ZERO_TOLERANCE) THEN
               pTest = ABS((pCellML-pPrevious)/pPrevious)
