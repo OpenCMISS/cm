@@ -461,12 +461,13 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
 
     REAL(DP), POINTER :: independentVectorParameters(:),independentWeightParameters(:)
+    REAL(DP), ALLOCATABLE :: projectionXi(:)
     REAL(DP):: POROSITY_0, POROSITY, PERM_OVER_VIS_PARAM_0, PERM_OVER_VIS_PARAM,TAU_PARAM,KAPPA_PARAM
+    REAL(DP):: tension,curvature
     REAL(DP):: MATERIAL_FACT
     REAL(DP):: DXDY(3,3), DXDXI(3,3), DYDXI(3,3), DXIDY(3,3), DXI_DX(3,3)
     REAL(DP):: Jxy, Jyxi
-    REAL(DP):: projectionXi(3),dataPointVector(3)
-    REAL(DP):: dataPointWeight,sumWeights
+    REAL(DP):: dataPointWeight,sumWeights,dataPointVector(3)
     INTEGER(INTG) :: derivative_idx, component_idx, xi_idx, NUMBER_OF_DIMENSIONS
     INTEGER(INTG) :: dataPointIdx,dataPointUserNumber,dataPointLocalNumber
     INTEGER(INTG) :: numberOfXi
@@ -499,8 +500,7 @@ CONTAINS
     NULLIFY(QUADRATURE_SCHEME)
     NULLIFY(GEOMETRIC_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT)
 
-    projectionXi=0.0_DP
-    dataPointVector=0.0_DP
+    dataPointVector = 0.0_DP
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -550,6 +550,8 @@ CONTAINS
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
           numberOfXi = DEPENDENT_BASIS%NUMBER_OF_XI
+          ALLOCATE(projectionXi(numberOfXi))
+          projectionXi=0.0_DP
           ! Get data point vector parameters
           CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
             & independentVectorParameters,err,error,*999)
@@ -563,18 +565,18 @@ CONTAINS
             & decompositionLocalElementNumber,ghostElement,err,error,*999)              
           IF(userElementExists .AND. .NOT. ghostElement ) THEN
 
-            !Loop over data points to get the sum of the weights (for non-embedded data points)
-            sumWeights = 0.0_DP
-            DO dataPointIdx=1,dataPoints%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
-              dataPointUserNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%userNumber
-              dataPointLocalNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%localNumber
-              ! Get data point weight value
-              variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
-              fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
-              localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
-              dataPointWeight=independentWeightParameters(localDof)
-              sumWeights = sumWeights + dataPointWeight
-            ENDDO
+            ! !Loop over data points to get the sum of the weights (for non-embedded data points)
+            ! sumWeights = 0.0_DP
+            ! DO dataPointIdx=1,dataPoints%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
+            !   dataPointUserNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%userNumber
+            !   dataPointLocalNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%localNumber
+            !   ! Get data point weight value
+            !   variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
+            !   fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+            !   localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
+            !   dataPointWeight=independentWeightParameters(localDof)
+            !   sumWeights = sumWeights + dataPointWeight
+            ! ENDDO
 
             !===========================================
             ! D a t a   P o i n t   V e c t o r    F i t
@@ -602,7 +604,8 @@ CONTAINS
               fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
               localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
                & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
-              dataPointWeight=independentWeightParameters(localDof)/sumWeights
+!              dataPointWeight=independentWeightParameters(localDof)/sumWeights
+              dataPointWeight=independentWeightParameters(localDof)
 
               mhs=0          
               !Loop over element rows
@@ -688,32 +691,67 @@ CONTAINS
                     DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
                       SUM = 0.0_DP
-                      !Calculate SUM 
 
-                      SUM = SUM +    ( &
-                        & TAU_PARAM*2.0_DP* ( &
+                      !Calculate sobelov surface tension and curvature smoothing terms
+                      tension = TAU_PARAM*2.0_DP* ( &
                         & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3,ng)) +&
-                        & KAPPA_PARAM*2.0_DP* ( &
+                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1,ng))
+                      curvature = KAPPA_PARAM*2.0_DP* ( &
                         & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S1,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S2,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S2,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3_S3,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3_S3,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S2,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S2,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S3,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S3,ng)+ &
-                        & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S3,ng)* &
-                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng)))
+                        & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,ng))
 
+                      IF(mappingVariable%NUMBER_OF_COMPONENTS > 1) THEN
+                        tension = tension + TAU_PARAM*2.0_DP* ( &
+                          & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2,ng)* &
+                          & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2,ng))
+                        curvature = curvature + KAPPA_PARAM*2.0_DP* ( &
+                          & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S2,ng)* &
+                          & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S2,ng) + &
+                          & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S2,ng)* &
+                          & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S2,ng))
+
+                        IF(mappingVariable%NUMBER_OF_COMPONENTS > 2) THEN
+                          tension = tension + TAU_PARAM*2.0_DP* ( &
+                            & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3,ng)* &
+                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3,ng))
+                          curvature = curvature + KAPPA_PARAM*2.0_DP* ( &
+                            & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3_S3,ng)* &
+                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3_S3,ng)+ &
+                            & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S3,ng)* &
+                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S3,ng)+ &
+                            & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S3,ng)* &
+                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng))
+                        ENDIF ! 3D
+                      ENDIF ! 2 or 3D
+
+                      ! Add in smoothing terms to the element matrix
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
-                        & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * jacobianGaussWeight
+                        & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + (tension + curvature) * jacobianGaussWeight
+
+                      ! SUM = SUM +    ( &
+                      !   & TAU_PARAM*2.0_DP* ( &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3,ng)) +&
+                      !   & KAPPA_PARAM*2.0_DP* ( &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S1,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S2,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S2,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3_S3,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3_S3,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S2,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S2,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S3,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S3,ng)+ &
+                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S3,ng)* &
+                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng)))
+
+                      ! EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
+                      !   & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * jacobianGaussWeight
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF ! update matrix
