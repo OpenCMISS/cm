@@ -538,7 +538,7 @@ CONTAINS
                                   ENDIF
                                 ENDIF
                                 !Loop over the versions
-                                DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                                DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%numberOfVersions
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                     & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(derivative_idx)%VERSIONS(version_idx)
                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
@@ -3086,8 +3086,8 @@ CONTAINS
               DO nodeIdx=1,basis%NUMBER_OF_NODES
                 node=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_NODES(nodeIdx)
                 DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
-                  derivative=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_DERIVATIVES(1,derivativeIdx,nodeIdx)
-                  version=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_DERIVATIVES(2,derivativeIdx,nodeIdx)
+                  derivative=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_DERIVATIVES(derivativeIdx,nodeIdx)
+                  version=elementsTopology%ELEMENTS(elementNumber)%elementVersions(derivativeIdx,nodeIdx)
                   localNy=columnVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                     & DERIVATIVES(derivative)%VERSIONS(version)
                   ! one-sided finite difference

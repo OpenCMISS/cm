@@ -2282,17 +2282,17 @@ CONTAINS
                               !Set derivative number of u (NO_GLOBAL_DERIV) for the domain line
                               DOMAIN_LINE%DERIVATIVES_IN_LINE(1,1,basis_local_line_node_idx)=NO_GLOBAL_DERIV
                               !Set version number of u (NO_GLOBAL_DERIV) for the domain line
-                              version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                              version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                & basis_local_line_node_idx,basis_local_line_idx))
                               DOMAIN_LINE%DERIVATIVES_IN_LINE(2,1,basis_local_line_node_idx)=version_idx
                               IF(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
                                 derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                  & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
+                                  & BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
                                   & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
                                 DOMAIN_LINE%DERIVATIVES_IN_LINE(1,2,basis_local_line_node_idx)=derivative_idx
-                                version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                  & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
-                                  & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE( &
+                                  & basis_local_line_node_idx,basis_local_line_idx),BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                  & basis_local_line_node_idx,basis_local_line_idx))
                                 DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
                               ENDIF
                             ENDDO !basis_local_line_node_idx
@@ -2444,17 +2444,16 @@ CONTAINS
                                   !Set derivative number of u (NO_GLOBAL_DERIV) for the domain line
                                   DOMAIN_LINE%DERIVATIVES_IN_LINE(1,1,basis_local_line_node_idx)=NO_GLOBAL_DERIV
                                   !Set version number of u (NO_GLOBAL_DERIV) for the domain line
-                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                  version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                    & basis_local_line_node_idx,basis_local_line_idx))
                                   DOMAIN_LINE%DERIVATIVES_IN_LINE(2,1,basis_local_line_node_idx)=version_idx
                                   IF(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
-                                      & element_local_node_idx)
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE( &
+                                      & basis_local_line_node_idx,basis_local_line_idx),element_local_node_idx)
                                     DOMAIN_LINE%DERIVATIVES_IN_LINE(1,2,basis_local_line_node_idx)=derivative_idx
-                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
-                                      & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                    version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE( &
+                                      & basis_local_line_node_idx,basis_local_line_idx),BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                      & basis_local_line_node_idx,basis_local_line_idx))
                                     DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
                                   ENDIF
                                   NODES_NUMBER_OF_LINES(node_idx)=NODES_NUMBER_OF_LINES(node_idx)+1
@@ -2943,19 +2942,19 @@ CONTAINS
                                 !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
                                 DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
                                 !Set version number of u (NO_GLOBAL_DERIV) for the domain face
-                                version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                  & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_FACE( &
+                                  & basis_local_face_node_idx,basis_local_face_idx))
                                 DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                 IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
                                   DO basis_local_face_derivative_idx=2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
-                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                      & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                      & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                      & element_local_node_idx)
                                     DOMAIN_FACE%DERIVATIVES_IN_FACE(1,basis_local_face_derivative_idx, &
                                       & basis_local_face_node_idx)=derivative_idx
-                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                      & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                    version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                      & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                      & element_local_node_idx)
                                     DOMAIN_FACE%DERIVATIVES_IN_FACE(2,basis_local_face_derivative_idx, &
                                       & basis_local_face_node_idx)=version_idx
                                   ENDDO !basis_local_face_derivative_idx
@@ -3116,19 +3115,19 @@ CONTAINS
                                   !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
                                   DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
                                   !Set version number of u (NO_GLOBAL_DERIV) for the domain face
-                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                  version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_FACE( &
+                                    & basis_local_face_node_idx,basis_local_face_idx))
                                   DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                   IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
                                     DO basis_local_face_derivative_idx=2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
-                                      derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                        & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                        & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                      derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                        & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                        & element_local_node_idx)
                                       DOMAIN_FACE%DERIVATIVES_IN_FACE(1,basis_local_face_derivative_idx, &
                                         & basis_local_face_node_idx)=derivative_idx
-                                      version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                        & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                        & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                      version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                        & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                        & element_local_node_idx)
                                       DOMAIN_FACE%DERIVATIVES_IN_FACE(2,basis_local_face_derivative_idx, &
                                         & basis_local_face_node_idx)=version_idx
                                     ENDDO !basis_local_face_derivative_idx
@@ -4787,12 +4786,19 @@ CONTAINS
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX
                   DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX= &
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
-                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS= & 
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%numberOfVersions= & 
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                  ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%userVersionNumbers( &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node derivative version numbers.",ERR,ERROR,*999)
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%userVersionNumbers(1: &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS)= &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(1: &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS)
                   ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%DOF_INDEX( &
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node dervative versions dof index.",ERR,ERROR,*999)
-                  DO version_idx=1,DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                  DO version_idx=1,DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%numberOfVersions
                     dof_idx=dof_idx+1
                     DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)=dof_idx
                     DOMAIN_DOFS%DOF_INDEX(1,dof_idx)=version_idx
@@ -4807,12 +4813,16 @@ CONTAINS
                 CALL DOMAIN_TOPOLOGY_ELEMENT_INITIALISE(DOMAIN_ELEMENTS%ELEMENTS(local_element),ERR,ERROR,*999)
                 global_element=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(local_element)               
                 BASIS=>MESH_ELEMENTS%ELEMENTS(global_element)%BASIS
+                DOMAIN_ELEMENTS%ELEMENTS(local_element)%NUMBER=local_element
                 DOMAIN_ELEMENTS%ELEMENTS(local_element)%BASIS=>BASIS
                 ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element nodes",ERR,ERROR,*999)
-                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element nodes.",ERR,ERROR,*999)
+                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                   & BASIS%NUMBER_OF_NODES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element derivatives",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element derivatives.",ERR,ERROR,*999)
+                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%elementVersions(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                  & BASIS%NUMBER_OF_NODES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element versions.",ERR,ERROR,*999)
                 DO nn=1,BASIS%NUMBER_OF_NODES
                   global_node=MESH_ELEMENTS%ELEMENTS(global_element)%MESH_ELEMENT_NODES(nn)
                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(global_node)%LOCAL_NUMBER(1)
@@ -4829,8 +4839,8 @@ CONTAINS
                       ENDIF
                     ENDDO !nkk
                     IF(FOUND) THEN
-                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(1,derivative_idx,nn)=nkk
-                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,derivative_idx,nn) = & 
+                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(derivative_idx,nn)=nkk
+                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%elementVersions(derivative_idx,nn) = & 
                         & MESH_ELEMENTS%ELEMENTS(global_element)%USER_ELEMENT_NODE_VERSIONS(derivative_idx,nn)
                     ELSE
                       CALL FLAG_ERROR("Could not find equivalent node derivative",ERR,ERROR,*999)
@@ -4877,7 +4887,7 @@ CONTAINS
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Partial derivative index = ", &
             & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
-            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,4,4, &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%numberOfVersions,4,4, &
             & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX, &
             & '("        Degree-of-freedom index(version_idx)  :",4(X,I9))','(36X,4(X,I9))',ERR,ERROR,*999)
         ENDDO !derivative_idx
@@ -4903,19 +4913,14 @@ CONTAINS
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES,8,8, &
           & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES,'("    Element nodes(nn) :",8(X,I9))','(23X,8(X,I9))', &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Element derivatives :",ERR,ERROR,*999)
         DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number : ",nn,ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
-            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,:,nn), &
-            & '("        Element derivatives(derivative_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
-        ENDDO !nn
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Element versions :",ERR,ERROR,*999)
-        DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
+            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(:,nn), &
+            & '("        Element derivatives :",8(X,I2))','(29X,8(X,I2))',ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
-            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,:,nn), &
-            & '("        Element derivatives(version_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
+            & DOMAIN_ELEMENTS%ELEMENTS(ne)%elementVersions(:,nn), &
+            & '("        Element versions    :",8(X,I2))','(29X,8(X,I2))',ERR,ERROR,*999)
         ENDDO !nn
       ENDDO !ne
     ENDIF
@@ -5013,6 +5018,7 @@ CONTAINS
 
     IF(ALLOCATED(ELEMENT%ELEMENT_NODES)) DEALLOCATE(ELEMENT%ELEMENT_NODES)
     IF(ALLOCATED(ELEMENT%ELEMENT_DERIVATIVES)) DEALLOCATE(ELEMENT%ELEMENT_DERIVATIVES)
+    IF(ALLOCATED(ELEMENT%elementVersions)) DEALLOCATE(ELEMENT%elementVersions)
  
     CALL EXITS("DOMAIN_TOPOLOGY_ELEMENT_FINALISE")
     RETURN
@@ -5522,8 +5528,7 @@ CONTAINS
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE",ERR,ERROR,*999)
 
-    IF(ALLOCATED(NODE_DERIVATIVE%USER_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%USER_VERSION_NUMBERS)
-    IF(ALLOCATED(NODE_DERIVATIVE%LOCAL_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%LOCAL_VERSION_NUMBERS)
+    IF(ALLOCATED(NODE_DERIVATIVE%userVersionNumbers)) DEALLOCATE(NODE_DERIVATIVE%userVersionNumbers)
     IF(ALLOCATED(NODE_DERIVATIVE%DOF_INDEX)) DEALLOCATE(NODE_DERIVATIVE%DOF_INDEX)
 
     CALL EXITS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE")
@@ -5548,7 +5553,7 @@ CONTAINS
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE",ERR,ERROR,*999)
 
-    NODE_DERIVATIVE%NUMBER_OF_VERSIONS=0
+    NODE_DERIVATIVE%numberOfVersions=0
     NODE_DERIVATIVE%GLOBAL_DERIVATIVE_INDEX=0
     NODE_DERIVATIVE%PARTIAL_DERIVATIVE_INDEX=0
 

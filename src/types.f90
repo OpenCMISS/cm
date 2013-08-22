@@ -666,7 +666,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER !<The local element number in the domain.
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:) !<ELEMENT_NODES(element_node_idx). The local node number in the domain of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:,:) !<ELEMENT_DERIVATIVES(i,local_derivative_idx,local_element_node_idx).  When i=1 ELEMENT_DERIVATIVES will give the global derivative number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. When i=2 ELEMENT_DERIVATIVES will give the version number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:) !<ELEMENT_DERIVATIVES(local_derivative_idx,local_element_node_idx).  Will give the global derivative number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+    INTEGER(INTG), ALLOCATABLE :: elementVersions(:,:) !<elementVersions(localDerivativeIdx,localElementNodeIdx). will give the version number of the localDerivativeIdx'th local derivative for the localElementNodeIdx'th local node in the element. Old CMISS name NVJE(nn,nbf,nj,ne).
   END TYPE DOMAIN_ELEMENT_TYPE
   
   !>Contains the topology information for the elements of a domain.
@@ -681,9 +682,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !>Contains the topology information for a local node derivative of a domain.
   TYPE DOMAIN_NODE_DERIVATIVE_TYPE
-    INTEGER(INTG) :: NUMBER_OF_VERSIONS !The number of global versions at the node for the mesh.
-    INTEGER(INTG), ALLOCATABLE :: USER_VERSION_NUMBERS(:) !The user version index of the nk'th global derivative for the node.
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_VERSION_NUMBERS(:) !The local version index of the local nk'th global derivative for the node in the domain.
+    INTEGER(INTG) :: numberOfVersions !The number of global versions at the node for the mesh.
+    INTEGER(INTG), ALLOCATABLE :: userVersionNumbers(:) !The user version index of the nk'th global derivative for the node.
     INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !The local dof derivative version index in the domain of the nk'th global derivative for the node.
     INTEGER(INTG) :: GLOBAL_DERIVATIVE_INDEX !The global derivative index of the nk'th global derivative for the node.
     INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX !The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).

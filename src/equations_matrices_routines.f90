@@ -623,8 +623,8 @@ CONTAINS
                     DO node_idx=1,BASIS%NUMBER_OF_NODES
                       node=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_NODES(node_idx)
                       DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                        version=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
+                        version=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%elementVersions(derivative_idx,node_idx)
                         local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                           & DERIVATIVES(derivative)%VERSIONS(version)
                         global_ny=ROWS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
@@ -694,8 +694,8 @@ CONTAINS
                     DO node_idx=1,BASIS%NUMBER_OF_NODES
                       node=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_NODES(node_idx)
                       DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                        version=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
+                        version=ELEMENTS_TOPOLOGY%ELEMENTS(rowElementNumber)%elementVersions(derivative_idx,node_idx)
                         local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                           & DERIVATIVES(derivative)%VERSIONS(version)
                         ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
@@ -760,8 +760,8 @@ CONTAINS
                     DO node_idx=1,BASIS%NUMBER_OF_NODES
                       node=ELEMENTS_TOPOLOGY%ELEMENTS(colElementNumber)%ELEMENT_NODES(node_idx)
                       DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(colElementNumber)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                        version=ELEMENTS_TOPOLOGY%ELEMENTS(colElementNumber)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(colElementNumber)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
+                        version=ELEMENTS_TOPOLOGY%ELEMENTS(colElementNumber)%elementVersions(derivative_idx,node_idx)
                         local_ny=COLS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                           & DERIVATIVES(derivative)%VERSIONS(version)
                         global_ny=COLS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
@@ -993,8 +993,8 @@ CONTAINS
               DO node_idx=1,BASIS%NUMBER_OF_NODES
                 node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                 DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                  derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                  version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                  derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
+                  version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%elementVersions(derivative_idx,node_idx)
                   local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                     & DERIVATIVES(derivative)%VERSIONS(version)
                   ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
@@ -1653,7 +1653,7 @@ CONTAINS
                     & NUMBER_OF_DERIVATIVES
                   DO derivativeIdx=1,numberOfDerivatives
                     numberOfVersions=rowsFieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%NODES%NODES(rowNodeNumber)% &
-                      & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                      & DERIVATIVES(derivativeIdx)%numberOfVersions
                     DO versionIdx=1,numberOfVersions
                       localRow=rowsFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
                         & NODES(rowNodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -1708,7 +1708,7 @@ CONTAINS
                     & NUMBER_OF_DERIVATIVES
                   DO derivativeIdx=1,numberOfDerivatives
                     numberOfVersions=colsFieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%NODES%NODES(rowNodeNumber)% &
-                      & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                      & DERIVATIVES(derivativeIdx)%numberOfVersions
                     DO versionIdx=1,numberOfVersions
                       localRow=rowsFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
                         & NODES(rowNodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -1760,7 +1760,7 @@ CONTAINS
                     & NUMBER_OF_DERIVATIVES
                   DO derivativeIdx=1,numberOfDerivatives
                     numberOfVersions=colsFieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%NODES%NODES(rowNodeNumber)% &
-                      & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                      & DERIVATIVES(derivativeIdx)%numberOfVersions
                     DO versionIdx=1,numberOfVersions
                       localRow=colsFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
                         & NODES(rowNodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -1837,7 +1837,7 @@ CONTAINS
       nodalVector%numberOfRows=0
       IF(updateVector) THEN
         DO componentIdx=1,rowsFieldVariable%NUMBER_OF_COMPONENTS
-          nodesTopology=>rowsFieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%NODES
+          nodesTopology=>rowsFieldVariable%components(componentIdx)%domain%topology%nodes
           IF(rowNodeNumber>=1.AND.rowNodeNumber<=nodesTopology%TOTAL_NUMBER_OF_NODES) THEN
             SELECT CASE(rowsFieldVariable%COMPONENTS(componentIdx)%INTERPOLATION_TYPE)
             CASE(FIELD_CONSTANT_INTERPOLATION)
@@ -1854,10 +1854,10 @@ CONTAINS
                 & NUMBER_OF_DERIVATIVES
               DO derivativeIdx=1,numberOfDerivatives
                 numberOfVersions=rowsFieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%NODES%NODES(rowNodeNumber)% &
-                  & DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                  & DERIVATIVES(derivativeIdx)%numberOfVersions
                 DO versionIdx=1,numberOfVersions
                   localRow=rowsFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                    & NODES(rowNodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                    & nodes(rowNodeNumber)%derivatives(derivativeIdx)%versions(versionIdx)
                   nodalVector%numberOfRows=nodalVector%numberOfRows+1
                   nodalVector%rowDofs(nodalVector%numberOfRows)=localRow
                 ENDDO !versionIdx
@@ -4614,8 +4614,8 @@ CONTAINS
                                           DO nn=1,basis%NUMBER_OF_NODES
                                             mp=domainElements%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                             DO nnk=1,basis%NUMBER_OF_DERIVATIVES(nn)
-                                              mk=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,nnk,nn)
-                                              mv=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,nnk,nn)
+                                              mk=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
+                                              mv=domainElements%ELEMENTS(ne)%elementVersions(nnk,nn)
                                               !Find the local and global column and add the global column to the indices list
                                               localColumn=fieldVariable%COMPONENTS(nh2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                                 & NODES(mp)%DERIVATIVES(mk)%VERSIONS(mv)
@@ -4811,8 +4811,8 @@ CONTAINS
                                         numberOfDerivatives=fieldVariable%components(componentIdx)%domain%topology% &
                                          & nodes%nodes(nodeIdx)%NUMBER_OF_DERIVATIVES
                                         DO derivativeIdx=1,numberOfDerivatives
-                                          numberOfVersions=fieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY% &
-                                           & NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                                          numberOfVersions=fieldVariable%components(componentIdx)%domain%topology% &
+                                           & nodes%nodes(nodeIdx)%derivatives(derivativeIdx)%numberOfVersions
                                           DO versionIdx=1,numberOfVersions
                                             localColumn=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                                              & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -5103,8 +5103,8 @@ CONTAINS
                                                 DO nn=1,basis%NUMBER_OF_NODES
                                                   mp=domainElements%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                                   DO nnk=1,basis%NUMBER_OF_DERIVATIVES(nn)
-                                                    mk=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,nnk,nn)
-                                                    mv=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,nnk,nn)
+                                                    mk=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
+                                                    mv=domainElements%ELEMENTS(ne)%elementVersions(nnk,nn)
                                                     !Find the local and global column and add the global column to the indices list
                                                     localColumn=fieldVariable%COMPONENTS(nh2)%PARAM_TO_DOF_MAP% &
                                                       & NODE_PARAM2DOF_MAP%NODES(mp)%DERIVATIVES(mk)%VERSIONS(mv)
@@ -5162,8 +5162,8 @@ CONTAINS
                                               DO nn=1,basis%NUMBER_OF_NODES
                                                 mp=domainElements%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                                 DO nnk=1,basis%NUMBER_OF_DERIVATIVES(nn)
-                                                  mk=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,nnk,nn)
-                                                  mv=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,nnk,nn)
+                                                  mk=domainElements%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
+                                                  mv=domainElements%ELEMENTS(ne)%elementVersions(nnk,nn)
                                                   !Find the local and global column and add the global column to the indices list
                                                   localColumn=fieldVariable%COMPONENTS(nh2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                                     & NODES(mp)%DERIVATIVES(mk)%VERSIONS(mv)
@@ -5347,8 +5347,8 @@ CONTAINS
                                               numberOfDerivatives=fieldVariable%components(componentIdx)%domain%topology% &
                                                & nodes%nodes(nodeIdx)%NUMBER_OF_DERIVATIVES
                                               DO derivativeIdx=1,numberOfDerivatives
-                                                numberOfVersions=fieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY% &
-                                                 & NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                                                numberOfVersions=fieldVariable%components(componentIdx)%domain%topology% &
+                                                 & nodes%nodes(nodeIdx)%derivatives(derivativeIdx)%numberOfVersions
                                                 DO versionIdx=1,numberOfVersions
                                                   localColumn=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                                                    & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
