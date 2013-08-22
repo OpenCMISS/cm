@@ -10258,8 +10258,8 @@ CONTAINS
     REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR,RESIDUAL_VALUE, &
       & LINEAR_VALUE,LINEAR_VALUE_SUM,MASS_MATRIX_COEFFICIENT,RHS_VALUE,row_coupling_coefficient,PREVIOUS_RESIDUAL_VALUE, &
       & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT,ALPHA_VALUE, &
-      & MATRIX_VALUE,DYNAMIC_DISPLACEMENT_FACTOR,DYNAMIC_VELOCITY_FACTOR,DYNAMIC_ACCELERATION_FACTOR,RHS_INTEGRATED_VALUE, &
-      & MatrixCoefficient,MatrixTransposeCoefficient
+      & MATRIX_VALUE,DYNAMIC_DISPLACEMENT_FACTOR,DYNAMIC_VELOCITY_FACTOR,DYNAMIC_ACCELERATION_FACTOR,RHS_INTEGRATED_VALUE
+    REAL(DP) :: MatrixCoefficients(2)=(/0.0_DP,0.0_DP/)
     REAL(DP), POINTER :: FIELD_VALUES_VECTOR(:),PREVIOUS_VALUES_VECTOR(:),PREVIOUS_VELOCITY_VECTOR(:), &
       & PREVIOUS_ACCELERATION_VECTOR(:),RHS_PARAMETERS(:)
     LOGICAL :: HAS_INTEGRATED_VALUES
@@ -10319,10 +10319,70 @@ CONTAINS
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      NULLIFY(DYNAMIC_SOLVER)
-      NULLIFY(SOLVER_EQUATIONS)
-      NULLIFY(SOLVER_MAPPING)
-      NULLIFY(SOLVER_MATRICES)
+      IF(ASSOCIATED(DYNAMIC_SOLVER)) NULLIFY(DYNAMIC_SOLVER)
+      IF(ASSOCIATED(SOLVER_EQUATIONS)) NULLIFY(SOLVER_EQUATIONS)
+      IF(ASSOCIATED(SOLVER_MAPPING)) NULLIFY(SOLVER_MAPPING)
+      IF(ASSOCIATED(SOLVER_MATRICES)) NULLIFY(SOLVER_MATRICES)
+      !
+      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) NULLIFY(BOUNDARY_CONDITIONS)
+      IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) NULLIFY(RHS_BOUNDARY_CONDITIONS)
+      IF(ASSOCIATED(DEPENDENT_BOUNDARY_CONDITIONS)) NULLIFY(DEPENDENT_BOUNDARY_CONDITIONS)
+      IF(ASSOCIATED(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)) NULLIFY(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)
+      IF(ASSOCIATED(SOLVER_DISTRIBUTED_MATRIX)) NULLIFY(SOLVER_DISTRIBUTED_MATRIX)
+      IF(ASSOCIATED(DEPENDENT_VECTOR)) NULLIFY(DEPENDENT_VECTOR)
+      IF(ASSOCIATED(DYNAMIC_TEMP_VECTOR)) NULLIFY(DYNAMIC_TEMP_VECTOR)
+      IF(ASSOCIATED(EQUATIONS_RHS_VECTOR)) NULLIFY(EQUATIONS_RHS_VECTOR)
+      IF(ASSOCIATED(DISTRIBUTED_SOURCE_VECTOR)) NULLIFY(DISTRIBUTED_SOURCE_VECTOR)
+      IF(ASSOCIATED(LINEAR_TEMP_VECTOR)) NULLIFY(LINEAR_TEMP_VECTOR)
+      IF(ASSOCIATED(PREDICTED_MEAN_ACCELERATION_VECTOR)) NULLIFY(PREDICTED_MEAN_ACCELERATION_VECTOR)
+      IF(ASSOCIATED(PREDICTED_MEAN_DISPLACEMENT_VECTOR)) NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
+      IF(ASSOCIATED(PREDICTED_MEAN_VELOCITY_VECTOR)) NULLIFY(PREDICTED_MEAN_VELOCITY_VECTOR)
+      IF(ASSOCIATED(SOLVER_RHS_VECTOR)) NULLIFY(SOLVER_RHS_VECTOR)
+      IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) NULLIFY(SOLVER_RESIDUAL_VECTOR)
+      IF(ASSOCIATED(RESIDUAL_VECTOR)) NULLIFY(RESIDUAL_VECTOR)
+      IF(ASSOCIATED(INCREMENTAL_VECTOR)) NULLIFY(INCREMENTAL_VECTOR)
+      IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) NULLIFY(RHS_DOMAIN_MAPPING)
+      IF(ASSOCIATED(VARIABLE_DOMAIN_MAPPING)) NULLIFY(VARIABLE_DOMAIN_MAPPING)
+      IF(ASSOCIATED(EQUATIONS)) NULLIFY(EQUATIONS)
+      IF(ASSOCIATED(EQUATIONS_MAPPING)) NULLIFY(EQUATIONS_MAPPING)
+      IF(ASSOCIATED(DYNAMIC_MAPPING)) NULLIFY(DYNAMIC_MAPPING)
+      IF(ASSOCIATED(NONLINEAR_MAPPING)) NULLIFY(NONLINEAR_MAPPING)
+      IF(ASSOCIATED(LINEAR_MAPPING)) NULLIFY(LINEAR_MAPPING)
+      IF(ASSOCIATED(RHS_MAPPING)) NULLIFY(RHS_MAPPING)
+      IF(ASSOCIATED(SOURCE_MAPPING)) NULLIFY(SOURCE_MAPPING)
+      IF(ASSOCIATED(EQUATIONS_MATRICES)) NULLIFY(EQUATIONS_MATRICES)
+      IF(ASSOCIATED(DYNAMIC_MATRICES)) NULLIFY(DYNAMIC_MATRICES)
+      IF(ASSOCIATED(NONLINEAR_MATRICES)) NULLIFY(NONLINEAR_MATRICES)
+      IF(ASSOCIATED(LINEAR_MATRICES)) NULLIFY(LINEAR_MATRICES)
+      IF(ASSOCIATED(RHS_VECTOR)) NULLIFY(RHS_VECTOR)
+      IF(ASSOCIATED(SOURCE_VECTOR)) NULLIFY(SOURCE_VECTOR)
+      IF(ASSOCIATED(DAMPING_MATRIX)) NULLIFY(DAMPING_MATRIX)
+      IF(ASSOCIATED(LINEAR_MATRIX)) NULLIFY(LINEAR_MATRIX)
+      IF(ASSOCIATED(MASS_MATRIX)) NULLIFY(MASS_MATRIX)
+      IF(ASSOCIATED(STIFFNESS_MATRIX)) NULLIFY(STIFFNESS_MATRIX)
+      IF(ASSOCIATED(EQUATIONS_MATRIX)) NULLIFY(EQUATIONS_MATRIX)
+      IF(ASSOCIATED(JACOBIAN_MATRIX)) NULLIFY(JACOBIAN_MATRIX)
+      IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) NULLIFY(JACOBIAN_TO_SOLVER_MAP)
+      IF(ASSOCIATED(EQUATIONS_SET)) NULLIFY(EQUATIONS_SET)
+      IF(ASSOCIATED(DEPENDENT_FIELD)) NULLIFY(DEPENDENT_FIELD)
+      IF(ASSOCIATED(LAGRANGE_FIELD)) NULLIFY(LAGRANGE_FIELD)
+      IF(ASSOCIATED(DYNAMIC_VARIABLE)) NULLIFY(DYNAMIC_VARIABLE)
+      IF(ASSOCIATED(LINEAR_VARIABLE)) NULLIFY(LINEAR_VARIABLE)
+      IF(ASSOCIATED(RHS_VARIABLE)) NULLIFY(RHS_VARIABLE)
+      IF(ASSOCIATED(DEPENDENT_VARIABLE)) NULLIFY(DEPENDENT_VARIABLE)
+      IF(ASSOCIATED(SOLVER_MATRIX)) NULLIFY(SOLVER_MATRIX)
+      IF(ASSOCIATED(INTERFACE_CONDITION)) NULLIFY(INTERFACE_CONDITION)
+      IF(ASSOCIATED(INTERFACE_EQUATIONS)) NULLIFY(INTERFACE_EQUATIONS)
+      IF(ASSOCIATED(INTERFACE_LAGRANGE)) NULLIFY(INTERFACE_LAGRANGE)
+      IF(ASSOCIATED(INTERFACE_MAPPING)) NULLIFY(INTERFACE_MAPPING)
+      IF(ASSOCIATED(INTERFACE_RHS_MAPPING)) NULLIFY(INTERFACE_RHS_MAPPING)
+      IF(ASSOCIATED(INTERFACE_MATRICES)) NULLIFY(INTERFACE_MATRICES)
+      IF(ASSOCIATED(INTERFACE_MATRIX)) NULLIFY(INTERFACE_MATRIX)
+      IF(ASSOCIATED(INTERFACE_RHS_VECTOR)) NULLIFY(INTERFACE_RHS_VECTOR)
+      IF(ASSOCIATED(INTERFACE_TO_SOLVER_MAP)) NULLIFY(INTERFACE_TO_SOLVER_MAP)
+      IF(ASSOCIATED(CHECK_DATA)) NULLIFY(CHECK_DATA)
+      IF(ASSOCIATED(PREVIOUS_RESIDUAL_PARAMETERS)) NULLIFY(PREVIOUS_RESIDUAL_PARAMETERS)
+      IF(ASSOCIATED(CHECK_DATA2)) NULLIFY(CHECK_DATA2)
       
       !Determine which dynamic solver needs to be used
       IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
@@ -10552,27 +10612,26 @@ CONTAINS
                                 IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
                                   SELECT CASE(INTERFACE_MATRIX%INTERFACE_MATRIX_TIME_DEPENDENCE_TYPE)
                                   CASE(INTERFACE_MATRIX_STATIC)
-                                    MatrixCoefficient=STIFFNESS_MATRIX_COEFFICIENT
+                                    MatrixCoefficients(1)=STIFFNESS_MATRIX_COEFFICIENT
                                   CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
-                                    MatrixCoefficient=DAMPING_MATRIX_COEFFICIENT
+                                    MatrixCoefficients(1)=DAMPING_MATRIX_COEFFICIENT
                                   CASE DEFAULT
                                     CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
                                   END SELECT
                                   IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
                                     SELECT CASE(INTERFACE_MATRIX%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE)
                                     CASE(INTERFACE_MATRIX_STATIC)
-                                      MatrixTransposeCoefficient=STIFFNESS_MATRIX_COEFFICIENT
+                                      MatrixCoefficients(2)=STIFFNESS_MATRIX_COEFFICIENT
                                     CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
-                                      MatrixTransposeCoefficient=DAMPING_MATRIX_COEFFICIENT
+                                      MatrixCoefficients(2)=DAMPING_MATRIX_COEFFICIENT
                                     CASE DEFAULT
                                       CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
                                     END SELECT
                                   ELSE
-                                    MatrixTransposeCoefficient=0.0_DP
+                                    MatrixCoefficients(2)=0.0_DP
                                   ENDIF
                                   CALL SOLVER_MATRIX_INTERFACE_MATRIX_ADD(SOLVER_MATRIX,interface_condition_idx, &
-                                    & (/MatrixCoefficient,MatrixTransposeCoefficient/), &
-                                    & INTERFACE_MATRIX,ERR,ERROR,*999)
+                                    & MatrixCoefficients,INTERFACE_MATRIX,Err,Error,*999)
                                 ELSE
                                   CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
@@ -10726,6 +10785,7 @@ CONTAINS
                                     IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                       !Default to FIELD_U_VARIABLE_TYPE
                                       DYNAMIC_VARIABLE_TYPE=FIELD_U_VARIABLE_TYPE
+                                      IF(ASSOCIATED(DYNAMIC_TEMP_VECTOR)) NULLIFY(DYNAMIC_TEMP_VECTOR)
                                     ELSE
                                       CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                                     ENDIF
@@ -10799,17 +10859,15 @@ CONTAINS
                                             & ERR,ERROR,*999)
                                           !Loop over the rows in the equations set
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                            !(AH)
-                                            IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                                              !Get the dynamic contribution to the RHS values
+                                            !Get the dynamic contribution to the RHS values
+                                          !
+                                            IF(ASSOCIATED(DYNAMIC_TEMP_VECTOR)) THEN
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
                                                 & DYNAMIC_VALUE,ERR,ERROR,*999)
+                                            ELSE
+                                              DYNAMIC_VALUE=0.0_DP
                                             ENDIF
-                                              !instead of
-                                            !!Get the dynamic contribution to the the RHS values
-                                            !CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
-                                            !  & DYNAMIC_VALUE,ERR,ERROR,*999)
-                                            !
+                                          !
                                             !Get the linear matrices contribution to the RHS values if there are any
                                             IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                               LINEAR_VALUE_SUM=0.0_DP
@@ -10840,10 +10898,10 @@ CONTAINS
                                                      & *999)  
                                                    residual_variable_dof=NONLINEAR_MAPPING% & 
                                                      & EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(equations_row_number)
-                                                    PREVIOUS_RESIDUAL_VALUE=-1.0_DP*PREVIOUS_RESIDUAL_PARAMETERS & 
-                                                      & (residual_variable_dof)
-                                                    DYNAMIC_VALUE=DYNAMIC_VALUE+PREVIOUS_RESIDUAL_VALUE*(1.0_DP-DYNAMIC_SOLVER% & 
-                                                      & THETA(1))
+                                                   PREVIOUS_RESIDUAL_VALUE=-1.0_DP*PREVIOUS_RESIDUAL_PARAMETERS & 
+                                                     & (residual_variable_dof)
+                                                   DYNAMIC_VALUE=DYNAMIC_VALUE+PREVIOUS_RESIDUAL_VALUE*(1.0_DP-DYNAMIC_SOLVER% & 
+                                                     & THETA(1))
                                                   ENDIF
                                               END IF
                                             END IF
@@ -11307,6 +11365,9 @@ CONTAINS
                       & ERR,ERROR,*999)
                   ENDIF
                 ENDIF
+                IF(ASSOCIATED(SOLVER_RHS_VECTOR)) THEN
+                  CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(SOLVER_RHS_VECTOR,ERR,ERROR,*999)
+                ENDIF
               END IF
 
               NULLIFY(SOLVER_RESIDUAL_VECTOR)
@@ -11595,9 +11656,6 @@ CONTAINS
                     ENDIF
                   ENDDO !equations_set_idx
                 ENDIF
-              ENDIF
-              IF(ASSOCIATED(SOLVER_RHS_VECTOR)) THEN
-                CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(SOLVER_RHS_VECTOR,ERR,ERROR,*999)
               ENDIF
               !If required output the solver matrices
               IF(SOLVER%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN

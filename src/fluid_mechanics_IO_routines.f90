@@ -4207,7 +4207,7 @@ CONTAINS
     INTEGER(INTG) :: SolverType,Option
     REAL(DP) :: Value
     REAL(DP), ALLOCATABLE, INTENT(OUT) :: BoundaryValues(:)
-    INTEGER(INTG) :: BoundaryCondition,MaterialSpecification,arraySize,NodeNumber,I
+    INTEGER(INTG) :: BoundaryCondition,MaterialSpecification,arraySize,NodeNumber,I,ComponentNumber
     INTEGER(INTG), PARAMETER :: Plate2D=2
     INTEGER(INTG),PARAMETER :: Plate3D=3
     INTEGER(Intg), ALLOCATABLE, INTENT(OUT) :: InletNodes(:)
@@ -4221,9 +4221,11 @@ CONTAINS
         IF(MaterialSpecification==Plate2D) THEN
           OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
             & status='old', action='read')
+          ComponentNumber=2
         ELSE
           OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate3DinletBC.txt', &
             & status='old', action='read')
+          ComponentNumber=3
         ENDIF
         READ(1,*), arraySize
         IF(arraySize==0) STOP "Number of boundary conditions for fluid domain is zero. Invalid."
@@ -4236,7 +4238,8 @@ CONTAINS
         DO I=1,SIZE(InletNodes)
           NodeNumber=InletNodes(I)
           CALL FIELD_PARAMETER_SET_GET_NODE(GeometricField,FIELD_U_VARIABLE_TYPE, &
-            & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,2,Value,Err,Error,*999)
+            & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,ComponentNumber,Value,Err,Error,*999)
+          !                 3/2   * V     / H^2         *(2     *H     *z    - z^2       )* t  / t_end
           BoundaryValues(I)=1.5_DP*0.01_DP/5.0_DP/5.0_DP*(2.0_DP*5.0_DP*Value-Value*Value)*Time/StopTime
         ENDDO
       CASE DEFAULT

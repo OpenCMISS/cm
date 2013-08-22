@@ -4349,7 +4349,7 @@ CONTAINS
 !    INTEGER(INTG) :: component_idx,node_idx,NUMBER_OF_DIMENSIONS,variable_type
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),search_idx
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx,ComponentBC
     INTEGER(INTG) :: NDOFS_TO_PRINT,EquationsSetIndex,SolidNodeNumber,FluidNodeNumber,M
     INTEGER(INTG), ALLOCATABLE :: InletNodes(:)
     
@@ -5485,7 +5485,7 @@ CONTAINS
                     & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 !Pre solve for the dynamic solver
                 ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
+                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Velocity field change boundary conditions... ",ERR,ERROR,*999)
                   SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                   IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                     SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -5542,6 +5542,11 @@ CONTAINS
                             & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME,1.0_DP)
                         ELSE
+                          IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2) THEN
+                            ComponentBC=1
+                          ELSE
+                            ComponentBC=2
+                          ENDIF
                           CALL FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
                             & SOLVER%SOLVE_TYPE,InletNodes, &
                             & BoundaryValues,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
@@ -5575,9 +5580,10 @@ CONTAINS
                                 !            & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
                                         ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
                                           IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==3.OR.CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2 &
-                                            & .AND.component_idx==1) THEN
+                                            & .AND.component_idx==ComponentBC.AND.deriv_idx==1.AND.variable_idx==1) THEN
                                             DO M=1,SIZE(InletNodes)
                                               IF(InletNodes(M)==node_idx) THEN
+                                                !TODO don't modify pointers from data_get
                                                 BOUNDARY_VALUES(local_ny)=BoundaryValues(M)
                                               ENDIF
                                             ENDDO
