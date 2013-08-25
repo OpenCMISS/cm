@@ -15,7 +15,8 @@ relocate:
 install:
 	cd doxygen; \
 	doxygen Doxyfile; \
-	doxygen Doxyfile_User
+	doxygen Doxyfile_User; \
+	doxygen Doxyfile_Python
 	cd notes; \
 	./Latex_make.sh clean; \
 	./Latex_make.sh pdf; \
