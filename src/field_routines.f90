@@ -427,14 +427,6 @@ MODULE FIELD_ROUTINES
   END INTERFACE !FIELD_PARAMETER_SET_GET_NODE
 
   !>Returns from the given parameter set a value for the specified node, derivative and version of a field variable component.
-  INTERFACE FIELD_PARAMETER_SET_GET_LOCAL_NODE
-    MODULE PROCEDURE Field_ParameterSetGetLocalNode_Intg
-    MODULE PROCEDURE Field_ParameterSetGetLocalNode_Sp
-    MODULE PROCEDURE Field_ParameterSetGetLocalNode_Dp
-    MODULE PROCEDURE Field_ParameterSetGetLocalNode_L
-  END INTERFACE !FIELD_PARAMETER_SET_GET_LOCAL_NODE
-
-  !>Returns from the given parameter set a value for the specified node, derivative and version of a field variable component.
   INTERFACE Field_ParameterSetGetLocalNode
     MODULE PROCEDURE Field_ParameterSetGetLocalNode_Intg
     MODULE PROCEDURE Field_ParameterSetGetLocalNode_Sp
@@ -687,8 +679,8 @@ MODULE FIELD_ROUTINES
   PUBLIC FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE
 
   PUBLIC FIELD_PARAMETER_SET_GET_CONSTANT,Field_ParameterSetGetDataPoint,FIELD_PARAMETER_SET_GET_ELEMENT, &
-    & FIELD_PARAMETER_SET_GET_LOCAL_DOF,FIELD_PARAMETER_SET_GET_NODE,FIELD_PARAMETER_SET_GET_LOCAL_NODE, &
-    & Field_ParameterSetGetLocalNode,FIELD_PARAMETER_SET_GET_GAUSS_POINT
+    & FIELD_PARAMETER_SET_GET_LOCAL_DOF,FIELD_PARAMETER_SET_GET_NODE,Field_ParameterSetGetLocalNode, &
+    & FIELD_PARAMETER_SET_GET_GAUSS_POINT
 
   PUBLIC FIELD_PARAMETER_SET_OUTPUT
 
