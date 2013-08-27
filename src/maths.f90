@@ -867,10 +867,10 @@ CONTAINS
               EVECTOR(1)=(EVALUE-A(2,2))/AL
               EVECTOR(2)=A(1,2)/AL
             ENDIF
-          ELSE IF(EVALUE==A(1,1)) THEN
+          ELSE IF(ABS(EVALUE-A(1,1))<ZERO_TOLERANCE_SP) THEN
             EVECTOR(1)=1.0_SP
             EVECTOR(2)=0.0_SP
-          ELSE IF(EVALUE==A(2,2)) THEN
+          ELSE IF(ABS(EVALUE-A(2,2))<ZERO_TOLERANCE_SP) THEN
             EVECTOR(1)=0.0_SP
             EVECTOR(2)=1.0_DP
           ENDIF
@@ -954,10 +954,10 @@ CONTAINS
               EVECTOR(1)=(EVALUE-A(2,2))/AL
               EVECTOR(2)=A(1,2)/AL
             ENDIF
-          ELSE IF(EVALUE==A(1,1)) THEN
+          ELSE IF(ABS(EVALUE-A(1,1))<ZERO_TOLERANCE_SP) THEN
             EVECTOR(1)=1.0_DP
             EVECTOR(2)=0.0_DP
-          ELSE IF(EVALUE==A(2,2)) THEN
+          ELSE IF(ABS(EVALUE-A(2,2))<ZERO_TOLERANCE_SP) THEN
             EVECTOR(1)=0.0_DP
             EVECTOR(2)=1.0_DP
           ENDIF

@@ -1,5 +1,5 @@
-OpenCMISS-cm
-============
+OpenCMISS-Iron
+==============
 
 OpenCMISS (Open Continuum Mechanics, Imaging, Signal processing and System identification)
 is a mathematical modelling environment that enables the application of finite element

@@ -67,6 +67,7 @@ MODULE EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_TIMING_OUTPUT=1 !<Timing information output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_OUTPUT=2 !<All below and equation matrices output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_ELEMENT_MATRIX_OUTPUT=3 !<All below and element matrices output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_NODAL_MATRIX_OUTPUT=4 !<All below and nodal matrices output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
   !>@}
 
   !> \addtogroup EQUATIONS_ROUTINES_SparsityTypes EQUATIONS_ROUTINES::SparsityTypes
@@ -93,6 +94,8 @@ MODULE EQUATIONS_ROUTINES
 
   PUBLIC EQUATIONS_NO_OUTPUT,EQUATIONS_TIMING_OUTPUT,EQUATIONS_MATRIX_OUTPUT,EQUATIONS_ELEMENT_MATRIX_OUTPUT
 
+  PUBLIC EQUATIONS_NODAL_MATRIX_OUTPUT
+
   PUBLIC EQUATIONS_SPARSE_MATRICES,EQUATIONS_FULL_MATRICES
 
   PUBLIC EQUATIONS_UNLUMPED_MATRICES,EQUATIONS_LUMPED_MATRICES
@@ -114,7 +117,33 @@ MODULE EQUATIONS_ROUTINES
   PUBLIC EQUATIONS_TIME_DEPENDENCE_TYPE_GET,EQUATIONS_TIME_DEPENDENCE_TYPE_SET
 
   PUBLIC EQUATIONS_SET_EQUATIONS_GET
-  
+
+  PUBLIC Equations_NumberOfLinearMatricesGet
+
+  PUBLIC Equations_NumberOfJacobianMatricesGet
+
+  PUBLIC Equations_NumberOfDynamicMatricesGet
+
+  PUBLIC Equations_LinearMatrixGet
+
+  PUBLIC Equations_JacobianMatrixGet
+
+  PUBLIC Equations_DynamicMatrixGet
+
+  PUBLIC Equations_DynamicMatrixGetByType
+
+  PUBLIC Equations_DynamicMatrixTypeGet
+
+  PUBLIC Equations_RhsVectorGet
+
+  PUBLIC Equations_ResidualVectorGet
+
+  PUBLIC Equations_ResidualNumberOfVariablesGet
+
+  PUBLIC Equations_ResidualVariablesGet
+
+  PUBLIC Equations_SourceVectorGet
+
 CONTAINS
 
   !
@@ -696,6 +725,8 @@ CONTAINS
           EQUATIONS%OUTPUT_TYPE=EQUATIONS_MATRIX_OUTPUT
         CASE(EQUATIONS_ELEMENT_MATRIX_OUTPUT)
           EQUATIONS%OUTPUT_TYPE=EQUATIONS_ELEMENT_MATRIX_OUTPUT
+        CASE(EQUATIONS_NODAL_MATRIX_OUTPUT)
+          EQUATIONS%OUTPUT_TYPE=EQUATIONS_NODAL_MATRIX_OUTPUT
         CASE DEFAULT
           LOCAL_ERROR="The specified output type of "//TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -911,5 +942,708 @@ CONTAINS
   !
   !================================================================================================================================
   !
-      
+
+  !>Get the number of linear matrices in the equations
+  SUBROUTINE Equations_NumberOfLinearMatricesGet(equations,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the number of linear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of linear matrices
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: linearMatrices
+
+    CALL Enters("Equations_NumberOfLinearMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        linearMatrices=>equationsMatrices%linear_matrices
+        IF(ASSOCIATED(linearMatrices)) THEN
+          numberOfMatrices=linearMatrices%number_of_linear_matrices
+        ELSE
+          numberOfMatrices=0
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_NumberOfLinearMatricesGet")
+    RETURN
+999 CALL Errors("Equations_NumberOfLinearMatricesGet",err,error)
+    CALL Exits("Equations_NumberOfLinearMatricesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_NumberOfLinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of Jacobian matrices in the equations
+  SUBROUTINE Equations_NumberOfJacobianMatricesGet(equations,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the number of Jacobian matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of Jacobian matrices
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+
+    CALL Enters("Equations_NumberOfJacobianMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        nonlinearMatrices=>equationsMatrices%nonlinear_matrices
+        IF(ASSOCIATED(nonlinearMatrices)) THEN
+          numberOfMatrices=nonlinearMatrices%number_of_jacobians
+        ELSE
+          numberOfMatrices=0
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_NumberOfJacobianMatricesGet")
+    RETURN
+999 CALL Errors("Equations_NumberOfJacobianMatricesGet",err,error)
+    CALL Exits("Equations_NumberOfJacobianMatricesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_NumberOfJacobianMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of dynamic matrices in the equations
+  SUBROUTINE Equations_NumberOfDynamicMatricesGet(equations,numberOfMatrices,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the number of dynamic matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of dynamic matrices
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+
+    CALL Enters("Equations_NumberOfDynamicMatricesGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        dynamicMatrices=>equationsMatrices%dynamic_matrices
+        IF(ASSOCIATED(dynamicMatrices)) THEN
+          numberOfMatrices=dynamicMatrices%number_of_dynamic_matrices
+        ELSE
+          numberOfMatrices=0
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_NumberOfDynamicMatricesGet")
+    RETURN
+999 CALL Errors("Equations_NumberOfDynamicMatricesGet",err,error)
+    CALL Exits("Equations_NumberOfDynamicMatricesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_NumberOfDynamicMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a linear equations matrix from equations
+  SUBROUTINE Equations_LinearMatrixGet(equations,matrixIndex,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the linear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The index of the linear matrix to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the linear matrix requested
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: linearMatrices
+
+    CALL Enters("Equations_LinearMatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        linearMatrices=>equationsMatrices%linear_matrices
+        IF(ASSOCIATED(linearMatrices)) THEN
+          IF(matrixIndex>0.AND.matrixIndex<=linearMatrices%number_of_linear_matrices) THEN
+            IF(.NOT.ASSOCIATED(matrix)) THEN
+              equationsMatrix=>linearMatrices%matrices(matrixIndex)%ptr
+              IF(ASSOCIATED(equationsMatrix)) THEN
+                matrix=>equationsMatrix%matrix
+              ELSE
+                CALL FlagError("The equations matrix is not associated.",err,error,*999)
+              END IF
+            ELSE
+              CALL FlagError("The matrix is already associated.",err,error,*999)
+            END IF
+          ELSE
+            CALL FlagError("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+              & TRIM(NumberToVstring(linearMatrices%number_of_linear_matrices,"*",err,error))//".",err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The equations linear matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_LinearMatrixGet")
+    RETURN
+999 CALL Errors("Equations_LinearMatrixGet",err,error)
+    CALL Exits("Equations_LinearMatrixGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_LinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a Jacobian matrix from equations
+  SUBROUTINE Equations_JacobianMatrixGet(equations,residualIndex,variableType,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type that the residual is differentiated with respect to for this Jacobian
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    INTEGER(INTG) :: matrixIndex,variableIndex
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: equationsJacobian
+
+    CALL Enters("Equations_JacobianMatrixGet",err,error,*999)
+
+    !Check for pointer associations
+    IF(ASSOCIATED(equations)) THEN
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        nonlinearMapping=>equationsMapping%nonlinear_mapping
+        IF(.NOT.ASSOCIATED(nonlinearMapping)) THEN
+          CALL FlagError("The equations nonlinear mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+    IF(ASSOCIATED(matrix)) THEN
+      CALL FlagError("The matrix is already associated.",err,error,*999)
+    END IF
+
+    IF(residualIndex/=1) THEN
+      CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+    END IF
+
+    !Find Jacobian matrix index using the nonlinear equations mapping
+    matrixIndex=0
+    DO variableIndex=1,nonlinearMapping%number_of_residual_variables
+      IF(nonlinearMapping%residual_variables(variableIndex)%ptr%variable_type==variableType) THEN
+        matrixIndex=nonlinearMapping%var_to_jacobian_map(variableIndex)%jacobian_number
+      END IF
+    END DO
+    IF(matrixIndex==0) THEN
+      CALL FlagError("Equations do not have a Jacobian matrix for residual index "// &
+        & TRIM(NumberToVstring(residualIndex,"*",err,error))//" and variable type "// &
+        & TRIM(NumberToVstring(variableType,"*",err,error))//".",err,error,*999)
+    END IF
+
+    !Now get Jacobian matrix using the matrix index
+    equationsJacobian=>nonlinearMapping%jacobian_to_var_map(matrixIndex)%jacobian
+    IF(ASSOCIATED(equationsJacobian)) THEN
+      matrix=>equationsJacobian%jacobian
+    ELSE
+      CALL FlagError("The equations Jacobian matrix is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_JacobianMatrixGet")
+    RETURN
+999 CALL Errors("Equations_JacobianMatrixGet",err,error)
+    CALL Exits("Equations_JacobianMatrixGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_JacobianMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from equations using the dynamic matrix index
+  SUBROUTINE Equations_DynamicMatrixGet(equations,matrixIndex,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+
+    CALL Enters("Equations_DynamicMatrixGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        dynamicMatrices=>equationsMatrices%dynamic_matrices
+        IF(ASSOCIATED(dynamicMatrices)) THEN
+          IF(matrixIndex>0.AND.matrixIndex<=dynamicMatrices%number_of_dynamic_matrices) THEN
+            IF(.NOT.ASSOCIATED(matrix)) THEN
+              equationsMatrix=>dynamicMatrices%matrices(matrixIndex)%ptr
+              IF(ASSOCIATED(equationsMatrix)) THEN
+                matrix=>equationsMatrix%matrix
+              ELSE
+                CALL FlagError("The equations matrix is not associated.",err,error,*999)
+              END IF
+            ELSE
+              CALL FlagError("The matrix is already associated.",err,error,*999)
+            END IF
+          ELSE
+            CALL FlagError("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+              & TRIM(NumberToVstring(dynamicMatrices%number_of_dynamic_matrices,"*",err,error))//".",err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The equations dynamic matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_DynamicMatrixGet")
+    RETURN
+999 CALL Errors("Equations_DynamicMatrixGet",err,error)
+    CALL Exits("Equations_DynamicMatrixGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_DynamicMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from equations using the dynamic matrix type
+  SUBROUTINE Equations_DynamicMatrixGetByType(equations,matrixType,matrix,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixType !<The type of the dynamic matrix to get. \see EQUATIONS_SET_CONSTANTS_DynamicMatrixTypes,EQUATIONS_SET_CONSTANTS
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER, INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    INTEGER(INTG) :: matrixIndex
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: equationsMatrix
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: dynamicMapping
+
+    CALL Enters("Equations_DynamicMatrixGetByType",err,error,*999)
+
+    !Check all pointer associations
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        dynamicMatrices=>equationsMatrices%dynamic_matrices
+        IF(.NOT.ASSOCIATED(dynamicMatrices)) THEN
+          CALL FlagError("The equations dynamic matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        dynamicMapping=>equationsMapping%DYNAMIC_MAPPING
+        IF(.NOT.ASSOCIATED(dynamicMapping)) THEN
+          CALL FlagError("The equations dynamic mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+    IF(ASSOCIATED(matrix)) THEN
+      CALL FlagError("The matrix is already associated.",err,error,*999)
+    END IF
+
+    !Now get the dynamic matrix
+    !Find matrix index using the equations mapping
+    SELECT CASE(matrixType)
+    CASE(EQUATIONS_MATRIX_STIFFNESS)
+      matrixIndex=dynamicMapping%stiffness_matrix_number
+    CASE(EQUATIONS_MATRIX_DAMPING)
+      matrixIndex=dynamicMapping%damping_matrix_number
+    CASE(EQUATIONS_MATRIX_MASS)
+      matrixIndex=dynamicMapping%mass_matrix_number
+    CASE DEFAULT
+      CALL FlagError("Invalid dynamic matrix type "//TRIM(NumberToVstring(matrixType,"*",err,error))// &
+        & " specified.",err,error,*999)
+    END SELECT
+    IF(matrixIndex==0) THEN
+      CALL FlagError("The equations dynamic matrices do not have a matrix with the specified type of "// &
+        & TRIM(NumberToVstring(matrixType,"*",err,error))//".",err,error,*999)
+    ELSE
+      equationsMatrix=>dynamicMatrices%matrices(matrixIndex)%ptr
+      IF(ASSOCIATED(equationsMatrix)) THEN
+        matrix=>equationsMatrix%matrix
+      ELSE
+        CALL FlagError("The equations dynamic matrix for index "// &
+          & TRIM(NumberToVstring(matrixIndex,"*",err,error))//" is not associated.",err,error,*999)
+      END IF
+    END IF
+
+    CALL Exits("Equations_DynamicMatrixGetByType")
+    RETURN
+999 CALL Errors("Equations_DynamicMatrixGetByType",err,error)
+    CALL Exits("Equations_DynamicMatrixGetByType")
+    RETURN 1
+
+  END SUBROUTINE Equations_DynamicMatrixGetByType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the type of a dynamic matrix, eg. stiffness, damping or mass
+  SUBROUTINE Equations_DynamicMatrixTypeGet(equations,matrixIndex,matrixType,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    INTEGER(INTG), INTENT(INOUT) :: matrixType !<On return, the type of the dynamic matrix. \see EQUATIONS_MATRICES_ROUTINES_DynamicMatrixTypes,EQUATIONS_MATRICES_ROUTINES
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: dynamicMapping
+
+    CALL Enters("Equations_DynamicMatrixTypeGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        dynamicMapping=>equationsMapping%DYNAMIC_MAPPING
+        IF(ASSOCIATED(dynamicMapping)) THEN
+          IF(matrixIndex>0.AND.matrixIndex<=dynamicMapping%number_of_dynamic_equations_matrices) THEN
+            IF(matrixIndex==dynamicMapping%stiffness_matrix_number) THEN
+              matrixType=EQUATIONS_MATRIX_STIFFNESS
+            ELSE IF(matrixIndex==dynamicMapping%damping_matrix_number) THEN
+              matrixType=EQUATIONS_MATRIX_DAMPING
+            ELSE IF(matrixIndex==dynamicMapping%mass_matrix_number) THEN
+              matrixType=EQUATIONS_MATRIX_MASS
+            ELSE
+              CALL FlagError("Could not find dynamic matrix type.",err,error,*999)
+            END IF
+          ELSE
+            CALL FlagError("Invalid matrix index. The matrix index must be greater than zero and less than or equal to "// &
+              & TRIM(NumberToVstring(dynamicMapping%number_of_dynamic_equations_matrices,"*",err,error))//".",err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The equations dynamic mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_DynamicMatrixTypeGet")
+    RETURN
+999 CALL Errors("Equations_DynamicMatrixTypeGet",err,error)
+    CALL Exits("Equations_DynamicMatrixTypeGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_DynamicMatrixTypeGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector for equations
+  SUBROUTINE Equations_RhsVectorGet(equations,vector,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the right hand side vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the right hand side vector for the equations
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+
+    CALL Enters("Equations_RhsVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        rhsVector=>equationsMatrices%rhs_vector
+        IF(ASSOCIATED(rhsVector)) THEN
+          IF(.NOT.ASSOCIATED(vector)) THEN
+            vector=>rhsVector%vector
+          ELSE
+            CALL FlagError("The vector is already associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The equations matrices right hand side vector is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_RhsVectorGet")
+    RETURN
+999 CALL Errors("Equations_RhsVectorGet",err,error)
+    CALL Exits("Equations_RhsVectorGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_RhsVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a residual vector for nonlinear equations
+  SUBROUTINE Equations_ResidualVectorGet(equations,residualIndex,vector,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the residual vector for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the residual vector for the equations
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+
+    CALL Enters("Equations_ResidualVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        nonlinearMatrices=>equationsMatrices%nonlinear_matrices
+        IF(ASSOCIATED(nonlinearMatrices)) THEN
+          IF(.NOT.ASSOCIATED(vector)) THEN
+            IF(residualIndex==1) THEN
+              vector=>nonlinearMatrices%residual
+            ELSE
+              CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+            END IF
+          ELSE
+            CALL FlagError("The vector is already associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The equations matrices nonlinear matrices are not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_ResidualVectorGet")
+    RETURN
+999 CALL Errors("Equations_ResidualVectorGet",err,error)
+    CALL Exits("Equations_ResidualVectorGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of field variables that contribute to the residual vector
+  SUBROUTINE Equations_ResidualNumberOfVariablesGet(equations,residualIndex,numberOfVariables,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the residual vector number of variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the number of variables for
+    INTEGER(INTG), INTENT(OUT) :: numberOfVariables !<On return, the number of variables that contribute to the residual vector
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+
+    CALL Enters("Equations_ResidualNumberOfVariablesGet",err,error,*999)
+
+    !Check for pointer associations
+    IF(ASSOCIATED(equations)) THEN
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        nonlinearMapping=>equationsMapping%nonlinear_mapping
+        IF(.NOT.ASSOCIATED(nonlinearMapping)) THEN
+          CALL FlagError("The equations nonlinear mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    IF(residualIndex==1) THEN
+      numberOfVariables=nonlinearMapping%number_of_residual_variables
+    ELSE
+      CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_ResidualNumberOfVariablesGet")
+    RETURN
+999 CALL Errors("Equations_ResidualNumberOfVariablesGet",err,error)
+    CALL Exits("Equations_ResidualNumberOfVariablesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_ResidualNumberOfVariablesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the field variables that contribute to the residual vector
+  SUBROUTINE Equations_ResidualVariablesGet(equations,residualIndex,residualVariables,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the residual vector variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the variables for
+    INTEGER(INTG), INTENT(OUT) :: residualVariables(:) !<residualVariables(varIdx). On return, the field variable type for the varIdx'th residual variable
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    INTEGER(INTG) :: numberOfVariables,variableIdx
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+
+    CALL Enters("Equations_ResidualVariablesGet",err,error,*999)
+
+    !Check for pointer associations
+    IF(ASSOCIATED(equations)) THEN
+      equationsMapping=>equations%equations_mapping
+      IF(ASSOCIATED(equationsMapping)) THEN
+        nonlinearMapping=>equationsMapping%nonlinear_mapping
+        IF(.NOT.ASSOCIATED(nonlinearMapping)) THEN
+          CALL FlagError("The equations nonlinear mapping is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations mapping is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    IF(residualIndex==1) THEN
+      numberOfVariables=nonlinearMapping%number_of_residual_variables
+      IF(SIZE(residualVariables,1)>=numberOfVariables) THEN
+        DO variableIdx=1,numberOfVariables
+          residualVariables(variableIdx)=nonlinearMapping%residual_variables(variableIdx)%ptr%variable_type
+        END DO
+      ELSE
+        CALL FlagError("residualVariables array must have size of at least "// &
+          & TRIM(numberToVstring(numberOfVariables,"*",err,error))//".",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("Multiple residual vectors are not yet implemented.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_ResidualVariablesGet")
+    RETURN
+999 CALL Errors("Equations_ResidualVariablesGet",err,error)
+    CALL Exits("Equations_ResidualVariablesGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_ResidualVariablesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the source vector for equations
+  SUBROUTINE Equations_SourceVectorGet(equations,vector,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<The equations to get the source vector for
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER, INTENT(INOUT) :: vector !<On return, the source vector for the equations
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    !Local variables
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: matricesSource
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+
+    CALL Enters("Equations_SourceVectorGet",err,error,*999)
+
+    IF(ASSOCIATED(equations)) THEN
+      equationsMatrices=>equations%equations_matrices
+      IF(ASSOCIATED(equationsMatrices)) THEN
+        matricesSource=>equationsMatrices%source_vector
+        IF(ASSOCIATED(matricesSource)) THEN
+          IF(.NOT.ASSOCIATED(vector)) THEN
+            vector=>matricesSource%vector
+          ELSE
+            CALL FlagError("The vector is already associated.",err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The equations matrices source vector is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("The equations matrices are not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("The equations are not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Equations_SourceVectorGet")
+    RETURN
+999 CALL Errors("Equations_SourceVectorGet",err,error)
+    CALL Exits("Equations_SourceVectorGet")
+    RETURN 1
+
+  END SUBROUTINE Equations_SourceVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE EQUATIONS_ROUTINES

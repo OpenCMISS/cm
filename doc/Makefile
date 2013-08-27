@@ -4,6 +4,7 @@
 clean:
 	find ../../cm -type d -exec chmod 755 {} \;
 	rm -rf doxy/latexhtml doxy/programmer doxy/user doxy/OpenCMISSNotes.pdf
+	
 
 relocate:
 	mv notes/OpenCMISSNotes.pdf doxy
@@ -14,8 +15,10 @@ relocate:
 install:
 	cd doxygen; \
 	doxygen Doxyfile; \
-	doxygen Doxyfile_User
+	doxygen Doxyfile_User; \
+	doxygen Doxyfile_Python
 	cd notes; \
+	./Latex_make.sh clean; \
 	./Latex_make.sh pdf; \
 	./Latex_make.sh html
 

@@ -523,7 +523,7 @@ CONTAINS
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     REAL(DP) :: NORMAL(3),TANGENTS(3,3),VALUE,X(3),VALUE_SOURCE !<The value to add
 !     REAL(DP) :: k_xx, k_yy, k_zz
-    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,variable_idx,eqnset_idx
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,eqnset_idx
     INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
     INTEGER(INTG) :: ANALYTIC_FUNCTION_TYPE
     INTEGER(INTG) :: GLOBAL_DERIV_INDEX

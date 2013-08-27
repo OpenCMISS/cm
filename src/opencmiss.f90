@@ -63,6 +63,7 @@ MODULE OPENCMISS
   USE COORDINATE_ROUTINES
   USE DATA_POINT_ROUTINES
   USE DATA_PROJECTION_ROUTINES
+  USE DISTRIBUTED_MATRIX_VECTOR
   USE EQUATIONS_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
@@ -99,6 +100,8 @@ MODULE OPENCMISS
 
   PRIVATE
 
+#include "include/petscversion.h"
+  
   !Module parameters
 
   !Module types
@@ -216,6 +219,25 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY
   END TYPE CMISSInterfaceMeshConnectivityType
+  
+  !>Contains information on an interfaces points connectivity.
+  TYPE CMISSInterfacePointsConnectivityType
+    PRIVATE
+    TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity
+  END TYPE CMISSInterfacePointsConnectivityType
+
+  !>A matrix that may be distributed across multiple computational nodes
+  !>and may use sparse or full storage.
+  TYPE CMISSDistributedMatrixType
+    PRIVATE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: distributedMatrix
+  END TYPE CMISSDistributedMatrixType
+
+  !>A vector that may be distributed across multiple computational nodes
+  TYPE CMISSDistributedVectorType
+    PRIVATE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: distributedVector
+  END TYPE CMISSDistributedVectorType
 
   !>Contains information on a mesh defined on a region.
   TYPE CMISSMeshType
@@ -226,7 +248,7 @@ MODULE OPENCMISS
   !>Contains information on a mesh elements defined in a mesh
   TYPE CMISSMeshElementsType
     PRIVATE
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
   END TYPE CMISSMeshElementsType
 
   !>Contains information on an embedded mesh
@@ -339,7 +361,14 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceEquationsType,CMISSInterfaceEquations_Finalise,CMISSInterfaceEquations_Initialise
 
   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivity_Finalise, &
-     & CMISSInterfaceMeshConnectivity_Initialise
+    & CMISSInterfaceMeshConnectivity_Initialise
+  
+  PUBLIC CMISSInterfacePointsConnectivityType,CMISSInterfacePointsConnectivity_Initialise, &
+    & CMISSInterfacePointsConnectivity_Finalise
+
+  PUBLIC CMISSDistributedMatrixType,CMISSDistributedVectorType
+
+  PUBLIC CMISSDistributedMatrix_Initialise,CMISSDistributedVector_Initialise
 
   PUBLIC CMISSMeshType,CMISSMesh_Finalise,CMISSMesh_Initialise
 
@@ -693,6 +722,14 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBasis_QuadratureNumberOfGaussXiSetObj
   END INTERFACE !CMISSBasis_QuadratureNumberOfGaussXiSet
 
+  !>Returns the xi positions of Gauss points on a basis quadrature.
+  INTERFACE CMISSBasis_QuadratureGaussXiGet
+    MODULE PROCEDURE CMISSBasis_QuadratureSingleGaussXiGetNumber
+    MODULE PROCEDURE CMISSBasis_QuadratureSingleGaussXiGetObj
+    MODULE PROCEDURE CMISSBasis_QuadratureMultipleGaussXiGetNumber
+    MODULE PROCEDURE CMISSBasis_QuadratureMultipleGaussXiGetObj
+  END INTERFACE !CMISSBasis_QuadratureGaussXiGet
+
   !>Returns the order of quadrature for a basis quadrature.
   INTERFACE CMISSBasis_QuadratureOrderGet
     MODULE PROCEDURE CMISSBasis_QuadratureOrderGetNumber
@@ -764,6 +801,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBasis_QuadratureNumberOfGaussXiGet,CMISSBasis_QuadratureNumberOfGaussXiSet
 
+  PUBLIC CMISSBasis_QuadratureGaussXiGet
+
   PUBLIC CMISSBasis_QuadratureOrderGet,CMISSBasis_QuadratureOrderSet
 
   PUBLIC CMISSBasis_QuadratureTypeGet,CMISSBasis_QuadratureTypeSet, CMISSBasis_QuadratureLocalFaceGaussEvaluateSet
@@ -796,6 +835,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FREE_WALL = BOUNDARY_CONDITION_FREE_WALL
 
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_POINT = BOUNDARY_CONDITION_NEUMANN_POINT !<Specify the normal derivative at a node, which is then integrated to find the nodal load term
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED = BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED !<Specify the normal derivative at a node, which is then integrated to find the nodal load term. The value is incremented inside a load incremented control loop.
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED = BOUNDARY_CONDITION_NEUMANN_INTEGRATED !<Set the integrated right hand side load value directly
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_DIRICHLET = BOUNDARY_CONDITION_DIRICHLET
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_CAUCHY = BOUNDARY_CONDITION_CAUCHY
@@ -875,6 +915,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBoundaryConditions_NeumannSparsityTypeSetObj
   END INTERFACE !CMISSBoundaryConditions_NeumannSparsityTypeSet
 
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  INTERFACE CMISSBoundaryConditions_ConstrainNodeDofsEqual
+    MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber
+    MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj
+  END INTERFACE CMISSBoundaryConditions_ConstrainNodeDofsEqual
+
   PUBLIC CMISS_BOUNDARY_CONDITION_FREE,CMISS_BOUNDARY_CONDITION_FIXED, &
     & CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
     & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
@@ -884,6 +930,7 @@ MODULE OPENCMISS
   PUBLIC CMISS_BOUNDARY_CONDITION_NEUMANN_POINT,CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED,CMISS_BOUNDARY_CONDITION_DIRICHLET
   PUBLIC CMISS_BOUNDARY_CONDITION_CAUCHY,CMISS_BOUNDARY_CONDITION_ROBIN,CMISS_BOUNDARY_CONDITION_FIXED_INCREMENTED
   PUBLIC CMISS_BOUNDARY_CONDITION_PRESSURE,CMISS_BOUNDARY_CONDITION_PRESSURE_INCREMENTED
+  PUBLIC CMISS_BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED
 
   PUBLIC CMISS_BOUNDARY_CONDITION_SPARSE_MATRICES,CMISS_BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -896,6 +943,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditions_AddNode,CMISSBoundaryConditions_SetNode
 
   PUBLIC CMISSBoundaryConditions_NeumannSparsityTypeSet
+
+  PUBLIC CMISSBoundaryConditions_ConstrainNodeDofsEqual
 
 !!==================================================================================================================================
 !!
@@ -1608,43 +1657,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataPoints_LabelSetVSObj
   END INTERFACE !CMISSDataPoints_LabelSet
 
-  !>Returns the projection distance for a data point identified by a given global number.
-  INTERFACE CMISSDataPoints_ProjectionDistanceGet
-    MODULE PROCEDURE CMISSDataPoints_ProjectionDistanceGetNumber
-    MODULE PROCEDURE CMISSDataPoints_ProjectionDistanceGetObj
-  END INTERFACE !CMISSDataPoints_ProjectionDistanceGet
-
-  !>Returns the projection element number for a data point identified by a given global number.
-  INTERFACE CMISSDataPoints_ProjectionElementNumberGet
-    MODULE PROCEDURE CMISSDataPoints_ProjectionElementNumberGetNumber
-    MODULE PROCEDURE CMISSDataPoints_ProjectionElementNumberGetObj
-  END INTERFACE !CMISSDataPoints_ProjectionElementNumberGet
-
-  !>Returns the projection element face number for a data point identified by a given global number.
-  INTERFACE CMISSDataPoints_ProjectionElementFaceNumberGet
-    MODULE PROCEDURE CMISSDataPoints_ProjectionElementFaceNumberGetNumber
-    MODULE PROCEDURE CMISSDataPoints_ProjectionElementFaceNumberGetObj
-  END INTERFACE !CMISSDataPoints_ProjectionElementFaceNumberGet
-
-  !>Returns the projection element line number for a data point identified by a given global number.
-  INTERFACE CMISSDataPoints_ProjectionElementLineNumberGet
-    MODULE PROCEDURE CMISSDataPoints_ProjectionElementLineNumberGetNumber
-    MODULE PROCEDURE CMISSDataPoints_ProjectionElementLineNumberGetObj
-  END INTERFACE !CMISSDataPoints_ProjectionElementLineNumberGet
-
-  !>Returns the projection exit tag for a data point identified by a given global number.
-  INTERFACE CMISSDataPoints_ProjectionExitTagGet
-    MODULE PROCEDURE CMISSDataPoints_ProjectionExitTagGetNumber
-    MODULE PROCEDURE CMISSDataPoints_ProjectionExitTagGetObj
-  END INTERFACE !CMISSDataPoints_ProjectionExitTagGet
-
-  !>Returns the projection xi for a data point identified by a given global number.
-  INTERFACE CMISSDataPoints_ProjectionXiGet
-    MODULE PROCEDURE CMISSDataPoints_ProjectionXiGetNumber
-    MODULE PROCEDURE CMISSDataPoints_ProjectionXiGetObj
-  END INTERFACE !CMISSDataPoints_ProjectionXiGet
-
-
   !>Returns the user number for a data point identified by a given global number.
   INTERFACE CMISSDataPoints_UserNumberGet
     MODULE PROCEDURE CMISSDataPoints_UserNumberGetNumber
@@ -1689,12 +1701,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDataPoints_LabelGet,CMISSDataPoints_LabelSet
 
-  PUBLIC CMISSDataPoints_ProjectionDistanceGet,CMISSDataPoints_ProjectionElementNumberGet
-
-  PUBLIC CMISSDataPoints_ProjectionElementFaceNumberGet,CMISSDataPoints_ProjectionElementLineNumberGet
-
-  PUBLIC CMISSDataPoints_ProjectionExitTagGet,CMISSDataPoints_ProjectionXiGet
-
   PUBLIC CMISSDataPoints_UserNumberGet,CMISSDataPoints_UserNumberSet
 
   PUBLIC CMISSDataPoints_ValuesGet,CMISSDataPoints_ValuesSet
@@ -1713,12 +1719,14 @@ MODULE OPENCMISS
   !> \brief DataProjection  constants.
   !>@{
   !> \addtogroup OPENCMISS_DataProjectionProjectionTypes OPENCMISS::DataProjection::ProjectionTypes
-  !> \brief Equations projection types
+  !> \brief Data Projection types
   !> \see OPENCMISS::DataProjection,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE!<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE!<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE = DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE !<The element projection type for data projection, projects to all elements in mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
+  !>@}
+  !>@}
 
   !Module types
 
@@ -1755,12 +1763,19 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_DestroyNumber
     MODULE PROCEDURE CMISSDataProjection_DestroyObj
   END INTERFACE !CMISSDataProjection_Destroy
+  
+  !>Evaluate the data points position in a field based on data projection
+  INTERFACE CMISSDataProjection_DataPointsPositionEvaluate
+    MODULE PROCEDURE CMISSDataProjection_DataPointsPositionEvaluateRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_DataPointsPositionEvaluateObj
+  END INTERFACE !CMISSDataProjection_DataPointsPositionEvaluate
 
-  !>Starts the evluation of data projection.
-  INTERFACE CMISSDataProjection_Evaluate
-    MODULE PROCEDURE CMISSDataProjection_EvaluateNumber
-    MODULE PROCEDURE CMISSDataProjection_EvaluateObj
-  END INTERFACE !CMISSDataProjection_Evaluate
+  !>Starts the evluation of data projection on the geometric field.
+  INTERFACE CMISSDataProjection_ProjectionEvaluate
+    MODULE PROCEDURE CMISSDataProjection_ProjectionEvaluateNumber
+    MODULE PROCEDURE CMISSDataProjection_ProjectionEvaluateObj
+  END INTERFACE !CMISSDataProjection_ProjectionEvaluate
 
   !>Returns the maximum iteration update for a data projection.
   INTERFACE CMISSDataProjection_MaximumIterationUpdateGet
@@ -1797,6 +1812,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_NumberOfClosestElementsSetNumber
     MODULE PROCEDURE CMISSDataProjection_NumberOfClosestElementsSetObj
   END INTERFACE !CMISSDataProjection_NumberOfClosestElementsSet
+  
+  !>Set the candidate element numbers and their local face/line numbers
+  INTERFACE CMISSDataProjection_ProjectionCandidatesSet
+    MODULE PROCEDURE CMISSDataProjection_ProjectionCandidatesSetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_ProjectionCandidatesSetObj
+  END INTERFACE !CMISSDataProjection_ProjectionCandidatesSet
 
   !>Returns the projection type for a data projection.
   INTERFACE CMISSDataProjection_ProjectionTypeGet
@@ -1834,6 +1856,75 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjection_StartingXiSetObj
   END INTERFACE !CMISSDataProjection_StartingXiSet
 
+  !>Sets/changes the element number for a data point projection.
+  INTERFACE CMISSDataProjection_ElementSet
+    MODULE PROCEDURE CMISSDataProjection_ElementSetRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_ElementSetInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_ElementSetObj
+  END INTERFACE !CMISSDataProjection_ElementSet
+
+  !>Gets the label for a data point projection.
+  INTERFACE CMISSDataProjection_LabelGet
+    MODULE PROCEDURE CMISSDataProjection_LabelGetCRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetCInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetCObj
+    MODULE PROCEDURE CMISSDataProjection_LabelGetVSRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetVSInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelGetVSObj
+  END INTERFACE !CMISSDataProjection_LabelGet
+
+  !>Sets/changes the label for a data point projection.
+  INTERFACE CMISSDataProjection_LabelSet
+    MODULE PROCEDURE CMISSDataProjection_LabelSetCRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetCInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetCObj
+    MODULE PROCEDURE CMISSDataProjection_LabelSetVSRegionNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetVSInterfaceNumber
+    MODULE PROCEDURE CMISSDataProjection_LabelSetVSObj
+  END INTERFACE !CMISSDataProjection_LabelSet
+
+  !>Returns the projection distance for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultDistanceGet
+    MODULE PROCEDURE CMISSDataProjection_ResultDistanceGetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultDistanceGetObj
+  END INTERFACE !CMISSDataProjection_ResultDistanceGet
+
+  !>Returns the projection element number for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultElementNumberGet
+    MODULE PROCEDURE CMISSDataProjection_ResultElementNumberGetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultElementNumberGetObj
+  END INTERFACE !CMISSDataProjection_ResultElementNumberGet
+
+  !>Returns the projection element face number for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultElementFaceNumberGet
+    MODULE PROCEDURE CMISSDataProjection_ResultElementFaceNumberGetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultElementFaceNumberGetObj
+  END INTERFACE !CMISSDataProjection_ResultElementFaceNumberGet
+
+  !>Returns the projection element line number for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultElementLineNumberGet
+    MODULE PROCEDURE CMISSDataProjection_ResultElementLineNumberGetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultElementLineNumberGetObj
+  END INTERFACE !CMISSDataProjection_ResultElementLineNumberGet
+
+  !>Returns the projection exit tag for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultExitTagGet
+    MODULE PROCEDURE CMISSDataProjection_ResultExitTagGetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultExitTagGetObj
+  END INTERFACE !CMISSDataProjection_ResultExitTagGet
+
+  !>Returns the projection xi for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultXiGet
+    MODULE PROCEDURE CMISSDataProjection_ResultXiGetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultXiGetObj
+  END INTERFACE !CMISSDataProjection_ResultXiGet
+
+  !>Sets the projection xi for a data point identified by a given user number.
+  INTERFACE CMISSDataProjection_ResultXiSet
+    MODULE PROCEDURE CMISSDataProjection_ResultXiSetNumber
+    MODULE PROCEDURE CMISSDataProjection_ResultXiSetObj
+  END INTERFACE !CMISSDataProjection_ResultXiSet
+
   PUBLIC CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
 
   PUBLIC CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
@@ -1843,8 +1934,12 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjection_CreateFinish,CMISSDataProjection_CreateStart
 
   PUBLIC CMISSDataProjection_Destroy
+  
+  PUBLIC CMISSDataProjection_DataPointsPositionEvaluate
+  
+  PUBLIC CMISSDataProjection_ProjectionCandidatesSet
 
-  PUBLIC CMISSDataProjection_Evaluate
+  PUBLIC CMISSDataProjection_ProjectionEvaluate
 
   PUBLIC CMISSDataProjection_MaximumIterationUpdateGet,CMISSDataProjection_MaximumIterationUpdateSet
 
@@ -1857,6 +1952,18 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjection_RelativeToleranceGet,CMISSDataProjection_RelativeToleranceSet
 
   PUBLIC CMISSDataProjection_StartingXiGet,CMISSDataProjection_StartingXiSet
+
+  PUBLIC CMISSDataProjection_ElementSet
+
+  PUBLIC CMISSDataProjection_LabelGet,CMISSDataProjection_LabelSet
+
+  PUBLIC CMISSDataProjection_ResultDistanceGet,CMISSDataProjection_ResultElementNumberGet
+
+  PUBLIC CMISSDataProjection_ResultElementFaceNumberGet,CMISSDataProjection_ResultElementLineNumberGet
+
+  PUBLIC CMISSDataProjection_ResultExitTagGet
+
+  PUBLIC CMISSDataProjection_ResultXiGet, CMISSDataProjection_ResultXiSet
 
 !!==================================================================================================================================
 !!
@@ -1877,6 +1984,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIMING_OUTPUT = EQUATIONS_TIMING_OUTPUT !<Timing information output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_OUTPUT = EQUATIONS_MATRIX_OUTPUT !<All below and equation matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_ELEMENT_MATRIX_OUTPUT = EQUATIONS_ELEMENT_MATRIX_OUTPUT !<All below and element matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NODAL_MATRIX_OUTPUT = EQUATIONS_NODAL_MATRIX_OUTPUT !<All below and nodal matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSparsityTypes OPENCMISS::Equations::SparsityTypes
   !> \brief Equations sparsity types
@@ -1972,7 +2080,9 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquations_TimeDependenceTypeGetObj
   END INTERFACE !CMISSEquations_TimeDependenceTypeGet
 
- PUBLIC CMISS_EQUATIONS_NO_OUTPUT,CMISS_EQUATIONS_TIMING_OUTPUT,CMISS_EQUATIONS_MATRIX_OUTPUT,CMISS_EQUATIONS_ELEMENT_MATRIX_OUTPUT
+  PUBLIC CMISS_EQUATIONS_NO_OUTPUT,CMISS_EQUATIONS_TIMING_OUTPUT,CMISS_EQUATIONS_MATRIX_OUTPUT
+
+  PUBLIC CMISS_EQUATIONS_ELEMENT_MATRIX_OUTPUT,CMISS_EQUATIONS_NODAL_MATRIX_OUTPUT
 
   PUBLIC CMISS_EQUATIONS_SPARSE_MATRICES,CMISS_EQUATIONS_FULL_MATRICES
 
@@ -1995,6 +2105,32 @@ MODULE OPENCMISS
   PUBLIC CMISSEquations_SparsityTypeGet,CMISSEquations_SparsityTypeSet
 
   PUBLIC CMISSEquations_TimeDependenceTypeGet
+
+  PUBLIC CMISSEquations_NumberOfLinearMatricesGet
+
+  PUBLIC CMISSEquations_NumberOfJacobianMatricesGet
+
+  PUBLIC CMISSEquations_NumberOfDynamicMatricesGet
+
+  PUBLIC CMISSEquations_LinearMatrixGet
+
+  PUBLIC CMISSEquations_JacobianMatrixGet
+
+  PUBLIC CMISSEquations_DynamicMatrixGet
+
+  PUBLIC CMISSEquations_DynamicMatrixGetByType
+
+  PUBLIC CMISSEquations_DynamicMatrixTypeGet
+
+  PUBLIC CMISSEquations_RhsVectorGet
+
+  PUBLIC CMISSEquations_ResidualVectorGet
+
+  PUBLIC CMISSEquations_ResidualNumberOfVariablesGet
+
+  PUBLIC CMISSEquations_ResidualVariablesGet
+
+  PUBLIC CMISSEquations_SourceVectorGet
 
 !!==================================================================================================================================
 !!
@@ -2035,6 +2171,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE = EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE !<Darcy pressure equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TYPE = EQUATIONS_SET_POISEUILLE_EQUATION_TYPE !<Poiseuille equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BURGERS_EQUATION_TYPE = EQUATIONS_SET_BURGERS_EQUATION_TYPE !<Burgers equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE = EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE !<Characteristic equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELECTROSTATIC_TYPE = EQUATIONS_SET_ELECTROSTATIC_TYPE !<Electrostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MAGNETOSTATIC_TYPE = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE = EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE !<Maxwells equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -2110,6 +2247,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE !< Static finite elasticity coupled with fluid pressure set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE= &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE !<Holmes and Mow's poroelastic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE= &
+    & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE !<Humphrey and Yin transversely isotropic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2121,8 +2260,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = & 
     & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = & 
+    & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes equations set with coupled multidomain method subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = &
     & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE = EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE !<Static Characteristics equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE = &
+    & EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE !<Static Characteristics equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE = &
+    & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2293,6 +2439,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD = EQUATIONS_SET_GFD_SOLUTION_METHOD !<Grid-based Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD = EQUATIONS_SET_GFV_SOLUTION_METHOD !<Grid-based Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   !>@}
+
+  !> \addtogroup OPENCMISS_EquationsSetDynamicMatrixTypes OPENCMISS::EquationsSet::DynamicMatrixTypes
+  !> \brief Type of matrix in a dynamic equations set
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_STIFFNESS=EQUATIONS_MATRIX_STIFFNESS !<A stiffness matrix (multiplies displacement values)
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_DAMPING=EQUATIONS_MATRIX_DAMPING !<A damping matrix (multiplies velocity values)
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_MASS=EQUATIONS_MATRIX_MASS !<A mass matrix (multiplies acceleration values)
+  !>@}
+
   !> \addtogroup OPENCMISS_EquationsSetAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes
   !> \brief The analytic function types.
   !> \see OPENCMISS::EquationsSet,OPENCMISS
@@ -2383,6 +2538,16 @@ MODULE OPENCMISS
     & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE !< fully developed 2D channel flow (parabolic) \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN= &
     & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN !< 2D dynamic nonlinear Taylor-Green vortex decay \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid !< A sinusoidal flow waveform
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
@@ -2483,6 +2648,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE,CMISS_EQUATIONS_SET_BURGERS_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE, &
     & CMISS_EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_ELECTROSTATIC_TYPE,CMISS_EQUATIONS_SET_MAGNETOSTATIC_TYPE,CMISS_EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE, &
     & CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TYPE,CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_POISSON_EQUATION_TYPE, &
@@ -2515,12 +2681,17 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE,&
+    & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE,&
     & CMISS_EQUATIONS_SET_STATIC_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE, &
@@ -2584,6 +2755,8 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_FV_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD, &
     & CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD
 
+  PUBLIC CMISS_EQUATIONS_MATRIX_STIFFNESS,CMISS_EQUATIONS_MATRIX_DAMPING,CMISS_EQUATIONS_MATRIX_MASS
+
   PUBLIC CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2, &
     & CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2
 
@@ -2625,6 +2798,11 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE, &
     & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield, &
+    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds, &
+    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
+    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2, &
     & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5
@@ -2876,7 +3054,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
 
-
 !!==================================================================================================================================
 !!
 !! FIELD_ROUTINES
@@ -2911,6 +3088,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_FIBRE_TYPE = FIELD_FIBRE_TYPE !<Fibre field \see OPENCMISS_FieldTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_GENERAL_TYPE = FIELD_GENERAL_TYPE !<General field \see OPENCMISS_FieldTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_MATERIAL_TYPE = FIELD_MATERIAL_TYPE !<Material field \see OPENCMISS_FieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GEOMETRIC_GENERAL_TYPE = FIELD_GEOMETRIC_GENERAL_TYPE !<Geometric general field \see OPENCMISS_FieldTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldInterpolationTypes OPENCMISS::Field::InterpolationTypes
   !> \brief Field interpolation parameters.
@@ -2921,6 +3099,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_NODE_BASED_INTERPOLATION = FIELD_NODE_BASED_INTERPOLATION !<Node based interpolation. Parameters are nodal based and a basis function is used \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION = FIELD_GRID_POINT_BASED_INTERPOLATION !<Grid point based interpolation. Parameters are different at each grid point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION = FIELD_GAUSS_POINT_BASED_INTERPOLATION !<Gauss point based interpolation. Parameters are different at each Gauss point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DATA_POINT_BASED_INTERPOLATION = FIELD_DATA_POINT_BASED_INTERPOLATION !<Data point based interpolation. Parameters are different at each data point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldVariableTypes OPENCMISS::Field::VariableTypes
   !> \brief Field variable type parameters.
@@ -3166,6 +3345,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_GeometricFieldSetObj
   END INTERFACE !CMISSField_GeometricFieldSet
 
+  !>Gets line lengths from a geometric field given an element number and element basis line number.
+  INTERFACE CMISSField_GeometricParametersElementLineLengthGet
+    MODULE PROCEDURE CMISSField_GeometricParametersElementLineLengthGetNumber
+    MODULE PROCEDURE CMISSField_GeometricParametersElementLineLengthGetObj
+  END INTERFACE !CMISSField_GeometricParametersElementLineLengthGet
+
  !>Returns the label for a field.
   INTERFACE CMISSField_LabelGet
     MODULE PROCEDURE CMISSField_LabelGetCNumber
@@ -3306,6 +3491,22 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetGetConstantLNumber
     MODULE PROCEDURE CMISSField_ParameterSetGetConstantLObj
   END INTERFACE !CMISSField_ParameterSetGetConstant
+  
+  !>Returns from the given parameter set a value for the specified data pont of a field variable component.
+  INTERFACE CMISSField_ParameterSetGetDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointIntgNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointIntgNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointIntgObj
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointSPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointSPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointSPObj
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointDPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointDPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointDPObj
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointLNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointLNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetGetDataPointLObj
+  END INTERFACE !CMISSField_ParameterSetGetDataPoint
 
   !>Returns from the given parameter set a value for the specified element of a field variable component.
   INTERFACE CMISSField_ParameterSetGetElement
@@ -3347,6 +3548,22 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetUpdateConstantLNumber
     MODULE PROCEDURE CMISSField_ParameterSetUpdateConstantLObj
   END INTERFACE !CMISSField_ParameterSetUpdateConstant
+  
+  !>Update the given parameter set a value for the specified data pont of a field variable component.
+  INTERFACE CMISSField_ParameterSetUpdateDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointIntgNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointIntgNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointIntgObj
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointSPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointSPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointSPObj
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointDPObj
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointLNumberI !Interface
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointLNumberR !Region
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateDataPointLObj
+  END INTERFACE !CMISSField_ParameterSetUpdateDataPoint
 
   !>Updates the given parameter set with the given value for a particular user element of a field variable component.
   INTERFACE CMISSField_ParameterSetUpdateElement
@@ -3378,11 +3595,64 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetUpdateNodeLObj
   END INTERFACE !CMISSField_ParameterSetUpdateNode
 
+  !\todo: merge the two types of routines for getting scalefactors under the same interface declaration?
+  !>Gets a scale factor for a particular node.
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorGet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorGetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorGetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorGet
+
+  !>Gets the scale factors for all nodes
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorsGet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsGetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsGetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorsGet
+
+  !>Sets a scale factor for a particular node.
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorSet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorSetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorSetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorSet
+
+  !>Sets the scale factors for all nodes
+  INTERFACE CMISSField_ParameterSetNodeScaleFactorsSet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsSetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeScaleFactorsSetObj
+  END INTERFACE !CMISSField_ParameterSetNodeScaleFactorsSet
+
+  !>Gets the number of scalefactor dofs
+  INTERFACE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGet
+    MODULE PROCEDURE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber
+    MODULE PROCEDURE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj
+  END INTERFACE !CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGet
+
+  !>Updates the given parameter set with the given values for all local dofs of the field variable.  
+  INTERFACE CMISSField_ParameterSetUpdateLocalDofs
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateLocalDofsDPObj
+    !\todo: add Intg/SP/L routines, both indexed by Number and Obj
+  END INTERFACE !CMISSField_ParameterSetUpdateLocalDofs
+
   !>Updates the given parameter set with the given value for a particular gauss point of a field variable component.
   INTERFACE CMISSField_ParameterSetUpdateGaussPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateGaussPointDPNumber
     MODULE PROCEDURE CMISSField_ParameterSetUpdateGaussPointDPObj
-  END INTERFACE !CMISSField_ParameterSetUpdateNode
+  END INTERFACE !CMISSField_ParameterSetUpdateGaussPoint
 
+  !>Interpolates the given parameter set at a specified xi/set of xi locations for specified element and derviative.
+  INTERFACE CMISSField_ParameterSetInterpolateXi
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateSingleXiDPNumber
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateSingleXiDPObj
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateMultipleXiDPNumber
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateMultipleXiDPObj
+  END INTERFACE !CMISSField_ParameterSetInterpolateXi
+
+  !>Interpolates the given parameter set at a specified set of Gauss points for specified element and derviative. When interpolating at multiple Gauss points, if no Gauss points are specified then all Gauss points are interpolated.
+  INTERFACE CMISSField_ParameterSetInterpolateGauss
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateSingleGaussDPNumber
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateSingleGaussDPObj
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateMultipleGaussDPNumber
+    MODULE PROCEDURE CMISSField_ParameterSetInterpolateMultipleGaussDPObj
+  END INTERFACE !CMISSField_ParameterSetInterpolateGauss
 
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSField_ParameterSetUpdateFinish
   INTERFACE CMISSField_ParameterSetUpdateStart
@@ -3454,10 +3724,12 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_FIELD_SCALAR_DIMENSION_TYPE,CMISS_FIELD_VECTOR_DIMENSION_TYPE,CMISS_FIELD_TENSOR_DIMENSION_TYPE
 
-  PUBLIC CMISS_FIELD_GEOMETRIC_TYPE,CMISS_FIELD_FIBRE_TYPE,CMISS_FIELD_GENERAL_TYPE,CMISS_FIELD_MATERIAL_TYPE
+  PUBLIC CMISS_FIELD_GEOMETRIC_TYPE,CMISS_FIELD_FIBRE_TYPE,CMISS_FIELD_GENERAL_TYPE,CMISS_FIELD_MATERIAL_TYPE, &
+    & CMISS_FIELD_GEOMETRIC_GENERAL_TYPE
 
   PUBLIC CMISS_FIELD_CONSTANT_INTERPOLATION,CMISS_FIELD_ELEMENT_BASED_INTERPOLATION,CMISS_FIELD_NODE_BASED_INTERPOLATION, &
-    & CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION,CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION
+    & CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION,CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION, &
+    & CMISS_FIELD_DATA_POINT_BASED_INTERPOLATION
 
   PUBLIC CMISS_FIELD_NUMBER_OF_VARIABLE_SUBTYPES
 
@@ -3526,6 +3798,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSField_GeometricFieldGet,CMISSField_GeometricFieldSet
 
+  PUBLIC CMISSField_GeometricParametersElementLineLengthGet
+
   PUBLIC CMISSField_LabelGet,CMISSField_LabelSet
 
   PUBLIC CMISSField_MeshDecompositionGet,CMISSField_MeshDecompositionSet
@@ -3545,9 +3819,24 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetDataGet,CMISSField_ParameterSetDataRestore
 
   PUBLIC CMISSField_ParameterSetGetConstant,CMISSField_ParameterSetGetElement,CMISSField_ParameterSetGetNode
+  
+  PUBLIC CMISSField_ParameterSetGetDataPoint,CMISSField_ParameterSetUpdateDataPoint
 
   PUBLIC CMISSField_ParameterSetUpdateConstant,CMISSField_ParameterSetUpdateElement,CMISSField_ParameterSetUpdateNode
+
+  PUBLIC CMISSField_ParameterSetNodeScaleFactorGet,CMISSField_ParameterSetNodeScaleFactorSet
+
+  PUBLIC CMISSField_ParameterSetNodeScaleFactorsGet,CMISSField_ParameterSetNodeScaleFactorsSet
+
+  PUBLIC CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGet
+
+  PUBLIC CMISSField_ParameterSetUpdateLocalDofs
+
   PUBLIC CMISSField_ParameterSetUpdateGaussPoint, CMISSField_ParameterSetGetGaussPoint
+
+  PUBLIC CMISSField_ParameterSetInterpolateXi
+
+  PUBLIC CMISSField_ParameterSetInterpolateGauss
 
   PUBLIC CMISSField_ParameterSetUpdateFinish,CMISSField_ParameterSetUpdateStart
 
@@ -3887,6 +4176,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterface_LabelSetVSObj
   END INTERFACE !CMISSInterface_LabelSet
 
+  !>Returns the nodes for a interface.
+  INTERFACE CMISSInterface_NodesGet
+    MODULE PROCEDURE CMISSInterface_NodesGetObj
+  END INTERFACE !CMISSInterface_NodesGet
+
   !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshConnectivity_CreateStart
   INTERFACE CMISSInterfaceMeshConnectivity_CreateFinish
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_CreateFinishNumber
@@ -3903,7 +4197,7 @@ MODULE OPENCMISS
   INTERFACE CMISSInterfaceMeshConnectivity_ElementXiSet
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementXiSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementXiSetObj
-  END INTERFACE !CMISSInterfaceMeshConnectivity_ElementXiSet <<>>
+  END INTERFACE !CMISSInterfaceMeshConnectivity_ElementXiSet
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivity_ElementNumberSet
@@ -3912,16 +4206,65 @@ MODULE OPENCMISS
   END INTERFACE !CMISSInterfaceMeshConnectivity_ElementNumberSet
 
   !>Sets the number of elements coupled through a given interface mesh element
-  INTERFACE CMISSInterfaceMeshConnectivity_SetBasis
-    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_SetBasisNumber
-    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_SetBasisObj
-  END INTERFACE !CMISSInterfaceMeshConnectivity_SetBasis
+  INTERFACE CMISSInterfaceMeshConnectivity_BasisSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_BasisSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_BasisSetObj
+  END INTERFACE !CMISSInterfaceMeshConnectivity_BasisSet
 
   !>Destroys an interface meshes connectivity.
   INTERFACE CMISSInterfaceMeshConnectivity_Destroy
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_DestroyNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_DestroyObj
   END INTERFACE !CMISSInterfaceMeshConnectivity_Destroy
+  
+  !>Finishes the creation of an interface points connectivity.
+  INTERFACE CMISSInterfacePointsConnectivity_CreateFinish
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateFinishNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateFinishObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_CreateFinish
+  
+  !>Starts the creation of an interface points connectivity.
+  INTERFACE CMISSInterfacePointsConnectivity_CreateStart
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateStartNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_CreateStartObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_CreateStart
+  
+  !>Destroys an interface points connectivity.
+  INTERFACE CMISSInterfacePointsConnectivity_Destroy
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_DestroyNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_DestroyObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_Destroy
+  
+  !>Get the coupled mesh element number that defines points connectivity
+  INTERFACE CMISSInterfacePointsConnectivity_ElementNumberGet
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ElementNumberGetNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ElementNumberGetObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_ElementNumberGet
+  
+  !>Gets the element xi values for the points connectivity between a data point in the interface mesh and an element in a region mesh
+  INTERFACE CMISSInterfacePointsConnectivity_PointXiGet
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiGetNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiGetObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_PointXiGet
+  
+  !>Sets the coupled mesh element number that defines points connectivity
+  INTERFACE CMISSInterfacePointsConnectivity_ElementNumberSet
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ElementNumberSetNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_ElementNumberSetObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_ElementNumberSet 
+  
+  !>Sets the element xi values for the points connectivity between a data point in the interface mesh and an element in a region mesh
+  INTERFACE CMISSInterfacePointsConnectivity_PointXiSet
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_PointXiSetObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_PointXiSet 
+  
+  !>Update points connectivity information with projection results
+  INTERFACE CMISSInterfacePointsConnectivity_UpdateFromProjection
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivity_UpdateFromProjectionObj
+  END INTERFACE !CMISSInterfacePointsConnectivity_UpdateFromProjection
 
   PUBLIC CMISSInterface_MeshAdd
 
@@ -3933,11 +4276,23 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterface_LabelGet,CMISSInterface_LabelSet
 
+  PUBLIC CMISSInterface_NodesGet
+
   PUBLIC CMISSInterfaceMeshConnectivity_CreateFinish,CMISSInterfaceMeshConnectivity_CreateStart
 
-  PUBLIC CMISSInterfaceMeshConnectivity_Destroy, CMISSInterfaceMeshConnectivity_SetBasis
+  PUBLIC CMISSInterfaceMeshConnectivity_Destroy, CMISSInterfaceMeshConnectivity_BasisSet
 
   PUBLIC CMISSInterfaceMeshConnectivity_ElementNumberSet, CMISSInterfaceMeshConnectivity_ElementXiSet
+  
+  PUBLIC CMISSInterfacePointsConnectivity_CreateFinish,CMISSInterfacePointsConnectivity_CreateStart
+  
+  PUBLIC CMISSInterfacePointsConnectivity_Destroy
+  
+  PUBLIC CMISSInterfacePointsConnectivity_ElementNumberGet,CMISSInterfacePointsConnectivity_PointXiGet
+  
+  PUBLIC CMISSInterfacePointsConnectivity_ElementNumberSet,CMISSInterfacePointsConnectivity_PointXiSet
+  
+  PUBLIC CMISSInterfacePointsConnectivity_UpdateFromProjection
 
 !!==================================================================================================================================
 !!
@@ -3964,12 +4319,24 @@ MODULE OPENCMISS
   !> \brief Interface condition operator types.
   !> \see OPENCMISS::InterfaceConditions,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR = INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR !<Continuous field operator, i.e., lambda.(u_1-u_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR = &
+    & INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR !<Continuous field operator, i.e., lambda.(u1_gauss-u2_gauss). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR = &
     & INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR !<Continuous field normal operator, i.e., lambda(u_1.n_1-u_2.n_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FLS_CONTACT_OPERATOR= &
+    & INTERFACE_CONDITION_FLS_CONTACT_OPERATOR !<Frictionless contact operator, i.e., lambda.(x_1.n-x_2.n). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR= &
+    & INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR !<Frictionless contact operator, reproject at each newton iteration and has geometric linearisation terms i.e., lambda.(x_1.n-x_2.n). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_SOLID_FLUID_OPERATOR = INTERFACE_CONDITION_SOLID_FLUID_OPERATOR !<Solid fluid operator, i.e., lambda.(v_f-du_s/dt). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR = &
     & INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR !<Solid fluid normal operator, i.e., lambda(v_f.n_f-du_s/dt.n_s). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_InterfaceConditionIntegrationTypes OPENCMISS::InterfaceConditions::IntegrationTypes
+  !> \brief Interface condition integration types.
+  !> \see OPENCMISS::InterfaceConditions,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_GAUSS_INTEGRATION=INTERFACE_CONDITION_GAUSS_INTEGRATION !<Gauss points integration type, i.e. Loop over element Gauss points and sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_DATA_POINTS_INTEGRATION=INTERFACE_CONDITION_DATA_POINTS_INTEGRATION !< Data points integration type i.e. Loop over data points and  sum up their contribution. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -4020,6 +4387,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceCondition_EquationsDestroyNumber
     MODULE PROCEDURE CMISSInterfaceCondition_EquationsDestroyObj
   END INTERFACE !CMISSInterfaceCondition_EquationsDestroy
+  
+  !>Returns the integration type for an interface condition.
+  INTERFACE CMISSInterfaceCondition_IntegrationTypeGet
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeGetNumber
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeGetObj
+  END INTERFACE !CMISSInterfaceCondition_IntegrationTypeGet
+  
+  !>Sets/changes the integration type for an interface condition.
+  INTERFACE CMISSInterfaceCondition_IntegrationTypeSet
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeSetNumber
+    MODULE PROCEDURE CMISSInterfaceCondition_IntegrationTypeSetObj
+  END INTERFACE !CMISSInterfaceCondition_IntegrationTypeSet
 
   !>Finishes the creation of a Lagrange multipliers field for an interface condition. \see OPENCMISS::CMISSInterfaceCondition_LagrangeFieldCreateStart
   INTERFACE CMISSInterfaceCondition_LagrangeFieldCreateFinish
@@ -4032,6 +4411,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceCondition_LagrangeFieldCreateStartNumber
     MODULE PROCEDURE CMISSInterfaceCondition_LagrangeFieldCreateStartObj
   END INTERFACE !CMISSInterfaceCondition_LagrangeFieldCreateStart
+
+  !>Finishes the creation of a Penalty field for an interface condition. \see OPENCMISS::CMISSInterfaceCondition_PenaltyFieldCreateStart
+  INTERFACE CMISSInterfaceCondition_PenaltyFieldCreateFinish
+    MODULE PROCEDURE CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceCondition_PenaltyFieldCreateFinishObj
+  END INTERFACE !CMISSInterfaceCondition_PenaltyFieldCreateFinish
+
+  !>Starts the creation of a Penalty field for an interface condition. \see OPENCMISS::CMISSInterfaceCondition_PenaltyFieldCreateFinish
+  INTERFACE CMISSInterfaceCondition_PenaltyFieldCreateStart
+    MODULE PROCEDURE CMISSInterfaceCondition_PenaltyFieldCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceCondition_PenaltyFieldCreateStartObj
+  END INTERFACE !CMISSInterfaceCondition_PenaltyFieldCreateStart
 
   !>Returns the method for an interface condition.
   INTERFACE CMISSInterfaceCondition_MethodGet
@@ -4085,7 +4476,10 @@ MODULE OPENCMISS
     & CMISS_INTERFACE_CONDITION_PENALTY_METHOD,CMISS_INTERFACE_CONDITION_POINT_TO_POINT_METHOD
 
   PUBLIC CMISS_INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR,CMISS_INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR, &
+    & CMISS_INTERFACE_CONDITION_FLS_CONTACT_OPERATOR,CMISS_INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR, &
     & CMISS_INTERFACE_CONDITION_SOLID_FLUID_OPERATOR,CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR
+    
+  PUBLIC CMISS_INTERFACE_CONDITION_GAUSS_INTEGRATION,CMISS_INTERFACE_CONDITION_DATA_POINTS_INTEGRATION
 
   PUBLIC CMISSInterfaceCondition_CreateFinish,CMISSInterfaceCondition_CreateStart
 
@@ -4096,8 +4490,12 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceCondition_EquationsCreateFinish,CMISSInterfaceCondition_EquationsCreateStart
 
   PUBLIC CMISSInterfaceCondition_EquationsDestroy
+  
+  PUBLIC CMISSInterfaceCondition_IntegrationTypeGet,CMISSInterfaceCondition_IntegrationTypeSet
 
   PUBLIC CMISSInterfaceCondition_LagrangeFieldCreateFinish,CMISSInterfaceCondition_LagrangeFieldCreateStart
+
+  PUBLIC CMISSInterfaceCondition_PenaltyFieldCreateFinish,CMISSInterfaceCondition_PenaltyFieldCreateStart
 
   PUBLIC CMISSInterfaceCondition_MethodGet,CMISSInterfaceCondition_MethodSet
 
@@ -4314,6 +4712,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMesh_SurroundingElementsCalculateSetNumber
     MODULE PROCEDURE CMISSMesh_SurroundingElementsCalculateSetObj
   END INTERFACE !CMISSMesh_SurroundingElementsCalculateSet
+  
+  !>Sets/changes whether data points topology should be calculated for the decomposition.
+  INTERFACE CMISSMesh_TopologyDataPointsCalculateProjection
+    MODULE PROCEDURE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber
+    MODULE PROCEDURE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber
+    MODULE PROCEDURE CMISSMesh_TopologyDataPointsCalculateProjectionObj
+  END INTERFACE !CMISSMesh_TopologyDataPointsCalculateProjection
 
   !>Returns the basis for an element in a mesh.
   INTERFACE CMISSMeshElements_BasisGet
@@ -4326,6 +4731,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElements_BasisSetNumber
     MODULE PROCEDURE CMISSMeshElements_BasisSetObj
   END INTERFACE !CMISSMeshElements_BasisSet
+
+  !>Returns the adjacent elements for a given element and adjacent xi direction for an element in a mesh.
+  INTERFACE CMISSMeshElements_AdjacentElementGet
+    MODULE PROCEDURE CMISSMeshElements_AdjacentElementGetNumber
+    MODULE PROCEDURE CMISSMeshElements_AdjacentElementGetObj
+  END INTERFACE !CMISSMeshElements_AdjacentElementGet
 
   !>Finishes the creation of a mesh elements for a mesh component. \see OPENCMISS::CMISSMeshElements_CreateStart
   INTERFACE CMISSMeshElements_CreateFinish
@@ -4416,6 +4827,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDecomposition_TypeGet,CMISSDecomposition_TypeSet
 
+  PUBLIC CMISSDecomposition_NodeDomainGet
+
   PUBLIC CMISSMesh_CreateFinish,CMISSMesh_CreateStart
 
   PUBLIC CMISSMesh_Destroy
@@ -4426,20 +4839,130 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshElements_BasisGet,CMISSMeshElements_BasisSet
 
-  PUBLIC CMISSMeshElements_CreateFinish,CMISSMeshElements_CreateStart
+  PUBLIC CMISSMeshElements_AdjacentElementGet
 
-  PUBLIC CMISSMesh_ElementsGet
+  PUBLIC CMISSMeshElements_UserNodeVersionSet, CMISSMeshElements_LocalElementNodeVersionSet
+
+  PUBLIC CMISSMeshElements_CreateFinish,CMISSMeshElements_CreateStart
 
   PUBLIC CMISSMeshElements_NodesGet,CMISSMeshElements_NodesSet
 
   PUBLIC CMISSMeshElements_UserNumberGet,CMISSMeshElements_UserNumberSet
 
+  PUBLIC CMISSMesh_ElementsGet
+
   PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
 
-  PUBLIC CMISSDecomposition_NodeDomainGet,CMISSMeshElements_UserNodeVersionSet, CMISSMeshElements_LocalElementNodeVersionSet
-
   PUBLIC CMISSMesh_SurroundingElementsCalculateSet
+  
+  PUBLIC CMISSMesh_TopologyDataPointsCalculateProjection
 
+!!==================================================================================================================================
+!!
+!! DISTRIBUTED_MATRIX_VECTOR
+!!
+!!==================================================================================================================================
+
+  !> \addtogroup OPENCMISS_MatrixVectorConstants OPENCMISS::MatrixVector::Constants
+  !> \brief Distributed matrix and vector function constants.
+  !>@{
+  !> \addtogroup OPENCMISS_MatrixStorageTypes OPENCMISS::MatrixVector::MatrixStorageTypes
+  !> \brief Type of matrix storage.
+  !> \see OPENCMISS::MatrixVectorConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_BLOCK_STORAGE_TYPE=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE !<Distributed matrix block storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_DIAGONAL_STORAGE_TYPE=DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE !<Distributed matrix diagonal storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COLUMN_MAJOR_STORAGE_TYPE=DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE !<Distributed matrix column major storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_ROW_MAJOR_STORAGE_TYPE=DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE !<Distributed matrix row major storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COMPRESSED_ROW_STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE !<Distributed matrix compressed row storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE !<Distributed matrix compressed column storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_ROW_COLUMN_STORAGE_TYPE=DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE !<Distributed matrix row-column storage type \see OPENCMISS_MatrixStorageTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_MatrixVectorDataTypes OPENCMISS::MatrixVector::DataTypes
+  !> \brief Type of data stored in matrices and vectors.
+  !> \see OPENCMISS::MatrixVectorConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_INTG_TYPE=DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_SP_TYPE=DISTRIBUTED_MATRIX_VECTOR_SP_TYPE !<Single precision real distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_DP_TYPE=DISTRIBUTED_MATRIX_VECTOR_DP_TYPE !<Double precision real distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_MATRIX_VECTOR_L_TYPE=DISTRIBUTED_MATRIX_VECTOR_L_TYPE !<Logical distributed matrix-vector data type \see OPENCMISS_MatrixVectorDataTypes,OPENCMISS
+  !>@}
+  !>@}
+
+  PUBLIC CMISS_MATRIX_BLOCK_STORAGE_TYPE,CMISS_MATRIX_DIAGONAL_STORAGE_TYPE,CMISS_MATRIX_COLUMN_MAJOR_STORAGE_TYPE, &
+    & CMISS_MATRIX_ROW_MAJOR_STORAGE_TYPE,CMISS_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,CMISS_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE, &
+    & CMISS_MATRIX_ROW_COLUMN_STORAGE_TYPE
+
+  PUBLIC CMISS_MATRIX_VECTOR_INTG_TYPE,CMISS_MATRIX_VECTOR_SP_TYPE,CMISS_MATRIX_VECTOR_DP_TYPE,CMISS_MATRIX_VECTOR_L_TYPE
+
+  !Note that currently we don't have any user number based routines for distributed matrices
+  !as if we can't use a pointer to a CMISS object, a pointer to matrix data isn't going to
+  !be much use either. It's also more awkward when matrices and vectors themselves don't have
+  !user numbers and there are multiple ways to access them through user numbers, eg. solver equations
+  !matrices or equations set matrices
+
+  !>Get the storage type for a distributed matrix
+  INTERFACE CMISSDistributedMatrix_StorageTypeGet
+    MODULE PROCEDURE CMISSDistributedMatrix_StorageTypeGetObj
+  END INTERFACE CMISSDistributedMatrix_StorageTypeGet
+
+  !>Get the data type for a distributed matrix
+  INTERFACE CMISSDistributedMatrix_DataTypeGet
+    MODULE PROCEDURE CMISSDistributedMatrix_DataTypeGetObj
+  END INTERFACE CMISSDistributedMatrix_DataTypeGet
+
+  !>Get the dimensions for a distributed matrix on this computational node
+  INTERFACE CMISSDistributedMatrix_DimensionsGet
+    MODULE PROCEDURE CMISSDistributedMatrix_DimensionsGetObj
+  END INTERFACE CMISSDistributedMatrix_DimensionsGet
+
+  !>Get the row indices and column indices for a sparse matrix
+  INTERFACE CMISSDistributedMatrix_StorageLocationsGet
+    MODULE PROCEDURE CMISSDistributedMatrix_StorageLocationsGetObj
+  END INTERFACE CMISSDistributedMatrix_StorageLocationsGet
+
+  !>Get the data array for this matrix on this computational node
+  INTERFACE CMISSDistributedMatrix_DataGet
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetIntgObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetDPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetSPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataGetLObj
+  END INTERFACE CMISSDistributedMatrix_DataGet
+
+  !>Restore the data array for this matrix once it has finished being used
+  INTERFACE CMISSDistributedMatrix_DataRestore
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreIntgObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreDPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreSPObj
+    MODULE PROCEDURE CMISSDistributedMatrix_DataRestoreLObj
+  END INTERFACE CMISSDistributedMatrix_DataRestore
+
+  !>Get the data type for a distributed vector
+  INTERFACE CMISSDistributedVector_DataTypeGet
+    MODULE PROCEDURE CMISSDistributedVector_DataTypeGetObj
+  END INTERFACE CMISSDistributedVector_DataTypeGet
+
+  !>Get the data array for this vector on this computational node
+  INTERFACE CMISSDistributedVector_DataGet
+    MODULE PROCEDURE CMISSDistributedVector_DataGetIntgObj
+    MODULE PROCEDURE CMISSDistributedVector_DataGetDPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataGetSPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataGetLObj
+  END INTERFACE CMISSDistributedVector_DataGet
+
+  !>Restore the data array for this vector once it has finished being used
+  INTERFACE CMISSDistributedVector_DataRestore
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreIntgObj
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreDPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreSPObj
+    MODULE PROCEDURE CMISSDistributedVector_DataRestoreLObj
+  END INTERFACE CMISSDistributedVector_DataRestore
+
+  PUBLIC CMISSDistributedMatrix_StorageTypeGet,CMISSDistributedMatrix_StorageLocationsGet
+  PUBLIC CMISSDistributedMatrix_DataTypeGet,CMISSDistributedMatrix_DimensionsGet
+  PUBLIC CMISSDistributedMatrix_DataGet,CMISSDistributedMatrix_DataRestore
+  PUBLIC CMISSDistributedVector_DataTypeGet
+  PUBLIC CMISSDistributedVector_DataGet,CMISSDistributedVector_DataRestore
 
 !!==================================================================================================================================
 !!
@@ -4507,6 +5030,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSNodes_UserNumberSetNumber
     MODULE PROCEDURE CMISSNodes_UserNumberSetObj
   END INTERFACE !CMISSNodes_UserNumberSet
+  
+  !>Sets/changes the all user number for nodes.
+  INTERFACE CMISSNodes_AllUserNumbersSet
+    MODULE PROCEDURE CMISSNodes_AllUserNumbersSetNumber
+    MODULE PROCEDURE CMISSNodes_AllUserNumbersSetObj
+  END INTERFACE !CMISSNodes_AllUserNumbersSet
 
   PUBLIC CMISSNodes_CreateFinish,CMISSNodes_CreateStart
 
@@ -4516,7 +5045,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSNodes_LabelGet,CMISSNodes_LabelSet
 
-  PUBLIC CMISSNodes_UserNumberGet,CMISSNodes_UserNumberSet
+  PUBLIC CMISSNodes_UserNumberGet,CMISSNodes_UserNumberSet,CMISSNodes_AllUserNumbersSet
 
 !!==================================================================================================================================
 !!
@@ -4551,6 +5080,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_TYPE = PROBLEM_NO_TYPE !<No problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_ELASTICITY_TYPE = PROBLEM_LINEAR_ELASTICITY_TYPE !<Linear elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_TYPE = PROBLEM_FINITE_ELASTICITY_TYPE !<Finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE = PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE !<Linear elasticity problem subject to contact contstraint type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE = PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE !<Finite elasticity problem subject to contact constraint type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STOKES_EQUATION_TYPE = PROBLEM_STOKES_EQUATION_TYPE !<Stokes equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NAVIER_STOKES_EQUATION_TYPE = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DARCY_EQUATION_TYPE = PROBLEM_DARCY_EQUATION_TYPE !<Darcy equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
@@ -4598,7 +5129,11 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = &
+    & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes problem with coupled multidomain method subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE = PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE = Problem_Coupled1dDaeNavierStokesSubtype !<Coupled 1D-DAE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE = PROBLEM_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE = PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4698,6 +5233,13 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE = PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE = PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE=PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments and reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE=PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+    
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE !<linear elasticity problem subject to contact constraint, transform field at load increments and reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE=PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE !<finear elasticity problem subject to contact constraint, transform field at load increments \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE=PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE !<finear elasticity problem subject to contact constraint, reproject at Newton iterations \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
@@ -4726,6 +5268,8 @@ MODULE OPENCMISS
   PUBLIC CMISS_PROBLEM_NO_TYPE
 
   PUBLIC CMISS_PROBLEM_LINEAR_ELASTICITY_TYPE,CMISS_PROBLEM_FINITE_ELASTICITY_TYPE
+  
+  PUBLIC CMISS_PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE, CMISS_PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE
 
   PUBLIC CMISS_PROBLEM_STOKES_EQUATION_TYPE,CMISS_PROBLEM_NAVIER_STOKES_EQUATION_TYPE,CMISS_PROBLEM_DARCY_EQUATION_TYPE, &
     & CMISS_PROBLEM_POISEUILLE_EQUATION_TYPE,CMISS_PROBLEM_BURGERS_EQUATION_TYPE
@@ -4749,15 +5293,22 @@ MODULE OPENCMISS
     & CMISS_PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
 
   PUBLIC CMISS_PROBLEM_NO_SUBTYPE
+  
+  PUBLIC CMISS_PROBLEM_LE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE, CMISS_PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE, &
+    & CMISS_PROBLEM_LE_CONTACT_REPROJECT_SUBTYPE
+    
+  PUBLIC CMISS_PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE, CMISS_PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE, &
+    & CMISS_PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STATIC_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_OPTIMISED_STOKES_SUBTYPE,CMISS_PROBLEM_ALE_STOKES_SUBTYPE,CMISS_PROBLEM_PGM_STOKES_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE
+    & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE, &
+    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STANDARD_DARCY_SUBTYPE,CMISS_PROBLEM_QUASISTATIC_DARCY_SUBTYPE,CMISS_PROBLEM_ALE_DARCY_SUBTYPE, &
     & CMISS_PROBLEM_TRANSIENT_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE
@@ -5145,7 +5696,11 @@ MODULE OPENCMISS
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_RICHARDSON = SOLVER_ITERATIVE_RICHARDSON !<Richardson iterative solver type. \see  OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_CHEBYSHEV = SOLVER_ITERATIVE_CHEBYSHEV !<Chebychev iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+#else  
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_CHEBYCHEV = SOLVER_ITERATIVE_CHEBYCHEV !<Chebychev iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+#endif
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT = SOLVER_ITERATIVE_CONJUGATE_GRADIENT !<Conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_BICONJUGATE_GRADIENT = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_GMRES = SOLVER_ITERATIVE_GMRES !<Generalised minimum residual iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
@@ -5181,6 +5736,16 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH = SOLVER_NEWTON_LINESEARCH !<Newton line search nonlinear solver type. \see OPENCMISS_NewtonSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_TRUSTREGION = SOLVER_NEWTON_TRUSTREGION !<Newton trust region nonlinear solver type. \see OPENCMISS_NewtonSolverTypes,OPENCMISS
   !>@}
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !> \addtogroup OPENCMISS_NewtonLineSearchTypes OPENCMISS::Solver::NewtonLineSearchTypes
+  !> \brief The types line search techniques for Newton line search nonlinear solvers.
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_LINEAR = SOLVER_NEWTON_LINESEARCH_LINEAR !<Linear line search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_QUADRATIC = SOLVER_NEWTON_LINESEARCH_QUADRATIC !<Quadratic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_CUBIC = SOLVER_NEWTON_LINESEARCH_CUBIC !<Cubic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  !>@}
+#else
   !> \addtogroup OPENCMISS_NewtonLineSearchTypes OPENCMISS::Solver::NewtonLineSearchTypes
   !> \brief The types line search techniques for Newton line search nonlinear solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
@@ -5190,6 +5755,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_QUADRATIC = SOLVER_NEWTON_LINESEARCH_QUADRATIC !<Quadratic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_CUBIC = SOLVER_NEWTON_LINESEARCH_CUBIC !<Cubic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
   !>@}
+#endif  
   !> \addtogroup OPENCMISS_JacobianCalculationTypes OPENCMISS::Solver::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
@@ -5197,6 +5763,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED = SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED !<The Jacobian values will not be calculated for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED = SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED !<The Jacobian values will be calculated analytically for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_NewtonConvergenceTypes OPENCMISS::Solver::NewtonConvergenceTypes
+  !> \brief The convergence test types for a nonlinear newton solver.
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT = SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT !<Newton solver Petsc default convergence test type. \see OPENCMISS_NewtonConvergenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM = SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM !<Newton solver energy norm convergence test type. \see OPENCMISS_NewtonConvergenceTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO = SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO !<Newton solver Sum of differentiated ratios of unconstrained to constrained residuals convergence test type. \see OPENCMISS_NewtonConvergenceTypes,OPENCMISS 
   !>@}
   !> \addtogroup OPENCMISS_DynamicOrderTypes OPENCMISS::Solver::DynamicOrderTypes
   !> \brief The order types for a dynamic solver.
@@ -5422,6 +5996,60 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_DynamicTimesSetNumber1
     MODULE PROCEDURE CMISSSolver_DynamicTimesSetObj
   END INTERFACE !CMISSSolver_DynamicTimesSet
+  
+  !Sets the arbitrary path logical for the transformation
+  INTERFACE CMISSSolver_GeometricTransformationArbitraryPathSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationArbitraryPathSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationArbitraryPathSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationArbitraryPathSet
+  
+  !Clear transformation for a geometric transformation solver
+  INTERFACE CMISSSolver_GeometricTransformationClear
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationClearNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationClearObj
+  END INTERFACE CMISSSolver_GeometricTransformationClear
+  
+  !Sets the field to transform
+  INTERFACE CMISSSolver_GeometricTransformationFieldSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationFieldSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationFieldSet
+  
+  !Sets the full transformation matrix for a geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationMatrixSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetNumber0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetObj0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetNumber1
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationMatrixSetObj1
+  END INTERFACE CMISSSolver_GeometricTransformationMatrixSet
+  
+  !Sets number of load increments for the transformation
+  INTERFACE CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationNoLoadIncrementsSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationNoLoadIncrementsSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+  
+  !Sets the rotation for a geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationRotationSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetNumber0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetObj0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetNumber1
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationRotationSetObj1
+  END INTERFACE CMISSSolver_GeometricTransformationRotationSet
+  
+  !Sets the scalings for a uni-directional geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationScalingsSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationScalingsSetNumber
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationScalingsSetObj
+  END INTERFACE CMISSSolver_GeometricTransformationScalingsSet
+  
+  !Sets the translation for a geometric transformation
+  INTERFACE CMISSSolver_GeometricTransformationTranslationSet
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetNumber0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetObj0
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetNumber1
+    MODULE PROCEDURE CMISSSolver_GeometricTransformationTranslationSetObj1
+  END INTERFACE CMISSSolver_GeometricTransformationTranslationSet
 
   !>Returns the label of a solver.
   INTERFACE CMISSSolver_LabelGet
@@ -5527,6 +6155,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_NewtonAbsoluteToleranceSetObj
   END INTERFACE !CMISSSolver_NewtonAbsoluteToleranceSet
 
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver.
+  INTERFACE CMISSSolver_NewtonLineSearchMonitorOutputSet
+    MODULE PROCEDURE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0
+    MODULE PROCEDURE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1
+    MODULE PROCEDURE CMISSSolver_NewtonLineSearchMonitorOutputSetObj
+  END INTERFACE !CMISSSolver_NewtonLineSearchMonitorOutputSet
+
   !>Sets/changes the Jacobian calculation type for a nonlinear Newton solver.
   INTERFACE CMISSSolver_NewtonJacobianCalculationTypeSet
     MODULE PROCEDURE CMISSSolver_NewtonJacobianCalculationTypeSetNumber0
@@ -5547,6 +6182,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_NewtonCellMLSolverGetNumber1
     MODULE PROCEDURE CMISSSolver_NewtonCellMLSolverGetObj
   END INTERFACE !CMISSSolver_NewtonCellMLSolverGet
+
+  !>Sets/change the convergence test for a nonlinear Newton solver.
+  INTERFACE CMISSSolver_NewtonConvergenceTestTypeSet
+    MODULE PROCEDURE CMISSSolver_NewtonConvergenceTestTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_NewtonConvergenceTestTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_NewtonConvergenceTestTypeSetObj
+  END INTERFACE CMISSSolver_NewtonConvergenceTestTypeSet
 
   !>Sets/changes the line search alpha for a nonlinear Newton solver.
   INTERFACE CMISSSolver_NewtonLineSearchAlphaSet
@@ -5697,13 +6339,21 @@ MODULE OPENCMISS
     & CMISS_SOLVER_LAPACK_LIBRARY,CMISS_SOLVER_TAO_LIBRARY,CMISS_SOLVER_HYPRE_LIBRARY,CMISS_SOLVER_PASTIX_LIBRARY
 
   PUBLIC CMISS_SOLVER_LINEAR_DIRECT_SOLVE_TYPE,CMISS_SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
+  !################################
+  !These two lines below were changed (first one removed) in most recent merge with main opencmiss/cm on 26 Aug 2013
+  !PUBLIC CMISS_SOLVER_DIRECT_LU,CMISS_SOLVER_DIRECT_CHOLESKY,CMISS_SOLVER_DIRECT_SVD
 
-  PUBLIC CMISS_SOLVER_DIRECT_LU,CMISS_SOLVER_DIRECT_CHOLESKY,CMISS_SOLVER_DIRECT_SVD
-
-  PUBLIC CMISS_SOLVER_ITERATIVE_RICHARDSON,CMISS_SOLVER_ITERATIVE_CHEBYCHEV,CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
+  !PUBLIC CMISS_SOLVER_ITERATIVE_RICHARDSON,CMISS_SOLVER_ITERATIVE_CHEBYCHEV,CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
+  !################################
+  PUBLIC CMISS_SOLVER_ITERATIVE_RICHARDSON,CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
     & CMISS_SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,CMISS_SOLVER_ITERATIVE_GMRES,CMISS_SOLVER_ITERATIVE_BiCGSTAB, &
     & CMISS_SOLVER_ITERATIVE_CONJGRAD_SQUARED
-
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  PUBLIC CMISS_SOLVER_ITERATIVE_CHEBYSHEV
+#else
+  PUBLIC CMISS_SOLVER_ITERATIVE_CHEBYCHEV
+#endif
+  
   PUBLIC CMISS_SOLVER_ITERATIVE_NO_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_JACOBI_PRECONDITIONER, &
     & CMISS_SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_SOR_PRECONDITIONER, &
     & CMISS_SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER, &
@@ -5713,11 +6363,18 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH,CMISS_SOLVER_NEWTON_TRUSTREGION
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH_LINEAR,CMISS_SOLVER_NEWTON_LINESEARCH_QUADRATIC,CMISS_SOLVER_NEWTON_LINESEARCH_CUBIC
+#else  
   PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH_NONORMS,CMISS_SOLVER_NEWTON_LINESEARCH_NONE,CMISS_SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
     & CMISS_SOLVER_NEWTON_LINESEARCH_CUBIC
-
+#endif
+  
   PUBLIC CMISS_SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED,CMISS_SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED, &
     & CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
+
+  PUBLIC CMISS_SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT,CMISS_SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM, &
+    & CMISS_SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
 
   PUBLIC CMISS_SOLVER_DYNAMIC_FIRST_ORDER,CMISS_SOLVER_DYNAMIC_SECOND_ORDER
 
@@ -5772,6 +6429,18 @@ MODULE OPENCMISS
   PUBLIC CMISSSolver_DynamicThetaSet
 
   PUBLIC CMISSSolver_DynamicTimesSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationArbitraryPathSet,CMISSSolver_GeometricTransformationClear
+  
+  PUBLIC CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationScalingsSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationFieldSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationMatrixSet
+  
+  PUBLIC CMISSSolver_GeometricTransformationRotationSet,CMISSSolver_GeometricTransformationTranslationSet
 
   PUBLIC CMISSSolver_LabelGet,CMISSSolver_LabelSet
 
@@ -5797,11 +6466,15 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolver_NewtonAbsoluteToleranceSet
 
+  PUBLIC CMISSSolver_NewtonLineSearchMonitorOutputSet
+
   PUBLIC CMISSSolver_NewtonJacobianCalculationTypeSet
 
   PUBLIC CMISSSolver_NewtonLinearSolverGet
 
   PUBLIC CMISSSolver_NewtonCellMLSolverGet
+
+  PUBLIC CMISSSolver_NewtonConvergenceTestTypeSet
 
   PUBLIC CMISSSolver_NewtonLineSearchAlphaSet
 
@@ -5840,6 +6513,18 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverEquations_BoundaryConditionsCreateFinish,CMISSSolverEquations_BoundaryConditionsCreateStart
 
   PUBLIC CMISSSolverEquations_BoundaryConditionsGet
+
+  PUBLIC CMISSSolverEquations_NumberOfMatricesGet
+
+  PUBLIC CMISSSolverEquations_MatrixGet
+
+  PUBLIC CMISSSolverEquations_JacobianMatrixGet
+
+  PUBLIC CMISSSolverEquations_VectorGet
+
+  PUBLIC CMISSSolverEquations_ResidualVectorGet
+
+  PUBLIC CMISSSolverEquations_RhsVectorGet
 
   PUBLIC CMISSBioelectricsFiniteElasticity_UpdateGeometricField
   
@@ -6755,21 +7440,21 @@ CONTAINS
   !
 
   !>Creates a CMISSFieldsType object for an inteface by an object reference.
-  SUBROUTINE CMISSFields_CreateInterface(iNTERFACE,fields,err)
+  SUBROUTINE CMISSFields_CreateInterface(interface,fields,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to get the fields from
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to get the fields from
     TYPE(CMISSFieldsType), INTENT(INOUT) :: fields !<On return, the fields attached to the specified interface. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSFields_CreateInterface",err,error,*999)
 
-    IF(ASSOCIATED(Interface%iNTERFACE)) THEN
+    IF(ASSOCIATED(interface%INTERFACE)) THEN
       IF(ASSOCIATED(fields%FIELDS)) THEN
         CALL FLAG_ERROR("fields is already associated.",ERR,error,*999)
       ELSE
-        fields%FIELDS=>Interface%iNTERFACE%FIELDS
+        fields%FIELDS=>interface%INTERFACE%FIELDS
       END IF
     ELSE
       CALL FLAG_ERROR("The interface is not associated.",ERR,error,*999)
@@ -7079,6 +7764,58 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterfaceEquations_Initialise
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finalise a CMISSInterfaceMeshConnectivityType object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_Finalise(CMISSInterfacePointsConnectivity,Err)
+   
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(OUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfacePointsConnectivity_Finalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSInterfacePointsConnectivity%pointsConnectivity)) THEN
+      CALL InterfacePointsConnectivity_Destroy(CMISSInterfacePointsConnectivity%pointsConnectivity,err,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("CMISSInterfacePointsConnectivity_Finalise")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_Finalise",Err,ERROR)
+    CALL EXITS("CMISSInterfacePointsConnectivity_Finalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+     
+  END SUBROUTINE CMISSInterfacePointsConnectivity_Finalise
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Initialises a CMISSInterfaceMeshConnectivityType object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_Initialise(CMISSInterfacePointsConnectivity,Err)
+   
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(OUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfacePointsConnectivity_Initialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSInterfacePointsConnectivity%pointsConnectivity)
+ 
+    CALL EXITS("CMISSInterfacePointsConnectivity_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_Initialise",Err,ERROR)
+    CALL EXITS("CMISSInterfacePointsConnectivity_Initialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+     
+  END SUBROUTINE CMISSInterfacePointsConnectivity_Initialise
 
   !
   !================================================================================================================================
@@ -7181,6 +7918,56 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSHistory_Initialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSDistributedMatrixType object.
+  SUBROUTINE CMISSDistributedMatrix_Initialise(CMISSDistributedMatrix,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(OUT) :: CMISSDistributedMatrix !<The CMISSDistributedMatrixType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDistributedMatrix_Initialise",err,error,*999)
+
+    NULLIFY(CMISSDistributedMatrix%distributedMatrix)
+
+    CALL EXITS("CMISSDistributedMatrix_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSDistributedMatrix_Initialise",err,error)
+    CALL EXITS("CMISSDistributedMatrix_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_Initialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSDistributedVectorType object.
+  SUBROUTINE CMISSDistributedVector_Initialise(CMISSDistributedVector,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(OUT) :: CMISSDistributedVector !<The CMISSDistributedVectorType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDistributedVector_Initialise",err,error,*999)
+
+    NULLIFY(CMISSDistributedVector%distributedVector)
+
+    CALL EXITS("CMISSDistributedVector_Initialise")
+    RETURN
+999 CALL ERRORS("CMISSDistributedVector_Initialise",err,error)
+    CALL EXITS("CMISSDistributedVector_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_Initialise
 
   !
   !================================================================================================================================
@@ -10059,6 +10846,135 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !>Returns the xi position of a Gauss point on a basis quadrature identified by a user number.
+  SUBROUTINE CMISSBasis_QuadratureSingleGaussXiGetNumber(userNumber,quadratureScheme,GaussPoint,GaussXi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the basis to get the Gauss Xi positions for.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to return the Gauss positions for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoint !<The Gauss point to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GaussXi(:) !<On return, GaussXi(xi_direction) the xi position of the specified Gauss point for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSBasis_QuadratureSingleGaussXiGetNumber",err,error,*999)
+
+    NULLIFY(BASIS)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    IF(ASSOCIATED(BASIS)) THEN
+      CALL BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET(BASIS,quadratureScheme,GaussPoint,GaussXi,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A basis with an user number of "//TRIM(NUMBER_TO_VSTRING(userNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSBasis_QuadratureSingleGaussXiGetNumber",err,error)
+    CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBasis_QuadratureSingleGaussXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the xi position of a Gauss point on a basis quadrature identified by an object.
+  SUBROUTINE CMISSBasis_QuadratureSingleGaussXiGetObj(basis,quadratureScheme,GaussPoint,GaussXi,err)
+
+    !Argument variables
+    TYPE(CMISSBasisType), INTENT(IN) :: basis !<The basis to get the Gauss Xi positions for.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to return the Gauss xi positions for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoint !<The Gauss point to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GaussXi(:) !<On return, GaussXi(xi_direction) the xi position of the specified Gauss point for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSBasis_QuadratureSingleGaussXiGetObj",err,error,*999)
+
+    CALL BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET(basis%BASIS,quadratureScheme,GaussPoint,GaussXi,err,error,*999)
+
+    CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSBasis_QuadratureSingleGaussXiGetObj",err,error)
+    CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBasis_QuadratureSingleGaussXiGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by a user number.
+  SUBROUTINE CMISSBasis_QuadratureMultipleGaussXiGetNumber(userNumber,quadratureScheme,GaussPoints,GaussXi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the basis to get the Gauss Xi positions for.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to return the Gauss positions for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GaussXi(:,:) !<On return, GaussXi(Gauss_point,xi_direction) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSBasis_QuadratureMultipleGaussXiGetNumber",err,error,*999)
+
+    NULLIFY(BASIS)
+    CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
+    IF(ASSOCIATED(BASIS)) THEN
+      CALL BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET(BASIS,quadratureScheme,GaussPoints,GaussXi,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A basis with an user number of "//TRIM(NUMBER_TO_VSTRING(userNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSBasis_QuadratureMultipleGaussXiGetNumber",err,error)
+    CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBasis_QuadratureMultipleGaussXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the xi positions of Gauss points on a basis quadrature identified by an object.
+  SUBROUTINE CMISSBasis_QuadratureMultipleGaussXiGetObj(basis,quadratureScheme,GaussPoints,GaussXi,err)
+
+    !Argument variables
+    TYPE(CMISSBasisType), INTENT(IN) :: basis !<The basis to get the Gauss Xi positions for.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to return the Gauss xi positions for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to return the element xi positions for.
+    REAL(DP), INTENT(OUT) :: GaussXi(:,:) !<On return, GaussXi(Gauss_point,xi_direction) the Gauss xi positions for the specified quadrature scheme.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSBasis_QuadratureMultipleGaussXiGetObj",err,error,*999)
+
+    CALL BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET(basis%BASIS,quadratureScheme,GaussPoints,GaussXi,err,error,*999)
+
+    CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSBasis_QuadratureMultipleGaussXiGetObj",err,error)
+    CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBasis_QuadratureMultipleGaussXiGetObj
+
+  !
+  !================================================================================================================================
+  !
 
   !>Returns the order of quadrature a basis quadrature identified by a user number.
   SUBROUTINE CMISSBasis_QuadratureOrderGetNumber(userNumber,quadratureOrder,err)
@@ -11484,6 +12400,115 @@ CONTAINS
 
   END SUBROUTINE CMISSBoundaryConditions_NeumannSparsityTypeSetObj
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber(regionUserNumber,problemUserNumber,controlLoopIdentifier, &
+    & solverIndex,fieldUserNumber,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field DOFs to constrain.
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem containing the solver equations.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier to get the solver equations.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index of the solver equations.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the dependent field containing the DOFs to contrain.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The variable type of the dependent field containing the DOFs to constrain. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(problem)
+    NULLIFY(solverEquations)
+    NULLIFY(field)
+
+    CALL Region_user_number_find(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL Problem_user_number_find(problemUserNumber,problem,err,error,*999)
+      IF(ASSOCIATED(problem)) THEN
+        CALL Problem_solver_equations_get(problem,controlLoopIdentifier,solverIndex,solverEquations,err,error,*999)
+        IF(ASSOCIATED(solverEquations)) THEN
+          CALL Solver_equations_boundary_conditions_get(solverEquations,boundaryConditions,err,error,*999)
+          IF(ASSOCIATED(boundaryConditions)) THEN
+            CALL Field_user_number_find(fieldUserNumber,region,field,err,error,*999)
+            IF(ASSOCIATED(field)) THEN
+              CALL BoundaryConditions_ConstrainNodeDofsEqual(boundaryConditions,field, &
+                & fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*999)
+            ELSE
+              localError="A field with a user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+                & " does not exist."
+              CALL FlagError(localError,err,error,*999)
+            END IF
+          ELSE
+            localError="The boundary conditions for the solver equations are not associated."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The solver equations are not associated.",err,error,*999)
+        END IF
+      ELSE
+        localError="A problem with a user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber")
+    RETURN
+999 CALL Errors("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber",err,error)
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain multiple nodal equations dependent field DOFs to be a single solver DOF in the solver equations
+  SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj( &
+      & boundaryConditions,field,fieldVariableType,versionNumber,derivativeNumber,component,nodes,err)
+
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: boundaryConditions !<The boundary conditions to constrain the DOFs in.
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: component !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL Enters("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj",err,error,*999)
+
+    CALL BoundaryConditions_ConstrainNodeDofsEqual(boundaryConditions%boundary_conditions,field%field, &
+      & fieldVariableType,versionNumber,derivativeNumber,component,nodes,err,error,*999)
+
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj")
+    RETURN
+999 CALL Errors("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj",err,error)
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofsEqualObj")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj
+
 !!==================================================================================================================================
 !!
 !! CMISS
@@ -11551,7 +12576,7 @@ CONTAINS
     CALL EXTRACT_ERROR_MESSAGE(errorMessage,err,error,*999)
 
     RETURN
-999 RETURN 1
+999 RETURN
 
   END SUBROUTINE CMISSExtractErrorMessageC
 
@@ -11570,7 +12595,7 @@ CONTAINS
     CALL EXTRACT_ERROR_MESSAGE(errorMessage,err,error,*999)
 
     RETURN
-999 RETURN 1
+999 RETURN
 
   END SUBROUTINE CMISSExtractErrorMessageVS
 
@@ -12757,12 +13782,12 @@ CONTAINS
   !
 
   !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellML_ModelImportNumberC(regionUserNumber,CellMLUserNumber,uRI,modelIndex,err)
+  SUBROUTINE CMISSCellML_ModelImportNumberC(regionUserNumber,CellMLUserNumber,URI,modelIndex,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the CellML enviroment to import the model into.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to import the model into.
-    CHARACTER(LEN=*), INTENT(IN) :: uRI !<The uRI of the CellML model to import.
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the CellML model to import.
     INTEGER(INTG), INTENT(OUT) :: modelIndex !<On return, the index of the imported model.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -12778,7 +13803,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,err,error,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_MODEL_IMPORT(CELLML,uRI,modelIndex,err,error,*999)
+        CALL CELLML_MODEL_IMPORT(CELLML,URI,modelIndex,err,error,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -12804,18 +13829,18 @@ CONTAINS
   !
 
   !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by an object.
-  SUBROUTINE CMISSCellML_ModelImportObjC(CellML,uRI,modelIndex,err)
+  SUBROUTINE CMISSCellML_ModelImportObjC(CellML,URI,modelIndex,err)
 
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to import the model into.
-    CHARACTER(LEN=*), INTENT(IN) :: uRI !<The uRI of the CellML model to import.
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the CellML model to import.
     INTEGER(INTG), INTENT(OUT) :: modelIndex !<On return, the index of the imported model.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSCellML_ModelImportObjC",err,error,*999)
 
-    CALL CELLML_MODEL_IMPORT(CellML%CELLML,uRI,modelIndex,err,error,*999)
+    CALL CELLML_MODEL_IMPORT(CellML%CELLML,URI,modelIndex,err,error,*999)
 
     CALL EXITS("CMISSCellML_ModelImportObjC")
     RETURN
@@ -12831,12 +13856,12 @@ CONTAINS
   !
 
   !>Imports a specified CellML model as specified by a varying string URI into a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellML_ModelImportNumberVS(regionUserNumber,CellMLUserNumber,uRI,modelIndex,err)
+  SUBROUTINE CMISSCellML_ModelImportNumberVS(regionUserNumber,CellMLUserNumber,URI,modelIndex,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the CellML enviroment to import the model into.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to import the model into.
-    TYPE(VARYING_STRING), INTENT(IN) :: uRI !<The uRI of the CellML model to import.
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the CellML model to import.
     INTEGER(INTG), INTENT(OUT) :: modelIndex !<On return, the index of the imported model.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -12852,7 +13877,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,err,error,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_MODEL_IMPORT(CELLML,uRI,modelIndex,err,error,*999)
+        CALL CELLML_MODEL_IMPORT(CELLML,URI,modelIndex,err,error,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -12878,18 +13903,18 @@ CONTAINS
   !
 
   !>Imports a specified CellML model as specified by a varying string URI into a CellML environment identified by an object.
-  SUBROUTINE CMISSCellML_ModelImportObjVS(CellML,uRI,modelIndex,err)
+  SUBROUTINE CMISSCellML_ModelImportObjVS(CellML,URI,modelIndex,err)
 
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to import the model into.
-    TYPE(VARYING_STRING), INTENT(IN) :: uRI !<The uRI of the CellML model to import.
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the CellML model to import.
     INTEGER(INTG), INTENT(OUT) :: modelIndex !<On return, the index of the imported model.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSCellML_ModelImportObjVS",err,error,*999)
 
-    CALL CELLML_MODEL_IMPORT(CellML%CELLML,uRI,modelIndex,err,error,*999)
+    CALL CELLML_MODEL_IMPORT(CellML%CELLML,URI,modelIndex,err,error,*999)
 
     CALL EXITS("CMISSCellML_ModelImportObjVS")
     RETURN
@@ -17242,10 +18267,10 @@ CONTAINS
   !
 
   !>Starts the creation of a data points in a region for data points identified by an object.
-  SUBROUTINE CMISSDataPoints_CreateStartInterfaceObj(iNTERFACE,numberOfDataPoints,dataPoints,err)
+  SUBROUTINE CMISSDataPoints_CreateStartInterfaceObj(interface,numberOfDataPoints,dataPoints,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: iNTERFACE !<The interface to start the creation of data points on.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to start the creation of data points on.
     INTEGER(INTG), INTENT(IN) :: numberOfDataPoints !<The number of data points to create.
     TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<On return, the created data points.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -17257,7 +18282,7 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('dataPoints Create')
 #endif
 
-    CALL DATA_POINTS_CREATE_START(Interface%iNTERFACE,numberOfDataPoints,dataPoints%DATA_POINTS,err,error,*999)
+    CALL DATA_POINTS_CREATE_START(interface%INTERFACE,numberOfDataPoints,dataPoints%DATA_POINTS,err,error,*999)
 
     CALL EXITS("CMISSDataPoints_CreateStartInterfaceObj")
     RETURN
@@ -17666,427 +18691,6 @@ CONTAINS
 
   END SUBROUTINE CMISSDataPoints_LabelSetVSObj
 
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection distance for a data point in a set of data points identified by user number.
-  SUBROUTINE CMISSDataPoints_ProjectionDistanceGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointProjectionDistance,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    REAL(DP), INTENT(OUT) :: dataPointProjectionDistance !<On return, the projection distance for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPoints_ProjectionDistanceGetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_PROJECTION_DISTANCE_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionDistance,err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionDistanceGetNumber",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionDistanceGetNumber
-
-
-   !
-   !================================================================================================================================
-   !
-
-  !>Returns the projection distance for a data point in a set of data points identified by an object.
-  SUBROUTINE CMISSDataPoints_ProjectionDistanceGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionDistance,err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    REAL(DP), INTENT(OUT) :: dataPointProjectionDistance !<On return, the projection distance for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataPoints_ProjectionDistanceGetObj",err,error,*999)
-
-    CALL DATA_POINTS_PROJECTION_DISTANCE_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionDistance, &
-      & err,error,*999)
-
-    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionDistanceGetObj",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionDistanceGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionDistanceGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection element number for a data point in a set of data points identified by user number.
-  SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetNumber(regionUserNumber,dataPointGlobalNumber, &
-    & dataPointProjectionElementNumber,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementNumber !<On return, the projection element number for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPoints_ProjectionElementNumberGetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_PROJECTION_ELEMENT_NUMBER_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementNumber, &
-        & err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionElementNumberGetNumber",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection element number for a data point in a set of data points identified by an object.
-  SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionElementNumber,err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementNumber !<On return, the projection element number for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataPoints_ProjectionElementNumberGetObj",err,error,*999)
-
-    CALL DATA_POINTS_PROJECTION_ELEMENT_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementNumber, &
-      & err,error,*999)
-
-    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionElementNumberGetObj",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionElementNumberGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionElementNumberGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection element face number for a data point in a set of data points identified by user number.
-  SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetNumber(regionUserNumber,dataPointGlobalNumber, &
-    & dataPointProjectionElementFaceNumber,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementFaceNumber !<On return, the projection element face number for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_PROJECTION_ELEMENT_FACE_NUMBER_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementFaceNumber, &
-        & err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection element face number for a data point in a set of data points identified by an object.
-  SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetObj(dataPoints,dataPointGlobalNumber, &
-    & dataPointProjectionElementFaceNumber,err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementFaceNumber !<On return, the projection element face number for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataPoints_ProjectionElementFaceNumberGetObj",err,error,*999)
-
-    CALL DATA_POINTS_PROJECTION_ELEMENT_FACE_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber, &
-      & dataPointProjectionElementFaceNumber,err,error,*999)
-
-    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionElementFaceNumberGetObj",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionElementFaceNumberGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionElementFaceNumberGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection element line number for a data point in a set of data points identified by user number.
-  SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetNumber(regionUserNumber,dataPointGlobalNumber, &
-    & dataPointProjectionElementLineNumber,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementLineNumber !<On return, the projection element line number for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPoints_ProjectionElementLineNumberGetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_PROJECTION_ELEMENT_LINE_NUMBER_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionElementLineNumber, &
-        & err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionElementLineNumberGetNumber",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection element line number for a data point in a set of data points identified by an object.
-  SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetObj(dataPoints,dataPointGlobalNumber, &
-    & dataPointProjectionElementLineNumber,err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionElementLineNumber !<On return, the projection element line number for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataPoints_ProjectionElementLineNumberGetObj",err,error,*999)
-
-    CALL DATA_POINTS_PROJECTION_ELEMENT_LINE_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber, &
-      & dataPointProjectionElementLineNumber,err,error,*999)
-
-    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionElementLineNumberGetObj",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionElementLineNumberGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionElementLineNumberGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection exit tag for a data point in a set of data points identified by user number.
-  SUBROUTINE CMISSDataPoints_ProjectionExitTagGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointProjectionExitTag,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionExitTag !<On return, the projection exit tag for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPoints_ProjectionExitTagGetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_PROJECTION_EXIT_TAG_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionExitTag,err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionExitTagGetNumber",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionExitTagGetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection exit tag for a data point in a set of data points identified by an object.
-  SUBROUTINE CMISSDataPoints_ProjectionExitTagGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionExitTag,err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(OUT) :: dataPointProjectionExitTag !<On return, the projection exit tag for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataPoints_ProjectionExitTagGetObj",err,error,*999)
-
-    CALL DATA_POINTS_PROJECTION_EXIT_TAG_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionExitTag, &
-      & err,error,*999)
-
-    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionExitTagGetObj",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionExitTagGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionExitTagGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection xi for a data point in a set of data points identified by user number.
-  SUBROUTINE CMISSDataPoints_ProjectionXiGetNumber(regionUserNumber,dataPointGlobalNumber,dataPointProjectionXi,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    REAL(DP), INTENT(OUT) :: dataPointProjectionXi(:) !<On return, the projection xi for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPoints_ProjectionXiGetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_PROJECTION_XI_GET(DATA_POINTS,dataPointGlobalNumber,dataPointProjectionXi,err,error,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSDataPoints_ProjectionXiGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionXiGetNumber",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionXiGetNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionXiGetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the projection xi for a data point in a set of data points identified by an object.
-  SUBROUTINE CMISSDataPoints_ProjectionXiGetObj(dataPoints,dataPointGlobalNumber,dataPointProjectionXi,err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to get the data point user number for.
-    INTEGER(INTG), INTENT(IN) :: dataPointGlobalNumber !<The global number of the data points to get the data point user number for.
-    REAL(DP), INTENT(OUT) :: dataPointProjectionXi(:) !<On return, the projection xi for the data point.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSDataPoints_ProjectionXiGetObj",err,error,*999)
-
-    CALL DATA_POINTS_PROJECTION_XI_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointProjectionXi,err,error,*999)
-
-    CALL EXITS("CMISSDataPoints_ProjectionXiGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPoints_ProjectionXiGetObj",err,error)
-    CALL EXITS("CMISSDataPoints_ProjectionXiGetObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSDataPoints_ProjectionXiGetObj
-
-  !
-  !================================================================================================================================
-  !
-
   !
   !================================================================================================================================
   !
@@ -18237,7 +18841,6 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
     CALL ENTERS("CMISSDataPoints_ValuesGetNumber",err,error,*999)
 
     NULLIFY(REGION)
@@ -18496,9 +19099,10 @@ CONTAINS
 !!==================================================================================================================================
 
   !>Returns the absolute tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_AbsoluteToleranceGetNumber(regionUserNumber,absoluteTolerance,err)
+  SUBROUTINE CMISSDataProjection_AbsoluteToleranceGetNumber(dataProjectionUserNumber,regionUserNumber,absoluteTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get tolerance for.
     REAL(DP), INTENT(OUT) :: absoluteTolerance !<On exit, the absolute tolerance of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18507,6 +19111,7 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
     CALL ENTERS("CMISSDataProjection_AbsoluteToleranceGetNumber",ERR,error,*999)
 
@@ -18516,7 +19121,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_GET(DATA_PROJECTION,absoluteTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18564,9 +19170,10 @@ CONTAINS
   !
 
   !>Sets/changes the absolute tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_AbsoluteToleranceSetNumber(regionUserNumber,absoluteTolerance,err)
+  SUBROUTINE CMISSDataProjection_AbsoluteToleranceSetNumber(dataProjectionUserNumber,regionUserNumber,absoluteTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set tolerance for.
     REAL(DP), INTENT(IN) :: absoluteTolerance !<the absolute tolerance to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18575,8 +19182,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18584,7 +19192,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_SET(DATA_PROJECTION,absoluteTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18632,9 +19241,10 @@ CONTAINS
   !
 
   !>Finishes the creation of a new data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_CreateFinishNumber(regionUserNumber,err)
+  SUBROUTINE CMISSDataProjection_CreateFinishNumber(dataProjectionUserNumber,regionUserNumber,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points which associates to the data projection to finish the creation of.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
@@ -18642,8 +19252,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_CreateFinishNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_CreateFinishNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18651,7 +19262,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_CREATE_FINISH(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18698,60 +19310,62 @@ CONTAINS
   !
 
   !>Starts the creation of a new data projection for a data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_CreateStartNumber(dataPointRegionUserNumber,fieldUserNumber, &
-    & fieldRegionUserNumber,err)
-
+  SUBROUTINE CMISSDataProjection_CreateStartNumber(dataProjectionUserNumber,dataPointRegionUserNumber,meshUserNumber, &
+    & meshRegionUserNumber,err)
+  
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: dataPointRegionUserNumber !<The region user number of the data points to be projected
-    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number of the geometric field data points are be projected on
-    INTEGER(INTG), INTENT(IN) :: fieldRegionUserNumber !<The region user number of the geometric field data points are be projected on
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number.
+    INTEGER(INTG), INTENT(IN) :: dataPointRegionUserNumber !<The region user number of the data points to be projected.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The field user number of the geometric field data points are be projected on.
+    INTEGER(INTG), INTENT(IN) :: meshRegionUserNumber !<The region user number of the geometric field data points are be projected on.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
+    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(REGION_TYPE), POINTER :: DATA_POINTS_REGION
-    TYPE(REGION_TYPE), POINTER :: GEOMETRIC_FIELD_REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(REGION_TYPE), POINTER :: MESH_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR    
 
-    CALL ENTERS("CMISSDataProjection_CreateStartNumber",err,error,*999)
+    CALL ENTERS("CMISSDataProjection_CreateStartNumber",err,ERROR,*999)
 
     NULLIFY(DATA_PROJECTION)
-    NULLIFY(DATA_POINTS)
-    NULLIFY(GEOMETRIC_FIELD)
+    NULLIFY(DATA_POINTS) 
+    NULLIFY(MESH)   
     NULLIFY(DATA_POINTS_REGION)
-    NULLIFY(GEOMETRIC_FIELD_REGION)
-    CALL REGION_USER_NUMBER_FIND(dataPointRegionUserNumber,DATA_POINTS_REGION,err,error,*999)
-    CALL REGION_USER_NUMBER_FIND(fieldRegionUserNumber,GEOMETRIC_FIELD_REGION,err,error,*999)
+    NULLIFY(MESH_REGION)
+    CALL REGION_USER_NUMBER_FIND(dataPointRegionUserNumber,DATA_POINTS_REGION,err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(meshRegionUserNumber,MESH_REGION,err,ERROR,*999)
     IF(ASSOCIATED(DATA_POINTS_REGION)) THEN
-      IF(ASSOCIATED(GEOMETRIC_FIELD_REGION)) THEN
-        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,GEOMETRIC_FIELD_REGION,GEOMETRIC_FIELD,ERR,error,*999)
-        IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-          CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,error,*999)
-          CALL DATA_PROJECTION_CREATE_START(DATA_POINTS,GEOMETRIC_FIELD,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(MESH_REGION)) THEN
+        CALL MESH_USER_NUMBER_FIND(meshUserNumber,MESH_REGION,MESH,err,ERROR,*999)
+        IF(ASSOCIATED(MESH)) THEN
+          CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,ERROR,*999)
+          CALL DATA_PROJECTION_CREATE_START_DATA_POINTS(dataProjectionUserNumber,DATA_POINTS,MESH,DATA_PROJECTION,err, &
+            & ERROR,*999)
         ELSE
-          LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,ERROR))// &
             & " does not exist."
-          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-        END IF
+          CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+        ENDIF
       ELSE
-        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldRegionUserNumber,"*",err,error))// &
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(meshRegionUserNumber,"*",err,ERROR))// &
           & " does not exist."
-        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-      END IF
+        CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(dataPointRegionUserNumber,"*",err,error))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(dataPointRegionUserNumber,"*",err,ERROR))// &
         & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+      CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+    ENDIF
 
     CALL EXITS("CMISSDataProjection_CreateStartNumber")
     RETURN
-999 CALL ERRORS("CMISSDataProjection_CreateStartNumber",err,error)
+999 CALL ERRORS("CMISSDataProjection_CreateStartNumber",err,ERROR)
     CALL EXITS("CMISSDataProjection_CreateStartNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
+    CALL CMISS_HANDLE_ERROR(err,ERROR)
     RETURN
-
+    
   END SUBROUTINE CMISSDataProjection_CreateStartNumber
 
   !
@@ -18759,18 +19373,20 @@ CONTAINS
   !
 
   !>Starts the creation of a new data projection for a data projection identified by an object.
-  SUBROUTINE CMISSDataProjection_CreateStartObj(dataPoints,geometricField,dataProjection,err)
+  SUBROUTINE CMISSDataProjection_CreateStartObj(dataProjectionUserNumber,dataPoints,mesh,dataProjection,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number.
     TYPE(CMISSDataPointsType), INTENT(IN) :: dataPoints !<The data points to be projected
-    TYPE(CMISSFieldType), INTENT(IN) :: geometricField !<The geometric field data points is projected on
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh !<The mesh where data points is projected on
     TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<On exit, the newly created data projection.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSDataProjection_CreateStartObj",err,error,*999)
 
-    CALL DATA_PROJECTION_CREATE_START(dataPoints%DATA_POINTS,geometricField%FIELD,dataProjection%DATA_PROJECTION,err,error,*999)
+    CALL DATA_PROJECTION_CREATE_START_DATA_POINTS(dataProjectionUserNumber,dataPoints%DATA_POINTS,mesh%MESH, &
+      & dataProjection%DATA_PROJECTION,err,ERROR,*999)
 
     CALL EXITS("CMISSDataProjection_CreateStartObj")
     RETURN
@@ -18786,9 +19402,10 @@ CONTAINS
   !
 
   !>Destroys a data projection identified by region user number.
-  SUBROUTINE CMISSDataProjection_DestroyNumber(regionUserNumber,err)
+  SUBROUTINE CMISSDataProjection_DestroyNumber(dataProjectionUserNumber,regionUserNumber,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to destroy.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -18796,8 +19413,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_DestroyNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_DestroyNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18805,7 +19423,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_DESTROY(DATA_PROJECTION,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18846,81 +19465,394 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_DestroyObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in a region, identified by user number
+  SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateRegionNumber(dataProjectionUserNumber,regionUserNumber, &
+    & fieldUserNumber,fieldVariableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection and field
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number of the field to be interpolated
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints) 
+    NULLIFY(field)   
+    NULLIFY(region)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL REGION_DATA_POINTS_GET(region,dataPoints,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+        & err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,ERROR,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL DataProjection_DataPointsPositionEvaluate(dataProjection,field,fieldVariableType,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,ERROR,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in an interface, identified by user number
+  SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber(dataProjectionUserNumber, &
+      & parentRegionUserNumber,interfaceUserNumber,fieldUserNumber,fieldVariableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The parent region number of the interface for the data projection 
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The interface number for the data projection
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number of the field to be interpolated
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: parentRegion
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints) 
+    NULLIFY(field)   
+    NULLIFY(parentRegion)
+    NULLIFY(interface)  
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,parentRegion,Err,ERROR,*999)
+    IF(ASSOCIATED(parentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,parentRegion,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(interface,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,ERROR,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL DataProjection_DataPointsPositionEvaluate(dataProjection,field,fieldVariableType,err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(localError,err,ERROR,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection, identified by object
+  SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateObj(dataProjection,field,fieldVariableType,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection used to evaluate data points position
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to interpolate
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to be interpolated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables 
+
+    CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateObj",err,error,*999)
+    
+    CALL DataProjection_DataPointsPositionEvaluate(dataProjection%DATA_PROJECTION,field%FIELD,fieldVariableType,err,error,*999)
+    
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateObj",err,error)
+    CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_DataPointsPositionEvaluateObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in a region, identified by user number
+  SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetRegionNumber(dataProjectionUserNumber,regionUserNumber, &
+    & candidateElements,localFaceLineNumbers,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection and field
+    INTEGER(INTG), INTENT(IN) :: candidateElements(:) !<The candidate element for the projection
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<The local face/line number for the candidate elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints) 
+    NULLIFY(region)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL REGION_DATA_POINTS_GET(region,dataPoints,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+        & err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+      CALL DataProjection_ProjectionCandidatesSet(dataProjection,candidateElements,localFaceLineNumbers,err,error,*999)
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection in an interface, identified by user number
+  SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber(dataProjectionUserNumber, &
+      & parentRegionUserNumber,interfaceUserNumber,candidateElements,localFaceLineNumbers,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection 
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The parent region number of the interface for the data projection 
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The interface number for the data projection
+    INTEGER(INTG), INTENT(IN) :: candidateElements(:) !<The candidate element for the projection
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<The local face/line number for the candidate elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables  
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(REGION_TYPE), POINTER :: parentRegion
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
+    TYPE(VARYING_STRING) :: localError      
+
+    CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber",err,error,*999)
+    
+    NULLIFY(dataProjection)
+    NULLIFY(dataPoints)  
+    NULLIFY(parentRegion)
+    NULLIFY(interface)  
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,parentRegion,Err,ERROR,*999)
+    IF(ASSOCIATED(parentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,parentRegion,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(interface,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,dataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL DataProjection_ProjectionCandidatesSet(dataProjection,candidateElements,localFaceLineNumbers,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the data points position in a field based on data projection, identified by object
+  SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetObj(dataProjection,candidateElements,localFaceLineNumbers,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection used to evaluate data points position
+    INTEGER(INTG), INTENT(IN) :: candidateElements(:) !<The candidate element for the projection
+    INTEGER(INTG), INTENT(IN) :: localFaceLineNumbers(:) !<The local face/line number for the candidate elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables 
+
+    CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetObj",err,error,*999)
+    
+    CALL DataProjection_ProjectionCandidatesSet(dataProjection%DATA_PROJECTION,candidateElements,localFaceLineNumbers, &
+      & err,error,*999)
+    
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ProjectionCandidatesSetObj
 
   !
   !================================================================================================================================
   !
 
   !>Evaluate a data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_EvaluateNumber(regionUserNumber,err)
+  SUBROUTINE CMISSDataProjection_ProjectionEvaluateNumber(dataProjectionUserNumber,dataPointsRegionUserNumber, &
+    & projectionFieldUserNumber,projectionFieldRegionUserNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to evaluate.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointsRegionUserNumber !<The region user number of the data projection to evaluate.
+    INTEGER(INTG), INTENT(IN) :: projectionFieldUserNumber !<The field user number of the field data points are be projected on.
+    INTEGER(INTG), INTENT(IN) :: projectionFieldRegionUserNumber !<The region user number of the field data points are be projected on.    
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    !Local variables  
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(FIELD_TYPE), POINTER :: PROJECTION_FIELD
+    TYPE(REGION_TYPE), POINTER :: DATA_POINTS_REGION
+    TYPE(REGION_TYPE), POINTER :: PROJECTION_FIELD_REGION
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
+    TYPE(VARYING_STRING) :: LOCAL_ERROR      
 
-    CALL ENTERS("CMISSDataProjection_EvaluateNumber",ERR,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
+    CALL ENTERS("CMISSDataProjection_ProjectionEvaluateNumber",err,error,*999)
+    
     NULLIFY(DATA_PROJECTION)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
-      CALL DATA_PROJECTION_EVALUATE(DATA_PROJECTION,err,error,*999)
+    NULLIFY(DATA_POINTS) 
+    NULLIFY(PROJECTION_FIELD)   
+    NULLIFY(DATA_POINTS_REGION)
+    NULLIFY(PROJECTION_FIELD_REGION)
+    CALL REGION_USER_NUMBER_FIND(dataPointsRegionUserNumber,DATA_POINTS_REGION,err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(projectionFieldRegionUserNumber,PROJECTION_FIELD_REGION,err,ERROR,*999)
+    IF(ASSOCIATED(DATA_POINTS_REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
+      IF(ASSOCIATED(PROJECTION_FIELD_REGION)) THEN
+        CALL FIELD_USER_NUMBER_FIND(projectionFieldUserNumber,PROJECTION_FIELD_REGION,PROJECTION_FIELD,err,ERROR,*999)
+        IF(ASSOCIATED(PROJECTION_FIELD)) THEN
+          CALL DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE(DATA_PROJECTION,PROJECTION_FIELD,err,error,*999)
+        ELSE
+          LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(projectionFieldUserNumber,"*",err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(projectionFieldRegionUserNumber,"*",err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(dataPointsRegionUserNumber,"*",err,error))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
-    CALL EXITS("CMISSDataProjection_EvaluateNumber")
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateNumber")
     RETURN
-999 CALL ERRORS("CMISSDataProjection_EvaluateNumber",err,error)
-    CALL EXITS("CMISSDataProjection_EvaluateNumber")
+999 CALL ERRORS("CMISSDataProjection_ProjectionEvaluateNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDataProjection_EvaluateNumber
+  END SUBROUTINE CMISSDataProjection_ProjectionEvaluateNumber
+
 
   !
   !================================================================================================================================
   !
 
   !>Evaluate a data projection identified by an object.
-  SUBROUTINE CMISSDataProjection_EvaluateObj(dataProjection,err)
+  SUBROUTINE CMISSDataProjection_ProjectionEvaluateObj(dataProjection,projectionField,err)
 
     !Argument variables
     TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to evaluate.
+    TYPE(CMISSFieldType), INTENT(IN) :: projectionField !<The field data points is projected on
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSDataProjection_EvaluateObj",err,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionEvaluateObj",err,error,*999)
 
-    CALL DATA_PROJECTION_EVALUATE(dataProjection%DATA_PROJECTION,err,error,*999)
+    CALL DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE(dataProjection%DATA_PROJECTION,projectionField%FIELD,err,error,*999)
 
-    CALL EXITS("CMISSDataProjection_EvaluateObj")
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateObj")
     RETURN
-999 CALL ERRORS("CMISSDataProjection_EvaluateObj",err,error)
-    CALL EXITS("CMISSDataProjection_EvaluateObj")
+999 CALL ERRORS("CMISSDataProjection_ProjectionEvaluateObj",err,error)
+    CALL EXITS("CMISSDataProjection_ProjectionEvaluateObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDataProjection_EvaluateObj
+  END SUBROUTINE CMISSDataProjection_ProjectionEvaluateObj
 
   !
   !================================================================================================================================
   !
 
   !>Returns the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateGetNumber(regionUserNumber,maximumIterationUpdate,err)
+  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateGetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumIterationUpdate,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get tolerance for.
     REAL(DP), INTENT(OUT) :: maximumIterationUpdate !<On exit, the maximum iteration update of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18929,8 +19861,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18938,7 +19871,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET(DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -18986,9 +19920,11 @@ CONTAINS
   !
 
   !>Sets/changes the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateSetNumber(regionUserNumber,maximumIterationUpdate,err)
+  SUBROUTINE CMISSDataProjection_MaximumIterationUpdateSetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumIterationUpdate,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set tolerance for.
     REAL(DP), INTENT(IN) :: maximumIterationUpdate !<the maximum iteration update to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -18997,8 +19933,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19006,7 +19943,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_SET(DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19054,9 +19992,11 @@ CONTAINS
   !
 
   !>Returns the maximum number of iterations of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsGetNumber(regionUserNumber,maximumNumberOfIterations,err)
+  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsGetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumNumberOfIterations,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get maximum number of iterations for.
     INTEGER(INTG), INTENT(OUT) :: maximumNumberOfIterations !<On exit, the maximum number of iterations of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19065,8 +20005,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19074,7 +20015,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET(DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19090,6 +20032,581 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection distance for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultDistanceGetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber, &
+    & ProjectionDistance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    REAL(DP), INTENT(OUT) :: ProjectionDistance !<On return, the projection distance for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER    
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR 
+
+    CALL ENTERS("CMISSDataProjection_ResultDistanceGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION) 
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_DISTANCE_GET(DATA_PROJECTION,dataPointUserNumber,ProjectionDistance,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_ResultDistanceGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultDistanceGetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultDistanceGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultDistanceGetNumber
+
+
+   !
+   !================================================================================================================================
+   !
+
+  !>Returns the projection distance for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultDistanceGetObj(dataProjection,dataPointUserNumber,ProjectionDistance,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    REAL(DP), INTENT(OUT) :: ProjectionDistance !<On return, the projection distance for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultDistanceGetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_DISTANCE_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionDistance, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultDistanceGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultDistanceGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultDistanceGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultDistanceGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultElementNumberGetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber, &
+    & ProjectionElementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionElementNumber !<On return, the projection element number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER  
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_ResultElementNumberGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET(DATA_PROJECTION,dataPointUserNumber,ProjectionElementNumber,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF    
+
+    CALL EXITS("CMISSDataProjection_ResultElementNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultElementNumberGetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultElementNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultElementNumberGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultElementNumberGetObj(dataProjection,dataPointUserNumber,ProjectionElementNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionElementNumber !<On return, the projection element number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultElementNumberGetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionElementNumber, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultElementNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultElementNumberGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultElementNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultElementNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element face number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultElementFaceNumberGetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber, &
+    & ProjectionElementFaceNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionElementFaceNumber !<On return, the projection element face number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER  
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_ResultElementFaceNumberGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET(DATA_PROJECTION,dataPointUserNumber,ProjectionElementFaceNumber,err, &
+          & error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF    
+
+    CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultElementFaceNumberGetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultElementFaceNumberGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element face number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultElementFaceNumberGetObj(dataProjection,dataPointUserNumber, &
+    & ProjectionElementFaceNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionElementFaceNumber !<On return, the projection element face number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultElementFaceNumberGetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber, &
+      & ProjectionElementFaceNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultElementFaceNumberGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultElementFaceNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element line number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultElementLineNumberGetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber, &
+    & ProjectionElementLineNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionElementLineNumber !<On return, the projection element line number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER  
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_ResultElementLineNumberGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET(DATA_PROJECTION,dataPointUserNumber,ProjectionElementLineNumber,err, &
+          & error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF    
+
+    CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultElementLineNumberGetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultElementLineNumberGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection element line number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultElementLineNumberGetObj(dataProjection,dataPointUserNumber, &
+    & ProjectionElementLineNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionElementLineNumber !<On return, the projection element line number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultElementLineNumberGetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber, &
+      & ProjectionElementLineNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultElementLineNumberGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultElementLineNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection exit tag for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultExitTagGetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber, &
+    & ProjectionExitTag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionExitTag !<On return, the projection exit tag for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER  
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_ResultExitTagGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_EXIT_TAG_GET(DATA_PROJECTION,dataPointUserNumber,ProjectionExitTag,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF    
+
+    CALL EXITS("CMISSDataProjection_ResultExitTagGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultExitTagGetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultExitTagGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultExitTagGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection exit tag for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultExitTagGetObj(dataProjection,dataPointUserNumber,ProjectionExitTag,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    INTEGER(INTG), INTENT(OUT) :: ProjectionExitTag !<On return, the projection exit tag for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultExitTagGetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_EXIT_TAG_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionExitTag, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultExitTagGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultExitTagGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultExitTagGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultExitTagGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection xi for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultXiGetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber,ProjectionXi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.
+    REAL(DP), INTENT(OUT) :: ProjectionXi(:) !<On return, the projection xi for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER  
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_ResultXiGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_XI_GET(DATA_PROJECTION,dataPointUserNumber,ProjectionXi,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_ResultXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultXiGetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the projection xi for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultXiGetObj(dataProjection,dataPointUserNumber,ProjectionXi,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to get attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to get attributes for.        
+    REAL(DP), INTENT(OUT) :: ProjectionXi(:) !<On return, the projection xi for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultXiGetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_XI_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionXi,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultXiGetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultXiGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultXiGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the projection xi for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataProjection_ResultXiSetNumber(regionUserNumber,dataProjectionUserNumber,dataPointUserNumber,ProjectionXi,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the data points to set attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The user number of the data projection containing the data points to set attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to set attributes for.
+    REAL(DP), INTENT(IN) :: ProjectionXi(:) !<On return, the projection xi for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    INTEGER(INTG) :: DATA_PROJECTION_GLOBAL_NUMBER  
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_ResultXiSetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)    
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_GLOBAL_NUMBER,ERR, &
+        & error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_GLOBAL_NUMBER,DATA_PROJECTION,err,error,*999)
+      IF(ASSOCIATED(DATA_PROJECTION)) THEN
+        CALL DATA_PROJECTION_RESULT_XI_SET(DATA_PROJECTION,dataPointUserNumber,ProjectionXi,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A data projection with an user number of "//TRIM(NUMBER_TO_VSTRING(dataProjectionUserNumber,"*",err,error)) &
+          & //" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_ResultXiSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultXiSetNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ResultXiSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultXiSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the projection xi for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataProjection_ResultXiSetObj(dataProjection,dataPointUserNumber,ProjectionXi,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to set attributes for.
+    INTEGER(INTG), INTENT(IN) :: dataPointUserNumber !<The user number of the data points to set attributes for 
+    REAL(DP), INTENT(IN) :: ProjectionXi(:) !<On return, the projection xi for the data point.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ResultXiSetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_RESULT_XI_SET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionXi,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ResultXiSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ResultXiSetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ResultXiSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ResultXiSetObj
 
   !
   !================================================================================================================================
@@ -19122,9 +20639,11 @@ CONTAINS
   !
 
   !>Sets/changes the maximum number of iterations of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsSetNumber(regionUserNumber,maximumNumberOfIterations,err)
+  SUBROUTINE CMISSDataProjection_MaximumNumberOfIterationsSetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & maximumNumberOfIterations,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set maximum number of iterations for.
     INTEGER(INTG), INTENT(IN) :: maximumNumberOfIterations !<the maximum number of iterations to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19133,8 +20652,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19142,7 +20662,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_SET(DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19190,9 +20711,11 @@ CONTAINS
   !
 
   !>Returns the number of closest elements of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsGetNumber(regionUserNumber,numberOfClosestElements,err)
+  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsGetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & numberOfClosestElements,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get number of closest elements for.
     INTEGER(INTG), INTENT(OUT) :: numberOfClosestElements !<On exit, the number of closest elements of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19201,8 +20724,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19210,7 +20734,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_GET(DATA_PROJECTION,numberOfClosestElements,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19258,9 +20783,11 @@ CONTAINS
   !
 
   !>Sets/changes the number of closest elements of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsSetNumber(regionUserNumber,numberOfClosestElements,err)
+  SUBROUTINE CMISSDataProjection_NumberOfClosestElementsSetNumber(dataProjectionUserNumber,regionUserNumber, &
+      & numberOfClosestElements,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set number of closest elements for.
     INTEGER(INTG), INTENT(IN) :: numberOfClosestElements !<the number of closest elements to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19269,8 +20796,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19278,7 +20806,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET(DATA_PROJECTION,numberOfClosestElements,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19326,9 +20855,10 @@ CONTAINS
   !
 
   !>Returns the projection type of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_ProjectionTypeGetNumber(regionUserNumber,projectionType,err)
+  SUBROUTINE CMISSDataProjection_ProjectionTypeGetNumber(dataProjectionUserNumber,regionUserNumber,projectionType,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get projection type for.
     INTEGER(INTG), INTENT(OUT) :: projectionType !<On exit, the projection type of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19337,8 +20867,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19346,7 +20877,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_PROJECTION_TYPE_GET(DATA_PROJECTION,projectionType,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19394,9 +20926,10 @@ CONTAINS
   !
 
   !>Sets/changes the projection type of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_ProjectionTypeSetNumber(regionUserNumber,projectionType,err)
+  SUBROUTINE CMISSDataProjection_ProjectionTypeSetNumber(dataProjectionUserNumber,regionUserNumber,projectionType,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set projection type for.
     INTEGER(INTG), INTENT(IN) :: projectionType !<the projection type to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19405,8 +20938,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19414,7 +20948,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_PROJECTION_TYPE_SET(DATA_PROJECTION,projectionType,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19461,10 +20996,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_RelativeToleranceGetNumber(regionUserNumber,relativeTolerance,err)
+  !>Returns the relative tolerance of data projection identified by a data projection user number and a region user number.
+  SUBROUTINE CMISSDataProjection_RelativeToleranceGetNumber(dataProjectionUserNumber,regionUserNumber,relativeTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get relative tolerance for.
     REAL(DP), INTENT(OUT) :: relativeTolerance !<On exit, the absolute relative tolerance of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19473,8 +21009,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19482,7 +21019,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_RELATIVE_TOLERANCE_GET(DATA_PROJECTION,relativeTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19529,10 +21067,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_RelativeToleranceSetNumber(regionUserNumber,relativeTolerance,err)
+  !>Sets/changes the relative tolerance of data projection identified by a data projection user number and a region user number.
+  SUBROUTINE CMISSDataProjection_RelativeToleranceSetNumber(dataProjectionUserNumber,regionUserNumber,relativeTolerance,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set relative tolerance for.
     REAL(DP), INTENT(IN) :: relativeTolerance !<the absolute relative tolerance to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19541,8 +21080,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19550,7 +21090,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_RELATIVE_TOLERANCE_SET(DATA_PROJECTION,relativeTolerance,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19597,10 +21138,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the starting xi of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_StartingXiGetNumber(regionUserNumber,startingXi,err)
+  !>Returns the starting xi of data projection identified by a data projection user number and region user number.
+  SUBROUTINE CMISSDataProjection_StartingXiGetNumber(dataProjectionUserNumber,regionUserNumber,startingXi,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of the data projection to get starting xi for.
     REAL(DP), INTENT(OUT) :: startingXi(:) !<On exit, the absolute starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19609,8 +21151,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
-    CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19618,7 +21161,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_STARTING_XI_GET(DATA_PROJECTION,startingXi,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19634,6 +21178,7 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_StartingXiGetNumber
+
 
   !
   !================================================================================================================================
@@ -19666,9 +21211,10 @@ CONTAINS
   !
 
   !>Sets/changes the starting xi of data projection identified by a region user number.
-  SUBROUTINE CMISSDataProjection_StartingXiSetNumber(regionUserNumber,startingXi,err)
+  SUBROUTINE CMISSDataProjection_StartingXiSetNumber(dataProjectionUserNumber,regionUserNumber,startingXi,err)
 
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region use number of data projection to set starting xi for.
     REAL(DP), INTENT(IN) :: startingXi(:) !<the absolute starting xi to set
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -19677,8 +21223,9 @@ CONTAINS
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
-    CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",ERR,error,*999)
+    CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19686,7 +21233,8 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
-      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,err,ERROR,*999)
       CALL DATA_PROJECTION_STARTING_XI_SET(DATA_PROJECTION,startingXi,err,error,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
@@ -19728,6 +21276,596 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDataProjection_StartingXiSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_ElementSetInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+      & dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_ElementSetInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_DATA_POINTS_GET(INTERFACE,DATA_POINTS,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+        CALL DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_ElementSetInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementSetInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ElementSetInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementSetInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_ElementSetRegionNumber(dataProjectionUserNumber,regionUserNumber,dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get starting xi for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
+
+    CALL ENTERS("CMISSDataProjection_ElementSetRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,DataProjectionUserNumber,GLOBAL_NUMBER,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+      CALL DATA_PROJECTION_ELEMENT_SET(DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_ElementSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementSetRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_ElementSetRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementSetRegionNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the starting xi of data projection identified an object.
+  SUBROUTINE CMISSDataProjection_ElementSetObj(dataProjection,dataPointNumber,elementNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set starting xi for.
+    INTEGER(INTG), INTENT(IN) :: dataPointNumber !<The data point number to set xi position for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<the element number to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_ElementSetObj",err,error,*999)
+
+    CALL DATA_PROJECTION_ELEMENT_SET(dataProjection%DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_ElementSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_ElementSetObj",err,error)
+    CALL EXITS("CMISSDataProjection_ElementSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_ElementSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetCInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    CHARACTER(LEN=*), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelGetCInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetCInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetCInterfaceNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetVSInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    TYPE(VARYING_STRING), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelGetVSInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelGetVSInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetVSInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetVSInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetVSInterfaceNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetCRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelGetCRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelGetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetCRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetCRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetCRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelGetVSRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to get the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelGetVSRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_GET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelGetVSRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetVSRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetVSRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetVSRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the character string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelGetCObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelGetCObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_GET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelGetCObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetCObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetCObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetCObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the varying string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelGetVSObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: label !<the label to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelGetVSObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_GET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelGetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelGetVSObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelGetVSObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelGetVSObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetCInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    CHARACTER(LEN=*), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelSetCInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelSetCInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetCInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetCInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetCInterfaceNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetVSInterfaceNumber(dataProjectionUserNumber,parentRegionUserNumber,interfaceUserNumber, &
+    & label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    TYPE(VARYING_STRING), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelSetVSInterfaceNumber",ERR,error,*999)
+
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjection_LabelSetVSInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetVSInterfaceNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetVSInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetVSInterfaceNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the character string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetCRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelSetCRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelSetRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetCRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetCRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetCRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the varying string label of a data projection identified by a region user number.
+  SUBROUTINE CMISSDataProjection_LabelSetVSRegionNumber(dataProjectionUserNumber,regionUserNumber,label,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to set the label for.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number of data projection to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjection_LabelSetVSRegionNumber",ERR,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_PROJECTION_LABEL_SET(DATA_PROJECTION,label,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSDataProjection_LabelSetVSRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetVSRegionNumber",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetVSRegionNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetVSRegionNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the character string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelSetCObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelSetCObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_SET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelSetCObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetCObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetCObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetCObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the varying string label of a data projection identified an object.
+  SUBROUTINE CMISSDataProjection_LabelSetVSObj(dataProjection,label,err)
+
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: dataProjection !<The data projection to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: label !<the label to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjection_LabelSetVSObj",err,error,*999)
+
+    CALL DATA_PROJECTION_LABEL_SET(dataProjection%DATA_PROJECTION,label,err,error,*999)
+
+    CALL EXITS("CMISSDataProjection_LabelSetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjection_LabelSetVSObj",err,error)
+    CALL EXITS("CMISSDataProjection_LabelSetVSObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDataProjection_LabelSetVSObj
 
 !!==================================================================================================================================
 !!
@@ -20395,6 +22533,340 @@ CONTAINS
 
   END SUBROUTINE CMISSEquations_TimeDependenceTypeGetObj
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of linear matrices in the equations
+  SUBROUTINE CMISSEquations_NumberOfLinearMatricesGet(equations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the number of linear matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of linear matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_NumberOfLinearMatricesGet",err,error,*999)
+
+    CALL Equations_NumberOfLinearMatricesGet(equations%equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSEquations_NumberOfLinearMatricesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_NumberOfLinearMatricesGet",err,error)
+    CALL Exits("CMISSEquations_NumberOfLinearMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_NumberOfLinearMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of Jacobian matrices in the equations
+  SUBROUTINE CMISSEquations_NumberOfJacobianMatricesGet(equations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the number of Jacobian matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of Jacobian matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_NumberOfLinearMatricesGet",err,error,*999)
+
+    CALL Equations_NumberOfJacobianMatricesGet(equations%equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSEquations_NumberOfJacobianMatricesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_NumberOfJacobianMatricesGet",err,error)
+    CALL Exits("CMISSEquations_NumberOfJacobianMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_NumberOfJacobianMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of dynamic matrices in the equations
+  SUBROUTINE CMISSEquations_NumberOfDynamicMatricesGet(equations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the number of dynamic matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of dynamic matrices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_NumberOfDynamicMatricesGet",err,error,*999)
+
+    CALL Equations_NumberOfDynamicMatricesGet(equations%equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSEquations_NumberOfDynamicMatricesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_NumberOfDynamicMatricesGet",err,error)
+    CALL Exits("CMISSEquations_NumberOfDynamicMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_NumberOfDynamicMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a linear equations matrix from the equations
+  SUBROUTINE CMISSEquations_LinearMatrixGet(equations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the linear matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the linear matrix to get
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested linear matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_LinearMatrixGet",err,error,*999)
+
+    CALL Equations_LinearMatrixGet(equations%equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_LinearMatrixGet")
+    RETURN
+999 CALL Errors("CMISSEquations_LinearMatrixGet",err,error)
+    CALL Exits("CMISSEquations_LinearMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_LinearMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a Jacobian matrix from the equations
+  SUBROUTINE CMISSEquations_JacobianMatrixGet(equations,residualIndex,variableType,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the Jacobian matrix for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type that the residual is differentiated with respect to for this Jacobian. \see OPENCMISS_FieldVariableTypes
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_JacobianMatrixGet",err,error,*999)
+
+    CALL Equations_JacobianMatrixGet(equations%equations, &
+      & residualIndex,variableType,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_JacobianMatrixGet")
+    RETURN
+999 CALL Errors("CMISSEquations_JacobianMatrixGet",err,error)
+    CALL Exits("CMISSEquations_JacobianMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_JacobianMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from equations using the dynamic matrix index
+  SUBROUTINE CMISSEquations_DynamicMatrixGet(equations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_DynamicMatrixGet",err,error,*999)
+
+    CALL Equations_DynamicMatrixGet(equations%equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_DynamicMatrixGet")
+    RETURN
+999 CALL Errors("CMISSEquations_DynamicMatrixGet",err,error)
+    CALL Exits("CMISSEquations_DynamicMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_DynamicMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a dynamic equations matrix from equations using the dynamic matrix type
+  SUBROUTINE CMISSEquations_DynamicMatrixGetByType(equations,matrixType,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the dynamic matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixType !<The type of the dynamic matrix to get. \see OPENCMISS_EquationsSetDynamicMatrixTypes
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested dynamic matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_DynamicMatrixGetByType",err,error,*999)
+
+    CALL Equations_DynamicMatrixGetByType(equations%equations,matrixType,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSEquations_DynamicMatrixGetByType")
+    RETURN
+999 CALL Errors("CMISSEquations_DynamicMatrixGetByType",err,error)
+    CALL Exits("CMISSEquations_DynamicMatrixGetByType")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_DynamicMatrixGetByType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the type of a dynamic matrix from equations set equations
+  SUBROUTINE CMISSEquations_DynamicMatrixTypeGet(equations,matrixIndex,matrixType,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the dynamic matrix type from
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The number of the dynamic matrix to get the type of
+    INTEGER(INTG), INTENT(OUT) :: matrixType !<On return, the dynamic matrix type. \see OPENCMISS_EquationsSetDynamicMatrixTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_DynamicMatrixTypeGet",err,error,*999)
+
+    CALL Equations_DynamicMatrixTypeGet(equations%equations,matrixIndex,matrixType,err,error,*999)
+
+    CALL Exits("CMISSEquations_DynamicMatrixTypeGet")
+    RETURN
+999 CALL Errors("CMISSEquations_DynamicMatrixTypeGet",err,error)
+    CALL Exits("CMISSEquations_DynamicMatrixTypeGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_DynamicMatrixTypeGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector for equations
+  SUBROUTINE CMISSEquations_RhsVectorGet(equations,rhsVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the right hand side vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: rhsVector !<On return, the right hand side vector for the equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_RhsVectorGet",err,error,*999)
+
+    CALL Equations_RhsVectorGet(equations%equations,rhsVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSEquations_RhsVectorGet")
+    RETURN
+999 CALL Errors("CMISSEquations_RhsVectorGet",err,error)
+    CALL Exits("CMISSEquations_RhsVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_RhsVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the source vector for equations
+  SUBROUTINE CMISSEquations_SourceVectorGet(equations,sourceVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the source vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: sourceVector !<On return, the source vector for the equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_SourceVectorGet",err,error,*999)
+
+    CALL Equations_SourceVectorGet(equations%equations,sourceVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSEquations_SourceVectorGet")
+    RETURN
+999 CALL Errors("CMISSEquations_SourceVectorGet",err,error)
+    CALL Exits("CMISSEquations_SourceVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_SourceVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a residual vector for equations
+  SUBROUTINE CMISSEquations_ResidualVectorGet(equations,residualIndex,residualVector,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the residual vector for the equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualVectorGet",err,error,*999)
+
+    CALL Equations_ResidualVectorGet(equations%equations,residualIndex,residualVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualVectorGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualVectorGet",err,error)
+    CALL Exits("CMISSEquations_ResidualVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of field variables that contribute to the residual vector
+  SUBROUTINE CMISSEquations_ResidualNumberOfVariablesGet(equations,residualIndex,numberOfVariables,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector number of variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the number of variables for
+    INTEGER(INTG), INTENT(OUT) :: numberOfVariables !<On return, the number of variables that contribute to the residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualNumberOfVariablesGet",err,error,*999)
+
+    CALL Equations_ResidualNumberOfVariablesGet(equations%equations,residualIndex,numberOfVariables,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualNumberOfVariablesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualNumberOfVariablesGet",err,error)
+    CALL Exits("CMISSEquations_ResidualNumberOfVariablesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualNumberOfVariablesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the field variables that contribute to the residual vector
+  SUBROUTINE CMISSEquations_ResidualVariablesGet(equations,residualIndex,residualVariables,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsType), INTENT(IN) :: equations !<The equations to get the residual vector variables for
+    INTEGER(INTG), INTENT(IN) :: residualIndex !<The index of the residual vector to get the variables for
+    INTEGER(INTG), INTENT(OUT) :: residualVariables(:) !<residualVariables(varIdx). On return, the field variable type for the varIdx'th residual variable. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSEquations_ResidualVariablesGet",err,error,*999)
+
+    CALL Equations_ResidualVariablesGet(equations%equations,residualIndex,residualVariables,err,error,*999)
+
+    CALL Exits("CMISSEquations_ResidualVariablesGet")
+    RETURN
+999 CALL Errors("CMISSEquations_ResidualVariablesGet",err,error)
+    CALL Exits("CMISSEquations_ResidualVariablesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquations_ResidualVariablesGet
 
 !!==================================================================================================================================
 !!
@@ -23666,13 +26138,13 @@ CONTAINS
   !
 
   !>Returns the DOF order type for a field variable for a field identified by a user number.
-  SUBROUTINE CMISSField_DOFOrderTypeGetNumber(regionUserNumber,fieldUserNumber,variableType,dOFOrderType,err)
+  SUBROUTINE CMISSField_DOFOrderTypeGetNumber(regionUserNumber,fieldUserNumber,variableType,DOFOrderType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the DOF Order type for.
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the DOF Order type for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the DOF Order type for. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(OUT) :: dOFOrderType !<On return, the field variable DOF Order type. \see OPENCMISS_FieldDOFOrderTypes
+    INTEGER(INTG), INTENT(OUT) :: DOFOrderType !<On return, the field variable DOF Order type. \see OPENCMISS_FieldDOFOrderTypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -23687,7 +26159,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_DOF_ORDER_TYPE_GET(FIELD,variableType,dOFOrderType,err,error,*999)
+        CALL FIELD_DOF_ORDER_TYPE_GET(FIELD,variableType,DOFOrderType,err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -23712,18 +26184,18 @@ CONTAINS
   !
 
   !>Returns the DOF Order type for a field variable for a field identified by an object.
-  SUBROUTINE CMISSField_DOFOrderTypeGetObj(field,variableType,dOFOrderType,err)
+  SUBROUTINE CMISSField_DOFOrderTypeGetObj(field,variableType,DOFOrderType,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the DOF order type for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the DOF order type for. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(OUT) :: dOFOrderType !<On return, the field variable DOF order type. \see OPENCMISS_FieldDOFOrderTypes
+    INTEGER(INTG), INTENT(OUT) :: DOFOrderType !<On return, the field variable DOF order type. \see OPENCMISS_FieldDOFOrderTypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_DOFOrderTypeGetObj",err,error,*999)
 
-    CALL FIELD_DOF_ORDER_TYPE_GET(field%FIELD,variableType,dOFOrderType,err,error,*999)
+    CALL FIELD_DOF_ORDER_TYPE_GET(field%FIELD,variableType,DOFOrderType,err,error,*999)
 
     CALL EXITS("CMISSField_DOFOrderTypeGetObj")
     RETURN
@@ -23739,13 +26211,13 @@ CONTAINS
   !
 
   !>Sets/changes the DOF order type for a field variable for a field identified by a user number.
-  SUBROUTINE CMISSField_DOFOrderTypeSetNumber(regionUserNumber,fieldUserNumber,variableType,dOFOrderType,err)
+  SUBROUTINE CMISSField_DOFOrderTypeSetNumber(regionUserNumber,fieldUserNumber,variableType,DOFOrderType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the DOF Order type for.
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to set the DOF Order type for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to set the DOF Order type for. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: dOFOrderType !<The field variable DOF Order type to set. \see OPENCMISS_FieldDOFOrderTypes
+    INTEGER(INTG), INTENT(IN) :: DOFOrderType !<The field variable DOF Order type to set. \see OPENCMISS_FieldDOFOrderTypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -23760,7 +26232,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_DOF_ORDER_TYPE_SET(FIELD,variableType,dOFOrderType,err,error,*999)
+        CALL FIELD_DOF_ORDER_TYPE_SET(FIELD,variableType,DOFOrderType,err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -23785,18 +26257,18 @@ CONTAINS
   !
 
   !>Sets/changes the DOF Order type for a field variable for a field identified by an object.
-  SUBROUTINE CMISSField_DOFOrderTypeSetObj(field,variableType,dOFOrderType,err)
+  SUBROUTINE CMISSField_DOFOrderTypeSetObj(field,variableType,DOFOrderType,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to set the DOF order type for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to set the DOF order type for. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: dOFOrderType !<The field variable DOF order type to set. \see OPENCMISS_FieldDOFOrderTypes
+    INTEGER(INTG), INTENT(IN) :: DOFOrderType !<The field variable DOF order type to set. \see OPENCMISS_FieldDOFOrderTypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_DOFOrderTypeSetObj",err,error,*999)
 
-    CALL FIELD_DOF_ORDER_TYPE_SET(field%FIELD,variableType,dOFOrderType,err,error,*999)
+    CALL FIELD_DOF_ORDER_TYPE_SET(field%FIELD,variableType,DOFOrderType,err,error,*999)
 
     CALL EXITS("CMISSField_DOFOrderTypeSetObj")
     RETURN
@@ -23930,7 +26402,7 @@ CONTAINS
   !
 
   !>Starts the creation of a field on an interface identified by an object.
-  SUBROUTINE CMISSField_CreateStartInterfaceObj(fieldUserNumber,iNTERFACE,field,err)
+  SUBROUTINE CMISSField_CreateStartInterfaceObj(fieldUserNumber,interface,field,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to start the creation of.
@@ -23941,7 +26413,7 @@ CONTAINS
 
     CALL ENTERS("CMISSField_CreateStartInterfaceObj",err,error,*999)
 
-    CALL FIELD_CREATE_START(fieldUserNumber,Interface%iNTERFACE,field%FIELD,err,error,*999)
+    CALL FIELD_CREATE_START(fieldUserNumber,interface%INTERFACE,field%FIELD,err,error,*999)
 
     CALL EXITS("CMISSField_CreateStartInterfaceObj")
     RETURN
@@ -24199,13 +26671,13 @@ CONTAINS
   !
 
   !>Returns the dimension for a field identified by a user number.
-  SUBROUTINE CMISSField_DimensionGetNumber(regionUserNumber,fieldUserNumber,variableType,dIMENSION,err)
+  SUBROUTINE CMISSField_DimensionGetNumber(regionUserNumber,fieldUserNumber,variableType,dimension,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the dimension for.
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the dimension for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the dimension for. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(OUT) :: Dimension !<On return, the field dimension. \see OPENCMISS_FieldDimensionTypes
+    INTEGER(INTG), INTENT(OUT) :: dimension !<On return, the field dimension. \see OPENCMISS_FieldDimensionTypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -24220,7 +26692,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_DIMENSION_GET(FIELD,variableType,dIMENSION,err,error,*999)
+        CALL FIELD_DIMENSION_GET(FIELD,variableType,dimension,err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -24245,7 +26717,7 @@ CONTAINS
   !
 
   !>Returns the dimension for a field identified by an object.
-  SUBROUTINE CMISSField_DimensionGetObj(field,variableType,dIMENSION,err)
+  SUBROUTINE CMISSField_DimensionGetObj(field,variableType,dimension,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the dimension for.
@@ -24256,7 +26728,7 @@ CONTAINS
 
     CALL ENTERS("CMISSField_DimensionGetObj",err,error,*999)
 
-    CALL FIELD_DIMENSION_GET(field%FIELD,variableType,dIMENSION,err,error,*999)
+    CALL FIELD_DIMENSION_GET(field%FIELD,variableType,dimension,err,error,*999)
 
     CALL EXITS("CMISSField_DimensionGetObj")
     RETURN
@@ -24272,7 +26744,7 @@ CONTAINS
   !
 
   !>Sets/changes the dimension for a field identified by a user number.
-  SUBROUTINE CMISSField_DimensionSetNumber(regionUserNumber,fieldUserNumber,variableType,dIMENSION,err)
+  SUBROUTINE CMISSField_DimensionSetNumber(regionUserNumber,fieldUserNumber,variableType,dimension,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the dimension for.
@@ -24293,7 +26765,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_DIMENSION_SET(FIELD,variableType,dIMENSION,err,error,*999)
+        CALL FIELD_DIMENSION_SET(FIELD,variableType,dimension,err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -24492,6 +26964,485 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_GeometricFieldSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the line length between nodes of a geometric field for a given element number and element basis line number by a user number.
+  SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetNumber(regionUserNumber,geometricFieldUserNumber,elementNumber, &
+    & elementLineNumber,lineLength,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to obtain the line length from
+    INTEGER(INTG), INTENT(IN) :: geometricFieldUserNumber !<The geometric field user number to obtain the line length from
+    INTEGER(INTG),  INTENT(IN) :: elementNumber !<The element to get the line length for
+    INTEGER(INTG), INTENT(IN) :: elementLineNumber !<The element basis line to get the length for
+    REAL(DP), INTENT(OUT) :: lineLength !<The line length of the chosen element line number
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: geometricField
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_GeometricParametersElementLineLengthGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(geometricField)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(geometricFieldUserNumber,region,geometricField,err,error,*999)
+      IF(ASSOCIATED(geometricField)) THEN
+        CALL Field_GeometricParametersElementLineLengthGet(geometricField,elementNumber,elementLineNumber,lineLength, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(geometricFieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_GeometricParametersElementLineLengthGetNumber",err,error)
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the line length between nodes of a geometric field for a given element number and element basis line number by an object.
+  SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetObj(geometricField,elementNumber,elementLineNumber,lineLength,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: geometricField !<The geometric field to obtain the line length from
+    INTEGER(INTG),  INTENT(IN) :: elementNumber !<The element to get the line length for
+    INTEGER(INTG), INTENT(IN) :: elementLineNumber !<The element basis line to get the length for
+    REAL(DP), INTENT(OUT) :: lineLength !<The line length of the chosen element line number
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_GeometricParametersElementLineLengthGetObj",err,error,*999)
+
+    CALL Field_GeometricParametersElementLineLengthGet(geometricField%FIELD,elementNumber,elementLineNumber,lineLength, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_GeometricParametersElementLineLengthGetObj",err,error)
+    CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_GeometricParametersElementLineLengthGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the scale factor for a particular node identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to get scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to get the scale factor for
+    REAL(DP), INTENT(OUT) :: scaleFactor !<The scale factor of the specified node
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeScaleFactorGet(field,variableType,versionNumber, &
+          & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorGetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the scale factor for a particular node identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetObj(field,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to get the scale factor for
+    REAL(DP), INTENT(OUT) :: scaleFactor !<The scale factor of the specified node
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorGetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeScaleFactorGet(field%FIELD,variableType,versionNumber, &
+      & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorGetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorGetObj
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the scale factors for all nodes identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to get scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh omponent number of the field to set the scale factor for
+    REAL(DP), INTENT(OUT) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeScaleFactorsGet(field,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsGetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the scale factors for all nodes identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetObj(field,variableType,meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh omponent number of the field to set the scale factor for
+    REAL(DP), INTENT(OUT) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsGetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeScaleFactorsGet(field%FIELD,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsGetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsGetObj
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of scale factor dofs, identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & meshComponentNumber,numberOfScaleFactorsDofs,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the number of scalefactors for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(OUT) :: numberOfScaleFactorsDofs !<The number of scale factor dofs
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeNumberOfScaleFactorDofsGet(field,variableType,meshComponentNumber,numberOfScaleFactorsDofs, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of scale factor dofs, identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj(field,variableType,meshComponentNumber, &
+    & numberOfScaleFactorsDofs,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the field to get the number of scale factor dofs for
+    INTEGER(INTG), INTENT(OUT) :: numberOfScaleFactorsDofs !<The number of scale factor dofs
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeNumberOfScaleFactorDofsGet(field%FIELD,variableType,meshComponentNumber,numberOfScaleFactorsDofs, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factor for a particular node identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to set scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to set the scale factor for
+    REAL(DP), INTENT(IN) :: scaleFactor !<The scale factor of the specified node
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorSetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeScaleFactorSet(field,variableType,versionNumber, &
+          & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorSetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factor for a particular node identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetObj(field,variableType, &
+    & versionNumber,derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to set scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: versionNumber !<The user number of the node derivative version to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The user number of the node derivative to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field to set the scale factor for
+    REAL(DP), INTENT(IN) :: scaleFactor !<The scale factor of the specified node
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorSetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeScaleFactorSet(field%FIELD,variableType,versionNumber, &
+      & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorSetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factors for all nodes identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetNumber(regionUserNumber,fieldUserNumber,variableType, &
+    & meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to set scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh omponent number of the field to set the scale factor for
+    REAL(DP), INTENT(IN) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsSetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetNodeScaleFactorsSet(field,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsSetNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scale factors for all nodes identified by an object.
+  SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetObj(field,variableType,meshComponentNumber,scaleFactors,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to set scale factor for
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the scale factor for
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The component number of the field to set the scale factor for
+    REAL(DP), INTENT(IN) :: scaleFactors(:) !<The scale factors
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsSetObj",err,error,*999)
+
+    CALL Field_ParameterSetNodeScaleFactorsSet(field%FIELD,variableType,meshComponentNumber,scaleFactors,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsSetObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetNodeScaleFactorsSetObj
 
   !
   !================================================================================================================================
@@ -26650,7 +29601,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(DP), INTENT(OUT), POINTER :: parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -26754,7 +29705,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    INTEGER(INTG), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26800,7 +29751,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    INTEGER(INTG), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -26829,7 +29780,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    REAL(SP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26875,7 +29826,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(SP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -26904,7 +29855,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    REAL(DP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26950,7 +29901,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(DP), INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -26979,7 +29930,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data.
+    LOGICAL, INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -27025,7 +29976,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(OUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore.
+    LOGICAL, INTENT(INOUT), POINTER :: parameters(:) !<A pointer to the parameter set data to restore. On return this pointer is null.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -27048,7 +29999,7 @@ CONTAINS
 
   !>Returns from the given parameter set an integer value for the specified constant of a field variable component for a field identified by a user number.
   SUBROUTINE CMISSField_ParameterSetGetConstantIntgNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
-    & componentNumber,vALUE,err)
+    & componentNumber,value,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the constant value from the field parameter set.
@@ -27056,7 +30007,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the constant value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the constant value from. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the constant value from the field parameter set.
-    INTEGER(INTG), INTENT(OUT) :: Value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -27353,6 +30304,583 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetGetConstantLObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointIntgNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a integer value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointIntgObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointIntgObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointIntgObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(SP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointSPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(SP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointSPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointSPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a single precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointSPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(SP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointSPObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointSPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointSPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointDPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointDPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointDPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a double precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointDPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointDPObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointDPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointLNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointLNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetGetDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointLNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns from the given parameter set a logical value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetGetDataPointLObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to get the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to get the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to get the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the data point value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetGetDataPointLObj",err,error,*999)
+
+    CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetGetDataPointLObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetGetDataPointLObj
 
   !
   !================================================================================================================================
@@ -27737,7 +31265,7 @@ CONTAINS
 
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by an object.
   SUBROUTINE CMISSField_ParameterSetGetNodeIntgObj(field,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
-    & componentNumber,vALUE,err)
+    & componentNumber,value,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the nodal value from the field parameter set.
@@ -27747,14 +31275,14 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
-    INTEGER(INTG), INTENT(OUT) :: Value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: value !<On return, the value from the field parameter set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_ParameterSetGetNodeIntgObj",err,error,*999)
 
     CALL FIELD_PARAMETER_SET_GET_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
-      & componentNumber, Value,err,error,*999)
+      & componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetGetNodeIntgObj")
     RETURN
@@ -28113,20 +31641,20 @@ CONTAINS
   !
 
   !>Updates the given parameter set with the given integer value for the constant of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateConstantIntgObj(field,variableType,fieldSetType,componentNumber,vALUE,err)
+  SUBROUTINE CMISSField_ParameterSetUpdateConstantIntgObj(field,variableType,fieldSetType,componentNumber,value,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: Value !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantIntgObj",err,error,*999)
 
-    CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,Value,err,error,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetUpdateConstantIntgObj")
     RETURN
@@ -28191,14 +31719,14 @@ CONTAINS
   !
 
   !>Updates the given parameter set with the given single precision value for the constant of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateConstantSPObj(field,variableType,fieldSetType,componentNumber,vALUE,err)
+  SUBROUTINE CMISSField_ParameterSetUpdateConstantSPObj(field,variableType,fieldSetType,componentNumber,value,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
-    REAL(SP), INTENT(IN) :: Value !<The value for the field parameter set to update.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -28269,20 +31797,20 @@ CONTAINS
   !
 
   !>Updates the given parameter set with the given double precision value for the constant of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateConstantDPObj(field,variableType,fieldSetType,componentNumber,vALUE,err)
+  SUBROUTINE CMISSField_ParameterSetUpdateConstantDPObj(field,variableType,fieldSetType,componentNumber,value,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
-    REAL(DP), INTENT(IN) :: Value !<The value for the field parameter set to update.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantDPObj",err,error,*999)
 
-    CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,Value,err,error,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetUpdateConstantDPObj")
     RETURN
@@ -28347,20 +31875,20 @@ CONTAINS
   !
 
   !>Updates the given parameter set with the given logical value for the constant of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateConstantLObj(field,variableType,fieldSetType,componentNumber,vALUE,err)
+  SUBROUTINE CMISSField_ParameterSetUpdateConstantLObj(field,variableType,fieldSetType,componentNumber,value,err)
 
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
-    LOGICAL, INTENT(IN) :: Value !<The value for the field parameter set to update.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantLObj",err,error,*999)
 
-    CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,Value,err,error,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetUpdateConstantLObj")
     RETURN
@@ -28370,6 +31898,586 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetUpdateConstantLObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a integer value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a integer value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointIntgObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a single precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a single precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(SP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointSPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a double precision value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a double precision value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointDPObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberI(parentRegionUserNumber,interfaceUserNumber,fieldUserNumber, &
+    & variableType,fieldSetType,userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentRegionUserNumber !<The user number of the parent region for the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLNumberI",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(parentRegionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,Err,ERROR,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,interface,field,err,error,*999)
+        IF(ASSOCIATED(field)) THEN
+          CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+            & err,error,*999)
+        ELSE
+          localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentRegionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberI")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLNumberI",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberI")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberI
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a logical value for the specified data point of a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberR(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userDataPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLNumberR",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_ParameterSetUpdateDataPoint(field,variableType,fieldSetType,userDataPointNumber,componentNumber,value, &
+          & err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberR")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLNumberR",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberR")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointLNumberR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Update the given parameter set a logical value for the specified constant of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateDataPointLObj(field,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the data point value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the data point value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the data point value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userDataPointNumber  !<The user data point number to update the value for
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the data point value from the field parameter set.
+    LOGICAL, INTENT(IN) :: value !<The value for the field parameter set to update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
+      & value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateDataPointLObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateDataPointLObj
 
   !
   !================================================================================================================================
@@ -28377,7 +32485,7 @@ CONTAINS
 
   !>Updates the given parameter set with the given integer value for the element of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSField_ParameterSetUpdateElementIntgNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
-    & userElementNumber,componentNumber,vALUE,err)
+    & userElementNumber,componentNumber,value,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set.
@@ -28386,7 +32494,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the element value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the element value for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: Value !<The value to update the field parameter set to.
+    INTEGER(INTG), INTENT(IN) :: value !<The value to update the field parameter set to.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -28401,7 +32509,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,variableType,fieldSetType,userElementNumber,componentNumber,Value, &
+        CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
           & err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
@@ -28460,7 +32568,7 @@ CONTAINS
 
   !>Updates the given parameter set with the given single precision value for the element of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSField_ParameterSetUpdateElementSPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
-    & userElementNumber,componentNumber,vALUE,err)
+    & userElementNumber,componentNumber,value,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set.
@@ -28469,7 +32577,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the element value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the element value for the field parameter set.
-    REAL(SP), INTENT(IN) :: Value !<The value to update the field parameter set to.
+    REAL(SP), INTENT(IN) :: value !<The value to update the field parameter set to.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -28484,7 +32592,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,variableType,fieldSetType,userElementNumber,componentNumber,Value, &
+        CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
           & err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
@@ -28543,7 +32651,7 @@ CONTAINS
 
   !>Updates the given parameter set with the given double precision value for the element of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSField_ParameterSetUpdateElementDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
-    & userElementNumber,componentNumber,vALUE,err)
+    & userElementNumber,componentNumber,value,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set.
@@ -28626,7 +32734,7 @@ CONTAINS
 
   !>Updates the given parameter set with the given logical value for the element of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSField_ParameterSetUpdateElementLNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
-    & userElementNumber,componentNumber,vALUE,err)
+    & userElementNumber,componentNumber,value,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set.
@@ -28635,7 +32743,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the element value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the element value for the field parameter set.
-    LOGICAL, INTENT(IN) :: Value !<The value to update the field parameter set to.
+    LOGICAL, INTENT(IN) :: value !<The value to update the field parameter set to.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -28650,7 +32758,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,variableType,fieldSetType,userElementNumber,componentNumber,Value, &
+        CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
           & err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
@@ -29131,25 +33239,106 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPObj(field,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
-  & componentNumber, value,err)
+
+  !>Updates the given parameter set with the given values for all local dofs of the field variable identified by an object..
+  SUBROUTINE CMISSField_ParameterSetUpdateLocalDofsDPObj(field,variableType,fieldSetType,values,err)
 
     !Argument variables
-    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
-    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the values for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update values for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update values for. \see OPENCMISS_FieldParameterSetTypes
+    REAL(DP), INTENT(IN) :: values(:) !<The values to update the field parameter set to.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateLocalDofsDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS(field%FIELD,variableType,fieldSetType,values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateLocalDofsDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateLocalDofsDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateLocalDofsDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateLocalDofsDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & userElementNumber,gaussPointNumber,componentNumber,value,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to update the Gauss point value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to update the Gauss point value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the Gauss point value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the Gauss point value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The user element number of the field variable component to update for the field parameter set.
-    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
-    REAL(DP), INTENT(IN) :: VALUE !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the Gauss point value for the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateGaussPointDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
+      & componentNumber,value, err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetUpdateGaussPointDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateGaussPointDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateGaussPointDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPObj(field,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
+    & componentNumber, value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the Gauss point value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the Gauss point value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the Gauss point value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the Gauss point value for the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSField_ParameterSetUpdateGaussPointDPObj",err,error,*999)
 
-    CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(field%FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber,&
-    & componentNumber,value,  err,error,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(field%FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
+      & componentNumber,value, err,error,*999)
 
     CALL EXITS("CMISSField_ParameterSetUpdateGaussPointDPObj")
     RETURN
@@ -29159,6 +33348,350 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified xi location for the specified element and derviative and returns double precision values for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetInterpolateSingleXiDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & derivativeNumber,userElementNumber,xi,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateSingleXiDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_XI(FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+          & xi,values,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleXiDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateSingleXiDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified xi location for the specified element and derviative and returns double precision values for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetInterpolateSingleXiDPObj(field,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+    & xi,values,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateSingleXiDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_XI(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber,xi, &
+      & values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleXiDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateSingleXiDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of xi locations for the specified element and derviative and returns double precision values for a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetInterpolateMultipleXiDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & derivativeNumber,userElementNumber,xi,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:,:) !<The sets of element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_XI(FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+          & xi,values,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateMultipleXiDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of xi locations for the specified element and derviative and returns double precision values for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetInterpolateMultipleXiDPObj(field,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+    & xi,values,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:,:) !<The sets of element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleXiDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_XI(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber,xi, &
+      & values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleXiDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateMultipleXiDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified Gauss point for the specified element and derviative and returns double precision values for a or a field identified by a user number.
+  SUBROUTINE CMISSField_ParameterSetInterpolateSingleGaussDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & derivativeNumber,userElementNumber,quadratureScheme,GaussPoint,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to interpolate the field for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoint !<The Gauss point to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_GAUSS(FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+          & quadratureScheme,GaussPoint,values,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateSingleGaussDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified Gauss point for the specified element and derviative and returns double precision values for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetInterpolateSingleGaussDPObj(field,variableType,fieldSetType,derivativeNumber, &
+    & userElementNumber,quadratureScheme, GaussPoint,values,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to interpolate the field for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoint !<The Gauss point to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateSingleGaussDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_GAUSS(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+      & quadratureScheme,GaussPoint,values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleGaussDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateSingleGaussDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of Gauss points for the specified element and derviative and returns double precision values for a or a field identified by a user number. If no Gauss points are specified then all Gauss points are interpolated.
+  SUBROUTINE CMISSField_ParameterSetInterpolateMultipleGaussDPNumber(regionUserNumber,fieldUserNumber,variableType,fieldSetType, &
+    & derivativeNumber,userElementNumber,quadratureScheme,GaussPoints,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field whose parameter set is to be interpolated.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to interpolate. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to interpolate. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to interpolate the field for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_GAUSS(FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+          & quadratureScheme,GaussPoints,values,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateMultipleGaussDPNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the given parameter set at a specified set of Gauss points for the specified element and derviative and returns double precision values for a field identified by an object. If no Gauss points are specified then all Gauss points are interpolated.
+  SUBROUTINE CMISSField_ParameterSetInterpolateMultipleGaussDPObj(field,variableType,fieldSetType,derivativeNumber, &
+    & userElementNumber,quadratureScheme, GaussPoints,values,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: quadratureScheme !<The quadrature scheme to interpolate the field for.
+    INTEGER(INTG), INTENT(IN) :: GaussPoints(:) !<The Gauss points to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(:,:) !<The interpolated values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj",err,error,*999)
+
+    CALL FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_GAUSS(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
+      & quadratureScheme,GaussPoints,values,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetInterpolateMultipleGaussDPObj
 
   !
   !================================================================================================================================
@@ -30775,7 +35308,7 @@ CONTAINS
     CALL GENERATED_MESH_CREATE_FINISH(generatedMesh%GENERATED_MESH,meshUserNumber,mesh%MESH,err,error,*999)
 
 #ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('Generated mesh Create')
+    CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
 #endif
 
     CALL EXITS("CMISSGeneratedMesh_CreateFinishObj")
@@ -30834,18 +35367,18 @@ CONTAINS
   !
 
   !>Starts the creation of a generated mesh on an interface identified by an object.
-  SUBROUTINE CMISSGeneratedMesh_CreateStartInterfaceObj(generatedMeshUserNumber,iNTERFACE,generatedMesh,err)
+  SUBROUTINE CMISSGeneratedMesh_CreateStartInterfaceObj(generatedMeshUserNumber,interface,generatedMesh,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: generatedMeshUserNumber !<The user number of the generated mesh to create.
-    TYPE(CMISSInterfaceType), INTENT(INOUT) :: Interface !<The interface to created generated mesh in.
+    TYPE(CMISSInterfaceType), INTENT(INOUT) :: interface !<The interface to created generated mesh in.
     TYPE(CMISSGeneratedMeshType), INTENT(INOUT) :: generatedMesh !<On return, the created generated mesh.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSGeneratedMesh_CreateStartInterfaceObj",err,error,*999)
 
-    CALL GENERATED_MESH_CREATE_START(generatedMeshUserNumber,Interface%iNTERFACE,generatedMesh%GENERATED_MESH,err,error,*999)
+    CALL GENERATED_MESH_CREATE_START(generatedMeshUserNumber,interface%interface,generatedMesh%GENERATED_MESH,err,error,*999)
 
     CALL EXITS("CMISSGeneratedMesh_CreateStartInterfaceObj")
     RETURN
@@ -30984,11 +35517,11 @@ CONTAINS
         CALL GENERATED_MESH_EXTENT_GET(GENERATED_MESH,extent,err,error,*999)
       ELSE
         LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(generatedMeshUserNumber,"*",err,error))// &
-          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(rEGIONUserNumber,"*",err,error))//"."
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
         CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
       END IF
     ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(rEGIONUserNumber,"*",err,error))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
@@ -32009,16 +36542,16 @@ CONTAINS
   !
 
   !>Finishes the creation of an interface identified by an object.
-  SUBROUTINE CMISSInterface_CreateFinishObj(iNTERFACE,err)
+  SUBROUTINE CMISSInterface_CreateFinishObj(interface,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to finish creating.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to finish creating.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSInterface_CreateFinishObj",err,error,*999)
 
-    CALL INTERFACE_CREATE_FINISH(Interface%iNTERFACE,err,error,*999)
+    CALL INTERFACE_CREATE_FINISH(interface%INTERFACE,err,error,*999)
 
     CALL EXITS("CMISSInterface_CreateFinishObj")
     RETURN
@@ -32293,7 +36826,7 @@ CONTAINS
   !
 
   !>Destroys an interface identified by an object.
-  SUBROUTINE CMISSInterface_DestroyObj(iNTERFACE,err)
+  SUBROUTINE CMISSInterface_DestroyObj(interface,err)
 
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to destroy.
@@ -32302,7 +36835,7 @@ CONTAINS
 
     CALL ENTERS("CMISSInterface_DestroyObj",err,error,*999)
 
-    CALL INTERFACE_DESTROY(Interface%iNTERFACE,err,error,*999)
+    CALL INTERFACE_DESTROY(interface%INTERFACE,err,error,*999)
 
     CALL EXITS("CMISSInterface_DestroyObj")
     RETURN
@@ -32438,7 +36971,7 @@ CONTAINS
   !
 
   !>Returns the varying string label for an interface identified by an object.
-  SUBROUTINE CMISSInterface_LabelGetVSObj(iNTERFACE,label,err)
+  SUBROUTINE CMISSInterface_LabelGetVSObj(interface,label,err)
 
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to get the label for.
@@ -32448,7 +36981,7 @@ CONTAINS
 
     CALL ENTERS("CMISSInterface_LabelGetVSObj",err,error,*999)
 
-    CALL INTERFACE_LABEL_GET(Interface%iNTERFACE,label,err,error,*999)
+    CALL INTERFACE_LABEL_GET(interface%INTERFACE,label,err,error,*999)
 
     CALL EXITS("CMISSInterface_LabelGetVSObj")
     RETURN
@@ -32511,7 +37044,7 @@ CONTAINS
   !
 
   !>Sets/changes the character string label for an interface identified by an object.
-  SUBROUTINE CMISSInterface_LabelSetCObj(iNTERFACE,label,err)
+  SUBROUTINE CMISSInterface_LabelSetCObj(interface,label,err)
 
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to set the label for.
@@ -32521,7 +37054,7 @@ CONTAINS
 
     CALL ENTERS("CMISSInterface_LabelSetCObj",err,error,*999)
 
-    CALL INTERFACE_LABEL_SET(Interface%iNTERFACE,label,err,error,*999)
+    CALL INTERFACE_LABEL_SET(interface%INTERFACE,label,err,error,*999)
 
     CALL EXITS("CMISSInterface_LabelSetCObj")
     RETURN
@@ -32584,7 +37117,7 @@ CONTAINS
   !
 
   !>Sets/changes string label for an interface identified by an object.
-  SUBROUTINE CMISSInterface_LabelSetVSObj(iNTERFACE,label,err)
+  SUBROUTINE CMISSInterface_LabelSetVSObj(interface,label,err)
 
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to set the label for.
@@ -32594,7 +37127,7 @@ CONTAINS
 
     CALL ENTERS("CMISSInterface_LabelSetVSObj",err,error,*999)
 
-    CALL INTERFACE_LABEL_SET(Interface%iNTERFACE,CHAR(label),err,error,*999)
+    CALL INTERFACE_LABEL_SET(interface%INTERFACE,CHAR(label),err,error,*999)
 
     CALL EXITS("CMISSInterface_LabelSetVSObj")
     RETURN
@@ -32604,6 +37137,32 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterface_LabelSetVSObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the nodes for a interface identified by an object.
+  SUBROUTINE CMISSInterface_NodesGetObj(interface,nodes,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to get the nodes for.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes !<On return, the interfaces nodes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterface_NodesGetObj",err,error,*999)
+
+    CALL INTERFACE_NODES_GET(interface%INTERFACE,nodes%NODES,err,error,*999)
+
+    CALL EXITS("CMISSInterface_NodesGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterface_NodesGetObj",err,error)
+    CALL EXITS("CMISSInterface_NodesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterface_NodesGetObj
 
   !
   !================================================================================================================================
@@ -32770,8 +37329,6 @@ CONTAINS
 
   END SUBROUTINE CMISSInterfaceMeshConnectivity_CreateFinishObj
 
-
-
   !
   !================================================================================================================================
   !
@@ -32833,18 +37390,18 @@ CONTAINS
   !
 
   !>Starts the creation of an interface meshes connectivity identified by an object.
-  SUBROUTINE CMISSInterfaceMeshConnectivity_CreateStartObj(iNTERFACE,iNTERFACE_MESH,interfaceMeshConnectivity,err)
+  SUBROUTINE CMISSInterfaceMeshConnectivity_CreateStartObj(interface,interfaceMesh,interfaceMeshConnectivity,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
-    TYPE(CMISSMeshType), INTENT(IN) :: iNTERFACE_MESH
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to start the creation of the meshes connectivity for
+    TYPE(CMISSMeshType), INTENT(IN) :: interfaceMesh
     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(INOUT) :: interfaceMeshConnectivity !<On return, the created meshes connectivity
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSInterfaceMeshConnectivity_CreateStartObj",err,error,*999)
 
-    CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(iNTERFACE%iNTERFACE,iNTERFACE_MESH%MESH, &
+    CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(interface%INTERFACE,interfaceMesh%MESH, &
       & interfaceMeshConnectivity%MESH_CONNECTIVITY,err,error,*999)
 
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateStartObj")
@@ -32861,16 +37418,16 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the number of coupled mesh elements which are linked to a specific interface element.
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetNumber(regionUserNumber,interfaceUserNumber, &
-     &  interfaceElementNumber,coupledMeshIndexNumber,numberOfElements,err)
+     &  interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
-    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number to the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: numberOfElements !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface meshe connectivity.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to be connected to the interface
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
@@ -32886,7 +37443,7 @@ CONTAINS
       CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(INTERFACE%MESH_CONNECTIVITY,interfaceElementNumber, &
-         & coupledMeshIndexNumber,numberOfElements,err,error,*999)
+         & coupledMeshIndexNumber,coupledMeshElementNumber,err,error,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -32911,21 +37468,51 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj(interfaceMeshConnectivity,interfaceElementNumber, &
+     &  coupledMeshIndexNumber,coupledMeshElementNumber,err)
 
-  !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber  !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error,*999)
+
+    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY, &
+      & interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err,error,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the mapping from an xi position of a coupled mesh element to a node of an interface mesh element
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementXiSetNumber(regionUserNumber,interfaceUserNumber,interfaceElementNumber, &
-     &  coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err)
-
+     &  coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi,err)
+  
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
     INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number to the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: localNodeNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: componentNumber !<The number of elements
-    REAL(DP), INTENT(IN) :: xi(:)
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to define the element xi connectivity from
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshLocalNodeNumber !<The interface mesh node to assign the coupled mesh element xi to
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshComponentNodeNumber !<The interface mesh node's component to assign the coupled mesh element xi to
+    REAL(DP), INTENT(IN) :: xi(:) !<The xi value for the xi_idx'th xi direction in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
     !Local variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -32940,7 +37527,8 @@ CONTAINS
       CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(INTERFACE%MESH_CONNECTIVITY,interfaceElementNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err,error,*999)
+         & coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi, &
+         & err,error,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -32965,25 +37553,26 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
+  !>Sets the mapping from an xi position of a coupled mesh element to a node of an interface mesh element
   SUBROUTINE CMISSInterfaceMeshConnectivity_ElementXiSetObj(interfaceMeshConnectivity,interfaceElementNumber, &
-     &  coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err)
+     &  coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi,err)
 
     !Argument variables
     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number to the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: localNodeNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: componentNumber !<The number of elements
-    REAL(DP), INTENT(IN) :: xi(:)
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to define the element xi connectivity from
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshLocalNodeNumber !<The interface mesh node to assign the coupled mesh element xi to
+    INTEGER(INTG), INTENT(IN) :: interfaceMeshComponentNodeNumber !<The interface mesh node's component to assign the coupled mesh element xi to
+    REAL(DP), INTENT(IN) :: xi(:) !<The xi value for the xi_idx'th xi direction in the coupled mesh element.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementXiSetObj",err,error,*999)
 
     CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceElementNumber, &
-         & coupledMeshIndexNumber,coupledMeshElementNumber,localNodeNumber,componentNumber,xi,err,error,*999)
+      & coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi, &
+      & err,error,*999)
 
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementXiSetObj")
     RETURN
@@ -32998,39 +37587,61 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the number of coupled mesh elements which are linked to a specific interface element.
-  SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj(interfaceMeshConnectivity,interfaceElementNumber, &
-     &  coupledMeshIndexNumber,numberOfElements,err)
+  SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetNumber(regionUserNumber,interfaceUserNumber,interfaceBasisNumber,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
-    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The element number of the interface mesh
-    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number to the coupled mesh
-    INTEGER(INTG), INTENT(IN) :: numberOfElements !<The number of elements
-
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface and interface condition to destroy the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to destroy the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceBasisNumber !<The user number of the basis to denote the interface mesh connectivity basis
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error,*999)
 
-    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY, &
-         & interfaceElementNumber,coupledMeshIndexNumber,numberOfElements,err,error,*999)
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(BASIS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL BASIS_USER_NUMBER_FIND(interfaceBasisNumber,BASIS,err,error,*999)
+        IF (ASSOCIATED(BASIS)) THEN
+          CALL INTERFACE_MESH_CONNECTIVITY_BASIS_SET(INTERFACE%MESH_CONNECTIVITY,BASIS,err,error,*999)
+        ELSE
+          LOCAL_ERROR="A basis with the user number "//TRIM(NUMBER_TO_VSTRING(interfaceBasisNumber,"*",err,error))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+        END IF
+     ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
 
-    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetNumber
 
   !
   !================================================================================================================================
   !
 
   !>Sets the basis for the mesh connectivity
-  SUBROUTINE CMISSInterfaceMeshConnectivity_SetBasisObj(interfaceMeshConnectivity,interfaceMappingBasis,err)
+  SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetObj(interfaceMeshConnectivity,interfaceMappingBasis,err)
 
     !Argument variables
     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
@@ -33038,19 +37649,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_SetBasisObj",err,error,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetObj",err,error,*999)
 
-    CALL INTERFACE_MESH_CONNECTIVITY_SET_BASIS(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceMappingBasis%BASIS,err, &
-      & error,*999)
+    CALL INTERFACE_MESH_CONNECTIVITY_BASIS_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceMappingBasis%BASIS, &
+      & err,error,*999)
 
-    CALL EXITS("CMISSInterfaceMeshConnectivity_SetBasisObj")
+    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_SetBasisObj",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_SetBasisObj")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_BasisSetObj",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_SetBasisObj
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_BasisSetObj
 
   !
   !================================================================================================================================
@@ -33062,7 +37673,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface and interface condition to destroy the meshes connectivity for.
     INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to destroy the meshes connectivity for.
-   INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -33122,61 +37733,710 @@ CONTAINS
 
   END SUBROUTINE CMISSInterfaceMeshConnectivity_DestroyObj
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of an interface coupled mesh points connectivity identified by a user number.
+  SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishNumber(regionUserNumber,interfaceUserNumber,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to finish the interface points connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to finish creating the points connectivity.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL interface_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL InterfacePointsConnectivity_CreateFinish(interface%pointsConnectivity,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_CreateFinishNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface meshes connectivity identified by an object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishObj(interfacePointsConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: interfacePointsConnectivity !<The interface points connectivity to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_CreateFinish(interfacePointsConnectivity%pointsConnectivity,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_CreateFinishObj
+  
+  !  
+  !================================================================================================================================
+  !   
+  
+  !>Starts the creation of an interface points connectivity identified by a user number.
+  SUBROUTINE CMISSInterfacePointsConnectivity_CreateStartNumber(regionUserNumber,interfaceUserNumber,MeshNumber,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: MeshNumber !<The user number of the interface mesh
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(InterfacePointsConnectivityType), POINTER :: interfacePointsConnectivity
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_CreateStartNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    NULLIFY(interfacePointsConnectivity)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL MESH_USER_NUMBER_FIND(MeshNumber,interface,mesh,ERR,error,*999)
+        IF(ASSOCIATED(mesh)) THEN
+          CALL InterfacePointsConnectivity_CreateStart(interface,mesh,interfacePointsConnectivity,err,error,*999)
+        ELSE
+          localError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+           & " does not exist on the interface with user number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_error(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_error(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_error(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartNumber")
+    RETURN
+999 CALL errorS("CMISSInterfacePointsConnectivity_CreateStartNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartNumber")
+    CALL CMISS_HANDLE_error(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_CreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface points connectivity identified by an object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_CreateStartObj(interface,interfaceMesh,interfacePointsConnectivity,err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to start the creation of the meshes connectivity for
+    TYPE(CMISSMeshType), INTENT(IN) :: interfaceMesh
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(INOUT) :: interfacePointsConnectivity !<On return, the created meshes connectivity
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfacePointsConnectivity_CreateStartObj",err,error,*999)
+
+    CALL InterfacePointsConnectivity_CreateStart(interface%INTERFACE,interfaceMesh%MESH, &
+      & InterfacePointsConnectivity%pointsConnectivity,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartObj")
+    RETURN
+999 CALL errorS("CMISSInterfacePointsConnectivity_CreateStartObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartObj")
+    CALL CMISS_HANDLE_error(err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_CreateStartObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys an interface points connectivity identified by a user number.
+  SUBROUTINE CMISSInterfacePointsConnectivity_DestroyNumber(regionUserNumber,interfaceUserNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface to destroy the points connectivity for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface to destroy the points connectivity for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSInterfacePointsConnectivity_DestroyNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL InterfacePointsConnectivity_Destroy(interface%pointsConnectivity,err,error,*999)
+     ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_DestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_DestroyNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_DestroyNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfacePointsConnectivity_DestroyNumber
 
   !
   !================================================================================================================================
   !
 
-
-  SUBROUTINE CMISSInterfaceMeshConnectivity_SetBasisNumber(regionUserNumber,interfaceUserNumber,interfaceBasisNumber,err)
+  !>Destroys an interface points connectivity identified by an object.
+  SUBROUTINE CMISSInterfacePointsConnectivity_DestroyObj(interfacePointsConnectivity,err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface and interface condition to destroy the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to destroy the meshes connectivity for.
-    INTEGER(INTG), INTENT(IN) :: interfaceBasisNumber !<The user number of the basis to denote the interface mesh connectivity basis
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: interfacePointsConnectivity !<The interface points connectivity to destroy.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_SetBasisNumber",err,error,*999)
+    CALL ENTERS("CMISSInterfacePointsConnectivity_DestroyObj",err,error,*999)
 
-    NULLIFY(REGION)
-    NULLIFY(INTERFACE)
-    NULLIFY(BASIS)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,REGION,INTERFACE,err,error,*999)
-      IF(ASSOCIATED(INTERFACE)) THEN
-        CALL BASIS_USER_NUMBER_FIND(interfaceBasisNumber,BASIS,err,error,*999)
-        IF (ASSOCIATED(BASIS)) THEN
-          CALL INTERFACE_MESH_CONNECTIVITY_SET_BASIS(INTERFACE%MESH_CONNECTIVITY,BASIS,err,error,*999)
-        ELSE
-          LOCAL_ERROR="A basis with the user number "//TRIM(NUMBER_TO_VSTRING(interfaceBasisNumber,"*",err,error))// &
-            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-        END IF
-     ELSE
-        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
-          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-      END IF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+    CALL InterfacePointsConnectivity_Destroy(interfacePointsConnectivity%pointsConnectivity,err,error,*999)
 
-    CALL EXITS("CMISSInterfaceMeshConnectivity_SetBasisNumber")
+    CALL EXITS("CMISSInterfacePointsConnectivity_DestroyObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_SetBasisNumber",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_SetBasisNumber")
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_DestroyObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_DestroyObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_SetBasisNumber
+  END SUBROUTINE CMISSInterfacePointsConnectivity_DestroyObj
+  
+  !  
+  !================================================================================================================================
+  ! 
 
+  !>Gets coupled mesh element number that the data point in the interface is connected to
+  SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberGetNumber(regionUserNumber,interfaceUserNumber, &
+     &  interfaceDataPointIndexNumber,coupledMeshIndexNumber,meshComponentNumber,coupledMeshElementNumber,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the interface mesh that points connectivity is associated to
+    INTEGER(INTG), INTENT(OUT) :: coupledMeshElementNumber !<The element number where the data point is connected to.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL InterfacePointsConnectivity_ElementNumberGet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
+         & coupledMeshIndexNumber,meshComponentNumber,coupledMeshElementNumber,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberGetNumber
+  
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Gets coupled mesh element number that the data point in the interface is connected to
+  SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberGetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, &
+      & coupledMeshIndexNumber,meshComponentNumber,coupledMeshElementNumber,err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface points connectivity to set the element number for
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number of the interface mesh that points connectivity is associated to
+    INTEGER(INTG), INTENT(OUT) :: coupledMeshElementNumber !<The element number where the data point is projected to.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberGetObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_ElementNumberGet(InterfacePointsConnectivity%pointsConnectivity, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,meshComponentNumber,coupledMeshElementNumber,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberGetObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets coupled mesh element number that the data point in the interface is connected to
+  SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetNumber(regionUserNumber,interfaceUserNumber, &
+     &  interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The element number where the data point is projected to.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to set the points connectivity element number for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL InterfacePointsConnectivity_ElementNumberSet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
+         & coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetNumber
+  
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets coupled mesh element number that the data point in the interface is connected to
+  SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, &
+      & coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface points connectivity to set the element number for
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The element number where the data point is projected to.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to set the points connectivity element number for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_ElementNumberSet(InterfacePointsConnectivity%pointsConnectivity, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_ElementNumberSetObj
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetNumber(regionUserNumber,interfaceUserNumber, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    REAL(DP), INTENT(OUT) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,INTERFACE,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL InterfacePointsConnectivity_PointXiGet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
+         & coupledMeshIndexNumber,xi,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetNumber
+
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Gets the xi coordinate mapping between the interface data points and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, & 
+     &  coupledMeshIndexNumber,xi,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface to start the creation of the meshes connectivity for
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    REAL(DP), INTENT(OUT) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_PointXiGet(InterfacePointsConnectivity%pointsConnectivity, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the xi coordinate mapping between the data points in interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetNumber(regionUserNumber,interfaceUserNumber, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    REAL(DP), INTENT(IN) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,error,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(interface)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL InterfacePointsConnectivity_PointXiSet(interface%pointsConnectivity,interfaceDataPointIndexNumber, &
+         & coupledMeshIndexNumber,xi,err,error,*999)
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetNumber
+
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Sets the xi coordinate mapping between the interface data points and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetObj(interfacePointsConnectivity,interfaceDataPointIndexNumber, & 
+     &  coupledMeshIndexNumber,xi,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: InterfacePointsConnectivity !<The interface to start the creation of the meshes connectivity for
+    INTEGER(INTG), INTENT(IN) :: interfaceDataPointIndexNumber !<The index of the interface data point, i.e.user defined global number
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index number of the coupled mesh
+    REAL(DP), INTENT(IN) :: xi(:) !<xi(xiIdx). The full xi location in the coupled mesh that the data point is connected to 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_PointXiSet(InterfacePointsConnectivity%pointsConnectivity, &
+      & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err,error,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_PointXiSetObj
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Update points connectivity with projection results, data projection identified by region user number
+  SUBROUTINE CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber(regionUserNumber,interfaceUserNumber, &
+      & dataPointsRegionUserNumber,dataProjectionUserNumber,coupledMeshIndex,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: dataPointsRegionUserNumber !<The region number of the data points which the data projection is associated with
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to update points connectivity with
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: dataProjectionGlobalNumber
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(REGION_TYPE), POINTER :: ParentRegion,dataPointsRegion
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber",err,error,*999)
+ 
+    NULLIFY(ParentRegion)
+    NULLIFY(dataPointsRegion)
+    NULLIFY(interface)
+    NULLIFY(dataPoints)
+    NULLIFY(dataProjection)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,ParentRegion,err,error,*999)
+    IF(ASSOCIATED(ParentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,ParentRegion,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL REGION_USER_NUMBER_FIND(dataPointsRegionUserNumber,dataPointsRegion,err,error,*999)
+        CALL REGION_DATA_POINTS_GET(dataPointsRegion,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,DataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL InterfacePointsConnectivity_UpdateFromProjection(Interface%PointsConnectivity, &
+          & dataProjection,coupledMeshIndex,err,error,*999) 
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Update points connectivity with projection results, data projection identified by interface user number
+  SUBROUTINE CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber(regionUserNumber,interfaceUserNumber, &
+      & dataPointsRegionUserNumber,dataPointsInterfaceUserNumber,dataProjectionUserNumber,coupledMeshIndex,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface 
+    INTEGER(INTG), INTENT(IN) :: dataPointsRegionUserNumber !<The parent region number of the interface for the data points which the data projection is associated with
+    INTEGER(INTG), INTENT(IN) :: dataPointsInterfaceUserNumber !<The interface number of the data points which the data projection is associated with
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The data projection user number of the data projection to update points connectivity with
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The index number of the coupled mesh
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: dataProjectionGlobalNumber
+    TYPE(INTERFACE_TYPE), POINTER :: interface,dataPointsInterface
+    TYPE(REGION_TYPE), POINTER :: ParentRegion,dataPointsRegion
+    TYPE(DATA_POINTS_TYPE), POINTER :: dataPoints
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber",err,error,*999)
+ 
+    NULLIFY(ParentRegion)
+    NULLIFY(dataPointsRegion)
+    NULLIFY(interface)
+    NULLIFY(dataPointsInterface)
+    NULLIFY(dataPoints)
+    NULLIFY(dataProjection)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,ParentRegion,err,error,*999)
+    IF(ASSOCIATED(ParentRegion)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,ParentRegion,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL REGION_USER_NUMBER_FIND(dataPointsRegionUserNumber,dataPointsRegion,err,error,*999)
+        CALL INTERFACE_USER_NUMBER_FIND(dataPointsInterfaceUserNumber,dataPointsRegion,dataPointsInterface,err,error,*999)
+        CALL INTERFACE_DATA_POINTS_GET(dataPointsInterface,dataPoints,err,error,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(dataPoints,DataProjectionUserNumber,dataProjectionGlobalNumber, &
+          & err,ERROR,*999)
+        CALL DATA_POINTS_DATA_PROJECTION_GET(dataPoints,dataProjectionGlobalNumber,dataProjection,err,ERROR,*999)
+        CALL InterfacePointsConnectivity_UpdateFromProjection(Interface%PointsConnectivity, &
+          & dataProjection,coupledMeshIndex,err,error,*999) 
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Update points connectivity with projection results, data projection identified by object
+  SUBROUTINE CMISSInterfacePointsConnectivity_UpdateFromProjectionObj(pointsConnectivity,dataProjection, &
+      & coupledMeshIndex,err)
+  
+    !Argument variables
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(IN) :: pointsConnectivity !<A pointer to the interface points connectivity to finish creating
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection to update points connectivity with
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndex !<The mesh index of the the points connectivity to be updated
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj",err,error,*999)
+ 
+    CALL InterfacePointsConnectivity_UpdateFromProjection(pointsConnectivity%pointsConnectivity, &
+      & dataProjection%DATA_PROJECTION,coupledMeshIndex,err,error,*999) 
+
+    CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj",err,error)
+    CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj")
+    CALL CMISS_HANDLE_ERROR(Err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivity_UpdateFromProjectionObj
 
 !!==================================================================================================================================
 !!
@@ -33800,6 +39060,178 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSInterfaceCondition_EquationsDestroyObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the integration type for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetNumber(regionUserNumber,interfaceUserNumber,interfaceConditionUserNumber, &
+    & interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface containing the interface condition to get the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to get the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionUserNumber !<The user number of the interface condition to get the method for.
+    INTEGER(INTG), INTENT(OUT) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(interface)
+    NULLIFY(interfaceCondition)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(interfaceConditionUserNumber,interface,interfaceCondition,err,error,*999)
+        IF(ASSOCIATED(interfaceCondition)) THEN
+          CALL InterfaceCondition_IntegrationTypeGet(interfaceCondition,interfaceConditionIntegrationType,err,error,*999)
+        ELSE
+          localError="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceConditionUserNumber,"*",err,error))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeGetNumber",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the integration type for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetObj(interfaceCondition,interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to get the method for.
+    INTEGER(INTG), INTENT(OUT) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeGetObj",err,error,*999)
+
+    CALL InterfaceCondition_IntegrationTypeGet(interfaceCondition%INTERFACE_CONDITION,interfaceConditionIntegrationType, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeGetObj",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the integration type for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetNumber(regionUserNumber,interfaceUserNumber,interfaceConditionUserNumber, &
+    & interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface containing the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface containing the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionUserNumber !<The user number of the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: interface
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeSetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(interface)
+    NULLIFY(interfaceCondition)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,region,interface,err,error,*999)
+      IF(ASSOCIATED(interface)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(interfaceConditionUserNumber,interface,interfaceCondition,err,error,*999)
+        IF(ASSOCIATED(interfaceCondition)) THEN
+          CALL InterfaceCondition_IntegrationTypeSet(interfaceCondition,interfaceConditionIntegrationType,err,error,*999)
+        ELSE
+          localError="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceConditionUserNumber,"*",err,error))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeSetNumber",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the integration type for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetObj(interfaceCondition,interfaceConditionIntegrationType,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: interfaceConditionIntegrationType !<On return, the interface condition integration type. \see OPENCMISS_InterfaceConditionIntegrationTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceCondition_MethodSetObj",err,error,*999)
+
+    CALL InterfaceCondition_IntegrationTypeSet(interfaceCondition%INTERFACE_CONDITION,interfaceConditionIntegrationType, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeSetObj",err,error)
+    CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceCondition_IntegrationTypeSetObj
 
   !
   !================================================================================================================================
@@ -33979,6 +39411,181 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Finishes the creation of a penalty Field for an interface condition identified by an user number.
+  SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to finish the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containg the interface condition to finish the penalty  field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to finish creating the penalty field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_FINISH(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of a penalty field for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateFinishObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to finish creating the penalty field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_FINISH(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a penalty field for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateStartNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,PenaltyFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: PenaltyFieldUserNumber !<The user number of the penalty field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: PENALTY_FIELD
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(PENALTY_FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_START(INTERFACE_CONDITION,PenaltyFieldUserNumber,PENALTY_FIELD, &
+            & Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a penalty field for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateStartObj(InterfaceCondition,PenaltyFieldUserNumber,PenaltyField,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: PenaltyFieldUserNumber !<The user number of the penalty field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: PenaltyField !<If associated on entry, the user created penalty field which has the same user number as the specified penalty field user number. If not associated on entry, on return, the created penalty field for the interface condition.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_START(InterfaceCondition%INTERFACE_CONDITION,PenaltyFieldUserNumber, &
+      & PenaltyField%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCondition_PenaltyFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
 
   !>Returns the method for an interface condition identified by a user number.
   SUBROUTINE CMISSInterfaceCondition_MethodGetNumber(regionUserNumber,interfaceUserNumber,interfaceConditionUserNumber, &
@@ -36080,13 +41687,13 @@ CONTAINS
   !
 
   !>Starts the creation of a mesh for a mesh identified by an object.
-  SUBROUTINE CMISSMesh_CreateStartInterfaceObj(meshUserNumber,iNTERFACE,numberOfDimensions,mesh,err)
+  SUBROUTINE CMISSMesh_CreateStartInterfaceObj(meshUserNumber,interface,numberOfDimensions,mesh,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to start the creation of.
-    TYPE(CMISSInterfaceType), INTENT(IN) :: iNTERFACE !<The interface containing the mesh to start the creation of.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface containing the mesh to start the creation of.
     INTEGER(INTG), INTENT(IN) :: numberOfDimensions !<The number of dimensions for the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: mesh !<On return, the created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !<On return, the created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -36096,7 +41703,7 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('mesh Create')
 #endif
 
-    CALL MESH_CREATE_START(meshUserNumber,Interface%iNTERFACE,numberOfDimensions,mesh%MESH,err,error,*999)
+    CALL MESH_CREATE_START(meshUserNumber,interface%INTERFACE,numberOfDimensions,mesh%MESH,err,error,*999)
 
     CALL EXITS("CMISSMesh_CreateStartInterfaceObj")
     RETURN
@@ -36536,6 +42143,136 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMesh_NumberOfElementsSetObj
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Calculate mesh data points topology in a region identified by a user number based on projection
+  SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber(regionUserNumber,MeshUserNumber, &
+      & DataProjection,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber")
+    RETURN
+999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR)
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Calculate mesh data points topology in an interface identified by a user number based on projection
+  SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber(parentRegionUserNumber,interfaceUserNumber, &
+      & MeshUserNumber,DataProjection,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: parentregionUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(parentregionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(interfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL MESH_USER_NUMBER_FIND(MeshUserNumber,INTERFACE,MESH,Err,ERROR,*999)
+        IF(ASSOCIATED(MESH)) THEN
+          CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
+        ELSE
+          LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber, &
+            & "*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(interfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber")
+    RETURN
+999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR)
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+  
+  !>Calculate mesh data points topology identified by object based on projection
+  SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionObj(Mesh,DataProjection,Err)
+  
+  !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to calculate data points topology for
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: DataProjection !<The data projection
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
+    
+    CALL Mesh_TopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+ 
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
+    RETURN
+999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR)
+    CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMesh_TopologyDataPointsCalculateProjectionObj
 
   !
   !================================================================================================================================
@@ -36551,7 +42288,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -36627,7 +42364,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -36794,7 +42531,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -36885,7 +42622,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -36959,6 +42696,89 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the adjacent element number of a mesh identified by a user number
+  SUBROUTINE CMISSMeshElements_AdjacentElementGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,globalElementNumber, &
+    & adjacentElementXi,adjacentElement,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh from which to get the adjacent element from.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh from which to get the adjacent element from.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number from which to get adjacent element number from.
+    INTEGER(INTG), INTENT(IN) :: globalElementNumber !<The global element number to get the adjacent element number for. !\todo this should be a user number
+    INTEGER(INTG), INTENT(IN) :: adjacentElementXi !<The xi coordinate direction to get the adjacent element for. Note that -xiCoordinateDirection gives the adjacent element before the element in the xiCoordinateDirection'th direction and +xiCoordinateDirection gives the adjacent element after the element in the xiCoordinateDirection'th direction. The xiCoordinateDirection=0 index will give the information on the current element.
+    INTEGER(INTG), INTENT(OUT) :: adjacentElement !<On return, the adjacent element number in the specified xi coordinate direction. Return 0 if the specified element has no adjacent elements in the specified xi coordinate direction.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSMeshElements_AdjacentElementGetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(MESH_ELEMENTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,REGION,MESH,err,error,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,meshComponentNumber,MESH_ELEMENTS,err,error,*999)
+        CALL MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET(globalElementNumber,MESH_ELEMENTS,adjacentElementXi,adjacentElement, &
+          & err,error,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElements_AdjacentElementGetNumber",err,error)
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshElements_AdjacentElementGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the adjacent element number of a mesh identified by an object.
+  SUBROUTINE CMISSMeshElements_AdjacentElementGetObj(meshElements,globalElementNumber,adjacentElementXi,adjacentElement,err)
+
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(IN) :: meshElements !<The mesh elements from which to get the adjacent element for.
+    INTEGER(INTG), INTENT(IN) :: globalElementNumber !<The global element number to get the adjacent element for !\todo this should be a user number
+    INTEGER(INTG), INTENT(IN) :: adjacentElementXi !<The xi coordinate direction to get the adjacent element for  Note that -xiCoordinateDirection gives the adjacent element before the element in the xiCoordinateDirection'th direction and +xiCoordinateDirection gives the adjacent element after the element in the xiCoordinateDirection'th direction. The xiCoordinateDirection=0 index will give the information on the current element.
+    INTEGER(INTG), INTENT(OUT) :: adjacentElement !<On return, the adjacent element number in the specified xi coordinate direction. Return 0 if the specified element has no adjacent elements in the specified xi coordinate direction.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSMeshElements_AdjacentElementGetObj",err,error,*999)
+
+    CALL MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET(globalElementNumber,meshElements%MESH_ELEMENTS,adjacentElementXi, &
+      & adjacentElement,err,error,*999)
+
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElements_AdjacentElementGetObj",err,error)
+    CALL EXITS("CMISSMeshElements_AdjacentElementGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshElements_AdjacentElementGetObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
   SUBROUTINE CMISSMeshElements_NodesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,globalElementNumber, &
     & elementUserNodes,err)
@@ -36972,7 +42792,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37051,7 +42871,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37134,7 +42954,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: localelementnode
@@ -37159,7 +42979,7 @@ CONTAINS
         END DO !localelementnode
         IF(FOUND) THEN
           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(globalElementNumber,MESH_ELEMENTS,versionNumber,derivativeNumber, &
-            & userNodeNumber,err,error,*999)
+            & localelementnode,err,error,*999)
         ELSE
           LOCAL_ERROR="User node number "//TRIM(NUMBER_TO_VSTRING(userNodeNumber,"*",err,error))// &
             & " does not exist in element number "//TRIM(NUMBER_TO_VSTRING(globalElementNumber,"*",err,error))//"."
@@ -37216,7 +43036,7 @@ CONTAINS
     END DO !localelementnode
     IF(FOUND) THEN
       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(globalElementNumber,meshElements%MESH_ELEMENTS,versionNumber, &
-         & derivativeNumber,userNodeNumber,err,error,*999)
+         & derivativeNumber,localelementnode,err,error,*999)
     ELSE
       LOCAL_ERROR="User node number "//TRIM(NUMBER_TO_VSTRING(userNodeNumber,"*",err,error))// &
         & " does not exist in element number "//TRIM(NUMBER_TO_VSTRING(globalElementNumber,"*",err,error))//"."
@@ -37252,7 +43072,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37340,7 +43160,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37420,7 +43240,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -37657,6 +43477,556 @@ CONTAINS
 
 !!==================================================================================================================================
 !!
+!! DISTRIBUTED_MATRIX_VECTOR
+!!
+!!==================================================================================================================================
+
+  !>Get the storage type for a distributed matrix
+  SUBROUTINE CMISSDistributedMatrix_StorageTypeGetObj(matrix,storageType,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the storage type for
+    INTEGER(INTG), INTENT(OUT) :: storageType !<On return, the matrix storage type. \see OPENCMISS_MatrixStorageTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_StorageTypeGetObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(matrix%distributedMatrix,storageType,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_StorageTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_StorageTypeGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_StorageTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_StorageTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data type of a distributed matrix
+  SUBROUTINE CMISSDistributedMatrix_DataTypeGetObj(matrix,dataType,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the matrix data type. \see OPENCMISS_MatrixVectorDataTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataTypeGetObj",err,error,*999)
+
+    CALL DistributedMatrix_DataTypeGet(matrix%distributedMatrix,dataType,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataTypeGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the dimensions of a distributed matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DimensionsGetObj(matrix,m,n,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: m !<On return, the number of rows for this computational node
+    INTEGER(INTG), INTENT(OUT) :: n !<On return, the number of columns
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DimensionsGetObj",err,error,*999)
+
+    CALL DistributedMatrix_DimensionsGet(matrix%distributedMatrix,m,n,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DimensionsGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DimensionsGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DimensionsGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DimensionsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the row indices and column indices for a sparse matrix
+  SUBROUTINE CMISSDistributedMatrix_StorageLocationsGetObj(matrix,rowIndices,columnIndices,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the storage locations for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: rowIndices(:) !<On return, the matrix storage row indices
+    INTEGER(INTG), POINTER, INTENT(OUT) :: columnIndices(:) !<On return, the matrix storage column indices
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_StorageLocationsGetObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(matrix%distributedMatrix,rowIndices,columnIndices,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_StorageLocationsGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_StorageLocationsGetObj",err,error)
+    CALL exits("CMISSDistributedMatrix_StorageLocationsGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_StorageLocationsGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetIntgObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetIntgObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreIntgObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    INTEGER(INTG), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreIntgObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetDPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    REAL(DP), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetDPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreDPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    REAL(DP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreDPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetSPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    REAL(SP), POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetSPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreSPObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    REAL(SP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreSPObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this matrix on this computational node
+  SUBROUTINE CMISSDistributedMatrix_DataGetLObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to get the data for
+    LOGICAL, POINTER, INTENT(OUT) :: data(:) !<On return, the matrix data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataGetLObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_GET(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataGetLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataGetLObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataGetLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataGetLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this matrix once it has finished being used
+  SUBROUTINE CMISSDistributedMatrix_DataRestoreLObj(matrix,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedMatrixType), INTENT(IN) :: matrix !<The matrix to restore the data for
+    LOGICAL, POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the matrix data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedMatrix_DataRestoreLObj",err,error,*999)
+
+    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(matrix%distributedMatrix,data,err,error,*999)
+
+    CALL exits("CMISSDistributedMatrix_DataRestoreLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedMatrix_DataRestoreLObj",err,error)
+    CALL exits("CMISSDistributedMatrix_DataRestoreLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedMatrix_DataRestoreLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data type of a distributed vector
+  SUBROUTINE CMISSDistributedVector_DataTypeGetObj(vector,dataType,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data type for
+    INTEGER(INTG), INTENT(OUT) :: dataType !<On return, the vector data type. \see OPENCMISS_MatrixVectorDataTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataTypeGetObj",err,error,*999)
+
+    CALL DistributedVector_DataTypeGet(vector%distributedVector,dataType,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataTypeGetObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataTypeGetObj",err,error)
+    CALL exits("CMISSDistributedVector_DataTypeGetObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataTypeGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetIntgObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    INTEGER(INTG), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetIntgObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreIntgObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    INTEGER(INTG), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreIntgObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreIntgObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreIntgObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreIntgObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreIntgObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetDPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    REAL(DP), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetDPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreDPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    REAL(DP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreDPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreDPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreDPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreDPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreDPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetSPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    REAL(SP), POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetSPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreSPObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    REAL(SP), POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreSPObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreSPObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreSPObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreSPObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreSPObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the data array for this vector on this computational node
+  SUBROUTINE CMISSDistributedVector_DataGetLObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to get the data for
+    LOGICAL, POINTER, INTENT(OUT) :: data(:) !<On return, the vector data
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataGetLObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_GET(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataGetLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataGetLObj",err,error)
+    CALL exits("CMISSDistributedVector_DataGetLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataGetLObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restore the data array for this vector once it has finished being used
+  SUBROUTINE CMISSDistributedVector_DataRestoreLObj(vector,data,err)
+
+    !Argument variables
+    TYPE(CMISSDistributedVectorType), INTENT(IN) :: vector !<The vector to restore the data for
+    LOGICAL, POINTER, INTENT(INOUT) :: data(:) !<On entry, a pointer to the vector data. On return, a nullified pointer.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL enters("CMISSDistributedVector_DataRestoreLObj",err,error,*999)
+
+    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(vector%distributedVector,data,err,error,*999)
+
+    CALL exits("CMISSDistributedVector_DataRestoreLObj")
+
+    RETURN
+999 CALL errors("CMISSDistributedVector_DataRestoreLObj",err,error)
+    CALL exits("CMISSDistributedVector_DataRestoreLObj")
+    CALL cmiss_handle_error(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDistributedVector_DataRestoreLObj
+
+!!==================================================================================================================================
+!!
 !! NODE_ROUTINES
 !!
 !!==================================================================================================================================
@@ -37806,10 +44176,10 @@ CONTAINS
   !
 
   !>Starts the creation of a nodes in a region for nodes identified by an object.
-  SUBROUTINE CMISSNodes_CreateStartInterfaceObj(iNTERFACE,numberOfNodes,nodes,err)
+  SUBROUTINE CMISSNodes_CreateStartInterfaceObj(interface,numberOfNodes,nodes,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: iNTERFACE !<The interface to start the creation of nodes on.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: interface !<The interface to start the creation of nodes on.
     INTEGER(INTG), INTENT(IN) :: numberOfNodes !<The number of nodes to create.
     TYPE(CMISSNodesType), INTENT(IN) :: nodes !<On return, the created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -37821,7 +44191,7 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('nodes Create')
 #endif
 
-    CALL NODES_CREATE_START(Interface%iNTERFACE,numberOfNodes,nodes%NODES,err,error,*999)
+    CALL NODES_CREATE_START(interface%INTERFACE,numberOfNodes,nodes%NODES,err,error,*999)
 
     CALL EXITS("CMISSNodes_CreateStartInterfaceObj")
     RETURN
@@ -38361,6 +44731,71 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSNodes_UserNumberSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the user numbers for a set of nodes identified by user number.
+  SUBROUTINE CMISSNodes_AllUserNumbersSetNumber(regionUserNumber,nodeUserNumbers,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the nodes to set the node user numbers for.
+    INTEGER(INTG), INTENT(IN) :: nodeUserNumbers(:) !<The user numbers for the nodes to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(NODES_TYPE), POINTER :: nodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSNodes_AllUserNumbersSetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(nodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL REGION_NODES_GET(region,nodes,err,error,*999)
+      CALL Nodes_AllUserNumbersSet(nodes,nodeUserNumbers,err,error,*999)
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSNodes_AllUserNumbersSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSNodes_AllUserNumbersSetNumber",err,error)
+    CALL EXITS("CMISSNodes_AllUserNumbersSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSNodes_AllUserNumbersSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the user numbers for a set of nodes identified by an object. 
+  SUBROUTINE CMISSNodes_AllUserNumbersSetObj(nodes,nodeUserNumbers,err)
+
+    !Argument variables
+    TYPE(CMISSNodesType), INTENT(IN) :: nodes !<The nodes to set the node user number for.
+    INTEGER(INTG), INTENT(IN) :: nodeUserNumbers(:) !<The user numbers for the nodes to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSNodes_AllUserNumbersSetObj",err,error,*999)
+
+    CALL Nodes_AllUserNumbersSet(nodes%NODES,nodeUserNumbers,err,error,*999)
+
+    CALL EXITS("CMISSNodes_AllUserNumbersSetObj")
+    RETURN
+999 CALL ERRORS("CMISSNodes_AllUserNumbersSetObj",err,error)
+    CALL EXITS("CMISSNodes_AllUserNumbersSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSNodes_AllUserNumbersSetObj
 
 !!==================================================================================================================================
 !!
@@ -41036,13 +47471,13 @@ CONTAINS
   !
 
   !>Returns the solve type for an Euler differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAEEulerSolverTypeGetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,dAEEulerSolverType,err)
+  SUBROUTINE CMISSSolver_DAEEulerSolverTypeGetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,DAEEulerSolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the DAE Euler solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to get the DAE Euler solver type for
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the DAE Euler solver type for
-    INTEGER(INTG), INTENT(OUT) :: dAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: DAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41056,7 +47491,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,dAEEulerSolverType,err,error,*999)
+      CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,DAEEulerSolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41077,13 +47512,13 @@ CONTAINS
   !
 
   !>Returns the solve type for an Euler differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAEEulerSolverTypeGetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,dAEEulerSolverType,err)
+  SUBROUTINE CMISSSolver_DAEEulerSolverTypeGetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,DAEEulerSolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the DAE Euler solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to get the DAE Euler solver type for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the DAE Euler solver type for
-    INTEGER(INTG), INTENT(OUT) :: dAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: DAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41097,7 +47532,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,dAEEulerSolverType,err,error,*999)
+      CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,DAEEulerSolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41118,17 +47553,17 @@ CONTAINS
   !
 
   !>Returns the solve type for an Euler differential-algebraic equation solver identified by an object.
-  SUBROUTINE CMISSSolver_DAEEulerSolverTypeGetObj(solver,dAEEulerSolverType,err)
+  SUBROUTINE CMISSSolver_DAEEulerSolverTypeGetObj(solver,DAEEulerSolverType,err)
 
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to get the DAE Euler solver type for.
-    INTEGER(INTG), INTENT(OUT) :: dAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: DAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeGetObj",err,error,*999)
 
-    CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(solver%SOLVER,dAEEulerSolverType,err,error,*999)
+    CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(solver%SOLVER,DAEEulerSolverType,err,error,*999)
 
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetObj")
     RETURN
@@ -41144,13 +47579,13 @@ CONTAINS
   !
 
   !>Sets/changes the solve type for an Euler differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAEEulerSolverTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,dAEEulerSolverType,err)
+  SUBROUTINE CMISSSolver_DAEEulerSolverTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,DAEEulerSolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the DAE Euler solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the DAE Euler solver type for
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the DAE Euler solver type for
-    INTEGER(INTG), INTENT(IN) :: dAEEulerSolverType !<The DAE Euler solver type to set. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: DAEEulerSolverType !<The DAE Euler solver type to set. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41164,7 +47599,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,dAEEulerSolverType,err,error,*999)
+      CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,DAEEulerSolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41185,13 +47620,13 @@ CONTAINS
   !
 
   !>Sets/changes the solve type for an Euler differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAEEulerSolverTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,dAEEulerSolverType,err)
+  SUBROUTINE CMISSSolver_DAEEulerSolverTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,DAEEulerSolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the DAE Euler solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the DAE Euler solver type for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the DAE Euler solver type for
-    INTEGER(INTG), INTENT(IN) :: dAEEulerSolverType !<The DAE Euler solver type to set. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: DAEEulerSolverType !<The DAE Euler solver type to set. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41205,7 +47640,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,dAEEulerSolverType,err,error,*999)
+      CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,DAEEulerSolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41226,17 +47661,17 @@ CONTAINS
   !
 
   !>Sets/changes the solve type for an Euler differential-algebraic equation solver identified by an object.
-  SUBROUTINE CMISSSolver_DAEEulerSolverTypeSetObj(solver,dAEEulerSolverType,err)
+  SUBROUTINE CMISSSolver_DAEEulerSolverTypeSetObj(solver,DAEEulerSolverType,err)
 
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the DAE Euler solver type for.
-    INTEGER(INTG), INTENT(IN) :: dAEEulerSolverType !<The DAE Euler solver type to set. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: DAEEulerSolverType !<The DAE Euler solver type to set. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeSetObj",err,error,*999)
 
-    CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(solver%SOLVER,dAEEulerSolverType,err,error,*999)
+    CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(solver%SOLVER,DAEEulerSolverType,err,error,*999)
 
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetObj")
     RETURN
@@ -41252,13 +47687,13 @@ CONTAINS
   !
 
   !>Returns the solve type for an differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAESolverTypeGetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,dAESolverType,err)
+  SUBROUTINE CMISSSolver_DAESolverTypeGetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,DAESolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the DAE solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to get the DAE solver type for
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the DAE solver type for
-    INTEGER(INTG), INTENT(OUT) :: dAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: DAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41272,7 +47707,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,dAESolverType,err,error,*999)
+      CALL SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,DAESolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41293,13 +47728,13 @@ CONTAINS
   !
 
   !>Returns the solve type for an differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAESolverTypeGetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,dAESolverType,err)
+  SUBROUTINE CMISSSolver_DAESolverTypeGetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,DAESolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the DAE solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to get the DAE solver type for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the DAE solver type for
-    INTEGER(INTG), INTENT(OUT) :: dAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: DAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41313,7 +47748,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,dAESolverType,err,error,*999)
+      CALL SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,DAESolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41334,17 +47769,17 @@ CONTAINS
   !
 
   !>Returns the solve type for an differential-algebraic equation solver identified by an object.
-  SUBROUTINE CMISSSolver_DAESolverTypeGetObj(solver,dAESolverType,err)
+  SUBROUTINE CMISSSolver_DAESolverTypeGetObj(solver,DAESolverType,err)
 
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to get the DAE solver type for.
-    INTEGER(INTG), INTENT(OUT) :: dAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: DAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolver_DAESolverTypeGetObj",err,error,*999)
 
-    CALL SOLVER_DAE_SOLVER_TYPE_GET(solver%SOLVER,dAESolverType,err,error,*999)
+    CALL SOLVER_DAE_SOLVER_TYPE_GET(solver%SOLVER,DAESolverType,err,error,*999)
 
     CALL EXITS("CMISSSolver_DAESolverTypeGetObj")
     RETURN
@@ -41360,13 +47795,13 @@ CONTAINS
   !
 
   !>Sets/changes the solve type for an differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAESolverTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,dAESolverType,err)
+  SUBROUTINE CMISSSolver_DAESolverTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,DAESolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the DAE solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the DAE solver type for
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the DAE solver type for
-    INTEGER(INTG), INTENT(IN) :: dAESolverType !<The DAE solver type to set. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: DAESolverType !<The DAE solver type to set. \see OPENCMISS_DAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41380,7 +47815,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,dAESolverType,err,error,*999)
+      CALL SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAESolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41401,13 +47836,13 @@ CONTAINS
   !
 
   !>Sets/changes the solve type for an differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolver_DAESolverTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,dAESolverType,err)
+  SUBROUTINE CMISSSolver_DAESolverTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,DAESolverType,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the DAE solver type for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the DAE solver type for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the DAE solver type for
-    INTEGER(INTG), INTENT(IN) :: dAESolverType !<The DAE solver type to set. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: DAESolverType !<The DAE solver type to set. \see OPENCMISS_DAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -41421,7 +47856,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,dAESolverType,err,error,*999)
+      CALL SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAESolverType,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -41442,17 +47877,17 @@ CONTAINS
   !
 
   !>Sets/changes the solve type for an differential-algebraic equation solver identified by an object.
-  SUBROUTINE CMISSSolver_DAESolverTypeSetObj(solver,dAESolverType,err)
+  SUBROUTINE CMISSSolver_DAESolverTypeSetObj(solver,DAESolverType,err)
 
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the DAE solver type for.
-    INTEGER(INTG), INTENT(IN) :: dAESolverType !<The DAE solver type to set. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: DAESolverType !<The DAE solver type to set. \see OPENCMISS_DAESolverTypes,OPENCMISS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolver_DAESolverTypeSetObj",err,error,*999)
 
-    CALL SOLVER_DAE_SOLVER_TYPE_SET(solver%SOLVER,dAESolverType,err,error,*999)
+    CALL SOLVER_DAE_SOLVER_TYPE_SET(solver%SOLVER,DAESolverType,err,error,*999)
 
     CALL EXITS("CMISSSolver_DAESolverTypeSetObj")
     RETURN
@@ -42671,6 +49106,852 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_DynamicTimesSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & arbitraryPath,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the arbitrary path for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the arbitrary path for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    LOGICAL, INTENT(IN) :: arbitraryPath !<.TRUE. if the the transformation has an arbitrary path, .FALSE. if the path is uni-directional
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationArbitraryPathSet(solver,arbitraryPath,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetObj(solver,arbitraryPath,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the arbitrary path for.
+    LOGICAL, INTENT(IN) :: arbitraryPath !<.TRUE. if the the transformation has an arbitrary path, .FALSE. if the path is uni-directional
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationArbitraryPathSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationArbitraryPathSet(solver%SOLVER,arbitraryPath,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationArbitraryPathSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationArbitraryPathSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Clear transformation a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationClearNumber(problemUserNumber,controlLoopIdentifier,solverIndex,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to clear.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to clear.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationClearNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationClear(solver,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationClearNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationClearNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationClearNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationClearNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Clear transformation for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationClearObj(solver,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to clear
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationClearObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationClear(solver%SOLVER,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationClearObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationClearObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationClearObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationClearObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationFieldSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & regionUserNumber,fieldUserNumber,variableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The region user number for the field
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field user number
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the transformation for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationFieldSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    NULLIFY(field)
+    NULLIFY(region)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+        IF(ASSOCIATED(region)) THEN
+          CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+          IF(ASSOCIATED(field)) THEN
+            CALL Solver_GeometricTransformationFieldSet(solver,field,variableType,err,error,*999)
+          ELSE
+            localError="A field with user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+              & " does not exist."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="A region with user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+            & " does not exist."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationFieldSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationFieldSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationFieldSetObj(solver,field,variableType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field for the solver to set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The field variable type to set the transformation for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationFieldSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationFieldSet(solver%SOLVER,field%FIELD,variableType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationFieldSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationFieldSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationFieldSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix for a geometric transformation identified by an user number, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & matrix,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationMatrixSet(solver,matrix,1,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix for a geometric transformation solver identified by an object, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj0(solver,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetObj0",err,error,*999)
+    
+    CALL Solver_GeometricTransformationMatrixSet(solver%SOLVER,matrix,1,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetObj0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix at a specific increment for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber1(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & matrix,loadIncrementIdx,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the matrix for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the matrix for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationMatrixSet(solver,matrix,loadIncrementIdx,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetNumber1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the full transformation matrix vector at a specific load increment for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj1(solver,matrix,loadIncrementIdx,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the matrix for.
+    REAL(DP), INTENT(IN) :: matrix(:,:) !<The full transformation matrix to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the matrix for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetObj1",err,error,*999)
+    
+    CALL Solver_GeometricTransformationMatrixSet(solver%SOLVER,matrix,loadIncrementIdx,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetObj1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationMatrixSetObj1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetNumber(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,numberOfIncrements,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index for the geometric transformation solver.
+    INTEGER(INTG), INTENT(IN) :: numberOfIncrements !<The number of load increments to apply the transformation
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationNumberOfLoadIncrementsSet(solver,numberOfIncrements,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the arbitrary path logical for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetObj(solver,numberOfIncrements,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the field for.
+    INTEGER(INTG), INTENT(IN) :: numberOfIncrements !<The number of load increments to apply the transformation
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationNumberOfLoadIncrementsSet(solver%SOLVER,numberOfIncrements,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationNoLoadIncrementsSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation for a geometric transformation identified by an user number, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & pivotPoint,axis,angle,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationRotationSet(solver,pivotPoint,axis,angle,1,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation for a geometric transformation solver identified by an object, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj0(solver,pivotPoint,axis,angle,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetObj0",err,error,*999)
+    
+    CALL Solver_GeometricTransformationRotationSet(solver%SOLVER,pivotPoint,axis,angle,1,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetObj0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation at a specific increment for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber1(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & pivotPoint,axis,angle,loadIncrementIdx,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the rotation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the rotation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationRotationSet(solver,pivotPoint,axis,angle,loadIncrementIdx,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetNumber1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the rotation at a specific load increment for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj1(solver,pivotPoint,axis,angle,loadIncrementIdx,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the rotation for.
+    REAL(DP), INTENT(IN) :: pivotPoint(:) !<The pivot point to rotate about
+    REAL(DP), INTENT(IN) :: axis(:) !<The axis to  to rotate around
+    REAL(DP), INTENT(IN) :: angle !<The angle to rotate
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the rotation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetObj1",err,error,*999)
+    
+    CALL Solver_GeometricTransformationRotationSet(solver%SOLVER,pivotPoint,axis,angle,loadIncrementIdx,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetObj1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationRotationSetObj1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scalings for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetNumber(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & scalings,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the scalings for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the scalings for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the scalings for.
+    REAL(DP), INTENT(IN) :: scalings(:) !<The scalings to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationScalingsSetNumber",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationScalingsSet(solver,scalings,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationScalingsSetNumber",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetNumber
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the scalings for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetObj(solver,scalings,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the scalings for.
+    REAL(DP), INTENT(IN) :: scalings(:) !<The scalings to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationScalingsSetObj",err,error,*999)
+    
+    CALL Solver_GeometricTransformationScalingsSet(solver%SOLVER,scalings,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationScalingsSetObj",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationScalingsSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation for a geometric transformation identified by an user number, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & translation,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationTranslationSet(solver,translation,1,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation vector for a geometric transformation solver identified by an object, default to be the 1st load increment
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj0(solver,translation,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj0",err,error,*999)
+    
+    CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,1,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj0",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj0
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation at a specific increment for a geometric transformation identified by an user number.
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber1(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & translation,loadIncrementIdx,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to set the translation for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the translation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      IF(ASSOCIATED(solver)) THEN
+        CALL Solver_GeometricTransformationTranslationSet(solver,translation,loadIncrementIdx,err,error,*999)
+      ELSE
+        localError="A solver with index of "//TRIM(NUMBER_TO_VSTRING(solverIndex,"*",err,error))// &
+          & " does not exist."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      ENDIF
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetNumber1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the translation vector at a specific load increment for a geometric transformation solver identified by an object.
+  SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj1(solver,translation,loadIncrementIdx,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The geometric transformation solver to set the translation for.
+    REAL(DP), INTENT(IN) :: translation(:) !<The translation components to set
+    INTEGER(INTG), INTENT(IN) :: loadIncrementIdx !<The load increment index to set the translation for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj1",err,error,*999)
+    
+    CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,loadIncrementIdx,err,error,*999)
+
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj1",err,error)
+    CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_GeometricTransformationTranslationSetObj1
 
   !
   !================================================================================================================================
@@ -42701,7 +49982,7 @@ CONTAINS
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+    ENDIF
 
     CALL EXITS("CMISSSolver_LabelGetCNumber0")
     RETURN
@@ -42741,7 +50022,7 @@ CONTAINS
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
+    ENDIF
 
     CALL EXITS("CMISSSolver_LabelGetCNumber1")
     RETURN
@@ -43641,13 +50922,13 @@ CONTAINS
 
   !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an user number.
   SUBROUTINE CMISSSolver_LinearIterativeGMRESRestartSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
-    & gMRESRestart,err)
+    & GMRESRestart,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the GMRES iterative linear solver to set the restart value for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the GMRES iterative linear solver to set the restart value for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the GMRES restart value for.
-    INTEGER(INTG), INTENT(IN) :: gMRESRestart !<The GMRES restart value to set.
+    INTEGER(INTG), INTENT(IN) :: GMRESRestart !<The GMRES restart value to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -43661,7 +50942,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,gMRESRestart,err,error,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRESRestart,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -43683,13 +50964,13 @@ CONTAINS
 
   !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an user number.
   SUBROUTINE CMISSSolver_LinearIterativeGMRESRestartSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
-    & gMRESRestart,err)
+    & GMRESRestart,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the GMRES iterative linear solver to set the restart value for.
     INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the restart value for.
     INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the restart value for.
-    INTEGER(INTG), INTENT(IN) :: gMRESRestart !<The GMRES restart value to set.
+    INTEGER(INTG), INTENT(IN) :: GMRESRestart !<The GMRES restart value to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -43703,7 +50984,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
-      CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,gMRESRestart,err,error,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRESRestart,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
         & " does not exist."
@@ -43723,17 +51004,17 @@ CONTAINS
   !
 
   !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an object.
-  SUBROUTINE CMISSSolver_LinearIterativeGMRESRestartSetObj(solver,gMRESRestart,err)
+  SUBROUTINE CMISSSolver_LinearIterativeGMRESRestartSetObj(solver,GMRESRestart,err)
 
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: solver !<The GMRES iterative linear solver to set the restart value for.
-    INTEGER(INTG), INTENT(IN) :: gMRESRestart !<The GMRES restart value to set.
+    INTEGER(INTG), INTENT(IN) :: GMRESRestart !<The GMRES restart value to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolver_LinearIterativeGMRESRestartSetObj",err,error,*999)
 
-    CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(solver%SOLVER,gMRESRestart,err,error,*999)
+    CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(solver%SOLVER,GMRESRestart,err,error,*999)
 
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetObj")
     RETURN
@@ -44398,6 +51679,115 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+    & monitorLinesearchFlag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Newton solver to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the linesearch monitoring for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL Solver_NewtonLineSearchMonitorOutputSet(SOLVER,monitorLinesearchFlag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+    & monitorLinesearchFlag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the absolute tolerance for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL Solver_NewtonLineSearchMonitorOutputSet(SOLVER,monitorLinesearchFlag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetObj(solver,monitorLinesearchFlag,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Newton solver to set the linesearch monitoring for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj",err,error,*999)
+
+    CALL Solver_NewtonLineSearchMonitorOutputSet(solver%SOLVER,monitorLinesearchFlag,err,error,*999)
+
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj",err,error)
+    CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonLineSearchMonitorOutputSetObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the Jacobian calculation type for an Newton solver identified by an user number.
   SUBROUTINE CMISSSolver_NewtonJacobianCalculationTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
     & jacobianCalculationType,err)
@@ -44733,9 +52123,121 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_NewtonCellMLSolverGetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for an Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & convergenceTestType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the convergence test for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      CALL Solver_NewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*999)
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber0
 
   !
   !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+      & convergenceTestType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifiers,solverIndex,solver,err,error,*999)
+      CALL Solver_NewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*999)
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetNumber1
+  
+  ! 
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetObj(solver,convergenceTestType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetObj",err,error,*999)
+
+    CALL Solver_NewtonConvergenceTestTypeSet(solver%SOLVER,convergenceTestType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_NewtonConvergenceTestTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+  
   !>Sets/changes the line search alpha for an Newton linesearch solver identified by an user number.
   SUBROUTINE CMISSSolver_NewtonLineSearchAlphaSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,alpha,err)
 
@@ -47053,6 +54555,158 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the number of solver matrices for the solver equations
+  SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet(solverEquations,numberOfMatrices,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the number of matrices for
+    INTEGER(INTG), INTENT(OUT) :: numberOfMatrices !<On return, the number of matrices for the solver equations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_NumberOfMatricesGet",err,error,*999)
+
+    CALL SolverEquations_NumberOfMatricesGet(solverEquations%solver_equations,numberOfMatrices,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_NumberOfMatricesGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_NumberOfMatricesGet",err,error)
+    CALL Exits("CMISSSolverEquations_NumberOfMatricesGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_NumberOfMatricesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get a solver matrix from the solver equations matrices
+  SUBROUTINE CMISSSolverEquations_MatrixGet(solverEquations,matrixIndex,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the matrix for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the requested solver matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_MatrixGet",err,error,*999)
+
+    CALL SolverEquations_MatrixGet(solverEquations%solver_equations,matrixIndex,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_MatrixGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_MatrixGet",err,error)
+    CALL Exits("CMISSSolverEquations_MatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_MatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the Jacobian matrix from the solver equations matrices for nonlinear solver equations
+  SUBROUTINE CMISSSolverEquations_JacobianMatrixGet(solverEquations,matrix,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the Jacobian matrix for
+    TYPE(CMISSDistributedMatrixType), INTENT(INOUT) :: matrix !<On return, the solver equations Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_JacobianMatrixGet",err,error,*999)
+
+    CALL SolverEquations_JacobianMatrixGet(solverEquations%solver_equations,matrix%distributedMatrix,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_JacobianMatrixGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_JacobianMatrixGet",err,error)
+    CALL Exits("CMISSSolverEquations_JacobianMatrixGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_JacobianMatrixGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the vector assiciated with a solver matrix from the solver equations matrices
+  SUBROUTINE CMISSSolverEquations_VectorGet(solverEquations,matrixIndex,vector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the vector for
+    INTEGER(INTG), INTENT(IN) :: matrixIndex !<The solver matrix index to get the vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: vector !<On return, the requested solver matrix vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_VectorGet",err,error,*999)
+
+    CALL SolverEquations_VectorGet(solverEquations%solver_equations,matrixIndex,vector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_VectorGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_VectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_VectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_VectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the residual vector from the solver equations for nonlinear problems
+  SUBROUTINE CMISSSolverEquations_ResidualVectorGet(solverEquations,residualVector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the residual vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: residualVector !<On return, the solver residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_ResidualVectorGet",err,error,*999)
+
+    CALL SolverEquations_ResidualVectorGet(solverEquations%solver_equations,residualVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_ResidualVectorGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_ResidualVectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_ResidualVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_ResidualVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the right hand side vector from the solver equations
+  SUBROUTINE CMISSSolverEquations_RhsVectorGet(solverEquations,rhsVector,err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the right hand side vector for
+    TYPE(CMISSDistributedVectorType), INTENT(INOUT) :: rhsVector !<On return, the solver right hand side vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+
+    CALL Enters("CMISSSolverEquations_RhsVectorGet",err,error,*999)
+
+    CALL SolverEquations_RhsVectorGet(solverEquations%solver_equations,rhsVector%distributedVector,err,error,*999)
+
+    CALL Exits("CMISSSolverEquations_RhsVectorGet")
+    RETURN
+999 CALL Errors("CMISSSolverEquations_RhsVectorGet",err,error)
+    CALL Exits("CMISSSolverEquations_RhsVectorGet")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquations_RhsVectorGet
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get the user number of the given region.
   SUBROUTINE CMISSUserNumberGetRegion( region, userNumber, err )
     !Argument variables
@@ -48225,8 +55879,6 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSFieldML_OutputWriteVS",err,error,*999)
 

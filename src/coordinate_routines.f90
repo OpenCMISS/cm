@@ -238,13 +238,13 @@ CONTAINS
     CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
         COORDINATE_CONVERT_FROM_RC_DP(1)=SQRT(Z(1)**2+Z(2)**2+Z(3)**2)
-        IF(Z(1)/=0.0_DP.OR.Z(2)/=0.0_DP) THEN
+        IF(ABS(Z(1))>=ZERO_TOLERANCE.OR.ABS(Z(2))>=ZERO_TOLERANCE) THEN
           COORDINATE_CONVERT_FROM_RC_DP(2)=ATAN2(Z(2),Z(1))
         ELSE
           COORDINATE_CONVERT_FROM_RC_DP(2)=0.0_DP
         ENDIF
         A1=SQRT(Z(1)**2+Z(2)**2)
-        IF(Z(3)/=0.0_DP.OR.A1/=0.0_DP) THEN
+        IF(ABS(Z(3))>=ZERO_TOLERANCE.OR.ABS(A1)>=ZERO_TOLERANCE) THEN
           COORDINATE_CONVERT_FROM_RC_DP(3)=ATAN2(Z(3),A1)
         ELSE
           COORDINATE_CONVERT_FROM_RC_DP(3)=0.0_DP
@@ -268,7 +268,7 @@ CONTAINS
           A8=0.0_DP
           CALL FLAG_WARNING("Put A8=0 since ABS(A8)>1.",ERR,ERROR,*999)
         ENDIF
-        IF((Z(3)==0.0_DP).OR.(A6==0.0_DP).OR.(A7==0.0_DP)) THEN
+        IF((ABS(Z(3))<ZERO_TOLERANCE).OR.(ABS(A6)<ZERO_TOLERANCE).OR.(ABS(A7)<ZERO_TOLERANCE)) THEN
           A9=0.0_DP
         ELSE
           IF(ABS(A6*A7)>0.0_DP) THEN
@@ -286,12 +286,12 @@ CONTAINS
           ENDIF
         ENDIF
         COORDINATE_CONVERT_FROM_RC_DP(1)=LOG(A6+SQRT(A4+1.0_DP))
-        IF(Z(1)>=0.0_DP) THEN
+        IF(ABS(Z(1))>=ZERO_TOLERANCE) THEN
           COORDINATE_CONVERT_FROM_RC_DP(2)=A8
         ELSE
           COORDINATE_CONVERT_FROM_RC_DP(2)=PI-A8
         ENDIF
-        IF(Z(2)>=0.0_DP) THEN
+        IF(ABS(Z(2))>ZERO_TOLERANCE) THEN
           COORDINATE_CONVERT_FROM_RC_DP(3)=MOD(A9+2.0_DP*PI,2.0_DP*PI)
         ELSE
           COORDINATE_CONVERT_FROM_RC_DP(3)=PI-A9
@@ -358,13 +358,13 @@ CONTAINS
     CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
         COORDINATE_CONVERT_FROM_RC_SP(1)=SQRT(Z(1)**2+Z(2)**2+Z(3)**2)
-        IF(Z(1)/=0.0_SP.OR.Z(2)/=0.0_SP) THEN
+        IF(ABS(Z(1))>=ZERO_TOLERANCE_SP.OR.ABS(Z(2))>ZERO_TOLERANCE_SP) THEN
           COORDINATE_CONVERT_FROM_RC_SP(2)=ATAN2(Z(2),Z(1))
         ELSE
           COORDINATE_CONVERT_FROM_RC_SP(2)=0.0_SP
         ENDIF
         A1=SQRT(Z(1)**2+Z(2)**2)
-        IF(Z(3)/=0.0_SP.OR.A1/=0.0_SP) THEN
+        IF(ABS(Z(3))>=ZERO_TOLERANCE_SP.OR.ABS(A1)>ZERO_TOLERANCE_SP) THEN
           COORDINATE_CONVERT_FROM_RC_SP(3)=ATAN2(Z(3),A1)
         ELSE
           COORDINATE_CONVERT_FROM_RC_SP(3)=0.0_SP
@@ -388,10 +388,10 @@ CONTAINS
           A8=0.0_SP
           CALL FLAG_WARNING("Put A8=0 since ABS(A8)>1.",ERR,ERROR,*999)
         ENDIF
-        IF((Z(3)==0.0_SP).OR.(A6==0.0_SP).OR.(A7==0.0_SP)) THEN
+        IF((ABS(Z(3))<ZERO_TOLERANCE_SP).OR.(ABS(A6)<ZERO_TOLERANCE_SP).OR.(ABS(A7)<ZERO_TOLERANCE_SP)) THEN
           A9=0.0_SP
         ELSE
-          IF(ABS(A6*A7)>0.0_SP) THEN
+          IF(ABS(A6*A7)>ZERO_TOLERANCE_SP) THEN
             A9=Z(3)/(FOCUS*A6*A7)
           ELSE
             A9=0.0_SP
@@ -406,12 +406,12 @@ CONTAINS
           ENDIF
         ENDIF
         COORDINATE_CONVERT_FROM_RC_SP(1)=LOG(A6+SQRT(A4+1.0_SP))
-        IF(Z(1)>=0.0_SP) THEN
+        IF(ABS(Z(1))>=ZERO_TOLERANCE_SP) THEN
           COORDINATE_CONVERT_FROM_RC_SP(2)=A8
         ELSE
           COORDINATE_CONVERT_FROM_RC_SP(2)=REAL(PI,SP)-A8
         ENDIF
-        IF(Z(2)>=0.0_SP) THEN
+        IF(ABS(Z(2))>=ZERO_TOLERANCE_SP) THEN
           COORDINATE_CONVERT_FROM_RC_SP(3)=MOD(A9+2.0_SP*REAL(PI,SP),2.0_SP*&
             & REAL(PI,SP))
         ELSE
@@ -656,7 +656,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mi,ni,nu
-    REAL(DP) :: A(2,2),B(2),C,D,DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
+    REAL(DP) :: DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -669,7 +669,7 @@ CONTAINS
         INTERPOLATED_POINT=>METRICS%INTERPOLATED_POINT
         IF(ASSOCIATED(INTERPOLATED_POINT)) THEN
           IF(INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE>=FIRST_PART_DERIV) THEN
-            
+
             SELECT CASE(METRICS%NUMBER_OF_XI_DIMENSIONS)
             CASE(1)
               !Calculate the derivatives of X with respect to XI
@@ -837,7 +837,7 @@ CONTAINS
                   DET_DX_DXI=METRICS%DX_DXI(1,1)*DX_DXI2(2)-METRICS%DX_DXI(2,1)*DX_DXI2(1)
                   IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
                     METRICS%DXI_DX(1,1)=DX_DXI2(2)/DET_DX_DXI
-                    METRICS%DXI_DX(1,2)=DX_DXI2(1)/DET_DX_DXI
+                    METRICS%DXI_DX(1,2)=-1.0_DP*DX_DXI2(1)/DET_DX_DXI
                     !Normalise to ensure that g^11=g^1.g^1
                     LENGTH=L2NORM(METRICS%DXI_DX(1,1:2))
                     SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
@@ -855,60 +855,29 @@ CONTAINS
                     IF(ERR/=0) GOTO 999
                     !Calculate the bi-normal vector from the normalised cross product of the tangent and normal vectors
                     CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(1:3,1),DX_DXI2,DX_DXI3,ERR,ERROR,*999)
-                  ELSE
-                    !Solve system of equations to find g_2 and g_3 using g_3 = g_1 x g_2 and g_2 = g_3 x g_1
-                    !We need to choose a component of g_2 to fix this system. As we are going to normalise results
-                    !we don't need to worry about the value.
-                    !If we pick a component to set then we need to ensure that it is roughly orthogonal to the tangent
-                    !vector. Try the first component unless it is in the direction of the tangent else try the second
-                    C=METRICS%DX_DXI(1,1)/SQRT(METRICS%DX_DXI(1,1)**2+METRICS%DX_DXI(2,1)**2+METRICS%DX_DXI(3,1)**2)
-                    IF(ABS(C)>0.9_DP) THEN
-                      !Tangent has a significant first component, set the second component of g_2
-                      C=METRICS%DX_DXI(2,1)/SQRT(METRICS%DX_DXI(1,1)**2+METRICS%DX_DXI(2,1)**2+METRICS%DX_DXI(3,1)**2)
-                      D=1.0_DP/(1.0_DP-C)
-                      A(1,1)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)+METRICS%DX_DXI(3,1)*METRICS%DX_DXI(3,1)-1.0_DP
-                      A(1,2)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(3,1)
-                      A(2,1)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
-                      A(2,2)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)-1.0_DP
-                      B(1)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(2,1)*D
-                      B(2)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)*D
-                      CALL SOLVE_SMALL_LINEAR_SYSTEM(A,DX_DXI2(1:2),B,ERR,ERROR,*999)
-                      DX_DXI2(3)=DX_DXI2(2)
-                      DX_DXI2(2)=D
+                    DET_DX_DXI=METRICS%DX_DXI(1,1)*(DX_DXI2(2)*DX_DXI3(3)-DX_DXI2(3)*DX_DXI3(2))+ &
+                      & DX_DXI2(1)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
+                      & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*DX_DXI2(3)-METRICS%DX_DXI(3,1)*DX_DXI2(2))
+                    IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
+                      METRICS%DXI_DX(1,1)=(DX_DXI3(3)*DX_DXI2(2)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
+                      METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*DX_DXI2(1)-DX_DXI2(3)*DX_DXI3(1))/DET_DX_DXI
+                      METRICS%DXI_DX(1,3)=(DX_DXI3(2)*DX_DXI2(1)-DX_DXI2(2)*DX_DXI3(1))/DET_DX_DXI
+                      !Normalise to ensure that g^11=g^1.g^1
+                      LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
+                      SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
+                      METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DX_DXI(1,1:3)
                     ELSE
-                      !Tangent does not have a significant first component, set the first component of g_2
-                      D=1.0_DP/(1.0_DP-C)
-                      A(1,1)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(3,1)*METRICS%DX_DXI(3,1)-1
-                      A(1,2)=METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
-                      A(2,1)=-1.0_DP*METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,1)
-                      A(2,2)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(1,1)+METRICS%DX_DXI(2,1)*METRICS%DX_DXI(2,1)-1
-                      B(1)=METRICS%DX_DXI(1,1)*METRICS%DX_DXI(2,1)
-                      B(2)=-1.0_DP*METRICS%DX_DXI(1,1)*METRICS%DX_DXI(3,1)
-                      DX_DXI2(1)=D
-                      CALL SOLVE_SMALL_LINEAR_SYSTEM(A,DX_DXI2(2:3),B,ERR,ERROR,*999)
+                      CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
+                      METRICS%DXI_DX=0.0_DP                    
                     ENDIF
-                    DX_DXI2=NORMALISE(DX_DXI2,ERR,ERROR)
-                    IF(ERR/=0) GOTO 999
-                    DX_DXI3(1)=METRICS%DX_DXI(2,1)*DX_DXI2(3)-DX_DXI2(2)*METRICS%DX_DXI(3,1)
-                    DX_DXI3(2)=METRICS%DX_DXI(3,1)*DX_DXI2(1)-DX_DXI2(3)*METRICS%DX_DXI(1,1)
-                    DX_DXI3(3)=METRICS%DX_DXI(1,1)*DX_DXI2(2)-DX_DXI2(1)*METRICS%DX_DXI(2,1)
-                    DX_DXI3=NORMALISE(DX_DXI3,ERR,ERROR)
-                    IF(ERR/=0) GOTO 999
-                  ENDIF
-                  DET_DX_DXI=METRICS%DX_DXI(1,1)*(DX_DXI2(2)*DX_DXI3(3)-DX_DXI2(3)*DX_DXI3(2))+ &
-                    & DX_DXI2(1)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
-                    & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*DX_DXI2(3)-METRICS%DX_DXI(3,1)*DX_DXI2(2))
-                  IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
-                    METRICS%DXI_DX(1,1)=(DX_DXI3(3)*DX_DXI2(2)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
-                    METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*DX_DXI2(1)-DX_DXI2(3)*DX_DXI3(2))/DET_DX_DXI
-                    METRICS%DXI_DX(1,3)=(DX_DXI3(2)*DX_DXI2(1)-DX_DXI2(2)*DX_DXI3(1))/DET_DX_DXI
+                  ELSE
+                    METRICS%DXI_DX(1,1)=METRICS%DX_DXI(1,1)
+                    METRICS%DXI_DX(1,2)=METRICS%DX_DXI(2,1)
+                    METRICS%DXI_DX(1,3)=METRICS%DX_DXI(3,1)
                     !Normalise to ensure that g^11=g^1.g^1
                     LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
                     SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
                     METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DXI_DX(1,1:3)
-                  ELSE
-                    CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
-                    METRICS%DXI_DX=0.0_DP                    
                   ENDIF
                 CASE DEFAULT
                   CALL FLAG_ERROR("Invalid embedding of a line in space.",ERR,ERROR,*999)
@@ -3286,7 +3255,7 @@ CONTAINS
         ENDIF
       CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
         IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
-          FOCUS=COORDINATE_SYSTEM%FOCUS
+          FOCUS=REAL(COORDINATE_SYSTEM%FOCUS,SP)
           SELECT CASE(PART_DERIV_TYPE)
           CASE(NO_PART_DERIV)
             Z=COORDINATE_CONVERT_TO_RC(COORDINATE_SYSTEM,X(:,1),ERR,ERROR)

@@ -59,13 +59,13 @@ ifndef OPENCMISS_ROOT
   OPENCMISS_ROOT = $(CURDIR)/../
 endif
 
-GLOBAL_CM_ROOT = $(CURDIR)
+OC_CM_GLOBAL_ROOT = $(CURDIR)
 
-include $(GLOBAL_CM_ROOT)/utils/MakefileCommon.inc
+include $(OC_CM_GLOBAL_ROOT)/utils/MakefileCommon.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-SOURCE_DIR = $(GLOBAL_CM_ROOT)/src
+SOURCE_DIR = $(OC_CM_GLOBAL_ROOT)/src
 OBJECT_DIR := $(MAIN_OBJECT_DIR)
 BASE_LIB_NAME = OpenCMISS
 MODULE_DIR := $(OBJECT_DIR)
@@ -75,7 +75,7 @@ MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
 HEADER_INC_NAME := opencmiss.h
 HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
-BINDINGS_DIR = $(GLOBAL_CM_ROOT)/bindings
+BINDINGS_DIR = $(OC_CM_GLOBAL_ROOT)/bindings
 BINDINGS_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
@@ -94,7 +94,7 @@ FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
 
 .SUFFIXES:	.f90	.c
 
-main: preliminaries \
+main:	preliminaries \
 	$(LIBRARY) \
 	$(MOD_INCLUDE) \
 	$(MOD_FIELDML_TARGET) \
@@ -146,6 +146,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/Burgers_equation_routines.o \
+	$(OBJECT_DIR)/characteristic_equation_routines.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
 	$(OBJECT_DIR)/cmiss_c.o \
@@ -199,6 +200,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
 	$(OBJECT_DIR)/interface_mapping_routines.o \
 	$(OBJECT_DIR)/interface_matrices_routines.o \
+	$(OBJECT_DIR)/interface_operators_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
@@ -250,7 +252,7 @@ OBJECTS += $(MACHINE_OBJECTS)
 
 preliminaries: $(OBJECT_DIR)/.directory \
 	$(INC_DIR)/.directory \
-	$(LIB_DIR)/.directory
+	$(LIB_DIR)/.directory 
 
 $(LIBRARY) : $(OBJECTS) $(LIB_DIR)/.directory
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
@@ -265,7 +267,7 @@ MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
 $(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py
-	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
+	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
@@ -390,6 +392,7 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(SOURCE_DIR)/boundary_condition_
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -681,6 +684,7 @@ $(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o	:	$(SOURCE_DIR)/bioelectr
 $(OBJECT_DIR)/data_point_routines.o	:	$(SOURCE_DIR)/data_point_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/computational_environment.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -698,6 +702,7 @@ $(OBJECT_DIR)/data_projection_routines.o	:	$(SOURCE_DIR)/data_projection_routine
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/mesh_routines.o\
 	$(OBJECT_DIR)/sorting.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/trees.o \
@@ -802,6 +807,26 @@ $(OBJECT_DIR)/Burgers_equation_routines.o	:	$(SOURCE_DIR)/Burgers_equation_routi
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/characteristic_equation_routines.o	:	$(SOURCE_DIR)/characteristic_equation_routines.f90 \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -993,6 +1018,7 @@ $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_rou
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/field_IO_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
@@ -1009,6 +1035,7 @@ $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_rou
 
 $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routines.f90 \
 	$(OBJECT_DIR)/Burgers_equation_routines.o \
+	$(OBJECT_DIR)/characteristic_equation_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
 	$(OBJECT_DIR)/Darcy_pressure_equations_routines.o \
 	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
@@ -1117,14 +1144,34 @@ $(OBJECT_DIR)/history_routines.o	:	$(SOURCE_DIR)/history_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/interface_operators_routines.o	:	$(SOURCE_DIR)/interface_operators_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_conditions_constants.o \
+	$(OBJECT_DIR)/interface_equations_routines.o \
+	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_matrices_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/interface_routines.o	:	$(SOURCE_DIR)/interface_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+  $(OBJECT_DIR)/data_point_routines.o \
+  $(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
@@ -1141,6 +1188,7 @@ $(OBJECT_DIR)/interface_conditions_routines.o	:	$(SOURCE_DIR)/interface_conditio
 	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
 	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_operators_routines.o \
 	$(OBJECT_DIR)/interface_matrices_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1177,6 +1225,7 @@ $(OBJECT_DIR)/interface_matrices_routines.o	:	$(SOURCE_DIR)/interface_matrices_r
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
@@ -1443,6 +1492,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
@@ -1537,7 +1587,9 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/fitting_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/interface_conditions_routines.o \
+	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
@@ -1733,6 +1785,7 @@ PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
 PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
 PYTHON_WRAPPER_OBJ = $(OBJECT_DIR)/opencmiss_wrap.o
 PYTHON_INCLUDES = $(shell python-config --includes)
+NUMPY_INCLUDE = $(shell python $(OC_CM_GLOBAL_ROOT)/utils/numpy_include.py)
 
 python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO) python_cp
 
@@ -1743,17 +1796,18 @@ python_cp: $(PYTHON_MODULE_SO)
 	cp $(PYTHON_MODULE_SO) $(PYTHON_MODULE_SO_INSTALL)
 
 $(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
-	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) SWIG $@
+	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) SWIG $@
 
-$(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py $(SOURCE_DIR)/opencmiss.f90
-	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
+$(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py \
+	$(SOURCE_DIR)/opencmiss.f90 $(BINDINGS_DIR)/python/extra_content.py
+	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
 
-$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
+$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
 # Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
 	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm opencmiss_swig.py )
 
 $(PYTHON_WRAPPER_OBJ): $(PYTHON_WRAPPER)
-	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o $(PYTHON_WRAPPER_OBJ) )
+	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -I$(NUMPY_INCLUDE) -o $(PYTHON_WRAPPER_OBJ) )
 
 $(PYTHON_MODULE_SO): $(LIBRARY) $(PYTHON_WRAPPER_OBJ) $(OBJECTS)
 	( cd $(BINDINGS_DIR)/python && $(FC) $(PYTHON_WRAPPER_OBJ) $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
@@ -1774,22 +1828,7 @@ clobber: clean
 	rm -f $(LIBRARY)
 
 externallibs:
-	$(MAKE) --no-print-directory -f $(EXTERNAL_CM_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI)
-
-debug opt debug64 opt64:
-	$(MAKE) --no-print-directory DEBUG=$(DEBUG) ABI=$(ABI)
-
-debug debug64: DEBUG=true
-opt opt64: DEBUG=false
-ifneq (,$(filter $(MACHNAME),ia64 x86_64))# ia64 or x86_64
-   debug opt: ABI=64
-else
-   debug opt: ABI=32
-endif
-debug64 opt64: ABI=64
-
-all: debug opt
-all64: debug64 opt64
+	$(MAKE) --no-print-directory -f $(UTILS_ROOT)/Makefile DEBUG=$(DEBUG) ABI=$(ABI)
 
 ifndef SIZE
   SIZE=small
@@ -1808,7 +1847,7 @@ test: main
 	@echo "Please go to http://readthedocs.org/docs/nose/ for details."
 	@echo "For detailed logfiles, go to <OPENCMISS_ROOT>/build/logs directory."
 	@echo "================================================================================================"
-	COMPILER=$(COMPILER) SIZE=${SIZE} DIR=$(DIR) ABI=${ABI} nosetests ${OPENCMISSEXAMPLES_ROOT}/noseMain.py:test_example
+	COMPILER=$(COMPILER) SIZE=${SIZE} DIR=$(DIR) ABI=${ABI} python ${OPENCMISSEXAMPLES_ROOT}/scripts/run_tests.py
 
 #-----------------------------------------------------------------------------
 
@@ -1826,7 +1865,7 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo "	MPI=(mpich2|intel|openmpi|mvapich2|cray)"
+	@echo "	MPI=(mpich|mpich2|intel|openmpi|mvapich2|cray)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
@@ -1866,3 +1905,8 @@ help:
 	@echo "		Build, execute and check for test."
 	@echo
 
+#-----------------------------------------------------------------------------
+# Aliases
+#-----------------------------------------------------------------------------
+
+include $(OCE_MAKEINC_ROOT)/Makefile_Aliases.inc
