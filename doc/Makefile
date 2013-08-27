@@ -11,11 +11,13 @@ relocate:
 	mv notes/OpenCMISSNotes doxy/latexhtml
 	mv doxygen/Programmer/html doxy/programmer
 	mv doxygen/User/html doxy/user
+	mv doxygen/Python/html doxy/python
 
 install:
 	cd doxygen; \
 	doxygen Doxyfile; \
-	doxygen Doxyfile_User
+	doxygen Doxyfile_User; \
+	doxygen Doxyfile_Python
 	cd notes; \
 	./Latex_make.sh clean; \
 	./Latex_make.sh pdf; \
