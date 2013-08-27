@@ -8607,7 +8607,7 @@ CONTAINS
               reynoldsNumber=maxVelocitySUPG*lengthScale*rhoParameter/muParameter
               pecletNumber=reynoldsNumber*maxVelocitySUPG*lengthScale
               !Store element (cell) Reynolds number
-              CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & elementNumber,3,reynoldsNumber,err,error,*999)
               IF(pecletNumber.GT.ZERO_TOLERANCE) THEN
                 IF(pecletNumber.GT.100) THEN
