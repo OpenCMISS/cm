@@ -737,9 +737,9 @@ CONTAINS
                                                   DO column_local_derivative_idx=1,COLUMN_BASIS% &
                                                     & NUMBER_OF_DERIVATIVES(column_local_node_idx)
                                                     column_derivative=COLUMN_DOMAIN_ELEMENTS%ELEMENTS(interface_element_idx)% &
-                                                      & ELEMENT_DERIVATIVES(1,column_local_derivative_idx,column_local_node_idx)
+                                                      & ELEMENT_DERIVATIVES(column_local_derivative_idx,column_local_node_idx)
                                                     column_version=COLUMN_DOMAIN_ELEMENTS%ELEMENTS(interface_element_idx)% &
-                                                      & ELEMENT_DERIVATIVES(2,column_local_derivative_idx,column_local_node_idx)
+                                                      & elementVersions(column_local_derivative_idx,column_local_node_idx)
                                                     local_column=COLUMN_VARIABLE%COMPONENTS(column_component_idx)% &
                                                       & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(column_node)% &
                                                       & DERIVATIVES(column_derivative)%VERSIONS(column_version)
@@ -783,9 +783,9 @@ CONTAINS
                                                           DO row_local_derivative_idx=1,ROW_BASIS% &
                                                             & NUMBER_OF_DERIVATIVES(row_local_node_idx)
                                                             row_derivative=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
-                                                              & ELEMENT_DERIVATIVES(1,row_local_derivative_idx,row_local_node_idx)
+                                                              & ELEMENT_DERIVATIVES(row_local_derivative_idx,row_local_node_idx)
                                                             row_version=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
-                                                              & ELEMENT_DERIVATIVES(2,row_local_derivative_idx,row_local_node_idx)
+                                                              & elementVersions(row_local_derivative_idx,row_local_node_idx)
                                                             local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)% &
                                                               & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(row_node)% &
                                                               & DERIVATIVES(row_derivative)%VERSIONS(row_version)
