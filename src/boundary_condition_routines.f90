@@ -2201,6 +2201,9 @@ CONTAINS
             SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%INTERPOLATION_TYPE)
             CASE(FIELD_NODE_BASED_INTERPOLATION)
               nodeNumber=rhsVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,localDofNyy)
+              IF(.NOT.ASSOCIATED(topology%NODES%NODES)) THEN
+                CALL FlagError("Topology nodes are not associated.",err,error,*999)
+              END IF
               IF(topology%NODES%NODES(nodeNumber)%BOUNDARY_NODE) THEN
                 SELECT CASE(rhsVariable%COMPONENTS(componentNumber)%DOMAIN%NUMBER_OF_DIMENSIONS)
                 CASE(1)
@@ -2226,6 +2229,9 @@ CONTAINS
                 CASE(2)
                   ! Loop over all lines for this node and find any DOFs that have a Neumann point condition set
                   DO lineIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_LINES
+                    IF(.NOT.ALLOCATED(topology%LINES%LINES)) THEN
+                      CALL FlagError("Topology lines have not been calculated.",err,error,*999)
+                    END IF
                     line=>topology%LINES%LINES(topology%NODES%NODES(nodeNumber)%NODE_LINES(lineIdx))
                     IF(.NOT.line%BOUNDARY_LINE) CYCLE
                     DO nodeIdx=1,line%BASIS%NUMBER_OF_NODES
@@ -2258,6 +2264,9 @@ CONTAINS
                 CASE(3)
                   ! Loop over all faces for this node and find any DOFs that have a Neumann point condition set 
                   DO faceIdx=1,topology%NODES%NODES(nodeNumber)%NUMBER_OF_NODE_FACES
+                    IF(.NOT.ALLOCATED(topology%faces%faces)) THEN
+                      CALL FlagError("Topology faces have not been calculated.",err,error,*999)
+                    END IF
                     face=>topology%FACES%FACES(topology%NODES%NODES(nodeNumber)%NODE_FACES(faceIdx))
                     IF(.NOT.face%BOUNDARY_FACE) CYCLE
                     DO nodeIdx=1,face%BASIS%NUMBER_OF_NODES
@@ -2486,6 +2495,7 @@ CONTAINS
     INTEGER(INTG) :: faceIdx,lineIdx,nodeIdx,derivIdx,gaussIdx
     INTEGER(INTG) :: faceNumber,lineNumber
     INTEGER(INTG) :: ms,os,nodeNumber,derivativeNumber,versionNumber
+    LOGICAL :: dependentGeometry
     REAL(DP) :: integratedValue,phim,phio
     TYPE(BoundaryConditionsNeumannType), POINTER :: neumannConditions
     TYPE(BASIS_TYPE), POINTER :: basis
@@ -2518,10 +2528,8 @@ CONTAINS
       IF(.NOT.ASSOCIATED(rhsVariable)) THEN
         CALL FLAG_ERROR("Field variable for RHS boundary conditions is not associated.",err,error,*999)
       END IF
-      geometricField=>rhsVariable%field%GEOMETRIC_FIELD
-      IF(.NOT.ASSOCIATED(geometricField)) THEN
-        CALL FLAG_ERROR("Geometric field for the rhs field variable is not associated.",err,error,*999)
-      END IF
+
+      CALL Field_GeometricGeneralFieldGet(rhsVariable%field,geometricField,dependentGeometry,err,error,*999)
 
       CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(neumannConditions%integrationMatrix,0.0_DP,err,error,*999)
 
@@ -2607,7 +2615,7 @@ CONTAINS
                   CALL FLAG_ERROR("Line basis default quadrature scheme is not associated.",err,error,*999)
                 END IF
                 CALL FIELD_INTERPOLATION_PARAMETERS_LINE_GET(FIELD_VALUES_SET_TYPE,lineNumber, &
-                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                 IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
                   CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_LINE_GET(lineNumber, &
                     & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
@@ -2628,7 +2636,7 @@ CONTAINS
                     ! Loop over line gauss points, adding gauss weighted terms to the integral
                     DO gaussIdx=1,quadratureScheme%NUMBER_OF_GAUSS
                       CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
-                        & interpolatedPoints(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+                        & interpolatedPoints(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                       CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_LINE_TYPE, &
                         & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
 
@@ -2702,7 +2710,7 @@ CONTAINS
                   CALL FLAG_ERROR("Face basis default quadrature scheme is not associated.",err,error,*999)
                 END IF
                 CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
-                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+                  & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                 IF(rhsVariable%FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
                   CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_FACE_GET(faceNumber, &
                     & scalingParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
@@ -2723,7 +2731,7 @@ CONTAINS
                     ! Loop over line gauss points, adding gauss weighted terms to the integral
                     DO gaussIdx=1,quadratureScheme%NUMBER_OF_GAUSS
                       CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
-                        & interpolatedPoints(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+                        & interpolatedPoints(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
                       CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE, &
                         & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
 
@@ -2785,6 +2793,11 @@ CONTAINS
       CALL FIELD_PARAMETER_SET_UPDATE_START(rhsVariable%FIELD,rhsVariable%VARIABLE_TYPE,FIELD_INTEGRATED_NEUMANN_SET_TYPE, &
         & err,error,*999)
       IF(DIAGNOSTICS1) THEN
+        IF(dependentGeometry) THEN
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Using dependent field geometry",err,error,*999)
+        ELSE
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Using undeformed geometry",err,error,*999)
+        END IF
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfNeumann,6,6,neumannConditions%setDofs, &
           & '("  setDofs:",6(X,I8))', '(10X,6(X,I8))',err,error,*999)
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Neumann point values",err,error,*999)
