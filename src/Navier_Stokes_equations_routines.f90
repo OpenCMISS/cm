@@ -9587,7 +9587,7 @@ CONTAINS
           derivativeIdx=1
           versionIdx=1
           DO componentIdx=1,2
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, & 
+            CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, & 
              & derivativeIdx,nodeIdx,componentIdx,normalWave(componentIdx),err,error,*999)
           ENDDO
           !check for non-zero wave direction
@@ -9652,15 +9652,15 @@ CONTAINS
              & Fr,err,error,*999)
             ! A0
             componentIdx=8
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,derivativeIdx,nodeIdx,componentIdx,A0_PARAM,err,error,*999)  
             ! E
             componentIdx=9
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,derivativeIdx,nodeIdx,componentIdx,E_PARAM,err,error,*999)                
             ! H0
             componentIdx=10
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,derivativeIdx,nodeIdx,componentIdx,H0_PARAM,err,error,*999)                
             Beta = (4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
          
@@ -9668,40 +9668,40 @@ CONTAINS
             ! Get qBoundary- 1D q value at node
             versionIdx=1
             componentIdx=1
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
              & derivativeIdx,nodeIdx,componentIdx,qBoundary,err,error,*999)
             ! Get qPrevious- previous 1D q value at node
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
               & versionIdx,derivativeIdx,nodeIdx,componentIdx,qPrevious,err,error,*999)
             ! Get aBoundary- 1D area value at node
             componentIdx=2
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
               & derivativeIdx,nodeIdx,componentIdx,aBoundary,err,error,*999)
             
             ! Get W- characteristic wave values calculated by the characteristic equations (V dependent variable)
             versionIdx=1
             DO componentIdx=1,2
-              CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
                 & derivativeIdx,nodeIdx,componentIdx,W(componentIdx),err,error,*999)
             ENDDO
 
             ! Get pCellML- pressure returned from CellML 0D model
             componentIdx=1
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
              & derivativeIdx,nodeIdx,componentIdx,pCellML,err,error,*999)
             ! Get pPrevious- previous pressure set by CellML
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
               & versionIdx,derivativeIdx,nodeIdx,componentIdx,pPrevious,err,error,*999)
 
             ! --- M a t e r i a l s   P a r a m e t e r s --- !
             ! Get pVesselWall- intrinsic material parameter based on vessel
             versionIdx=1
             componentIdx=1
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
              & derivativeIdx,nodeIdx,componentIdx,pVesselWall,err,error,*999)
             componentIdx=2
             ! Get pExternal - pressure external to the given vessel
-            CALL FIELD_PARAMETER_SET_GET_LOCAL_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
               & derivativeIdx,nodeIdx,componentIdx,pExternal,err,error,*999)
 
             pressure = pCellML-pExternal+pVesselWall
