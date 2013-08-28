@@ -4208,15 +4208,25 @@ CONTAINS
     REAL(DP) :: Value
     REAL(DP), ALLOCATABLE, INTENT(OUT) :: BoundaryValues(:)
     INTEGER(INTG) :: BoundaryCondition,MaterialSpecification,arraySize,NodeNumber,I,ComponentNumber
+    INTEGER(INTG), PARAMETER :: Blood=1
     INTEGER(INTG), PARAMETER :: Plate2D=2
     INTEGER(INTG),PARAMETER :: Plate3D=3
     INTEGER(Intg), ALLOCATABLE, INTENT(OUT) :: InletNodes(:)
-    REAL(DP) :: Time,StopTime
+    REAL(DP) :: Time,StopTime,Y
     
     MaterialSpecification=Option
     
     IF(SolverType==3) THEN
       SELECT CASE(MaterialSpecification)
+      CASE(Blood)
+        ALLOCATE(InletNodes(5))
+        InletNodes=(/29,7,43,13,58/)
+        ALLOCATE(BoundaryValues(5))
+        Y=0.0_DP
+        DO I=1,SIZE(InletNodes)
+          Y=Y+0.5_DP
+          BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
+        ENDDO
       CASE(Plate2D,Plate3D)
         IF(MaterialSpecification==Plate2D) THEN
           OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &

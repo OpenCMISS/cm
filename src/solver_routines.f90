@@ -10253,7 +10253,8 @@ CONTAINS
       & solver_matrix_idx,residual_variable_dof,variable_boundary_condition,variable_type,equations_matrix_idx2, &
       & variable_idx,variable_global_dof,variable_dof,equations_row_number2,equations_matrix_number,DEPENDENT_VARIABLE_TYPE, &
       & equations_column_number,dirichlet_row,dirichlet_idx, &
-      & interface_condition_idx,interface_matrix_idx,interface_column_number
+      & interface_condition_idx,interface_matrix_idx,interface_column_number,interface_row_number, &
+      & interface_variable_type,number_of_interface_matrices
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR,RESIDUAL_VALUE, &
       & LINEAR_VALUE,LINEAR_VALUE_SUM,MASS_MATRIX_COEFFICIENT,RHS_VALUE,row_coupling_coefficient,PREVIOUS_RESIDUAL_VALUE, &
@@ -10268,7 +10269,8 @@ CONTAINS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DEPENDENT_VECTOR,DYNAMIC_TEMP_VECTOR,EQUATIONS_RHS_VECTOR,DISTRIBUTED_SOURCE_VECTOR, &
       & LINEAR_TEMP_VECTOR,PREDICTED_MEAN_ACCELERATION_VECTOR,PREDICTED_MEAN_DISPLACEMENT_VECTOR,PREDICTED_MEAN_VELOCITY_VECTOR, &
-      & SOLVER_RHS_VECTOR, SOLVER_RESIDUAL_VECTOR,RESIDUAL_VECTOR,INCREMENTAL_VECTOR
+      & SOLVER_RHS_VECTOR, SOLVER_RESIDUAL_VECTOR,RESIDUAL_VECTOR,INCREMENTAL_VECTOR,INTERFACE_TEMP_VECTOR, &
+      & LAGRANGE_VECTOR
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -10289,7 +10291,7 @@ CONTAINS
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,LAGRANGE_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE,INTERFACE_VARIABLE
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -11267,7 +11269,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
-              !        
+              !!!! TODO TODO !!!! ???
                       !Add in any rows from any interface conditions
                       DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
                         INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
@@ -11568,6 +11570,213 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
+                  !
+                      !Loop over the interface conditions
+                      DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+                        INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+                        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+                          LAGRANGE_FIELD=>INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD
+                          IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
+                            INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+                            IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+                              INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
+                              IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
+                                INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
+                                IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+                                  SELECT CASE(INTERFACE_CONDITION%METHOD)
+                                  CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                                    number_of_interface_matrices=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
+                                  CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                                    number_of_interface_matrices=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES-1
+                                  ENDSELECT
+                                  !Calculate the contributions from any interface matrices
+                                  DO interface_matrix_idx=1,number_of_interface_matrices
+                                    !Calculate the interface matrix-Lagrange vector product residual contribution
+                                    INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR
+                                    IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
+                                      interface_variable_type=INTERFACE_MAPPING%LAGRANGE_VARIABLE_TYPE
+                                      INTERFACE_VARIABLE=>INTERFACE_MAPPING%LAGRANGE_VARIABLE
+                                      IF(ASSOCIATED(INTERFACE_VARIABLE)) THEN
+                                        INTERFACE_TEMP_VECTOR=>INTERFACE_MATRIX%TEMP_VECTOR
+                                        !Initialise the linear temporary vector to zero
+                                        CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(INTERFACE_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                        NULLIFY(LAGRANGE_VECTOR)
+                                        CALL FIELD_PARAMETER_SET_VECTOR_GET(LAGRANGE_FIELD,interface_variable_type, &
+                                          & FIELD_VALUES_SET_TYPE,LAGRANGE_VECTOR,ERR,ERROR,*999)
+                                        
+                                    !
+                                        SELECT CASE(INTERFACE_MATRIX%INTERFACE_MATRIX_TIME_DEPENDENCE_TYPE)
+                                        CASE(INTERFACE_MATRIX_STATIC)
+                                          MatrixCoefficients(1)=STIFFNESS_MATRIX_COEFFICIENT
+                                        CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
+                                          MatrixCoefficients(1)=DAMPING_MATRIX_COEFFICIENT
+                                        CASE DEFAULT
+                                          CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
+                                        END SELECT
+                                        IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
+                                          SELECT CASE(INTERFACE_MATRIX%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE)
+                                          CASE(INTERFACE_MATRIX_STATIC)
+                                            MatrixCoefficients(2)=STIFFNESS_MATRIX_COEFFICIENT
+                                          CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
+                                            MatrixCoefficients(2)=DAMPING_MATRIX_COEFFICIENT
+                                          CASE DEFAULT
+                                            CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
+                                          END SELECT
+                                        ELSE
+                                          MatrixCoefficients(2)=0.0_DP
+                                        ENDIF
+                                    !
+                                        
+                                        
+                                       ! CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                       !   & INTERFACE_MATRIX%MATRIX,LAGRANGE_VECTOR,INTERFACE_TEMP_VECTOR,ERR,ERROR,*999)
+                                        CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
+                                          & MatrixCoefficients(1),INTERFACE_MATRIX%MATRIX,LAGRANGE_VECTOR,INTERFACE_TEMP_VECTOR, &
+                                          & ERR,ERROR,*999)
+                                        
+                                        !Add interface matrix residual contribution to the solver residual
+                                        DO interface_row_number=1,INTERFACE_MATRIX%NUMBER_OF_ROWS
+                                          IF(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                            & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
+                                            & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number)%NUMBER_OF_SOLVER_ROWS>0) THEN
+                                            !Loop over the solver rows associated with this interface residual row
+                                            !Currently earch interface matrix row has only one corresponding solver row number & coupling coefficient
+                                            solver_row_number=SOLVER_MAPPING% & 
+                                              & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                              & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
+                                              & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number)%SOLVER_ROW
+                                            row_coupling_coefficient=SOLVER_MAPPING% &
+                                              & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                              & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
+                                              & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number)%COUPLING_COEFFICIENT
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(INTERFACE_TEMP_VECTOR,interface_row_number, &
+                                              & RESIDUAL_VALUE,ERR,ERROR,*999)
+                                            VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                            !Add in nonlinear residual values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDIF
+                                        ENDDO !interface_row_number
+                                      ELSE
+                                        CALL FLAG_ERROR("Interface variable is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                      !Calculate the transposed interface matrix-dependent variable product residual contribution
+                                      dependent_variable_type=INTERFACE_MAPPING% &
+                                        & INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx)%VARIABLE_TYPE
+                                      DEPENDENT_VARIABLE=>INTERFACE_MAPPING% &
+                                        & INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx)%VARIABLE
+                                      IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                                        INTERFACE_TEMP_VECTOR=>INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR
+                                        !Initialise the linear temporary vector to zero
+                                        CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(INTERFACE_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                        NULLIFY(DEPENDENT_VECTOR)
+                                        DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
+                                        CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,dependent_variable_type, &
+                                          & FIELD_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
+                                        
+                                       ! CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                       !   & INTERFACE_MATRIX%MATRIX_TRANSPOSE,DEPENDENT_VECTOR,INTERFACE_TEMP_VECTOR,ERR,ERROR,*999)
+                                        CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
+                                          & MatrixCoefficients(2),INTERFACE_MATRIX%MATRIX_TRANSPOSE,DEPENDENT_VECTOR, &
+                                          & INTERFACE_TEMP_VECTOR,ERR,ERROR,*999)
+                                        
+                                        !Add interface matrix residual contribution to the solver residual.
+                                        !The number of columns in the interface matrix is equivalent to the number of rows of the transposed interface matrices
+                                        DO interface_row_number=1,INTERFACE_MATRICES%NUMBER_OF_COLUMNS
+                                          IF(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                            & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(interface_row_number)% &
+                                            & NUMBER_OF_SOLVER_ROWS>0) THEN
+                                            !Loop over the solver rows associated with this interface residual row
+                                            !Currently earch interface matrix row has only one corresponding solver row number & coupling coefficient
+                                            solver_row_number=SOLVER_MAPPING% & 
+                                              & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                              & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(interface_row_number)%SOLVER_ROW
+                                            row_coupling_coefficient=SOLVER_MAPPING% & 
+                                              & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                              & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(interface_row_number)%COUPLING_COEFFICIENT
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(INTERFACE_TEMP_VECTOR,interface_row_number, &
+                                              & RESIDUAL_VALUE,ERR,ERROR,*999)
+                                            VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                            !Add in nonlinear residual values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDIF
+                                        ENDDO !interface_row_number
+                                      ELSE
+                                        CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      LOCAL_ERROR="Interface matrix is not associated for linear matrix number "// &
+                                        & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDDO !interface_matrix_idx
+                                  SELECT CASE(INTERFACE_CONDITION%METHOD)
+                                  CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                                    interface_matrix_idx=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
+                                    !Calculate the Lagrange-Lagrange vector product residual contribution from the penalty term
+                                    INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR
+                                    IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
+                                      interface_variable_type=INTERFACE_MAPPING%LAGRANGE_VARIABLE_TYPE
+                                      INTERFACE_VARIABLE=>INTERFACE_MAPPING%LAGRANGE_VARIABLE
+                                      IF(ASSOCIATED(INTERFACE_VARIABLE)) THEN
+                                        INTERFACE_TEMP_VECTOR=>INTERFACE_MATRIX%TEMP_VECTOR
+                                        !Initialise the linear temporary vector to zero
+                                        CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(INTERFACE_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                        NULLIFY(LAGRANGE_VECTOR)
+                                        CALL FIELD_PARAMETER_SET_VECTOR_GET(LAGRANGE_FIELD,interface_variable_type, &
+                                          & FIELD_VALUES_SET_TYPE,LAGRANGE_VECTOR,ERR,ERROR,*999)
+                                        CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                          & INTERFACE_MATRIX%MATRIX,LAGRANGE_VECTOR,INTERFACE_TEMP_VECTOR,ERR,ERROR,*999)
+                                        !Add interface matrix residual contribution to the solver residual
+                                        DO interface_row_number=1,INTERFACE_MATRIX%NUMBER_OF_ROWS
+                                          IF(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                            & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
+                                            & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number)%NUMBER_OF_SOLVER_ROWS>0) THEN
+                                            !Loop over the solver rows associated with this interface residual row
+                                            !Currently earch interface matrix row has only one corresponding solver row number & coupling coefficient
+                                            solver_row_number=SOLVER_MAPPING% & 
+                                              & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                              & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
+                                              & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number)%SOLVER_ROW
+                                            row_coupling_coefficient=SOLVER_MAPPING% &
+                                              & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                                              & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
+                                              & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number)%COUPLING_COEFFICIENT
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(INTERFACE_TEMP_VECTOR,interface_row_number, &
+                                              & RESIDUAL_VALUE,ERR,ERROR,*999)
+                                            VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                            !Add in nonlinear residual values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDIF
+                                        ENDDO !interface_row_number
+                                      ELSE
+                                        CALL FLAG_ERROR("Interface variable is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      LOCAL_ERROR="Interface matrix is not associated for linear matrix number "// &
+                                        & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDSELECT
+                                ELSE
+                                  CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Interface Lagrange field is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !interface_condition_idx
+                  !
                       !Start the update the solver residual vector values
                       CALL DISTRIBUTED_VECTOR_UPDATE_START(SOLVER_RESIDUAL_VECTOR,ERR,ERROR,*999)
 

@@ -5536,11 +5536,86 @@ CONTAINS
                         CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                           & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                         !Get update for time-dependent boundary conditions
-                        IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER/=3.AND.CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER/=2) THEN
-                          CALL FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS( &
-                            & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,SOLVER%SOLVE_TYPE,BOUNDARY_VALUES, & 
-                            & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
-                            & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME,1.0_DP)
+                        IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==1) THEN
+                          
+                          
+                          
+                          
+                          ComponentBC=1
+                          CALL FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
+                            & SOLVER%SOLVE_TYPE,InletNodes, &
+                            & BoundaryValues,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
+                            & CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME)
+                          DO node_idx=1,SIZE(InletNodes)
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,InletNodes(node_idx),ComponentBC, &
+                              & BoundaryValues(node_idx),ERR,ERROR,*999)
+                          ENDDO
+                          
+                          
+                          
+                          
+                          
+                      !    CALL FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS( &
+                      !      & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,SOLVER%SOLVE_TYPE,BOUNDARY_VALUES, & 
+                      !      & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
+                      !      & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME,1.0_DP)
+                      !      
+                      !      
+                      !      
+                      !      
+                      !      DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                      !    variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                      !    FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                      !    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                      !      DO component_idx=1,NUMBER_OF_DIMENSIONS!FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                      !        DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                      !        IF(ASSOCIATED(DOMAIN)) THEN
+                      !          IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                      !            DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                      !            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                      !              !Loop over the local nodes excluding the ghosts.
+                      !              DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                      !                DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                      !                  !Default to version 1 of each node derivative
+                      !                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                      !                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                      !                  BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                      !                    & CONDITION_TYPES(local_ny)
+                      !                  !Now update boundary conditions for fixed inlet nodes and moved wall nodes
+                      !                  IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                      !                    !NOTE This should be UPDATE_LOCAL_DOF and not ADD_LOCAL_DOF since we have a modified
+                      !                    ! no-slip condition on the fluid structure interface
+                      !                    CALL FLAG_ERROR("Prescribed velocities not implemented for FSI.",Err,Error,*999)
+                      !          !          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                      !          !            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                      !          !            & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
+                      !                  ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                      !                    IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==3.OR.CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2 &
+                      !                      & .AND.component_idx==ComponentBC.AND.deriv_idx==1.AND.variable_idx==1) THEN
+                      !                      DO M=1,SIZE(InletNodes)
+                      !                        IF(InletNodes(M)==node_idx) THEN
+                      !                          !TODO don't modify pointers from data_get
+                      !                          BOUNDARY_VALUES(local_ny)=BoundaryValues(M)
+                      !                        ENDIF
+                      !                      ENDDO
+                      !                    ENDIF
+                      !                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                      !                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                      !                      & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
+                      !                  END IF
+                      !                ENDDO !deriv_idx
+                      !              ENDDO !node_idx
+                      !            ENDIF
+                      !          ENDIF
+                      !        ENDIF
+                      !      ENDDO !component_idx
+                      !    ENDIF
+                      !  ENDDO !variable_idx
+                        
+                        
+                            
+                            
                         ELSE
                           IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2) THEN
                             ComponentBC=1
@@ -5551,55 +5626,20 @@ CONTAINS
                             & SOLVER%SOLVE_TYPE,InletNodes, &
                             & BoundaryValues,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME)
+                          
+                          DO node_idx=1,SIZE(InletNodes)
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,InletNodes(node_idx),ComponentBC, &
+                              & BoundaryValues(node_idx),ERR,ERROR,*999)
+                          ENDDO
+                          
+                          
+                          
+                          
+                          
+                          
                         ENDIF
-                        DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                          variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                          FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                            DO component_idx=1,NUMBER_OF_DIMENSIONS!FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                              DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                              IF(ASSOCIATED(DOMAIN)) THEN
-                                IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                  IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                    !Loop over the local nodes excluding the ghosts.
-                                    DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                      DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                        !Default to version 1 of each node derivative
-                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                          & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                          & CONDITION_TYPES(local_ny)
-                                        !Now update boundary conditions for fixed inlet nodes and moved wall nodes
-                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                                          !NOTE This should be UPDATE_LOCAL_DOF and not ADD_LOCAL_DOF since we have a modified
-                                          ! no-slip condition on the fluid structure interface
-                                          CALL FLAG_ERROR("Prescribed velocities not implemented for FSI.",Err,Error,*999)
-                                !          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                !            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                !            & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
-                                        ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                                          IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==3.OR.CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2 &
-                                            & .AND.component_idx==ComponentBC.AND.deriv_idx==1.AND.variable_idx==1) THEN
-                                            DO M=1,SIZE(InletNodes)
-                                              IF(InletNodes(M)==node_idx) THEN
-                                                !TODO don't modify pointers from data_get
-                                                BOUNDARY_VALUES(local_ny)=BoundaryValues(M)
-                                              ENDIF
-                                            ENDDO
-                                          ENDIF
-                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                            & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-                                        END IF
-                                      ENDDO !deriv_idx
-                                    ENDDO !node_idx
-                                  ENDIF
-                                ENDIF
-                              ENDIF
-                            ENDDO !component_idx
-                          ENDIF
-                        ENDDO !variable_idx
+                        
                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                           & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
