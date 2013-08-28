@@ -5541,6 +5541,7 @@ CONTAINS
                           
                           
                           
+                          
                           ComponentBC=1
                           CALL FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
                             & SOLVER%SOLVE_TYPE,InletNodes, &

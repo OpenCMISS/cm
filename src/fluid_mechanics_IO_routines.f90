@@ -4227,6 +4227,7 @@ CONTAINS
           Y=Y+0.5_DP
           BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
         ENDDO
+        
       CASE(Plate2D,Plate3D)
         IF(MaterialSpecification==Plate2D) THEN
           OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
