@@ -1957,7 +1957,7 @@ CONTAINS
 
             !Interpolate p(appl) at gauss point
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,FACE_INTERPOLATED_POINT, &
-              & ERR,ERROR,*999)
+              & ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
             PRESSURE_GAUSS=FACE_INTERPOLATED_POINT%VALUES(normal_component_idx,1)    !Surface pressure at this gauss point
             IF(DECOMP_FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS            !Crucial detail here
 
