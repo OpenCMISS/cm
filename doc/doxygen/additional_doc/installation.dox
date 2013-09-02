@@ -48,6 +48,9 @@ You may also like to install additional packages for your Linux distribution to 
   - lapack-devel and lapack-static
   - omniORB-devel
   - papi-devel and papi-static
+  - SuperLU-devel
+  - suitesparse-devel and suitesparse-static
+  - scotch-devel
   - For MPICH2 (recommended for Fedora)
     - mpich2-devel
     - blacs-mpich2-devel and blacs-mpich2-static
@@ -57,6 +60,7 @@ You may also like to install additional packages for your Linux distribution to 
     - netcdf-fortran-mpich2-devel and netcdf-fortran-mpich2-static
   - For OpenMPI
     - openmpi-devel
+    - MUMPS-devel
     - blacs-openmpi-devel and blacs-openmpi-static
     - scalapack-openmpi-devel and scalapack-openmpi-static
     - hdf5-openmpi-devel and hdf5-openmpi-static

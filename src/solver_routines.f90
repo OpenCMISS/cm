@@ -708,7 +708,7 @@ CONTAINS
         SOLVER=>CELLML_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.TRUE.
-          CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
+          !CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -1296,8 +1296,8 @@ CONTAINS
     INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
       & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
       & STATE_END_DOF,state_idx,STATE_START_DOF
-    REAL(DP) :: INTERMEDIATES(MAX_NUMBER_INTERMEDIATES),PARAMETERS(MAX_NUMBER_PARAMETERS),RATES(MAX_NUMBER_STATES), &
-      & STATES(MAX_NUMBER_STATES)
+    REAL(DP) :: INTERMEDIATES(MAX(1,MAX_NUMBER_INTERMEDIATES)),PARAMETERS(MAX(1,MAX_NUMBER_PARAMETERS)), &
+      & RATES(MAX(1,MAX_NUMBER_STATES)),STATES(MAX(1,MAX_NUMBER_STATES))
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -1396,6 +1396,9 @@ CONTAINS
             !Dof components are continguous. Can pass data directly.
             IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
               !Mulitple models
+
+#ifdef USECELLML                    
+
               DO dof_idx=1,N
                 model_idx=MODELS_DATA(dof_idx)
                 IF(model_idx.GT.0) THEN
@@ -1404,20 +1407,85 @@ CONTAINS
                     NUMBER_STATES=MODEL%NUMBER_OF_STATE
                     NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
                     NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                    !Call RHS. Note some models might not have state, rates, intermediate or parameter data so call accordingly
+                    !to avoid indexing in to null pointers
+                    IF(NUMBER_STATES>0) THEN
+                      IF(NUMBER_INTERMEDIATES>0) THEN
+                        IF(NUMBER_PARAMETERS>0) THEN
+                          !We have state, intermediate and parameters in the model
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
                     
-#ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                      & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      & PARAMETER_END_DOF))
-#else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-#endif
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA( &
+                            & PARAMETER_START_DOF:PARAMETER_END_DOF))
+                        
+                        ELSE
+                          !We do not have parameters in the model
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS)
+                        
+                        ENDIF
+                      ELSE
+                        IF(NUMBER_PARAMETERS>0) THEN
+                          !We do not have intermediates in the model
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATES,PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
+                        
+                        ELSE
+                          !We do not have intermediates or parameters in the model
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATES,PARAMETERS)
+                        
+                       ENDIF
+                      ENDIF
+                    ELSE
+                      IF(NUMBER_INTERMEDIATES>0) THEN
+                        IF(NUMBER_PARAMETERS>0) THEN
+                          !We do not have any states in the model
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES, &
+                            & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA( &
+                            & PARAMETER_START_DOF:PARAMETER_END_DOF))
+                        ELSE
+                          !We do not have any states or parameters in the model
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES, &
+                            & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS)
+                          
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Invalid CellML model - there are no states or intermediates.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDIF
+
                     
                   ELSE
                     LOCAL_ERROR="CellML environment model is not associated for model index "// &
@@ -1427,34 +1495,129 @@ CONTAINS
                   ENDIF
                 ENDIF  !model_idx                
               ENDDO !dof_idx
+#else
+              CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
 
             ELSE
-              !One one model is used.
+              !One model is used.
               MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
               IF(ASSOCIATED(MODEL)) THEN
                 NUMBER_STATES=MODEL%NUMBER_OF_STATE
                 NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                DO dof_idx=1,N
-                  model_idx=MODELS_DATA(dof_idx)
-                  IF(model_idx.GT.0) THEN
-
-                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS                
+#ifdef USECELLML
+                !Call RHS. Note some models might not have state, rates, intermediate or parameter data so call accordingly
+                !to avoid referencing null pointers
+                IF(NUMBER_STATES>0) THEN
+                  IF(NUMBER_INTERMEDIATES>0) THEN
+                    IF(NUMBER_PARAMETERS>0) THEN
+                      !We have states, intermediate and parameters for the model
+                      DO dof_idx=1,N
+                        model_idx=MODELS_DATA(dof_idx)
+                        IF(model_idx.GT.0) THEN
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
                     
-#ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                      & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      & PARAMETER_END_DOF))
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA( &
+                            & PARAMETER_START_DOF:PARAMETER_END_DOF))
+                        ENDIF !model_idx
+                      ENDDO !dof_idx
+                    ELSE
+                      !We do not have parameters in the model
+                      DO dof_idx=1,N
+                        model_idx=MODELS_DATA(dof_idx)
+                        IF(model_idx.GT.0) THEN
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                   
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS)
+                        ENDIF !model_idx
+                      ENDDO !dof_idx
+                    
+                    ENDIF
+                  ELSE
+                    IF(NUMBER_PARAMETERS>0) THEN
+                      !We do not have any intermediates in the model
+                      DO dof_idx=1,N
+                        model_idx=MODELS_DATA(dof_idx)
+                        IF(model_idx.GT.0) THEN
+
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP, & 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATES,PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
+                        ENDIF !model_idx
+                      ENDDO !dof_idx
+                    ELSE
+                      !We do not have any intermediates or parameters in the model
+                      DO dof_idx=1,N
+                        model_idx=MODELS_DATA(dof_idx)
+                        IF(model_idx.GT.0) THEN
+
+                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                        
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,& 
+                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                            & RATES,INTERMEDIATES,PARAMETERS)
+                        ENDIF !model_idx
+                      ENDDO !dof_idx
+                    ENDIF
+                  ENDIF
+                ELSE
+                  IF(NUMBER_INTERMEDIATES>0) THEN
+                    IF(NUMBER_PARAMETERS>0) THEN
+                      !We do not have any states in the model
+                      DO dof_idx=1,N
+                        model_idx=MODELS_DATA(dof_idx)
+                        IF(model_idx.GT.0) THEN
+
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES, &
+                            & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA( &
+                            & PARAMETER_START_DOF:PARAMETER_END_DOF))
+                        ENDIF !model_idx
+                      ENDDO !dof_idx
+                    ELSE
+                      !We do not have any states or parameters the model
+                      DO dof_idx=1,N
+                        model_idx=MODELS_DATA(dof_idx)
+                        IF(model_idx.GT.0) THEN
+
+                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                     
+                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES, &
+                            & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS)
+                        ENDIF !model_idx           
+                      ENDDO !dof_idx
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Invalid CellML model - there are no states or intermediates.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
-                  ENDIF !model_idx    
-                ENDDO !dof_idx
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
                   & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
@@ -1903,8 +2066,8 @@ CONTAINS
     INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
       & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
       & STATE_END_DOF,state_idx,STATE_START_DOF
-    REAL(DP) :: INTERMEDIATES(MAX_NUMBER_INTERMEDIATES),PARAMETERS(MAX_NUMBER_PARAMETERS),RATES(MAX_NUMBER_STATES), &
-      & STATES(MAX_NUMBER_STATES),TIME
+    REAL(DP) :: INTERMEDIATES(MAX(1,MAX_NUMBER_INTERMEDIATES)),PARAMETERS(MAX(1,MAX_NUMBER_PARAMETERS)), &
+      & RATES(MAX(1,MAX_NUMBER_STATES)),STATES(MAX(1,MAX_NUMBER_STATES)),TIME
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -2022,18 +2185,64 @@ CONTAINS
                       NUMBER_STATES=MODEL%NUMBER_OF_STATE
                       NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
                       NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                      STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                      STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                      INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                      INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                      PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                      PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
 
 #ifdef USECELLML                    
-                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                        & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF), &
-                        & PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
+                      !Call RHS. Note some models might not have state, rates, intermediate or parameter data so call accordingly
+                      !to avoid referencing null pointers
+                      IF(NUMBER_STATES>0) THEN
+                        IF(NUMBER_INTERMEDIATES>0) THEN
+                          IF(NUMBER_PARAMETERS>0) THEN
+                            !We have states, intermediate and parameters for the model
+                     
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                            INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                            INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                            PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                            PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                            
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF: &
+                              & STATE_END_DOF),RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF), &
+                              & PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
 
+                          ELSE
+                            !We do not have parameters in the model
+                     
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                            INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                            INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                            
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF: &
+                              & STATE_END_DOF),RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF), &
+                              & PARAMETERS)
+
+                           ENDIF
+                        ELSE
+                          IF(NUMBER_PARAMETERS>0) THEN
+                            !We do not have intermediates in the model
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                            PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                            PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                            
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF: &
+                              & STATE_END_DOF),RATES,INTERMEDIATES,PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
+
+                          ELSE
+                            !We do not have intermediates or parameters in the model
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                          
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF: &
+                              & STATE_END_DOF),RATES,INTERMEDIATES,PARAMETERS)
+
+                          ENDIF
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
+                      ENDIF
+                        
 #else
                       CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
@@ -2061,34 +2270,119 @@ CONTAINS
                 NUMBER_STATES=MODEL%NUMBER_OF_STATE
                 NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
                 NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                TIME=START_TIME
-                DO WHILE(TIME<=END_TIME)
-                  DO dof_idx=1,N
-                    model_idx=MODELS_DATA(dof_idx)
-                    IF(model_idx.GT.0) THEN
-
-                      STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                      STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                      INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                      INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                      PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                      PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
-                    
 #ifdef USECELLML                    
-                      CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
-                        & STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
-                        & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                        & PARAMETER_END_DOF))
+
+                !Call RHS. Note some models might not have state, rates, intermediate or parameter data so call accordingly
+                !to avoid referencing null pointers
+                IF(NUMBER_STATES>0) THEN
+                  IF(NUMBER_INTERMEDIATES>0) THEN
+                    IF(NUMBER_PARAMETERS>0) THEN
+                      !We have states, intermediate and parameters for the model
+                      
+                      TIME=START_TIME
+                      DO WHILE(TIME<=END_TIME)
+                        DO dof_idx=1,N
+                          model_idx=MODELS_DATA(dof_idx)
+                          IF(model_idx.GT.0) THEN
+
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                            INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                            INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                            PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                            PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, &
+                              & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                              & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA( &
+                              & PARAMETER_START_DOF:PARAMETER_END_DOF))
+                            
+                            STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                              & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                          ENDIF !model_idx
+                        ENDDO !dof_idx
+                        TIME=TIME+TIME_INCREMENT
+                      ENDDO !time
+                    ELSE
+                      !We do not have parameters in the model
+                      TIME=START_TIME
+                      DO WHILE(TIME<=END_TIME)
+                        DO dof_idx=1,N
+                          model_idx=MODELS_DATA(dof_idx)
+                          IF(model_idx.GT.0) THEN
+
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                            INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                            INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
+                              & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                              & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS)
+                             
+                            STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                              & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                          ENDIF !model_idx
+                        ENDDO !dof_idx
+                        TIME=TIME+TIME_INCREMENT
+                      ENDDO !time
+                    ENDIF                      
+                  ELSE
+                    IF(NUMBER_PARAMETERS>0) THEN
+                      !We do not have intermediates in the model
+                      
+                      TIME=START_TIME
+                      DO WHILE(TIME<=END_TIME)
+                        DO dof_idx=1,N
+                          model_idx=MODELS_DATA(dof_idx)
+                          IF(model_idx.GT.0) THEN
+
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                            PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                            PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
+                              & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                              & RATES,INTERMEDIATES,PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
+                            
+                            STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                              & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                          ENDIF !model_idx
+                        ENDDO !dof_idx
+                        TIME=TIME+TIME_INCREMENT
+                      ENDDO !time
+                    ELSE
+                      !We do not have intermediates or parameters in the model
+                      TIME=START_TIME
+                      DO WHILE(TIME<=END_TIME)
+                        DO dof_idx=1,N
+                          model_idx=MODELS_DATA(dof_idx)
+                          IF(model_idx.GT.0) THEN
+
+                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                     
+                            CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
+                              & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                              & RATES,INTERMEDIATES,PARAMETERS)
+                            
+                            STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                              & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                          ENDIF !model_idx
+                        ENDDO !dof_idx
+                        TIME=TIME+TIME_INCREMENT
+                      ENDDO !time
+                    ENDIF
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
+                ENDIF
+
 #else
-                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
-                      STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
-                        & TIME_INCREMENT*RATES(1:NUMBER_STATES)
-                    ENDIF !model_idx>0  
-                  ENDDO !dof_idx
-                  TIME=TIME+TIME_INCREMENT
-                ENDDO !time
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
                   & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
