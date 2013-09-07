@@ -11671,9 +11671,16 @@ CONTAINS
                                         CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(INTERFACE_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
                                         NULLIFY(DEPENDENT_VECTOR)
                                         DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
-                                        CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,dependent_variable_type, &
-                                          & FIELD_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
-                                        
+                                        !hard-coded for now TODO under the assumption that the first equations set is the solid
+                                        !equations set and the second equations set is the fluid equations set
+                                        !FSI only - needs to be extended/generalized for other coupled problems TODO
+                                        IF(interface_matrix_idx==1) THEN
+                                          CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,dependent_variable_type, &
+                                            & FIELD_INCREMENTAL_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
+                                        ELSE
+                                          CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,dependent_variable_type, &
+                                            & FIELD_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
+                                        ENDIF
                                        ! CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
                                        !   & INTERFACE_MATRIX%MATRIX_TRANSPOSE,DEPENDENT_VECTOR,INTERFACE_TEMP_VECTOR,ERR,ERROR,*999)
                                         CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
@@ -11696,7 +11703,11 @@ CONTAINS
                                               & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(interface_row_number)%COUPLING_COEFFICIENT
                                             CALL DISTRIBUTED_VECTOR_VALUES_GET(INTERFACE_TEMP_VECTOR,interface_row_number, &
                                               & RESIDUAL_VALUE,ERR,ERROR,*999)
-                                            VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                         !   IF(interface_matrix_idx==1) THEN
+                                         !     VALUE=RESIDUAL_VALUE*row_coupling_coefficient/DELTA_T
+                                         !   ELSE
+                                              VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                         !   ENDIF
                                             !Add in nonlinear residual values
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
                                               & ERR,ERROR,*999)

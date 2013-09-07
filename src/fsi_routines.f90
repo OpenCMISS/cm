@@ -703,7 +703,8 @@ CONTAINS
           EquationsSet=>DynamicSolverMapping%EQUATIONS_SETS(EquationsSetIndex)%PTR
           IF(EquationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS &
             & .AND.EquationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE &
-            & .AND.EquationsSet%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE) THEN
+            & .AND.((EquationsSet%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE).OR. &
+            & (EquationsSet%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE))) THEN
             SolidEquationsSet=>EquationsSet
             SolidEquationsSetFound=.TRUE.
           ELSEIF(EquationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS &

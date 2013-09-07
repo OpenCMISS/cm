@@ -5256,7 +5256,6 @@ CONTAINS
                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                             !Update moving wall nodes from solid/fluid gap (as we solve for displacements of the mesh
                             !in Laplacian smoothing step).
-                        !    CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,Solver2,ERR,ERROR,*999)
                             CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,Solver2,ERR,ERROR,*999)
                             IF(.NOT.ASSOCIATED(Solver2)) CALL FLAG_ERROR("Dynamic solver is not associated.",Err,Error,*999)
                             !Find the FiniteElasticity equations set as there is a NavierStokes equations set too
@@ -5274,7 +5273,8 @@ CONTAINS
                                     IF(ASSOCIATED(SOLID_EQUATIONS_SET)) THEN
                                       IF(SOLID_EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS &
                                         & .AND.SOLID_EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE &
-                                        & .AND.SOLID_EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE) THEN
+                                        & .AND.((SOLID_EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE).OR. &
+                                        & (SOLID_EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE))) THEN
                                         SolidEquationsSetFound=.TRUE.
                                       ELSE
                                         EquationsSetIndex=EquationsSetIndex+1
@@ -5362,9 +5362,6 @@ CONTAINS
                                               & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                             BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                                               & CONDITION_TYPES(local_ny)
-                                              
-                                              
-                                            
                                             !Update moved wall nodes only
                                             IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
                                               !NOTE: assuming same mesh and mesh nodes for fluid domain and moving mesh domain
@@ -5400,62 +5397,6 @@ CONTAINS
                                                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
                                                 & NewLaplaceBoundaryValue,Err,Error,*999)
                                             ENDIF
-                                            
-                                            
-                                            
-                                            
-                                            
-                                            
-                                            
-                                            
-                                            
-                         !                   !Update moved wall nodes only
-                         !                   IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                         !                     !Find correct solid displacement node number
-                         !                     !TODO This might be expensive as we loop over all interface nodes (worst-case O(n^2))
-                         !                     FluidNodeNumber=0
-                         !                     SolidNodeNumber=1
-                         !                     SolidNodeFound=.FALSE.
-                         !                     DO WHILE (SolidNodeNumber<= &
-                         !                       & Solver2%SOLVER_EQUATIONS%SOLVER_MAPPING%INTERFACE_CONDITIONS(1)%PTR%INTERFACE% &
-                         !                       & NODES%NUMBER_OF_NODES.AND..NOT.SolidNodeFound)
-                         !                       IF(Solver2%SOLVER_EQUATIONS%SOLVER_MAPPING%INTERFACE_CONDITIONS(1)%PTR%INTERFACE% &
-                         !                         & NODES%COUPLED_NODES(2,SolidNodeNumber)==(local_ny-FIELD_VARIABLE% &
-                         !                         & COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                         !                         & NODE_PARAM2DOF_MAP%NUMBER_OF_NODE_PARAMETERS*(component_idx-1))) THEN
-                         !                         !We need to declare the FluidNodeNumber first, as we want to re-use the
-                         !                         !variable SolidNodeNumber to set the real SolidNodeNumber
-                         !                         FluidNodeNumber=Solver2%SOLVER_EQUATIONS%SOLVER_MAPPING% &
-                         !                           & INTERFACE_CONDITIONS(1)%PTR%INTERFACE% &
-                         !                           & NODES%COUPLED_NODES(2,SolidNodeNumber)
-                         !                         SolidNodeNumber=Solver2%SOLVER_EQUATIONS%SOLVER_MAPPING% &
-                         !                           & INTERFACE_CONDITIONS(1)%PTR%INTERFACE% &
-                         !                           & NODES%COUPLED_NODES(1,SolidNodeNumber)
-                         !                         SolidNodeFound=.TRUE.
-                         !                       ELSE
-                         !                         SolidNodeNumber=SolidNodeNumber+1
-                         !                       ENDIF
-                         !                     END DO
-                         !                     IF(.NOT.SolidNodeFound &
-                         !                       & .OR.FluidNodeNumber==0) CALL FLAG_ERROR("Solid interface node not found.", &
-                         !                       & Err,Error,*999)
-                         !                       !Default to version number 1
-                         !                       IF(variable_idx==1) THEN
-                         !                         CALL FIELD_PARAMETER_SET_GET_NODE(FLUID_GEOMETRIC_FIELD,variable_type, &
-                         !                           & FIELD_VALUES_SET_TYPE,1,deriv_idx, &
-                         !                           & FluidNodeNumber,component_idx,FluidGFValue,Err,Error,*999)
-                         !                       ELSE
-                         !                         FluidGFValue=0.0_DP
-                         !                       ENDIF
-                         !                       CALL FIELD_PARAMETER_SET_GET_NODE(SOLID_DEPENDENT_FIELD,variable_type, &
-                         !                         & FIELD_VALUES_SET_TYPE,1,deriv_idx, &
-                         !                         & SolidNodeNumber,component_idx,SolidDFValue,Err,Error,*999)
-                         !                       NewLaplaceBoundaryValue=SolidDFValue-FluidGFValue
-                         !                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                         !                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                         !                         & NewLaplaceBoundaryValue,ERR,ERROR,*999)
-                         !                     !ENDIF
-                         !                   ENDIF
                                           ENDDO !deriv_idx
                                         ENDDO !node_idx
                                       ENDIF
@@ -5537,10 +5478,6 @@ CONTAINS
                           & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                         !Get update for time-dependent boundary conditions
                         IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==1) THEN
-                          
-                          
-                          
-                          
                           ComponentBC=1
                           CALL FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
                             & SOLVER%SOLVE_TYPE,InletNodes, &
@@ -5551,95 +5488,24 @@ CONTAINS
                               & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,InletNodes(node_idx),ComponentBC, &
                               & BoundaryValues(node_idx),ERR,ERROR,*999)
                           ENDDO
-                          
-                          
-                          
-                          
-                          
-                      !    CALL FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS( &
-                      !      & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,SOLVER%SOLVE_TYPE,BOUNDARY_VALUES, & 
-                      !      & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
-                      !      & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME,1.0_DP)
-                      !      
-                      !      
-                      !      
-                      !      
-                      !      DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                      !    variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                      !    FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                      !    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                      !      DO component_idx=1,NUMBER_OF_DIMENSIONS!FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                      !        DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                      !        IF(ASSOCIATED(DOMAIN)) THEN
-                      !          IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                      !            DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                      !            IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                      !              !Loop over the local nodes excluding the ghosts.
-                      !              DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                      !                DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                      !                  !Default to version 1 of each node derivative
-                      !                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                      !                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                      !                  BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                      !                    & CONDITION_TYPES(local_ny)
-                      !                  !Now update boundary conditions for fixed inlet nodes and moved wall nodes
-                      !                  IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                      !                    !NOTE This should be UPDATE_LOCAL_DOF and not ADD_LOCAL_DOF since we have a modified
-                      !                    ! no-slip condition on the fluid structure interface
-                      !                    CALL FLAG_ERROR("Prescribed velocities not implemented for FSI.",Err,Error,*999)
-                      !          !          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                      !          !            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                      !          !            & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
-                      !                  ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                      !                    IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==3.OR.CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2 &
-                      !                      & .AND.component_idx==ComponentBC.AND.deriv_idx==1.AND.variable_idx==1) THEN
-                      !                      DO M=1,SIZE(InletNodes)
-                      !                        IF(InletNodes(M)==node_idx) THEN
-                      !                          !TODO don't modify pointers from data_get
-                      !                          BOUNDARY_VALUES(local_ny)=BoundaryValues(M)
-                      !                        ENDIF
-                      !                      ENDDO
-                      !                    ENDIF
-                      !                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                      !                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                      !                      & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-                      !                  END IF
-                      !                ENDDO !deriv_idx
-                      !              ENDDO !node_idx
-                      !            ENDIF
-                      !          ENDIF
-                      !        ENDIF
-                      !      ENDDO !component_idx
-                      !    ENDIF
-                      !  ENDDO !variable_idx
-                        
-                        
-                            
-                            
                         ELSE
+                          !Figure out which component we're applying BC at
                           IF(CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER==2) THEN
                             ComponentBC=1
                           ELSE
                             ComponentBC=2
                           ENDIF
+                          !Get inlet nodes and the corresponding velocities
                           CALL FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
                             & SOLVER%SOLVE_TYPE,InletNodes, &
                             & BoundaryValues,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CURRENT_TIME,CONTROL_LOOP%TIME_LOOP%STOP_TIME)
-                          
                           DO node_idx=1,SIZE(InletNodes)
                             CALL FIELD_PARAMETER_SET_UPDATE_NODE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                               & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,InletNodes(node_idx),ComponentBC, &
                               & BoundaryValues(node_idx),ERR,ERROR,*999)
                           ENDDO
-                          
-                          
-                          
-                          
-                          
-                          
                         ENDIF
-                        
                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                           & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
