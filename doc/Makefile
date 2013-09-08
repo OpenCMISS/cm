@@ -3,7 +3,7 @@
 
 clean:
 	find ../../cm -type d -exec chmod 755 {} \;
-	rm -rf doxy/latexhtml doxy/programmer doxy/user doxy/OpenCMISSNotes.pdf
+	rm -rf doxy/latexhtml doxy/programmer doxy/user doxy/python doxy/OpenCMISSNotes.pdf
 	
 
 relocate:
