@@ -4226,6 +4226,8 @@ CONTAINS
         DO I=1,SIZE(InletNodes)
           Y=Y+0.5_DP
           BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
+          BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.075_DP) ! 0.75 cm/s in artery with 2 cm diameter
+          BoundaryValues(I)=0.1_DP/(1.0_DP+exp(-0.5_DP*Time+2.0_DP)) ! m / s
         ENDDO
       CASE(Plate2D,Plate3D)
         IF(MaterialSpecification==Plate2D) THEN
