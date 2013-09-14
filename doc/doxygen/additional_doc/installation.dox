@@ -392,8 +392,9 @@ You may specify the following options to the build:
 - USEFIELDML=(false|true): to use FieldML or not
 
 3. Execute the example:
-You may specify the arguments to execute the example, e.g.
-\code ./bin/x86_64-linux/mpich2/gnu_4.4/LaplaceExample-debug 4 4 4 1 \endcode
+You may specify the arguments to execute the example, e.g. For a 64-bit linux using MPICH2 and GNU 4.4 compilers you could type
+\code ./bin/x86_64-linux/mpich2/gnu_4.4/FortranExample-debug 4 4 4 1 \endcode
+For other versions of MPI or compiler please adjust the path to the FortranExample-debug example appropriately.
 
 4. Execute the example with mpi:
 To execute the example with mpi running on two computational nodes:
