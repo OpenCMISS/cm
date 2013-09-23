@@ -48,6 +48,7 @@ MODULE DATA_PROJECTION_ROUTINES
   USE BASE_ROUTINES
   USE CMISS_MPI  
   USE COMP_ENVIRONMENT
+  USE CONSTANTS
   USE DOMAIN_MAPPINGS
   USE FIELD_ROUTINES  
   USE INPUT_OUTPUT
@@ -2097,7 +2098,7 @@ CONTAINS
     REAL(DP) :: PREDICTED_REDUCTION,PREDICTION_ACCURACY
     
     
-    INTEGER(INTG) :: ne,ni,ni2(2),nb,nifix,nifix2(2),itr1,itr2,nbfix
+    INTEGER(INTG) :: ne,ni,ni2(2),nb,nifix,nifix2(2),itr1,itr2,nbfix,mi
     
     CALL ENTERS("DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3",ERR,ERROR,*999)
               
@@ -2168,7 +2169,7 @@ CONTAINS
             ELSE
               TEMP3=DSQRT(-TEMP3)
               TEMP4=(DET+3.0_DP*(TEMP1*TEMP2)-2.0_DP*TEMP1**3)/(2.0_DP*TEMP3**3)
-              EIGEN_MIN=2.0_DP*TEMP3*DCOS((DACOS(TEMP4)+TWOPI)/3.0_DP)-TEMP1                
+              EIGEN_MIN=2.0_DP*TEMP3*DCOS((DCOS(TEMP4)+TWOPI)/3.0_DP)-TEMP1                
             ENDIF
             FUNCTION_GRADIENT_NORM=DSQRT(DOT_PRODUCT(FUNCTION_GRADIENT,FUNCTION_GRADIENT))
             DO itr2=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(inner loop: adjust region size) usually EXIT at 1 or 2 iterations
@@ -2287,7 +2288,23 @@ CONTAINS
               CONVERGED=XI_UPDATE_NORM<ABSOLUTE_TOLERANCE !first half of the convergence test
               XI_NEW=XI+XI_UPDATE !update XI
               DO ni=1,3
-                IF(XI_NEW(ni)<0.0_DP) THEN !boundary collision check
+                IF(ABS(XI_UPDATE(ni))<ZERO_TOLERANCE) THEN !FPE Handling
+                  IF(XI_NEW(ni)<0.0_DP) THEN
+                    XI_NEW(ni)=0.0_DP
+                    DO mi = 1,3
+                      IF(mi /= ni) THEN
+                        XI_NEW(mi)=XI(mi)-XI_UPDATE(mi)
+                      ENDIF
+                    ENDDO
+                  ELSEIF(XI_NEW(ni)>1.0_DP) THEN
+                    XI_NEW(ni)=1.0_DP
+                    DO mi = 1,3
+                      IF(mi /= ni) THEN
+                        XI_NEW(mi)=XI(mi)+XI_UPDATE(mi)
+                      ENDIF
+                    ENDDO
+                  ENDIF
+                ELSEIF(XI_NEW(ni)<0.0_DP) THEN !boundary collision check
                   XI_NEW(ni)=0.0_DP
                   XI_NEW=XI-XI_UPDATE*XI(ni)/XI_UPDATE(ni)
                 ELSEIF(XI_NEW(ni)>1.0_DP) THEN
@@ -2311,6 +2328,9 @@ CONTAINS
                   & 0.5_DP*(XI_UPDATE(1)*(XI_UPDATE(1)*FUNCTION_HESSIAN(1,1)+2.0_DP*XI_UPDATE(2)*FUNCTION_HESSIAN(1,2)+ &
                   & 2.0_DP*XI_UPDATE(3)*FUNCTION_HESSIAN(1,3))+XI_UPDATE(2)*(XI_UPDATE(2)*FUNCTION_HESSIAN(2,2)+ &
                   & 2.0_DP*XI_UPDATE(3)*FUNCTION_HESSIAN(2,3))+XI_UPDATE(2)**2*FUNCTION_HESSIAN(2,2))
+                IF (ABS(PREDICTED_REDUCTION) < ZERO_TOLERANCE) THEN
+                  EXIT main_loop ! solution converged
+                ENDIF
                 PREDICTION_ACCURACY=(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/PREDICTED_REDUCTION
                 IF(PREDICTION_ACCURACY<0.01_DP) THEN !bad model: reduce region size
                   IF(DELTA<=MINIMUM_DELTA) THEN !something went wrong, MINIMUM_DELTA too large? not likely to happen if MINIMUM_DELTA is small
