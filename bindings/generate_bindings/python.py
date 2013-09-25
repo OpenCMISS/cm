@@ -4,13 +4,18 @@ import re
 from parse import *
 from c import subroutine_c_names
 
-MODULE_DOCSTRING = ("""OpenCMISS (Open Continuum Mechanics, Imaging, """
-"""Signal processing and System identification)
+PACKAGE_NAME = 'opencmiss'
+MODULE_NAME = 'iron'
 
-A mathematical modelling environment that enables the application of finite
-element analysis techniques to a variety of complex bioengineering problems.
+MODULE_DOCSTRING = ("""OpenCMISS-Iron
 
-This Python module wraps the underlying OpenCMISS Fortran library.
+OpenCMISS (Open Continuum Mechanics, Imaging, Signal processing and System
+identification) is a mathematical modelling environment that enables the
+application of finite element analysis techniques to a variety of complex
+bioengineering problems.
+
+OpenCMISS-Iron is the computational backend component of OpenCMISS.
+This Python module wraps the underlying OpenCMISS-Iron Fortran library.
 
 http://www.opencmiss.org
 """)
@@ -35,15 +40,15 @@ def generate(cm_path, args):
     This wraps the lower level extension module created by SWIG
     """
 
-    module = open(os.sep.join((cm_path, 'bindings', 'python', 'opencmiss',
-        'CMISS.py')), 'w')
+    module = open(os.sep.join((cm_path, 'bindings', 'python', PACKAGE_NAME,
+        '%s.py' % MODULE_NAME)), 'w')
 
     library = LibrarySource(cm_path)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
-    module.write("import _opencmiss_swig\n")
+    module.write("from . import _iron_swig\n")
     module.write("import signal\n")
-    module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
+    module.write("from ._iron_utils import (CMISSError, CMISSType, Enum,\n"
         "    wrap_cmiss_routine as _wrap_routine)\n\n\n")
 
     types = sorted(library.lib_source.types.values(), key=attrgetter('name'))
@@ -106,7 +111,7 @@ def type_to_py(type):
     py_class.append("    def __init__(self):")
     py_class.append('        """Initialise a null %s"""\n' % type.name)
     py_class.append("        self.cmiss_type = "
-        "_wrap_routine(_opencmiss_swig.%s, None)\n" % initialise_method)
+        "_wrap_routine(_iron_swig.%s, None)\n" % initialise_method)
 
     for method in type.methods:
         if (not method.name.endswith('TypeInitialise') and
@@ -220,7 +225,7 @@ def py_method(type, routine):
     method.append("        %s = self" % self_parameter.name)
     for line in pre_code:
         method.append("        %s" % line)
-    method.append("        return _wrap_routine(_opencmiss_swig.%s, [%s])" %
+    method.append("        return _wrap_routine(_iron_swig.%s, [%s])" %
         (c_name, ', '.join(swig_args)))
 
     return '\n'.join(method)
@@ -242,7 +247,7 @@ def routine_to_py(routine):
     py_routine.append('    """%s\n    """\n' % docstring)
     for line in pre_code:
         py_routine.append("    %s" % line)
-    py_routine.append('    return _wrap_routine(_opencmiss_swig.%s, [%s])' %
+    py_routine.append('    return _wrap_routine(_iron_swig.%s, [%s])' %
                       (c_name, ', '.join(swig_args)))
 
     return '\n'.join(py_routine)
