@@ -48,7 +48,7 @@ class SWIGTestClass(unittest.TestCase):
         # Input 1D array
         result = parameter_swig_lines(m.input_array)
         expected = typemap_apply(
-                "const int DIM1, const int *IN_ARRAY1",
+                "const int DIM1, int *IN_ARRAY1",
                 "const int testSize, const int *test")
         self.assertEqual(result[0], expected)
 
@@ -56,7 +56,7 @@ class SWIGTestClass(unittest.TestCase):
         result = parameter_swig_lines(m.input_array_2d)
         expected = typemap_apply(
                 "const int DIM1, const int DIM2, "
-                    "const int *IN_FARRAY2",
+                    "int *IN_FARRAY2",
                 "const int testSize1, const int testSize2, const int *test")
         self.assertEqual(result[0], expected)
 
