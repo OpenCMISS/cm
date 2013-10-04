@@ -17,19 +17,19 @@ class CTestClass(unittest.TestCase):
         """
 
         test_obj_names = [
-            "CMISSRoutineObj",
-            "CMISSRoutine1",
-            "CMISSRoutineC1",
-            "CMISSRoutineCObj"]
-        expected_obj_names = ("CMISSRoutine", "CMISSRoutineC")
+            "cmfe_RoutineObj",
+            "cmfe_Routine1",
+            "cmfe_RoutineC1",
+            "cmfe_RoutineCObj"]
+        expected_obj_names = ("cmfe_Routine", "cmfe_RoutineC")
 
         test_num_names = [
-            "CMISSRoutineNumber",
-            "CMISSRoutineCNumber",
-            "CMISSRoutineNumber0",
-            "CMISSRoutineCNumber1",
-            "CMISSRoutineCCNumber1"]
-        expected_num_names = ("CMISSRoutineNum", "CMISSRoutineCNum")
+            "cmfe_RoutineNumber",
+            "cmfe_RoutineCNumber",
+            "cmfe_RoutineNumber0",
+            "cmfe_RoutineCNumber1",
+            "cmfe_RoutineCCNumber1"]
+        expected_num_names = ("cmfe_RoutineNum", "cmfe_RoutineCNum")
 
         for routine_name in test_obj_names:
             routine = m.Mock(name=routine_name)
@@ -161,29 +161,29 @@ class CTestClass(unittest.TestCase):
         self.assertEqual(cf90_result, cf90_expected)
 
     def test_cmiss_parameters(self):
-        """Test how CMISS type parameters are translated to C"""
+        """Test how CMFE type parameters are translated to C"""
 
-        # Input CMISS type
+        # Input CMFE type
         c_result = parameter_to_c(m.input_cmiss_type)
-        c_expected = ["const CMISSTestType test"]
+        c_expected = ["const cmfe_TestType test"]
         cf90_result = parameter_c_f90_declaration(m.input_cmiss_type)
         cf90_expected = [
                 "TYPE(C_PTR), VALUE, INTENT(IN) :: testPtr"]
         self.assertEqual(c_result, c_expected)
         self.assertEqual(cf90_result, cf90_expected)
 
-        # Output CMISS type
+        # Output CMFE type
         c_result = parameter_to_c(m.output_cmiss_type)
-        c_expected = ["CMISSTestType *test"]
+        c_expected = ["cmfe_TestType *test"]
         cf90_result = parameter_c_f90_declaration(m.output_cmiss_type)
         cf90_expected = [
                 "TYPE(C_PTR), INTENT(OUT) :: testPtr"]
         self.assertEqual(c_result, c_expected)
         self.assertEqual(cf90_result, cf90_expected)
 
-        # Input array of CMISS types
+        # Input array of CMFE types
         c_result = parameter_to_c(m.input_cmiss_type_array)
-        c_expected = ["const int testSize", "const CMISSTestType *test"]
+        c_expected = ["const int testSize", "const cmfe_TestType *test"]
         cf90_result = parameter_c_f90_declaration(m.input_cmiss_type_array)
         cf90_expected = [
                 "INTEGER(C_INT), VALUE, INTENT(IN) :: testSize",

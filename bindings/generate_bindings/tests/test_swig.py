@@ -108,18 +108,18 @@ class SWIGTestClass(unittest.TestCase):
         self.assertEqual(result[0], expected)
 
     def test_cmiss_parameters(self):
-        """Test CMISS type parameters have correct SWIG typemaps"""
+        """Test CMFE type parameters have correct SWIG typemaps"""
 
-        # Input CMISS type
+        # Input CMFE type
         result = parameter_swig_lines(m.input_cmiss_type)
         expected = ""
         self.assertEqual(result[0], expected)
 
-        # Input array of CMISS types
+        # Input array of CMFE types
         result = parameter_swig_lines(m.input_cmiss_type_array)
         expected = typemap_apply(
-                "const int ArraySize, const CMISSDummyType *DummyTypes",
-                "const int testSize, const CMISSTestType *test")
+                "const int ArraySize, const cmfe_DummyType *DummyTypes",
+                "const int testSize, const cmfe_TestType *test")
         self.assertEqual(result[0], expected)
 
 if __name__ == '__main__':

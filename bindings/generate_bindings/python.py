@@ -31,11 +31,11 @@ ErrorHandlingModeSet(ErrorHandlingModes.RETURN_ERROR_CODE)
 signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 """
 
-PREFIX = 'CMISS'
+PREFIX = 'cmfe_'
 
 
 def generate(cm_path, args):
-    """Generate the OpenCMISS Python module
+    """Generate the OpenCMISS-Iron Python module
 
     This wraps the lower level extension module created by SWIG
     """
@@ -179,16 +179,16 @@ def method_name(type, routine):
     "Return the name of a method of an object"""
 
     c_name = subroutine_c_names(routine)[0]
-    if '_' in c_name:
+    if c_name.count('_') > 1:
         name = c_name.split('_')[-1]
-    elif (c_name.startswith('CMISSFieldML') and
-            not c_name.startswith('CMISSFieldMLIO')):
+    elif (c_name.startswith('cmfe_FieldML') and
+            not c_name.startswith('cmfe_FieldMLIO')):
         # Special case for FieldML routines that start
         # with FieldML but take a CMISSFieldMLIOType, although
         # some start with CMISSFieldMLIO...
-        name = c_name[len('CMISSFieldML'):]
+        name = c_name[len('cmfe_FieldML'):]
     else:
-        # Old code style
+        # Old code style, no underscore after type name
         name = c_name[len(type.name) - len('Type'):]
     if name == 'TypeFinalise':
         name = 'Finalise'
@@ -377,7 +377,7 @@ def replace_doxygen_commands(param):
         if match:
             enum = match.group(1)
             if enum is not None:
-                if enum.startswith(PREFIX):
+                if enum.lower().startswith(PREFIX.lower()):
                     enum = enum[len(PREFIX):]
                 comment = comment[0:match.start(0)]
                 if param.intent == 'IN':
@@ -389,10 +389,10 @@ def replace_doxygen_commands(param):
 
 
 def enum_to_py(enum):
-    """Create a Python class to represent and enum"""
+    """Create a Python class to represent an enum"""
 
     output = []
-    if enum.name.startswith(PREFIX):
+    if enum.name.lower().startswith(PREFIX.lower()):
         name = enum.name[len(PREFIX):]
     else:
         name = enum.name
@@ -422,14 +422,14 @@ def remove_prefix_and_suffix(names):
     suffix_length = 0
     if len(names) == 1:
         # Special cases we have to specify
-        if names[0] == 'CMISS_CONTROL_LOOP_NODE':
-            prefix_length = len('CMISS_CONTROL_LOOP_')
-        elif names[0] == 'CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1':
-            prefix_length = len('CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_')
-        elif names[0] == 'CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1':
-            prefix_length = len('CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_')
-        elif names[0] == 'CMISS_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER':
-            prefix_length = len('CMISS_EQUATIONS_SET_FINITE_ELASTICITY_')
+        if names[0] == 'CMFE_CONTROL_LOOP_NODE':
+            prefix_length = len('CMFE_CONTROL_LOOP_')
+        elif names[0] == 'CMFE_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMFE_EQUATIONS_SET_HELMHOLTZ_EQUATION_')
+        elif names[0] == 'CMFE_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMFE_EQUATIONS_SET_POISEUILLE_EQUATION_')
+        elif names[0] == 'CMFE_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER':
+            prefix_length = len('CMFE_EQUATIONS_SET_FINITE_ELASTICITY_')
         else:
             sys.stderr.write("Warning: Found an unknown enum "
                     "group with only one name: %s.\n" % names[0])

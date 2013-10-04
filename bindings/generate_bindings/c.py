@@ -29,15 +29,15 @@ def _logical_type():
 
 
 C_DEFINES = ('\n/*\n * Defines\n */\n\n'
-        'const int CMISS_NO_ERROR = 0;\n'
-        'const int CMISS_POINTER_IS_NULL = -1;\n'
-        'const int CMISS_POINTER_NOT_NULL = -2;\n'
-        'const int CMISS_COULD_NOT_ALLOCATE_POINTER = -3;\n'
-        'const int CMISS_ERROR_CONVERTING_POINTER = -4;\n\n'
-        'typedef %s CMISSBool;\n'
-        'const CMISSBool CMISSTrue = 1;\n'
-        'const CMISSBool CMISSFalse = 0;\n\n'
-        'typedef int CMISSError;\n\n' % _logical_type())
+        'const int CMFE_NO_ERROR = 0;\n'
+        'const int CMFE_POINTER_IS_NULL = -1;\n'
+        'const int CMFE_POINTER_NOT_NULL = -2;\n'
+        'const int CMFE_COULD_NOT_ALLOCATE_POINTER = -3;\n'
+        'const int CMFE_ERROR_CONVERTING_POINTER = -4;\n\n'
+        'typedef %s cmfe_Bool;\n'
+        'const cmfe_Bool cmfe_True = 1;\n'
+        'const cmfe_Bool cmfe_False = 0;\n\n'
+        'typedef int cmfe_Error;\n\n' % _logical_type())
 
 
 def write_c_header(library, output):
@@ -87,13 +87,13 @@ def write_c_f90(library, output):
         '  USE CMISS_FORTRAN_C\n\n'
         '  IMPLICIT NONE\n\n'
         '  PRIVATE\n\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSTrue = 1\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISSFalse = 0\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISS_NO_ERROR = 0\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISS_POINTER_IS_NULL = -1\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISS_POINTER_NOT_NULL = -2\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISS_COULD_NOT_ALLOCATE_POINTER = -3\n'
-        '  INTEGER(C_INT), PARAMETER :: CMISS_ERROR_CONVERTING_POINTER = -4\n\n')
+        '  INTEGER(C_INT), PARAMETER :: cmfe_True = 1\n'
+        '  INTEGER(C_INT), PARAMETER :: cmfe_False = 0\n'
+        '  INTEGER(C_INT), PARAMETER :: CMFE_NO_ERROR = 0\n'
+        '  INTEGER(C_INT), PARAMETER :: CMFE_POINTER_IS_NULL = -1\n'
+        '  INTEGER(C_INT), PARAMETER :: CMFE_POINTER_NOT_NULL = -2\n'
+        '  INTEGER(C_INT), PARAMETER :: CMFE_COULD_NOT_ALLOCATE_POINTER = -3\n'
+        '  INTEGER(C_INT), PARAMETER :: CMFE_ERROR_CONVERTING_POINTER = -4\n\n')
 
     output.write('\n'.join(('  PUBLIC %s' % subroutine_c_names(subroutine)[1]
             for subroutine in library.public_subroutines)))
@@ -111,7 +111,7 @@ PARAMETER_CTYPES = {
     Parameter.FLOAT: 'float',
     Parameter.DOUBLE: 'double',
     Parameter.CHARACTER: 'char',
-    Parameter.LOGICAL: 'CMISSBool',
+    Parameter.LOGICAL: 'cmfe_Bool',
     Parameter.CUSTOM_TYPE: None}
 
 
@@ -169,7 +169,7 @@ def subroutine_to_c_header(subroutine):
     output = ['\n/*>']
     output.append('\n *>'.join(subroutine.comment_lines))
     output.append(' */\n')
-    output.append('CMISSError %s(' % subroutine_c_names(subroutine)[0])
+    output.append('cmfe_Error %s(' % subroutine_c_names(subroutine)[0])
 
     c_parameters = _chain_iterable([parameter_to_c(p)
             for p in subroutine.parameters])
@@ -214,7 +214,7 @@ def subroutine_to_c_f90(subroutine):
     content = []
     content.extend(local_variables)
     content.append('')
-    content.append('%s = CMISS_NO_ERROR' % c_f90_name)
+    content.append('%s = CMFE_NO_ERROR' % c_f90_name)
     content.extend(pre_lines)
     content.append('CALL %s(%s)' % (function_call,
             ','.join([parameter_call_name(p) for p in subroutine.parameters] +
@@ -248,7 +248,7 @@ def parameter_conversion(parameter):
     c_f90_name = parameter_c_f90_name(parameter)
     size_list = parameter_size_list(parameter)[0]
 
-    # CMISS Types
+    # CMFE Types
     if parameter.var_type == Parameter.CUSTOM_TYPE:
         if parameter.array_dims > 0:
             local_variables.append('TYPE(%s), TARGET :: %s(%s)' %
@@ -256,7 +256,7 @@ def parameter_conversion(parameter):
         else:
             local_variables.append('TYPE(%s), POINTER :: %s' %
                     (parameter.type_name, parameter.name))
-        # If we're in a CMISS...TypeInitialise routine, then objects get
+        # If we're in a CMFE...TypeInitialise routine, then objects get
         # allocated in Fortran and we need to convert pointers to C pointers
         # before returning them.  For all other routines the pointer to the
         # buffer object doesn't change so we ignore the intent and always check
@@ -264,12 +264,12 @@ def parameter_conversion(parameter):
         if parameter.routine.name.endswith('_Initialise'):
             local_variables.append('INTEGER(C_INT) :: Err')
             pre_call.extend(('IF(C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
-                '%s = CMISS_POINTER_NOT_NULL' % routine_c_f90_name,
+                '%s = CMFE_POINTER_NOT_NULL' % routine_c_f90_name,
                 'ELSE',
                 'NULLIFY(%s)' % parameter.name,
                 'ALLOCATE(%s, STAT = Err)' % parameter.name,
                 'IF(Err /= 0) THEN',
-                '%s = CMISS_COULD_NOT_ALLOCATE_POINTER' % routine_c_f90_name,
+                '%s = CMFE_COULD_NOT_ALLOCATE_POINTER' % routine_c_f90_name,
                 'ELSE'))
 
             post_call.extend(('%sPtr=C_LOC(%s)' % (parameter.name,
@@ -282,23 +282,23 @@ def parameter_conversion(parameter):
             post_call.extend(('DEALLOCATE(%s)' % parameter.name,
                 '%sPtr = C_NULL_PTR' % parameter.name,
                 'ELSE',
-                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                '%s = CMFE_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF',
                 'ELSE',
-                '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
+                '%s = CMFE_POINTER_IS_NULL' % routine_c_f90_name,
                 'ENDIF'))
         else:
             if parameter.array_dims > 0:
                 pre_call.append('IF(C_ASSOCIATED(%sPtr)) THEN' %
                         parameter.name)
                 if parameter.intent == 'IN':
-                    # Passing an array of CMISS Types to Fortran
+                    # Passing an array of CMFE Types to Fortran
                     pre_call.append('CALL %ssCopy(%s,%sSize,%sPtr,%s)' %
                             (parameter.type_name, parameter.name,
                             parameter.name, parameter.name,
                             routine_c_f90_name))
                 else:
-                    # Getting an array of CMISS Types from Fortran and
+                    # Getting an array of CMFE Types from Fortran and
                     # setting an array of C pointers
                     local_variables.append('INTEGER(C_INT) :: %sIndex' %
                         parameter.name)
@@ -311,7 +311,7 @@ def parameter_conversion(parameter):
                         '%sCPtrs(%sIndex) = C_LOC(%s(%sIndex))' %
                         ((parameter.name,) * 4), 'ENDDO'))
                 post_call.extend(('ELSE',
-                    '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
+                    '%s = CMFE_POINTER_IS_NULL' % routine_c_f90_name,
                     'ENDIF'))
             else:
                 pre_call.extend(('IF(C_ASSOCIATED(%s)) THEN' % c_f90_name,
@@ -319,10 +319,10 @@ def parameter_conversion(parameter):
                     parameter.__dict__,
                     'IF(ASSOCIATED(%s)) THEN' % parameter.name))
                 post_call.extend(('ELSE',
-                    '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                    '%s = CMFE_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                     'ENDIF',
                     'ELSE',
-                    '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
+                    '%s = CMFE_POINTER_IS_NULL' % routine_c_f90_name,
                     'ENDIF'))
 
     # Character arrays
@@ -375,7 +375,7 @@ def parameter_conversion(parameter):
                 parameter.name),
                 '%sSize = SIZE(%s,1)' % (parameter.name, parameter.name),
                 'IF(.NOT.C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
-                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                '%s = CMFE_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF'))
         elif parameter.pointer == True and c_intent(parameter) == 'INOUT':
             # we are getting the value from a pointer and then setting
@@ -391,7 +391,7 @@ def parameter_conversion(parameter):
                 '%sPtr = C_LOC(%s(1))' % (parameter.name, parameter.name),
                 '%sSize = SIZE(%s,1)' % (parameter.name, parameter.name),
                 'IF(.NOT.C_ASSOCIATED(%sPtr)) THEN' % parameter.name,
-                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                '%s = CMFE_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF',
                 'ELSE',
                 '%sPtr = C_NULL_PTR' % parameter.name,
@@ -399,10 +399,10 @@ def parameter_conversion(parameter):
                 'ENDIF',
                 ))
             post_call.extend(('ELSE',
-                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                '%s = CMFE_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF',
                 'ELSE',
-                '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
+                '%s = CMFE_POINTER_IS_NULL' % routine_c_f90_name,
                 'ENDIF'))
         else:
             # pointer is pointing to allocated memory that is being set
@@ -411,10 +411,10 @@ def parameter_conversion(parameter):
                 ','.join(size_list)),
                 'IF(ASSOCIATED(%s)) THEN' % parameter.name))
             post_call.extend(('ELSE',
-                '%s = CMISS_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
+                '%s = CMFE_ERROR_CONVERTING_POINTER' % routine_c_f90_name,
                 'ENDIF',
                 'ELSE',
-                '%s = CMISS_POINTER_IS_NULL' % routine_c_f90_name,
+                '%s = CMFE_POINTER_IS_NULL' % routine_c_f90_name,
                 'ENDIF'))
 
     return (local_variables, pre_call, post_call)
