@@ -72,8 +72,9 @@ MODULE_DIR := $(OBJECT_DIR)
 MOD_INC_NAME := opencmiss.mod
 MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
 MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
-HEADER_INC_NAME := opencmiss.h
-HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
+HEADER_INC_NAME := iron.h
+HEADER_DIR := $(INC_DIR)/opencmiss
+HEADER_INCLUDE := $(HEADER_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
 BINDINGS_DIR = $(OC_CM_GLOBAL_ROOT)/bindings
 BINDINGS_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
@@ -268,7 +269,7 @@ MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py
+$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.

@@ -2,7 +2,7 @@
 %module opencmiss
 %{
 #include "stdlib.h"
-#include "opencmiss.h"
+#include "opencmiss/iron.h"
 #define MAX_OUTPUT_STRING_SIZE 300
 %}
 
