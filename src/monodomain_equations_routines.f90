@@ -83,10 +83,10 @@ MODULE MONODOMAIN_EQUATIONS_ROUTINES
   !Interfaces
 
   PUBLIC MONODOMAIN_EQUATION_EQUATIONS_SET_SETUP, MONODOMAIN_FINITE_ELEMENT_CALCULATE, &
-    & MONODOMAIN_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET,MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET, &
-    & MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET,MONODOMAIN_EQUATION_PROBLEM_SETUP, &
-    & MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET,MONODOMAIN_PROBLEM_CLASS_TYPE_SET, &
-    & MONODOMAIN_PROBLEM_CLASS_TYPE_GET,MONODOMAIN_PRE_SOLVE,MONODOMAIN_POST_SOLVE
+    & MONODOMAIN_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET,MonodomainEquation_EquationsSetSpecificationSet, &
+    & MonodomainEquation_ProblemSpecificationSet,MONODOMAIN_EQUATION_PROBLEM_SETUP, &
+    & Monodomain_EquationsSetSpecificationSet,Monodomain_ProblemSpecificationSet, &
+    & MONODOMAIN_PRE_SOLVE,MONODOMAIN_POST_SOLVE
   
 CONTAINS
 
@@ -95,154 +95,87 @@ CONTAINS
   !
   !
 
-  !>Gets the problem type and subtype for a monodomain equation set class.
-  SUBROUTINE MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-    & ERR,ERROR,*)
+  !>Sets the problem specification for a monodomain equation set class.
+  SUBROUTINE Monodomain_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<On return, the equation type
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<On return, the equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    CALL ENTERS("MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%CLASS==PROBLEM_BIOELECTRICS_CLASS) THEN
-        EQUATIONS_TYPE=EQUATIONS_SET%TYPE
-        EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
+    CALL Enters("Monodomain_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a monodomain class equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(specification(2))
+      CASE(EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+        CALL MonodomainEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
+      CASE DEFAULT
+        localError="Equations set equation type "//TRIM(NumberToVstring(specification(2),"*",err,error))// &
+          & " is not valid for a monodomain equations set class."
+        CALL FlagError(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FlagError("Equations set is not associated",err,error,*999)
+    END IF
+
+    CALL Exits("Monodomain_EquationsSetSpecificationSet")
+    RETURN
+999 CALL Errors("Monodomain_EquationsSetSpecificationSet",err,error)
+    CALL Exits("Monodomain_EquationsSetSpecificationSet")
+    RETURN 1
+  END SUBROUTINE Monodomain_EquationsSetSpecificationSet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the problem specification for a monodomain problem class.
+  SUBROUTINE Monodomain_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemType
+
+    CALL Enters("Monodomain_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)>=2) THEN
+        problemType=problemSpecification(2)
+        SELECT CASE(problemType)
+        CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+          CALL MonodomainEquation_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
+        CASE DEFAULT
+          localError="Problem equation type "//TRIM(NumberToVstring(problemType,"*",err,error))// &
+            & " is not valid for a monodomain problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set is not the monodomain type",ERR,ERROR,*999)
+        CALL FlagError("Monodomain problem specification must have a type.",err,error,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_GET")
+      CALL FlagError("Problem is not associated",err,error,*999)
+    END IF
+
+    CALL Exits("Monodomain_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_GET")
+999 CALL Errors("Monodomain_ProblemSpecificationSet",err,error)
+    CALL Exits("Monodomain_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_GET
+  END SUBROUTINE Monodomain_ProblemSpecificationSet
 
   !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem type and subtype for a monodomain equation set class.
-  SUBROUTINE MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-    & ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_TYPE !<The equation type
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("MONODOMAIN_EQUATIONS_SET_CLASS_SET",ERR,ERROR,*999)
-
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_TYPE)
-      CASE(EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
-        CALL MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a monodomain equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MONODOMAIND_EQUATIONS_SET_CLASS_TYPE_SET")
-    RETURN
-999 CALL ERRORS("MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET
-
- !
-  !================================================================================================================================
-  !
-
-  !>Gets the problem type and subtype for a monodomain problem class.
-  SUBROUTINE MONODOMAIN_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem type
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    
-    CALL ENTERS("MONODOMAIN_PROBLEM_CLASS_TYPE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%CLASS==PROBLEM_BIOELECTRICS_CLASS) THEN
-        PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
-        PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
-      ELSE
-        CALL FLAG_ERROR("Problem is not monodomain class",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MONODOMAIN_PROBLEM_CLASS_TYPE_GET")
-    RETURN
-999 CALL ERRORS("MONODOMAIN_PROBLEM_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("MONODOMAIN_PROBLEM_CLASS_TYPE_GET")
-    RETURN 1
-  END SUBROUTINE MONODOMAIN_PROBLEM_CLASS_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem type and subtype for a monodomain problem class.
-  SUBROUTINE MONODOMAIN_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("MONODOMAIN_PROBLEM_CLASS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_EQUATION_TYPE)
-       CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
-        CALL MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a monodomain problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MONODOMAIN_PROBLEM_CLASS_TYPE_SET")
-    RETURN
-999 CALL ERRORS("MONODOMAIN_PROBLEM_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("MONODOMAIN_PROBLEM_CLASS_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE MONODOMAIN_PROBLEM_CLASS_TYPE_SET
-
-  !
-  !================================================================================================================================
- !  !
   !================================================================================================================================
   !
 
@@ -260,11 +193,17 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
-     CASE(EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a monodomain type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
+      CASE(EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
         CALL MONODOMAIN_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)   
       CASE DEFAULT
-        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a monodomain equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -314,7 +253,13 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+          CALL FlagError("Equations set specification must have three entries for a monodomain type equations set.", &
+            & err,error,*999)
+        END IF
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE,EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
 
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -473,7 +418,7 @@ CONTAINS
             ENDDO !mh
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Monodomain equation type of a Strang splitting equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -509,11 +454,17 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a monodomain type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE,EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
         CALL MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)        
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Monodomain equation type of a Strang splitting equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -546,7 +497,13 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a monodomain type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE,EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)        
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -566,7 +523,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Monodomain equation type of monodomain Strang splitting equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -585,44 +542,54 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a Monodomain equation type of a Strang splitting equations set class.
-  SUBROUTINE MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a Monodomain equation type of a Strang splitting equations set class.
+  SUBROUTINE MonodomainEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE
-      CASE(EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
+
+    CALL Enters("MonodomainEquation_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a monodomain type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE, &
+          & EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
+        !ok
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+        localError="Equations set subtype "//TRIM(NumberToVstring(subtype,"*",err,error))// &
           & " is not valid for a Monodomain equation type of a Strang splitting equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_BIOELECTRICS_CLASS, &
+        & EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("MonodomainEquation_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+999 CALL Errors("MonodomainEquation_EquationsSetSpecificationSet",err,error)
+    CALL Exits("MonodomainEquation_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE MONODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+  END SUBROUTINE MonodomainEquation_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -655,8 +622,14 @@ CONTAINS
 
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE .OR. &
-         &EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a monodomain type equations set.", &
+          & err,error,*999)
+      END IF
+      IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE .OR. &
+          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE) THEN
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -746,7 +719,7 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
-              SELECT CASE(EQUATIONS_SET%SUBTYPE) 
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
               CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE)
                  NUM_COMP = 4
               CASE(EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
@@ -800,7 +773,7 @@ CONTAINS
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
               CALL FIELD_CREATE_FINISH(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE) 
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
               CASE(EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE)
                 CALL BUENO_OROVIO_INITIALIZE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999) ! initialize to y0
               CASE(EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
@@ -988,7 +961,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a Monodomain equation subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -1021,11 +994,16 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a monodomain equation problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
         CALL MONODOMAIN_EQUATION_PROBLEM_STRANG_SPLITTING_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a Monodomain equation Strang splitting problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -1058,11 +1036,16 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_EQUATION_PROBLEM_STRANG_SPLITTING_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a monodomain Strang splitting problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
       CASE(PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE,PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
         CALL MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Monodomain equation type of a Strang splitting problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -1081,44 +1064,52 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a Monodomain equation type .
-  SUBROUTINE MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a Monodomain equation type.
+  SUBROUTINE MonodomainEquation_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-        PROBLEM%TYPE=PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE     
-      CASE(PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-        PROBLEM%TYPE=PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE    
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Monodomain equation type of a Strang splitting  problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    CALL Enters("MonodomainEquation_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE, &
+            & PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="Problem subtype "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a Monodomain equation type of a Strang splitting  problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_BIOELECTRICS_CLASS,PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE,problemSubtype]
+      ELSE
+        CALL FlagError("Monodomain equation problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("MonodomainEquation_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET")
+999 CALL Errors("MonodomainEquation_ProblemSpecificationSet",err,error)
+    CALL Exits("MonodomainEquation_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE MONODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET
+  END SUBROUTINE MonodomainEquation_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -1147,7 +1138,13 @@ CONTAINS
     NULLIFY(SOLVERS)
     
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE.OR.PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE)THEN
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a monodomain equation problem.",err,error,*999)
+      END IF
+      IF(PROBLEM%SPECIFICATION(3)==PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE.OR. &
+          & PROBLEM%SPECIFICATION(3)==PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE)THEN
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1242,7 +1239,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a Monodomain equation subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -1276,7 +1273,12 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must at least two entries for a monodomain equation problem.",err,error,*999)
+      END IF
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
         DEPENDENT_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
                            & EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
@@ -1289,7 +1291,7 @@ CONTAINS
          & 1, DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, 1,ERR,ERROR,*999) ! also to prev.
 
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a monodomain problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -1331,7 +1333,12 @@ CONTAINS
     CALL ENTERS("MONODOMAIN_POST_SOLVE",ERR,ERROR,*999)
   
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a monodomain equation problem.",err,error,*999)
+      END IF
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) ! CAN NOT GET EQN TYPE?! 
 
 
@@ -1359,7 +1366,7 @@ CONTAINS
         CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & 1, INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 1,ERR,ERROR,*999) ! dependent -> independent
 
-        SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+        SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
         CASE(PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE)
           CALL BUENO_OROVIO_INTEGRATE(INDEPENDENT_FIELD,MATERIAL_FIELD,&
           &  CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT, CONTROL_LOOP%TIME_LOOP%CURRENT_TIME&  ! from t-dt to t
@@ -1393,7 +1400,7 @@ CONTAINS
         ENDIF
 
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a monodomain problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT

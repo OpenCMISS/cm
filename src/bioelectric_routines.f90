@@ -67,10 +67,8 @@ MODULE BIOELECTRIC_ROUTINES
   !Interfaces
 
   PUBLIC BIOELECTRIC_CONTROL_LOOP_POST_LOOP
-  
-  PUBLIC BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET,BIOELECTRIC_PROBLEM_CLASS_TYPE_GET
 
-  PUBLIC BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET
+  PUBLIC Bioelectric_EquationsSetSpecificationSet
 
   PUBLIC BIOELECTRIC_FINITE_ELEMENT_CALCULATE
 
@@ -78,7 +76,7 @@ MODULE BIOELECTRIC_ROUTINES
 
   PUBLIC BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET
 
-  PUBLIC BIOELECTRIC_PROBLEM_CLASS_TYPE_SET
+  PUBLIC Bioelectric_ProblemSpecificationSet
 
   PUBLIC BIOELECTRIC_PROBLEM_SETUP
   
@@ -108,13 +106,18 @@ CONTAINS
       IF(ASSOCIATED(PROBLEM)) THEN
         SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
         CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<2) THEN
+            CALL FlagError("Problem specification must have at least two entries for a bioelectric problem.",err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
             CALL BIODOMAIN_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
           CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
             !do nothing
           CASE DEFAULT
-            LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
               & " is not valid for a bioelectric problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -140,80 +143,44 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the problem type and subtype for a bioelectric equation set class.
-  SUBROUTINE BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-    & ERR,ERROR,*)
+  !>Sets the problem specification for a bioelectric equation set class.
+  SUBROUTINE Bioelectric_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<The equation type
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<The equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    CALL ENTERS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF (EQUATIONS_SET%CLASS==EQUATIONS_SET_BIOELECTRICS_CLASS) THEN
-        EQUATIONS_TYPE=EQUATIONS_SET%TYPE
-        EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
-      ELSE
-        CALL FLAG_ERROR("Equations set is not a bioelectric class.",ERR,ERROR,*999)
+    CALL Enters("Bioelectric_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a bioelectric class equations set.", &
+          & err,error,*999)
       END IF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET")
-    RETURN
-999 CALL ERRORS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET")
-    RETURN 1
-  END SUBROUTINE BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem type and subtype for a bioelectric equation set class.
-  SUBROUTINE BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-    & ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_TYPE !<The equation type
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("BIOELECTRIC_EQUATIONS_SET_CLASS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_TYPE)
+      SELECT CASE(specification(2))
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-          & ERR,ERROR,*999)
+        CALL BiodomainEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-          & ERR,ERROR,*999)
+        CALL BiodomainEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
+        localError="Equations set equation type "//TRIM(NumberToVstring(specification(2),"*",err,error))// &
           & " is not valid for a bioelectric equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Bioelectric_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET")
+999 CALL Errors("Bioelectric_EquationsSetSpecificationSet",err,error)
+    CALL Exits("Bioelectric_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET
+  END SUBROUTINE Bioelectric_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -233,13 +200,19 @@ CONTAINS
     CALL ENTERS("BIOELECTRIC_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a bioelectric type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -272,13 +245,19 @@ CONTAINS
     CALL ENTERS("BIOELECTRIC_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a bioelectric type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -311,13 +290,19 @@ CONTAINS
     CALL ENTERS("BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a bioelectric type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -359,13 +344,18 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
           PROBLEM=>CONTROL_LOOP%PROBLEM
           IF(ASSOCIATED(PROBLEM)) THEN
-            SELECT CASE(PROBLEM%TYPE)
+            IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<2) THEN
+              CALL FlagError("Problem specification must have at least two entries for a bioelectric problem.",err,error,*999)
+            END IF
+            SELECT CASE(PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
               CALL BIODOMAIN_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
               CALL MONODOMAIN_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for a bioelectrics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -415,13 +405,18 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
           PROBLEM=>CONTROL_LOOP%PROBLEM
           IF(ASSOCIATED(PROBLEM)) THEN
-            SELECT CASE(PROBLEM%TYPE)
+            IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<2) THEN
+              CALL FlagError("Problem specification must have at least two entries for a bioelectric problem.",err,error,*999)
+            END IF
+            SELECT CASE(PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE,PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
               !Do nothing???
             CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
               CALL MONODOMAIN_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for a bioelectrics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -450,77 +445,46 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the problem type and subtype for a bioelectric problem class.
-  SUBROUTINE BIOELECTRIC_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a bioelectric problem class.
+  SUBROUTINE Bioelectric_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for.
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    CALL ENTERS("BIOELECTRIC_PROBLEM_CLASS_TYPE_GET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemType
 
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%CLASS==PROBLEM_BIOELECTRICS_CLASS) THEN
-        PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
-        PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
+    CALL Enters("Bioelectric_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)>=2) THEN
+        problemType=problemSpecification(2)
+        SELECT CASE(problemType)
+        CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
+          CALL BiodomainEquation_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
+        CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+          CALL Monodomain_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
+        CASE DEFAULT
+          localError="Problem type "//TRIM(NumberToVstring(problemType,"*",err,error))// &
+            & " is not valid for a bioelectric problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
       ELSE
-        CALL FLAG_ERROR("Problem is not bioelectric class.",ERR,ERROR,*999)
-      ENDIF
+        CALL FlagError("Bioelectric problem specification must have a type set.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("BIOELECTRIC_PROBLEM_CLASS_TYPE_GET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Bioelectric_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("BIOELECTRIC_PROBLEM_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("BIOELECTRIC_PROBLEM_CLASS_TYPE_GET")
+999 CALL Errors("Bioelectric_ProblemSpecificationSet",err,error)
+    CALL Exits("Bioelectric_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE BIOELECTRIC_PROBLEM_CLASS_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem type and subtype for a bioelectric problem class.
-  SUBROUTINE BIOELECTRIC_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("BIOELECTRIC_PROBLEM_CLASS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_EQUATION_TYPE)
-      CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE, &
-          & ERR,ERROR,*999)
-      CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
-        CALL MONODOMAIN_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)        
-      CASE DEFAULT
-        LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a bioelectric problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("BIOELECTRIC_PROBLEM_CLASS_TYPE_SET")
-    RETURN
-999 CALL ERRORS("BIOELECTRIC_PROBLEM_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("BIOELECTRIC_PROBLEM_CLASS_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE BIOELECTRIC_PROBLEM_CLASS_TYPE_SET
+  END SUBROUTINE Bioelectric_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -540,7 +504,12 @@ CONTAINS
     CALL ENTERS("BIOELECTRIC_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a bioelectric problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_BIDOMAIN_EQUATION_TYPE)
@@ -548,7 +517,7 @@ CONTAINS
       CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
         CALL MONODOMAIN_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a bioelectric problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT

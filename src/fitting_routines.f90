@@ -86,17 +86,13 @@ MODULE FITTING_ROUTINES
 
   PUBLIC FITTING_EQUATIONS_SET_SETUP
   PUBLIC FITTING_EQUATIONS_SET_VECTORDATA_SETUP
-  PUBLIC FITTING_EQUATIONS_SET_SUBTYPE_SET
+  PUBLIC Fitting_EquationsSetSpecificationSet
   PUBLIC FITTING_EQUATIONS_SET_SOLUTION_METHOD_SET
 
   PUBLIC FITTING_PROBLEM_SETUP
-  PUBLIC FITTING_PROBLEM_SUBTYPE_SET
+  PUBLIC Fitting_ProblemSpecificationSet
 
   PUBLIC FITTING_FINITE_ELEMENT_CALCULATE
-  PUBLIC FITTING_EQUATIONS_SET_CLASS_TYPE_SET
-  PUBLIC FITTING_EQUATIONS_SET_CLASS_TYPE_GET
-  PUBLIC FITTING_PROBLEM_CLASS_TYPE_SET
-  PUBLIC FITTING_PROBLEM_CLASS_TYPE_GET
 
   PUBLIC FITTING_PRE_SOLVE
   PUBLIC FITTING_POST_SOLVE
@@ -505,8 +501,13 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-
+        IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+          CALL FlagError("Equations set specification must have three entries for a fitting type equations set.", &
+            & err,error,*999)
+        END IF
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EquationsSet_DataPointVectorStaticFittingSubtype, &
           &  EquationsSet_DataPointVectorQuasistaticFittingSubtype)
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -919,7 +920,7 @@ CONTAINS
               CALL FLAG_ERROR(localError,ERR,ERROR,*999)
             END IF
 
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE) THEN
               PERM_OVER_VIS_PARAM = PERM_OVER_VIS_PARAM_0
             ELSE
               MATERIAL_FACT = ( Jxy * POROSITY / POROSITY_0 )**2.0_DP
@@ -1130,8 +1131,8 @@ CONTAINS
                       END DO !ni
                       SUM = 0.0_DP
                       !Calculate SUM 
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
+                      IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+                        & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                         IF(mh==nh) THEN 
                           !This stiffness matrix contribution is without "integration" means ng=nd in fact = least square!
                           SUM = SUM + PGM * PGN
@@ -1170,8 +1171,8 @@ CONTAINS
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
                           & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM
 
-                      ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
+                      ELSEIF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+                        & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                         IF(mh==nh.AND.mh<=NUMBER_OF_DIMENSIONS) THEN 
                           SUM = SUM + PGM * PGN
 !REDUCED SOBOLEV SMOOTHING
@@ -1223,15 +1224,15 @@ CONTAINS
                 ENDIF
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
                 IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-                    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
+                  IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+                    & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                     SUM=0.0_DP
                     PGM=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                     SUM=U_VALUE(mh)*PGM
 !                     SUM=42.0_DP*PGM
                     SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM
-                  ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-                    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
+                  ELSEIF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+                    & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                     IF(mh<=NUMBER_OF_DIMENSIONS) THEN 
                       SUM=0.0_DP
                       PGM=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -1279,7 +1280,7 @@ CONTAINS
         CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Galerkin projection type of a data fitting equations set class."
           CALL FLAG_ERROR(localError,ERR,ERROR,*999)
         END SELECT
@@ -1330,8 +1331,14 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE.OR. &
-        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a fitting type equations set.", &
+          & err,error,*999)
+      END IF
+      IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE.OR. &
+        & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE) THEN
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
 
         !-----------------------------------------------------------------
@@ -1862,7 +1869,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal an update-materials Galerkin projection subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -1895,7 +1902,13 @@ CONTAINS
     CALL ENTERS("FITTING_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a fitting type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE)
         CALL FITTING_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE,EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE)
@@ -1911,7 +1924,7 @@ CONTAINS
       CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of a data fitting equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -1944,7 +1957,13 @@ CONTAINS
     CALL ENTERS("FITTING_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a fitting type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE)        
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -2021,7 +2040,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of an data fitting equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -2040,147 +2059,70 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the problem type and subtype for a data fitting equation set class.
-  SUBROUTINE FITTING_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a data fitting equation set class.
+  SUBROUTINE Fitting_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<On return, the equation type
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<On return, the equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    CALL ENTERS("FITTING_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: equationsSetType,equationsSetSubtype
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FITTING_CLASS) THEN
-        EQUATIONS_TYPE=EQUATIONS_SET%TYPE
-        EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
-      ELSE
-        CALL FLAG_ERROR("Equations set is not the data fitting type",ERR,ERROR,*999)
+    CALL Enters("Fitting_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a fitting class equations set.", &
+          & err,error,*999)
       END IF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FITTING_EQUATIONS_SET_CLASS_TYPE_GET")
-    RETURN
-999 CALL ERRORS("FITTING_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("FITTING_EQUATIONS_SET_CLASS_TYPE_GET")
-    RETURN 1
-  END SUBROUTINE FITTING_EQUATIONS_SET_CLASS_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem type and subtype for a data fitting equation set class.
-  SUBROUTINE FITTING_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_TYPE !<The equation type
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("FITTING_EQUATIONS_SET_CLASS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_TYPE)
+      equationsSetType=specification(2)
+      SELECT CASE(equationsSetType)
       CASE(EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE)
-        CALL FITTING_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        equationsSetSubtype=specification(3)
+        SELECT CASE(equationsSetSubtype)
+        CASE(EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE, &
+            & EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE, &
+            & EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE, &
+            & EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
+            & EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
+            & EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE, &
+            & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE, &
+            & EquationsSet_DataPointVectorStaticFittingSubtype, &
+            & EquationsSet_DataPointVectorQuasistaticFittingSubtype)
+          !ok
+        CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
+          CALL FlagError("Not implemented.",err,error,*999)
+        CASE DEFAULT
+          localError="Equations set subtype "//TRIM(NumberToVstring(equationsSetSubtype,"*",err,error))// &
+            & " is not valid for a Galerkin projection type of a data fitting equations set class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
+        localError="Equations set equation type "//TRIM(NumberToVstring(equationsSetType,"*",err,error))// &
           & " is not valid for a data fitting equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FITTING_CLASS,equationsSetType,equationsSetSubtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FITTING_EQUATIONS_SET_CLASS_TYPE_SET")
+      CALL FlagError("Equations set is not associated",err,error,*999)
+    END IF
+
+    CALL Exits("Fitting_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("FITTING_EQUATIONS_SET_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("FITTING_EQUATIONS_SET_CLASS_TYPE_SET")
+999 CALL Errors("Fitting_EquationsSetSpecificationSet",err,error)
+    CALL Exits("Fitting_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE FITTING_EQUATIONS_SET_CLASS_TYPE_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the equation subtype for a Galerkin projection type of a data fitting equations set class.
-  SUBROUTINE FITTING_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("FITTING_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE
-      CASE(EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE
-      CASE(EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE
-      CASE(EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE
-      CASE(EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE
-      CASE(EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE
-      CASE(EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE
-      CASE(EquationsSet_DataPointVectorStaticFittingSubtype)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EquationsSet_DataPointVectorStaticFittingSubtype
-      CASE(EquationsSet_DataPointVectorQuasistaticFittingSubtype)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FITTING_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EquationsSet_DataPointVectorQuasistaticFittingSubtype
-      CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Galerkin projection type of a data fitting equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FITTING_EQUATIONS_SET_SUBTYPE_SET")
-    RETURN
-999 CALL ERRORS("FITTING_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("FITTING_EQUATIONS_SET_SUBTYPE_SET")
-    RETURN 1
-  END SUBROUTINE FITTING_EQUATIONS_SET_SUBTYPE_SET
+  END SUBROUTINE Fitting_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -2204,7 +2146,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("FITTING_EQUATION_SET_STANDARD_SETUP",ERR,ERROR,*999)
+    CALL ENTERS("FITTING_EQUATIONS_SET_STANDARD_SETUP",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS)
     NULLIFY(EQUATIONS)
@@ -2213,7 +2155,13 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
    
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a fitting type equations set.", &
+          & err,error,*999)
+      END IF
+      IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE) THEN
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
 
         !-----------------------------------------------------------------
@@ -2570,7 +2518,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a standard Galerkin projection subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -2621,7 +2569,13 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
    
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a fitting type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE, &
         & EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
         & EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE, &
@@ -2687,8 +2641,8 @@ CONTAINS
               !calculate number of components with one component for each dimension and one for pressure
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
                 & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
 ! !                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -2707,8 +2661,8 @@ CONTAINS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,I, &
                     & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 END DO
-              ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-                EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
+              ELSE IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+                EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & NUMBER_OF_DIMENSIONS+1,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, & 
@@ -2723,7 +2677,7 @@ CONTAINS
               ENDIF
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE) THEN
+                IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE) THEN
 !                   DO I=1,NUMBER_OF_DIMENSIONS
                   DO I=1,1
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
@@ -2731,7 +2685,7 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_DELUDELN_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   END DO
-                ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE) THEN
+                ELSE IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE) THEN
                   DO I=1,NUMBER_OF_DIMENSIONS+1
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
@@ -2780,14 +2734,14 @@ CONTAINS
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE) THEN
+                IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE) THEN
                   DO I=1,NUMBER_OF_DIMENSIONS
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_DELUDELN_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   END DO
-                ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE) THEN
+                ELSEIF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE) THEN
                   DO I=1,NUMBER_OF_DIMENSIONS+1
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
@@ -3000,7 +2954,7 @@ CONTAINS
         !   s o u r c e   t y p e  
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE,EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE, &
             & EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE,EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -3108,8 +3062,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is invalid for a PPE equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -3661,9 +3615,9 @@ CONTAINS
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
               CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
               CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
-              IF (EQUATIONS_SET%SUBTYPE==EquationsSet_DataPointVectorStaticFittingSubtype) THEN
+              IF (EQUATIONS_SET%SPECIFICATION(3)==EquationsSet_DataPointVectorStaticFittingSubtype) THEN
                 CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
-              ELSE IF (EQUATIONS_SET%SUBTYPE==EquationsSet_DataPointVectorQuasistaticFittingSubtype) THEN
+              ELSE IF (EQUATIONS_SET%SPECIFICATION(3)==EquationsSet_DataPointVectorQuasistaticFittingSubtype) THEN
                 CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_QUASISTATIC,ERR,ERROR,*999)                
               ENDIF
             ELSE
@@ -3726,7 +3680,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a vector data Galerkin projection subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -3759,7 +3713,12 @@ CONTAINS
     CALL ENTERS("FITTING_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
       CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE)
         CALL FITTING_PROBLEM_STANDARD_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_VECTOR_DATA_FITTING_SUBTYPE)
@@ -3773,7 +3732,7 @@ CONTAINS
       CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of a data fitting problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -3787,63 +3746,6 @@ CONTAINS
     CALL EXITS("FITTING_PROBLEM_SETUP")
     RETURN 1
   END SUBROUTINE FITTING_PROBLEM_SETUP
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem subtype for a Galerkin projection type .
-  SUBROUTINE FITTING_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("FITTING_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FITTING_CLASS
-        PROBLEM%TYPE=PROBLEM_DATA_FITTING_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STANDARD_DATA_FITTING_SUBTYPE     
-      CASE(PROBLEM_VECTOR_DATA_FITTING_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FITTING_CLASS
-        PROBLEM%TYPE=PROBLEM_DATA_FITTING_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_VECTOR_DATA_FITTING_SUBTYPE     
-      CASE(PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FITTING_CLASS
-        PROBLEM%TYPE=PROBLEM_DATA_FITTING_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE     
-      CASE(Problem_DataPointVectorStaticFittingSubtype)
-        PROBLEM%CLASS=PROBLEM_FITTING_CLASS
-        PROBLEM%TYPE=PROBLEM_DATA_FITTING_TYPE
-        PROBLEM%SUBTYPE=Problem_DataPointVectorStaticFittingSubtype     
-      CASE(Problem_DataPointVectorQuasistaticFittingSubtype)
-        PROBLEM%CLASS=PROBLEM_FITTING_CLASS
-        PROBLEM%TYPE=PROBLEM_DATA_FITTING_TYPE
-        PROBLEM%SUBTYPE=Problem_DataPointVectorQuasistaticFittingSubtype     
-      CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Galerkin projection type of a data fitting problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FITTING_PROBLEM_SUBTYPE_SET")
-    RETURN
-999 CALL ERRORS("FITTING_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("FITTING_PROBLEM_SUBTYPE_SET")
-    RETURN 1
-  END SUBROUTINE FITTING_PROBLEM_SUBTYPE_SET
 
   !
   !================================================================================================================================
@@ -3871,7 +3773,12 @@ CONTAINS
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%SUBTYPE==PROBLEM_STANDARD_DATA_FITTING_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+      END IF
+      IF(PROBLEM%SPECIFICATION(3)==PROBLEM_STANDARD_DATA_FITTING_SUBTYPE) THEN
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3962,7 +3869,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a standard Galerkin projection subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -3977,7 +3884,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE FITTING_PROBLEM_STANDARD_SETUP
 
- !
+  !
   !================================================================================================================================
   !
 
@@ -4003,10 +3910,15 @@ CONTAINS
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%SUBTYPE==PROBLEM_VECTOR_DATA_FITTING_SUBTYPE.OR. &
-        & PROBLEM%SUBTYPE==Problem_DataPointVectorStaticFittingSubtype .OR. &
-        & PROBLEM%SUBTYPE==Problem_DataPointVectorQuasistaticFittingSubtype .OR. &
-        & PROBLEM%SUBTYPE==PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+      END IF
+      IF(PROBLEM%SPECIFICATION(3)==PROBLEM_VECTOR_DATA_FITTING_SUBTYPE.OR. &
+        & PROBLEM%SPECIFICATION(3)==Problem_DataPointVectorStaticFittingSubtype .OR. &
+        & PROBLEM%SPECIFICATION(3)==Problem_DataPointVectorQuasistaticFittingSubtype .OR. &
+        & PROBLEM%SPECIFICATION(3)==PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE) THEN
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -4025,7 +3937,7 @@ CONTAINS
           CASE(PROBLEM_SETUP_START_ACTION)
             !Set up a simple control loop
             CALL CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*999)
-            IF(PROBLEM%SUBTYPE==Problem_DataPointVectorStaticFittingSubtype) THEN
+            IF(PROBLEM%SPECIFICATION(3)==Problem_DataPointVectorStaticFittingSubtype) THEN
               CALL CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,PROBLEM_CONTROL_SIMPLE_TYPE,ERR,ERROR,*999)
             ELSE
               CALL CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,PROBLEM_CONTROL_TIME_LOOP_TYPE,ERR,ERROR,*999)
@@ -4078,7 +3990,7 @@ CONTAINS
             !Create the solver equations
             CALL SOLVER_EQUATIONS_CREATE_START(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
             CALL SOLVER_EQUATIONS_LINEARITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_LINEAR,ERR,ERROR,*999)
-            IF(PROBLEM%SUBTYPE==Problem_DataPointVectorStaticFittingSubtype) THEN
+            IF(PROBLEM%SPECIFICATION(3)==Problem_DataPointVectorStaticFittingSubtype) THEN
               CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_STATIC,ERR,ERROR,*999)
             ELSE
               CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_QUASISTATIC,ERR,ERROR,*999)
@@ -4106,7 +4018,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a vector data Galerkin projection subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -4125,77 +4037,68 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the problem type and subtype for a data fitting problem class.
-  SUBROUTINE FITTING_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a data fitting problem class.
+  SUBROUTINE Fitting_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem type
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The proboem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    CALL ENTERS("FITTING_PROBLEM_CLASS_TYPE_GET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemType,problemSubtype
+
+    CALL Enters("Fitting_ProblemSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%CLASS==PROBLEM_FITTING_CLASS) THEN
-        PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
-        PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemType=problemSpecification(2)
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemType)
+        CASE(PROBLEM_DATA_FITTING_TYPE)
+          SELECT CASE(problemSubtype)
+          CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE, &
+              & PROBLEM_VECTOR_DATA_FITTING_SUBTYPE, &
+              & PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE, &
+              & Problem_DataPointVectorStaticFittingSubtype, &
+              & Problem_DataPointVectorQuasistaticFittingSubtype)
+            !ok
+          CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            localError="Problem subtype "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+              & " is not valid for a Galerkin projection type of a data fitting problem class."
+            CALL FlagError(localError,err,error,*999)
+          END SELECT
+        CASE DEFAULT
+          localError="Problem equation type "//TRIM(NumberToVstring(problemType,"*",err,error))// &
+            & " is not valid for a data fitting problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_FITTING_CLASS,problemType,problemSubtype]
       ELSE
-        CALL FLAG_ERROR("Problem is not data fitting class",ERR,ERROR,*999)
-      ENDIF
+        CALL FlagError("Fitting problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FITTING_PROBLEM_CLASS_TYPE_GET")
-    RETURN
-999 CALL ERRORS("FITTING_PROBLEM_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("FITTING_PROBLEM_CLASS_TYPE_GET")
-    RETURN 1
-  END SUBROUTINE FITTING_PROBLEM_CLASS_TYPE_GET
+      CALL FlagError("Problem is not associated",err,error,*999)
+    END IF
 
+    CALL Exits("Fitting_ProblemSpecificationSet")
+    RETURN
+999 CALL Errors("Fitting_ProblemSpecificationSet",err,error)
+    CALL Exits("Fitting_ProblemSpecificationSet")
+    RETURN 1
+  END SUBROUTINE Fitting_ProblemSpecificationSet
   !
   !================================================================================================================================
   !
-
-  !>Sets/changes the problem type and subtype for a data fitting problem class.
-  SUBROUTINE FITTING_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("FITTING_PROBLEM_CLASS_SET",ERR,ERROR,*999)
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_EQUATION_TYPE)
-       CASE(PROBLEM_DATA_FITTING_TYPE)
-        CALL FITTING_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a data fitting problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FITTING_PROBLEM_CLASS_TYPE_SET")
-    RETURN
-999 CALL ERRORS("FITTING_PROBLEM_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("FITTING_PROBLEM_CLASS_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE FITTING_PROBLEM_CLASS_TYPE_SET
-
-  !
-  !================================================================================================================================
-  !   
 
   !>Evaluates the deformation gradient tensor at a given Gauss point
   SUBROUTINE FITTING_GAUSS_DEFORMATION_GRADIENT_TENSOR(REFERENCE_GEOMETRIC_INTERPOLATED_POINT, &
@@ -4259,30 +4162,30 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE)
-!               do nothing
-            CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
-!               do nothing
-            CASE(PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE)
-!               do nothing
-            CASE(Problem_DataPointVectorStaticFittingSubtype)
-!               do nothing
-            CASE(Problem_DataPointVectorQuasistaticFittingSubtype)
-!               do nothing
-            CASE(PROBLEM_VECTOR_DATA_FITTING_SUBTYPE,PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE)
-! !               IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER==1)THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read in vector data... ",ERR,ERROR,*999)
-                !Update indpendent data fields
-                CALL FITTING_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-! !                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"While loop... ",ERR,ERROR,*999)
-! !               ELSE
-! !                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"While loop... ",ERR,ERROR,*999)
-! !               ENDIF
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a data fitting problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
+          CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE)
+            ! do nothing
+          CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
+            ! do nothing
+          CASE(PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE)
+            ! do nothing
+          CASE(Problem_DataPointVectorStaticFittingSubtype)
+            ! do nothing
+          CASE(Problem_DataPointVectorQuasistaticFittingSubtype)
+            ! do nothing
+          CASE(PROBLEM_VECTOR_DATA_FITTING_SUBTYPE,PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE)
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read in vector data... ",ERR,ERROR,*999)
+            !Update indpendent data fields
+            CALL FITTING_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " is not valid for a data fitting problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
           CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
@@ -4322,7 +4225,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE,PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE, &
               & PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE)
 !               do nothing
@@ -4334,7 +4242,7 @@ CONTAINS
             CASE(PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE,PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE)
 !               do nothing
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a fitting type of a classical field problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -4386,7 +4294,12 @@ CONTAINS
 !       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE,PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE, &
               & PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE, &
               & Problem_DataPointVectorStaticFittingSubtype)
@@ -4432,7 +4345,7 @@ CONTAINS
                 ENDIF
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a fitting equation of a classical field problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -4492,7 +4405,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a fitting problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STANDARD_DATA_FITTING_SUBTYPE)
 !               do nothing
             CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
@@ -4575,7 +4493,7 @@ CONTAINS
                   CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF 
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a vector data type of a fitting field problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT

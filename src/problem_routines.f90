@@ -114,7 +114,7 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_CREATE_START,PROBLEM_CREATE_FINISH,PROBLEM_DESTROY
   
-  PUBLIC PROBLEM_SPECIFICATION_GET,PROBLEM_SPECIFICATION_SET
+  PUBLIC Problem_SpecificationGet
   
   PUBLIC PROBLEM_CONTROL_LOOP_CREATE_START,PROBLEM_CONTROL_LOOP_CREATE_FINISH
   
@@ -655,11 +655,8 @@ CONTAINS
           & ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Global number   = ",PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Problem class   = ",PROBLEMS%PROBLEMS(problem_idx)%PTR%CLASS, &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Problem type    = ",PROBLEMS%PROBLEMS(problem_idx)%PTR%TYPE, &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Problem subtype = ",PROBLEMS%PROBLEMS(problem_idx)%PTR%SUBTYPE, &
+        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SIZE(PROBLEMS%PROBLEMS(problem_idx)%PTR%SPECIFICATION,1),8,8, &
+          & PROBLEMS%PROBLEMS(problem_idx)%PTR%SPECIFICATION,'("  Problem specification = ",8(X,I3))','(16X,8(X,I3))', &
           & ERR,ERROR,*999)
       ENDDO !problem_idx    
     ENDIF
@@ -677,14 +674,11 @@ CONTAINS
   !
 
   !>Starts the process of creating a problem defined by USER_NUMBER. \see OPENCMISS::CMISSProblemCreateStart
-  !>The default values of the PROBLEM attributes are:
-  !>- CLASS: 4 (PROBLEM_CLASSICAL_FIELD_CLASS)
-  !>- TYPE: 1 (PROBLEM_LAPLACE_EQUATION_TYPE)
-  !>- SUBTYPE: 1 (PROBLEM_STANDARD_LAPLACE_SUBTYPE)
-  SUBROUTINE PROBLEM_CREATE_START(USER_NUMBER,PROBLEM,ERR,ERROR,*)
+  SUBROUTINE PROBLEM_CREATE_START(USER_NUMBER,PROBLEM_SPECIFICATION,PROBLEM,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the problem to create
+    INTEGER(INTG), INTENT(IN) :: PROBLEM_SPECIFICATION(:) !<The problem specification array, eg. [problem_class, problem_type, problem_subtype]
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<On return, a pointer to the created problem. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -718,10 +712,9 @@ CONTAINS
         NEW_PROBLEM%USER_NUMBER=USER_NUMBER
         NEW_PROBLEM%GLOBAL_NUMBER=PROBLEMS%NUMBER_OF_PROBLEMS+1
         NEW_PROBLEM%PROBLEMS=>PROBLEMS
-        !Default to a standardised Laplace.
-        NEW_PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
-        NEW_PROBLEM%TYPE=PROBLEM_LAPLACE_EQUATION_TYPE
-        NEW_PROBLEM%SUBTYPE=PROBLEM_STANDARD_LAPLACE_SUBTYPE
+        !Set problem specification
+        CALL Problem_SpecificationSet(NEW_PROBLEM,PROBLEM_SPECIFICATION,ERR,ERROR,*999)
+        !For compatibility with old code, set class, type and subtype
         NEW_PROBLEM%PROBLEM_FINISHED=.FALSE.
         !Initialise the problem setup information
         CALL PROBLEM_SETUP_INITIALISE(PROBLEM_SETUP_INFO,ERR,ERROR,*999)
@@ -881,6 +874,7 @@ CONTAINS
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(PROBLEM%CONTROL_LOOP)) CALL CONTROL_LOOP_DESTROY(PROBLEM%CONTROL_LOOP,ERR,ERROR,*999)
+      IF(ALLOCATED(PROBLEM%SPECIFICATION)) DEALLOCATE(PROBLEM%SPECIFICATION)
       DEALLOCATE(PROBLEM)
     ENDIF
        
@@ -911,9 +905,6 @@ CONTAINS
       PROBLEM%GLOBAL_NUMBER=0
       PROBLEM%PROBLEM_FINISHED=.FALSE.
       NULLIFY(PROBLEM%PROBLEMS)
-      PROBLEM%CLASS=PROBLEM_NO_CLASS
-      PROBLEM%TYPE=PROBLEM_NO_TYPE
-      PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE
       NULLIFY(PROBLEM%CONTROL_LOOP)
     ELSE
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
@@ -1133,7 +1124,12 @@ CONTAINS
     CALL ENTERS("PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%CLASS)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(1))
       CASE(PROBLEM_ELASTICITY_CLASS)
         CALL ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_INFO,ERR,ERROR,*999)
       CASE(PROBLEM_FLUID_MECHANICS_CLASS)
@@ -1151,7 +1147,7 @@ CONTAINS
       CASE(PROBLEM_MULTI_PHYSICS_CLASS)
         CALL MULTI_PHYSICS_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_INFO,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(PROBLEM%CLASS,"*",ERR,ERROR))//" is not valid."
+        LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))//" is not valid."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -1550,7 +1546,12 @@ CONTAINS
                       CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC,EQUATIONS_FIRST_ORDER_DYNAMIC) ! quasistatic handled like static
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+                            CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+                          ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+                            CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+                          END IF
+                          SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
                           CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                             CALL ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -1566,19 +1567,19 @@ CONTAINS
                           CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
                             !Pre residual evaluate not used
                           CASE DEFAULT
-                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid."
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*", &
+                              & ERR,ERROR))//" is not valid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT !EQUATIONS_SET%CLASS
+                          END SELECT !EQUATIONS_SET%SPECIFICATION(1)
                         CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
-                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
                             !Pre residual evaluate not used
                           CASE DEFAULT
-                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid."
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*", &
+                              & ERR,ERROR))//" is not valid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT !EQUATIONS_SET%CLASS
+                          END SELECT !EQUATIONS_SET%SPECIFICATION(1)
                         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -1683,7 +1684,12 @@ CONTAINS
                       CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC,EQUATIONS_FIRST_ORDER_DYNAMIC) ! quasistatic handled like static
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+                            CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+                          ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+                            CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+                          END IF
+                          SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
                           CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                             CALL ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -1699,19 +1705,19 @@ CONTAINS
                           CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
                             !Post residual evaluate not used
                           CASE DEFAULT
-                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid."
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*", &
+                              & ERR,ERROR))//" is not valid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT !EQUATIONS_SET%CLASS
+                          END SELECT !EQUATIONS_SET%SPECIFICATION(1)
                         CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
-                          SELECT CASE(EQUATIONS_SET%CLASS)
+                          SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
                             !Post residual evaluate not used
                           CASE DEFAULT
-                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid with the nodal solution method."
+                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*", &
+                              & ERR,ERROR))//" is not valid with the nodal solution method."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT !EQUATIONS_SET%CLASS
+                          END SELECT !EQUATIONS_SET%SPECIFICATION(1)
                         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -1951,7 +1957,12 @@ CONTAINS
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           CALL PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE(CONTROL_LOOP,ERR,ERROR,*999)
         ENDIF
-        SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+        IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<1) THEN
+          CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+        END IF
+        SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(1))
         CASE(PROBLEM_ELASTICITY_CLASS)
           CALL ELASTICITY_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
         CASE(PROBLEM_BIOELECTRICS_CLASS)
@@ -1969,7 +1980,7 @@ CONTAINS
         CASE(PROBLEM_MULTI_PHYSICS_CLASS)
           CALL MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))//" &
             & is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -2005,7 +2016,12 @@ CONTAINS
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-        SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+        IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<1) THEN
+          CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+        END IF
+        SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(1))
         CASE(PROBLEM_ELASTICITY_CLASS)
           CALL Elasticity_ControlLoopPostLoop(CONTROL_LOOP,ERR,ERROR,*999)
         CASE(PROBLEM_BIOELECTRICS_CLASS)
@@ -2015,7 +2031,7 @@ CONTAINS
         CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
           !Do nothing
         CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-          SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE)
             CALL REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
@@ -2028,7 +2044,7 @@ CONTAINS
         CASE(PROBLEM_MULTI_PHYSICS_CLASS)
           CALL MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))//" &
             & is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -2071,7 +2087,12 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
           PROBLEM=>CONTROL_LOOP%PROBLEM
           IF(ASSOCIATED(PROBLEM)) THEN
-            SELECT CASE(PROBLEM%CLASS)
+            IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<1) THEN
+              CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+            END IF
+            SELECT CASE(PROBLEM%SPECIFICATION(1))
             CASE(PROBLEM_ELASTICITY_CLASS)
               CALL ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_BIOELECTRICS_CLASS)
@@ -2089,7 +2110,7 @@ CONTAINS
             CASE(PROBLEM_MULTI_PHYSICS_CLASS)
               CALL MULTI_PHYSICS_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The problem class of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%CLASS,"*",ERR,ERROR))//" &
+              LOCAL_ERROR="The problem class of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))//" &
                 & is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -2139,7 +2160,12 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
           PROBLEM=>CONTROL_LOOP%PROBLEM
           IF(ASSOCIATED(PROBLEM)) THEN
-            SELECT CASE(PROBLEM%CLASS)
+            IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<1) THEN
+              CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+            END IF
+            SELECT CASE(PROBLEM%SPECIFICATION(1))
             CASE(PROBLEM_ELASTICITY_CLASS)
               CALL ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_BIOELECTRICS_CLASS)
@@ -2157,7 +2183,7 @@ CONTAINS
             CASE(PROBLEM_MULTI_PHYSICS_CLASS)
               CALL MULTI_PHYSICS_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The problem class of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+              LOCAL_ERROR="The problem class of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))//" &
                 & is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3337,9 +3363,17 @@ CONTAINS
         IF(ASSOCIATED(controlLoop)) THEN
           problem=>controlLoop%PROBLEM
           IF(ASSOCIATED(problem)) THEN
-            SELECT CASE(problem%CLASS)
+            IF(.NOT.ALLOCATED(problem%specification)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(problem%specification,1)<1) THEN
+              CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+            END IF
+            SELECT CASE(problem%SPECIFICATION(1))
             CASE(PROBLEM_ELASTICITY_CLASS)
-              SELECT CASE(problem%TYPE)
+              IF(SIZE(problem%specification,1)/=3) THEN
+                CALL FlagError("Problem specification must have three entries for an elasticity problem.",err,error,*999)
+              END IF
+              SELECT CASE(problem%SPECIFICATION(2))
               CASE(PROBLEM_LINEAR_ELASTICITY_TYPE,PROBLEM_FINITE_ELASTICITY_TYPE)
                 !Output meshes at iterations
                 IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -3349,7 +3383,7 @@ CONTAINS
                   ENDIF
                 ENDIF
               CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE,PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
-                SELECT CASE(problem%SUBTYPE)
+                SELECT CASE(problem%SPECIFICATION(3))
                 CASE(PROBLEM_LE_CONTACT_TRANSFORM_SUBTYPE,PROBLEM_FE_CONTACT_TRANSFORM_SUBTYPE) !Reproject at iteration 0 before the nonlinear solve to update xi location since the field is transformed.
                   IF(iterationNumber==0) THEN
                     reproject=.TRUE.
@@ -3360,7 +3394,7 @@ CONTAINS
                     & PROBLEM_FE_CONTACT_TRANSFORM_REPROJECT_SUBTYPE,PROBLEM_FE_CONTACT_REPROJECT_SUBTYPE)
                   reproject=.TRUE.
                 CASE DEFAULT
-                  localError="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(problem%SUBTYPE,"*",err,error))//" &
+                  localError="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(3),"*",err,error))//" &
                     & is invalid."
                   CALL FLAG_ERROR(localError,err,error,*999)
                 END SELECT
@@ -3406,7 +3440,7 @@ CONTAINS
                   ENDIF
                 ENDIF
               CASE DEFAULT
-                localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%TYPE,"*",err,error))//" &
+                localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(2),"*",err,error))//" &
                   & is invalid."
                 CALL FLAG_ERROR(localError,err,error,*999)
               END SELECT
@@ -3414,7 +3448,7 @@ CONTAINS
                 & PROBLEM_CLASSICAL_FIELD_CLASS,PROBLEM_FITTING_CLASS,PROBLEM_MODAL_CLASS,PROBLEM_MULTI_PHYSICS_CLASS)
               !Do nothing???
             CASE DEFAULT
-              localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%CLASS,"*",err,error))//" &
+              localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(1),"*",err,error))//" &
                 & is invalid."
               CALL FLAG_ERROR(localError,err,error,*999)
             END SELECT
@@ -3498,9 +3532,17 @@ CONTAINS
       solverMapping=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING
       problem=>solver%SOLVERS%CONTROL_LOOP%PROBLEM
 
-      SELECT CASE(problem%CLASS)
+      IF(.NOT.ALLOCATED(problem%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Problem specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(problem%SPECIFICATION(1))
       CASE(PROBLEM_ELASTICITY_CLASS)
-        SELECT CASE(problem%TYPE)
+        IF(SIZE(problem%specification,1)/=3) THEN
+          CALL FlagError("Problem specification must have three entries for an elasticity problem.",err,error,*999)
+        END IF
+        SELECT CASE(problem%SPECIFICATION(2))
         CASE(PROBLEM_LINEAR_ELASTICITY_TYPE,PROBLEM_FINITE_ELASTICITY_TYPE,PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE, &
           & PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
 
@@ -3557,7 +3599,7 @@ CONTAINS
           ENDIF
 
         CASE DEFAULT
-          localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%TYPE,"*",err,error))//" &
+          localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(2),"*",err,error))//" &
             & is invalid."
           CALL FLAG_ERROR(localError,err,error,*999)
         END SELECT
@@ -3565,14 +3607,14 @@ CONTAINS
           & PROBLEM_CLASSICAL_FIELD_CLASS,PROBLEM_FITTING_CLASS,PROBLEM_MODAL_CLASS,PROBLEM_MULTI_PHYSICS_CLASS)
         !Do nothing???
       CASE DEFAULT
-        localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%CLASS,"*",err,error))//" &
+        localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(1),"*",err,error))//" &
           & is invalid."
         CALL FLAG_ERROR(localError,err,error,*999)
       END SELECT
 
-      SELECT CASE(problem%CLASS)
+      SELECT CASE(problem%SPECIFICATION(1))
       CASE(PROBLEM_ELASTICITY_CLASS)
-        SELECT CASE(problem%TYPE)
+        SELECT CASE(problem%SPECIFICATION(2))
         CASE(PROBLEM_LINEAR_ELASTICITY_TYPE,PROBLEM_FINITE_ELASTICITY_TYPE)
           ! Pass
         CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE,PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
@@ -3656,7 +3698,7 @@ CONTAINS
           ENDIF
 
         CASE DEFAULT
-          localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%TYPE,"*",err,error))//" &
+          localError="The problem type of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(2),"*",err,error))//" &
             & is invalid."
           CALL FLAG_ERROR(localError,err,error,*999)
         END SELECT
@@ -3664,7 +3706,7 @@ CONTAINS
           & PROBLEM_CLASSICAL_FIELD_CLASS,PROBLEM_FITTING_CLASS,PROBLEM_MODAL_CLASS,PROBLEM_MULTI_PHYSICS_CLASS)
         !Do nothing???
       CASE DEFAULT
-        localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%CLASS,"*",err,error))//" &
+        localError="The problem class of "//TRIM(NUMBER_TO_VSTRING(problem%SPECIFICATION(1),"*",err,error))//" &
           & is invalid."
         CALL FLAG_ERROR(localError,err,error,*999)
       END SELECT
@@ -3685,125 +3727,106 @@ CONTAINS
   !
 
   !>Gets the problem specification i.e., problem class, type and subtype for a problem identified by a pointer. \see OPENCMISS::CMISSProblemSpecificationGet
-  SUBROUTINE PROBLEM_SPECIFICATION_GET(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE Problem_SpecificationGet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the specification for.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<On return, The problem class to set.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem equation type to set.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the problem subtype to set.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to get the specification for.
+    INTEGER(INTG), INTENT(INOUT) :: problemSpecification(:) !<On return, The problem specifcation array. Must be allocated on entry.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: specificationLength
 
-    CALL ENTERS("PROBLEM_SPECIFICATION_GET",ERR,ERROR,*999)
+    CALL Enters("Problem_SpecificationGet",err,error,*999)
 
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%PROBLEM_FINISHED) THEN
-        PROBLEM_CLASS=PROBLEM%CLASS
-        SELECT CASE(PROBLEM_CLASS)
-        CASE(PROBLEM_ELASTICITY_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-          CALL FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
-        CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-          CALL CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
-        CASE(PROBLEM_MODAL_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(PROBLEM_FITTING_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(PROBLEM_OPTIMISATION_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(PROBLEM_MULTI_PHYSICS_CLASS)
-          CALL MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
-        CASE DEFAULT
-          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(PROBLEM_CLASS,"*",ERR,ERROR))//" is not valid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
+    IF(ASSOCIATED(problem)) THEN
+      IF(problem%problem_finished) THEN
+        IF(.NOT.ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        END IF
+        specificationLength=SIZE(problem%specification,1)
+        IF(SIZE(problemSpecification,1)>=specificationLength) THEN
+          problemSpecification(1:specificationLength)=problem%specification(1:specificationLength)
+        ELSE
+          CALL FlagError("Problem specification size is "//TRIM(NumberToVstring(specificationLength,"*",err,error))// &
+            & " but input array only has size "//TRIM(NumberToVstring(SIZE(problemSpecification,1),"*",err,error))//".", &
+            & err,error,*999)
+        END IF
       ELSE
-        CALL FLAG_ERROR("Problem has not been finished.",ERR,ERROR,*999)
-      ENDIF
+        CALL FlagError("Problem has not been finished.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("PROBLEM_SPECIFICATION_GET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Problem_SpecificationGet")
     RETURN
-999 CALL ERRORS("PROBLEM_SPECIFICATION_GET",ERR,ERROR)
-    CALL EXITS("PROBLEM_SPECIFICATION_GET")
+999 CALL Errors("Problem_SpecificationGet",err,error)
+    CALL Exits("Problem_SpecificationGet")
     RETURN 1
-  END SUBROUTINE PROBLEM_SPECIFICATION_GET
+  END SUBROUTINE Problem_SpecificationGet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem specification i.e., problem class, type and subtype for a problem identified by a pointer. \see OPENCMISS::CMISSProblemSpecificationSet
-  SUBROUTINE PROBLEM_SPECIFICATION_SET(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification, eg. problem class, type and subtype for a problem. \see OPENCMISS::CMISSProblemSpecificationSet
+  SUBROUTINE Problem_SpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_CLASS !<The problem class to set.
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem equation type to set.
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for.
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification array to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(PROBLEM_SETUP_TYPE) :: PROBLEM_SETUP_INFO
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemClass
 
-    CALL ENTERS("PROBLEM_SPECIFICATION_SET",ERR,ERROR,*999)
+    CALL Enters("Problem_SpecificationSet",err,error,*999)
 
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%PROBLEM_FINISHED) THEN
-        CALL FLAG_ERROR("Problem has been finished.",ERR,ERROR,*999)
+    IF(ASSOCIATED(problem)) THEN
+      IF(problem%problem_finished) THEN
+        CALL FlagError("Problem has been finished.",err,error,*999)
       ELSE
-        SELECT CASE(PROBLEM_CLASS)
+        IF(SIZE(problemSpecification,1)<1) THEN
+          CALL FlagError("Problem specification size is zero. First entry must be problem class.",err,error,*999)
+        END IF
+        problemClass=problemSpecification(1)
+        SELECT CASE(problemClass)
         CASE(PROBLEM_ELASTICITY_CLASS)
-          CALL ELASTICITY_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+          CALL Elasticity_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
         CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-          CALL FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+          CALL FluidMechanics_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
         CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-          CALL CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+          CALL ClassicalField_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
         CASE(PROBLEM_BIOELECTRICS_CLASS)
-          CALL BIOELECTRIC_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+          CALL Bioelectric_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
         CASE(PROBLEM_MODAL_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(PROBLEM_FITTING_CLASS)
-          CALL FITTING_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+          CALL Fitting_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
         CASE(PROBLEM_OPTIMISATION_CLASS)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(PROBLEM_MULTI_PHYSICS_CLASS)
-          CALL MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+          CALL MultiPhysics_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(PROBLEM_CLASS,"*",ERR,ERROR))//" is not valid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          localError="Problem class "//TRIM(NumberToVstring(problemClass,"*",err,error))//" is not valid."
+          CALL FlagError(localError,err,error,*999)
         END SELECT
-        !Initialise the problem setup information
-        CALL PROBLEM_SETUP_INITIALISE(PROBLEM_SETUP_INFO,ERR,ERROR,*999)
-        PROBLEM_SETUP_INFO%SETUP_TYPE=PROBLEM_SETUP_INITIAL_TYPE
-        PROBLEM_SETUP_INFO%ACTION_TYPE=PROBLEM_SETUP_START_ACTION
-        !Finish the problem specific setup
-        CALL PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_INFO,ERR,ERROR,*999)
-        !Finalise the problem setup information
-        CALL PROBLEM_SETUP_FINALISE(PROBLEM_SETUP_INFO,ERR,ERROR,*999)
-      ENDIF
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("PROBLEM_SPECIFICATION_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("Problem_SpecificationSet")
     RETURN
-999 CALL ERRORS("PROBLEM_SPECIFICATION_SET",ERR,ERROR)
-    CALL EXITS("PROBLEM_SPECIFICATION_SET")
+999 CALL Errors("Problem_SpecificationSet",err,error)
+    CALL Exits("Problem_SpecificationSet")
     RETURN 1
-  END SUBROUTINE PROBLEM_SPECIFICATION_SET
-  
+  END SUBROUTINE Problem_SpecificationSet
+
   !
   !================================================================================================================================
   !

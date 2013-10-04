@@ -69,12 +69,12 @@ MODULE FSI_ROUTINES
   IMPLICIT NONE
 
   PUBLIC FSI_EQUATIONS_SET_SETUP
-  PUBLIC FSI_EQUATIONS_SET_SUBTYPE_SET
+  PUBLIC FSI_EquationsSetSpecificationSet
   PUBLIC FSI_EQUATIONS_SET_SOLUTION_METHOD_SET
 
   PUBLIC FSI_PROBLEM_SETUP
-  PUBLIC FSI_PROBLEM_SUBTYPE_SET
-  
+  PUBLIC FSI_ProblemSpecificationSet
+
   PUBLIC FSI_FINITE_ELEMENT_CALCULATE
 
   PUBLIC FSI_PRE_SOLVE
@@ -103,7 +103,13 @@ CONTAINS
     CALL ENTERS("FSI_EQUATIONS_SET_SOLUTION_METHOD_SET",Err,Error,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a "// &
+          & "finite elasticity Navier-Stokes class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -123,7 +129,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",Err,Error))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",Err,Error))// &
           & " is not valid for a finite elasticity navier stokes equation type of a multi physics equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
       END SELECT
@@ -191,65 +197,78 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a finite elasticity navier stokes  equation type of a multi physics equations set class.
-  SUBROUTINE FSI_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,Err,Error,*)
+  !>Sets/changes the equation subtype for a finite elasticity navier stokes equation type of a multi physics equations set class.
+  SUBROUTINE FSI_EquationsSetSpecificationSet(equationsSet,specification,Err,Error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: Error !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("FSI_EQUATIONS_SET_SUBTYPE_SET",Err,Error,*999)
+    CALL Enters("FSI_EquationsSetSpecificationSet",err,error,*999)
 
-    CALL FLAG_ERROR("FSI_EQUATIONS_SET_SUBTYPE_SET is not implemented.",Err,Error,*999)
+    CALL FlagError("FSI_EquationsSetSpecificationSet is not implemented.",err,error,*999)
 
-    CALL EXITS("FSI_EQUATIONS_SET_SUBTYPE_SET")
+    CALL Exits("FSI_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("FSI_EQUATIONS_SET_SUBTYPE_SET",Err,Error)
-    CALL EXITS("FSI_EQUATIONS_SET_SUBTYPE_SET")
+999 CALL Errors("FSI_EquationsSetSpecificationSet",err,error)
+    CALL Exits("FSI_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE FSI_EQUATIONS_SET_SUBTYPE_SET
+  END SUBROUTINE FSI_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a finite elasticity navier stokes equation type .
-  SUBROUTINE FSI_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,Err,Error,*)
+  !>Sets the problem specification for a finite elasticity Navier-Stokes equation type.
+  SUBROUTINE FSI_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: Error !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("FSI_PROBLEM_SUBTYPE_SET",Err,Error,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",Err,Error))// &
-          & " is not valid for a finite elasticity navier stokes type of a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
-      END SELECT
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    CALL Enters("FSI_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="Problem subtype "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a finite elasticity Navier-Stokes equation type of a multi physics problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_MULTI_PHYSICS_CLASS, &
+          & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE, &
+          & problemSubtype]
+      ELSE
+        CALL FlagError("Finite elasticity Navier-Stokes problem specificaion must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",Err,Error,*999)
-    ENDIF
-       
-    CALL EXITS("FSI_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("FSI_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("FSI_PROBLEM_SUBTYPE_SET",Err,Error)
-    CALL EXITS("FSI_PROBLEM_SUBTYPE_SET")
+999 CALL Errors("FSI_ProblemSpecificationSet",err,error)
+    CALL Exits("FSI_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE FSI_PROBLEM_SUBTYPE_SET
+  END SUBROUTINE FSI_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -285,7 +304,17 @@ CONTAINS
     NULLIFY(MovingMeshSolvers)
     
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(ALLOCATED(problem%specification)) THEN
+        IF(.NOT.ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(problem%specification,1)<3) THEN
+          CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+            & err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
         !Standard FiniteElasticity NavierStokes ALE
         CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
@@ -425,7 +454,7 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",Err,Error))// &
+          LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",Err,Error))// &
             & " does not equal a standard finite elasticity navier stokes equation subtype."
           CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
       END SELECT
@@ -460,8 +489,13 @@ CONTAINS
 
     IF(ASSOCIATED(ControlLoop)) THEN
       IF(ASSOCIATED(Solver)) THEN
-        IF(ASSOCIATED(ControlLoop%PROBLEM)) THEN
-          SELECT CASE(ControlLoop%PROBLEM%SUBTYPE)
+        IF(ASSOCIATED(ControlLoop%problem)) THEN
+          IF(.NOT.ALLOCATED(ControlLoop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(ControlLoop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an elasticity Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(ControlLoop%problem%specification(3))
             CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
               IF(ControlLoop%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Running pre-solve steps.",Err,Error,*999)
@@ -473,7 +507,7 @@ CONTAINS
                 CALL FLAG_ERROR("Incorrect loop type. Must be time loop.",Err,Error,*999)
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(ControlLoop%PROBLEM%SUBTYPE,"*",Err,Error))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(ControlLoop%PROBLEM%SPECIFICATION(3),"*",Err,Error))// &
                 & " is not valid for a finite elasticity navier stokes type of a multi physics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
           END SELECT
@@ -516,8 +550,13 @@ CONTAINS
 
     IF(ASSOCIATED(ControlLoop)) THEN
       IF(ASSOCIATED(Solver)) THEN
-        IF(ASSOCIATED(ControlLoop%PROBLEM)) THEN 
-          SELECT CASE(ControlLoop%PROBLEM%SUBTYPE)
+        IF(ASSOCIATED(ControlLoop%problem)) THEN 
+          IF(.NOT.ALLOCATED(ControlLoop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(ControlLoop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an elasticity Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(ControlLoop%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
               !Post solve for the linear solver
               IF(Solver%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
@@ -578,12 +617,12 @@ CONTAINS
      !           CALL FIELD_IO_ELEMENTS_EXPORT(Solver%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(2)%PTR%REGION%FIELDS, &
      !             & FileName,Method,ERR,ERROR,*999)
               ELSE
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(ControlLoop%PROBLEM%SUBTYPE,"*",Err,Error))// &
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(ControlLoop%PROBLEM%SPECIFICATION(3),"*",Err,Error))// &
                   & " for a FiniteElasticity-NavierStokes type of a multi physics problem class has unknown solver solve type."
                 CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(ControlLoop%PROBLEM%SUBTYPE,"*",Err,Error))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(ControlLoop%PROBLEM%SPECIFICATION(3),"*",Err,Error))// &
                 & " is not valid for a FiniteElasticity-NavierStokes type of a multi physics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
           END SELECT
@@ -701,15 +740,15 @@ CONTAINS
           & .OR.(EquationsSetIndex<=DynamicSolverMapping%NUMBER_OF_EQUATIONS_SETS &
           & .AND..NOT.FluidEquationsSetFound))
           EquationsSet=>DynamicSolverMapping%EQUATIONS_SETS(EquationsSetIndex)%PTR
-          IF(EquationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS &
-            & .AND.EquationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE &
-            & .AND.((EquationsSet%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE).OR. &
-            & (EquationsSet%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE))) THEN
+          IF(EquationsSet%specification(1)==EQUATIONS_SET_ELASTICITY_CLASS &
+            & .AND.EquationsSet%specification(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE &
+            & .AND.((EquationsSet%specification(3)==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE).OR. &
+            & (EquationsSet%specification(3)==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE))) THEN
             SolidEquationsSet=>EquationsSet
             SolidEquationsSetFound=.TRUE.
-          ELSEIF(EquationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
-            & .AND.EquationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
-            & .AND.EquationsSet%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
+          ELSEIF(EquationsSet%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
+            & .AND.EquationsSet%specification(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
+            & .AND.EquationsSet%specification(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
             FluidEquationsSet=>EquationsSet
             FluidEquationsSetFound=.TRUE.
           ELSE

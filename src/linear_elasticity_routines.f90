@@ -81,8 +81,8 @@ MODULE LINEAR_ELASTICITY_ROUTINES
 
   PUBLIC LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE,LINEAR_ELASTICITY_EQUATIONS_SET_SETUP, &
     & LINEAR_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET,LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE, &
-    & LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET, &
-    & LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET,LINEAR_ELASTICITY_PROBLEM_SETUP
+    & LinearElasticity_EquationsSetSpecificationSet, &
+    & LinearElasticity_ProblemSpecificationSet,LINEAR_ELASTICITY_PROBLEM_SETUP
 
 CONTAINS
 
@@ -1136,6 +1136,12 @@ CONTAINS
     !!TODO:: Check whether quadrature scheme being used is suffient to interpolate highest order basis function
     !!Q - TPBG: Need to be able to use different Interpolation for Geometric & Dependent field?
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a linear elasticity type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
         DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -1169,7 +1175,7 @@ CONTAINS
         !    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
         !  GEOMETRIC_BASES_EP(ns)=GEOMETRIC_BASES(ns)%PTR%NUMBER_OF_ELEMENT_PARAMETERS
         !ENDDO
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         !
         !ONE, TWO & THREE DIMENSIONAL LINEAR ELASTICITY
         !
@@ -1227,7 +1233,7 @@ CONTAINS
               !CALL COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT, &
               !  EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT,DXDNU,ERR,ERROR,*999)
               !Create Linear Elasticity Tensor C
-              CALL LINEAR_ELASTICITY_TENSOR(EQUATIONS_SET%SUBTYPE,MATERIALS_INTERP_POINT,C,ERR,ERROR,*999)
+              CALL LINEAR_ELASTICITY_TENSOR(EQUATIONS_SET%SPECIFICATION(3),MATERIALS_INTERP_POINT,C,ERR,ERROR,*999)
               !Store Elasticity Tensor diagonal & off diagonal stress coefficients
               JRWG_DIAG_C(3,:) = (/JRWG*C(4,4),JRWG*C(5,5),JRWG*C(3,3)/)
               JRWG_DIAG_C(2,:) = (/JRWG*C(6,6),JRWG*C(2,2),JRWG_DIAG_C(3,2)/)
@@ -1304,9 +1310,9 @@ CONTAINS
 !             ENDDO !ms
             ENDDO !ng
             !If Plane Stress/Strain problem multiply equation matrix by thickness
-            IF(EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE .OR. &
-              & EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE .OR. & 
-              & EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3) == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE .OR. &
+              & EQUATIONS_SET%SPECIFICATION(3) == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE .OR. & 
+              & EQUATIONS_SET%SPECIFICATION(3) == EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE) THEN
               DO mhs=1,TOTAL_DEPENDENT_BASIS_EP
                 DO nhs=mhs,TOTAL_DEPENDENT_BASIS_EP
                   !!TODO::Bring 2D plane stress/strain element thickness in through a field - element constant when it can be exported by field i/o. Currently brought in through material field (Temporary)
@@ -1357,7 +1363,7 @@ CONTAINS
         CASE(EQUATIONS_SET_SHELL_SUBTYPE)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Linear Elasticity equation type of a Elasticty equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -1514,9 +1520,15 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a linear elasticity type equations set.", &
+          & err,error,*999)
+      END IF
 
       !!TODO:: Update all these so there is a default setup that is valid for 1D,2D & 3D Linear Elasticity
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       !
       ! THREE DIMENSIONAL ELASTICITY
       !
@@ -2599,7 +2611,7 @@ CONTAINS
       CASE(EQUATIONS_SET_SHELL_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a linear elasticity equation type of an elasticity equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -2632,7 +2644,13 @@ CONTAINS
     CALL ENTERS("LINEAR_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a linear elasticity type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -2710,7 +2728,7 @@ CONTAINS
       CASE(EQUATIONS_SET_SHELL_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a linear elasticity equation type of an elasticity equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -2728,60 +2746,59 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a linear elasticity equation type of an elasticity equations set class.
-  SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a linear elasticity equation type of an elasticity equations set class.
+  SUBROUTINE LinearElasticity_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_FIELD_USER_NUMBER
-    TYPE(FIELD_TYPE), POINTER :: DUMMY_FIELD
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
 
-    CALL ENTERS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    CALL Enters("LinearElasticity_EquationsSetSpecificationSet",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      DUMMY_FIELD_USER_NUMBER=0
-      NULLIFY(DUMMY_FIELD)
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE)        
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE  
-      CASE(EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE
-      CASE(EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE
-      CASE(EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a linear elasticity type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE, &
+          & EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE, &
+          & EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE, &
+          & EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE)
+        !ok
       CASE(EQUATIONS_SET_PLATE_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_SHELL_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+        localError="Equations set subtype "//TRIM(NumberToVstring(specification(3),"*",err,error))// &
           & " is not valid for a linear elasticity equation type of an elasticity equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_ELASTICITY_CLASS,EQUATIONS_SET_LINEAR_ELASTICITY_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
 
-    CALL EXITS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET")
+    CALL Exits("LinearElasticity_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET")
+999 CALL Errors("LinearElasticity_EquationsSetSpecificationSet",err,error)
+    CALL Exits("LinearElasticity_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET
+  END SUBROUTINE LinearElasticity_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -2809,7 +2826,12 @@ CONTAINS
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a linear elasticity problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
       CASE(PROBLEM_NO_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
@@ -2901,7 +2923,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a linear elasticity type of an elasticity problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -2920,40 +2942,55 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a linear elasticity type .
-  SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a linear elasticity type problem.
+  SUBROUTINE LinearElasticity_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specifiation to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
 
-    CALL ENTERS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    CALL Enters("LinearElasticity_ProblemSpecificationSet",err,error,*999)
 
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_NO_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_ELASTICITY_CLASS
-        PROBLEM%TYPE=PROBLEM_LINEAR_ELASTICITY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE      
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a linear elasticity type of an elasticity problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_NO_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="Problem subtype "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a linear elasticity type of an elasticity problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+      ELSE IF(SIZE(problemSpecification,1)<3) THEN
+        !Linear elasticity problem doesn't require a subtype, set it to no type
+        problemSubtype=PROBLEM_NO_SUBTYPE
+      ELSE
+        CALL FlagError("Linear elasticity problem specification may only have up to 3 entries.",err,error,*999)
+      END IF
+      !Set full specification
+      IF(ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(problem%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+      END IF
+      problem%specification(1:3)=[PROBLEM_ELASTICITY_CLASS, PROBLEM_LINEAR_ELASTICITY_TYPE, problemSubtype]
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
 
-    CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET")
+    CALL Exits("LinearElasticity_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET")
+999 CALL Errors("LinearElasticity_ProblemSpecificationSet",err,error)
+    CALL Exits("LinearElasticity_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET
+  END SUBROUTINE LinearElasticity_ProblemSpecificationSet
 
   !
   !================================================================================================================================

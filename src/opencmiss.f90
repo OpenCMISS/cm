@@ -305,9 +305,9 @@ MODULE OPENCMISS
 
   TYPE(VARYING_STRING) :: error
 
-  !INTERFACE cmfe__Finalise_
+  !INTERFACE cmfe_Finalise_
   !  MODULE PROCEDURE cmfe_Finalise
-  !END INTERFACE !cmfe__Finalise_
+  !END INTERFACE !cmfe_Finalise_
 
   INTERFACE cmfe_Initialise
     MODULE PROCEDURE cmfe_InitialiseNumber
@@ -319,7 +319,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE cmfe_Fields_CreateRegion
   END INTERFACE !cmfe_Fields_Create
 
-  !PUBLIC cmfe__Finalise,cmfe_Initialise
+  !PUBLIC cmfe_Finalise,cmfe_Initialise
   PUBLIC cmfe_Finalise,cmfe_Initialise
 
   PUBLIC cmfe_BasisType,cmfe_BasisTypesCopy,cmfe_Basis_Finalise,cmfe_Basis_Initialise
@@ -2448,9 +2448,9 @@ MODULE OPENCMISS
     & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE !<Standard Monodomain Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMFE_EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE =  &
     & EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE !<Coupled 1D Monodomain 3D Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE =  &
+  INTEGER(INTG), PARAMETER :: CMFE_EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE =  &
     & EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE !<Coupled 1D Monodomain 3D Elasticity equations set subtype with titin \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
+  INTEGER(INTG), PARAMETER :: CMFE_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
     & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE !<Finite Elasticity Navier Stokes ALE equations set subtype \see OPENCMISS_EquationsSetSubtype,OPENCMISS
 
   !>@}
@@ -3031,12 +3031,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE cmfe_EquationsSet_SpecificationGetObj
   END INTERFACE !cmfe_EquationsSet_SpecificationGet
 
-   !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set.
-  INTERFACE cmfe_EquationsSet_SpecificationSet
-    MODULE PROCEDURE cmfe_EquationsSet_SpecificationSetNumber
-    MODULE PROCEDURE cmfe_EquationsSet_SpecificationSetObj
-  END INTERFACE !cmfe_EquationsSet_SpecificationSet
-
   !>Gets the equations set analytic user parameter
   INTERFACE cmfe_EquationsSet_AnalyticUserParamGet
     MODULE PROCEDURE cmfe_EquationsSet_AnalyticUserParamGetNumber
@@ -3083,7 +3077,7 @@ MODULE OPENCMISS
 
   PUBLIC cmfe_EquationsSet_SourceDestroy
 
-  PUBLIC cmfe_EquationsSet_SpecificationGet,cmfe_EquationsSet_SpecificationSet
+  PUBLIC cmfe_EquationsSet_SpecificationGet
 
   PUBLIC cmfe_EquationsSet_AnalyticUserParamSet,cmfe_EquationsSet_AnalyticUserParamGet
 
@@ -3418,10 +3412,10 @@ MODULE OPENCMISS
   END INTERFACE !cmfe_Field_MeshDecompositionSet
 
   !>Sets/changes the data projection for a field.
-  INTERFACE CMISSField_DataProjectionSet
-    MODULE PROCEDURE CMISSField_DataProjectionSetNumber
-    MODULE PROCEDURE CMISSField_DataProjectionSetObj
-  END INTERFACE !CMISSField_DataProjectionSet
+  INTERFACE cmfe_Field_DataProjectionSet
+    MODULE PROCEDURE cmfe_Field_DataProjectionSetNumber
+    MODULE PROCEDURE cmfe_Field_DataProjectionSetObj
+  END INTERFACE cmfe_Field_DataProjectionSet
 
   !>Returns the number of field components for a field variable.
   INTERFACE cmfe_Field_NumberOfComponentsGet
@@ -3694,9 +3688,9 @@ MODULE OPENCMISS
   END INTERFACE !cmfe_Field_ParameterSetInterpolateGauss
 
   !>Updates the given parameter set with the given value for a particular data point of a field variable component.
-  INTERFACE CMISSField_ParameterSetUpdateElementDataPoint
-    MODULE PROCEDURE CMISSField_ParameterSetUpdateElementDataPointDPObj
-  END INTERFACE !CMISSField_ParameterSetUpdateElementDataPoint
+  INTERFACE cmfe_Field_ParameterSetUpdateElementDataPoint
+    MODULE PROCEDURE cmfe_Field_ParameterSetUpdateElementDataPointDPObj
+  END INTERFACE cmfe_Field_ParameterSetUpdateElementDataPoint
 
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSField_ParameterSetUpdateFinish
   INTERFACE cmfe_Field_ParameterSetUpdateStart
@@ -4872,11 +4866,6 @@ MODULE OPENCMISS
   END INTERFACE !cmfe_MeshElements_UserNumberGet
 
   !>Sets/changes the element user number for an element in a mesh.
-  INTERFACE CMISSMeshElements_UserNumberSet
-    MODULE PROCEDURE CMISSMeshElements_UserNumberSetNumber
-    MODULE PROCEDURE CMISSMeshElements_UserNumberSetObj
-  END INTERFACE !CMISSMeshElements_UserNumberSet
-
   INTERFACE cmfe_MeshElements_UserNumberSet
     MODULE PROCEDURE cmfe_MeshElements_UserNumberSetNumber
     MODULE PROCEDURE cmfe_MeshElements_UserNumberSetObj
@@ -5321,11 +5310,11 @@ MODULE OPENCMISS
     & PROBLEM_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMFE__PROBLEM_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE = &
+  INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE = &
     & Problem_DataPointVectorStaticFittingSubtype !<Standard static Galerkin projection problem using data points subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMFE__PROBLEM_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE = &
+  INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE = &
     & Problem_DataPointVectorQuasistaticFittingSubtype !<Standard quasistatic Galerkin projection problem using data points subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMFE__PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
+  INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5352,9 +5341,9 @@ MODULE OPENCMISS
     & PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE = & 
     & PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE = & 
+  INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE = & 
     & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE !<Transient monodomain simple elasticity problem subtype with titin \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
+  INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
     & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE !<Coupled Finite Elasticity Navier Stokes moving mesh subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5653,12 +5642,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE cmfe_Problem_SpecificationGetObj
   END INTERFACE !cmfe_Problem_SpecificationGet
 
-  !>Sets/changes the problem specification i.e., problem class, type and subtype for a problem.
-  INTERFACE cmfe_Problem_SpecificationSet
-    MODULE PROCEDURE cmfe_Problem_SpecificationSetNumber
-    MODULE PROCEDURE cmfe_Problem_SpecificationSetObj
-  END INTERFACE !cmfe_Problem_SpecificationSet
-
   PUBLIC cmfe_Problem_CellMLEquationsCreateFinish,cmfe_Problem_CellMLEquationsCreateStart
 
   PUBLIC cmfe_Problem_CellMLEquationsGet
@@ -5689,7 +5672,7 @@ MODULE OPENCMISS
 
   PUBLIC cmfe_Problem_SolversDestroy
 
-  PUBLIC cmfe_Problem_SpecificationGet,cmfe_Problem_SpecificationSet
+  PUBLIC cmfe_Problem_SpecificationGet
 
 !!==================================================================================================================================
 !!
@@ -6894,12 +6877,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Copy an array of CMISSBasisTypes from C to an allocated Fortran array, for use by the C bindings
+  !>Copy an array of cmfe_BasisTypes from C to an allocated Fortran array, for use by the C bindings
   SUBROUTINE cmfe_BasisTypesCopy(bases,basesSize,basesPtr,err)
 
     !Argument variables
-    TYPE(cmfe_BasisType), INTENT(INOUT) :: bases(:) !<On return, the array of CMISSBasisTypes
-    INTEGER(C_INT), INTENT(IN) :: basesSize !<The length of the C array of pointers to CMISSBasisTypes
+    TYPE(cmfe_BasisType), INTENT(INOUT) :: bases(:) !<On return, the array of cmfe_BasisTypes
+    INTEGER(C_INT), INTENT(IN) :: basesSize !<The length of the C array of pointers to cmfe_BasisTypes
     TYPE(C_PTR), INTENT(IN) :: basesPtr !<The pointer to the first cmfe_BasisType pointer
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -16382,26 +16365,26 @@ CONTAINS
   !
 
   !>Sets/changes the output parameters for a load control loop identified by an object.
-  SUBROUTINE CMISSControlLoop_LoadOutputSet(controlLoop,outputFrequency,err)
+  SUBROUTINE cmfe_ControlLoop_LoadOutputSet(controlLoop,outputFrequency,err)
 
     !Argument variables
-    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop to set the output parameters for.
+    TYPE(cmfe_ControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop to set the output parameters for.
     INTEGER(INTG), INTENT(IN) ::  outputFrequency !<The output frequency modulo to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSControlLoop_LoadOutputSet",err,error,*999)
+    CALL ENTERS("cmfe_ControlLoop_LoadOutputSet",err,error,*999)
 
     CALL CONTROL_LOOP_LOAD_OUTPUT_SET(controlLoop%CONTROL_LOOP,outputFrequency,err,error,*999)
 
-    CALL EXITS("CMISSControlLoop_LoadOutputSet")
+    CALL EXITS("cmfe_ControlLoop_LoadOutputSet")
     RETURN
-999 CALL ERRORS("CMISSControlLoop_LoadOutputSet",err,error)
-    CALL EXITS("CMISSControlLoop_LoadOutputSet")
+999 CALL ERRORS("cmfe_ControlLoop_LoadOutputSet",err,error)
+    CALL EXITS("cmfe_ControlLoop_LoadOutputSet")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSControlLoop_LoadOutputSet
+  END SUBROUTINE cmfe_ControlLoop_LoadOutputSet
 
   !
   !================================================================================================================================
@@ -23699,19 +23682,17 @@ CONTAINS
 
   !>Start the creation of an equations set identified by a user number.
   SUBROUTINE cmfe_EquationsSet_CreateStartNumber(equationsSetUserNumber,regionUserNumber,geomFibreFieldUserNumber,&
-               & equationsSetClass,equationsSetType,equationsSetSubtype,equationsSetFieldUserNumber,err)
+      & equationsSetSpecification,equationsSetFieldUserNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to be created.
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region to start the creation of an equations set on.
     INTEGER(INTG), INTENT(IN) :: geomFibreFieldUserNumber !<The user number of the Geometric/Fibre field for the equations set.
+    INTEGER(INTG), INTENT(IN) :: equationsSetSpecification(:) !<The equations set specification array, containing the equations class, type etc
     INTEGER(INTG), INTENT(IN) :: equationsSetFieldUserNumber !<The user number of the equations set field
-    INTEGER(INTG), INTENT(IN) :: equationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
-    INTEGER(INTG), INTENT(IN) :: equationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
-    INTEGER(INTG), INTENT(IN) :: equationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
-    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -23726,18 +23707,18 @@ CONTAINS
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
     NULLIFY(GEOM_FIBRE_FIELD)
-    NULLIFY(EQUATIONS_SET_FIELD_FIELD)
+    NULLIFY(EQUATIONS_SET_FIELD)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(geomFibreFieldUserNumber,REGION,GEOM_FIBRE_FIELD,err,error,*999)
 
-!!!!!!!!!!!!ALSO A FIELD USER NUMBER FIND FOR EQUATIONS SET FIELD?
-      CALL FIELD_USER_NUMBER_FIND(equationsSetFieldUserNumber,REGION,EQUATIONS_SET_FIELD_FIELD,err,error,*999)
+      !Equations set field may not be created
+      CALL FIELD_USER_NUMBER_FIND(equationsSetFieldUserNumber,REGION,EQUATIONS_SET_FIELD,err,error,*999)
 
       IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
         CALL EQUATIONS_SET_CREATE_START(equationsSetUserNumber,REGION,GEOM_FIBRE_FIELD,&
-          & equationsSetClass,equationsSetType,equationsSetSubtype,equationsSetFieldUserNumber,&
-          & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,err,error,*999)
+          & equationsSetSpecification,equationsSetFieldUserNumber,&
+          & EQUATIONS_SET_FIELD,EQUATIONS_SET,err,error,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(geomFibreFieldUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -23763,19 +23744,17 @@ CONTAINS
 
   !>Start the creation of an equations set identified by an object.
   SUBROUTINE cmfe_EquationsSet_CreateStartObj(equationsSetUserNumber,region,geomFibreField,&
-              & equationsSetClass,equationsSetType,equationsSetSubtype,equationsSetFieldUserNumber,&
-              & equationsSetFieldField,equationsSet,err)
+      & equationsSetSpecification,equationsSetFieldUserNumber,&
+      & equationsSetFieldField,equationsSet,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to be created.
     TYPE(cmfe_RegionType), INTENT(IN) :: region !<The region to create the equations set on.
     TYPE(cmfe_FieldType), INTENT(IN) :: geomFibreField !<The Geometric/Fibre field for the creation of the equations set.
+    INTEGER(INTG), INTENT(IN) :: equationsSetSpecification(:) !<The equations set specification array, containing the equations class, type etc
     INTEGER(INTG), INTENT(IN) :: equationsSetFieldUserNumber !<The user number of the equations set field
     TYPE(cmfe_FieldType), INTENT(INOUT) :: equationsSetFieldField !<On return, a pointer to the equations set field
     TYPE(cmfe_EquationsSetType), INTENT(INOUT) :: equationsSet !<On return, the created equations set.
-    INTEGER(INTG), INTENT(IN) :: equationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
-    INTEGER(INTG), INTENT(IN) :: equationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
-    INTEGER(INTG), INTENT(IN) :: equationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
@@ -23786,8 +23765,7 @@ CONTAINS
 #endif
 
     CALL EQUATIONS_SET_CREATE_START(equationsSetUserNumber,region%REGION,geomFibreField%FIELD, &
-      & equationsSetClass,equationsSetType,equationsSetSubtype,&
-      & equationsSetFieldUserNumber, equationsSetFieldField%FIELD, equationsSet%EQUATIONS_SET, &
+      & equationsSetSpecification,equationsSetFieldUserNumber,equationsSetFieldField%FIELD,equationsSet%EQUATIONS_SET, &
       & err,error,*999)
 
     CALL Exits("cmfe_EquationsSet_CreateStartObj")
@@ -25083,16 +25061,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set identified by a user number.
-  SUBROUTINE cmfe_EquationsSet_SpecificationGetNumber(regionUserNumber,equationsSetUserNumber,equationsSetClass, &
-    & equationsSetType,equationsSetSubtype,err)
+  !>Returns the equations set specification array i.e., equations set class, type and subtype etc for an equations set identified by a user number.
+  SUBROUTINE cmfe_EquationsSet_SpecificationGetNumber(regionUserNumber,equationsSetUserNumber,equationsSetSpecification,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the Region containing the equations set to get the specification for.
     INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to get the specification for.
-    INTEGER(INTG), INTENT(OUT) :: equationsSetClass !<On return, the equations set class. \see OPENCMISS_EquationsSetClasses
-    INTEGER(INTG), INTENT(OUT) :: equationsSetType !<On return, the equations set type. \see OPENCMISS_EquationsSetTypes
-    INTEGER(INTG), INTENT(OUT) :: equationsSetSubtype !<On return, the equations set subtype. \see OPENCMISS_EquationsSetSubtypes
+    INTEGER(INTG), INTENT(INOUT) :: equationsSetSpecification(:) !<On return, the equations set specification array. Must be allocated and large enough to contain the specification on entry.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -25107,7 +25082,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_SPECIFICATION_GET(EQUATIONS_SET,equationsSetClass,equationsSetType,equationsSetSubtype,err,error,*999)
+        CALL EquationsSet_SpecificationGet(EQUATIONS_SET,equationsSetSpecification,err,error,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -25131,21 +25106,18 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set identified by an object.
-  SUBROUTINE cmfe_EquationsSet_SpecificationGetObj(equationsSet,equationsSetClass,equationsSetType,equationsSetSubtype,err)
+  !>Returns the equations set specification array i.e., equations set class, type and subtype etc for an equations set identified by an object.
+  SUBROUTINE cmfe_EquationsSet_SpecificationGetObj(equationsSet,equationsSetSpecification,err)
 
     !Argument variables
     TYPE(cmfe_EquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the specification for.
-    INTEGER(INTG), INTENT(OUT) :: equationsSetClass !<On return, the equations set class. \see OPENCMISS_EquationsSetClasses
-    INTEGER(INTG), INTENT(OUT) :: equationsSetType !<On return, the equations set type. \see OPENCMISS_EquationsSetTypes
-    INTEGER(INTG), INTENT(OUT) :: equationsSetSubtype !<On return, the equations set subtype. \see OPENCMISS_EquationsSetSubtypes
+    INTEGER(INTG), INTENT(INOUT) :: equationsSetSpecification(:) !<On return, the equations set specification array. Must be allocated and large enough to contain the specification on entry.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL Enters("cmfe_EquationsSet_SpecificationGetObj",err,error,*999)
 
-    CALL EQUATIONS_SET_SPECIFICATION_GET(equationsSet%EQUATIONS_SET,equationsSetClass,equationsSetType,equationsSetSubtype, &
-      & err,error,*999)
+    CALL EquationsSet_SpecificationGet(equationsSet%EQUATIONS_SET,equationsSetSpecification,err,error,*999)
 
     CALL Exits("cmfe_EquationsSet_SpecificationGetObj")
     RETURN
@@ -25155,83 +25127,6 @@ CONTAINS
     RETURN
 
   END SUBROUTINE cmfe_EquationsSet_SpecificationGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set identified by a user number.
-  SUBROUTINE cmfe_EquationsSet_SpecificationSetNumber(regionUserNumber,equationsSetUserNumber,equationsSetClass, &
-    & equationsSetType,equationsSetSubtype,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the Region containing the equations set to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: equationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
-    INTEGER(INTG), INTENT(IN) :: equationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
-    INTEGER(INTG), INTENT(IN) :: equationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL Enters("cmfe_EquationsSet_SpecificationSetNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(EQUATIONS_SET)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
-      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_SPECIFICATION_SET(EQUATIONS_SET,equationsSetClass,equationsSetType,equationsSetSubtype,err,error,*999)
-      ELSE
-        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
-          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-        CALL FlagError(LOCAL_ERROR,err,error,*999)
-      END IF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
-      CALL FlagError(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL Exits("cmfe_EquationsSet_SpecificationSetNumber")
-    RETURN
-999 CALL Errors("cmfe_EquationsSet_SpecificationSetNumber",err,error)
-    CALL Exits("cmfe_EquationsSet_SpecificationSetNumber")
-    CALL CMISSHandleError(err,error)
-    RETURN
-
-  END SUBROUTINE cmfe_EquationsSet_SpecificationSetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set identified by an object.
-  SUBROUTINE cmfe_EquationsSet_SpecificationSetObj(equationsSet,equationsSetClass,equationsSetType,equationsSetSubtype,err)
-
-    !Argument variables
-    TYPE(cmfe_EquationsSetType), INTENT(INOUT) :: equationsSet !<The equations set to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: equationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
-    INTEGER(INTG), INTENT(IN) :: equationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
-    INTEGER(INTG), INTENT(IN) :: equationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL Enters("cmfe_EquationsSet_SpecificationSetObj",err,error,*999)
-
-    CALL EQUATIONS_SET_SPECIFICATION_SET(equationsSet%EQUATIONS_SET,equationsSetClass,equationsSetType,equationsSetSubtype, &
-      & err,error,*999)
-
-    CALL Exits("cmfe_EquationsSet_SpecificationSetObj")
-    RETURN
-999 CALL Errors("cmfe_EquationsSet_SpecificationSetObj",err,error)
-    CALL Exits("cmfe_EquationsSet_SpecificationSetObj")
-    CALL CMISSHandleError(err,error)
-    RETURN
-
-  END SUBROUTINE cmfe_EquationsSet_SpecificationSetObj
 
 !!==================================================================================================================================
 !!
@@ -28141,7 +28036,7 @@ CONTAINS
   !
 
   !>Sets/changes the data projection for a field identified by a user number.
-  SUBROUTINE CMISSField_DataProjectionSetNumber(regionUserNumber,fieldUserNumber,dataProjectionUserNumber,err)
+  SUBROUTINE cmfe_Field_DataProjectionSetNumber(regionUserNumber,fieldUserNumber,dataProjectionUserNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the mesh decomposition for.
@@ -28156,7 +28051,7 @@ CONTAINS
     INTEGER(INTG) :: DATA_PROJECTION_NUMBER
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("CMISSField_DataProjectionSetNumber",err,error,*999)
+    CALL ENTERS("cmfe_Field_DataProjectionSetNumber",err,error,*999)
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28191,40 +28086,40 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
-    CALL EXITS("CMISSField_DataProjectionSetNumber")
+    CALL EXITS("cmfe_Field_DataProjectionSetNumber")
     RETURN
-999 CALL ERRORS("CMISSField_DataProjectionSetNumber",err,error)
-    CALL EXITS("CMISSField_DataProjectionSetNumber")
+999 CALL ERRORS("cmfe_Field_DataProjectionSetNumber",err,error)
+    CALL EXITS("cmfe_Field_DataProjectionSetNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_DataProjectionSetNumber
+  END SUBROUTINE cmfe_Field_DataProjectionSetNumber
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the data projection for a field identified by an object.
-  SUBROUTINE CMISSField_DataProjectionSetObj(field,dataProjection,err)
+  SUBROUTINE cmfe_Field_DataProjectionSetObj(field,dataProjection,err)
 
     !Argument variables
-    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the mesh decomposition for.
-    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection for the field to set.
+    TYPE(cmfe_FieldType), INTENT(IN) :: field !<The field to get the mesh decomposition for.
+    TYPE(cmfe_DataProjectionType), INTENT(IN) :: dataProjection !<The data projection for the field to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_DataProjectionSetObj",err,error,*999)
+    CALL ENTERS("cmfe_Field_DataProjectionSetObj",err,error,*999)
 
     CALL Field_DataProjectionSet(field%FIELD,dataProjection%DATA_PROJECTION,err,error,*999)
 
-    CALL EXITS("CMISSField_DataProjectionSetObj")
+    CALL EXITS("cmfe_Field_DataProjectionSetObj")
     RETURN
-999 CALL ERRORS("CMISSField_DataProjectionSetObj",err,error)
-    CALL EXITS("CMISSField_DataProjectionSetObj")
+999 CALL ERRORS("cmfe_Field_DataProjectionSetObj",err,error)
+    CALL EXITS("cmfe_Field_DataProjectionSetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_DataProjectionSetObj
+  END SUBROUTINE cmfe_Field_DataProjectionSetObj
 
   !
   !================================================================================================================================
@@ -33572,11 +33467,11 @@ CONTAINS
   !
 
   !>Updates the given parameter set with the given double precision value for the element data point of the field variable component for a field identified by an object.
-  SUBROUTINE CMISSField_ParameterSetUpdateElementDataPointDPObj(field,variableType,fieldSetType,elementNumber,dataPointIndex, &
+  SUBROUTINE cmfe_Field_ParameterSetUpdateElementDataPointDPObj(field,variableType,fieldSetType,elementNumber,dataPointIndex, &
        & componentNumber,value,err)
 
     !Argument variables
-    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
+    TYPE(cmfe_FieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: elementNumber !<The user element number to update the data point for.
@@ -33586,19 +33481,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error,*999)
+    CALL ENTERS("cmfe_Field_ParameterSetUpdateElementDataPointDPObj",err,error,*999)
 
     CALL Field_ParameterSetUpdateElementDataPoint(field%FIELD,variableType,fieldSetType,elementNumber,&
     & dataPointIndex,componentNumber,value,err,error,*999)
 
-    CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
+    CALL EXITS("cmfe_Field_ParameterSetUpdateElementDataPointDPObj")
     RETURN
-999 CALL ERRORS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error)
-    CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
+999 CALL ERRORS("cmfe_Field_ParameterSetUpdateElementDataPointDPObj",err,error)
+    CALL EXITS("cmfe_Field_ParameterSetUpdateElementDataPointDPObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSField_ParameterSetUpdateElementDataPointDPObj
+  END SUBROUTINE cmfe_Field_ParameterSetUpdateElementDataPointDPObj
 
   !
   !================================================================================================================================
@@ -37784,7 +37679,7 @@ CONTAINS
   !
 
   !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
-  SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber(regionUserNumber,interfaceUserNumber, &
+  SUBROUTINE cmfe_InterfaceMeshConnectivity_NodeNumberSetNumber(regionUserNumber,interfaceUserNumber, &
      &  interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err)
 
     !Argument variables
@@ -37799,29 +37694,29 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error,*999)
+    CALL ENTERS("cmfe_InterfaceMeshConnectivity_NodeNumberSetNumber",err,error,*999)
 
     CALL FLAG_ERROR("Not implemented yet.",err,error,*999)
 
-    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+    CALL EXITS("cmfe_InterfaceMeshConnectivity_NodeNumberSetNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+999 CALL ERRORS("cmfe_InterfaceMeshConnectivity_NodeNumberSetNumber",err,error)
+    CALL EXITS("cmfe_InterfaceMeshConnectivity_NodeNumberSetNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber
+  END SUBROUTINE cmfe_InterfaceMeshConnectivity_NodeNumberSetNumber
 
   !
   !================================================================================================================================
   !
 
   !>Sets the connectivity between nodes in coupled meshes to nodes in the interface mesh
-  SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetObj(interfaceMeshConnectivity,interfaceNodeNumbers, &
+  SUBROUTINE cmfe_InterfaceMeshConnectivity_NodeNumberSetObj(interfaceMeshConnectivity,interfaceNodeNumbers, &
      &  firstCoupledMeshIndexNumber,firstCoupledMeshNodeNumbers,secondCoupledMeshIndexNumber,secondCoupledMeshNodeNumbers,err)
 
     !Argument variables
-    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
+    TYPE(cmfe_InterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
     INTEGER(INTG), INTENT(IN) :: interfaceNodeNumbers(:)  !<The interface mesh node numbers to which the specified coupled mesh nodes would be connected
     INTEGER(INTG), INTENT(IN) :: firstCoupledMeshIndexNumber,secondCoupledMeshIndexNumber !<The index of the coupled meshes at the interface to set the node connectivity for
     INTEGER(INTG), INTENT(IN) :: firstCoupledMeshNodeNumbers(:),secondCoupledMeshNodeNumbers(:) !<The coupled meshes nodes to be connected to the interface
@@ -37829,7 +37724,7 @@ CONTAINS
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error,*999)
+    CALL ENTERS("cmfe_InterfaceMeshConnectivity_NodeNumberSetObj",err,error,*999)
     
     IF(SIZE(interfaceNodeNumbers(:))==SIZE(firstCoupledMeshNodeNumbers(:)) &
       & .AND.SIZE(interfaceNodeNumbers(:))==SIZE(secondCoupledMeshNodeNumbers(:))) THEN
@@ -37843,14 +37738,14 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
-    CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+    CALL EXITS("cmfe_InterfaceMeshConnectivity_NodeNumberSetObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error)
-    CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+999 CALL ERRORS("cmfe_InterfaceMeshConnectivity_NodeNumberSetObj",err,error)
+    CALL EXITS("cmfe_InterfaceMeshConnectivity_NodeNumberSetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetObj
+  END SUBROUTINE cmfe_InterfaceMeshConnectivity_NodeNumberSetObj
 
   !
   !================================================================================================================================
@@ -40730,129 +40625,129 @@ CONTAINS
   !
 
   !> Calculates the decomposition topology for data points
-  SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj(decomposition,err)
+  SUBROUTINE cmfe_Decomposition_TopologyDataProjectionCalculateObj(decomposition,err)
 
     !Argument variables
-    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    TYPE(cmfe_DecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error,*999)
+    CALL ENTERS("cmfe_Decomposition_TopologyDataProjectionCalculateObj",err,error,*999)
 
     CALL DecompositionTopology_DataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
 
 #ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyDataProjectionCalculateObj',err,error,*999)
+    CALL TAU_STATIC_PHASE_STOP('cmfe_Decomposition_TopologyDataProjectionCalculateObj',err,error,*999)
 #endif
 
-    CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+    CALL EXITS("cmfe_Decomposition_TopologyDataProjectionCalculateObj")
     RETURN
-999 CALL ERRORS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error)
-    CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+999 CALL ERRORS("cmfe_Decomposition_TopologyDataProjectionCalculateObj",err,error)
+    CALL EXITS("cmfe_Decomposition_TopologyDataProjectionCalculateObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj
+  END SUBROUTINE cmfe_Decomposition_TopologyDataProjectionCalculateObj
 
   !
   !================================================================================================================================
   !
 
   !>Gets the local data point number for data points projected on an element
-  SUBROUTINE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj(decomposition,elementNumber,dataPointIndex, &
+  SUBROUTINE cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj(decomposition,elementNumber,dataPointIndex, &
        & dataPointLocalNumber,err)
 
     !Argument variables
-    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    TYPE(cmfe_DecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
     INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
     INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
     INTEGER(INTG), INTENT(OUT) :: dataPointLocalNumber !<The data point local number to retu
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
+    CALL ENTERS("cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
 
     CALL DecompositionTopology_ElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointLocalNumber,err,error,*999)
 
 #ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj',err,error,*999)
+    CALL TAU_STATIC_PHASE_STOP('cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj',err,error,*999)
 #endif
 
-    CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+    CALL EXITS("cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj")
     RETURN
-999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error)
-    CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+999 CALL ERRORS("cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj",err,error)
+    CALL EXITS("cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj
+  END SUBROUTINE cmfe_Decomposition_TopologyElementDataPointLocalNumberGetObj
 
   !
   !================================================================================================================================
   !
 
   !>Gets the user data point number for data points projected on an element
-  SUBROUTINE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj(decomposition,elementNumber,dataPointIndex, &
+  SUBROUTINE cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj(decomposition,elementNumber,dataPointIndex, &
        & dataPointUserNumber,err)
 
     !Argument variables
-    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    TYPE(cmfe_DecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
     INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
     INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
     INTEGER(INTG), INTENT(OUT) :: dataPointUserNumber !<The data point user number to retu
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
+    CALL ENTERS("cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
 
     CALL DecompositionTopology_ElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointUserNumber,err,error,*999)
 
 #ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointUserNumberGetObj',err,error,*999)
+    CALL TAU_STATIC_PHASE_STOP('cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj',err,error,*999)
 #endif
 
-    CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+    CALL EXITS("cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj")
     RETURN
-999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error)
-    CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+999 CALL ERRORS("cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj",err,error)
+    CALL EXITS("cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj
+  END SUBROUTINE cmfe_Decomposition_TopologyElementDataPointUserNumberGetObj
 
   !
   !================================================================================================================================
   !
 
   !>Gets the number of data points projected on an element
-  SUBROUTINE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj(decomposition,elementNumber,numberOfDataPoints,err)
+  SUBROUTINE cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj(decomposition,elementNumber,numberOfDataPoints,err)
 
     !Argument variables
-    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    TYPE(cmfe_DecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
     INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
     INTEGER(INTG), INTENT(OUT) :: numberOfDataPoints !<The data point local number to return
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
+    CALL ENTERS("cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
 
     CALL DecompositionTopology_NumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
      & numberOfDataPoints,err,error,*999)
 
 #ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj',err,error,*999)
+    CALL TAU_STATIC_PHASE_STOP('cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj',err,error,*999)
 #endif
 
-    CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+    CALL EXITS("cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj")
     RETURN
-999 CALL ERRORS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error)
-    CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+999 CALL ERRORS("cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj",err,error)
+    CALL EXITS("cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj
+  END SUBROUTINE cmfe_Decomposition_TopologyNumberOfElementDataPointsGetObj
 
   !
   !================================================================================================================================
@@ -43849,7 +43744,7 @@ CONTAINS
   SUBROUTINE cmfe_MeshElements_UserNumbersAllSetObj(meshElements,elementUserNumbers,err)
 
     !Argument variables
-    TYPE(CMISSMeshElementsType), INTENT(IN) :: meshElements !<The mesh elements to set the element user numbers for
+    TYPE(cmfe_MeshElementsType), INTENT(IN) :: meshElements !<The mesh elements to set the element user numbers for
     INTEGER(INTG), INTENT(IN) :: elementUserNumbers(:) !<The element user numbers to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -45705,10 +45600,11 @@ CONTAINS
   !
 
   !>Starts the process of a problem identified by user number.
-  SUBROUTINE cmfe_Problem_CreateStartNumber(problemUserNumber,err)
+  SUBROUTINE cmfe_Problem_CreateStartNumber(problemUserNumber,problemSpecification,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification array, containt the problem class, type etc
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -45720,7 +45616,7 @@ CONTAINS
 #endif
 
     NULLIFY(PROBLEM)
-    CALL PROBLEM_CREATE_START(problemUserNumber,PROBLEM,err,error,*999)
+    CALL PROBLEM_CREATE_START(problemUserNumber,problemSpecification,PROBLEM,err,error,*999)
 
     CALL Exits("cmfe_Problem_CreateStartNumber")
     RETURN
@@ -45736,10 +45632,11 @@ CONTAINS
   !
 
   !>Starts the creation of a problem identified by an object.
-  SUBROUTINE cmfe_Problem_CreateStartObj(problemUserNumber,problem,err)
+  SUBROUTINE cmfe_Problem_CreateStartObj(problemUserNumber,problemSpecification,problem,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification array, containt the problem class, type etc
     TYPE(cmfe_ProblemType), INTENT(INOUT) :: problem !<On return, the created problem.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
@@ -45750,7 +45647,7 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('problem Create')
 #endif
 
-    CALL PROBLEM_CREATE_START(problemUserNumber,problem%PROBLEM,err,error,*999)
+    CALL PROBLEM_CREATE_START(problemUserNumber,problemSpecification,problem%PROBLEM,err,error,*999)
 
     CALL Exits("cmfe_Problem_CreateStartObj")
     RETURN
@@ -46993,29 +46890,27 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the specification i.e., problem class, type and subtype for a problem identified by an user number.
-  SUBROUTINE cmfe_Problem_SpecificationGetNumber(problemUserNumber,problemClass,problemType,problemSubtype,err)
+  !>Returns the specification array i.e., problem class, type and subtype etc for a problem identified by a user number.
+  SUBROUTINE cmfe_Problem_SpecificationGetNumber(problemUserNumber,problemSpecification,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to get the specification for.
-    INTEGER(INTG), INTENT(OUT) :: problemClass !<On return, the problem class. \see OPENCMISS_ProblemClasses
-    INTEGER(INTG), INTENT(OUT) :: problemType !<On return, the problem type. \see OPENCMISS_ProblemTypes
-    INTEGER(INTG), INTENT(OUT) :: problemSubtype !<On return, the problem subtype. \see OPENCMISS_ProblemSubTypes
+    INTEGER(INTG), INTENT(INOUT) :: problemSpecification(:) !<On return, the problem specification array. Must be allocated and large enough to contain the specification on entry.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(VARYING_STRING) :: localError
 
     CALL Enters("cmfe_Problem_SpecificationGetNumber",err,error,*999)
 
-    NULLIFY(PROBLEM)
-    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
-    IF(ASSOCIATED(PROBLEM)) THEN
-      CALL PROBLEM_SPECIFICATION_GET(PROBLEM,problemClass,problemType,problemSubtype,err,error,*999)
+    NULLIFY(problem)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL Problem_SpecificationGet(problem,problemSpecification,err,error,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+      localError="A problem with an user number of "//TRIM(NumberToVstring(problemUserNumber,"*",err,error))// &
         & " does not exist."
-      CALL FlagError(LOCAL_ERROR,err,error,*999)
+      CALL FlagError(localError,err,error,*999)
     END IF
 
     CALL Exits("cmfe_Problem_SpecificationGetNumber")
@@ -47031,20 +46926,18 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the specification i.e., problem class, type and subtype for a problem identified by an object.
-  SUBROUTINE cmfe_Problem_SpecificationGetObj(problem,problemClass,problemType,problemSubtype,err)
+  !>Returns the specification array i.e., problem class, type and subtype etc for a problem identified by an object.
+  SUBROUTINE cmfe_Problem_SpecificationGetObj(problem,problemSpecification,err)
 
     !Argument variables
     TYPE(cmfe_ProblemType), INTENT(IN) :: problem !<The problem to get the specification for.
-    INTEGER(INTG), INTENT(OUT) :: problemClass !<On return, the problem class. \see OPENCMISS_ProblemClasses
-    INTEGER(INTG), INTENT(OUT) :: problemType !<On return, the problem type. \see OPENCMISS_ProblemTypes
-    INTEGER(INTG), INTENT(OUT) :: problemSubtype !<On return, the problem subtype. \see OPENCMISS_ProblemSubTypes
+    INTEGER(INTG), INTENT(INOUT) :: problemSpecification(:) !<On return, the problem specification array. Must be allocated and large enough to contain the specification on entry.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL Enters("cmfe_Problem_SpecificationGetObj",err,error,*999)
 
-    CALL PROBLEM_SPECIFICATION_GET(problem%PROBLEM,problemClass,problemType,problemSubtype,err,error,*999)
+    CALL Problem_SpecificationGet(problem%problem,problemSpecification,err,error,*999)
 
     CALL Exits("cmfe_Problem_SpecificationGetObj")
     RETURN
@@ -47054,72 +46947,6 @@ CONTAINS
     RETURN
 
   END SUBROUTINE cmfe_Problem_SpecificationGetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the specification i.e., problem class, type and subtype for a problem identified by an user number.
-  SUBROUTINE cmfe_Problem_SpecificationSetNumber(problemUserNumber,problemClass,problemType,problemSubtype,err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: problemClass !<The problem class to set. \see OPENCMISS_ProblemClasses
-    INTEGER(INTG), INTENT(IN) :: problemType !<The problem type to set. \see OPENCMISS_ProblemTypes
-    INTEGER(INTG), INTENT(IN) :: problemSubtype !<The problem subtype to set. \see OPENCMISS_ProblemSubTypes
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL Enters("cmfe_Problem_SpecificationSetNumber",err,error,*999)
-
-    NULLIFY(PROBLEM)
-    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
-    IF(ASSOCIATED(PROBLEM)) THEN
-      CALL PROBLEM_SPECIFICATION_SET(PROBLEM,problemClass,problemType,problemSubtype,err,error,*999)
-    ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
-        & " does not exist."
-      CALL FlagError(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL Exits("cmfe_Problem_SpecificationSetNumber")
-    RETURN
-999 CALL Errors("cmfe_Problem_SpecificationSetNumber",err,error)
-    CALL Exits("cmfe_Problem_SpecificationSetNumber")
-    CALL CMISSHandleError(err,error)
-    RETURN
-
-  END SUBROUTINE cmfe_Problem_SpecificationSetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the specification i.e., problem class, type and subtype for a problem identified by an object.
-  SUBROUTINE cmfe_Problem_SpecificationSetObj(problem,problemClass,problemType,problemSubtype,err)
-
-    !Argument variables
-    TYPE(cmfe_ProblemType), INTENT(IN) :: problem !<The problem to get the specification for.
-    INTEGER(INTG), INTENT(IN) :: problemClass !<The problem class to set. \see OPENCMISS_ProblemClasses
-    INTEGER(INTG), INTENT(IN) :: problemType !<The problem type to set. \see OPENCMISS_ProblemTypes
-    INTEGER(INTG), INTENT(IN) :: problemSubtype !<The problem subtype to set. \see OPENCMISS_ProblemSubTypes
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL Enters("cmfe_Problem_SpecificationSetObj",err,error,*999)
-
-    CALL PROBLEM_SPECIFICATION_SET(problem%PROBLEM,problemClass,problemType,problemSubtype,err,error,*999)
-
-    CALL Exits("cmfe_Problem_SpecificationSetObj")
-    RETURN
-999 CALL Errors("cmfe_Problem_SpecificationSetObj",err,error)
-    CALL Exits("cmfe_Problem_SpecificationSetObj")
-    CALL CMISSHandleError(err,error)
-    RETURN
-
-  END SUBROUTINE cmfe_Problem_SpecificationSetObj
 
 !!==================================================================================================================================
 !!
@@ -51268,54 +51095,54 @@ CONTAINS
   !
 
   !>Sets/changes the MUMPS ICNTL(icntl)=ivalue integer control parameters through the PETSc-MUMPS interface
-  SUBROUTINE CMISSSolver_MumpsSetIcntl(solver,icntl,ivalue,err)
+  SUBROUTINE cmfe_Solver_MumpsSetIcntl(solver,icntl,ivalue,err)
 
     !Argument variables
-    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the library type for.
+    TYPE(cmfe_SolverType), INTENT(IN) :: solver !<The solver to set the library type for.
     INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS ICNTL integer control parameter 
     INTEGER(INTG), INTENT(IN) :: ivalue !<The MUMPS ICNTL integer value to set: ICNTL(icntl)=ivalue
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSSolver_MumpsSetIcntl",err,error,*999)
+    CALL ENTERS("cmfe_Solver_MumpsSetIcntl",err,error,*999)
 
     CALL Solver_MumpsSetIcntl(solver%SOLVER,icntl,ivalue,err,error,*999)
 
-    CALL EXITS("CMISSSolver_MumpsSetIcntl")
+    CALL EXITS("cmfe_Solver_MumpsSetIcntl")
     RETURN
-999 CALL ERRORS("CMISSSolver_MumpsSetIcntl",err,error)
-    CALL EXITS("CMISSSolver_MumpsSetIcntl")
+999 CALL ERRORS("cmfe_Solver_MumpsSetIcntl",err,error)
+    CALL EXITS("cmfe_Solver_MumpsSetIcntl")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSSolver_MumpsSetIcntl
+  END SUBROUTINE cmfe_Solver_MumpsSetIcntl
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the MUMPS CNTL(icntl)=val real/complex control parameters through the PETSc-MUMPS interface
-  SUBROUTINE CMISSSolver_MumpsSetCntl(solver,icntl,val,err)
+  SUBROUTINE cmfe_Solver_MumpsSetCntl(solver,icntl,val,err)
 
     !Argument variables
-    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the library type for.
+    TYPE(cmfe_SolverType), INTENT(IN) :: solver !<The solver to set the library type for.
     INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS CNTL integer control parameter 
     REAL(DP), INTENT(IN) :: val !<The MUMPS CNTL real value to set: CNTL(icntl)=val
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSSolver_MumpsSetCntl",err,error,*999)
+    CALL ENTERS("cmfe_Solver_MumpsSetCntl",err,error,*999)
 
     CALL Solver_MumpsSetCntl(solver%SOLVER,icntl,val,err,error,*999)
 
-    CALL EXITS("CMISSSolver_MumpsSetCntl")
+    CALL EXITS("cmfe_Solver_MumpsSetCntl")
     RETURN
-999 CALL ERRORS("CMISSSolver_MumpsSetCntl",err,error)
-    CALL EXITS("CMISSSolver_MumpsSetCntl")
+999 CALL ERRORS("cmfe_Solver_MumpsSetCntl",err,error)
+    CALL EXITS("cmfe_Solver_MumpsSetCntl")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSSolver_MumpsSetCntl
+  END SUBROUTINE cmfe_Solver_MumpsSetCntl
 
   !
   !================================================================================================================================
@@ -54708,11 +54535,11 @@ CONTAINS
   !
   
   !>Set the time dependence type of interface matrices
-  SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeSet(interfaceCondition, &
+  SUBROUTINE cmfe_InterfaceMatrices_TimeDependenceTypeSet(interfaceCondition, &
     & interfaceMatrixIndex,hasTranspose,timeDependenceTypes,Err)
     
     !Argument variables
-    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
+    TYPE(cmfe_InterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
     INTEGER(INTG), INTENT(IN) :: timeDependenceTypes(:) !<Time dependence types for the given interface matrix and it's transpose (if any). \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
     INTEGER(INTG), INTENT(IN) :: interfaceMatrixIndex
     LOGICAL, INTENT(IN) :: hasTranspose
@@ -54720,20 +54547,20 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error,*999)
+    CALL ENTERS("cmfe_InterfaceMatrices_TimeDependenceTypeSet",err,error,*999)
     
     IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
-    IF(timeDependenceTypes(1)>0.AND.timeDependenceTypes(1)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES) THEN
+    IF(timeDependenceTypes(1)>0.AND.timeDependenceTypes(1)<=CMFE_NUMBER_OF_INTERFACE_MATRIX_TYPES) THEN
       CALL InterfaceMatrix_TimeDependenceTypeSet(interfaceCondition%INTERFACE_CONDITION, &
         & interfaceMatrixIndex,.FALSE.,timeDependenceTypes(1),err,error,*999)
-      IF(hasTranspose.AND.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+      IF(hasTranspose.AND.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMFE_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
         CALL InterfaceMatrix_TimeDependenceTypeSet(interfaceCondition%INTERFACE_CONDITION, &
           & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
       ELSE
         IF(.NOT.hasTranspose) THEN
           !ok)
         ELSEIF(hasTranspose.AND. &
-          & .NOT.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+          & .NOT.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMFE_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
           LOCAL_ERROR="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(interfaceMatrixIndex,"*",err,error))// &
             & " has transpose but invalid time dependence type of "//TRIM(NUMBER_TO_VSTRING(timeDependenceTypes(1), &
             & "*",err,error))//" ."
@@ -54747,25 +54574,25 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
     
-    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+    CALL EXITS("cmfe_InterfaceMatrices_TimeDependenceTypeSet")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error)
-    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+999 CALL ERRORS("cmfe_InterfaceMatrices_TimeDependenceTypeSet",err,error)
+    CALL EXITS("cmfe_InterfaceMatrices_TimeDependenceTypeSet")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeSet
+  END SUBROUTINE cmfe_InterfaceMatrices_TimeDependenceTypeSet
 
   !
   !================================================================================================================================
   !
   
   !>Get the time dependence type of interface matrices
-  SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeGet(interfaceCondition, &
+  SUBROUTINE cmfe_InterfaceMatrices_TimeDependenceTypeGet(interfaceCondition, &
     & interfaceMatrixIndex,hasTranspose,timeDependenceTypes,Err)
     
     !Argument variables
-    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
+    TYPE(cmfe_InterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
     INTEGER(INTG), INTENT(OUT) :: timeDependenceTypes(:) !<Time dependence types for the given interface matrix and it's transpose (if any). \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
     INTEGER(INTG), INTENT(IN) :: interfaceMatrixIndex
     LOGICAL, INTENT(IN) :: hasTranspose
@@ -54773,7 +54600,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error,*999)
+    CALL ENTERS("cmfe_InterfaceMatrices_TimeDependenceTypeGet",err,error,*999)
     
     IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
     CALL InterfaceMatrix_TimeDependenceTypeGet(interfaceCondition%INTERFACE_CONDITION, &
@@ -54783,14 +54610,14 @@ CONTAINS
         & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
     ENDIF
     
-    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+    CALL EXITS("cmfe_InterfaceMatrices_TimeDependenceTypeGet")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error)
-    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+999 CALL ERRORS("cmfe_InterfaceMatrices_TimeDependenceTypeGet",err,error)
+    CALL EXITS("cmfe_InterfaceMatrices_TimeDependenceTypeGet")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeGet
+  END SUBROUTINE cmfe_InterfaceMatrices_TimeDependenceTypeGet
   
   !
   !================================================================================================================================

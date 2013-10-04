@@ -104,7 +104,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_LINEAR_CONSTRAINT=21 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED=22!<A Neumann point boundary condition that is incremented inside a load increment control loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
-  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FixedFitted=23 !<The dof is fixed as a boundary condition to be updated from fitting data \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FIXEDFITTED=23 !<The dof is fixed as a boundary condition to be updated from fitting data \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
   INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=23 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
@@ -143,7 +143,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
     & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
     & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED, &
-    & BOUNDARY_CONDITION_FixedFitted
+    & BOUNDARY_CONDITION_FIXEDFITTED
 
   PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -1776,7 +1776,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     type(varying_string), intent(out) :: error !<The error string
     ! Local variables
-    INTEGER(INTG) :: boundaryConditionType,equationsSetIdx
+    INTEGER(INTG) :: boundaryConditionType,equationsSetIdx,specificationSize
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -1803,6 +1803,10 @@ CONTAINS
           IF(.NOT.ASSOCIATED(equationsSet)) THEN
             CALL FLAG_ERROR("Solver equations equations set is not associated.",err,error,*999)
           END IF
+          IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+            CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+          END IF
+          specificationSize=SIZE(equationsSet%specification,1)
 
           SELECT CASE(boundaryConditionType)
           CASE(BOUNDARY_CONDITION_FREE)
@@ -1814,51 +1818,61 @@ CONTAINS
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_FIXED_INLET, &
               & BOUNDARY_CONDITION_FIXED_OUTLET)
-            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
-                & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
-                & equationsSet%TYPE==EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE.OR. &
-                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
-              validEquationsSetFound=.TRUE.
+            IF(specificationSize>=2) THEN
+              IF(equationsSet%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                  & (equationsSet%specification(2)==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                  & equationsSet%specification(2)==EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE.OR. &
+                  & equationsSet%specification(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
+                validEquationsSetFound=.TRUE.
+              END IF
             END IF
           CASE(BOUNDARY_CONDITION_FIXED_WALL,BOUNDARY_CONDITION_MOVED_WALL, &
               & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED,BOUNDARY_CONDITION_FREE_WALL)
-            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
-                & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
-                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE.OR. &
-                & equationsSet%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE)) THEN
-              validEquationsSetFound=.TRUE.
-            ELSE IF(equationsSet%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS.AND. &
-                & equationsSet%TYPE==EQUATIONS_SET_LAPLACE_EQUATION_TYPE.AND. &
-                & equationsSet%SUBTYPE==EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE) THEN
-              validEquationsSetFound=.TRUE.
+            IF(specificationSize>=2) THEN
+              IF(equationsSet%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                  & (equationsSet%specification(2)==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                  & equationsSet%specification(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE.OR. &
+                  & equationsSet%specification(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE)) THEN
+                validEquationsSetFound=.TRUE.
+              ELSE IF(specificationSize==3) THEN
+                IF(equationsSet%specification(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS.AND. &
+                    & equationsSet%specification(2)==EQUATIONS_SET_LAPLACE_EQUATION_TYPE.AND. &
+                    & equationsSet%specification(3)==EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE) THEN
+                  validEquationsSetFound=.TRUE.
+                END IF
+              END IF
             END IF
           CASE(BOUNDARY_CONDITION_FIXED_INCREMENTED)
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_PRESSURE, &
               & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
-            IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
-                & equationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
-              validEquationsSetFound=.TRUE.
+            IF(specificationSize>=2) THEN
+              IF(equationsSet%specification(1)==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
+                  & equationsSet%specification(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
+                validEquationsSetFound=.TRUE.
+              END IF
             END IF
           CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
             !Not actually used anywhere? So keep it as invalid, although maybe it should be removed?
             validEquationsSetFound=.FALSE.
           CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
-            IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
-                & equationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE.AND. &
-                & (equationsSet%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE.OR. &
-                & equationsSet%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
-                & equationsSet%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)) THEN
-              validEquationsSetFound=.TRUE.
+            IF(specificationSize>=3) THEN
+              IF(equationsSet%specification(1)==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
+                  & equationsSet%specification(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE.AND. &
+                  & (equationsSet%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE.OR. &
+                  & equationsSet%specification(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
+                  & equationsSet%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)) THEN
+                validEquationsSetFound=.TRUE.
+              END IF
             END IF
           CASE(BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED)
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_FixedFitted)
-            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
-                & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
-                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
+            IF(equationsSet%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                & (equationsSet%specification(2)==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                & equationsSet%specification(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF
           CASE DEFAULT

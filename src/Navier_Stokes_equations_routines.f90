@@ -79,7 +79,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
 
   PUBLIC NavierStokes_AnalyticCalculate
   PUBLIC NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE
-  PUBLIC NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
+  PUBLIC NavierStokes_EquationsSetSpecificationSet
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SETUP
   PUBLIC NAVIER_STOKES_PRE_SOLVE
@@ -87,7 +87,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS
   PUBLIC NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH
   PUBLIC NAVIER_STOKES_POST_SOLVE
-  PUBLIC NAVIER_STOKES_PROBLEM_SUBTYPE_SET
+  PUBLIC NavierStokes_ProblemSpecificationSet
   PUBLIC NAVIER_STOKES_PROBLEM_SETUP
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
@@ -115,7 +115,13 @@ CONTAINS
     CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Navier-Stokes type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
@@ -148,7 +154,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Navier-Stokes flow equation type of a fluid mechanics equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -167,82 +173,64 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a Navier-Stokes fluid type of a fluid mechanics equations set class.
-  SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a Navier-Stokes fluid type of a fluid mechanics equations set class.
+  SUBROUTINE NavierStokes_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
 
-    CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    CALL Enters("NavierStokes_EquationsSetSpecificationSet",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE
-      CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Navier-Stokes type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
+          & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
+        !ok
       CASE(EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented yet.",err,error,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+        localError="Equations set subtype "//TRIM(NumberToVstring(specification(3),"*",err,error))// &
           & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FLUID_MECHANICS_CLASS,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
 
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET")
+    CALL Exits("NavierStokes_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET")
+999 CALL Errors("NavierStokes_EquationsSetSpecificationSet",err,error)
+    CALL Exits("NavierStokes_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
+  END SUBROUTINE NavierStokes_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -288,7 +276,13 @@ CONTAINS
     NULLIFY(EQUATIONS_SET_FIELD_FIELD)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Navier-Stokes type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
@@ -305,7 +299,7 @@ CONTAINS
           ! I n i t i a l   s e t u p
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
@@ -332,7 +326,7 @@ CONTAINS
                 & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
               EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 1 
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                 !4 SUPG parameters, 3 boundary normals, 1 boundary identifier, Q, R_proximal, C, R_distal value
                 ! component 13: trial node-based field for boundary flux
                 EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 13  
@@ -368,12 +362,12 @@ CONTAINS
               IF(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 CALL FIELD_CREATE_FINISH(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
                 !Default the Element Metrics parameter values 0.0
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                   !4 SUPG parameters, 3 boundary normals, 1 boundary identifier, Q, R_proximal, C, R_distal value
                   !component 13: trial node-based field for flux
                   EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 13
-                ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                ELSE IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                  & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
                   !SUPG parameters: H, Umax, Re, C
                   EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4
                 ENDIF
@@ -393,8 +387,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -402,7 +396,7 @@ CONTAINS
           ! G e o m e t r i c   f i e l d
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
@@ -413,7 +407,7 @@ CONTAINS
             &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                 EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 13  !SUPG and boundary parameters
               ELSE
                 EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4  !SUPG parameters: H, Umax, Re, C
@@ -428,7 +422,7 @@ CONTAINS
                   & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                   DO component_idx = 1, EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS-1
                     CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,component_idx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
@@ -464,7 +458,7 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -472,7 +466,7 @@ CONTAINS
           ! D e p e n d e n t   f i e l d
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
@@ -1001,8 +995,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1010,7 +1004,7 @@ CONTAINS
           ! I n d e p e n d e n t   f i e l d
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
               !Set start action
@@ -1266,8 +1260,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1275,7 +1269,7 @@ CONTAINS
           ! A n a l y t i c   t y p e
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
@@ -1324,8 +1318,8 @@ CONTAINS
                             &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
                             &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
                             !Check that this is a 1D equations set
-                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-                              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+                            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+                              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                               !Set analytic function type
                               EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
                               !Set numbrer of components
@@ -1496,7 +1490,7 @@ CONTAINS
                     !Finish creating the analytic field
                     CALL FIELD_CREATE_FINISH(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,ERR,ERROR,*999)
                     !Set the default values for the analytic field
-                    SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                    SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                     CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE)
                       SELECT CASE(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
@@ -1560,7 +1554,7 @@ CONTAINS
                       END SELECT
                     CASE DEFAULT
                       LOCAL_ERROR="The equation set subtype of "// &
-                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
                         & " is invalid for an analytical Navier-Stokes equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
@@ -1576,8 +1570,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1585,7 +1579,7 @@ CONTAINS
           ! M a t e r i a l s   f i e l d 
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
@@ -1887,8 +1881,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1896,7 +1890,7 @@ CONTAINS
           ! S o u r c e   f i e l d
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, & 
@@ -1917,8 +1911,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              &  " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              &  " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               &  " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1926,7 +1920,7 @@ CONTAINS
           ! E q u a t i o n s    t y p e
           !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
             &  EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             &  EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
@@ -2201,8 +2195,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -2212,7 +2206,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a Navier-Stokes fluid subtype."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -2259,11 +2253,16 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
           !Since we can have a fluid mechanics navier stokes equations set in a coupled problem setup we do not necessarily
-          !have PROBLEM%CLASS==FLUID_MECHANICS_CLASS
-          SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+          !have PROBLEM%SPECIFICATION(1)==FLUID_MECHANICS_CLASS
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(1))
           CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -2308,7 +2307,7 @@ CONTAINS
                 CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-              !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
+              !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SPECIFICATION(3)
               SOLVER_NUMBER_NAVIER_STOKES=2
               !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -2383,7 +2382,7 @@ CONTAINS
               END SELECT
             CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
+              !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SPECIFICATION(3)
               SOLVER_NUMBER_NAVIER_STOKES=2
               !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -2451,14 +2450,14 @@ CONTAINS
                 CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_MULTI_PHYSICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-              SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
                 !Pre solve for the linear solver
                 IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
@@ -2488,17 +2487,17 @@ CONTAINS
                   CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is not valid for a FiniteElasticity-NavierStokes type of a multi physics problem class."
                 CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for NAVIER_STOKES_PRE_SOLVE of a multi physics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))// &
               & " is not valid for Navier-Stokes fluid types."
             CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
           END SELECT
@@ -2524,81 +2523,62 @@ CONTAINS
   !
 
   !>Sets/changes the problem subtype for a Navier-Stokes fluid type.
-  SUBROUTINE NAVIER_STOKES_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE NavierStokes_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
 
-    CALL ENTERS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    CALL Enters("NavierStokes_ProblemSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE
-      CASE(Problem_Coupled1dDaeNavierStokesSubtype)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=Problem_Coupled1dDaeNavierStokesSubtype
-      CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE
-      CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_ALE_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_NAVIER_STOKES_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_PGM_NAVIER_STOKES_SUBTYPE
-      CASE(PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+            & Problem_Coupled1dDaeNavierStokesSubtype, &
+            & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
+            & PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_ALE_NAVIER_STOKES_SUBTYPE, &
+            & PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
+          !All ok
+        CASE(PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE)
+          CALL FlagError("Not implemented yet.",err,error,*999)
+        CASE DEFAULT
+          localError="Problem subtype "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_FLUID_MECHANICS_CLASS,PROBLEM_NAVIER_STOKES_EQUATION_TYPE,problemSubtype]
+      ELSE
+        CALL FlagError("Navier-Stokes problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
 
-    CALL EXITS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET")
+    CALL Exits("NavierStokes_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET")
+999 CALL Errors("NavierStokes_ProblemSpecificationSet",err,error)
+    CALL Exits("NavierStokes_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE NAVIER_STOKES_PROBLEM_SUBTYPE_SET
+  END SUBROUTINE NavierStokes_ProblemSpecificationSet
 
   ! 
   !================================================================================================================================
@@ -2636,7 +2616,12 @@ CONTAINS
     NULLIFY(SOLVERS)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
         !All steady state cases of Navier-Stokes
       CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
@@ -2780,7 +2765,7 @@ CONTAINS
             CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME,ERR,ERROR,*999)
             CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
             !setup CellML evaluator
-            IF(PROBLEM%SUBTYPE==PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+            IF(PROBLEM%SPECIFICATION(3)==PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
               !Create the CellML evaluator solver
               CALL SOLVER_NEWTON_CELLML_EVALUATOR_CREATE(SOLVER,cellmlSolver,ERR,ERROR,*999)
               !Link the CellML evaluator solver to the solver
@@ -2908,7 +2893,7 @@ CONTAINS
           CASE(PROBLEM_SETUP_START_ACTION)
             !Start the solvers creation
             CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_NUMBER_SET(SOLVERS,2,ERR,ERROR,*999)
               !Set the solver to be a nonlinear solver
@@ -2930,7 +2915,7 @@ CONTAINS
               !                 CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SOLVER_DYNAMIC_CRANK_NICHOLSON_SCHEME,ERR,ERROR,*999)
               CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
               !Cellml solver
-              IF(PROBLEM%SUBTYPE==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+              IF(PROBLEM%SPECIFICATION(3)==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                 !Create the CellML evaluator solver
                 CALL SOLVER_NEWTON_CELLML_EVALUATOR_CREATE(SOLVER,cellmlSolver,ERR,ERROR,*999)
                 !Link the CellML evaluator solver to the solver
@@ -2963,7 +2948,7 @@ CONTAINS
               !                 CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SOLVER_DYNAMIC_CRANK_NICHOLSON_SCHEME,ERR,ERROR,*999)
               CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -2988,13 +2973,13 @@ CONTAINS
             NULLIFY(SOLVER)
             NULLIFY(SOLVER_EQUATIONS)
             !Get the Characteristic solver
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CASE(Problem_Coupled1dDaeNavierStokesSubtype)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3007,13 +2992,13 @@ CONTAINS
             NULLIFY(SOLVER)
             NULLIFY(SOLVER_EQUATIONS)
             !Get the Navier-stokes solver
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
             CASE(Problem_Coupled1dDaeNavierStokesSubtype)
               CALL SOLVERS_SOLVER_GET(SOLVERS,3,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3032,13 +3017,13 @@ CONTAINS
             NULLIFY(SOLVER)
             NULLIFY(SOLVER_EQUATIONS)
             !Get the characteristic solver
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CASE(Problem_Coupled1dDaeNavierStokesSubtype)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3048,13 +3033,13 @@ CONTAINS
             NULLIFY(SOLVER)
             NULLIFY(SOLVER_EQUATIONS)
             !Get the Navier-Stokes solver
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
             CASE(Problem_Coupled1dDaeNavierStokesSubtype)
               CALL SOLVERS_SOLVER_GET(SOLVERS,3,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3080,7 +3065,7 @@ CONTAINS
             NULLIFY(cellMLSolver)
             NULLIFY(CELLML_EQUATIONS)
             !set up cellML equations on DAE and nonlinear solver for coupled 1d0d
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
               !Get the CellML evaluator solver
@@ -3092,7 +3077,7 @@ CONTAINS
               !Finish the CellML equations creation
               CALL CELLML_EQUATIONS_CREATE_START(solver,CELLML_EQUATIONS,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for cellML equations setup Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3103,7 +3088,7 @@ CONTAINS
             !Get the solver
             CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
             NULLIFY(SOLVER)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
               !Get the CellML evaluator solver
@@ -3119,7 +3104,7 @@ CONTAINS
               !Finish the CellML equations creation
               CALL CELLML_EQUATIONS_CREATE_FINISH(CELLML_EQUATIONS,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for cellML equations setup Navier-Stokes equation type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -3341,7 +3326,7 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -3456,9 +3441,15 @@ CONTAINS
     NULLIFY(DECOMPOSITION)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Navier-Stokes type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
@@ -3478,7 +3469,7 @@ CONTAINS
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
@@ -3643,7 +3634,7 @@ CONTAINS
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -3663,8 +3654,8 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
@@ -3681,15 +3672,15 @@ CONTAINS
             RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
 
             !Start with matrix calculations
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               !Loop over field components
 
               mhs=0
@@ -3748,7 +3739,7 @@ CONTAINS
                         !General matrix
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !GRADIENT TRANSPOSE TYPE
-                          IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE) THEN 
+                          IF(EQUATIONS_SET%SPECIFICATION(3)/=EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE) THEN 
                             IF(nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
                               SUM=0.0_DP
                               !Calculate SUM 
@@ -3769,8 +3760,8 @@ CONTAINS
                         !\todo: This part must be either here or within the nonlinear vector
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !GRADIENT TRANSPOSE TYPE
-                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. & 
-                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN 
+                          IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. & 
+                            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN 
                             IF(nh==mh) THEN 
                               SUM=0.0_DP
                               !Calculate SUM 
@@ -3801,11 +3792,11 @@ CONTAINS
                           END IF
                         END IF
                         !Damping matrix
-                        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE.OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                        IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+                          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE.OR. &
+                          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                           IF(UPDATE_DAMPING_MATRIX) THEN
                             IF(nh==mh) THEN 
                               SUM=0.0_DP 
@@ -3946,7 +3937,7 @@ CONTAINS
                               SUM=PHIMS*(-2.0_DP*PI*COS(2.0_DP*PI*X(3)/10.0_DP)*RHO_PARAM*SIN(2.0_DP*PI*X(3)/10.0_DP)* & 
                                 & (-1.0_DP+COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP)
                             ENDIF
-                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4) & 
+                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4) &
                             & THEN
                             IF(mh==1) THEN 
                               !Calculate SUM 
@@ -3955,7 +3946,7 @@ CONTAINS
                               !Calculate SUM 
                               ! ! !                               SUM=PHIMS*(-2.0_DP*COS(X(1))*SIN(X(2)))*MU_PARAM
                             ENDIF
-                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5) & 
+                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5) &
                             & THEN
                             !do nothing
                           ENDIF
@@ -3999,9 +3990,9 @@ CONTAINS
                 W_VALUE=0.0_DP
                 mhs=0
 
-                IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                IF( EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                   U_SUPG(1:3)=0.0_DP
                   DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                     MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -4036,9 +4027,9 @@ CONTAINS
                     !note mh value derivative 
                     SUM=0.0_DP
 
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                    IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                      & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                      & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                       !Apply streamline upwind petrov galerkin weights to convective term
                       W_SUPG=0.0_DP
                       DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
@@ -4085,8 +4076,8 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             !Start with matrix calculations
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
               Q_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               Q_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -4195,8 +4186,8 @@ CONTAINS
             ENDIF
           ENDDO !ng
 
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+          IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
             IF(UPDATE_NONLINEAR_RESIDUAL) THEN
               ELEMENTS_TOPOLOGY=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%components(1)%domain%topology%elements
               numberOfElementNodes=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS%NUMBER_OF_NODES
@@ -4316,15 +4307,15 @@ CONTAINS
           mhs_max=nhs
           nhs_min=mhs
           nhs_max=nhs
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+          IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
             IF(STIFFNESS_MATRIX%FIRST_ASSEMBLY) THEN
               IF(UPDATE_STIFFNESS_MATRIX) THEN
                 DO mhs=mhs_min+1,mhs_max
@@ -4338,7 +4329,7 @@ CONTAINS
           ENDIF
 
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Navier-Stokes equation type of a classical field equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -4421,10 +4412,16 @@ CONTAINS
     UPDATE_JACOBIAN_MATRIX=.FALSE.
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Navier-Stokes type equations set.", &
+          & err,error,*999)
+      END IF
       NULLIFY(EQUATIONS)
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
@@ -4443,7 +4440,7 @@ CONTAINS
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           !            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
@@ -4577,7 +4574,7 @@ CONTAINS
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% & 
               & INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -4597,8 +4594,8 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
@@ -4614,15 +4611,15 @@ CONTAINS
             !Define RHO_PARAM, density=2
             RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
 
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
 
               U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -4650,21 +4647,21 @@ CONTAINS
               W_VALUE=0.0_DP
             END IF
 
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               !Loop over field components
               mhs=0
 
-              IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+              IF( EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                 U_SUPG=0.0_DP
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -4714,9 +4711,9 @@ CONTAINS
                         PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                         PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                         SUM=0.0_DP
-                        IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                        IF( EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                           !Add SUPG weighting terms
                           IF(UPDATE_JACOBIAN_MATRIX) THEN
                             !Calculate J1 only
@@ -4802,8 +4799,8 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             !Start with Matrix Calculations
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
               Q_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               Q_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -4895,8 +4892,8 @@ CONTAINS
           ENDDO !ng
 
 !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+          IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
 
             numberOfElementNodes=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS%NUMBER_OF_NODES
             numberOfParameters=ELEMENTS_TOPOLOGY%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS  
@@ -4956,7 +4953,7 @@ CONTAINS
           ENDIF
 
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -4996,7 +4993,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
             CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
@@ -5043,7 +5045,7 @@ CONTAINS
               CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             END IF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -5176,9 +5178,14 @@ CONTAINS
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(1))
           CASE(PROBLEM_FLUID_MECHANICS_CLASS)        
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
@@ -5354,7 +5361,7 @@ CONTAINS
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                   & GLOBAL_DERIVATIVE_INDEX
-                                                CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
+                                                CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SPECIFICATION(3), & 
                                                   & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
                                                   & GLOBAL_DERIV_INDEX,component_idx,NUMBER_OF_DIMENSIONS, & 
                                                   & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
@@ -5623,7 +5630,7 @@ CONTAINS
                                               !Define RHO_PARAM, density=2
                                               RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
                                                 & parameters%cmiss%data_dp(2)
-                                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
+                                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SPECIFICATION(3), & 
                                                 & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
                                                 & GLOBAL_DERIV_INDEX,component_idx,NUMBER_OF_DIMENSIONS, & 
                                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
@@ -5711,14 +5718,14 @@ CONTAINS
               solverNavierStokesFlag = .FALSE.
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                IF (CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
-                  & CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+                IF (CONTROL_LOOP%PROBLEM%SPECIFICATION(3)==PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
+                  & CONTROL_LOOP%PROBLEM%SPECIFICATION(3)==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                   IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==1) THEN
                     solverCharacteristicFlag = .TRUE.
                   ELSE IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==2) THEN
                     solverNavierStokesFlag = .TRUE.
                   ENDIF
-                ELSE IF(CONTROL_LOOP%PROBLEM%SUBTYPE==Problem_Coupled1dDaeNavierStokesSubtype) THEN
+                ELSE IF(CONTROL_LOOP%PROBLEM%SPECIFICATION(3)==Problem_Coupled1dDaeNavierStokesSubtype) THEN
                   IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==2) THEN
                     solverCharacteristicFlag = .TRUE.
                   ELSE IF(SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==3) THEN
@@ -6411,14 +6418,14 @@ CONTAINS
               END IF
               ! do nothing ???
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation fluid type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_MULTI_PHYSICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-              SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
                 NULLIFY(Solver2)
                 !Pre solve for the linear solver
@@ -6460,10 +6467,11 @@ CONTAINS
                                   IF(ASSOCIATED(SOLID_EQUATIONS)) THEN
                                     SOLID_EQUATIONS_SET=>SOLID_EQUATIONS%EQUATIONS_SET
                                     IF(ASSOCIATED(SOLID_EQUATIONS_SET)) THEN
-                                      IF(SOLID_EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS &
-                                        & .AND.SOLID_EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE &
-                                        & .AND.((SOLID_EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE).OR. &
-                                        & (SOLID_EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE))) THEN
+                                      IF(SOLID_EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS &
+                                        & .AND.SOLID_EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE &
+                                        & .AND.((SOLID_EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE).OR. &
+                                        & (SOLID_EQUATIONS_SET%SPECIFICATION(3)== &
+                                        & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE))) THEN
                                         SolidEquationsSetFound=.TRUE.
                                       ELSE
                                         EquationsSetIndex=EquationsSetIndex+1
@@ -6503,9 +6511,9 @@ CONTAINS
                                   IF(ASSOCIATED(SOLID_EQUATIONS)) THEN
                                     FLUID_EQUATIONS_SET=>FLUID_EQUATIONS%EQUATIONS_SET
                                     IF(ASSOCIATED(FLUID_EQUATIONS_SET)) THEN
-                                      IF(FLUID_EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
-                                        & .AND.FLUID_EQUATIONS_SET%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
-                                        & .AND.FLUID_EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
+                                      IF(FLUID_EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
+                                        & .AND.FLUID_EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
+                                        & .AND.FLUID_EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
                                         FluidEquationsSetFound=.TRUE.
                                       ELSE
                                         EquationsSetIndex=EquationsSetIndex+1
@@ -6628,9 +6636,9 @@ CONTAINS
                       IF(ASSOCIATED(EQUATIONS)) THEN
                         EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                         IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                          IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
-                            & .AND.EQUATIONS_SET%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
-                            & .AND.EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
+                          IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
+                            & .AND.EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
+                            & .AND.EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
                             ALENavierStokesEquationsSetFound=.TRUE.
                           ELSE
                             EquationsSetIndex=EquationsSetIndex+1
@@ -6715,17 +6723,17 @@ CONTAINS
                 END IF
                 ! do nothing ???
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is not valid for a FiniteElasticity-NavierStokes problem type of a multi physics problem class."
                 CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for NAVIER_STOKES_PRE_SOLVE of a multi physics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))// &
               & " is not valid for NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS."
             CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
           END SELECT
@@ -6790,9 +6798,14 @@ CONTAINS
 
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(1))
           CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
@@ -7010,14 +7023,14 @@ CONTAINS
                 CALL FLAG_ERROR("Mesh update is not defined for non-dynamic problems.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation fluid type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_MULTI_PHYSICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-              SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
                 !Update mesh within the dynamic solver
                 IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
@@ -7057,9 +7070,9 @@ CONTAINS
                           & .AND.EquationsSetIndex<=SOLVER_MAPPING_ALE_NAVIER_STOKES%NUMBER_OF_EQUATIONS_SETS)
                           EQUATIONS_SET_ALE_NAVIER_STOKES=>SOLVER_MAPPING_ALE_NAVIER_STOKES%EQUATIONS_SETS(EquationsSetIndex)%PTR
                           IF(ASSOCIATED(EQUATIONS_SET_ALE_NAVIER_STOKES)) THEN
-                            IF(EQUATIONS_SET_ALE_NAVIER_STOKES%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
-                              & .AND.EQUATIONS_SET_ALE_NAVIER_STOKES%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
-                              & .AND.EQUATIONS_SET_ALE_NAVIER_STOKES%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
+                            IF(EQUATIONS_SET_ALE_NAVIER_STOKES%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS &
+                              & .AND.EQUATIONS_SET_ALE_NAVIER_STOKES%SPECIFICATION(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE &
+                              & .AND.EQUATIONS_SET_ALE_NAVIER_STOKES%SPECIFICATION(3)==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN
                               INDEPENDENT_FIELD_ALE_NAVIER_STOKES=>EQUATIONS_SET_ALE_NAVIER_STOKES%INDEPENDENT%INDEPENDENT_FIELD
                               IF(ASSOCIATED(INDEPENDENT_FIELD_ALE_NAVIER_STOKES)) ALENavierStokesEquationsSetFound=.TRUE.
                             ELSE
@@ -7153,15 +7166,15 @@ CONTAINS
                   CALL FLAG_ERROR("Mesh update is not defined for non-dynamic problems.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is not valid for a FiniteElasticity-NavierStokes type of a multi physics problem class."
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH of a multi physics problem class."
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))// &
               & " is not valid for NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -7216,9 +7229,14 @@ CONTAINS
       !       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(1))
           CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
@@ -7294,14 +7312,14 @@ CONTAINS
                 CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Navier-Stokes equation fluid type of a fluid mechanics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_MULTI_PHYSICS_CLASS)
-            SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-              SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE)
                 IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
                   !Get the independent field for the ALE Navier-Stokes problem
@@ -7368,17 +7386,17 @@ CONTAINS
                   CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
                 END IF
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is not valid for a FiniteElasticity-NavierStokes type of a multi physics problem class."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS of a multi physics problem class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(1),"*",ERR,ERROR))// &
               & " is not valid for NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -7434,7 +7452,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -7488,8 +7511,8 @@ CONTAINS
                       FILE=OUTPUT_FILE
                       METHOD="FORTRAN"
                       EXPORT_FIELD=.TRUE.
-                      IF(EXPORT_FIELD .AND. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)) THEN
+                      IF(EXPORT_FIELD.AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)) THEN
                         IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
                           !Use standard field IO routines (also only export nodes after first step as not a moving mesh case)
                           FileNameLength = LEN_TRIM(OUTPUT_FILE)
@@ -7612,7 +7635,7 @@ CONTAINS
               ENDIF
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a Navier-Stokes equation fluid type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -7769,7 +7792,7 @@ CONTAINS
                             globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                               & GLOBAL_DERIVATIVE_INDEX
                             DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
-                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SPECIFICATION(3), & 
                                 & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
                                 & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
                                 & materialsParameters,VALUE,err,error,*999)
@@ -7795,7 +7818,7 @@ CONTAINS
                           globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                             & GLOBAL_DERIVATIVE_INDEX
                           IF(componentIdx<=numberOfXi) THEN
-                            CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                            CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SPECIFICATION(3), & 
                               & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
                               & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
                               & materialsParameters,VALUE,err,error,*999)
@@ -7849,7 +7872,7 @@ CONTAINS
                                   boundaryConditionsCheckVariable=boundaryConditionsVariable% &
                                     & CONDITION_TYPES(local_ny)
                                   IF(boundaryConditionsCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                                    CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                                    CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SPECIFICATION(3), & 
                                       & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex, &
                                       & componentIdx,numberOfXi,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
                                       & materialsParameters,VALUE,err,error,*999)
@@ -7987,7 +8010,7 @@ CONTAINS
                         DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
                           globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                             & GLOBAL_DERIVATIVE_INDEX
-                          CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
+                          CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SPECIFICATION(3), & 
                             & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
                             & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
                             & materialsParameters,VALUE,err,error,*999)
@@ -9253,7 +9276,13 @@ CONTAINS
     NULLIFY(geometricVariable)
 
     IF(ASSOCIATED(equationsSet))THEN
-      SELECT CASE(equationsSet%SUBTYPE)
+      IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Navier-Stokes type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(equationsSet%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
         &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
         &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
@@ -9386,7 +9415,7 @@ CONTAINS
           CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
         ENDIF
       CASE DEFAULT
-        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SPECIFICATION(3),"*",err,error))// &
           & " is not a valid subtype to use SUPG weighting functions."
         CALL FLAG_ERROR(localError,err,error,*999)
       END SELECT
@@ -9486,7 +9515,7 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     END IF
 
-    SELECT CASE(equationsSet%SUBTYPE)
+    SELECT CASE(equationsSet%SPECIFICATION(3))
     CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
 
       !Get the mesh decomposition and basis
@@ -9723,7 +9752,12 @@ CONTAINS
     IF(ASSOCIATED(controlLoop)) THEN
       IF(ASSOCIATED(solver)) THEN
         IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
-          SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(controlLoop%problem%specification)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(controlLoop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(controlLoop%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             solverEquations=>solver%SOLVER_EQUATIONS
             IF(ASSOCIATED(solverEquations)) THEN
@@ -9759,7 +9793,7 @@ CONTAINS
               CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
             END IF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SPECIFICATION(3),"*",err,error))// &
               & " is not valid for boundary flux calculation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -9777,7 +9811,7 @@ CONTAINS
     boundaryFlux=0.0_DP
     faceFlux=0.0_DP
 
-    SELECT CASE(equationsSet%SUBTYPE)
+    SELECT CASE(equationsSet%SPECIFICATION(3))
     CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
       dependentVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
       !Get the mesh decomposition and mapping
@@ -10128,7 +10162,8 @@ CONTAINS
       ENDDO !elementIdx                 
 
     CASE DEFAULT
-      LOCAL_ERROR="Boundary flux calcluation for equations type "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",ERR,ERROR))// &
+      LOCAL_ERROR="Boundary flux calcluation for equations type "// &
+        & TRIM(NUMBER_TO_VSTRING(equationsSet%SPECIFICATION(3),"*",ERR,ERROR))// &
         & " is not yet implemented for Navier-Stokes."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)     
     END SELECT
@@ -10202,30 +10237,35 @@ CONTAINS
     NULLIFY(boundaryConditions)
     NULLIFY(boundaryConditionsVariable)
 
-    !get solvers based on the problem type
-    SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-    CASE(PROBLEM_Coupled1D0D_Navier_Stokes_SUBTYPE)     
-      solverCharacteristicNumber=1
-      solver1dNavierStokesNumber=2
-    CASE(Problem_Coupled1dDaeNavierStokesSubtype)     
-      solverDaeNumber=1
-      solverCharacteristicNumber=2
-      solver1dNavierStokesNumber=3
-      solverDae=>controlLoop%SOLVERS%SOLVERS(solverDaeNumber)%PTR
-    CASE DEFAULT
-      LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
-        & " is not valid for 1D-0D Navier-Stokes fluid coupling."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-    END SELECT
-
-    solverCharacteristic=>controlLoop%SOLVERS%SOLVERS(solverCharacteristicNumber)%PTR
-    solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
-
     ! Some preliminary sanity checks
     IF(ASSOCIATED(controlLoop)) THEN
       IF(ASSOCIATED(solver1D)) THEN
         IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
-          SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(controlLoop%problem%specification)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(controlLoop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Navier-Stokes problem.",err,error,*999)
+          END IF
+          !get solvers based on the problem type
+          SELECT CASE(controlLoop%PROBLEM%SPECIFICATION(3))
+          CASE(PROBLEM_Coupled1D0D_Navier_Stokes_SUBTYPE)     
+            solverCharacteristicNumber=1
+            solver1dNavierStokesNumber=2
+          CASE(Problem_Coupled1dDaeNavierStokesSubtype)     
+            solverDaeNumber=1
+            solverCharacteristicNumber=2
+            solver1dNavierStokesNumber=3
+            solverDae=>controlLoop%SOLVERS%SOLVERS(solverDaeNumber)%PTR
+          CASE DEFAULT
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SPECIFICATION(3),"*",err,error))// &
+              & " is not valid for 1D-0D Navier-Stokes fluid coupling."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+
+          solverCharacteristic=>controlLoop%SOLVERS%SOLVERS(solverCharacteristicNumber)%PTR
+          solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+
+          SELECT CASE(controlLoop%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_Coupled1D0D_Navier_Stokes_SUBTYPE,Problem_Coupled1dDaeNavierStokesSubtype)
             solverEquations=>solver1D%SOLVER_EQUATIONS
             IF(ASSOCIATED(solverEquations)) THEN
@@ -10233,10 +10273,10 @@ CONTAINS
               IF(ASSOCIATED(solverMapping)) THEN
                 equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
                 IF(ASSOCIATED(equationsSet)) THEN
-                  IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
+                  IF(equationsSet%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                     ! Do nothing
                   ELSE
-                    LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SPECIFICATION(3),"*",ERR,ERROR))// &
                       & " is not valid for 1D-0D coupling."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END IF
@@ -10267,7 +10307,7 @@ CONTAINS
               CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
             END IF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SPECIFICATION(3),"*",err,error))// &
               & " is not valid for 1D-0D Navier-Stokes fluid coupling."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -10299,7 +10339,7 @@ CONTAINS
 
     IF(solver%SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER==solverCharacteristicNumber) THEN
       DO iterationIdx=1,maxIterations  
-        SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
+        SELECT CASE(controlLoop%PROBLEM%SPECIFICATION(3))
         CASE(PROBLEM_Coupled1D0D_Navier_Stokes_SUBTYPE)     
           nonlinearSolver=>solver1D%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
           IF(ASSOCIATED(nonlinearSolver)) THEN
@@ -10316,7 +10356,7 @@ CONTAINS
           ! (Re)calculate the current DAE equations for this time step
           CALL SOLVER_SOLVE(solverDae,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
+          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SPECIFICATION(3),"*",err,error))// &
             & " is not valid for 1D-0D Navier-Stokes fluid coupling."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
