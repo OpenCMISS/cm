@@ -754,18 +754,22 @@ CONTAINS
                     !===============================================================================================================
                     !Export fields
                     IF(TimeStepNumber>=0.AND.TimeStepNumber<10) THEN
+                      SolidFileName="Solid0000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
+                      FluidFileName="Fluid0000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
+                      InterfaceFileName="Interface0000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
+                    ELSE IF(TimeStepNumber>=10.AND.TimeStepNumber<100) THEN
                       SolidFileName="Solid000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       FluidFileName="Fluid000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       InterfaceFileName="Interface000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=10.AND.TimeStepNumber<100) THEN
+                    ELSE IF(TimeStepNumber>=100.AND.TimeStepNumber<1000) THEN
                       SolidFileName="Solid00"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       FluidFileName="Fluid00"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       InterfaceFileName="Interface00"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=100.AND.TimeStepNumber<1000) THEN
+                    ELSE IF(TimeStepNumber>=1000) THEN
                       SolidFileName="Solid0"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       FluidFileName="Fluid0"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       InterfaceFileName="Interface0"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=1000) THEN
+                    ELSE IF(TimeStepNumber>=10000) THEN
                       SolidFileName="Solid"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       FluidFileName="Fluid"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                       InterfaceFileName="Interface"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))

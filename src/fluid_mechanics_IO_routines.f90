@@ -4251,12 +4251,10 @@ CONTAINS
           NodeNumber=InletNodes(I)
           CALL FIELD_PARAMETER_SET_GET_NODE(GeometricField,FIELD_U_VARIABLE_TYPE, &
             & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,ComponentNumber,Value,Err,Error,*999)
-          !                 3/2   * V     / H^2         *(2     *H     *z    - z^2       )* t  / t_end
-          BoundaryValues(I)=1.5_DP*0.01_DP/5.0_DP/5.0_DP*(2.0_DP*5.0_DP*Value-Value*Value)*Time/StopTime! m / s extents in m
-        !  BoundaryValues(I)=1.5_DP*100.0_DP/5000.0_DP/5000.0_DP*(2.0_DP*5000.0_DP*Value-Value*Value)*Time/StopTime! mm / s // extents in mm
-        !  BoundaryValues(I)=1.5_DP*0.1_DP/500.0_DP/500.0_DP*(2.0_DP*500.0_DP*Value-Value*Value)*Time/StopTime! m / s // extents in cm
-          BoundaryValues(I)=0.1_DP!just to check for equilibrium..!1.0_DP*Time/StopTime! m / s
-          BoundaryValues(I)=0.1_DP/(1.0_DP+exp(-0.5_DP*Time+2.0_DP)) ! m / s
+        !  BoundaryValues(I)=0.1_DP*Time/StopTime! m / s
+          BoundaryValues(I)=0.01_DP/(1.0_DP+exp(-0.5_DP*Time*1.0_DP+2.0_DP)) ! m / s
+        !  BoundaryValues(I)=0.1_DP/(1.0_DP+exp(-0.5_DP*Time*0.01_DP+5.0_DP)) ! m / s
+        !  BoundaryValues(I)=0.005_DP/(1.0_DP+exp(-0.5_DP*Time*0.5+2.0_DP)) ! m / s
         ENDDO
       CASE DEFAULT
         STOP "Invalid input option for position dependent boundary conditions in FSI problem."
