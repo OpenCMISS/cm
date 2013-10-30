@@ -861,11 +861,12 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VAR_DEP_M,FIELD_VAR_GEO_M,FIELD_VAR_IND_FE,FIELD_VAR_IND_M
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VAR_DEP_M,FIELD_VAR_GEO_M,FIELD_VAR_IND_FE,FIELD_VAR_IND_M,FIELD_VAR_IND_M_2
     INTEGER(INTG) :: component_idx,element_idx,ne,start_elem,START_ELEMENT,start_element_idx
     INTEGER(INTG) :: DEPENDENT_FIELD_INTERPOLATION,GEOMETRIC_FIELD_INTERPOLATION
     INTEGER(INTG) :: node_idx,node_idx_2,NODE_LEFT,NODE_RIGHT,NUMBER_OF_NODES,GAUSS_POINT,gauss_idx,fibre_idx
     INTEGER(INTG) :: nodes_in_Xi_1,nodes_in_Xi_2,nodes_in_Xi_3,n3,n2,n1,dof_idx,dof_idx2,idx,my_element_idx
+    INTEGER(INTG) :: offset,n4
     REAL(DP) :: XVALUE_M,XVALUE_FE,DIST_LEFT,DIST_RIGHT,VALUE,VALUE_LEFT,VALUE_RIGHT,DISTANCE,VELOCITY,VELOCITY_MAX,OLD_DIST
     REAL(DP) :: XI(3),PREVIOUS_NODE(3),DIST_INIT,SARCO_LENGTH_INIT,TIME_STEP
     LOGICAL :: OUTSIDE_NODE
@@ -896,6 +897,7 @@ CONTAINS
     NULLIFY(FIELD_VAR_GEO_M)
     NULLIFY(FIELD_VAR_IND_FE)
     NULLIFY(FIELD_VAR_IND_M)
+    NULLIFY(FIELD_VAR_IND_M_2)
     NULLIFY(GAUSS_POSITIONS)
     
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -1050,11 +1052,13 @@ CONTAINS
 
 
               node_idx=0
+              node_idx_2=0
               fibre_idx=0
               CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD_MONODOMAIN,FIELD_V_VARIABLE_TYPE,FIELD_VAR_DEP_M,ERR,ERROR,*999)
               CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE,FIELD_VAR_GEO_M,ERR,ERROR,*999)
               CALL FIELD_VARIABLE_GET(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE,FIELD_VAR_IND_FE,ERR,ERROR,*999)
               CALL FIELD_VARIABLE_GET(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE,FIELD_VAR_IND_M,ERR,ERROR,*999)
+              CALL FIELD_VARIABLE_GET(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE,FIELD_VAR_IND_M_2,ERR,ERROR,*999)
 
               NODES_MAPPING=>GEOMETRIC_FIELD_MONODOMAIN%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD_MONODOMAIN%DECOMPOSITION% &
                 & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%NODES
@@ -1062,10 +1066,12 @@ CONTAINS
               ELEMENTS_TOPOLOGY=>GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION%TOPOLOGY%ELEMENTS
 
 
-              !get the maximum contraction velocity
+              !get the maximum contraction velocity 
               dof_idx=FIELD_VAR_IND_M%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
               CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
                 & FIELD_VALUES_SET_TYPE,dof_idx,VELOCITY_MAX,ERR,ERROR,*999)
+              !NOTE: VELOCITY_MAX is the max shortening velocity, and hence negative!!!
+              !The max lengthening velocity is assumed to be   abs(VELOCITY_MAX)/2.0
               
               !get the time step of the elasticity problem
               TIME_STEP=CONTROL_LOOP_PARENT%TIME_LOOP%TIME_INCREMENT
@@ -1119,7 +1125,7 @@ CONTAINS
                       GAUSS_POSITIONS=>GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD_ELASTICITY%DECOMPOSITION% &
                         & MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP( &
                         & BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%GAUSS_POSITIONS
-
+                      
                       DO n1=1,nodes_in_Xi_1
                         node_idx=node_idx+1
                         
@@ -1174,14 +1180,21 @@ CONTAINS
                           
                           !compute the new contraction velocity
                           VELOCITY=(VALUE-OLD_DIST)/TIME_STEP
-                          IF(VELOCITY>VELOCITY_MAX .AND. (.NOT. CALC_CLOSEST_GAUSS_POINT)) THEN
-                            CALL FLAG_WARNING('Exceeded maximum contraction velocity',ERR,ERROR,*999)
-                            VELOCITY=VELOCITY_MAX
+                          IF(.NOT. CALC_CLOSEST_GAUSS_POINT) THEN
+                            !NOTE: VELOCITY_MAX is the max shortening velocity, and hence negative!!!
+                            IF(VELOCITY<VELOCITY_MAX) THEN
+                              CALL FLAG_WARNING('Exceeded maximum contraction velocity (shortening)',ERR,ERROR,*999)
+                              VELOCITY=VELOCITY_MAX
+                            !The max lengthening velocity is assumed to be VELOCITY_MAX/2.0
+                            ELSEIF(VELOCITY>(ABS(VELOCITY_MAX)/2.0_DP)) THEN
+                              CALL FLAG_WARNING('Exceeded maximum contraction velocity (lengthening)',ERR,ERROR,*999)
+                              VELOCITY=-VELOCITY_MAX/2.0_DP
+                            ENDIF
                           ENDIF
                           
                           !store the relative contraction velocity in component 3 of the U2 variable of the monodomain independent field
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,1,1,node_idx,3,VELOCITY/VELOCITY_MAX,ERR,ERROR,*999)
+                            & FIELD_VALUES_SET_TYPE,1,1,node_idx,3,VELOCITY/ABS(VELOCITY_MAX),ERR,ERROR,*999)
 
                           !store the node distance for contraction velocity calculation
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
@@ -1217,7 +1230,7 @@ CONTAINS
                               & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,1,VALUE,ERR,ERROR,*999)                            
                             !relative contraction velocity
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,3,VELOCITY/VELOCITY_MAX,ERR,ERROR,*999)
+                              & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,3,VELOCITY/ABS(VELOCITY_MAX),ERR,ERROR,*999)
                           ENDIF
 
                         ENDIF !((n1==1).AND.(ne==START_ELEMENT))
@@ -1245,14 +1258,147 @@ CONTAINS
                             & FIELD_VALUES_SET_TYPE,1,1,node_idx,5,ne,ERR,ERROR,*999)
                         ENDIF !CALC_CLOSEST_GAUSS_POINT
                         
-                        XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1-1))
+                        IF(start_elem==1) THEN
+                          !fibres start in this element
+                          XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1-1))
+                        ELSEIF(start_elem==0) THEN
+                          !fibres don't start in this element
+                          XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1))
+                        ELSE
+                          CALL FLAG_ERROR("Error in fibres start in element info.",ERR,ERROR,*999)
+                        ENDIF
+                        
                       ENDDO !n1
                       
+
+
+
+!tomo new
+                      !smooth of the velocity field
+
+                      !arithmetic mean of all rel_velo values within one FE element
+!                      VELOCITY=0.0_DP
+!                      DO n1=1,nodes_in_Xi_1
+!                        node_idx_2=node_idx_2+1
+!                        dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                          & DERIVATIVES(1)%VERSIONS(1)
+!                        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                          & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                        VELOCITY=VELOCITY+VALUE
+!                      ENDDO
+!                      VELOCITY=VELOCITY/nodes_in_Xi_1
+
+!                      node_idx_2=node_idx_2-nodes_in_Xi_1
+!                      DO n1=1,nodes_in_Xi_1
+!                        node_idx_2=node_idx_2+1
+!                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+!                      ENDDO
+
+!--------------------------------------------------------------------------
+
+                      !moving average
+                      offset=3
+                      
+                      !do the first three nodes of a fibre manually - arithmetic mean
+                      VELOCITY=0.0_DP
+
+                      node_idx_2=node_idx_2+1
+                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+                        & DERIVATIVES(1)%VERSIONS(1)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                      VELOCITY=VELOCITY+VALUE
+
+                      node_idx_2=node_idx_2+1
+                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+                        & DERIVATIVES(1)%VERSIONS(1)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                      VELOCITY=VELOCITY+VALUE
+
+                      node_idx_2=node_idx_2+1
+                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+                        & DERIVATIVES(1)%VERSIONS(1)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                      VELOCITY=VELOCITY+VALUE
+                      
+                      VELOCITY=VELOCITY/offset
+
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-2,3,VELOCITY,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-1,3,VELOCITY,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+
+                      !do the major part as moving average
+                      DO n1=1+offset,nodes_in_Xi_1-offset
+                        node_idx_2=node_idx_2+1
+                        VELOCITY=0.0_DP
+                        DO n4=node_idx_2-offset,node_idx_2+offset
+                          dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(n4)% &
+                            & DERIVATIVES(1)%VERSIONS(1)
+                          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                          VELOCITY=VELOCITY+VALUE
+                        ENDDO !n4
+                        VELOCITY=VELOCITY/(2*offset+1)
+                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+                      ENDDO !n1
+                      
+                      !do the last three nodes of a fibre manually - arithmetic mean
+                      VELOCITY=0.0_DP
+
+                      node_idx_2=node_idx_2+1
+                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+                        & DERIVATIVES(1)%VERSIONS(1)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                      VELOCITY=VELOCITY+VALUE
+
+                      node_idx_2=node_idx_2+1
+                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+                        & DERIVATIVES(1)%VERSIONS(1)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                      VELOCITY=VELOCITY+VALUE
+
+                      node_idx_2=node_idx_2+1
+                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+                        & DERIVATIVES(1)%VERSIONS(1)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+                      VELOCITY=VELOCITY+VALUE
+                      
+                      VELOCITY=VELOCITY/offset
+
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-2,3,VELOCITY,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-1,3,VELOCITY,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+!tomo new end                       
+
+
                       !if there is not an adjacent element in positive XI_1 direction, go to the next FE element
                       IF(ELEMENTS_TOPOLOGY%ELEMENTS(my_element_idx)%ADJACENT_ELEMENTS(1)%NUMBER_OF_ADJACENT_ELEMENTS==0) EXIT
                       
                       !consider the adjacent element in positive XI_1 direction
                       ne=ELEMENTS_TOPOLOGY%ELEMENTS(my_element_idx)%ADJACENT_ELEMENTS(1)%ADJACENT_ELEMENTS(1)
+
+                      !if a fibre starts in the next element, go to the next FE elem
+                      dof_idx=FIELD_VAR_IND_FE%COMPONENTS(4)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ne)
+                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,dof_idx,start_elem,ERR,ERROR,*999)
+                      !beginning of a fibre in this element: 1=yes, 0=no
+                      IF (start_elem==1) THEN
+                        ne=ELEMENTS_TOPOLOGY%ELEMENTS(element_idx)%LOCAL_NUMBER
+                        EXIT
+                      ENDIF
                       
                       !find the element_idx that corresponds to ne
                       my_element_idx=0
@@ -1262,18 +1408,26 @@ CONTAINS
                           EXIT
                         ENDIF
                       ENDDO
-                      IF(my_element_idx==0) CALL FLAG_WARNING("my_element_idx not found.",ERR,ERROR,*999)                      
+                      IF(my_element_idx==0) CALL FLAG_ERROR("my_element_idx not found.",ERR,ERROR,*999)                      
 
                       dof_idx=FIELD_VAR_IND_FE%COMPONENTS(1)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ne)
                       CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
                         & FIELD_VALUES_SET_TYPE,dof_idx,nodes_in_Xi_1,ERR,ERROR,*999)
                       
-                      XI(1)=1.0_DP/(REAL(nodes_in_Xi_1-1))
+                      start_elem=0 !fibres don't start in this element
+                      
+                      XI(1)=1.0_DP/(REAL(nodes_in_Xi_1))
 
                     ENDDO !
                     !for the beginning of the next fibre, go back to the element in which the last fibre started
                     ne=START_ELEMENT
+
+                    dof_idx=FIELD_VAR_IND_FE%COMPONENTS(1)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ne)
+                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_V_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,dof_idx,nodes_in_Xi_1,ERR,ERROR,*999)
+
                     my_element_idx=start_element_idx
+                    start_elem=1 !fibres start in this element
                     XI(1)=0.0_DP
                     XI(2)=XI(2)+1.0_DP/(REAL(nodes_in_Xi_2))
                   ENDDO !n2
@@ -1342,7 +1496,7 @@ CONTAINS
     REAL(DP) :: DISTANCE,XVALUE_FE,XVALUE_M,VALUE
     INTEGER(INTG), PARAMETER :: MAX_NUMBER_OF_GAUSS_POINTS=64
     INTEGER(INTG) :: NUMBER_OF_NODES(MAX_NUMBER_OF_GAUSS_POINTS)
-    REAL(INTG):: ACTIVE_STRESS_VALUES(MAX_NUMBER_OF_GAUSS_POINTS)
+    REAL(DP):: ACTIVE_STRESS_VALUES(MAX_NUMBER_OF_GAUSS_POINTS)
 
     NULLIFY(CONTROL_LOOP_PARENT)
     NULLIFY(CONTROL_LOOP_MONODOMAIN)

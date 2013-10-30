@@ -100,9 +100,12 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE=18 !<The dof is fixed as a boundary condition, to be used with load increment loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_IMPERMEABLE_WALL=19 !<The dof is set such that (via penalty formulation): velocity * normal = 0. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+!tomo
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FIXED_USER_CONTROLLED=21 !<The dof is a fixed boundary condition, but can be updated by the user. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=20 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=21 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+!tomo end
 
   !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_SparsityTypes BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
   !> \brief Storage type for matrices used by boundary conditions.
@@ -136,7 +139,8 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_DIRICHLET,BOUNDARY_CONDITION_NEUMANN_POINT, &
     & BOUNDARY_CONDITION_CAUCHY,BOUNDARY_CONDITION_ROBIN,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE,&
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
-    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
+    & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY,&
+    & BOUNDARY_CONDITION_FIXED_USER_CONTROLLED !tomo
 
   PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -1054,6 +1058,11 @@ CONTAINS
                             & local_ny,INITIAL_VALUE,ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,INITIAL_VALUE+VALUES(i),ERR,ERROR,*999)
+!tomo
+                        CASE(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)
+                          CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & local_ny,VALUES(i),ERR,ERROR,*999)
+!tomo end
                         CASE(BOUNDARY_CONDITION_PRESSURE)
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
@@ -1237,6 +1246,11 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_FIXED_INCREMENTED) !For load increment loops
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
+!tomo
+                        CASE(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & local_ny,VALUES(i),ERR,ERROR,*999)
+!tomo end
                         CASE(BOUNDARY_CONDITION_PRESSURE)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
@@ -1354,7 +1368,10 @@ CONTAINS
       dofType=BOUNDARY_CONDITION_DOF_FIXED
       CALL Field_ParameterSetEnsureCreated(boundaryConditionsVariable%VARIABLE%FIELD,boundaryConditionsVariable%VARIABLE_TYPE, &
         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,err,error,*999)
-      boundaryConditionsVariable%parameterSetRequired(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)=.TRUE.
+!tomo
+    CASE(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)
+      dofType=BOUNDARY_CONDITION_DOF_FIXED
+!tomo end
     CASE(BOUNDARY_CONDITION_PRESSURE)
       ! Pressure boundary conditions leave the RHS dof as free, as the Neumann terms
       ! are calculated in finite elasticity routines when calculating the element residual
@@ -1523,7 +1540,8 @@ CONTAINS
     SELECT CASE(condition)
     CASE(BOUNDARY_CONDITION_FREE, &
         & BOUNDARY_CONDITION_FIXED, &
-        & BOUNDARY_CONDITION_FIXED_INCREMENTED)
+        & BOUNDARY_CONDITION_FIXED_INCREMENTED, &
+        & BOUNDARY_CONDITION_FIXED_USER_CONTROLLED) !tomo
       ! Valid for all interpolation types
     CASE(BOUNDARY_CONDITION_FIXED_INLET, &
         & BOUNDARY_CONDITION_FIXED_OUTLET)
@@ -1642,6 +1660,10 @@ CONTAINS
             END IF
           CASE(BOUNDARY_CONDITION_FIXED_INCREMENTED)
             validEquationsSetFound=.TRUE.
+!tomo
+          CASE(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)
+            validEquationsSetFound=.TRUE.
+!tomo end
           CASE(BOUNDARY_CONDITION_PRESSURE, &
               & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
             IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
