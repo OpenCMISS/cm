@@ -2218,6 +2218,22 @@ CONTAINS
           & ELEMENT_NUMBER)
         CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
           & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+        !divide by lambda and multiply by P_max
+        VALUE=VALUE/SQRT(AZL(1,1))*C(5)
+        
+        
+        
+        !HINDAWI paper - force-length relation at the continuum level
+!        if((SQRT(AZL(1,1))>0.72_DP).AND.(SQRT(AZL(1,1))<1.68_DP)) then
+!          VALUE=VALUE*(-25.0_DP/4.0_DP*AZL(1,1)/1.2/1.2 + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.2_DP - 5.25_DP)
+!        else
+!          VALUE=0.0_DP
+!        endif
+        
+        
+        
+        
+!        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE/AZL(1,1)
         PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
       ELSE IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE) THEN
         IF(AZL(1,1) > 1.0_DP) THEN ! only in the tension range
@@ -2866,8 +2882,6 @@ CONTAINS
                   & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,&
                   & EQUATIONS_SET_NO_SUBTYPE, &
                   & EQUATIONS_SET_MEMBRANE_SUBTYPE, &
-                  & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE, &
-                  & EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE, &
                   & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
                   & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
               ! pass, fibre field isn't required as the constitutive relation is isotropic
@@ -2878,6 +2892,8 @@ CONTAINS
                   & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
                   & EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE, &
                   & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE, &
+                  & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE, &
+                  & EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE, &
                   & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE)
               IF(.NOT.ASSOCIATED(EQUATIONS_SET%GEOMETRY%FIBRE_FIELD)) CALL FLAG_ERROR( &
                 & "Finite elascitiy equations require a fibre field.",ERR,ERROR,*999)
@@ -4420,7 +4436,7 @@ CONTAINS
                 & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 3;
               CASE(EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE)
-                NUMBER_OF_COMPONENTS = 4;
+                NUMBER_OF_COMPONENTS = 5;
               CASE(EQUATIONS_SET_MEMBRANE_SUBTYPE)
                 !\todo Currently the number of components for a membrane problem's material field has been set to 3 in 3D space or
                 ! 2 in 2D space to work with a Mooney Rivlin material (2 material parameters) and a membrane thickness parameter 
