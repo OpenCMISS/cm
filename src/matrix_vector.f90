@@ -1692,8 +1692,8 @@ CONTAINS
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row indices.",ERR,ERROR,*999)
                   ALLOCATE(MATRIX%COLUMN_INDICES(MATRIX%NUMBER_NON_ZEROS),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix column indices.",ERR,ERROR,*999)                  
-                  MATRIX%ROW_INDICES=ROW_INDICES
-                  MATRIX%COLUMN_INDICES=COLUMN_INDICES
+                  MATRIX%ROW_INDICES(1:MATRIX%M+1)=ROW_INDICES(1:MATRIX%M+1)
+                  MATRIX%COLUMN_INDICES(1:MATRIX%NUMBER_NON_ZEROS)=COLUMN_INDICES(1:MATRIX%NUMBER_NON_ZEROS)
                   !Don't really need this???
                   !DO i=1,MATRIX%M
                   !  CALL LIST_SORT(MATRIX%COLUMN_INDICES(MATRIX%ROW_INDICES(i):MATRIX%ROW_INDICES(i+1)-1),ERR,ERROR,*999)
@@ -1773,8 +1773,8 @@ CONTAINS
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row indices.",ERR,ERROR,*999)
                   ALLOCATE(MATRIX%COLUMN_INDICES(MATRIX%N+1),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix column indices.",ERR,ERROR,*999)                  
-                  MATRIX%ROW_INDICES=ROW_INDICES
-                  MATRIX%COLUMN_INDICES=COLUMN_INDICES
+                  MATRIX%ROW_INDICES(1:MATRIX%NUMBER_NON_ZEROS)=ROW_INDICES(1:MATRIX%NUMBER_NON_ZEROS)
+                  MATRIX%COLUMN_INDICES(1:MATRIX%N+1)=COLUMN_INDICES(1:MATRIX%N+1)
                   !Don't really need this???
                   !DO j=1,MATRIX%N                    
                   !  CALL LIST_SORT(MATRIX%ROW_INDICES(MATRIX%COLUMN_INDICES(j):MATRIX%COLUMN_INDICES(j+1)-1),ERR,ERROR,*999)
@@ -1823,8 +1823,8 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !k
-              MATRIX%ROW_INDICES=ROW_INDICES
-              MATRIX%COLUMN_INDICES=COLUMN_INDICES
+              MATRIX%ROW_INDICES(1:MATRIX%NUMBER_NON_ZEROS)=ROW_INDICES(1:MATRIX%NUMBER_NON_ZEROS)
+              MATRIX%COLUMN_INDICES(1:MATRIX%NUMBER_NON_ZEROS)=COLUMN_INDICES(1:MATRIX%NUMBER_NON_ZEROS)
               !!TODO: sort the row and colum indices!!!!!
             ELSE
               LOCAL_ERROR="The supplied number of column indices ("// &
