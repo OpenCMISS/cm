@@ -3052,7 +3052,7 @@ CONTAINS
     IF(ASSOCIATED(geometricTransformationSolver)) THEN
       IF(ASSOCIATED(geometricTransformationSolver%field)) THEN
         fieldVariable=>geometricTransformationSolver%field%VARIABLE_TYPE_MAP(geometricTransformationSolver%fieldVariableType)%PTR
-        IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) transformBC=.TRUE. !if the BC is defined on the field variablet to be transformed
+        IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) transformBC=.TRUE. !if the BC is defined on the field variable to be transformed
         noGeomComp=SIZE(geometricTransformationSolver%transformationMatrices,1)-1 ! Number of geometric components
         !**********************************************************************************************************************
         !Determine iteration/load increment number 
@@ -3150,7 +3150,7 @@ CONTAINS
               localNodeNumber=domainNodes%NODES(nodeIdx)%LOCAL_NUMBER
               userNodeNumber=domainNodes%NODES(nodeIdx)%USER_NUMBER
               DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
-                DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+                DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
                   DO componentIdx=1,noGeomComp !Get all component for a nodal derivative
                     CALL FIELD_PARAMETER_SET_GET_NODE(geometricTransformationSolver%field,geometricTransformationSolver% &
                       & fieldVariableType,FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber,componentIdx, &
@@ -3411,8 +3411,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Problem control loop is not associated.",err,error,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solvers is not associated.",err,error,*999)
       ENDIF
       !Nonlinear solve monitor--progress output if required
       IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -3443,7 +3441,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !> Output fields at Newton iterations
+  !> Output fields at Newton iterations. This is in temporarily for debug output. It may be removed at a later date.
   SUBROUTINE Problem_SolverNewtonFieldsOutput(solver,iterationNumber,err,error,*)
 
     !Argument variables

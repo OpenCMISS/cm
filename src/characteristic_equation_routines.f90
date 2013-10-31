@@ -881,7 +881,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,versionIdx2,componentIdx,columnIdx,componentIdx2
-    INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
+    INTEGER(INTG) :: userNodeNumber
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,sum
     LOGICAL :: updateStiffnessMatrix, updateRhsVector,updateNonlinearResidual
     TYPE(VARYING_STRING) :: localError
@@ -952,8 +952,9 @@ CONTAINS
       IF(ASSOCIATED(nonlinearMatrices)) updateNonlinearResidual=nonlinearMatrices%UPDATE_RESIDUAL
       ! Get the number of versions at this node
       derivativeIdx=1
-      numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
-
+      numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%numberOfVersions
+      userNodeNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(nodeNumber)
+      
       !!!-- W a v e   D i r e c t i o n  ( nW ) --!!!
       normalWave=0.0_DP
       CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -1192,7 +1193,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     INTEGER(INTG) :: numberOfVersions,local_ny,variableType,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,parameterIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
-    INTEGER(INTG) :: elementNumber,elementIdx,elementNodeIdx,elementNodeNumber,elementNodeVersion,versionElementNumber(4)
+    INTEGER(INTG) :: userNodeNumber
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
     LOGICAL :: updateJacobianMatrix
     TYPE(VARYING_STRING) :: localError
@@ -1258,7 +1259,8 @@ CONTAINS
       IF(ASSOCIATED(jacobianMatrix)) updateJacobianMatrix=jacobianMatrix%UPDATE_JACOBIAN
       ! Set derivative to 1 and get the number of versions at this node
       derivativeIdx=1
-      numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%NUMBER_OF_VERSIONS
+      numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%numberOfVersions
+      userNodeNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(nodeNumber)
       ! Check if this is a standard node or a branching/coupled node (branch/coupled has >1 version)
       ! (if standard, the returned nodal nodal vector from this routine will be 0)
 
@@ -1359,7 +1361,6 @@ CONTAINS
         Fr=materialsParameters(local_ny)
         CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & materialsParameters,err,error,*999)
-
 
         !!!--  D E P E N D E N T   P A R A M E T E R S   ( Q , A ) --!!!
         !Current Q and A Values at the nodes - dependent field variable 1, components 1-2, type U

@@ -988,10 +988,10 @@ CONTAINS
 
     CALL ENTERS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX", ERR, ERROR, *999)
 
-    VERSION_NUMBER=ELEMENT%ELEMENT_DERIVATIVES(2, DERIVATIVE_NUMBER, NODE_NUMBER)
+    VERSION_NUMBER=ELEMENT%elementVersions(DERIVATIVE_NUMBER, NODE_NUMBER)
     NUMBER_OF_DERIVATIVES=ELEMENT%BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
     FIELD_IO_ELEMENT_DERIVATIVE_INDEX=(VERSION_NUMBER-1)*NUMBER_OF_DERIVATIVES + &
-      & ELEMENT%ELEMENT_DERIVATIVES(1, DERIVATIVE_NUMBER, NODE_NUMBER)
+      & ELEMENT%ELEMENT_DERIVATIVES(DERIVATIVE_NUMBER, NODE_NUMBER)
 
     CALL EXITS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX")
     RETURN
@@ -3257,8 +3257,8 @@ CONTAINS
           DO nodeIndex = 1, basis%NUMBER_OF_NODES
             nodeNumber = domainElements%ELEMENTS( localNumber )%ELEMENT_NODES( nodeIndex )
             DO derivativeIndex = 1, basis%NUMBER_OF_DERIVATIVES( nodeIndex )
-              nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(1, derivativeIndex, nodeIndex )
-              nv = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(2, derivativeIndex, nodeIndex )
+              nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(derivativeIndex, nodeIndex )
+              nv = domainElements%ELEMENTS( localNumber )%elementVersions(derivativeIndex, nodeIndex )
               ny2 = domainNodes%NODES( nodeNumber )%DERIVATIVES(nk)%DOF_INDEX(nv)
               scaleFactorCount = scaleFactorCount + 1
               IF( component%FIELD_VARIABLE%FIELD%SCALINGS%SCALING_TYPE /= FIELD_NO_SCALING ) THEN
@@ -3735,8 +3735,8 @@ CONTAINS
               !Check that the elements use the same versions of all derivatives for all element nodes
               DO node_idx=1,DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%NUMBER_OF_NODES
                 DO deriv_idx=1,DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                  IF (DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%ELEMENT_DERIVATIVES(2,deriv_idx,node_idx)/= &
-                      & DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%ELEMENT_DERIVATIVES(2,deriv_idx,node_idx)) THEN
+                  IF (DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%elementVersions(deriv_idx,node_idx)/= &
+                      & DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%elementVersions(deriv_idx,node_idx)) THEN
                     SAME_ELEMENT_INFO=.FALSE.
                     EXIT
                   END IF
@@ -5857,7 +5857,7 @@ CONTAINS
                 MAX_NUMBER_VERSIONS = 1
                 DO deriv_idx=1,DOMAIN_NODES%NODES( np )%NUMBER_OF_DERIVATIVES
                   MAX_NUMBER_VERSIONS = MAX(MAX_NUMBER_VERSIONS, &
-                    & DOMAIN_NODES%NODES(np)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS)
+                    & DOMAIN_NODES%NODES(np)%DERIVATIVES(deriv_idx)%numberOfVersions)
                 END DO
                 !allocate variable component memory
                 CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, 1, &
