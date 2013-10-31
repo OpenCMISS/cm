@@ -140,7 +140,6 @@ MODULE EQUATIONS_SET_ROUTINES
   
   PUBLIC EQUATIONS_SET_ANALYTIC_USER_PARAM_SET,EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
   
-!tomo
   PUBLIC EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE
   
 CONTAINS
@@ -7081,8 +7080,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-!tomo
-  !>Returns a pointer to the specified solver in the list of solvers.
+  !>Updates the value of a Dirichlet BC in a load incremented control loop to the specified value. 
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE(EQUATIONS_SET,VALUE,ERR,ERROR,*)
 
     !Argument variables
@@ -7096,7 +7094,6 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-!    REAL(DP), POINTER :: CURRENT_LOADS(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     INTEGER(INTG) :: variable_idx,variable_type,dirichlet_idx,dirichlet_dof_idx,MY_COMPUTATIONAL_NODE_NUMBER
@@ -7105,7 +7102,6 @@ CONTAINS
     NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
     NULLIFY(DIRICHLET_BOUNDARY_CONDITIONS)
     NULLIFY(DEPENDENT_FIELD)
-!    NULLIFY(CURRENT_LOADS)
     NULLIFY(DEPENDENT_VARIABLE)
     NULLIFY(DOMAIN_MAPPING)
 
@@ -7131,8 +7127,6 @@ CONTAINS
                 IF(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)>0) THEN
                   IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
                     DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
-!                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-!                      & CURRENT_LOADS,ERR,ERROR,*999)
                     DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                       dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
                       !Check whether we have an user controlled boundary condition type
@@ -7170,7 +7164,7 @@ CONTAINS
                 ENDIF
               ELSE
                 LOCAL_ERROR="Domain mapping is not associated for variable "// &
-                  & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" of dependent field"
+                  & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" of dependent field."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF !Domain mapping test
             ELSE

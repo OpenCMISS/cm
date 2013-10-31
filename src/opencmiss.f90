@@ -316,7 +316,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSComputationalWorkGroupType,CMISSComputationalWorkGroup_Initialise
 
-  PUBLIC CMISSControlLoopType,CMISSControlLoop_Finalise,CMISSControlLoop_Initialise,CMISSControlLoop_WriteIntermediateResultsSet
+  PUBLIC CMISSControlLoopType,CMISSControlLoop_Finalise,CMISSControlLoop_Initialise,CMISSControlLoop_LoadOutputSet
 
   PUBLIC CMISSCoordinateSystemType,CMISSCoordinateSystem_Finalise,CMISSCoordinateSystem_Initialise
 
@@ -16010,27 +16010,27 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output for a load incremented control loop identified by an object.
-  SUBROUTINE CMISSControlLoop_WriteIntermediateResultsSet(controlLoop,WriteIntermediateResults,err)
+  !>Sets/changes the output parameters for a load control loop identified by an object.
+  SUBROUTINE CMISSControlLoop_LoadOutputSet(controlLoop,outputFrequency,err)
 
     !Argument variables
-    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop to set the maximum iterations for.
-    LOGICAL, INTENT(IN) :: WriteIntermediateResults !<If true, write out results after each load step
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop to set the output parameters for.
+    INTEGER(INTG), INTENT(IN) ::  outputFrequency !<The output frequency modulo to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSControlLoop_WriteIntermediateResultsSet",err,error,*999)
+    CALL ENTERS("CMISSControlLoop_LoadOutputSet",err,error,*999)
 
-    CALL CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET(controlLoop%CONTROL_LOOP,WriteIntermediateResults,err,error,*999)
+    CALL CONTROL_LOOP_LOAD_OUTPUT_SET(controlLoop%CONTROL_LOOP,outputFrequency,err,error,*999)
 
-    CALL EXITS("CMISSControlLoop_WriteIntermediateResultsSet")
+    CALL EXITS("CMISSControlLoop_LoadOutputSet")
     RETURN
-999 CALL ERRORS("CMISSControlLoop_WriteIntermediateResultsSet",err,error)
-    CALL EXITS("CMISSControlLoop_WriteIntermediateResultsSet")
+999 CALL ERRORS("CMISSControlLoop_LoadOutputSet",err,error)
+    CALL EXITS("CMISSControlLoop_LoadOutputSet")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSControlLoop_WriteIntermediateResultsSet
+  END SUBROUTINE CMISSControlLoop_TimeOutputSetObj
 
   !
   !================================================================================================================================

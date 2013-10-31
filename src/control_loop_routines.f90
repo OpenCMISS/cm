@@ -114,7 +114,7 @@ MODULE CONTROL_LOOP_ROUTINES
 
   PUBLIC CONTROL_LOOP_MAXIMUM_ITERATIONS_SET
 
-  PUBLIC CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET
+  PUBLIC CONTROL_LOOP_LOAD_OUTPUT_SET
 
   PUBLIC CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET,CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET
 
@@ -136,7 +136,7 @@ MODULE CONTROL_LOOP_ROUTINES
 
   PUBLIC CONTROL_LOOP_TIME_INPUT_SET
 
-  PUBLIC CONTROL_LOOP_BOUNDARY_CONDITION_UPDATE !tomo
+  PUBLIC CONTROL_LOOP_BOUNDARY_CONDITION_UPDATE
 
 CONTAINS
 
@@ -791,9 +791,9 @@ CONTAINS
     CALL ENTERS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
-!      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-!        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
-!      ELSE
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+      ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
           WHILE_LOOP=>CONTROL_LOOP%WHILE_LOOP
           IF(ASSOCIATED(WHILE_LOOP)) THEN
@@ -823,7 +823,7 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("The specified control loop is not a while or load increment control loop.",ERR,ERROR,*999)
         ENDIF
-!      ENDIF          
+      ENDIF          
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -839,19 +839,19 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output for a load incremented control loop identified by an object. \see OPENCMISS_CMISSControlLoopWriteIntermediateResultsSet
-  SUBROUTINE CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET(CONTROL_LOOP,WRITE_INTERMEDIATE_RESULTS,ERR,ERROR,*)
+  !>Sets/changes the output for a load incremented control loop identified by an object. \see OPENCMISS_CMISSControlLoopLoadOutputSet
+  SUBROUTINE CONTROL_LOOP_LOAD_OUTPUT_SET(CONTROL_LOOP,OUTPUT_FREQUENCY,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
-    LOGICAL, INTENT(IN) :: WRITE_INTERMEDIATE_RESULTS !<If true, write out results after each load step
+    INTEGER(INTG), INTENT(IN) :: OUTPUT_FREQUENCY !<The output frequency modulo to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET",ERR,ERROR,*999)
+    CALL ENTERS("CONTROL_LOOP_LOAD_OUTPUT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
@@ -860,7 +860,7 @@ CONTAINS
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
           LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
           IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
-            LOAD_INCREMENT_LOOP%WRITE_INTERMEDIATE_RESULTS=WRITE_INTERMEDIATE_RESULTS
+            LOAD_INCREMENT_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
           ELSE
             CALL FLAG_ERROR("Control loop load increment loop is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -872,12 +872,12 @@ CONTAINS
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET")
+    CALL EXITS("CONTROL_LOOP_LOAD_OUTPUT_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET")
+999 CALL ERRORS("CONTROL_LOOP_LOAD_OUTPUT_SET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LOAD_OUTPUT_SET")
     RETURN 1
-  END SUBROUTINE CONTROL_LOOP_WRITE_INTERMEDIATE_RESULTS_SET
+  END SUBROUTINE CONTROL_LOOP_LOAD_OUTPUT_SET
 
   !
   !================================================================================================================================
@@ -1364,7 +1364,7 @@ CONTAINS
         CONTROL_LOOP%TIME_LOOP%START_TIME=0.0_DP
         CONTROL_LOOP%TIME_LOOP%STOP_TIME=1.0_DP
         CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT=0.01_DP        
-        CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER=1
+        CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER=0
         CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER=0
       ENDIF
     ELSE
@@ -1517,7 +1517,12 @@ CONTAINS
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
-            IF(OUTPUT_FREQUENCY>0) TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
+            IF(OUTPUT_FREQUENCY>=0) THEN
+              TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
+            ELSE
+              CALL FLAG_ERROR("Invalid output frequency. The frequency should be greater than or equal to zero, but is "// &
+                & TRIM(NUMBER_TO_VSTRING(OUTPUT_FREQUENCY,"*",ERR,ERROR))//".",ERR,ERROR,*999)
+            END IF
           ELSE
             CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1765,7 +1770,7 @@ CONTAINS
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%ITERATION_NUMBER=0
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=1 ! default is full load in one step
-        CONTROL_LOOP%LOAD_INCREMENT_LOOP%WRITE_INTERMEDIATE_RESULTS=.FALSE.
+        CONTROL_LOOP%LOAD_INCREMENT_LOOP%=OUTPUT_NUMBER=0
       ENDIF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
@@ -1783,8 +1788,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-!tomo
-  !>Returns a pointer to the specified solver in the list of solvers.
+  !>Updates the value of a Dirichlet BC in a load incremented control loop to the specified value. 
   SUBROUTINE CONTROL_LOOP_BOUNDARY_CONDITION_UPDATE(CONTROL_LOOP,SOLVER_INDEX,EQUATIONS_SET_INDEX,VALUE,ERR,ERROR,*)
 
     !Argument variables

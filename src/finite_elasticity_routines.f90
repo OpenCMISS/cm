@@ -6679,6 +6679,7 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(VARYING_STRING) :: FILENAME,METHOD
+    INTEGER(INTG) :: OUTPUT_ITERATION_NUMBER,CURRENT_LOOP_ITERATION
     INTEGER(INTG) :: equations_set_idx
 
     CALL ENTERS("FINITE_ELASTICITY_CONTROL_INCREMENTED_POST_LOOP",ERR,ERROR,*999)
@@ -6686,42 +6687,46 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
       IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
-        IF(LOAD_INCREMENT_LOOP%WRITE_INTERMEDIATE_RESULTS) THEN
-          PROBLEM=>CONTROL_LOOP%PROBLEM
-          IF(ASSOCIATED(PROBLEM)) THEN
-            NULLIFY(SOLVERS)
-            NULLIFY(SOLVER)
-            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)            
-            CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-            !Loop over the equations sets associated with the solver
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                    DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                    NULLIFY(DEPENDENT_REGION)
-                    CALL FIELD_REGION_GET(DEPENDENT_FIELD,DEPENDENT_REGION,ERR,ERROR,*999)
-                    FILENAME="LoadStep_"//TRIM(NUMBER_TO_VSTRING(LOAD_INCREMENT_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
-                    METHOD="FORTRAN"
-                    CALL FIELD_IO_NODES_EXPORT(DEPENDENT_REGION%FIELDS,FILENAME,METHOD,ERR,ERROR,*999)
-                  ELSE
-                    LOCAL_ERROR="Equations set is not associated for equations set index "// &
-                      & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
-                      & " in the solver mapping."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ENDDO !equations_set_idx
+        OUTPUT_ITERATION_NUMBER=LOAD_INCREMENT_LOOP%OUTPUT_NUMBER
+        IF(OUTPUT_ITERATION_NUMBER>0) THEN
+          CURRENT_LOOP_ITERATION=LOAD_INCREMENT_LOOP%ITERATION_NUMBER
+          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0) THEN
+            PROBLEM=>CONTROL_LOOP%PROBLEM
+            IF(ASSOCIATED(PROBLEM)) THEN
+              NULLIFY(SOLVERS)
+              NULLIFY(SOLVER)
+              CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)            
+              CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+              !Loop over the equations sets associated with the solver
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                      NULLIFY(DEPENDENT_REGION)
+                      CALL FIELD_REGION_GET(DEPENDENT_FIELD,DEPENDENT_REGION,ERR,ERROR,*999)
+                      FILENAME="LoadStep_"//TRIM(NUMBER_TO_VSTRING(LOAD_INCREMENT_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                      METHOD="FORTRAN"
+                      CALL FIELD_IO_NODES_EXPORT(DEPENDENT_REGION%FIELDS,FILENAME,METHOD,ERR,ERROR,*999)
+                    ELSE
+                      LOCAL_ERROR="Equations set is not associated for equations set index "// &
+                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
+                        & " in the solver mapping."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !equations_set_idx
+                ELSE
+                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Solver solver equations are not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations are not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE

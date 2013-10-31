@@ -1183,11 +1183,11 @@ CONTAINS
                           IF(.NOT. CALC_CLOSEST_GAUSS_POINT) THEN
                             !NOTE: VELOCITY_MAX is the max shortening velocity, and hence negative!!!
                             IF(VELOCITY<VELOCITY_MAX) THEN
-                              CALL FLAG_WARNING('Exceeded maximum contraction velocity (shortening)',ERR,ERROR,*999)
+                              CALL FLAG_WARNING('Exceeded maximum contraction velocity (shortening).',ERR,ERROR,*999)
                               VELOCITY=VELOCITY_MAX
                             !The max lengthening velocity is assumed to be VELOCITY_MAX/2.0
                             ELSEIF(VELOCITY>(ABS(VELOCITY_MAX)/2.0_DP)) THEN
-                              CALL FLAG_WARNING('Exceeded maximum contraction velocity (lengthening)',ERR,ERROR,*999)
+                              CALL FLAG_WARNING('Exceeded maximum contraction velocity (lengthening).',ERR,ERROR,*999)
                               VELOCITY=-VELOCITY_MAX/2.0_DP
                             ENDIF
                           ENDIF
@@ -1265,7 +1265,10 @@ CONTAINS
                           !fibres don't start in this element
                           XI(1)=XI(1)+1.0_DP/(REAL(nodes_in_Xi_1))
                         ELSE
-                          CALL FLAG_ERROR("Error in fibres start in element info.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The start element index is incorrect. The index is "// &
+                            & TRIM(NUMBER_TO_VSTRING(start_elem,"*",ERR,ERROR))// &
+                            & " and should be zero or one." 
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                         
                       ENDDO !n1
