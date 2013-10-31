@@ -106,7 +106,7 @@ CONTAINS
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)                                
+      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)                                
         SELECT CASE(solutionMethod)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           CALL FLAG_ERROR("Not implemented.",err,error,*999)
@@ -162,10 +162,6 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
-      CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE)
-        equationsSet%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        equationsSet%TYPE=EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE
-        equationsSet%SUBTYPE=EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE
       CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
         equationsSet%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         equationsSet%TYPE=EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE
@@ -208,7 +204,7 @@ CONTAINS
     INTEGER(INTG) :: geometricScalingType,geometricMeshComponent,geometricComponentNumber    
     INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents,numberComponentsU2
     INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables,numberComponentsV,numberComponentsU1
-    INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsField1DNumberOfComponents,materialsFieldCoupledNumberOfComponents
+    INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
     CALL ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
@@ -221,14 +217,14 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
         SELECT CASE(equationsSetSetup%SETUP_TYPE)
         !-----------------------------------------------------------------
         ! I n i t i a l   s e t u p
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               CALL Characteristic_EquationsSet_SolutionMethodSet(equationsSet, &
@@ -253,7 +249,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             !Do nothing???
           CASE DEFAULT
             localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
@@ -265,7 +261,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -295,7 +291,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & dependentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], &
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], & 
                   & err,error,*999)
                 ! set dimension
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -325,11 +321,9 @@ CONTAINS
                   & FIELD_U_VARIABLE_TYPE,dependentFieldNumberOfComponents,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_DELUDELN_VARIABLE_TYPE,dependentFieldNumberOfComponents,err,error,*999)
-!                IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
                 numberComponentsV=2
                 numberComponentsU1=1
                 numberComponentsU2=1
-!                ENDIF
                 ! set number of components for V
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                  & FIELD_V_VARIABLE_TYPE,numberComponentsV,err,error,*999)
@@ -337,7 +331,7 @@ CONTAINS
                  & FIELD_U1_VARIABLE_TYPE,numberComponentsU1,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                  & FIELD_U2_VARIABLE_TYPE,numberComponentsU2,err,error,*999)
-
+                 
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & 1,geometricMeshComponent,err,error,*999)
                 !Default to the geometric interpolation setup for U,dUdN
@@ -354,7 +348,7 @@ CONTAINS
                   & FIELD_U1_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
                   & FIELD_U2_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
-
+                  
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 !Specify nodal solution method
                 CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
@@ -365,19 +359,15 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_DELUDELN_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   END DO
-                  ! V; 2 components (W1,W2 )
+                  ! V; 2 components (W1,W2)
                   DO componentIdx=1,numberComponentsV
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_V_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   ENDDO
-                  DO componentIdx=1,numberComponentsU1
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
-                      & FIELD_U1_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
-                  ENDDO
-                  DO componentIdx=1,numberComponentsU2
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
-                      & FIELD_U2_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
-                  ENDDO
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                    & FIELD_U1_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                    & FIELD_U2_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, &
                     & err,error,*999)
                   CALL FIELD_SCALING_TYPE_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD,geometricScalingType, &
@@ -395,7 +385,8 @@ CONTAINS
                 dependentFieldNumberOfVariables=4 ! U,dUdN,V,U2
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(equationsSetSetup%FIELD,dependentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE],err,error,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE] &
+                  & ,err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -404,6 +395,7 @@ CONTAINS
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U2_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
                   & err,error,*999)
@@ -467,7 +459,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -494,30 +486,38 @@ CONTAINS
                 !point new field to geometric field
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,equationsSet% & 
                   & GEOMETRY%GEOMETRIC_FIELD,err,error,*999)
-                !set number of variables to 2 (2 for U,V)
-                independentFieldNumberOfVariables=2
+                !set number of variables to 3 (3 for U,V,U1)
+                independentFieldNumberOfVariables=3
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, &
                   & independentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
-                  & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],err,error,*999)
+                  & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE],err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 ! characteristic normal direction (normalWave) is +/- 1
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & numberOfDimensions,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & numberOfDimensions,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & numberOfDimensions,err,error,*999)
                 !calculate number of components with one component for each dimension
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
                   & FIELD_U_VARIABLE_TYPE,independentFieldNumberOfComponents,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
                   & FIELD_V_VARIABLE_TYPE,independentFieldNumberOfComponents,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
+                  & FIELD_U1_VARIABLE_TYPE,independentFieldNumberOfComponents,err,error,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & 1,geometricMeshComponent,err,error,*999)
                 !Default to the geometric interpolation setup
@@ -526,6 +526,8 @@ CONTAINS
                     & FIELD_U_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
                     & FIELD_V_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
+                    & FIELD_U1_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
                 END DO
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
@@ -534,6 +536,8 @@ CONTAINS
                       & FIELD_U_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, &
                       & FIELD_V_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, &
+                      & FIELD_U1_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   END DO !componentIdx
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, &
                     & err,error,*999)
@@ -544,28 +548,34 @@ CONTAINS
                     & //TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
                   CALL FLAG_ERROR(localError,err,error,*999)
                 END SELECT 
-
               ELSE
-                independentFieldNumberOfVariables=2
+                independentFieldNumberOfVariables=3
                 !Check the user specified field
                 CALL FIELD_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_GENERAL_TYPE,err,error,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_INDEPENDENT_TYPE,err,error,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(equationsSetSetup%FIELD,independentFieldNumberOfVariables,err,error,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE], &
-                  & err,error,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_U1_VARIABLE_TYPE],err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                   & err,error,*999)
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                   & err,error,*999)
+                CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                  & err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & numberOfDimensions,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & numberOfDimensions,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                  & numberOfDimensions,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, &
                   & independentFieldNumberOfComponents,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & independentFieldNumberOfComponents,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & independentFieldNumberOfComponents,err,error,*999)
               ENDIF    
             !Specify finish action
@@ -576,13 +586,19 @@ CONTAINS
                   & FIELD_MESH_DISPLACEMENT_SET_TYPE,err,error,*999)
                 CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_MESH_DISPLACEMENT_SET_TYPE,err,error,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                  & FIELD_MESH_DISPLACEMENT_SET_TYPE,err,error,*999)
                 CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_MESH_VELOCITY_SET_TYPE,err,error,*999)
                 CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_MESH_VELOCITY_SET_TYPE,err,error,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_MESH_VELOCITY_SET_TYPE,err,error,*999)
                 CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_BOUNDARY_SET_TYPE,err,error,*999)
                 CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_BOUNDARY_SET_TYPE,err,error,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_BOUNDARY_SET_TYPE,err,error,*999)
               ENDIF
             CASE DEFAULT
@@ -602,15 +618,11 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
-              materialsFieldNumberOfVariables=2 ! 1 U-type container variable w/ 10 components, 1 V-type w/ 2 components
-              materialsField1DNumberOfComponents=10
-              materialsFieldCoupledNumberOfComponents=2
-            ELSE
-              materialsFieldNumberOfVariables=1 ! 1 U-type container variable w/ 10 components
-              materialsField1DNumberOfComponents=10
-              materialsFieldCoupledNumberOfComponents=0
+              materialsFieldNumberOfVariables=2 ! 1 U-type container variable w/ 10 components
+              materialsFieldNumberOfComponents1=7
+              materialsFieldNumberOfComponents2=3
             ENDIF
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Specify start action
@@ -638,60 +650,54 @@ CONTAINS
                   CALL FIELD_NUMBER_OF_VARIABLES_SET(equationsMaterials%MATERIALS_FIELD, & 
                     & materialsFieldNumberOfVariables,err,error,*999)
                   CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD, & 
-                    & [FIELD_U_VARIABLE_TYPE],err,error,*999)
+                    & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],err,error,*999)
                   CALL FIELD_DIMENSION_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                  CALL FIELD_DIMENSION_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                   CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_DP_TYPE,err,error,*999)
-                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD, & 
-                    & FIELD_U_VARIABLE_TYPE,materialsField1DNumberOfComponents,err,error,*999)
+                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & FIELD_DP_TYPE,err,error,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & materialsFieldNumberOfComponents1,err,error,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsMaterials%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & materialsFieldNumberOfComponents2,err,error,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD, & 
                     & FIELD_U_VARIABLE_TYPE,1,geometricComponentNumber,err,error,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & 1,geometricComponentNumber,err,error,*999)
-                  DO componentIdx=1,7 !(MU,RHO,K,As,Re,Fr,St)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsMaterials%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & 1,geometricComponentNumber,err,error,*999)
+                  DO componentIdx=1,materialsFieldNumberOfComponents1 !(MU,RHO,K,As,Re,Fr,St)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & componentIdx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
-                  DO componentIdx=8,10 !(A0,E,H0)
-                    CALL FIELD_COMPONENT_INTERPOLATION_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  DO componentIdx=1,materialsFieldNumberOfComponents2 !(A0,E,H0)
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET(equationsMaterials%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                       & componentIdx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
                   !Default the field scaling to that of the geometric field
-                  CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, & 
-                    & err,error,*999)
+                  CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType,err,error,*999)
                   CALL FIELD_SCALING_TYPE_SET(equationsMaterials%MATERIALS_FIELD,geometricScalingType,err,error,*999)
                 ELSE
                   !Check the user specified field
                   CALL FIELD_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_MATERIAL_TYPE,err,error,*999)
                   CALL FIELD_DEPENDENT_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_INDEPENDENT_TYPE,err,error,*999)
                   CALL FIELD_NUMBER_OF_VARIABLES_CHECK(equationsSetSetup%FIELD,materialsFieldNumberOfVariables,err,error,*999)
-                  IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
-                    CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE], &
-                      & err,error,*999)
-                  ELSE
-                    CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE],err,error,*999)
-                  ENDIF
+                  CALL FIELD_VARIABLE_TYPES_CHECK(equationsSetSetup%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE], &
+                    & err,error,*999)
                   ! U-variable
                   CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, & 
                     & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
-                  CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE, & 
-                    & err,error,*999)
-                  CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & numberOfDimensions,err,error,*999)
+                  CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, & 
+                    & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                  CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
+                  CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & materialsField1DNumberOfComponents,err,error,*999)
-                  IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE) THEN
-                    ! V-variable
-                    CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, & 
-                      & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
-                    CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE, & 
-                      & err,error,*999)
-                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & numberOfDimensions,err,error,*999)
-                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, &
-                      & materialsFieldCoupledNumberOfComponents,err,error,*999)
-                  ENDIF
+                    & materialsFieldNumberOfComponents1,err,error,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & materialsFieldNumberOfComponents2,err,error,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations set materials is not associated.",err,error,*999)
@@ -725,7 +731,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsMaterials=>equationsSet%MATERIALS
@@ -779,8 +785,6 @@ CONTAINS
                       & [EquationsMatrix_NodalStructure],err,error,*999)
                     CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(equationsMatrices, & 
                       & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,err,error,*999)
-!                    CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(equationsMatrices, & 
-!                      & EquationsMatrix_NodalStructure,err,error,*999)
                   ELSE
                     CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(equationsMatrices, & 
                       & [MATRIX_COMPRESSED_ROW_STORAGE_TYPE],err,error,*999)
@@ -930,7 +934,7 @@ CONTAINS
 
 
     SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+    CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
       !Set General and Specific Pointers
       independentField=>equations%INTERPOLATION%INDEPENDENT_FIELD
       materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
@@ -980,14 +984,14 @@ CONTAINS
           elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
            & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(1)
           DO versionIdx=1,numberOfVersions
-            parameterIdx=8
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            parameterIdx=1
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-            parameterIdx=9
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            parameterIdx=2
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-            parameterIdx=10
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            parameterIdx=3
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
             Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
               & (3.0_DP*A0_PARAM(versionIdx))            
@@ -1018,14 +1022,14 @@ CONTAINS
                   IF(elementNodeVersion==versionIdx) THEN
                     !Get the element based material parameters for the surrounding elements
                     versionElementNumber(versionIdx)=elementNumber
-                    parameterIdx=8
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    parameterIdx=1
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-                    parameterIdx=9
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    parameterIdx=2
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-                    parameterIdx=10
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    parameterIdx=3
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
                     Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
                       & (3.0_DP*A0_PARAM(versionIdx))                 
@@ -1238,7 +1242,7 @@ CONTAINS
     ENDIF
 
     SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE,EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+    CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
       !Set General and Specific Pointers
       independentField=>equations%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
       materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
@@ -1288,14 +1292,14 @@ CONTAINS
           elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
            & NODES%NODES(nodeNumber)%SURROUNDING_ELEMENTS(1)
           DO versionIdx=1,numberOfVersions
-            parameterIdx=8
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            parameterIdx=1
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-            parameterIdx=9
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            parameterIdx=2
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-            parameterIdx=10
-            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            parameterIdx=3
+            CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
              & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
             Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
               & (3.0_DP*A0_PARAM(versionIdx))                 
@@ -1326,14 +1330,14 @@ CONTAINS
                   IF(elementNodeVersion==versionIdx) THEN
                     !Get the element based material parameters for the surrounding elements
                     versionElementNumber(versionIdx)=elementNumber
-                    parameterIdx=8
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    parameterIdx=1
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,A0_PARAM(versionIdx),err,error,*999)                
-                    parameterIdx=9
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    parameterIdx=2
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,E_PARAM(versionIdx),err,error,*999)
-                    parameterIdx=10
-                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    parameterIdx=3
+                    CALL FIELD_PARAMETER_SET_GET_NODE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & versionIdx,1,nodeNumber,parameterIdx,H0_PARAM(versionIdx),err,error,*999) 
                     Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
                       & (3.0_DP*A0_PARAM(versionIdx))          
