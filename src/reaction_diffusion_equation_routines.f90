@@ -93,6 +93,8 @@ MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
 
   PUBLIC REACTION_DIFFUSION_POST_SOLVE
 
+  PUBLIC REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP
+
 
 
 CONTAINS
@@ -861,7 +863,7 @@ CONTAINS
                           SUM=SUM+DIFFUSIVITY(ni,nj)*DPHIDX(ni,mhs)*DPHIDX(nj,nhs)
                        ENDDO !nj
                       ENDDO !ni
-                      STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+                      STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+(SUM*RWG)
                     ENDIF
                     IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
                       DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
@@ -870,6 +872,7 @@ CONTAINS
                     ENDIF
                   ENDDO !ns
                 ENDDO !nh
+
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
               ENDDO !ms
             ENDDO !mh
@@ -1219,6 +1222,7 @@ CONTAINS
 
           IF(PROBLEM%SUBTYPE==PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE) THEN
             NULLIFY(SOLVER)
+            NULLIFY(CELLML_EQUATIONS)
             !Create the CellML equations for the first DAE solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CALL CELLML_EQUATIONS_CREATE_START(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
@@ -1231,6 +1235,7 @@ CONTAINS
            & PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE) THEN
             !CREATE the CellML equations for the first evaluator solver
             NULLIFY(SOLVER)
+            NULLIFY(CELLML_EQUATIONS)
             !Create the CellML equations for the first cellml evaluator solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CALL CELLML_EQUATIONS_CREATE_START(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
@@ -1323,7 +1328,7 @@ CONTAINS
               CASE(2)
                 !Do nothing
               CASE(3)
-                CALL SOLVER_DAE_TIMES_SET(SOLVER,CURRENT_TIME+TIME_INCREMENT/2.0_DP,CURRENT_TIME+TIME_INCREMENT, &
+                CALL SOLVER_DAE_TIMES_SET(SOLVER,CURRENT_TIME,CURRENT_TIME+TIME_INCREMENT/2.0_DP, &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
@@ -1373,24 +1378,40 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(SOLVER_TYPE), POINTER :: PDE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("REACTION_DIFFUSION_POST_SOLVE",ERR,ERROR,*999)
-    NULLIFY(SOLVER2)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE)
-              !OUTPUT SOLUTIONS AT EACH TIME STEP
-              CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              SELECT CASE(SOLVER%GLOBAL_NUMBER)
+                CASE(1)
+                !do nothing
+                CASE(2)
+                !do nothing
+                CASE(3)
+                  !OUTPUT SOLUTIONS AT EACH TIME STEP - should probably change this bit below to output 
+                  !mesh solutions directly from the 3rd solver itself rather than by getting the 2nd solver.
+                  !I just don't know how to work with cellml_equations to do this.
+                  SOLVERS=>SOLVER%SOLVERS
+                  NULLIFY(PDE_SOLVER)
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,2,PDE_SOLVER,ERR,ERROR,*999)
+                  CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,PDE_SOLVER,ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for a Strang split reaction-diffusion problem."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             CASE (PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE)
               !do nothing - time output not implemented
             CASE (PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE)
-              !OUTPUT SOLUTIONS AT EACH TIME STEP
-              !CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              !OUTPUT SOLUTIONS AT TIME STEP
+              CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a reaction diffusion type of a classical field problem class."
@@ -1430,10 +1451,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_FREQUENCY
 
-    CHARACTER(14) :: FILE
-    CHARACTER(14) :: OUTPUT_FILE
+    CHARACTER(21) :: FILE,FNAME
+    CHARACTER(21) :: OUTPUT_FILE
 
     CALL ENTERS("REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
@@ -1443,7 +1464,6 @@ CONTAINS
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE, &
               & PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE)
-              WRITE(*,*) 'I AM IN REAC-DIFF-POST-SOLVE-OUTPUT-DATA'
               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -1454,33 +1474,43 @@ CONTAINS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
 
                     CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
-                    OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
-
-                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
-                        END IF
-                        FILE=OUTPUT_FILE
-!                        FILE="TRANSIENT_OUTPUT"
-!                         METHOD="FORTRAN"
-!                         EXPORT_FIELD=.TRUE.
-!                         IF(EXPORT_FIELD) THEN          
-!                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+                    OUTPUT_FREQUENCY=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+                    IF(OUTPUT_FREQUENCY>0) THEN
+                      IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_FREQUENCY)==0) THEN
+                        IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+                          IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS.EQ.1) THEN
+                            IF(CURRENT_LOOP_ITERATION<10) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_000",I0)') CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_00",I0)') CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_0",I0)') CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_",I0)') CURRENT_LOOP_ITERATION
+                            END IF
+                          ELSE
+                            IF(CURRENT_LOOP_ITERATION<10) THEN
+                              WRITE(FNAME, '(A15,I0,A4)') "TIME_STEP_SPEC_",equations_set_idx,"_000"
+                              WRITE(OUTPUT_FILE,'(A20,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                              WRITE(FNAME, '(A15,I0,A3)') "TIME_STEP_SPEC_",equations_set_idx,"_00"
+                              WRITE(OUTPUT_FILE,'(A19,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                              WRITE(FNAME, '(A15,I0,A2)') "TIME_STEP_SPEC_",equations_set_idx,"_0"
+                              WRITE(OUTPUT_FILE,'(A18,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                              WRITE(FNAME, '(A15,I0,A1)') "TIME_STEP_SPEC_",equations_set_idx,"_"
+                              WRITE(OUTPUT_FILE,'(A17,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            END IF
+                          ENDIF
+                          FILE=TRIM(OUTPUT_FILE)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                           CALL REACTION_DIFFUSION_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-!                           ENDIF
-!                         ENDIF 
+                            & ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                        ENDIF
                       ENDIF 
                     ENDIF
                   ENDDO
@@ -1513,4 +1543,82 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  SUBROUTINE REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the solvers
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,STIFFNESS_MATRIX
+    
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+    NULLIFY(SOLVER)
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      PROBLEM=>CONTROL_LOOP%PROBLEM
+      IF(ASSOCIATED(PROBLEM)) THEN
+        SELECT CASE(PROBLEM%SUBTYPE)
+        CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE)
+          SOLVERS=>CONTROL_LOOP%SOLVERS
+          IF(ASSOCIATED(SOLVERS)) THEN
+            CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                  EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                    DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                    STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
+                    DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
+                    STIFFNESS_MATRIX%UPDATE_MATRIX = .FALSE.
+                    DAMPING_MATRIX%UPDATE_MATRIX = .FALSE.
+                  ELSE
+                    CALL FLAG_ERROR("Equations not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations Set not associated.",ERR,ERROR,*999)
+                ENDIF
+      
+              ELSE
+                CALL FLAG_ERROR("Solver Mapping not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver Equations not associated.", ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solvers is not associated.", ERR,ERROR,*999)
+          ENDIF
+
+
+        CASE DEFAULT
+          !do nothing
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control Loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP")
+    RETURN
+999 CALL ERRORS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
+    CALL EXITS("REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP")
+    RETURN 1
+  END SUBROUTINE REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP
 END MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
