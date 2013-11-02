@@ -271,16 +271,14 @@ CONTAINS
                             !Default to version 1 of each node derivative
                             CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,1, &
                               & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-!                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
-!                             & "FIXED IN X DIRECTION"
+
                             X_FIXED=.TRUE.
                           ENDIF
                           IF(ABS(X(2))<1E-7_DP) THEN
                             !Default to version 1 of each node derivative
                             CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,1, &
                               & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-!                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
-!                             & "FIXED IN Y DIRECTION"
+
                             Y_FIXED=.TRUE.
                           ENDIF
                         ENDIF
@@ -1923,7 +1921,6 @@ CONTAINS
     FIELD_VAR_DUDN_TYPE=EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE
     DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
-!     write(*,*)'ELEMENT_NUMBER (solid) = ',ELEMENT_NUMBER
 
     !Surface pressure term calculation: Loop over all faces
     DO element_face_idx=1,DEPENDENT_BASIS%NUMBER_OF_LOCAL_FACES
@@ -1951,8 +1948,6 @@ CONTAINS
         !Nonzero surface pressure found?
         IF(NONZERO_PRESSURE) THEN
 
-!           write(*,*)'element_face_idx (solid) = ',element_face_idx
-!           write(*,*)'DECOMP_FACE%XI_DIRECTION = ',DECOMP_FACE%XI_DIRECTION
 
           !Grab some other pointers
           DOMAIN_FACE=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)
@@ -1986,14 +1981,6 @@ CONTAINS
               & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
 
-!             write(*,*)'gauss_idx (solid) = ',gauss_idx
-!             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-!               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-!             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
-!               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-!             write(*,*)'GEOMETRIC_INTERP_POINT (solid) = ',EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-!               & PTR%VALUES(1:3,NO_PART_DERIV)
-!             write(*,*)'DEPENDENT_INTERPOLATED_POINT COORDS (solid) = ',DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,NO_PART_DERIV)
 
             !Calculate covariant metric tensor
             CALL MATRIX_TRANSPOSE(DZDXI,DZDXIT,ERR,ERROR,*999)
@@ -2028,9 +2015,6 @@ CONTAINS
                 ENDDO !node_derivative_idx
               ENDDO !face_node_idx
 
-!               write(*,*)'component_idx (solid) = ',component_idx
-!               write(*,*)'NORMAL_PROJECTION (solid) = ',NORMAL_PROJECTION
-!               write(*,*)' '
 
             ENDDO !componenet_dx
           ENDDO !gauss_idx
@@ -2434,7 +2418,6 @@ CONTAINS
       B(3,1) = B(1,3);
       B(3,2) = B(2,3);
       B(3,3) = MATERIALS_INTERPOLATED_POINT%VALUES(1+6,1)
-      !write(*,*) "using costa material a", a,"B(1,1)=",B(1,1),"B(1,2)=",B(1,2),"B(1,3)=",B(1,3)
       Q = 0.0_DP;
       DO i=1,3,1
        DO j=1,3,1
@@ -2450,7 +2433,6 @@ CONTAINS
       DO i=1,3,1
        DO j=1,3,1
          PIOLA_TENSOR(i,j)=a*B(i,j)*E(i,j)*Q + p*AZU(i,j);
-         !write(*,*) PIOLA_TENSOR(i,j)
        ENDDO
       ENDDO
 
@@ -2883,11 +2865,11 @@ CONTAINS
     NULLIFY(EQUATIONS_SET_FIELD_DATA)
     
     IS_HYDROSTATIC_PRESSURE_DEPENDENT_FIELD = EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE &
-                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE &
-                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_MEMBRANE_SUBTYPE &
-                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE &
-                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE &
-                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE
+      & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE &
+      & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_MEMBRANE_SUBTYPE &
+      & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE &
+      & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE &
+      & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE
 
     NUMBER_OF_DIMENSIONS = EQUATIONS_SET%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
 
@@ -3185,8 +3167,6 @@ CONTAINS
                   & SET_TYPE(FIELD_PRESSURE_VALUES_SET_TYPE)%PTR)) THEN
                     LOCAL_ERROR="Variable 2 of type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%FIELD%VARIABLES(2)% &
                       & VARIABLE_TYPE,"*",ERR,ERROR))//" does not have a pressure values set type associated."
-!                     write(*,*) char(LOCAL_ERROR) ! this is temporary
-!                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -3398,8 +3378,6 @@ CONTAINS
                   & SET_TYPE(FIELD_PRESSURE_VALUES_SET_TYPE)%PTR)) THEN
                     LOCAL_ERROR="Variable 2 of type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%FIELD%VARIABLES(2)% &
                       & VARIABLE_TYPE,"*",ERR,ERROR))//" does not have a pressure values set type associated."
-!                     write(*,*) char(LOCAL_ERROR) ! this is temporary
-!                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -3642,8 +3620,6 @@ CONTAINS
                     LOCAL_ERROR="Variable 4 of type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
                       & FIELD%VARIABLES(4)% &
                       & VARIABLE_TYPE,"*",ERR,ERROR))//" does not have an impermeable flag values set type associated."
-!                     write(*,*) char(LOCAL_ERROR) ! this is temporary
-!                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
 
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -4070,17 +4046,6 @@ CONTAINS
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,VARIABLE_TYPES(num_var),NUMBER_OF_COMPONENTS, &
                     & ERR,ERROR,*999)
 
-!                   !Check that the impermeability flag values set type is created here?? 
-!                   !\todo: Decide whether these set_types is to be created by user or automatically..
-!                   !'4' is valid only for the single compartment model - What to use for the multi-compartment one ?
-!                   IF(.not.ASSOCIATED(EQUATIONS_SET_SETUP%FIELD%VARIABLES(4)%PARAMETER_SETS% &
-!                     & SET_TYPE(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)%PTR)) THEN
-!                       LOCAL_ERROR="Variable 4 of type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
-!                         & FIELD%VARIABLES(4)% &
-!                         & VARIABLE_TYPE,"*",ERR,ERROR))//" does not have an impermeable flag values set type associated."
-! !                       write(*,*) char(LOCAL_ERROR) ! this is temporary
-! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!                   ENDIF
                 ENDDO
 
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -4092,13 +4057,12 @@ CONTAINS
                    CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,component_idx, &
                      & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                  ENDDO !component_idx
-!                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
                     !If solid hydrostatic pressure is driving Darcy flow, check that pressure uses node based interpolation
                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                     & NUMBER_OF_COMPONENTS,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-!                   ENDIF
+
                 DO num_var=3,2*Ncompartments+2
                   !Darcy:
                   DO component_idx=1,NUMBER_OF_DARCY_COMPONENTS
@@ -5106,7 +5070,6 @@ CONTAINS
         EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_FINITE_ELASTICITY_TYPE
         EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_SUBTYPE
-        WRITE(*,*) EQUATIONS_SET%SUBTYPE
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a finite elasticity equation type of an elasticity equations set class."
@@ -5803,27 +5766,6 @@ CONTAINS
                         ENDIF
                       ENDIF !stop_time
 
-!                       !Subiteration intermediate solutions / iterates output:
-!                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
-!                         SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
-!                         IF(CURRENT_LOOP_ITERATION<10) THEN
-!                           IF(SUBITERATION_NUMBER<10) THEN
-!                             WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-!                           ELSE IF(SUBITERATION_NUMBER<100) THEN
-!                             WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-!                           END IF
-!                           FILE=OUTPUT_FILE
-!                           METHOD="FORTRAN"
-!                           EXPORT_FIELD=.TRUE.
-!                           IF(EXPORT_FIELD) THEN
-!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export subiterates ...",ERR,ERROR,*999)
-!                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-!                               & ERR,ERROR,*999)
-!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-!                             CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-!                           ENDIF
-!                         ENDIF
-!                       ENDIF
 
                    ENDIF !EQUATIONS_SET_FINITE_ELASTICITY_TYPE
                   ENDDO !equations_set_idx

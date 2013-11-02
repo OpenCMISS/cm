@@ -870,9 +870,6 @@ CONTAINS
                         & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
                         & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*STORAGE_COEFFICIENT*RWG
                     ENDIF
-                    !WRITE(*,*) 'Element ', ELEMENT_NUMBER, 'Gauss Point ', ng
-                    !WRITE(*,*) 'Stiffness Term: ',mhs,nhs,STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)
-                    !WRITE(*,*) 'Damping Term: ',mhs,nhs,DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)
                   ENDDO !ns
                 ENDDO !nh
 
@@ -1413,8 +1410,8 @@ CONTAINS
             CASE (PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE)
               !do nothing - time output not implemented
             CASE (PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE)
-              !OUTPUT SOLUTIONS AT EACH TIME STEP
-              !CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              !OUTPUT SOLUTIONS AT TIME STEP
+              CALL REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a reaction diffusion type of a classical field problem class."
@@ -1454,7 +1451,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_FREQUENCY
 
     CHARACTER(21) :: FILE,FNAME
     CHARACTER(21) :: OUTPUT_FILE
@@ -1477,48 +1474,43 @@ CONTAINS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
 
                     CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
-                    OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
-                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
-                        IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS.EQ.1) THEN
-                          IF(CURRENT_LOOP_ITERATION<10) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_000",I0)') CURRENT_LOOP_ITERATION
-                          ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_00",I0)') CURRENT_LOOP_ITERATION
-                          ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_0",I0)') CURRENT_LOOP_ITERATION
-                          ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                            WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_",I0)') CURRENT_LOOP_ITERATION
-                          END IF
-                        ELSE
-                          IF(CURRENT_LOOP_ITERATION<10) THEN
-                            WRITE(FNAME, '(A15,I0,A4)') "TIME_STEP_SPEC_",equations_set_idx,"_000"
-                            WRITE(OUTPUT_FILE,'(A20,I0)') FNAME,CURRENT_LOOP_ITERATION
-                          ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                            WRITE(FNAME, '(A15,I0,A3)') "TIME_STEP_SPEC_",equations_set_idx,"_00"
-                            WRITE(OUTPUT_FILE,'(A19,I0)') FNAME,CURRENT_LOOP_ITERATION
-                          ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                            WRITE(FNAME, '(A15,I0,A2)') "TIME_STEP_SPEC_",equations_set_idx,"_0"
-                            WRITE(OUTPUT_FILE,'(A18,I0)') FNAME,CURRENT_LOOP_ITERATION
-                          ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                            WRITE(FNAME, '(A15,I0,A1)') "TIME_STEP_SPEC_",equations_set_idx,"_"
-                            WRITE(OUTPUT_FILE,'(A17,I0)') FNAME,CURRENT_LOOP_ITERATION
-                          END IF
-                        ENDIF
+                    OUTPUT_FREQUENCY=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+                    IF(OUTPUT_FREQUENCY>0) THEN
+                      IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_FREQUENCY)==0) THEN
+                        IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+                          IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS.EQ.1) THEN
+                            IF(CURRENT_LOOP_ITERATION<10) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_000",I0)') CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_00",I0)') CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_0",I0)') CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_",I0)') CURRENT_LOOP_ITERATION
+                            END IF
+                          ELSE
+                            IF(CURRENT_LOOP_ITERATION<10) THEN
+                              WRITE(FNAME, '(A15,I0,A4)') "TIME_STEP_SPEC_",equations_set_idx,"_000"
+                              WRITE(OUTPUT_FILE,'(A20,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                              WRITE(FNAME, '(A15,I0,A3)') "TIME_STEP_SPEC_",equations_set_idx,"_00"
+                              WRITE(OUTPUT_FILE,'(A19,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                              WRITE(FNAME, '(A15,I0,A2)') "TIME_STEP_SPEC_",equations_set_idx,"_0"
+                              WRITE(OUTPUT_FILE,'(A18,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                              WRITE(FNAME, '(A15,I0,A1)') "TIME_STEP_SPEC_",equations_set_idx,"_"
+                              WRITE(OUTPUT_FILE,'(A17,I0)') FNAME,CURRENT_LOOP_ITERATION
+                            END IF
+                          ENDIF
                           FILE=TRIM(OUTPUT_FILE)
-!                        FILE="TRANSIENT_OUTPUT"
-!                         METHOD="FORTRAN"
-!                         EXPORT_FIELD=.TRUE.
-!                         IF(EXPORT_FIELD) THEN          
-!                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                           CALL REACTION_DIFFUSION_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-!                           ENDIF
-!                         ENDIF 
+                            & ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                        ENDIF
                       ENDIF 
                     ENDIF
                   ENDDO
@@ -1579,7 +1571,6 @@ CONTAINS
       IF(ASSOCIATED(PROBLEM)) THEN
         SELECT CASE(PROBLEM%SUBTYPE)
         CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE)
-          WRITE(*,*) 'HELLO FROM INSIDE REAC DIFF CONTROL LOOP POST LOOP'
           SOLVERS=>CONTROL_LOOP%SOLVERS
           IF(ASSOCIATED(SOLVERS)) THEN
             CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
