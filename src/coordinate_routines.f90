@@ -191,6 +191,8 @@ MODULE COORDINATE_ROUTINES
   PUBLIC COORDINATE_SYSTEM_USER_NUMBER_FIND
   
   PUBLIC COORDINATE_SYSTEMS_INITIALISE,COORDINATE_SYSTEMS_FINALISE
+
+  PUBLIC COORDINATE_SYSTEM_CALCULATE_DNUDXI
   
 CONTAINS
 
@@ -4260,6 +4262,81 @@ CONTAINS
     CALL EXITS("COORDINATE_SYSTEMS_INITIALISE")
     RETURN 1
   END SUBROUTINE COORDINATE_SYSTEMS_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Calculates the tensor to get from material coordinate system, nu, to local coordinate system, xi.
+  SUBROUTINE COORDINATE_SYSTEM_CALCULATE_DNUDXI(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,DNUDXI,DXIDNU,ERR,ERROR,*)
+  
+  !Argument variables
+  TYPE (FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT
+  REAL(DP), INTENT(OUT) :: DNUDXI(3,3),DXIDNU(3,3)  !<On return, tensors to transform coordinate system
+  INTEGER(INTG), INTENT(OUT) :: ERR   !<The error code
+  TYPE(VARYING_STRING), INTENT(OUT) ::  ERROR   !<The error string
+  !Local variables
+  INTEGER(INTG) :: dimen,number_of_xi   !<The number of dimensions and the number of xi directions
+  INTEGER(INTG) :: component_idx,xi_idx,derivative_idx
+  REAL(DP), ALLOCATABLE :: DXDXI(:,:)
+  REAL(DP), ALLOCATABLE :: DXDNU(:,:),DNUDX(:,:)
+  REAL(DP), ALLOCATABLE :: DNUDXI_TEMP(:,:)
+  REAL(DP) :: Jnuxi
+  
+  CALL ENTERS("COORDINATE_SYSTEM_CALCULATE_DNUDXI",ERR,ERROR,*999)
+  
+  !Get number of dimensions and number of xi from geometric_interpolated_point
+  dimen=GEOMETRIC_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+  number_of_xi=GEOMETRIC_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%NUMBER_OF_XI
+  
+  ALLOCATE(DXDXI(dimen,dimen),STAT=ERR)
+  ALLOCATE(DXDNU(dimen,dimen),STAT=ERR)
+  ALLOCATE(DNUDX(dimen,dimen),STAT=ERR)
+  ALLOCATE(DNUDXI_TEMP(dimen,dimen),STAT=ERR)      
+  
+  !Calculate dx/dxi
+  DXDXI=0.0_DP
+  DO component_idx=1,dimen
+    DO xi_idx=1,number_of_xi
+      derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)  ! 2,4,7
+      DXDXI(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,derivative_idx) !dx/dxi
+    ENDDO !xi_idx
+  ENDDO !component_idx
+
+  !Calculate the third vector orthogonal to the first and the second vector
+  IF (dimen==3 .AND. number_of_xi==2) THEN
+    CALL CROSS_PRODUCT(DXDXI(:,1),DXDXI(:,2),DXDXI(:,3),ERR,ERROR,*999)
+    DXDXI(:,3)=NORMALISE(DXDXI(:,3),ERR,ERROR)
+  ENDIF
+  
+  !Calculate dx/dnu and its inverse dnu/dx (same as transpose due to orthogonality)
+  IF(ASSOCIATED(FIBRE_INTERPOLATED_POINT)) THEN
+    CALL COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT, &
+      & DXDNU,ERR,ERROR,*999)
+    CALL MATRIX_TRANSPOSE(DXDNU,DNUDX,ERR,ERROR,*999)
+    !Calculate dnu/dxi = dnu/dx * dx/dxi and its inverse dxi/dnu
+    CALL MATRIX_PRODUCT(DNUDX,DXDXI,DNUDXI_TEMP,ERR,ERROR,*999)
+  ELSE
+    DNUDXI_TEMP=DXDXI
+  ENDIF
+  
+  IF (dimen == 2) THEN
+        DNUDXI(1,:)=(/DNUDXI_TEMP(1,1),DNUDXI_TEMP(1,2),0.0_DP/)
+        DNUDXI(2,:)=(/DNUDXI_TEMP(2,1),DNUDXI_TEMP(2,2),0.0_DP/)
+        DNUDXI(3,:)=(/0.0_DP,0.0_DP,1.0_DP/)
+  ELSE
+        DNUDXI = DNUDXI_TEMP
+  ENDIF
+  
+  CALL INVERT(DNUDXI,DXIDNU,Jnuxi,ERR,ERROR,*999)
+  
+  CALL EXITS("COORDINATE_SYSTEM_CALCULATE_DNUDXI")
+    RETURN
+999 CALL ERRORS("COORDINATE_SYSTEM_CALCULATE_DNUDXI",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_CALCULATE_DNUDXI")
+    RETURN 1
+  
+  END SUBROUTINE COORDINATE_SYSTEM_CALCULATE_DNUDXI
 
   !
   !================================================================================================================================
