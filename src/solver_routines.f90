@@ -4122,11 +4122,6 @@ CONTAINS
                                 ELSE
                                   CALL FLAG_ERROR("Residual variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
-                              
-                              !!  VariableType=FIELD_U_VARIABLE_TYPE
-                              !!  VariableType=NonlinearMapping%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_TYPE
-                                !Nonlinear so set up nonlinear parameter sets
-  !TODO(AH)                              CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & !all 4 calls
                               ELSE
                                 LOCAL_ERROR="The specified dynamic solver linearity type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%LINEARITY,"*",ERR,ERROR))// &
@@ -4955,8 +4950,6 @@ CONTAINS
                               END SELECT
                             ENDIF
                           ELSE
-                          
-                            !PRINT *, 'CHECK if correct: solver_routines.f90:4922'
                           
                             NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                             IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
@@ -16789,137 +16782,7 @@ CONTAINS
                               CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
-                            !(AH)
-                            !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                             !
-                            !PRINT *, 'CHECK if correct: solver_routines.f90:16241'                            
-                    !        LAGRANGE_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                    !          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_idx)%PTR
-                    !        IF(ASSOCIATED(LAGRANGE_VARIABLE)) THEN
-                    !          DYNAMIC_VARIABLE_TYPE=LAGRANGE_VARIABLE%VARIABLE_TYPE
-                    !          NULLIFY(LAGRANGE_FIELD)
-                    !          LAGRANGE_FIELD=>LAGRANGE_VARIABLE%FIELD
-                    !          IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
-                    !            !Get the dependent field dof the solver dof is mapped to
-                    !            variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                    !              & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_idx)
-                    !            variable_coefficient=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                    !              & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_idx)
-                    !            additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                    !              & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_idx)
-                    !            SOLVER_VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
-                    !            !Set the dependent field dof
-                    !            IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                    !              SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-                    !              CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                    !                !If we are nonlinear then use the previously calculated predicted displacement
-                    !                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                    !                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
-                    !                    & ERR,ERROR,*999)
-                    !                  DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
-                    !                ELSE
-                    !                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                    & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
-                    !                    & ERR,ERROR,*999)
-                    !                  DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*SOLVER_VALUE
-                    !                ENDIF
-                    !                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                  & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
-                    !              CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                    !                !If we are nonlinear then use the previously calculated predicted displacement
-                    !                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                    !                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
-                    !                    & ERR,ERROR,*999)
-                    !                  DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
-                    !                ELSE
-                    !                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                    & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
-                    !                    & ERR,ERROR,*999)
-                    !                  DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
-                    !                    & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
-                    !                ENDIF
-                    !                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                  & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
-                    !                  & ERR,ERROR,*999)
-                    !                VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*SOLVER_VALUE
-                    !                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                  & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
-                    !                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                  & FIELD_VELOCITY_VALUES_SET_TYPE,variable_dof,VELOCITY_VALUE,ERR,ERROR,*999)
-                    !              CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                    !                !If we are nonlinear then use the previously calculated predicted displacement
-                    !                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                    !                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
-                    !                    & ERR,ERROR,*999)
-                    !                  DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
-                    !                ELSE
-                    !                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                    & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
-                    !                    & ERR,ERROR,*999)
-                    !                  DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
-                    !                    & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
-                    !                    & (DELTA_T*DELTA_T*DELTA_T/6.0_DP)*SOLVER_VALUE
-                    !                ENDIF
-                    !                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                  & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
-                    !                  & ERR,ERROR,*999)
-                    !                VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*PREVIOUS_ACCELERATION+ &
-                    !                  & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
-                    !                CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                    !                  & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
-                    !                  & ERR,ERROR,*999)
-                    !                ACCELERATION_VALUE=PREVIOUS_ACCELERATION+DELTA_T*SOLVER_VALUE
-                    !                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                  & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
-                    !                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                  & FIELD_VELOCITY_VALUES_SET_TYPE,variable_dof,VELOCITY_VALUE,ERR,ERROR,*999)
-                    !                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                  & FIELD_ACCELERATION_VALUES_SET_TYPE,variable_dof,ACCELERATION_VALUE,ERR,ERROR,*999)
-                    !              CASE DEFAULT
-                    !                LOCAL_ERROR="The dynamic solver degree of "// &
-                    !                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
-                    !                  & " is invalid."
-                    !                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    !              END SELECT
-                    !            ELSE
-                    !              SELECT CASE(DYNAMIC_SOLVER%ORDER)
-                    !              CASE(SOLVER_DYNAMIC_FIRST_ORDER)
-                    !                SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-                    !                CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                    !                  !Do nothing
-                    !                CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                    !                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                    & FIELD_INITIAL_VELOCITY_SET_TYPE,variable_dof,SOLVER_VALUE,ERR,ERROR,*999)
-                    !                CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                    !                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                    & FIELD_INITIAL_VELOCITY_SET_TYPE,variable_dof,SOLVER_VALUE,ERR,ERROR,*999)
-                    !                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                    & FIELD_INITIAL_ACCELERATION_SET_TYPE,variable_dof,0.0_DP,ERR,ERROR,*999)
-                    !                CASE DEFAULT
-                    !                  LOCAL_ERROR="The dynamic solver degree of "// &
-                    !                    & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                    !                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    !                END SELECT
-                    !              CASE(SOLVER_DYNAMIC_SECOND_ORDER)
-                    !                IF(DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
-                    !                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                    !                    & FIELD_INITIAL_ACCELERATION_SET_TYPE,variable_dof,SOLVER_VALUE,ERR,ERROR,*999)
-                    !                ENDIF
-                    !              CASE DEFAULT
-                    !                LOCAL_ERROR="The dynamic solver order of "// &
-                    !                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
-                    !                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    !              END SELECT
-                    !            ENDIF
-                    !          ELSE
-                    !            CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
-                    !          ENDIF
-                    !        ELSE
-                    !          CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
-                    !        ENDIF
                           CASE DEFAULT
                             LOCAL_ERROR="The equations type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING% &
                               & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)% &
@@ -16987,7 +16850,7 @@ CONTAINS
                                     END SELECT
                                   ENDIF
                                 ELSE
-                                  !(AH)
+                                  !
                                   NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                                   IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                     DYNAMIC_VARIABLE_TYPE=FIELD_U_VARIABLE_TYPE
@@ -17067,7 +16930,7 @@ CONTAINS
                         EQUATIONS=>EQUATIONS_SET%EQUATIONS
                         EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
                         DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                        !(AH)
+                        !
                         IF(ASSOCIATED(DYNAMIC_MAPPING))THEN
                         !
                           DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
@@ -17479,7 +17342,7 @@ CONTAINS
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                         & FIELD_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
                                     ELSE
-                                      !(AH)
+                                      !
                                       NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                                       IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                         !Default to FIELD_U_VARIABLE_TYPE
@@ -17530,7 +17393,7 @@ CONTAINS
                             CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
-                          !(AH)
+                          !
                           !Equations set dof.
                           DEPENDENT_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                             & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_idx)%PTR

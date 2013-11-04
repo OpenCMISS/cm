@@ -11973,9 +11973,9 @@ CONTAINS
                     CALL DISTRIBUTED_VECTOR_COPY(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_TO_PARAMETER_SET%PARAMETERS, &
                       & ALPHA,ERR,ERROR,*999)
                   ELSE
-                    ! CHECK what needs to be done here: LagrangeMultipliersField does not have SET_TYPE==PREVIOUS_VALUES !(AH)
+                    ! CHECK what needs to be done here: LagrangeMultipliersField does not have SET_TYPE==PREVIOUS_VALUES
                     IF(ASSOCIATED(FIELD%INTERFACE)) THEN
-                      !OK if LagrangeMultipliersField???
+                      !OK if LagrangeMultipliersField?
                     ELSE
                       LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
                         & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."

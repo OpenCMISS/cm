@@ -4225,8 +4225,8 @@ CONTAINS
         Y=0.0_DP
         DO I=1,SIZE(InletNodes)
           Y=Y+0.5_DP
-          BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
-          BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.075_DP) ! 0.75 cm/s in artery with 2 cm diameter
+        !  BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
+        !  BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.075_DP) ! 0.75 cm/s in artery with 2 cm diameter
           BoundaryValues(I)=0.1_DP/(1.0_DP+exp(-0.5_DP*Time+2.0_DP)) ! m / s
         ENDDO
       CASE(Plate2D,Plate3D)
@@ -4268,79 +4268,6 @@ CONTAINS
   END SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
    
   !
-  !================================================================================================================================
-  !
-  !> Reads boundary conditions from a file
-  SUBROUTINE FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS(GEOMETRIC_FIELD, &
-    & SOLVER_TYPE,BOUNDARY_VALUES,NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION, & 
-    & OPTION,TIME_STEP,TIME,STOP_TIME,LENGTH_SCALE)
-
-    INTEGER(INTG) :: Err !<The error code
-    TYPE(VARYING_STRING) :: Error !<The error string
-    TYPE(FIELD_TYPE), POINTER  :: GEOMETRIC_FIELD
-    INTEGER(INTG):: SOLVER_TYPE,I,OPTION, TIME_STEP
-    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
-    INTEGER(INTG):: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION,NUM_BC_NODES
-    REAL(DP):: LENGTH_SCALE,TIME,Y,Value,STOP_TIME
-
-    CHARACTER(34) :: INPUT_FILE
-    INTEGER(INTG):: ENDI,arraySize,NodeNumber
-    INTEGER(INTG), PARAMETER :: Blood=1
-    INTEGER(INTG), PARAMETER :: Plate2D=2
-    INTEGER(INTG), PARAMETER :: Plate3D=3
-    INTEGER(INTG) :: MaterialSpecification
-    INTEGER(Intg), PARAMETER :: Nodes(5)=(/11,21,31,41,52/)
-    INTEGER(Intg), PARAMETER :: NodeMappings(5)=(/29,7,43,13,58/)
-    INTEGER(Intg), ALLOCATABLE :: BoundaryNodes(:)
-    
-
-    ENDI=SIZE(BOUNDARY_VALUES(:))/NUMBER_OF_DIMENSIONS
-    MaterialSpecification=OPTION
-    
-    IF(SOLVER_TYPE==3) THEN!Dynamic
-      SELECT CASE(MaterialSpecification)
-      CASE(Blood)
-        BOUNDARY_VALUES(:)=0.0_DP
-        Y=0.0_DP
-        DO I=1,SIZE(NodeMappings)
-          Y=Y+0.5_DP
-          !BOUNDARY_VALUES(Nodes(I))=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*TIME/4.0_DP)*LENGTH_SCALE/10.0_DP)
-          BOUNDARY_VALUES(NodeMappings(I))=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*TIME/4.0_DP)*LENGTH_SCALE*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
-        ENDDO
-      CASE(Plate2D,Plate3D)
-        IF(MaterialSpecification==Plate2D) THEN
-          !TODO Generalise path names
-          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
-            & status='old', action='read')
-        ELSE
-          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate3DinletBC.txt', &
-            & status='old', action='read')
-        ENDIF
-        READ(1,*), arraySize
-        IF(arraySize==0) STOP "Number of boundary conditions for fluid domain is zero. Invalid."
-        ALLOCATE(BoundaryNodes(arraySize))
-        READ(1,*) BoundaryNodes(:)
-        arraySize=0
-        CLOSE(1)
-        BOUNDARY_VALUES(:)=0.0_DP
-        DO I=1,SIZE(BoundaryNodes)
-          NodeNumber=BoundaryNodes(I)
-          CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-            & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,2,Value,Err,Error,*999)
-          BOUNDARY_VALUES(NodeNumber)=1.5_DP*0.01_DP/5.0_DP/5.0_DP*(2.0_DP*5.0_DP*Value-Value*Value)*TIME/STOP_TIME
-        ENDDO
-      CASE DEFAULT
-        STOP "Invalid input option for position dependent boundary conditions in FSI problem."
-      END SELECT
-    ELSE
-      STOP "Not implemented."
-    ENDIF
-    
-    RETURN
-999 RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_IO_READ_POSITION_DEPENDENT_BOUNDARY_CONDITIONS 
-
-  ! OK
   !================================================================================================================================
   !
 

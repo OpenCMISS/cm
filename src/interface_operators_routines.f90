@@ -215,8 +215,6 @@ CONTAINS
                 ENDDO !rowComponentIdx
               ELSE
                 !\todo defaults to first mesh component, generalise
-                ! TODO (AH)
-                !ORIGINAL VERSION crashed because of wrong size of returned variable:
                 !XI=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
                 !  & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
                 XI(1:interfaceDependentBasis%NUMBER_OF_XI)=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &

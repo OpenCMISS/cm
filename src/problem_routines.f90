@@ -2332,14 +2332,6 @@ CONTAINS
               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                  !TODO hard-coded (AH) introduce user-call
-            !      IF(SOLVER_EQUATIONS%SOLVER%SOLVERS%CONTROL_LOOP%PROBLEM%CLASS==PROBLEM_MULTI_PHYSICS_CLASS &
-            !        & .AND.SOLVER_EQUATIONS%SOLVER%SOLVERS%CONTROL_LOOP%PROBLEM%TYPE== &
-            !        & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE &
-            !        & .AND.SOLVER_EQUATIONS%SOLVER%SOLVERS%CONTROL_LOOP%PROBLEM%SUBTYPE== &
-            !        & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE) THEN
-            !        DYNAMIC_SOLVER%FSI=.TRUE.
-            !      ENDIF
                   IF(DYNAMIC_SOLVER%RESTART.OR..NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN!.OR.DYNAMIC_SOLVER%FSI) THEN
                     !If we need to restart or we haven't initialised yet or we have an FSI scheme, make sure the equations sets are up to date
                     EQUATIONS=>EQUATIONS_SET%EQUATIONS
