@@ -193,6 +193,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: ELEMENT_NUMBER
   INTEGER(INTG):: lagrange_simplex
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerMeshComponent
+  INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: DofsPerMeshComponent
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE::SimplexOutputHelp,HexOutputHelp
   INTEGER(INTG) FLD, DIMEN, OPENCMISS_INTERPOLATION(3),a,b
   INTEGER(INTG) NumberOfNodesPerElement(3), ArrayOfNodesDefined(3), NumberOfElementsDefined(3), TotalNumberOfNodes
@@ -314,10 +315,13 @@ CONTAINS
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(EQUATIONS_SET_FIELD_FIELD)
     NULLIFY(EQUATIONS_SET_FIELD_DATA)
 
     IF (ALLOCATED(NodesPerElement)) DEALLOCATE(NodesPerElement)
     IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(NodesPerMeshComponent)
+    IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(DofsPerMeshComponent)
     IF (ALLOCATED(XI_COORDINATES)) DEALLOCATE(XI_COORDINATES)
     IF (ALLOCATED(COORDINATES)) DEALLOCATE(COORDINATES)
     IF (ALLOCATED(NodeXValue)) DEALLOCATE(NodeXValue)
@@ -450,14 +454,16 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(MAX(NumberOfMeshComponents,NumberOfElements)))
 
     IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
+
+    IF(.NOT.ALLOCATED(DofsPerMeshComponent)) ALLOCATE(DofsPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
       NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%number_of_dofs
     END DO
-
 
 !     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
@@ -571,7 +577,8 @@ CONTAINS
     ENDIF
 
     DO I=1,NumberOfElements
-
+      NumberOfDimensions=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_xi
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
 
@@ -587,15 +594,23 @@ CONTAINS
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
 !          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
 !          & %ptr%number_of_nodes_xi(2)-1.0)
-        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
-          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
+        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)THEN
+           XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+             & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
+        ELSE
+          XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
+            & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
+        ENDIF
         IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
           XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
             & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(2)-1.0)
+          ! XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          ! & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
         END IF
         IF(NumberOfDimensions==3)THEN
           XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
@@ -607,66 +622,66 @@ CONTAINS
 !Start: This is a hack for 3D simplex elements
         IF(NumberOfDimensions==2)THEN
           IF (NodesPerElement(1)==3) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:2)=[0.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:2)=[1.0_DP,0.0_DP]
+            IF(J==3)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==6) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/0.5_DP,0.5_DP/)
-            IF(J==5)  XI_COORDINATES=(/1.0_DP,0.5_DP/)
-            IF(J==6)  XI_COORDINATES=(/0.5_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:2)=[0.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:2)=[1.0_DP,0.0_DP]
+            IF(J==3)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP]
+            IF(J==4)  XI_COORDINATES(1:2)=[0.5_DP,0.5_DP]
+            IF(J==5)  XI_COORDINATES(1:2)=[1.0_DP,0.5_DP]
+            IF(J==6)  XI_COORDINATES(1:2)=[0.5_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==10) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-            IF(J==5)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-            IF(J==6)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP/)
-            IF(J==7)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==8)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==9)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP/)
-            IF(J==10)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:2)=[0.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:2)=[1.0_DP,0.0_DP]
+            IF(J==3)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP]
+            IF(J==4)  XI_COORDINATES(1:2)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+            IF(J==5)  XI_COORDINATES(1:2)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+            IF(J==6)  XI_COORDINATES(1:2)=[1.0_DP,1.0_DP/3.0_DP]
+            IF(J==7)  XI_COORDINATES(1:2)=[1.0_DP,2.0_DP/3.0_DP]
+            IF(J==8)  XI_COORDINATES(1:2)=[2.0_DP/3.0_DP,1.0_DP]
+            IF(J==9)  XI_COORDINATES(1:2)=[1.0_DP/3.0_DP,1.0_DP]
+            IF(J==10)  XI_COORDINATES(1:2)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP]
           ENDIF
         ELSE IF(NumberOfDimensions==3)THEN
           IF (NodesPerElement(1)==4) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:3)=[0.0_DP,1.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:3)=[1.0_DP,0.0_DP,1.0_DP]
+            IF(J==3)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.0_DP]
+            IF(J==4)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==10) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
-            IF(J==5)  XI_COORDINATES=(/0.5_DP,0.5_DP,1.0_DP/)
-            IF(J==6)  XI_COORDINATES=(/0.5_DP,1.0_DP,0.5_DP/)
-            IF(J==7)  XI_COORDINATES=(/0.5_DP,1.0_DP,1.0_DP/)
-            IF(J==8)  XI_COORDINATES=(/1.0_DP,0.5_DP,0.5_DP/)
-            IF(J==9)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.5_DP/)
-            IF(J==10)  XI_COORDINATES=(/1.0_DP,0.5_DP,1.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:3)=[0.0_DP,1.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:3)=[1.0_DP,0.0_DP,1.0_DP]
+            IF(J==3)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.0_DP]
+            IF(J==4)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP]
+            IF(J==5)  XI_COORDINATES(1:3)=[0.5_DP,0.5_DP,1.0_DP]
+            IF(J==6)  XI_COORDINATES(1:3)=[0.5_DP,1.0_DP,0.5_DP]
+            IF(J==7)  XI_COORDINATES(1:3)=[0.5_DP,1.0_DP,1.0_DP]
+            IF(J==8)  XI_COORDINATES(1:3)=[1.0_DP,0.5_DP,0.5_DP]
+            IF(J==9)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.5_DP]
+            IF(J==10)  XI_COORDINATES(1:3)=[1.0_DP,0.5_DP,1.0_DP]
           ELSE IF (NodesPerElement(1)==20) THEN
-            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
-            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
-            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
-            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
-            IF(J==5)  XI_COORDINATES=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==6)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-            IF(J==7)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==8)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-            IF(J==9)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-            IF(J==10)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-            IF(J==11)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-            IF(J==12)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-            IF(J==13)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-            IF(J==14)  XI_COORDINATES=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==15)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-            IF(J==16)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==17)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-            IF(J==18)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-            IF(J==19)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-            IF(J==20)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==1)  XI_COORDINATES(1:3)=[0.0_DP,1.0_DP,1.0_DP]
+            IF(J==2)  XI_COORDINATES(1:3)=[1.0_DP,0.0_DP,1.0_DP]
+            IF(J==3)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,0.0_DP]
+            IF(J==4)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP]
+            IF(J==5)  XI_COORDINATES(1:3)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+            IF(J==6)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP]
+            IF(J==7)  XI_COORDINATES(1:3)=[1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+            IF(J==8)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP]
+            IF(J==9)  XI_COORDINATES(1:3)=[1.0_DP/3.0_DP,1.0_DP,1.0_DP]
+            IF(J==10)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP]
+            IF(J==11)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+            IF(J==12)  XI_COORDINATES(1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+            IF(J==13)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,1.0_DP/3.0_DP]
+            IF(J==14)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP,2.0_DP/3.0_DP]
+            IF(J==15)  XI_COORDINATES(1:3)=[1.0_DP,1.0_DP/3.0_DP,1.0_DP]
+            IF(J==16)  XI_COORDINATES(1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP]
+            IF(J==17)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
+            IF(J==18)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+            IF(J==19)  XI_COORDINATES(1:3)=[2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+            IF(J==20)  XI_COORDINATES(1:3)=[1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
           ENDIF
         ENDIF
 
@@ -676,9 +691,9 @@ CONTAINS
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
 
         IF(NumberOfDimensions==3)THEN
-          COORDINATES=(/1,1,1/)
+          COORDINATES(1:3)=[1,1,1]
         ELSE IF(NumberOfDimensions==2)THEN
-          COORDINATES=(/1,1/)
+          COORDINATES(1:2)=[1,1]
         END IF
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
@@ -1203,7 +1218,7 @@ CONTAINS
         !K is global node number
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
 
-        COORDINATES=(/1,1,1/)
+        COORDINATES(1:3)=[1,1,1]
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
@@ -1917,7 +1932,7 @@ CONTAINS
         !K is global node number
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
 
-        COORDINATES=(/1,1,1/)
+        COORDINATES(1:3)=[1,1,1]
 ! ! ! 
 ! ! !         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
 ! ! !           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
@@ -2199,12 +2214,11 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(len=14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
-!     CHARACTER :: FILENAME !<the prefix name of file.
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG):: I
-    INTEGER(INTG) :: ERR
+    INTEGER(INTG) :: ERR, ierror
     TYPE(VARYING_STRING):: ERROR 
     LOGICAL:: ANALYTIC
 
@@ -2219,7 +2233,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) ANALYTIC=.TRUE.
 
     FILENAME="./output/"//NAME//".exnode"
-    OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+    OPEN(UNIT=14, FILE=CHAR(FILENAME), STATUS='unknown', IOSTAT=ierror)
 
 ! WRITING HEADER INFORMATION
 
@@ -2288,6 +2302,8 @@ CONTAINS
 ! NOW WRITE NODE INFORMATION
 
     DO I = 1,NodesPerMeshComponent(1)
+    !DO I = 1,DofsPerMeshComponent(1)
+
       WRITE(14,*) ' Node: ',I
       WRITE(14,'("    ", es25.16 )')NodeXValue(I)
 
@@ -2429,7 +2445,7 @@ CONTAINS
     END DO
  
     WRITE(14,*) ' '
-    CLOSE(14)
+    CLOSE(UNIT=14)
 
     IF( DARCY%ANALYTIC ) THEN
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_MAX_ERROR
@@ -2484,17 +2500,17 @@ CONTAINS
   SUBROUTINE FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
 
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(len=14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
     ! CHARACTER*60 ELEM_TYPE
     INTEGER(INTG):: I,J,K,KK
-    INTEGER(INTG) :: ERR
+    INTEGER(INTG) :: ERR,ierror
     TYPE(VARYING_STRING):: ERROR
     LOGICAL:: OUTPUT_FLAG
 
     FILENAME="./output/"//NAME//".exelem"
-    OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown')
+    OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown', IOSTAT=ierror)
     WRITE(5,*) 'Group name: OpenCMISS'
 
 
@@ -2796,7 +2812,7 @@ CONTAINS
 
 
     WRITE(5,*) ' '
-    CLOSE(5)
+    CLOSE(UNIT=5)
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Elements...",ERR,ERROR,*999)
     RETURN
 999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI",ERR,ERROR)    
@@ -3804,7 +3820,7 @@ CONTAINS
         MESH_INFO(I)%X(J,1:3)=TEMP(1:3)
 !	WRITE(*,*) MESH_INFO(I)%X(J,1:3)
 !        READ(1,*,END=35) sebo_test_array(J,1:3)
-!	sebo_test_array(J,1:3)=(/1,2,3/)
+!	sebo_test_array(J,1:3)=[1,2,3]
       END DO
     END DO
     CLOSE(1)

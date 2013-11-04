@@ -49,7 +49,11 @@ def wrap_cmiss_routine(routine, args=None):
                 except (TypeError, AttributeError):
                     new_args.append(arg)
         r = routine(*new_args)
-    if isinstance(r, tuple):
+    # We will either have a list of multiple return values, or
+    # a single status code as a return. Don't have to worry about
+    # ever having a single return value as a list as there will always
+    # be at least a return status.
+    if isinstance(r, list):
         status = r[0]
         if len(r) == 1:
             return_val = None

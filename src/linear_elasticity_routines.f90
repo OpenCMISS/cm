@@ -100,9 +100,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
-    INTEGER(INTG) :: BC_X_FORCE_counter,BC_X_counter,BC_Y_counter,BC_X_Nodes,BC_Z_Nodes,Iyy
+    INTEGER(INTG) :: BC_X_FORCE_counter,BC_X_counter,BC_Y_counter,BC_X_Nodes,BC_Z_Nodes
     REAL(DP) :: ANALYTIC_VALUE,BC_VALUE,X(3),GEOMETRIC_TOL,FORCE_X,FORCE_Y,FORCE_Y_AREA,LENGTH,WIDTH,HEIGHT,E,v_X,FORCE_X_AREA
-    REAL(DP) :: FORCE_Z
+    REAL(DP) :: FORCE_Z,Iyy
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     LOGICAL :: SET_BC
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
