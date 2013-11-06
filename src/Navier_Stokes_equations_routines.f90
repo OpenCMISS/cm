@@ -9815,34 +9815,27 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
     !Local Variables
-    TYPE(SOLVER_TYPE), POINTER :: solver1D ! A pointer to the 1D Navier-Stokes Solver
-    TYPE(SOLVER_TYPE), POINTER :: solverCharacteristic ! A pointer to the Characteristic solver
-    TYPE(SOLVER_TYPE), POINTER :: solverDae ! A pointer to the DAE solver
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
-    TYPE(SOLVER_TYPE), POINTER :: cellmlSolver
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet 
-    TYPE(FIELD_TYPE), POINTER :: equationsSetField 
-    TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField
-    TYPE(EQUATIONS_TYPE), POINTER :: equations
-    REAL(DP), POINTER :: BIF_VALUES(:)
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(FIELD_TYPE), POINTER :: dependentField,materialsField,independentField,equationsSetField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
+    TYPE(SOLVER_TYPE), POINTER :: solver1D,solverCharacteristic,solverDae,cellmlSolver
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
     INTEGER(INTG) :: iterationIdx,maxIterations,nodeIdx,dofIdx,numberOfLocalNodes1D,global_ny,derivativeIdx
-    INTEGER(INTG) :: boundaryIdx,local_ny,DOMAIN_NUMBER,COMPUTATIONAL_NODE_NUMBER
-    INTEGER(INTG) :: numberOfVersions,numberOfNodes1D,numberOfDofs1D,numberOfElements1D,numberOfElementNodes
-    INTEGER(INTG) :: boundaryConditionCheckVariable,componentIdx,elementNumber,returnComponent,oneDComponent
-    INTEGER(INTG) :: numberOfSurroundingElements,parameterIdx,variableType,versionIdx
-    INTEGER(INTG) :: solverCharacteristicNumber,solver1dNavierStokesNumber,solverDaeNumber 
-    REAL(DP) :: RHO_PARAM,As,Fr
-    REAL(DP) :: couplingTolerance
-    REAL(DP) :: A_PRE(3),Q_PRE(3),Q_EX(3),A_EX(3),A0_PARAM,normalWave(2),W(2),W0
-    REAL(DP) :: pCellML,pPrevious,qBoundary,aBoundary,qPrevious
-    REAL(DP) :: Kr,Beta,pTest,qTest,E_PARAM,H0_PARAM
+    INTEGER(INTG) :: boundaryIdx,local_ny,nodeDomain,ComputationalNodeNumber
+    INTEGER(INTG) :: numberOfNodes1D,numberOfDofs1D,numberOfElements1D,numberOfElementNodes
+    INTEGER(INTG) :: boundaryConditionCheckVariable,componentIdx,returnComponent,oneDComponent
+    INTEGER(INTG) :: parameterIdx,variableType,versionIdx
+    INTEGER(INTG) :: solverCharacteristicNumber,solver1dNavierStokesNumber,solverDaeNumber
+    REAL(DP), POINTER :: BIF_VALUES(:)
+    REAL(DP) :: A_PRE(3),Q_PRE(3),Q_EX(3),A_EX(3),normalWave(2),W(2),W0
+    REAL(DP) :: pCellML,pPrevious,qBoundary,aBoundary,qPrevious,couplingTolerance
+    REAL(DP) :: Beta,pTest,qTest,A0_PARAM,E_PARAM,H0_PARAM,As,Fr
     LOGICAL :: converged,inletNode,outletNode,updateArea,boundaryNode
 
     !Nullify pointers
@@ -9884,52 +9877,38 @@ CONTAINS
     IF(ASSOCIATED(controlLoop)) THEN
       IF(ASSOCIATED(solver1D)) THEN
         IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
-          SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-          CASE(PROBLEM_Coupled1D0D_Navier_Stokes_SUBTYPE,Problem_Coupled1dDaeNavierStokesSubtype)
-            solverEquations=>solver1D%SOLVER_EQUATIONS
-            IF(ASSOCIATED(solverEquations)) THEN
-              solverMapping=>solverEquations%SOLVER_MAPPING
-              IF(ASSOCIATED(solverMapping)) THEN
-                equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
-                IF(ASSOCIATED(equationsSet)) THEN
-                  IF(equationsSet%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
-                    ! Do nothing
-                  ELSE
-                    LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",ERR,ERROR))// &
-                      & " is not valid for 1D-0D coupling."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END IF
-                  equations=>equationsSet%EQUATIONS
-                  IF(ASSOCIATED(equations)) THEN
-                    materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
-                    IF(.NOT.ASSOCIATED(materialsField)) THEN
-                      CALL FLAG_ERROR("Materials field is not associated.",err,error,*999)
-                    END IF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
-                  END IF
-                  dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
-                  IF(.NOT.ASSOCIATED(dependentField)) THEN
-                    CALL FLAG_ERROR("Dependent field is not associated.",err,error,*999)
-                  END IF
-                  independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
-                  IF(.NOT.ASSOCIATED(independentField)) THEN
-                    CALL FLAG_ERROR("Independent field is not associated.",err,error,*999)
+          solverEquations=>solver1D%SOLVER_EQUATIONS
+          IF(ASSOCIATED(solverEquations)) THEN
+            solverMapping=>solverEquations%SOLVER_MAPPING
+            IF(ASSOCIATED(solverMapping)) THEN
+              equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
+              IF(ASSOCIATED(equationsSet)) THEN
+                equations=>equationsSet%EQUATIONS
+                IF(ASSOCIATED(equations)) THEN
+                  materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
+                  IF(.NOT.ASSOCIATED(materialsField)) THEN
+                    CALL FLAG_ERROR("Materials field is not associated.",err,error,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+                  CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
+                END IF
+                dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
+                IF(.NOT.ASSOCIATED(dependentField)) THEN
+                  CALL FLAG_ERROR("Dependent field is not associated.",err,error,*999)
+                END IF
+                independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
+                IF(.NOT.ASSOCIATED(independentField)) THEN
+                  CALL FLAG_ERROR("Independent field is not associated.",err,error,*999)
                 END IF
               ELSE
-                CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
+                CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
               END IF
             ELSE
-              CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
+              CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
             END IF
-          CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
-              & " is not valid for 1D-0D Navier-Stokes fluid coupling."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
+          ELSE
+            CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
+          END IF
         ELSE
           CALL FLAG_ERROR("Problem is not associated.",err,error,*999)
         END IF
@@ -9943,7 +9922,6 @@ CONTAINS
     !Set maximum number of iterations and tolerance for the 1D and 0D boundary interface values to converge
     maxIterations=1000
     couplingTolerance=0.001_DP ! within % of previous value
-
     pPrevious=0.0_DP
     pCellML=0.0_DP
     A_PRE(3)=0.0_DP
@@ -9986,22 +9964,16 @@ CONTAINS
         dofIdx=0
         boundaryIdx=0
         derivativeIdx=1
-        converged=.TRUE. ! false when find node that hasn't converged values across 1D-0D interface
+        converged=.TRUE.
 
         ! Loop over 1D nodes to find coupled nodes and update characteristic values
         DO nodeIdx=1,numberOfLocalNodes1D
-          numberOfVersions=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)% &
-            & DERIVATIVES(1)%numberOfVersions
-          numberOfSurroundingElements=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-              & NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
-          boundaryNode=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY% &
-              & NODES%NODES(nodeIdx)%BOUNDARY_NODE
-
-          versionIdx=1
+          boundaryNode=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)%BOUNDARY_NODE
           DO componentIdx=1,2
-            CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, & 
-             & 1,nodeIdx,componentIdx,normalWave(componentIdx),err,error,*999)
+            CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+             & 1,derivativeIdx,nodeIdx,componentIdx,normalWave(componentIdx),err,error,*999)
           ENDDO
+
           !check for non-zero wave direction
           IF(ABS(normalWave(1))>ZERO_TOLERANCE .AND. boundaryNode) THEN
 
@@ -10016,9 +9988,8 @@ CONTAINS
                 variableType=dependentField%VARIABLES(1)%VARIABLE_TYPE
                 fieldVariable=>dependentField%VARIABLE_TYPE_MAP(variableType)%PTR
                 parameterIdx=2
-                versionIdx=1
                 local_ny=fieldVariable%COMPONENTS(parameterIdx)%PARAM_TO_DOF_MAP% &
-                  & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(versionIdx)
+                  & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
                 global_ny=fieldVariable%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
                 boundaryConditionCheckVariable=boundaryConditionsVariable% &
                   & CONDITION_TYPES(global_ny)
@@ -10042,67 +10013,39 @@ CONTAINS
               CALL FLAG_ERROR("Please set a boundary condition at the coupled node.",ERR,ERROR,*999)
             ENDIF
 
-            elementNumber=dependentField%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(1)
-
-            !!!--  M A T E R I A L  P A R A M E T E R S  --!!!
-            ! Rho (density)
-            componentIdx=2
-            CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx, &
-             & RHO_PARAM,err,error,*999)
-            ! K (viscous resistance per unit length of tube- related to kinematic viscosity K=8*pi*nu)
-            componentIdx=3
-            CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx, &
-             & Kr,err,error,*999)
-            ! As
-            componentIdx=4
-            CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx, &
-             & As,err,error,*999)
-            ! Fr
-            componentIdx=6
-            CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx, &
-             & Fr,err,error,*999)
-            ! A0
-            componentIdx=1
+            ! ---  M a t e r i a l  P a r a m e t e r s --- !
+            CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & 4,As,err,error,*999)
+            CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & 6,Fr,err,error,*999)
             CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,derivativeIdx,nodeIdx,componentIdx,A0_PARAM,err,error,*999)  
-            ! E
-            componentIdx=2
+              & 1,derivativeIdx,nodeIdx,1,A0_PARAM,err,error,*999)  
             CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,derivativeIdx,nodeIdx,componentIdx,E_PARAM,err,error,*999)                
-            ! H0
-            componentIdx=3
+              & 1,derivativeIdx,nodeIdx,2,E_PARAM,err,error,*999)                
             CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-             & versionIdx,derivativeIdx,nodeIdx,componentIdx,H0_PARAM,err,error,*999)                
+              & 1,derivativeIdx,nodeIdx,3,H0_PARAM,err,error,*999)                
             Beta = (4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
          
             ! --- D e p e n d e n t   P a r a m e t e r s --- !
-            ! Get qBoundary- 1D q value at node
-            versionIdx=1
-            componentIdx=1
-            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,qBoundary,err,error,*999)
-            ! Get qPrevious- previous 1D q value at node
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & 1,derivativeIdx,nodeIdx,1,qBoundary,err,error,*999)
             CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-              & versionIdx,derivativeIdx,nodeIdx,componentIdx,qPrevious,err,error,*999)
-            ! Get aBoundary- 1D area value at node
-            componentIdx=2
-            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-              & derivativeIdx,nodeIdx,componentIdx,aBoundary,err,error,*999)
+              & 1,derivativeIdx,nodeIdx,1,qPrevious,err,error,*999)
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & 1,derivativeIdx,nodeIdx,2,aBoundary,err,error,*999)
             
-            ! Get W- characteristic wave values calculated by the characteristic equations (V dependent variable)
-            versionIdx=1
+            ! Get W
             DO componentIdx=1,2
-              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-                & derivativeIdx,nodeIdx,componentIdx,W(componentIdx),err,error,*999)
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & 1,derivativeIdx,nodeIdx,componentIdx,W(componentIdx),err,error,*999)
             ENDDO
 
             ! Get pCellML- pressure returned from CellML 0D model
-            componentIdx=1
-            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-             & derivativeIdx,nodeIdx,componentIdx,pCellML,err,error,*999)
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & 1,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)
             ! Get pPrevious- previous pressure set by CellML
             CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-              & versionIdx,derivativeIdx,nodeIdx,componentIdx,pPrevious,err,error,*999)
+              & 1,derivativeIdx,nodeIdx,1,pPrevious,err,error,*999)
             
             ! Check whether p values have converged, w values need to be recalculated, or we need to exit after maximum iterations
             IF(ABS(pPrevious) > ZERO_TOLERANCE) THEN
@@ -10124,67 +10067,41 @@ CONTAINS
               converged=.FALSE. !coupled node has not converged (so neither has the global solution)
 
               ! set current Q,P as previous values in previous values parameter 
-              versionIdx=1
-              componentIdx=1
               qPrevious=qBoundary
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-               & versionIdx,derivativeIdx,nodeIdx,componentIdx,qPrevious,err,error,*999)
-              versionIdx=1
-              componentIdx=1 
+               & 1,derivativeIdx,nodeIdx,1,qPrevious,err,error,*999)
               pPrevious=pCellML !current p will be pPrevious for next iteration
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-               & versionIdx,derivativeIdx,nodeIdx,componentIdx,pPrevious,err,error,*999)
+               & 1,derivativeIdx,nodeIdx,1,pPrevious,err,error,*999)
 
-              updateArea=.TRUE.
-              IF (updateArea) THEN
-                ! U p d a t e  A r e a 
-                !--------------------------------------------------
-                ! update area based on the pressure-area condition p-pext = Beta(sqrt(a) -sqrt(a0))
-                aBoundary  = (((pCellML*133.32_DP)/Beta + SQRT(A0_PARAM))**2.0_DP)/As
-                versionIdx=1
-                componentIdx=2
-                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & versionIdx,derivativeIdx,nodeIdx,componentIdx,aBoundary,err,error,*999)
+              ! U p d a t e  A r e a 
+              !--------------------------------------------------
+              ! update area based on the pressure-area condition p-pext = Beta(sqrt(a) -sqrt(a0))
+              aBoundary  = (((pCellML*133.32_DP)/Beta + SQRT(A0_PARAM))**2.0_DP)/As
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & 1,derivativeIdx,nodeIdx,2,aBoundary,err,error,*999)
 
-                ! U p d a t e   F l o w  V e i n s
-!               versionIdx=1
-!               componentIdx=1
-!               IF (nodeIdx /= (numberOfNodes1D/2+1)) THEN
-!                 CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                   & versionIdx,1,nodeIdx+numberOfNodes1D/2,componentIdx,qBoundary,err,error,*999)
-!               ENDIF
-              ENDIF
+              ! U p d a t e   F l o w  V e i n s
+!             IF (nodeIdx /= (numberOfNodes1D/2+1)) THEN
+!               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                 & 1,1,nodeIdx+numberOfNodes1D/2,1,qBoundary,err,error,*999)
+!             ENDIF
+
 
               ! C a l c u l a t e   B o u n d a r y    C h a r a c t e r i s t i c 
               !--------------------------------------------------
-              ! Calculate characteristic variable W depending on whether this is an inlet or outlet (other W component will come
-              ! from update boundary conditions)
-
+              ! Calculate characteristic variable W
               IF(inletNode .OR. outletNode) THEN
                 W(oneDComponent) = qBoundary/aBoundary+normalWave(oneDComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
                 W0 = qBoundary/aBoundary+normalWave(returnComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
                 W(returnComponent) = W0 + qBoundary/aBoundary + normalWave(returnComponent)*(16.0_DP*Fr)* &
                   & (SQRT(pCellML*133.32_DP))
-
-                versionIdx=1
                 DO componentIdx=1,2
-                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(dependentField,FIELD_V_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,1,nodeIdx,componentIdx,W(componentIdx),ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & 1,derivativeIdx,nodeIdx,componentIdx,W(componentIdx),ERR,ERROR,*999)
                 ENDDO
               ENDIF
 
-              CALL FIELD_PARAMETER_SET_UPDATE_START(dependentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(dependentField,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_START(dependentField,FIELD_U1_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(dependentField,FIELD_U1_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_START(dependentField,FIELD_V_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(dependentField,FIELD_V_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Values at the coupled 1D-0D fluid interface have not converged over "// &
                 & TRIM(NUMBER_TO_VSTRING(iterationIdx,"*",ERR,ERROR))//" iterations."
@@ -10193,16 +10110,6 @@ CONTAINS
           ENDIF ! check for multiple versions (could be coupled or bifurcation)
         ENDDO ! loop over nodes 
 
-        ! !This is a nice check for serial but can easily have no boundaries set on a given rank in parallel problems
-        ! IF(converged .AND. boundaryIdx==0) THEN
-        !   LOCAL_ERROR="1D-0D coupling has been called but no boundaries have been found over "// &
-        !     & TRIM(NUMBER_TO_VSTRING(numberOfNodes1D,"*",ERR,ERROR))//" 1D nodes."
-        !   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)           
-        ! ENDIF ! check if converged for this node                        
-
-        ! If the global P,Q values at the 1D-0D interface have converged, exit the routine and continue on to the
-        ! next timestep and 1D solution. Otherwise re-solve the 1D problem with new characteristic values to generate
-        ! new values for Q and A at this timestep and continue looping until 1D and 0D converge (or exit at max iterations)
         IF(converged) THEN
           EXIT
         ELSE IF (controlLoop%TIME_LOOP%ITERATION_NUMBER>0) THEN
