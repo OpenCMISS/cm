@@ -604,8 +604,8 @@ CONTAINS
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              !set number of variables to 5 (U,DELUDELN,V,U1,U2)
-              DEPENDENT_FIELD_NUMBER_OF_VARIABLES=5
+              !set number of variables to 5 (U,DELUDELN,V,U1,U2,U3,DELU3DELN)
+              DEPENDENT_FIELD_NUMBER_OF_VARIABLES=7
               !calculate number of components (Q,A) for U and dUdN
               DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=2
               ! 2 component (W1,W2) for V
@@ -635,8 +635,8 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & DEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_U3_VARIABLE_TYPE,FIELD_DELU3DELN_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -646,6 +646,8 @@ CONTAINS
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U3_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 !set data type
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -657,6 +659,8 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U3_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                   
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -674,7 +678,8 @@ CONTAINS
                   & FIELD_U1_VARIABLE_TYPE,1,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_U2_VARIABLE_TYPE,1,ERR,ERROR,*999)
-                  
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U3_VARIABLE_TYPE,1,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & NUMBER_OF_DIMENSIONS,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 !Default to the geometric interpolation setup
@@ -686,10 +691,12 @@ CONTAINS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
                     & FIELD_V_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 END DO
-                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                    & FIELD_U1_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                    & FIELD_U2_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U1_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U2_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U3_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 !Specify fem solution method
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -703,6 +710,8 @@ CONTAINS
                       & FIELD_U1_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_U2_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                      & FIELD_U3_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
@@ -729,8 +738,8 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,DEPENDENT_FIELD_NUMBER_OF_VARIABLES, &
                   & ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_U3_VARIABLE_TYPE,FIELD_DELU3DELN_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -741,12 +750,20 @@ CONTAINS
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
+                  & ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                 !calculate number of components (Q,A) for U and dUdN
@@ -762,6 +779,10 @@ CONTAINS
                   & 1,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & 1,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & 1,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE, &
+                  & 1,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -773,6 +794,10 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -826,13 +851,13 @@ CONTAINS
                 !point new field to geometric field
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                   & GEOMETRIC_FIELD,ERR,ERROR,*999)
-                !set number of variables to 5 (U,DELUDELN,V,U1,U2)
-                DEPENDENT_FIELD_NUMBER_OF_VARIABLES=5
+                !set number of variables to 5 (U,DELUDELN,V,U1,U2,U3)
+                DEPENDENT_FIELD_NUMBER_OF_VARIABLES=6
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & DEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_U3_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -843,6 +868,8 @@ CONTAINS
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -852,6 +879,8 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U3_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
@@ -867,6 +896,8 @@ CONTAINS
                   & FIELD_U1_VARIABLE_TYPE,1,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_U2_VARIABLE_TYPE,1,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U3_VARIABLE_TYPE,1,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & NUMBER_OF_DIMENSIONS,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 !Default to the geometric interpolation setup
@@ -882,6 +913,8 @@ CONTAINS
                   & FIELD_U1_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_U2_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U3_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 !Specify fem solution method
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -897,6 +930,8 @@ CONTAINS
                     & FIELD_U1_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                     & FIELD_U2_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                    & FIELD_U3_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
@@ -917,15 +952,15 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE 
-                !set number of variables to 5 (U,DELUDELN,V,U1,U2)
-                DEPENDENT_FIELD_NUMBER_OF_VARIABLES=5
+                !set number of variables to 5 (U,DELUDELN,V,U1,U2,U3,DELU3DELN)
+                DEPENDENT_FIELD_NUMBER_OF_VARIABLES=7
                 !Check the user specified field- Characteristic equations
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,DEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_U3_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -936,12 +971,19 @@ CONTAINS
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
+                  & ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                 !calculate number of components (Q,A) for U and dUdN
@@ -959,6 +1001,10 @@ CONTAINS
                   & 1,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & 1,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & 1,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE, &
+                  & 1,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -970,6 +1016,10 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U3_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELU3DELN_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -7769,292 +7819,22 @@ CONTAINS
            CASE(NO_GLOBAL_DERIV)
              IF(componentNumber==1) THEN
                !Set analytic value for Q
-               !VALUE=(21.51_DP-5.276_DP*cos(1*7.343_DP*CURRENT_TIME/period) &
-               !        &     -25.84_DP*cos(2*7.343_DP*CURRENT_TIME/period) &
-               !        &     +10.99_DP*cos(3*7.343_DP*CURRENT_TIME/period) &
-               !        &     +5.946_DP*cos(4*7.343_DP*CURRENT_TIME/period) &
-               !        &     +1.276_DP*cos(5*7.343_DP*CURRENT_TIME/period) &
-               !        &     -3.462_DP*cos(6*7.343_DP*CURRENT_TIME/period) &
-               !        &     -1.618_DP*cos(7*7.343_DP*CURRENT_TIME/period) &
-               !        &     -1.807_DP*cos(8*7.343_DP*CURRENT_TIME/period) &
-               !        &     +37.34_DP*sin(1*7.343_DP*CURRENT_TIME/period) &
-               !        &     -22.28_DP*sin(2*7.343_DP*CURRENT_TIME/period) &
-               !        &     -9.312_DP*sin(3*7.343_DP*CURRENT_TIME/period) &
-               !        &     +0.280_DP*sin(4*7.343_DP*CURRENT_TIME/period) &
-               !        &     +5.906_DP*sin(5*7.343_DP*CURRENT_TIME/period) &
-               !        &     +0.520_DP*sin(6*7.343_DP*CURRENT_TIME/period) &
-               !        &     -0.614_DP*sin(7*7.343_DP*CURRENT_TIME/period) &
-               !        &     -2.521_DP*sin(8*7.343_DP*CURRENT_TIME/period))/100.0_DP
-                       
-               !Rey Des Aorta       
-               t(1)= 0.016342; q(1)=7.548303
-               t(2)=0.058682 ; q(2)=7.532637
-               t(3)=0.075766 ; q(3)=7.832898
-               t(4)=0.095822 ; q(4)=28.981723
-               t(5)=0.114392 ; q(5)=72.062663
-               t(6)=0.130734 ; q(6)=130.02611
-               t(7)=0.155246 ; q(7)=228.720627
-               t(8)=0.167131 ; q(8)=267.885117
-               t(9)=0.179759 ; q(9)=293.733681
-               t(10)=0.197586; q(10)=305.483029
-               t(11)=0.224327; q(11)=286.684073
-               t(12)=0.256267; q(12)=243.603133
-               t(13)=0.288208; q(13)=195.039164
-               t(14)=0.32312 ; q(14)=133.159269
-               t(15)=0.36546 ; q(15)=60.313316
-               t(16)=0.391458; q(16)=26.631854
-               t(17)=0.41597 ; q(17)=6.266319
-               t(18)=0.43974 ; q(18)=-1.56658
-               t(19)=0.46351 ; q(19)=-0.78329
-               t(20)=0.490251; q(20)=7.832898
-               t(21)=0.527391; q(21)=18.015666
-               t(22)=0.571216; q(22)=27.415144
-               t(23)=0.632869; q(23)=30.548303
-               t(24)=0.690808; q(24)=30.548303
-               t(25)=0.770288; q(25)=29.765013
-                        
-                            
-                            !Rey Des Aorta       
-                            !t(1)= 0.016342; q(1)=7.548303
-                            !t(2)=0.058682;  q(2)=7.532637
-                            !t(3)=0.075766;  q(3)=7.832898
-                            !t(4)=0.095822;  q(4)=28.981723
-                            !t(5)=0.114392;  q(5)=72.062663
-                            !t(6)=0.130734;  q(6)=130.02611
-                            !t(7)=0.155246;  q(7)=228.720627
-                            !t(8)=0.167131;  q(8)=267.885117
-                            !t(9)=0.179759;  q(9)=293.733681
-                            !t(10)=0.197586; q(10)=305.483029
-                            !t(11)=0.224327; q(11)=286.684073
-                            !t(12)=0.256267; q(12)=243.603133
-                            !t(13)=0.288208; q(13)=195.039164
-                            !t(14)=0.32312;  q(14)=133.159269
-                            !t(15)=0.36546;  q(15)=60.313316
-                            !t(16)=0.391458; q(16)=26.631854
-                            !t(17)=0.41597;  q(17)=6.266319
-                            !t(18)=0.43974;  q(18)=-1.56658
-                            !t(19)=0.46351;  q(19)=-0.78329
-                            !t(20)=0.490251; q(20)=7.832898
-                            !t(21)=0.527391; q(21)=18.015666
-                            !t(22)=0.571216; q(22)=27.415144
-                            !t(23)=0.632869; q(23)=30.548303
-                            !t(24)=0.690808; q(24)=30.548303
-                            !t(25)=0.770288; q(25)=29.765013
-                                                        !Rey Ascending Aorta
-                            t(1)=-0.00288	; q(1)=3.761235
-                            t(2)=0.039228	; q(2)=6.234795
-                            t(3)=0.053283	; q(3)=23.160354
-                            t(4)=0.063451	; q(4)=50.542554
-                            t(5)=0.083046	; q(5)=137.946742
-                            t(6)=0.116027	; q(6)=337.57978
-                            t(7)=0.136389	; q(7)=414.537505
-                            t(8)=0.148921	; q(8)=462.799906
-                            t(9)=0.165318	; q(9)=482.32881
-                            t(10)=0.188696	; q(10)=470.503059
-                            t(11)=0.208943	; q(11)=448.243569
-                            t(12)=0.239281	; q(12)=386.786307
-                            t(13)=0.254052	; q(13)=348.878755
-                            t(14)=0.285156	; q(14)=275.669541
-                            t(15)=0.32402	; q(15)=171.103126
-                            t(16)=0.355104	; q(16)=80.922546
-                            t(17)=0.376885	; q(17)=36.464642
-                            t(18)=0.397916	; q(18)=18.119077
-                            t(19)=0.418181	; q(19)=11.525463
-                            t(20)=0.455629	; q(20)=29.680168
-                            t(21)=0.488396	; q(21)=45.239162
-                            t(22)=0.507889	; q(22)=45.175541
-                            t(23)=0.540625	; q(23)=34.624742
-                            t(24)=0.577265	; q(24)=27.977687
-                            t(25)=0.621706	; q(25)=25.221653
-                            t(26)=0.663025	; q(26)=19.864819
-                            t(27)=0.714487	; q(27)=19.696862
-                            t(28)= 0.796358	; q(28)=19.429656
-
-                            !Rey Abd Aorta
-                            t(1)= 0.018469; q(1)=-1.351999
-                            t(2)=0.042354 ; q(2)=1.226006
-                            t(3)=0.073197 ; q(3)=-0.097725
-                            t(4)=0.101054 ; q(4)=-2.068381
-                            t(5)=0.120952 ; q(5)=-3.383228
-                            t(6)=0.13489  ; q(6)=0.501548
-                            t(7)=0.14784  ; q(7)=8.283214
-                            t(8)=0.165789 ; q(8)=28.398439
-                            t(9)=0.186749 ; q(9)=62.14753
-                            t(10)=0.206704; q(10)=90.702652
-                            t(11)=0.219667; q(11)=105.627137
-                            t(12)=0.23063 ; q(12)=114.709113
-                            t(13)=0.245569; q(13)=121.839817
-                            t(14)=0.257511; q(14)=122.479472
-                            t(15)=0.282373; q(15)=115.316463
-                            t(16)=0.308211; q(16)=98.412438
-                            t(17)=0.349933; q(17)=62.015076
-                            t(18)=0.389673; q(18)=30.16476
-                            t(19)=0.422463; q(19)=6.112263
-                            t(20)=0.451289; q(20)=-9.495491
-                            t(21)=0.47217 ; q(21)=-17.304617
-                            t(22)=0.497039; q(22)=-20.571544
-                            t(23)=0.527893; q(23)=-16.051151
-                            t(24)=0.56771 ; q(24)=-7.641944
-                            t(25)=0.611507; q(25)=0.764033
-                            t(26)=0.650321; q(26)=4.628618
-                            t(27)=0.689134; q(27)=8.493202
-                            t(28)=0.72695 ; q(28)=11.0599
-                            t(29)=0.769731; q(29)=8.427783
-                            t(30)=0.788; q(30)=-1.351999
-                            t(31)=0.8123 ; q(31)=1.226006
-                            t(32)=0.843197 ; q(32)=-0.097725
-                            t(33)=0.871054 ; q(33)=-2.068381
-                            t(34)=0.890952 ; q(34)=-3.383228
-                            t(35)=0.905  ; q(35)=0.501548
-                            t(36)=0.918  ; q(36)=8.283214
-                            t(37)=0.936 ; q(37)=28.398439
-                            t(38)=0.957 ; q(38)=62.14753
-                            t(39)=0.976; q(39)=90.702652
-                            t(40)=0.99; q(40)=105.627137
-                            t(41)=1.0 ; q(41)=114.709113
-                            t(42)=1.015; q(42)=121.839817
-                            t(43)=1.027; q(43)=122.479472
-                            t(44)=1.052; q(44)=115.316463
-                            t(45)=1.08; q(45)=98.412438
-                            t(46)=1.12; q(46)=62.015076
-                            t(47)=1.16; q(47)=30.16476
-                            t(48)=1.19; q(48)=6.112263
-                            t(49)=1.22; q(49)=-9.495491
-                            t(50)=1.24 ; q(50)=-17.304617
-                            t(51)=1.27; q(51)=-20.571544
-                            t(52)=1.3; q(52)=-16.051151
-                            t(53)=1.34 ; q(53)=-7.641944
-                            t(54)=1.381; q(54)=0.764033
-                            t(55)=1.42; q(55)=4.628618
-                            t(56)=1.46; q(56)=8.493202
-                            t(57)=1.5 ; q(57)=11.0599
-                            t(58)=1.54; q(58)=8.427783
-                            
-                            !Olufsen Ascending Aorta
-                            !t(1)=0.0011660; q(1)=17.390515
-                            !t(2)=0.0215840; q(2)=10.41978
-                            !t(3)=0.0340860; q(3)=18.75892
-                            !t(4)=0.0731370; q(4)=266.384247
-                            !t(5)=0.0857710; q(5)=346.375561
-                            !t(6)=0.1029220; q(6)=413.841978
-                            !t(7)=0.1154270; q(7)=424.268075
-                            !t(8)=0.1483530; q(8)=429.114741
-                            !t(9)=0.1698860; q(9)=411.012782
-                            !t(10)=0.220794; q(10)=319.151162
-                            !t(11)=0.264856; q(11)=207.816019
-                            !t(12)=0.295415; q(12)=160.490352
-                            !t(13)=0.325895; q(13)=70.03425
-                            !t(14)=0.346215; q(14)=10.19395
-                            !t(15)=0.363213; q(15)=-5.122243
-                            !t(16)=0.383666; q(16)=6.689631
-                            !t(17)=0.405265; q(17)=24.065933
-                            !t(18)=0.427988; q(18)=35.876228
-                            !t(19)=0.455272; q(19)=58.813799
-                            !t(20)=0.477990; q(20)=67.841484
-                            !t(21)=0.502943; q(21)=57.38933
-                            !t(22)=0.535816; q(22)=33.714258
-                            !t(23)=0.577789; q(23)=20.46765
-                            !t(24)=0.602753; q(24)=16.276366
-                            !t(25)=0.639087; q(25)=22.511968
-                            !t(26)=0.727616; q(26)=18.972117
-                            !t(27)=0.783235; q(27)=18.933425
-                            !t(28)=0.838848; q(28)=16.112126
-                            !t(29)=0.998892; q(29)=15.305137
-                          
-                            !Olufsen Descending aorta
-                            !t(1)= 0.051325 ; q(1)=-1.162791
-                            !t(2)= 0.071192 ; q(2)=-14.48203
-                            !t(3)= 0.087748 ; q(3)=-24.10148
-                            !t(4)= 0.100993 ; q(4)=-27.801268
-                            !t(5)= 0.112583 ; q(5)=-15.961945
-                            !t(6)= 0.120861 ; q(6)=4.756871
-                            !t(7)= 0.129139 ; q(7)=45.454545
-                            !t(8)= 0.142384 ; q(8)=100.951374
-                            !t(9)= 0.150662 ; q(9)=146.088795
-                            !t(10)= 0.163907; q(10)=187.526427
-                            !t(11)= 0.172185; q(11)=212.684989
-                            !t(12)= 0.178808; q(12)=227.484144
-                            !t(13)= 0.19702 ; q(13)=234.883721
-                            !t(14)= 0.213576; q(14)=251.902748
-                            !t(15)= 0.230132; q(15)=265.961945
-                            !t(16)= 0.236755; q(16)=270.401691
-                            !t(17)= 0.266556; q(17)=254.122622
-                            !t(18)= 0.286424; q(18)=222.30444
-                            !t(19)= 0.307947; q(19)=169.767442
-                            !t(20)= 0.339404; q(20)=109.090909
-                            !t(21)= 0.370861; q(21)=63.213531
-                            !t(22)= 0.397351; q(22)=21.775899
-                            !t(23)= 0.418874; q(23)=-28.541226
-                            !t(24)= 0.433775; q(24)=-38.900634
-                            !t(25)= 0.453642; q(25)=-21.141649
-                            !t(26)= 0.461921; q(26)=-17.44186
-                            !t(27)= 0.483444; q(27)=-21.141649
-                            !t(28)= 0.503311; q(28)=-20.401691
-                            !t(29)= 0.534768; q(29)=-10.782241
-                            !t(30)= 0.554636; q(30)=-7.82241
-                            !t(31)= 0.594371; q(31)=-11.522199
-                            !t(32)= 0.620861; q(32)=-12.262156
-                            !t(33)= 0.642384; q(33)=-7.082452
-                            !t(34)= 0.660596; q(34)=-2.642706
-                            !t(35)= 0.690397; q(35)=-0.422833
-                            !t(36)= 0.731788; q(36)=5.496829
-                            !t(37)= 0.758278; q(37)=7.716702
-                            !t(38)= 0.809603; q(38)=0.317125
-                            !t(39)= 0.857616; q(39)=-1.162791
-                            !t(40)= 0.905629; q(40)=-7.082452
-                            !t(41)= 0.940397; q(41)=-7.82241
-                            
-                            !Olufse Abdominal Aorta
-                            !t(1)=0.003328 ; q(1)=0.589213
-                            !t(2)=0.119151 ; q(2)=1.734496
-                            !t(3)=0.136672 ; q(3)=-0.635518
-                            !t(4)=0.15253  ; q(4)=-3.481171
-                            !t(5)=0.170818 ; q(5)=1.750861
-                            !t(6)=0.184854 ; q(6)=16.64217
-                            !t(7)=0.220967 ; q(7)=79.68522
-                            !t(8)=0.238306 ; q(8)=98.061734
-                            !t(9)=0.253223 ; q(9)=107.568712
-                            !t(10)=0.269856; q(10)=111.374882
-                            !t(11)=0.290719; q(11)=108.055701
-                            !t(12)=0.306623; q(12)=99.983824
-                            !t(13)=0.379564; q(13)=49.644986
-                            !t(14)=0.418121; q(14)=24.159487
-                            !t(15)=0.439111; q(15)=6.270225
-                            !t(16)=0.455068; q(16)=-7.819729
-                            !t(17)=0.471806; q(17)=-15.891343
-                            !t(18)=0.496822; q(18)=-17.78387
-                            !t(19)=0.537639; q(19)=-15.870491
-                            !t(20)=0.564247; q(20)=-9.210486
-                            !t(21)=0.600854; q(21)=-2.388943
-                            !t(22)=0.629151; q(22)=1.737663
-                            !t(23)=0.670786; q(23)=5.393381
-                            !t(24)=0.720749; q(24)=9.526849
-                            !t(25)=0.788248; q(25)=9.7066
-                            !t(26)=0.818235; q(26)=11.141436
-                            !t(27)=0.867445; q(27)=6.247525
-                            !t(28)=0.93332 ; q(28)=1.517264
-                            !t(29)=0.994997; q(29)=0.269833
-                              
-
-
-               !Initialize variables
-               m=1
-               n=58
-               !Compute derivation
-               DO i=1,n-1
-                 delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
-               END DO
-               delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
-               !Find subinterval
-               DO j=1,n-1
-                 IF (t(j) <= (CURRENT_TIME/period)) THEN
-                   m=j
-                 ENDIF
-               END DO
-               !Evaluate interpolant
-               s=(CURRENT_TIME/period)-t(m)
-               VALUE=(q(m)+s*delta(m))/100.0
-
+               VALUE=(21.51_DP-5.276_DP*cos(1*7.343_DP*CURRENT_TIME/period) &
+                       &     -25.84_DP*cos(2*7.343_DP*CURRENT_TIME/period) &
+                       &     +10.99_DP*cos(3*7.343_DP*CURRENT_TIME/period) &
+                       &     +5.946_DP*cos(4*7.343_DP*CURRENT_TIME/period) &
+                       &     +1.276_DP*cos(5*7.343_DP*CURRENT_TIME/period) &
+                       &     -3.462_DP*cos(6*7.343_DP*CURRENT_TIME/period) &
+                       &     -1.618_DP*cos(7*7.343_DP*CURRENT_TIME/period) &
+                       &     -1.807_DP*cos(8*7.343_DP*CURRENT_TIME/period) &
+                       &     +37.34_DP*sin(1*7.343_DP*CURRENT_TIME/period) &
+                       &     -22.28_DP*sin(2*7.343_DP*CURRENT_TIME/period) &
+                       &     -9.312_DP*sin(3*7.343_DP*CURRENT_TIME/period) &
+                       &     +0.280_DP*sin(4*7.343_DP*CURRENT_TIME/period) &
+                       &     +5.906_DP*sin(5*7.343_DP*CURRENT_TIME/period) &
+                       &     +0.520_DP*sin(6*7.343_DP*CURRENT_TIME/period) &
+                       &     -0.614_DP*sin(7*7.343_DP*CURRENT_TIME/period) &
+                       &     -2.521_DP*sin(8*7.343_DP*CURRENT_TIME/period))/100.0_DP
              ELSE
                CALL FLAG_ERROR("Incorrect component specification for Olufsen flow rate waveform ",ERR,ERROR,*999)
              ENDIF
@@ -10080,13 +9860,6 @@ CONTAINS
               aBoundary  = (((pCellML*133.32_DP)/Beta + SQRT(A0_PARAM))**2.0_DP)/As
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & 1,derivativeIdx,nodeIdx,2,aBoundary,err,error,*999)
-
-              ! U p d a t e   F l o w  V e i n s
-!             IF (nodeIdx /= (numberOfNodes1D/2+1)) THEN
-!               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                 & 1,1,nodeIdx+numberOfNodes1D/2,1,qBoundary,err,error,*999)
-!             ENDIF
-
 
               ! C a l c u l a t e   B o u n d a r y    C h a r a c t e r i s t i c 
               !--------------------------------------------------

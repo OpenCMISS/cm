@@ -286,13 +286,13 @@ CONTAINS
                 !point new field to geometric field
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,equationsSet%GEOMETRY% &
                   & GEOMETRIC_FIELD,err,error,*999)
-                !set number of variables to 5 (U,DELUDELN,V,U1,U2)=>(Q,A;dQ,dA;W(1,2);pCellML,Pressure)
-                dependentFieldNumberOfVariables=5
+                !set number of variables to 5 (U,DELUDELN,V,U1,U2,U3,delu3deln)=>(Q,A;dQ,dA;W(1,2);pCellML,Pressure,Concentration)
+                dependentFieldNumberOfVariables=7
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                   & dependentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE], & 
-                  & err,error,*999)
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_U3_VARIABLE_TYPE,FIELD_DELU3DELN_VARIABLE_TYPE],err,error,*999)
                 ! set dimension
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
@@ -304,6 +304,10 @@ CONTAINS
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_DELU3DELN_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
                 ! set data type
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
@@ -314,6 +318,10 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_U3_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,err,error,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD,FIELD_DELU3DELN_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
                 ! number of components for U,DELUDELN=2 (Q,A)
                 dependentFieldNumberOfComponents=2
@@ -331,6 +339,10 @@ CONTAINS
                  & FIELD_U1_VARIABLE_TYPE,numberComponentsU1,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                  & FIELD_U2_VARIABLE_TYPE,numberComponentsU2,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                 & FIELD_U3_VARIABLE_TYPE,numberComponentsU2,err,error,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                 & FIELD_DELU3DELN_VARIABLE_TYPE,numberComponentsU2,err,error,*999)
                  
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & 1,geometricMeshComponent,err,error,*999)
@@ -348,7 +360,10 @@ CONTAINS
                   & FIELD_U1_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
                   & FIELD_U2_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
-                  
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
+                  & FIELD_U3_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
+                  & FIELD_DELU3DELN_VARIABLE_TYPE,1,geometricMeshComponent,err,error,*999)
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 !Specify nodal solution method
                 CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
@@ -368,6 +383,10 @@ CONTAINS
                     & FIELD_U1_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
                     & FIELD_U2_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                    & FIELD_U3_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSet%DEPENDENT%DEPENDENT_FIELD, &
+                    & FIELD_DELU3DELN_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, &
                     & err,error,*999)
                   CALL FIELD_SCALING_TYPE_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD,geometricScalingType, &
@@ -377,7 +396,6 @@ CONTAINS
                     & //TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
                   CALL FLAG_ERROR(localError,err,error,*999)
                 END SELECT
-
               ELSE 
                 !Check the user specified field
                 CALL FIELD_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_GENERAL_TYPE,err,error,*999)
