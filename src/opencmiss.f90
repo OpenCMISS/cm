@@ -55996,7 +55996,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
-    TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjC",err,error,*999)
