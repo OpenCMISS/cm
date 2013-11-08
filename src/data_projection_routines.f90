@@ -2329,7 +2329,8 @@ CONTAINS
                   & 2.0_DP*XI_UPDATE(3)*FUNCTION_HESSIAN(1,3))+XI_UPDATE(2)*(XI_UPDATE(2)*FUNCTION_HESSIAN(2,2)+ &
                   & 2.0_DP*XI_UPDATE(3)*FUNCTION_HESSIAN(2,3))+XI_UPDATE(2)**2*FUNCTION_HESSIAN(2,2))
                 IF (ABS(PREDICTED_REDUCTION) < ZERO_TOLERANCE) THEN
-                  EXIT main_loop ! solution converged
+                  CONVERGED = .TRUE.  ! prediction reduction converged
+                  EXIT
                 ENDIF
                 PREDICTION_ACCURACY=(FUNCTION_VALUE_NEW-FUNCTION_VALUE)/PREDICTED_REDUCTION
                 IF(PREDICTION_ACCURACY<0.01_DP) THEN !bad model: reduce region size
