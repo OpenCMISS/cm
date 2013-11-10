@@ -2169,7 +2169,7 @@ CONTAINS
             ELSE
               TEMP3=DSQRT(-TEMP3)
               TEMP4=(DET+3.0_DP*(TEMP1*TEMP2)-2.0_DP*TEMP1**3)/(2.0_DP*TEMP3**3)
-              EIGEN_MIN=2.0_DP*TEMP3*DCOS((DCOS(TEMP4)+TWOPI)/3.0_DP)-TEMP1                
+              EIGEN_MIN=2.0_DP*TEMP3*DCOS((DACOS(TEMP4)+TWOPI)/3.0_DP)-TEMP1                
             ENDIF
             FUNCTION_GRADIENT_NORM=DSQRT(DOT_PRODUCT(FUNCTION_GRADIENT,FUNCTION_GRADIENT))
             DO itr2=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(inner loop: adjust region size) usually EXIT at 1 or 2 iterations

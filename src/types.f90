@@ -666,7 +666,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER !<The local element number in the domain.
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:) !<ELEMENT_NODES(element_node_idx). The local node number in the domain of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:,:) !<ELEMENT_DERIVATIVES(i,local_derivative_idx,local_element_node_idx).  When i=1 ELEMENT_DERIVATIVES will give the global derivative number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. When i=2 ELEMENT_DERIVATIVES will give the version number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:) !<ELEMENT_DERIVATIVES(local_derivative_idx,local_element_node_idx).  Will give the global derivative number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+    INTEGER(INTG), ALLOCATABLE :: elementVersions(:,:) !<elementVersions(localDerivativeIdx,localElementNodeIdx). will give the version number of the localDerivativeIdx'th local derivative for the localElementNodeIdx'th local node in the element. Old CMISS name NVJE(nn,nbf,nj,ne).
   END TYPE DOMAIN_ELEMENT_TYPE
   
   !>Contains the topology information for the elements of a domain.
@@ -681,9 +682,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !>Contains the topology information for a local node derivative of a domain.
   TYPE DOMAIN_NODE_DERIVATIVE_TYPE
-    INTEGER(INTG) :: NUMBER_OF_VERSIONS !The number of global versions at the node for the mesh.
-    INTEGER(INTG), ALLOCATABLE :: USER_VERSION_NUMBERS(:) !The user version index of the nk'th global derivative for the node.
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_VERSION_NUMBERS(:) !The local version index of the local nk'th global derivative for the node in the domain.
+    INTEGER(INTG) :: numberOfVersions !The number of global versions at the node for the mesh.
+    INTEGER(INTG), ALLOCATABLE :: userVersionNumbers(:) !The user version index of the nk'th global derivative for the node.
     INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !The local dof derivative version index in the domain of the nk'th global derivative for the node.
     INTEGER(INTG) :: GLOBAL_DERIVATIVE_INDEX !The global derivative index of the nk'th global derivative for the node.
     INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX !The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
@@ -1256,7 +1256,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component of the field decomposition for this field variable component.
     INTEGER(INTG) :: SCALING_INDEX !<The index into the defined field scalings for this field variable component.
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain of the field decomposition for this field variable component.
-    INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolations parameters in an element for a field variable component.
+    INTEGER(INTG) :: maxNumberElementInterpolationParameters !<The maximum number of interpolation parameters in an element for a field variable component. 
+    INTEGER(INTG) :: maxNumberNodeInterpolationParameters !<The maximum number of interpolation parameters in an element for a field variable component. 
     TYPE(FIELD_PARAM_TO_DOF_MAP_TYPE) :: PARAM_TO_DOF_MAP !<The mapping of the field parameters to the field dofs for this field variable component.
   END TYPE FIELD_VARIABLE_COMPONENT_TYPE
 
@@ -1278,7 +1279,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !<A pointer to the field variable that these parameter sets are defined on.
     INTEGER(INTG) :: NUMBER_OF_PARAMETER_SETS !<The number of parameter sets that are currently defined on the field.
     TYPE(FIELD_PARAMETER_SET_PTR_TYPE), POINTER :: SET_TYPE(:) !<SET_TYPE(set_type_idx). A pointer to an array of pointers to the field set types. SET_TYPE(set_type_idx)%PTR is a pointer to the parameter set type for the set_type_idx'th parameter set. set_type_idx can vary from 1 to FIELD_ROUTINES::FIELD_NUMBER_OF_SET_TYPES. The value of the pointer will be NULL if the parameter set corresponding to the set_type_idx'th parameter set has not yet been created for the field.
-    TYPE(FIELD_PARAMETER_SET_PTR_TYPE), POINTER :: PARAMETER_SETS(:) !<PARAMETER_SETS(set_type_idx). A pointer to an array of pointers to the parameter sets that have been created on the field. PARAMETER_SET(set_type_idx)%PTR is a pointer to the parameter set type for the set_type_idx'th parameter set that has been created. set_type_idx can vary from 1 to the number of parameter set types that have currently been created for the field i.e., TYPES::FIELD_PARAMETER_SETS_TYPE::NUMBER_OF_PARAMETER_SETS.
+    TYPE(FIELD_PARAMETER_SET_PTR_TYPE), POINTER :: PARAMETER_SETS(:) !<PARAMETER_SETS(set_type_idx). \todo change to allocatable. A pointer to an array of pointers to the parameter sets that have been created on the field. PARAMETER_SET(set_type_idx)%PTR is a pointer to the parameter set type for the set_type_idx'th parameter set that has been created. set_type_idx can vary from 1 to the number of parameter set types that have currently been created for the field i.e., TYPES::FIELD_PARAMETER_SETS_TYPE::NUMBER_OF_PARAMETER_SETS.
   END TYPE FIELD_PARAMETER_SETS_TYPE
   
   !>Contains information for a field variable defined on a field.
@@ -1291,7 +1292,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: DIMENSION !<The dimension of the field variable. \see FIELD_ROUTINES_DimensionTypes
     INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DOF_ORDER_TYPE !<The order of the DOF's in the field variable \see FIELD_ROUTINES_DOFOrderTypes,FIELD_ROUTINES
-    INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
+    INTEGER(INTG) :: maxNumberElementInterpolationParameters !<The maximum number of interpolation parameters in an element for a field variable. 
+    INTEGER(INTG) :: maxNumberNodeInterpolationParameters !<The maximum number of interpolation parameters in an element for a field variable. 
     INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
@@ -2696,7 +2698,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
  !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
-    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers. Note that if this is a linked solver this will be NULL and solvers should be accessed through the linking solver.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the solver in the list of solvers
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER !<A pointer to any solver that is linking to this solver
     INTEGER(INTG) :: NUMBER_OF_LINKED_SOLVERS !<The number of linked solvers
