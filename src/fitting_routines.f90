@@ -467,14 +467,12 @@ CONTAINS
     REAL(DP):: MATERIAL_FACT
     REAL(DP):: DXDY(3,3), DXDXI(3,3), DYDXI(3,3), DXIDY(3,3), DXI_DX(3,3)
     REAL(DP):: Jxy, Jyxi
-    REAL(DP):: dataPointWeight,sumWeights,dataPointVector(3)
+    REAL(DP):: dataPointWeight,dataPointVector(3)
     INTEGER(INTG) :: derivative_idx, component_idx, xi_idx, NUMBER_OF_DIMENSIONS
-    INTEGER(INTG) :: dataPointIdx,dataPointUserNumber,dataPointLocalNumber
+    INTEGER(INTG) :: dataPointIdx,dataPointUserNumber,dataPointLocalNumber,dataPointGlobalNumber
     INTEGER(INTG) :: numberOfXi
-    INTEGER(INTG) :: componentIdx,userElementNumber
+    INTEGER(INTG) :: componentIdx
     INTEGER(INTG) :: variableType,localDof
-    INTEGER(INTG) :: decompositionLocalElementNumber
-    LOGICAL :: ghostElement,userElementExists
 
     INTEGER(INTG) NDOFS
     INTEGER(INTG) MESH_COMPONENT1,MESH_COMPONENT2
@@ -492,6 +490,9 @@ CONTAINS
     NULLIFY(RHS_VECTOR)
     NULLIFY(EQUATIONS_MATRIX)
     NULLIFY(DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD)
+    NULLIFY(dataPoints)
+    NULLIFY(dataProjection)
+    NULLIFY(decompositionTopology)
     NULLIFY(independentField)
     NULLIFY(independentVectorParameters)
     NULLIFY(independentWeightParameters)
@@ -559,97 +560,80 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
             & independentWeightParameters,err,error,*999)
 
-          !Only loop over data points for non-ghosts
-          userElementNumber = decompositionTopology%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%USER_NUMBER
-          CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber,userElementExists, &
-            & decompositionLocalElementNumber,ghostElement,err,error,*999)              
-          IF(userElementExists .AND. .NOT. ghostElement ) THEN
+          !===========================================
+          ! D a t a   P o i n t   V e c t o r    F i t
+          !===========================================
+          !Loop over data points
+          DO dataPointIdx=1,dataPoints%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
+            dataPointUserNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%userNumber
+            dataPointLocalNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%localNumber
+            dataPointGlobalNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%globalNumber
+            ! Need to use global number to get the correct projection results
+            projectionXi = dataProjection%data_projection_results(dataPointGlobalNumber)%xi
+            CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,projectionXi,EQUATIONS%INTERPOLATION% &
+              & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,projectionXi,EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
+              & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
-            ! !Loop over data points to get the sum of the weights (for non-embedded data points)
-            ! sumWeights = 0.0_DP
-            ! DO dataPointIdx=1,dataPoints%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
-            !   dataPointUserNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%userNumber
-            !   dataPointLocalNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%localNumber
-            !   ! Get data point weight value
-            !   variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
-            !   fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
-            !   localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
-            !   dataPointWeight=independentWeightParameters(localDof)
-            !   sumWeights = sumWeights + dataPointWeight
-            ! ENDDO
-
-            !===========================================
-            ! D a t a   P o i n t   V e c t o r    F i t
-            !===========================================
-            !Loop over data points
-            DO dataPointIdx=1,dataPoints%elementDataPoint(ELEMENT_NUMBER)%numberOfProjectedData
-              dataPointUserNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%userNumber
-              dataPointLocalNumber = dataPoints%elementDataPoint(ELEMENT_NUMBER)%dataIndices(dataPointIdx)%localNumber
-              projectionXi = dataProjection%data_projection_results(dataPointUserNumber)%xi
-              CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,projectionXi,EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-
-              ! Get data point vector value
-              variableType=independentField%VARIABLES(1)%VARIABLE_TYPE
-              fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
-              DO componentIdx=1,numberOfXi
-                localDof=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
-                 & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
-                dataPointVector(componentIdx)=independentVectorParameters(localDof)
-              ENDDO
-
-              variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
-              fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
-              localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+            ! Get data point vector value
+            variableType=independentField%VARIABLES(1)%VARIABLE_TYPE
+            fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+            DO componentIdx=1,numberOfXi
+              localDof=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
-!              dataPointWeight=independentWeightParameters(localDof)/sumWeights
-              dataPointWeight=independentWeightParameters(localDof)
+              dataPointVector(componentIdx)=independentVectorParameters(localDof)
+            ENDDO
 
-              mhs=0          
-              !Loop over element rows
-              DO mh=1,mappingVariable%NUMBER_OF_COMPONENTS
-                MESH_COMPONENT1=mappingVariable%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                  mhs=mhs+1
-                  nhs=0
-                  PGM=BASIS_EVALUATE_XI(DEPENDENT_BASIS1,ms,NO_PART_DERIV,projectionXi,err,error)
-                  IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
-                    !Loop over element columns
-                    DO nh=1,mappingVariable%NUMBER_OF_COMPONENTS
-                      MESH_COMPONENT2=mappingVariable%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                      DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
-                        & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                      DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
-                        nhs=nhs+1
-                        PGN=BASIS_EVALUATE_XI(DEPENDENT_BASIS2,ns,NO_PART_DERIV,projectionXi,err,error)
-                        SUM=0.0_DP
-                        IF(mh==nh) THEN
-                          SUM = SUM + PGM * PGN * dataPointWeight
-                        ENDIF
-                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM
-                      ENDDO !ns
-                    ENDDO !nh
-                  ENDIF
-                  SUM=0.0_DP
-                  IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-                    SUM = SUM + PGM*dataPointVector(mh)*dataPointWeight
-                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM
-                  ENDIF
-                ENDDO !ms
-              ENDDO !mh
-            ENDDO !dataPointIdx
+            variableType=independentField%VARIABLES(2)%VARIABLE_TYPE
+            fieldVariable=>independentField%VARIABLE_TYPE_MAP(variableType)%PTR
+            localDof=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
+             & DATA_POINT_PARAM2DOF_MAP%DATA_POINTS(dataPointLocalNumber)
+            dataPointWeight=independentWeightParameters(localDof)
 
-            !Restore data point vector parameters
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & independentVectorParameters,err,error,*999)
-            !Restore data point weight parameters
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & independentWeightParameters,err,error,*999)
-          ENDIF ! Ghost element check
+            mhs=0          
+            !Loop over element rows
+            DO mh=1,mappingVariable%NUMBER_OF_COMPONENTS
+              MESH_COMPONENT1=mappingVariable%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+              DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                mhs=mhs+1
+                nhs=0
+                PGM=BASIS_EVALUATE_XI(DEPENDENT_BASIS1,ms,NO_PART_DERIV,projectionXi,err,error)
+                IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
+                  !Loop over element columns
+                  DO nh=1,mappingVariable%NUMBER_OF_COMPONENTS
+                    MESH_COMPONENT2=mappingVariable%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+                      nhs=nhs+1
+                      PGN=BASIS_EVALUATE_XI(DEPENDENT_BASIS2,ns,NO_PART_DERIV,projectionXi,err,error)
+                      SUM=0.0_DP
+                      IF(mh==nh) THEN
+                        SUM = SUM + PGM * PGN * dataPointWeight
+                      ENDIF
+                      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM
+                    ENDDO !ns
+                  ENDDO !nh
+                ENDIF
+                SUM=0.0_DP
+                IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+                  SUM = SUM + PGM*dataPointVector(mh)*dataPointWeight
+                  RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM
+                ENDIF
+              ENDDO !ms
+            ENDDO !mh
+          ENDDO !dataPointIdx
+
+          !Restore data point vector parameters
+          CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            & independentVectorParameters,err,error,*999)
+          !Restore data point weight parameters
+          CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+            & independentWeightParameters,err,error,*999)
             
           !===========================================
           ! S o b e l o v   S m o o t h i n g 
@@ -728,30 +712,6 @@ CONTAINS
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
                         & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + (tension + curvature) * jacobianGaussWeight
 
-                      ! SUM = SUM +    ( &
-                      !   & TAU_PARAM*2.0_DP* ( &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3,ng)) +&
-                      !   & KAPPA_PARAM*2.0_DP* ( &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S1,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S2,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S2,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3_S3,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3_S3,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S2,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S2,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S3,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S3,ng)+ &
-                      !   & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S3,ng)* &
-                      !   & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng)))
-
-                      ! EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
-                      !   & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * jacobianGaussWeight
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF ! update matrix
@@ -3453,34 +3413,16 @@ CONTAINS
             !Check the user specified field
               CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-              CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE], &
-                & ERR,ERROR,*999)
               CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, & 
                 & ERR,ERROR,*999)
-              CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
-                & ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-              CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, & 
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, & 
-                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                  & FIELD_U_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
-                  & ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                   & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -3549,9 +3491,9 @@ CONTAINS
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 2,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & 1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & 2,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  & 2,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 !Default the field scaling to that of the geometric field
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
@@ -3675,33 +3617,25 @@ CONTAINS
               !Check the user specified field
               CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-              CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE], &
-                & ERR,ERROR,*999)
               ! U (vector) variable
               CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                 & ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-              !calculate number of components with one component for each dimension and one for pressure
+              !calculate number of components with one component for each dimension
               CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               ! V (weight) variable
               CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, &
                 & ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-              !calculate number of components with one component for each dimension and one for pressure
-              CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
-                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
-                  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  & FIELD_DATA_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,1, &
+                  & FIELD_DATA_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                   &"*",ERR,ERROR))//" is invalid."
