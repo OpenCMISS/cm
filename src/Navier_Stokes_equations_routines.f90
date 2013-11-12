@@ -3326,7 +3326,6 @@ CONTAINS
     REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
-    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
@@ -3459,13 +3458,9 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    ! CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                    !   & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                    ! IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-!                    ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -3526,13 +3521,9 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                    ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -3563,18 +3554,12 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    USER_ELEMENT_EXISTS=.FALSE.
-                    GHOST_ELEMENT=.TRUE.
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                      !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                      IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
-                        CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                      ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                    !If this is a boundary element, calculate RHS vector for multidomain boundaries
+                    IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
+                      CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -4340,7 +4325,7 @@ CONTAINS
     REAL(DP) :: momentum1,momentum2,continuity,W_SUPG,TAU_SUPG,U_SUPG(3)
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:)
-    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS,UPDATE_JACOBIAN_MATRIX
+    LOGICAL :: UPDATE_JACOBIAN_MATRIX
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
@@ -4437,13 +4422,9 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                  !   CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                  !     & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                  !   IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                  !   ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -4487,13 +4468,9 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                    ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -4517,16 +4494,12 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                      !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                       IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
-                         CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                       ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                    !If this is a boundary element, calculate RHS vector for multidomain boundaries
+                    IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
+                      CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -8684,15 +8657,11 @@ CONTAINS
             IF(ASSOCIATED(equationsSetField)) THEN
 
               lengthScale=0.0_DP
-!              CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!               & elementNumber,1,lengthScale,err,error,*999)                
-
               CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & elementNumber,1,lengthScale,err,error,*999)                
 
+              !Calculate element length scale H if not already calc'd for this element
               IF(ABS(lengthScale)<=ZERO_TOLERANCE) THEN
-                !Calculate element length scale H
-                !TODO: calculate this length scale in field_routines instead
                 lengthScale=0.0_DP
                 X1=0.0_DP
                 X2=0.0_DP
@@ -8714,16 +8683,6 @@ CONTAINS
                   lengthScale = MAX(lengthScale,lineLength)
                 ENDDO ! element lines
                 lengthScale = lengthScale/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
-
-                !Length scale hadn't been calculated for this element, so add element components for each SUPG metric
-                ! CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                !   & elementNumber,1,lengthScale,err,error,*999)
-                ! CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                !   & elementNumber,2,0.0_DP,err,error,*999)
-                ! CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                !   & elementNumber,3,0.0_DP,err,error,*999)
-                ! CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                !   & elementNumber,4,0.0_DP,err,error,*999)
 
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & elementNumber,1,lengthScale,err,error,*999)
