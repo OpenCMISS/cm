@@ -1660,7 +1660,6 @@ $(OBJECT_DIR)/solver_routines.o	:	$(SOURCE_DIR)/solver_routines.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/external_dae_solver_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \

@@ -139,9 +139,7 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_LOAD_INCREMENT_APPLY
   
   PUBLIC EQUATIONS_SET_ANALYTIC_USER_PARAM_SET,EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
-  
-  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE
-  
+
 CONTAINS
 
   !
@@ -7075,120 +7073,6 @@ CONTAINS
     CALL EXITS("EquationsSet_ResidualEvaluateStaticNodal")
     RETURN 1
   END SUBROUTINE EquationsSet_ResidualEvaluateStaticNodal
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Updates the value of a Dirichlet BC in a load incremented control loop to the specified value. 
-  SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE(EQUATIONS_SET,VALUE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<The equations set to change the BC for
-    REAL(DP), INTENT(IN) :: VALUE !<The value too set for the BC
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
-    TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
-    INTEGER(INTG) :: variable_idx,variable_type,dirichlet_idx,dirichlet_dof_idx,MY_COMPUTATIONAL_NODE_NUMBER
-
-    NULLIFY(BOUNDARY_CONDITIONS)
-    NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
-    NULLIFY(DIRICHLET_BOUNDARY_CONDITIONS)
-    NULLIFY(DEPENDENT_FIELD)
-    NULLIFY(DEPENDENT_VARIABLE)
-    NULLIFY(DOMAIN_MAPPING)
-
-    CALL ENTERS("EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE",ERR,ERROR,*999)
-
-    MY_COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
-
-    BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
-    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-        IF(ALLOCATED(DEPENDENT_FIELD%VARIABLES)) THEN
-
-          DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-            DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLES(variable_idx)
-            variable_type=DEPENDENT_VARIABLE%VARIABLE_TYPE
-            CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
-              & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
-            IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-              DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-              IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
-                ! Check if there are any user controlled conditions applied for this boundary conditions variable
-                IF(BOUNDARY_CONDITIONS_VARIABLE%DOF_COUNTS(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)>0) THEN
-                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
-                    DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
-                    DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
-                      dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                      !Check whether we have an user controlled boundary condition type
-                      SELECT CASE(BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES(dirichlet_dof_idx))
-                      CASE(BOUNDARY_CONDITION_FIXED_USER_CONTROLLED)
-                        !Convert dof index to local index
-                        IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%DOMAIN_NUMBER(1)== &
-                          & MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                          dirichlet_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%LOCAL_NUMBER(1)
-                          IF(0<dirichlet_dof_idx.AND.dirichlet_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
-                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                              & FIELD_VALUES_SET_TYPE,dirichlet_dof_idx,VALUE,ERR,ERROR,*999)
-                          ENDIF !non-ghost dof
-                        ENDIF !current domain
-                      CASE DEFAULT
-                        !Do nothing for other boundary conditions
-                      END SELECT
-                    ENDDO !dirichlet_idx
-          !---tob
-                    !\ToDo: What happens if the call below is issued
-                    !without actually that the dependent field has been modified in above conditional ?
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                      & variable_type,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                      & variable_type,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-          !---toe
-                    !Restore the vector handles
-!                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-!                      & VALUE,ERR,ERROR,*999)
-                  ELSE
-                    LOCAL_ERROR="Dirichlet boundary condition for variable type "// &
-                      & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ENDIF
-              ELSE
-                LOCAL_ERROR="Domain mapping is not associated for variable "// &
-                  & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" of dependent field."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF !Domain mapping test
-            ELSE
-              ! do nothing - no boundary conditions variable type associated?
-            ENDIF
-          ENDDO !variable_idx
-        
-        ELSE
-          CALL FLAG_ERROR("Dependent field variables are not allocated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE")
-    RETURN
-999 CALL ERRORS("EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE",ERR,ERROR)
-    CALL EXITS("EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE")
-    RETURN 1
-
-  END SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITION_UPDATE
 
   !
   !================================================================================================================================

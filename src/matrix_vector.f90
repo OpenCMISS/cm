@@ -1156,8 +1156,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  ! TODO
-  !>Sets the list of a matrix.
+!>Gets the maximum number of columns in each row of a distributed matrix.
   SUBROUTINE MATRIX_LINKLIST_SET(MATRIX,LIST,ERR,ERROR,*)
 
     !Argument variables
@@ -1186,11 +1185,9 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MATRIX_LINKLIST_SET
 
-  !
+   !
   !================================================================================================================================
-  !
-  ! TODO
-  !>Gets the maximum number of columns in each row of a distributed matrix.
+  !!>Gets the maximum number of columns in each row of a distributed matrix.
   SUBROUTINE MATRIX_LINKLIST_GET(MATRIX,LIST,ERR,ERROR,*)
 
     !Argument variables
@@ -1219,10 +1216,10 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MATRIX_LINKLIST_GET
 
-  !
+   !
   !================================================================================================================================
   !
-  
+  !
   !>Sets/changes the maximum size of a matrix.
   SUBROUTINE MATRIX_MAX_SIZE_SET(MATRIX,MAX_M,MAX_N,ERR,ERROR,*)
 
