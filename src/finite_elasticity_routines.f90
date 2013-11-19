@@ -5785,7 +5785,7 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELDS_TYPE), POINTER :: fields
-    INTEGER(INTG) :: solverIdx,equationsSetIdx,incrementIdx
+    INTEGER(INTG) :: solverIdx,equationsSetIdx,incrementIdx,outputNumber
     LOGICAL :: dirExist
     TYPE(VARYING_STRING) :: fileName,method,directory
 
@@ -5794,36 +5794,41 @@ CONTAINS
     IF(ASSOCIATED(controlLoop)) THEN
       IF(controlLoop%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
         incrementIdx=controlLoop%LOAD_INCREMENT_LOOP%ITERATION_NUMBER
-        solvers=>controlLoop%SOLVERS
-        IF(ASSOCIATED(solvers)) THEN
-          DO solverIdx=1,solvers%NUMBER_OF_SOLVERS
-            solver=>solvers%SOLVERS(solverIdx)%PTR
-            IF(ASSOCIATED(solver)) THEN
-              solverEquations=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(solverEquations)) THEN
-                solverMapping=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(solverMapping)) THEN
-                  DO equationsSetIdx=1,solverMapping%NUMBER_OF_EQUATIONS_SETS
-                    region=>solverMapping%EQUATIONS_SETS(equationsSetIdx)%PTR%REGION
-                    NULLIFY(fields)
-                    fields=>region%FIELDS
-                    directory="results_load/"
-                    INQUIRE(FILE=CHAR(directory),EXIST=dirExist)
-                    IF(.NOT.dirExist) THEN
-                      CALL SYSTEM(CHAR("mkdir "//directory))
+        outputNumber=controlLoop%LOAD_INCREMENT_LOOP%OUTPUT_NUMBER
+        IF(outputNumber>0) THEN
+          IF(MOD(incrementIdx,outputNumber)==0) THEN
+            solvers=>controlLoop%SOLVERS
+            IF(ASSOCIATED(solvers)) THEN
+              DO solverIdx=1,solvers%NUMBER_OF_SOLVERS
+                solver=>solvers%SOLVERS(solverIdx)%PTR
+                IF(ASSOCIATED(solver)) THEN
+                  solverEquations=>SOLVER%SOLVER_EQUATIONS
+                  IF(ASSOCIATED(solverEquations)) THEN
+                    solverMapping=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING
+                    IF(ASSOCIATED(solverMapping)) THEN
+                      DO equationsSetIdx=1,solverMapping%NUMBER_OF_EQUATIONS_SETS
+                        region=>solverMapping%EQUATIONS_SETS(equationsSetIdx)%PTR%REGION
+                        NULLIFY(fields)
+                        fields=>region%FIELDS
+                        directory="results_load/"
+                        INQUIRE(FILE=CHAR(directory),EXIST=dirExist)
+                        IF(.NOT.dirExist) THEN
+                          CALL SYSTEM(CHAR("mkdir "//directory))
+                        ENDIF
+                        fileName=directory//"mesh"//TRIM(NUMBER_TO_VSTRING(equationsSetIdx,"*",err,error))// &
+                          & "_load"//TRIM(NUMBER_TO_VSTRING(incrementIdx,"*",err,error))
+                        method="FORTRAN"
+                        CALL FIELD_IO_ELEMENTS_EXPORT(fields,fileName,method,err,error,*999)
+                        CALL FIELD_IO_NODES_EXPORT(fields,fileName,method,err,error,*999)
+                      ENDDO !equationsSetIdx
                     ENDIF
-                    fileName=directory//"mesh"//TRIM(NUMBER_TO_VSTRING(equationsSetIdx,"*",err,error))// &
-                      & "_load"//TRIM(NUMBER_TO_VSTRING(incrementIdx,"*",err,error))
-                    method="FORTRAN"
-                    CALL FIELD_IO_ELEMENTS_EXPORT(fields,fileName,method,err,error,*999)
-                    CALL FIELD_IO_NODES_EXPORT(fields,fileName,method,err,error,*999)
-                  ENDDO !equationsSetIdx
+                  ENDIF
                 ENDIF
-              ENDIF
+              ENDDO !solverIdx
+            ELSE
+              CALL FLAG_ERROR("Control loop solvers is not associated.",err,error,*999)
             ENDIF
-          ENDDO !solverIdx
-        ELSE
-          CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+          ENDIF
         ENDIF
       ENDIF
     ELSE
