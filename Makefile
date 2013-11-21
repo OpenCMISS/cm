@@ -1267,6 +1267,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(SOURCE_DIR)/Laplace_equations_rou
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
@@ -1277,6 +1278,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(SOURCE_DIR)/Laplace_equations_rou
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+  $(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
@@ -1552,6 +1554,7 @@ $(OBJECT_DIR)/Poisson_equations_routines.o	:	$(SOURCE_DIR)/Poisson_equations_rou
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
@@ -1563,7 +1566,9 @@ $(OBJECT_DIR)/Poisson_equations_routines.o	:	$(SOURCE_DIR)/Poisson_equations_rou
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
