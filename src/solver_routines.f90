@@ -14413,6 +14413,17 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
                       CALL FlagError(local_error,err,error,*999)
                     END SELECT
+                    SELECT CASE(linesearch_solver%linesearch_type)
+                    CASE(SOLVER_NEWTON_LINESEARCH_QUADRATIC,SOLVER_NEWTON_LINESEARCH_CUBIC)
+                      ! Alpha parameter only applicable for back-tracking linesearch
+                      CALL Petsc_SnesLineSearchBTSetAlpha(linesearch_solver%snesLineSearch,LINESEARCH_SOLVER%LINESEARCH_ALPHA, &
+                        & err,error,*999)
+                    END SELECT
+                    ! Set step tolerances, leave iterative line search options as defaults
+                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
+                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
+                      & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION, &
+                      & PETSC_DEFAULT_INTEGER,err,error,*999)
 #endif
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
                     IF(linesearch_solver%linesearchMonitorOutput) THEN

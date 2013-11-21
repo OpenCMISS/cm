@@ -191,6 +191,8 @@ MODULE COORDINATE_ROUTINES
   PUBLIC COORDINATE_SYSTEM_USER_NUMBER_FIND
   
   PUBLIC COORDINATE_SYSTEMS_INITIALISE,COORDINATE_SYSTEMS_FINALISE
+
+  PUBLIC COORDINATE_SYSTEM_CALCULATE_DNUDXI
   
 CONTAINS
 
@@ -4260,6 +4262,91 @@ CONTAINS
     CALL EXITS("COORDINATE_SYSTEMS_INITIALISE")
     RETURN 1
   END SUBROUTINE COORDINATE_SYSTEMS_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Calculates the tensor to get from material coordinate system, nu, to local coordinate system, xi.
+  SUBROUTINE COORDINATE_SYSTEM_CALCULATE_DNUDXI(GEOM_INTERP_POINT_METRICS, &
+    & GEOM_INTERP_POINT,FIBRE_INTERP_POINT,DNUDXI,DXIDNU,ERR,ERROR,*)
+  
+  !TODO: remove GEOM_INTERP_POINT once the subroutine COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE is changed 
+  !such that it also uses GEOM_INTERP_POINT_METRICS
+    
+  !Argument variables
+  TYPE (FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOM_INTERP_POINT_METRICS  
+  TYPE (FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT,GEOM_INTERP_POINT
+  REAL(DP), INTENT(OUT) :: DNUDXI(:,:),DXIDNU(:,:)  !<On return, tensors to transform coordinate system
+  INTEGER(INTG), INTENT(OUT) :: ERR   !<The error code
+  TYPE(VARYING_STRING), INTENT(OUT) ::  ERROR   !<The error string
+  !Local variables
+  INTEGER(INTG) :: dimen,number_of_xi   !<The number of dimensions and the number of xi directions
+  INTEGER(INTG) :: component_idx,xi_idx
+  REAL(DP), ALLOCATABLE :: DXDXI(:,:)
+  REAL(DP), ALLOCATABLE :: DXDNU(:,:),DNUDX(:,:)
+  REAL(DP), ALLOCATABLE :: DNUDXI_TEMP(:,:)
+  REAL(DP) :: Jnuxi
+  
+  CALL ENTERS("COORDINATE_SYSTEM_CALCULATE_DNUDXI",ERR,ERROR,*999)
+  
+  !Get number of dimensions, number of xi and dxdxi from geometric_interp_point_metrics
+  IF(ASSOCIATED(GEOM_INTERP_POINT_METRICS)) THEN
+    dimen=GEOM_INTERP_POINT_METRICS%NUMBER_OF_X_DIMENSIONS
+    number_of_xi=GEOM_INTERP_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS
+    ALLOCATE(DXDXI(dimen,dimen),STAT=ERR)
+    DO component_idx=1,dimen
+      DO xi_idx=1,number_of_xi
+        DXDXI(component_idx,xi_idx)=GEOM_INTERP_POINT_METRICS%DX_DXI(component_idx,xi_idx) !dx/dxi
+      ENDDO !xi_idx
+    ENDDO !component_idx
+    !Calculate the third vector orthogonal to the first and the second vector
+    IF (dimen==3 .AND. number_of_xi==2) THEN
+      CALL CROSS_PRODUCT(DXDXI(:,1),DXDXI(:,2),DXDXI(:,3),ERR,ERROR,*999)
+      DXDXI(:,3)=NORMALISE(DXDXI(:,3),ERR,ERROR)
+    ENDIF
+  ELSE
+    CALL FLAG_ERROR("Geometric interpolated point metrics is not associated.",ERR,ERROR,*999)
+  ENDIF   
+
+  !TODO change to fixed dimension
+  ALLOCATE(DXDNU(dimen,dimen),STAT=ERR)
+  ALLOCATE(DNUDX(dimen,dimen),STAT=ERR)
+  ALLOCATE(DNUDXI_TEMP(dimen,dimen),STAT=ERR)   
+  
+  !Calculate dx/dnu and its inverse dnu/dx (same as transpose due to orthogonality)
+  IF(ASSOCIATED(FIBRE_INTERP_POINT)) THEN
+    CALL COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE(GEOM_INTERP_POINT,FIBRE_INTERP_POINT, &
+      & DXDNU,ERR,ERROR,*999)
+    CALL MATRIX_TRANSPOSE(DXDNU,DNUDX,ERR,ERROR,*999)
+    !Calculate dnu/dxi = dnu/dx * dx/dxi and its inverse dxi/dnu
+    CALL MATRIX_PRODUCT(DNUDX,DXDXI,DNUDXI_TEMP,ERR,ERROR,*999)
+  ELSE
+    DNUDXI_TEMP=DXDXI
+  ENDIF
+  
+  IF (dimen == 2) THEN
+        DNUDXI(1,:)=(/DNUDXI_TEMP(1,1),DNUDXI_TEMP(1,2),0.0_DP/)
+        DNUDXI(2,:)=(/DNUDXI_TEMP(2,1),DNUDXI_TEMP(2,2),0.0_DP/)
+        DNUDXI(3,:)=(/0.0_DP,0.0_DP,1.0_DP/)
+  ELSE
+        DNUDXI = DNUDXI_TEMP
+  ENDIF
+  
+  CALL INVERT(DNUDXI,DXIDNU,Jnuxi,ERR,ERROR,*999)
+  
+  DEALLOCATE(DXDXI)
+  DEALLOCATE(DXDNU)
+  DEALLOCATE(DNUDX)
+  DEALLOCATE(DNUDXI_TEMP)    
+  
+  CALL EXITS("COORDINATE_SYSTEM_CALCULATE_DNUDXI")
+    RETURN
+999 CALL ERRORS("COORDINATE_SYSTEM_CALCULATE_DNUDXI",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_CALCULATE_DNUDXI")
+    RETURN 1
+  
+  END SUBROUTINE COORDINATE_SYSTEM_CALCULATE_DNUDXI
 
   !
   !================================================================================================================================
