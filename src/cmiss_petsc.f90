@@ -988,6 +988,23 @@ MODULE CMISS_PETSC
       SNESLineSearchOrder linesearchorder
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSetOrder
+
+    SUBROUTINE SNESLineSearchBTSetAlpha(linesearch,alpha,ierr)
+      SNESLineSearch linesearch
+      PetscReal alpha
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchBTSetAlpha
+
+    SUBROUTINE SNESLineSearchSetTolerances(linesearch,steptol,maxstep,rtol,atol,ltol,maxIt,ierr)
+      SNESLineSearch linesearch
+      PetscReal steptol
+      PetscReal maxstep
+      PetscReal rtol
+      PetscReal atol
+      PetscReal ltol
+      PetscInt maxIt
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetTolerances
 #endif
     
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
@@ -1631,7 +1648,8 @@ MODULE CMISS_PETSC
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
   PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchComputeNorms, &
-    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
+    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType, &
+    & Petsc_SnesLineSearchBTSetAlpha,Petsc_SnesLineSearchSetTolerances
 #else
   PUBLIC PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS
 #endif
@@ -4784,6 +4802,73 @@ CONTAINS
     CALL Exits("Petsc_SnesLineSearchSetType")
     RETURN 1
   END SUBROUTINE Petsc_SnesLineSearchSetType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchBTSetAlpha routine.
+  SUBROUTINE Petsc_SnesLineSearchBTSetAlpha(lineSearch,alpha,err,error,*)
+
+    !Argument variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES back-tracking LineSearch to set alpha for
+    REAL(DP), INTENT(IN) :: alpha !<The alpha descent parameter to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Petsc_SnesLineSearchBTSetAlpha",err,error,*999)
+
+    CALL SNESLineSearchBTSetAlpha(lineSearch%snesLineSearch,alpha,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      END IF
+      CALL FlagError("PETSc error in SNESLineSearchBTSetAlpha",err,error,*999)
+    END IF
+
+    CALL Exits("Petsc_SnesLineSearchBTSetAlpha")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchBTSetAlpha",err,error)
+    CALL Exits("Petsc_SnesLineSearchBTSetAlpha")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchBTSetAlpha
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSetTolerances routine.
+  SUBROUTINE Petsc_SnesLineSearchSetTolerances(lineSearch,steptol,maxstep,rtol,atol,ltol,maxIt,err,error,*)
+
+    !Argument variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set tolerances for
+    REAL(DP), INTENT(IN) :: steptol !<The minimum steplength
+    REAL(DP), INTENT(IN) :: maxstep !<The maximum steplength
+    REAL(DP), INTENT(IN) :: rtol !<The relative tolerance for iterative line searches
+    REAL(DP), INTENT(IN) :: atol !<The absolute tolerance for iterative line searches
+    REAL(DP), INTENT(IN) :: ltol !<The change in lambda tolerance for iterative line searches
+    INTEGER(INTG), INTENT(IN) :: maxIt !<The maximum number of iterations of the line search
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Petsc_SnesLineSearchSetTolerances",err,error,*999)
+
+    CALL SNESLineSearchSetTolerances(lineSearch%snesLineSearch, &
+      & steptol,maxstep,rtol,atol,ltol,maxIt,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      END IF
+      CALL FlagError("PETSc error in SNESLineSearchSetTolerances",err,error,*999)
+    END IF
+
+    CALL Exits("Petsc_SnesLineSearchSetTolerances")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchSetTolerances",err,error)
+    CALL Exits("Petsc_SnesLineSearchSetTolerances")
+    RETURN 1
+
+  END SUBROUTINE Petsc_SnesLineSearchSetTolerances
 #endif
 
   !
