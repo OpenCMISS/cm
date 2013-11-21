@@ -224,29 +224,41 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the times for
-    REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
-    REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP
+    REAL(DP), INTENT(OUT) :: CURRENT_TIME
+    REAL(DP), INTENT(OUT) :: TIME_INCREMENT
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-   
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
+    INTEGER(INTG), POINTER :: CONTROL_LOOP_LEVEL
+    INTEGER(INTG) :: I
+
     CALL ENTERS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
-          IF(ASSOCIATED(TIME_LOOP)) THEN
-            CURRENT_TIME=TIME_LOOP%CURRENT_TIME
-            TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+        CONTROL_LOOP_LEVEL=>CONTROL_LOOP%CONTROL_LOOP_LEVEL
+        PARENT_LOOP=>CONTROL_LOOP
+        DO I=CONTROL_LOOP_LEVEL,1,-1
+          IF(CONTROL_LOOP_LEVEL==0) THEN
+            CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            IF(PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+              TIME_LOOP=>PARENT_LOOP%TIME_LOOP
+              IF(ASSOCIATED(TIME_LOOP)) THEN
+                CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+                TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+              ELSE
+                CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+              ENDIF
+              EXIT
+            ELSE
+              PARENT_LOOP=>PARENT_LOOP%PARENT_LOOP
+            ENDIF
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
-        ENDIF
+        ENDDO
       ELSE
         CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
       ENDIF
@@ -1333,38 +1345,55 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-  !>Gets the time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopTimesGet
-  SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,CURRENT_TIME,ERR,ERROR,*)
+  
+  !>Gets the current time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopCurrentTimesGet
+  SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT, &
+    & CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the times for
-    REAL(DP), INTENT(OUT) :: START_TIME !<On exit, the start time for the time control loop.
-    REAL(DP), INTENT(OUT) :: STOP_TIME !<On exit, the stop time for the time control loop.
-    REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
-    REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP
+    REAL(DP), INTENT(OUT) :: START_TIME
+    REAL(DP), INTENT(OUT) :: STOP_TIME
+    REAL(DP), INTENT(OUT) :: CURRENT_TIME
+    REAL(DP), INTENT(OUT) :: TIME_INCREMENT
+    INTEGER(INTG), INTENT(OUT) :: CURRENT_LOOP_ITERATION
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-   
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
+    INTEGER(INTG), POINTER :: CONTROL_LOOP_LEVEL
+    INTEGER(INTG) :: I
+
     CALL ENTERS("CONTROL_LOOP_TIMES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
-          IF(ASSOCIATED(TIME_LOOP)) THEN
-            START_TIME=TIME_LOOP%START_TIME
-            STOP_TIME=TIME_LOOP%STOP_TIME
-            TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
-            CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+        CONTROL_LOOP_LEVEL=>CONTROL_LOOP%CONTROL_LOOP_LEVEL
+        PARENT_LOOP=>CONTROL_LOOP
+        DO I=CONTROL_LOOP_LEVEL,1,-1
+          IF(CONTROL_LOOP_LEVEL==0) THEN
+            CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            IF(PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+              TIME_LOOP=>PARENT_LOOP%TIME_LOOP
+              IF(ASSOCIATED(TIME_LOOP)) THEN
+                START_TIME=TIME_LOOP%START_TIME
+                STOP_TIME=TIME_LOOP%STOP_TIME
+                CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+                TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+                CURRENT_LOOP_ITERATION=TIME_LOOP%ITERATION_NUMBER
+                OUTPUT_ITERATION_NUMBER=TIME_LOOP%OUTPUT_NUMBER
+              ELSE
+                CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+              ENDIF
+              EXIT
+            ELSE
+              PARENT_LOOP=>PARENT_LOOP%PARENT_LOOP
+            ENDIF
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
-        ENDIF
+        ENDDO
       ELSE
         CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
       ENDIF
@@ -1378,7 +1407,7 @@ CONTAINS
     CALL EXITS("CONTROL_LOOP_TIMES_GET")
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIMES_GET
-  
+
   !
   !================================================================================================================================
   !

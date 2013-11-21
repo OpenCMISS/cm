@@ -5129,7 +5129,6 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = &
     & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes problem with coupled multidomain method subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE = PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE = Problem_Coupled1dDaeNavierStokesSubtype !<Coupled 1D-DAE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE = PROBLEM_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5304,8 +5303,7 @@ MODULE OPENCMISS
     & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
     & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE, &
-    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE
+    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STANDARD_DARCY_SUBTYPE,CMISS_PROBLEM_QUASISTATIC_DARCY_SUBTYPE,CMISS_PROBLEM_ALE_DARCY_SUBTYPE, &
     & CMISS_PROBLEM_TRANSIENT_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE
@@ -16866,7 +16864,7 @@ CONTAINS
 
   !>Returns the time parameters for a time control loop identified by user numbers.
   SUBROUTINE CMISSControlLoop_TimesGetNumber0(problemUserNumber,controlLoopIdentifier,startTime,stopTime,timeIncrement, &
-    & currentTime,err)
+    & currentTime,currentLoopIteration,outputIterationNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to get the time parameters for for.
@@ -16875,6 +16873,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the time increment for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the current time for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
@@ -16888,7 +16888,8 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,controlLoopIdentifier,CONTROL_LOOP,err,error,*999)
-      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
+      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime, &
+        & currentLoopIteration,outputIterationNumber,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
@@ -16909,7 +16910,7 @@ CONTAINS
 
   !>Returns the time parameters for a time control loop identified by user numbers.
   SUBROUTINE CMISSControlLoop_TimesGetNumber1(problemUserNumber,controlLoopIdentifiers,startTime,stopTime,timeIncrement, &
-    & currentTime,err)
+    & currentTime,currentLoopIteration,outputIterationNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to get the time parameters for for.
@@ -16918,6 +16919,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the time increment for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the current time for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
@@ -16931,7 +16934,8 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,controlLoopIdentifiers,CONTROL_LOOP,err,error,*999)
-      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
+      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime, &
+        & currentLoopIteration,outputIterationNumber,err,error,*999)
    ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
@@ -16951,7 +16955,8 @@ CONTAINS
   !
 
   !>Returns the time parameters for a time control loop identified by an object.
-  SUBROUTINE CMISSControlLoop_TimesGetObj(controlLoop,startTime,stopTime,timeIncrement,currentTime,err)
+  SUBROUTINE CMISSControlLoop_TimesGetObj(controlLoop,startTime,stopTime,timeIncrement,currentTime, &
+    & currentLoopIteration,outputIterationNumber,err)
 
     !Argument variables
     TYPE(CMISSControlLoopType), INTENT(IN) :: controlLoop !<The control loop to get the times for.
@@ -16959,12 +16964,15 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the time increment for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the current time for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSControlLoop_TimesGetObj",err,error,*999)
 
-    CALL CONTROL_LOOP_TIMES_GET(controlLoop%CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
+    CALL CONTROL_LOOP_TIMES_GET(controlLoop%CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime, &
+      & currentLoopIteration,outputIterationNumber,err,error,*999)
 
     CALL EXITS("CMISSControlLoop_TimesGetObj")
     RETURN
