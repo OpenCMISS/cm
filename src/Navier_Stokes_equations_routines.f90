@@ -81,7 +81,6 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PRIVATE
 
   PUBLIC NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE
-  PUBLIC NAVIER_STOKES_CONTROL_LOOP_POST_LOOP
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SETUP
@@ -94,7 +93,6 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NavierStokes_AnalyticCalculate
   PUBLIC NavierStokes_SUPGCalculate
   PUBLIC NavierStokes_Couple1D0D
-  PUBLIC NavierStokes_Couple1D0D_MonitorConvergence
 
 CONTAINS 
 
@@ -2621,7 +2619,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT,SUB_LOOP
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS,MESH_SOLVER_EQUATIONS,BIF_SOLVER_EQUATIONS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER, MESH_SOLVER,BIF_SOLVER,cellmlSolver
@@ -2640,7 +2638,6 @@ CONTAINS
     NULLIFY(SOLVER)
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
-    NULLIFY(SUB_LOOP)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
@@ -2892,15 +2889,9 @@ CONTAINS
             SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
             CASE(PROBLEM_SETUP_START_ACTION)
               NULLIFY(CONTROL_LOOP_ROOT)
-              NULLIFY(SUB_LOOP)
-              !Set 1 subloop (while)
+              !Set the loop (time)
               CALL CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*999)
               CALL CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,PROBLEM_CONTROL_TIME_LOOP_TYPE,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(CONTROL_LOOP,1,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,SUB_LOOP,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_TYPE_SET(SUB_LOOP,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(SUB_LOOP,1000,ERR,ERROR,*999)
-!              CALL CONTROL_LOOP_OUTPUT_TYPE_SET(SUB_LOOP,CONTROL_LOOP_PROGRESS_OUTPUT,ERR,ERROR,*999)
             CASE(PROBLEM_SETUP_FINISH_ACTION)
               CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
               CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
@@ -2915,10 +2906,8 @@ CONTAINS
           CASE(PROBLEM_SETUP_SOLVERS_TYPE)
             !Get the control loop
             CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-            NULLIFY(SUB_LOOP)
             NULLIFY(CONTROL_LOOP)
-            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,SUB_LOOP,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_GET(SUB_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
             SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
             CASE(PROBLEM_SETUP_START_ACTION)
               CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
@@ -3000,10 +2989,8 @@ CONTAINS
             CASE(PROBLEM_SETUP_START_ACTION)
               !Get the control loop
               CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-              NULLIFY(SUB_LOOP)
               NULLIFY(CONTROL_LOOP)
-              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,SUB_LOOP,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_GET(SUB_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+              CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
               CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
               NULLIFY(SOLVER)
               NULLIFY(SOLVER_EQUATIONS)
@@ -3059,10 +3046,8 @@ CONTAINS
             CASE(PROBLEM_SETUP_FINISH_ACTION)
               !Get the control loop
               CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-              NULLIFY(SUB_LOOP)
               NULLIFY(CONTROL_LOOP)
-              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,SUB_LOOP,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_GET(SUB_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+              CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
               CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
               NULLIFY(SOLVER)
               NULLIFY(SOLVER_EQUATIONS)
@@ -3121,8 +3106,7 @@ CONTAINS
             CASE(PROBLEM_SETUP_START_ACTION)
               !Get the control loop
               CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,SUB_LOOP,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_GET(SUB_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+              CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
               CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
               NULLIFY(SOLVER)
               NULLIFY(cellMLSolver)
@@ -3139,8 +3123,7 @@ CONTAINS
             CASE(PROBLEM_SETUP_FINISH_ACTION)
               !Get the control loop
               CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-              CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,SUB_LOOP,ERR,ERROR,*999)
-              CALL CONTROL_LOOP_GET(SUB_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+              CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
               CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
               NULLIFY(SOLVER)
               SELECT CASE(PROBLEM%SUBTYPE)
@@ -5180,9 +5163,8 @@ CONTAINS
                                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                 & GLOBAL_DERIVATIVE_INDEX
-                                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
-                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
-                                                & GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS, & 
+                                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(ANALYTIC_FUNCTION_TYPE,X, &
+                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS, & 
                                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
                                                 & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
                                               DO version_idx=1, &
@@ -5452,9 +5434,8 @@ CONTAINS
                                               !Define RHO_PARAM, density=2
                                               RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
                                                 & parameters%cmiss%data_dp(2)
-                                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
-                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
-                                                & GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS, & 
+                                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(ANALYTIC_FUNCTION_TYPE,X, &
+                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS, & 
                                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
                                                 & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
                                               ! CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM, &
@@ -6583,24 +6564,20 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-
     !Local Variables
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
+    TYPE(DOMAIN_TYPE), POINTER :: domain
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoint(:)
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    TYPE(FIELD_TYPE), POINTER :: analyticField,dependentField,geometricField,materialsField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable,analyticVariable,materialsVariable
+    TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: componentIdx,derivativeIdx,dimensionIdx,local_ny,nodeIdx,numberOfDimensions,variableIdx,variableType,I,J,K
     INTEGER(INTG) :: numberOfNodesXiCoord(3),elementIdx,en_idx,boundaryCount,analyticFunctionType,globalDerivativeIndex,versionIdx
     INTEGER(INTG) :: boundaryConditionsCheckVariable,numberOfXi
-    REAL(DP) :: VALUE,X(3),xiCoordinates(3),initialValue
-    REAL(DP) :: T_COORDINATES(20,3)
+    REAL(DP) :: TIME,VALUE,X(3),xiCoordinates(3),initialValue,T_COORDINATES(20,3)
     REAL(DP), POINTER :: analyticParameters(:),geometricParameters(:),materialsParameters(:)
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
-    TYPE(DOMAIN_TYPE), POINTER :: domain
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
-    TYPE(FIELD_TYPE), POINTER :: analyticField,dependentField,geometricField,materialsField
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable,analyticVariable,materialsVariable
-    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoint(:)
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
-    !THESE ARE TEMPORARY VARIABLES - they need to be replace by constant field values and the current simulation time
-    REAL(DP) :: TIME,NORMAL(3),TANGENTS(3,3)
-    TYPE(VARYING_STRING) :: localError
 
     CALL ENTERS("NavierStokes_AnalyticCalculate",err,error,*999)
 
@@ -6709,10 +6686,9 @@ CONTAINS
                             globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                               & GLOBAL_DERIVATIVE_INDEX
                             DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
-                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
-                                & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
-                                & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
-                                & materialsParameters,VALUE,err,error,*999)
+                              CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(analyticFunctionType,X,TIME,variableType, &
+                                & globalDerivativeIndex,componentIdx,numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS, &
+                                & analyticParameters,materialsParameters,VALUE,err,error,*999)
                               local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
@@ -6735,10 +6711,9 @@ CONTAINS
                           globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                             & GLOBAL_DERIVATIVE_INDEX
                           IF(componentIdx<=numberOfXi) THEN
-                            CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
-                              & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
-                              & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
-                              & materialsParameters,VALUE,err,error,*999)
+                            CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(analyticFunctionType,X,TIME,variableType, &
+                              & globalDerivativeIndex,componentIdx,numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS, &
+                              & analyticParameters,materialsParameters,VALUE,err,error,*999)
                             DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
                               local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -6788,10 +6763,9 @@ CONTAINS
                                 IF(ASSOCIATED(boundaryConditionsVariable)) THEN
                                   boundaryConditionsCheckVariable=boundaryConditionsVariable%CONDITION_TYPES(local_ny)
                                   IF(boundaryConditionsCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                                    CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
-                                      & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex, &
-                                      & componentIdx,numberOfXi,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
-                                      & materialsParameters,VALUE,err,error,*999)
+                                    CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(analyticFunctionType,X,TIME,variableType, &
+                                      & globalDerivativeIndex,componentIdx,numberOfXi,fieldVariable%NUMBER_OF_COMPONENTS, &
+                                      & analyticParameters,materialsParameters,VALUE,err,error,*999)
                                     !If we are a boundary node then set the analytic value on the boundary
                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
                                       & FIELD_VALUES_SET_TYPE,local_ny,VALUE,err,error,*999)
@@ -6926,10 +6900,9 @@ CONTAINS
                         DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
                           globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                             & GLOBAL_DERIVATIVE_INDEX
-                          CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(equationsSet%SUBTYPE, & 
-                            & analyticFunctionType,X,TANGENTS,NORMAL,TIME,variableType,globalDerivativeIndex,componentIdx, &
-                            & numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS,analyticParameters, &
-                            & materialsParameters,VALUE,err,error,*999)
+                          CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(analyticFunctionType,X,TIME,variableType, &
+                            & globalDerivativeIndex,componentIdx,numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS, &
+                            & analyticParameters,materialsParameters,VALUE,err,error,*999)
                           DO versionIdx=1,domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
                             local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                               & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
@@ -7055,16 +7028,12 @@ CONTAINS
   !================================================================================================================================
   !
   !>Calculates the various analytic values for NSE examples with exact solutions
-  SUBROUTINE NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SUBTYPE,ANALYTIC_FUNCTION_TYPE,X, &
-    & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIV_INDEX,componentNumber,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS, &
-    & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*)
+  SUBROUTINE NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(ANALYTIC_FUNCTION_TYPE,X,TIME,VARIABLE_TYPE,GLOBAL_DERIV_INDEX, &
+    & componentNumber,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The subtype of equation to evaluate
     INTEGER(INTG), INTENT(IN) :: ANALYTIC_FUNCTION_TYPE !<The type of analytic function to evaluate
     REAL(DP), INTENT(IN) :: X(:) !<X(dimension_idx). The geometric position to evaluate at (includes Y,Z for higher dim problems)
-    REAL(DP), INTENT(IN) :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
-    REAL(DP), INTENT(IN) :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
     REAL(DP), INTENT(IN) :: TIME !<The time to evaluate at
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to evaluate at
     INTEGER(INTG), INTENT(IN) :: GLOBAL_DERIV_INDEX !<The global derivative to evaluate at
@@ -7079,9 +7048,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j,n,m
     REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
-    REAL(DP) :: period,delta(100),t(100),q(100),s
-    REAL(DP) :: boundaryNormal(3),amplitude,offset
-    
+    REAL(DP) :: boundaryNormal(3),amplitude,offset,period,delta(100),t(100),q(100),s
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
@@ -7164,7 +7131,6 @@ CONTAINS
          MU_PARAM = MATERIALS_PARAMETERS(1)
          RHO_PARAM = MATERIALS_PARAMETERS(2)
          NU_PARAM = MU_PARAM/RHO_PARAM ! kinematic viscosity
-!         PI = 3.141592654_DP
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
            U_PARAM = ANALYTIC_PARAMETERS(1) ! characteristic velocity (initial amplitude)
@@ -7224,35 +7190,57 @@ CONTAINS
        ENDIF
 
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield)
-       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
-       ! a boundary condition in a fluid simulation.
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(1)
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
-           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           period = ANALYTIC_PARAMETERS(1) !time period for waveform
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(componentNumber==1) THEN
-               !Set analytic value for Q
-               VALUE=(49.7_DP-31.47_DP*cos(1.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -25.58_DP*cos(2.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +4.208_DP*cos(3.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +1.644_DP*cos(4.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +7.950_DP*cos(5.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +1.203_DP*cos(6.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -3.487_DP*cos(7.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -0.902_DP*cos(8.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +54.71_DP*sin(1.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -17.48_DP*sin(2.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -9.114_DP*sin(3.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -8.087_DP*sin(4.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +4.242_DP*sin(5.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +2.605_DP*sin(6.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     +3.422_DP*sin(7.0_DP*9.117_DP*CURRENT_TIME/period) &
-                       &     -1.139_DP*sin(8.0_DP*9.117_DP*CURRENT_TIME/period))/100.0_DP
-                       
-                       
+               !Reymond Descending Aorta       
+               t(1)= 0.016342; q(1)=7.548303
+               t(2)=0.058682;  q(2)=7.532637
+               t(3)=0.075766;  q(3)=7.832898
+               t(4)=0.095822;  q(4)=28.981723
+               t(5)=0.114392;  q(5)=72.062663
+               t(6)=0.130734;  q(6)=130.02611
+               t(7)=0.155246;  q(7)=228.720627
+               t(8)=0.167131;  q(8)=267.885117
+               t(9)=0.179759;  q(9)=293.733681
+               t(10)=0.197586; q(10)=305.483029
+               t(11)=0.224327; q(11)=286.684073
+               t(12)=0.256267; q(12)=243.603133
+               t(13)=0.288208; q(13)=195.039164
+               t(14)=0.32312;  q(14)=133.159269
+               t(15)=0.36546;  q(15)=60.313316
+               t(16)=0.391458; q(16)=26.631854
+               t(17)=0.41597;  q(17)=6.266319
+               t(18)=0.43974;  q(18)=-1.56658
+               t(19)=0.46351;  q(19)=-0.78329
+               t(20)=0.490251; q(20)=7.832898
+               t(21)=0.527391; q(21)=18.015666
+               t(22)=0.571216; q(22)=27.415144
+               t(23)=0.632869; q(23)=30.548303
+               t(24)=0.690808; q(24)=30.548303
+               t(25)=0.770288; q(25)=29.765013
+               !Initialize variables
+               m=1
+               n=25
+               !Compute derivation
+               DO i=1,n-1
+                 delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
+               END DO
+               delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
+               !Find subinterval
+               DO j=1,n-1
+                 IF (t(j) <= (CURRENT_TIME/period)) THEN
+                   m=j
+                 ENDIF
+               END DO
+               !Evaluate interpolant
+               s=(CURRENT_TIME/period)-t(m)
+               VALUE=(q(m)+s*delta(m))/100.0
              ELSE
                CALL FLAG_ERROR("Incorrect component specification for Sheffield flow rate waveform ",ERR,ERROR,*999)
              ENDIF
@@ -7284,29 +7272,90 @@ CONTAINS
        END SELECT
 
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds)
-       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
-       ! a boundary condition in a fluid simulation.
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(1)
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
-           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           period = ANALYTIC_PARAMETERS(1) !time period for waveform
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(componentNumber==1) THEN
-               !Set analytic value for Q
-               VALUE=(22.41_DP-10.6_DP*cos(1*7.153_DP*CURRENT_TIME/period) &
-                       &     -27.08_DP*cos(2*7.153_DP*CURRENT_TIME/period) &
-                       &     +14.02_DP*cos(3*7.153_DP*CURRENT_TIME/period) &
-                       &     +3.888_DP*cos(4*7.153_DP*CURRENT_TIME/period) &
-                       &     -2.732_DP*cos(5*7.153_DP*CURRENT_TIME/period) &
-                       &     -2.722_DP*cos(6*7.153_DP*CURRENT_TIME/period) &
-                       &     +37.86_DP*sin(1*7.153_DP*CURRENT_TIME/period) &
-                       &     -26.92_DP*sin(2*7.153_DP*CURRENT_TIME/period) &
-                       &     -6.379_DP*sin(3*7.153_DP*CURRENT_TIME/period) &
-                       &     +5.332_DP*sin(4*7.153_DP*CURRENT_TIME/period) &
-                       &     +5.174_DP*sin(5*7.153_DP*CURRENT_TIME/period) &
-                       &     -0.436_DP*sin(6*7.153_DP*CURRENT_TIME/period))/100.0_DP
+               !Abdominal Aorta
+               t(1)= 0.018469; q(1)=-1.351999
+               t(2)=0.042354 ; q(2)=1.226006
+               t(3)=0.073197 ; q(3)=-0.097725
+               t(4)=0.101054 ; q(4)=-2.068381
+               t(5)=0.120952 ; q(5)=-3.383228
+               t(6)=0.13489  ; q(6)=0.501548
+               t(7)=0.14784  ; q(7)=8.283214
+               t(8)=0.165789 ; q(8)=28.398439
+               t(9)=0.186749 ; q(9)=62.14753
+               t(10)=0.206704; q(10)=90.702652
+               t(11)=0.219667; q(11)=105.627137
+               t(12)=0.23063 ; q(12)=114.709113
+               t(13)=0.245569; q(13)=121.839817
+               t(14)=0.257511; q(14)=122.479472
+               t(15)=0.282373; q(15)=115.316463
+               t(16)=0.308211; q(16)=98.412438
+               t(17)=0.349933; q(17)=62.015076
+               t(18)=0.389673; q(18)=30.16476
+               t(19)=0.422463; q(19)=6.112263
+               t(20)=0.451289; q(20)=-9.495491
+               t(21)=0.47217 ; q(21)=-17.304617
+               t(22)=0.497039; q(22)=-20.571544
+               t(23)=0.527893; q(23)=-16.051151
+               t(24)=0.56771 ; q(24)=-7.641944
+               t(25)=0.611507; q(25)=0.764033
+               t(26)=0.650321; q(26)=4.628618
+               t(27)=0.689134; q(27)=8.493202
+               t(28)=0.72695 ; q(28)=11.0599
+               t(29)=0.769731; q(29)=8.427783
+               t(30)=0.788; q(30)=-1.351999
+               t(31)=0.8123 ; q(31)=1.226006
+               t(32)=0.843197 ; q(32)=-0.097725
+               t(33)=0.871054 ; q(33)=-2.068381
+               t(34)=0.890952 ; q(34)=-3.383228
+               t(35)=0.905  ; q(35)=0.501548
+               t(36)=0.918  ; q(36)=8.283214
+               t(37)=0.936 ; q(37)=28.398439
+               t(38)=0.957 ; q(38)=62.14753
+               t(39)=0.976; q(39)=90.702652
+               t(40)=0.99; q(40)=105.627137
+               t(41)=1.0 ; q(41)=114.709113
+               t(42)=1.015; q(42)=121.839817
+               t(43)=1.027; q(43)=122.479472
+               t(44)=1.052; q(44)=115.316463
+               t(45)=1.08; q(45)=98.412438
+               t(46)=1.12; q(46)=62.015076
+               t(47)=1.16; q(47)=30.16476
+               t(48)=1.19; q(48)=6.112263
+               t(49)=1.22; q(49)=-9.495491
+               t(50)=1.24 ; q(50)=-17.304617
+               t(51)=1.27; q(51)=-20.571544
+               t(52)=1.3; q(52)=-16.051151
+               t(53)=1.34 ; q(53)=-7.641944
+               t(54)=1.381; q(54)=0.764033
+               t(55)=1.42; q(55)=4.628618
+               t(56)=1.46; q(56)=8.493202
+               t(57)=1.5 ; q(57)=11.0599
+               t(58)=1.54; q(58)=8.427783
+               !Initialize variables
+               m=1
+               n=58
+               !Compute derivation
+               DO i=1,n-1
+                 delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
+               END DO
+               delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
+               !Find subinterval
+               DO j=1,n-1
+                 IF (t(j) <= (CURRENT_TIME/period)) THEN
+                   m=j
+                 ENDIF
+               END DO
+               !Evaluate interpolant
+               s=(CURRENT_TIME/period)-t(m)
+               VALUE=(q(m)+s*delta(m))/100.0
              ELSE
                CALL FLAG_ERROR("Incorrect component specification for Reymonds flow rate waveform ",ERR,ERROR,*999)
              ENDIF
@@ -7338,71 +7387,44 @@ CONTAINS
        END SELECT
 
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen)
-       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
-       ! a boundary condition in a fluid simulation.
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(1)
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
-           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           period = ANALYTIC_PARAMETERS(1) !time period for waveform
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(componentNumber==1) THEN
-               !Set analytic value for Q
-               VALUE=(21.51_DP-5.276_DP*cos(1*7.343_DP*CURRENT_TIME/period) &
-                       &     -25.84_DP*cos(2*7.343_DP*CURRENT_TIME/period) &
-                       &     +10.99_DP*cos(3*7.343_DP*CURRENT_TIME/period) &
-                       &     +5.946_DP*cos(4*7.343_DP*CURRENT_TIME/period) &
-                       &     +1.276_DP*cos(5*7.343_DP*CURRENT_TIME/period) &
-                       &     -3.462_DP*cos(6*7.343_DP*CURRENT_TIME/period) &
-                       &     -1.618_DP*cos(7*7.343_DP*CURRENT_TIME/period) &
-                       &     -1.807_DP*cos(8*7.343_DP*CURRENT_TIME/period) &
-                       &     +37.34_DP*sin(1*7.343_DP*CURRENT_TIME/period) &
-                       &     -22.28_DP*sin(2*7.343_DP*CURRENT_TIME/period) &
-                       &     -9.312_DP*sin(3*7.343_DP*CURRENT_TIME/period) &
-                       &     +0.280_DP*sin(4*7.343_DP*CURRENT_TIME/period) &
-                       &     +5.906_DP*sin(5*7.343_DP*CURRENT_TIME/period) &
-                       &     +0.520_DP*sin(6*7.343_DP*CURRENT_TIME/period) &
-                       &     -0.614_DP*sin(7*7.343_DP*CURRENT_TIME/period) &
-                       &     -2.521_DP*sin(8*7.343_DP*CURRENT_TIME/period))/100.0_DP
-
-                            !Olufse Abdominal Aorta
-                            t(1)=0.0 ; q(1)=50.0
-                            t(2)=0.4 ; q(2)=100.0
-                            t(3)=0.8 ; q(3)=100.0
-                              
-                            !Olufse Abdominal Aorta
-                            t(1)=0.003328 ; q(1)=0.589213
-                            t(2)=0.119151 ; q(2)=1.734496
-                            t(3)=0.136672 ; q(3)=-0.635518
-                            t(4)=0.15253  ; q(4)=-3.481171
-                            t(5)=0.170818 ; q(5)=1.750861
-                            t(6)=0.184854 ; q(6)=16.64217
-                            t(7)=0.220967 ; q(7)=79.68522
-                            t(8)=0.238306 ; q(8)=98.061734
-                            t(9)=0.253223 ; q(9)=107.568712
-                            t(10)=0.269856; q(10)=111.374882
-                            t(11)=0.290719; q(11)=108.055701
-                            t(12)=0.306623; q(12)=99.983824
-                            t(13)=0.379564; q(13)=49.644986
-                            t(14)=0.418121; q(14)=24.159487
-                            t(15)=0.439111; q(15)=6.270225
-                            t(16)=0.455068; q(16)=-7.819729
-                            t(17)=0.471806; q(17)=-15.891343
-                            t(18)=0.496822; q(18)=-17.78387
-                            t(19)=0.537639; q(19)=-15.870491
-                            t(20)=0.564247; q(20)=-9.210486
-                            t(21)=0.600854; q(21)=-2.388943
-                            t(22)=0.629151; q(22)=1.737663
-                            t(23)=0.670786; q(23)=5.393381
-                            t(24)=0.720749; q(24)=9.526849
-                            t(25)=0.788248; q(25)=9.7066
-                            t(26)=0.818235; q(26)=11.141436
-                            t(27)=0.867445; q(27)=6.247525
-                            t(28)=0.93332 ; q(28)=1.517264
-                            t(29)=0.994997; q(29)=0.269833
-
-
+               !Abdominal Aorta
+               t(1)=0.003328 ; q(1)=0.589213
+               t(2)=0.119151 ; q(2)=1.734496
+               t(3)=0.136672 ; q(3)=-0.635518
+               t(4)=0.15253  ; q(4)=-3.481171
+               t(5)=0.170818 ; q(5)=1.750861
+               t(6)=0.184854 ; q(6)=16.64217
+               t(7)=0.220967 ; q(7)=79.68522
+               t(8)=0.238306 ; q(8)=98.061734
+               t(9)=0.253223 ; q(9)=107.568712
+               t(10)=0.269856; q(10)=111.374882
+               t(11)=0.290719; q(11)=108.055701
+               t(12)=0.306623; q(12)=99.983824
+               t(13)=0.379564; q(13)=49.644986
+               t(14)=0.418121; q(14)=24.159487
+               t(15)=0.439111; q(15)=6.270225
+               t(16)=0.455068; q(16)=-7.819729
+               t(17)=0.471806; q(17)=-15.891343
+               t(18)=0.496822; q(18)=-17.78387
+               t(19)=0.537639; q(19)=-15.870491
+               t(20)=0.564247; q(20)=-9.210486
+               t(21)=0.600854; q(21)=-2.388943
+               t(22)=0.629151; q(22)=1.737663
+               t(23)=0.670786; q(23)=5.393381
+               t(24)=0.720749; q(24)=9.526849
+               t(25)=0.788248; q(25)=9.7066
+               t(26)=0.818235; q(26)=11.141436
+               t(27)=0.867445; q(27)=6.247525
+               t(28)=0.93332 ; q(28)=1.517264
+               t(29)=0.994997; q(29)=0.269833
                !Initialize variables
                m=1
                n=29
@@ -7413,14 +7435,13 @@ CONTAINS
                delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
                !Find subinterval
                DO j=1,n-1
-                 IF (t(j) <= (CURRENT_TIME/period)) THEN
+                 IF(t(j)<=(CURRENT_TIME/period)) THEN
                    m=j
                  ENDIF
                END DO
                !Evaluate interpolant
                s=(CURRENT_TIME/period)-t(m)
                VALUE=(q(m)+s*delta(m))/100.0
-
              ELSE
                CALL FLAG_ERROR("Incorrect component specification for Olufsen flow rate waveform ",ERR,ERROR,*999)
              ENDIF
@@ -7452,31 +7473,61 @@ CONTAINS
        END SELECT
 
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
-       ! Returns value from a fourier decomposition of a physiologic flow wave to be used as
-       ! a boundary condition in a fluid simulation.
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(1)
          SELECT CASE(VARIABLE_TYPE)
          CASE(FIELD_U_VARIABLE_TYPE)
-           period = ANALYTIC_PARAMETERS(1) ! time period for waveform
+           period = ANALYTIC_PARAMETERS(1) !time period for waveform
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(componentNumber==1) THEN
-               !Set analytic value for Q
-               VALUE=0.5_DP*(134.1_DP+2.06_DP*cos(1*7.741_DP*CURRENT_TIME/period) &
-                       &     -118.7_DP*cos(2*7.741_DP*CURRENT_TIME/period) &
-                       &     -20.48_DP*cos(3*7.741_DP*CURRENT_TIME/period) &
-                       &     -8.634_DP*cos(4*7.741_DP*CURRENT_TIME/period) &
-                       &     +13.43_DP*cos(5*7.741_DP*CURRENT_TIME/period) &
-                       &     +7.387_DP*cos(6*7.741_DP*CURRENT_TIME/period) &
-                       &     +4.127_DP*cos(7*7.741_DP*CURRENT_TIME/period) &
-                       &     +178.9_DP*sin(1*7.741_DP*CURRENT_TIME/period) &
-                       &     +18.41_DP*sin(2*7.741_DP*CURRENT_TIME/period) &
-                       &     -45.9_DP*sin(3*7.741_DP*CURRENT_TIME/period) &
-                       &     -22.71_DP*sin(4*7.741_DP*CURRENT_TIME/period) &
-                       &     -16.28_DP*sin(5*7.741_DP*CURRENT_TIME/period) &
-                       &     -0.8115_DP*sin(6*7.741_DP*CURRENT_TIME/period) &
-                       &     +0.8263_DP*sin(7*7.741_DP*CURRENT_TIME/period))/100.0_DP
+               !Olufsen Aorta
+               t(1)=0.0011660; q(1)=17.390515
+               t(2)=0.0215840; q(2)=10.41978
+               t(3)=0.0340860; q(3)=18.75892
+               t(4)=0.0731370; q(4)=266.384247
+               t(5)=0.0857710; q(5)=346.375561
+               t(6)=0.1029220; q(6)=413.841978
+               t(7)=0.1154270; q(7)=424.268075
+               t(8)=0.1483530; q(8)=429.114741
+               t(9)=0.1698860; q(9)=411.012782
+               t(10)=0.220794; q(10)=319.151162
+               t(11)=0.264856; q(11)=207.816019
+               t(12)=0.295415; q(12)=160.490352
+               t(13)=0.325895; q(13)=70.03425
+               t(14)=0.346215; q(14)=10.19395
+               t(15)=0.363213; q(15)=-5.122243
+               t(16)=0.383666; q(16)=6.689631
+               t(17)=0.405265; q(17)=24.065933
+               t(18)=0.427988; q(18)=35.876228
+               t(19)=0.455272; q(19)=58.813799
+               t(20)=0.477990; q(20)=67.841484
+               t(21)=0.502943; q(21)=57.38933
+               t(22)=0.535816; q(22)=33.714258
+               t(23)=0.577789; q(23)=20.46765
+               t(24)=0.602753; q(24)=16.276366
+               t(25)=0.639087; q(25)=22.511968
+               t(26)=0.727616; q(26)=18.972117
+               t(27)=0.783235; q(27)=18.933425
+               t(28)=0.838848; q(28)=16.112126
+               t(29)=0.998892; q(29)=15.305137
+               !Initialize variables
+               m=1
+               n=29
+               !Compute derivation
+               DO i=1,n-1
+                 delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
+               END DO
+               delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
+               !Find subinterval
+               DO j=1,n-1
+                 IF (t(j) <= (CURRENT_TIME/period)) THEN
+                   m=j
+                 ENDIF
+               END DO
+               !Evaluate interpolant
+               s=(CURRENT_TIME/period)-t(m)
+               VALUE=(q(m)+s*delta(m))/100.0
              ELSE
                CALL FLAG_ERROR("Incorrect component specification for Aorta flow rate waveform ",ERR,ERROR,*999)
              ENDIF
@@ -9173,63 +9224,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Runs after each control loop iteration
-  SUBROUTINE NAVIER_STOKES_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
-    INTEGER(INTG), INTENT(OUT) :: ERR !
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_NAVIERSTOKES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    NULLIFY(CONTROL_LOOP_NAVIERSTOKES)
-
-    CALL ENTERS("NAVIER_STOKES_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-        SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
-        CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
-          IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"End of time step",ERR,ERROR,*999)
-          ENDIF
-        CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-          CASE(Problem_Coupled1dDaeNavierStokesSubtype,PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-            !subiteration
-            IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"End of subiteration",ERR,ERROR,*999)
-            ENDIF
-            CALL CONTROL_LOOP_GET(CONTROL_LOOP,[CONTROL_LOOP_NODE],CONTROL_LOOP_NAVIERSTOKES,ERR,ERROR,*999)
-            CALL NavierStokes_Couple1D0D_MonitorConvergence(CONTROL_LOOP,ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a NAVIER_STOKES type of a NAVIER_STOKES problem class with a while control loop."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        CASE DEFAULT
-          !do nothing
-        END SELECT
-      ELSE
-        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NAVIER_STOKES_CONTROL_LOOP_POST_LOOP")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_CONTROL_LOOP_POST_LOOP")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_CONTROL_LOOP_POST_LOOP
-
-  !
-  !================================================================================================================================
-  !
-
   !>Update area for boundary nodes.
   SUBROUTINE NavierStokes_Couple1D0D(controlLoop,err,error,*)
 
@@ -9239,33 +9233,23 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error
     !Local Variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
-    TYPE(EQUATIONS_TYPE), POINTER :: equations
     TYPE(FIELD_TYPE), POINTER :: dependentField,materialsField,independentField
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
     TYPE(SOLVER_TYPE), POINTER :: solver1D
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfLocalNodes1D,solver1dNavierStokesNumber
-    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,Fr,normalWave(2),pCellML,aBoundary
+    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,aCellML,aBoundary,areaCalculated,normalWave(2)
     LOGICAL :: boundaryNode
 
     CALL ENTERS("NavierStokes_Couple1D0D",ERR,ERROR,*999)
 
-    NULLIFY(solverEquations)
-    NULLIFY(solverMapping)
-    NULLIFY(equationsSet)
-    NULLIFY(equations)
-    NULLIFY(dependentField)
-    NULLIFY(independentField)
-    NULLIFY(materialsField)
-
-    pCellML=0.0_DP
-    aBoundary=0.0_DP
-
     !Get solvers based on the problem type
     SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-    CASE(Problem_Coupled1dDaeNavierStokesSubtype)     
+    CASE(Problem_Coupled1dDaeNavierStokesSubtype)    
       solver1dNavierStokesNumber=3
+      versionIdx=1
+      derivativeIdx=1
     CASE DEFAULT
       localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
         & " is not valid for 1D-0D Navier-Stokes fluid coupling."
@@ -9283,23 +9267,9 @@ CONTAINS
             IF(ASSOCIATED(solverMapping)) THEN
               equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
               IF(ASSOCIATED(equationsSet)) THEN
-                equations=>equationsSet%EQUATIONS
-                IF(ASSOCIATED(equations)) THEN
-                  materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
-                  IF(.NOT.ASSOCIATED(materialsField)) THEN
-                    CALL FLAG_ERROR("Materials field is not associated.",err,error,*999)
-                  END IF
-                ELSE
-                  CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
-                END IF
+                materialsField=>equationsSet%MATERIALS%MATERIALS_FIELD
                 dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
-                IF(.NOT.ASSOCIATED(dependentField)) THEN
-                  CALL FLAG_ERROR("Dependent field is not associated.",err,error,*999)
-                END IF
                 independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
-                IF(.NOT.ASSOCIATED(independentField)) THEN
-                  CALL FLAG_ERROR("Independent field is not associated.",err,error,*999)
-                END IF
               ELSE
                 CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
               END IF
@@ -9319,16 +9289,16 @@ CONTAINS
       CALL FLAG_ERROR("Control Loop is not associated.",err,error,*999)
     END IF
 
-    versionIdx=1
-    derivativeIdx=1
+    !Get the number of local nodes
     numberOfLocalNodes1D=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
       & TOPOLOGY%NODES%NUMBER_OF_NODES
 
     !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
     DO nodeIdx=1,numberOfLocalNodes1D
+
+      !Check for the boundary node
       boundaryNode=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
         & TOPOLOGY%NODES%NODES(nodeIdx)%BOUNDARY_NODE
-
       !Get node wave direction
       DO componentIdx=1,2
         CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
@@ -9341,15 +9311,13 @@ CONTAINS
         !Get material parameters
         CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & 4,As,err,error,*999)
-        CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & 6,Fr,err,error,*999)
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeIdx,1,A0_PARAM,err,error,*999)  
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeIdx,2,E_PARAM,err,error,*999)                
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeIdx,3,H0_PARAM,err,error,*999)                
-        Beta = (4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
+        Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
          
         !Get A at boundary node
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -9358,10 +9326,11 @@ CONTAINS
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)
 
-        !Update A at boundary node 
-        aBoundary=(((pCellML*133.32_DP)/Beta+SQRT(A0_PARAM))**2.0_DP)/As   !(p-pext=Beta(sqrt(a)-sqrt(a0)))
+        !Recalculate A at boundary node 
+        aCellML=(((pCellML*133.32_DP)/Beta+SQRT(A0_PARAM))**2.0_DP)/As
+        areaCalculated=(((aBoundary**0.25_DP)+(aCellML**0.25_DP))**4.0_DP)/16.0_DP
         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & versionIdx,derivativeIdx,nodeIdx,2,aBoundary,err,error,*999)
+          & versionIdx,derivativeIdx,nodeIdx,2,areaCalculated,err,error,*999)
 
       ENDIF !Find boundary nodes
     ENDDO !Loop over nodes 
@@ -9373,167 +9342,6 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE
-
-  !
-  !================================================================================================================================
-  !
-
-  !> Monitor convergence of the Coupling solution
-  SUBROUTINE NavierStokes_Couple1D0D_MonitorConvergence(controlLoop,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
-    TYPE(EQUATIONS_TYPE), POINTER :: equations
-    TYPE(FIELD_TYPE), POINTER :: dependentField,independentField
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
-    TYPE(SOLVER_TYPE), POINTER :: solver1D
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: solver1dNavierStokesNumber,numberOfLocalNodes1D,nodeIdx,derivativeIdx,versionIdx,componentIdx
-    REAL(DP) :: pCellML,pPrevious,qBoundary,qPrevious,pTest,qTest,normalWave(2),couplingTolerance
-    LOGICAL :: converged,boundaryNode
-
-    CALL ENTERS("NavierStokes_Couple1D0D_MonitorConvergence",ERR,ERROR,*999)
-
-    !Nullify pointers
-    NULLIFY(solverEquations)
-    NULLIFY(solverMapping)
-    NULLIFY(equationsSet)
-    NULLIFY(equations)
-    NULLIFY(dependentField)
-    NULLIFY(independentField)
-
-    versionIdx=1
-    derivativeIdx=1
-    pPrevious=0.0_DP
-    pCellML=0.0_DP
-    qBoundary=0.0_DP
-    qPrevious=0.0_DP
-    couplingTolerance=0.001_DP
-    converged=.TRUE.
-
-    IF(ASSOCIATED(controlLoop)) THEN
-      IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
-        SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-        !Get solvers based on the problem type
-        CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-          controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
-          solver1dNavierStokesNumber=2
-        CASE(Problem_Coupled1dDaeNavierStokesSubtype)
-          controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
-          solver1dNavierStokesNumber=3
-        CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
-            & " is not valid for 1D-0D Navier-Stokes fluid coupling."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-
-        solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
-
-        IF(ASSOCIATED(solver1D)) THEN
-          solverEquations=>solver1D%SOLVER_EQUATIONS
-          IF(ASSOCIATED(solverEquations)) THEN
-            solverMapping=>solverEquations%SOLVER_MAPPING
-            IF(ASSOCIATED(solverMapping)) THEN
-              equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
-              IF(ASSOCIATED(equationsSet)) THEN
-                dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
-                IF(.NOT.ASSOCIATED(dependentField)) THEN
-                  CALL FLAG_ERROR("Dependent field is not associated.",err,error,*999)
-                ENDIF
-                independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
-                IF(.NOT.ASSOCIATED(independentField)) THEN
-                  CALL FLAG_ERROR("Independent field is not associated.",err,error,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Problem is not associated.",err,error,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control Loop is not associated.",err,error,*999)
-    ENDIF
-
-    !Get local nodes number
-    numberOfLocalNodes1D=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-      & TOPOLOGY%NODES%NUMBER_OF_NODES
-
-    !Loop over local nodes
-    DO nodeIdx=1,numberOfLocalNodes1D
-      boundaryNode=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-        & TOPOLOGY%NODES%NODES(nodeIdx)%BOUNDARY_NODE
-      !Get node wave direction
-      DO componentIdx=1,2
-        CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-         & versionIdx,derivativeIdx,nodeIdx,componentIdx,normalWave(componentIdx),err,error,*999)
-      ENDDO
-
-      !!!-- B o u n d a r y   N o d e s --!!!
-      IF(ABS(normalWave(1))>ZERO_TOLERANCE) THEN
-        IF(boundaryNode) THEN
-          !Get Q at boundary node
-          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & versionIdx,derivativeIdx,nodeIdx,1,qBoundary,err,error,*999)
-          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-            & versionIdx,derivativeIdx,nodeIdx,1,qPrevious,err,error,*999)
-          !Get pCellML
-          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)
-          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-            & versionIdx,derivativeIdx,nodeIdx,1,pPrevious,err,error,*999)
-          !Check whether q & p values have converged
-          IF(ABS(pPrevious)>ZERO_TOLERANCE) THEN
-            pTest=ABS((pCellML-pPrevious)/pPrevious)
-          ELSE
-            pTest=ABS((pCellML-pPrevious)/couplingTolerance)
-          ENDIF
-          IF(ABS(qPrevious)>ZERO_TOLERANCE) THEN
-            qTest=ABS((qBoundary-qPrevious)/qPrevious)
-          ELSE
-            qTest=ABS((qBoundary-qPrevious)/couplingTolerance)
-          ENDIF
-          !Test parameters within tolerance
-          IF(pTest<couplingTolerance .AND. qTest<couplingTolerance) THEN
-            CYCLE !Coupled node converged, go to the next
-          ELSE
-            converged=.FALSE.
-            !Set current P & Q as previous values for next iteration
-            pPrevious=pCellML
-            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-              & versionIdx,derivativeIdx,nodeIdx,1,pPrevious,err,error,*999)
-            qPrevious=qBoundary
-            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-              & versionIdx,derivativeIdx,nodeIdx,1,qPrevious,err,error,*999)
-          ENDIF
-        ENDIF
-      ENDIF !Find boundary nodes
-    ENDDO !Loop over nodes 
-
-    IF(converged) THEN
-      controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
-      CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(solver1D,ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NavierStokes_Couple1D0D_MonitorConvergence")
-    RETURN
-999 CALL ERRORS("NavierStokes_Couple1D0D_MonitorConvergence",ERR,ERROR)
-    CALL EXITS("NavierStokes_Couple1D0D_MonitorConvergence")
-    RETURN 1
-  END SUBROUTINE NavierStokes_Couple1D0D_MonitorConvergence
 
   !
   !================================================================================================================================
