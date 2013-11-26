@@ -26126,6 +26126,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    INTEGER(INTG) :: numberOfComponents
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_XI_DP",ERR,ERROR,*999)
@@ -26145,11 +26146,13 @@ CONTAINS
                     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
                     CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER, &
                       & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                    IF(SIZE(VALUES)==FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,VARIABLE_TYPE,numberOfComponents,ERR,ERROR,*999)
+                    IF(SIZE(VALUES)==numberOfComponents) THEN
                       IF(SIZE(XI)==DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI) THEN
                         CALL FIELD_INTERPOLATE_XI(DERIVATIVE_NUMBER,XI(:),INTERPOLATED_POINT(VARIABLE_TYPE)%PTR, &
                           & ERR,ERROR,*999)
-                        VALUES(:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                        VALUES(1:numberOfComponents)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR% &
+                          & VALUES(1:numberOfComponents,DERIVATIVE_NUMBER)
                       ELSE
                         LOCAL_ERROR="The specified xi to interpolate the field at are invalid. "// &
                           & "The supplied size is "// &
@@ -26161,7 +26164,7 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="The number of the coordinate values to return the interpolated field to is invalid. "// &
                         & "The supplied size is "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES),"*",ERR,ERROR))//" and should be "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*", &
+                        & TRIM(NUMBER_TO_VSTRING(numberOfComponents,"*", &
                         & ERR,ERROR))//" for this field."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
@@ -26240,6 +26243,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    INTEGER(INTG) :: numberOfComponents
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_XI_DP",ERR,ERROR,*999)
@@ -26259,13 +26263,15 @@ CONTAINS
                     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
                     CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER, &
                       & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                    IF(SIZE(VALUES,1)==FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,VARIABLE_TYPE,numberOfComponents,ERR,ERROR,*999)
+                    IF(SIZE(VALUES,1)==numberOfComponents) THEN
                       IF(SIZE(XI,1)==DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%NUMBER_OF_XI) THEN
                         IF(SIZE(VALUES,2)==SIZE(XI,2)) THEN
                           DO xi_set=1,SIZE(XI,2)
                             CALL FIELD_INTERPOLATE_XI(DERIVATIVE_NUMBER,XI(:,xi_set),INTERPOLATED_POINT(VARIABLE_TYPE)%PTR, &
                               & ERR,ERROR,*999)
-                            VALUES(:,xi_set)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                            VALUES(1:numberOfComponents,xi_set)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR% &
+                              & VALUES(1:numberOfComponents,DERIVATIVE_NUMBER)
                           ENDDO
                         ELSE
                           LOCAL_ERROR="The number of xi sets in the field interpolated values output array is "// &
@@ -26283,8 +26289,7 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="The number of the coordinate values to return the interpolated field to is invalid. "// &
                         & "The supplied size is "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//" and should be "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*", &
-                        & ERR,ERROR))//" for this field."
+                        & TRIM(NUMBER_TO_VSTRING(numberOfComponents,"*",ERR,ERROR))//" for this field."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                     !Finalise the interpolated point and parameters
@@ -26363,6 +26368,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    INTEGER(INTG) :: numberOfComponents
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_GAUSS_DP",ERR,ERROR,*999)
@@ -26382,14 +26388,16 @@ CONTAINS
                     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
                     CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER, &
                       & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,VARIABLE_TYPE,numberOfComponents,ERR,ERROR,*999)
                     QUADRATURE_SCHEME=>DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%QUADRATURE% &
                       & QUADRATURE_SCHEME_MAP(SCHEME)%PTR
                     IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
-                      IF(SIZE(VALUES)==FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
+                      IF(SIZE(VALUES)==numberOfComponents) THEN
                         IF(GAUSS_POINT>0.AND.GAUSS_POINT<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
                           CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,GAUSS_POINT, &
                             & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                          VALUES(:)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                          VALUES(1:numberOfComponents)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR% &
+                            & VALUES(1:numberOfComponents,DERIVATIVE_NUMBER)
                         ELSE
                           LOCAL_ERROR="The specified Gauss point number of "// & 
                             & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT,"*",ERR,ERROR))//"is invalid for "// &
@@ -26400,8 +26408,7 @@ CONTAINS
                       ELSE
                         LOCAL_ERROR="The number of the coordinate values to return the interpolated field to is invalid. "// &
                           & "The supplied size is "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES),"*",ERR,ERROR))//" and should be "// &
-                          & TRIM(NUMBER_TO_VSTRING(FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*", &
-                          & ERR,ERROR))//" for this field."
+                          & TRIM(NUMBER_TO_VSTRING(numberOfComponents,"*",ERR,ERROR))//" for this field."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
@@ -26485,6 +26492,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    INTEGER(INTG) :: numberOfComponents
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_GAUSS_DP",ERR,ERROR,*999)
@@ -26504,16 +26512,18 @@ CONTAINS
                     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
                     CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER, &
                       & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,VARIABLE_TYPE,numberOfComponents,ERR,ERROR,*999)
                     QUADRATURE_SCHEME=>DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%QUADRATURE% &
                       & QUADRATURE_SCHEME_MAP(SCHEME)%PTR
                     IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
-                      IF(SIZE(VALUES,1)==FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
+                      IF(SIZE(VALUES,1)==numberOfComponents) THEN
                         IF(SIZE(GAUSS_POINTS)==0) THEN !Interpolate all Gauss points.
                           IF(SIZE(VALUES,2)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
                             DO Gauss_point=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
                               CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,Gauss_point, &
                                 & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                              VALUES(:,Gauss_point)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                              VALUES(1:numberOfComponents,Gauss_point)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR% &
+                                & VALUES(1:numberOfComponents,DERIVATIVE_NUMBER)
                             ENDDO
                           ELSE
                             LOCAL_ERROR="The number of Gauss points in the field interpolated values output array is "// & 
@@ -26547,8 +26557,7 @@ CONTAINS
                       ELSE
                         LOCAL_ERROR="The number of the coordinate values to return the interpolated field to is invalid. "// &
                           & "The supplied size is "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//" and should be "// &
-                          & TRIM(NUMBER_TO_VSTRING(FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*", &
-                          & ERR,ERROR))//" for this field."
+                          & TRIM(NUMBER_TO_VSTRING(numberOfComponents,"*",ERR,ERROR))//" for this field."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
