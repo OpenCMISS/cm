@@ -65,10 +65,7 @@ def Field_ParameterSetGetElement(self, *args):
 def Field_ParameterSetGetGaussPoint(self, *args):
     variableType = args[0]
     routines = {
-        FieldDataTypes.INTG: self.ParameterSetGetGaussPointIntg,
-        FieldDataTypes.SP: self.ParameterSetGetGaussPointSP,
         FieldDataTypes.DP: self.ParameterSetGetGaussPointDP,
-        FieldDataTypes.L: self.ParameterSetGetGaussPointL,
     }
     data_type = self.DataTypeGet(variableType)
     return routines[data_type](*args)
@@ -170,15 +167,6 @@ def Field_ParameterSetAddNode(self, *args):
     return routines[data_type](*args)
 
 
-def Field_ParameterSetGetGuassPoint(self, *args):
-    variableType = args[0]
-    routines = {
-        FieldDataTypes.DP: self.ParameterSetGetGaussPointDP,
-    }
-    data_type = self.DataTypeGet(variableType)
-    return routines[data_type](*args)
-
-
 def Field_ParameterSetInterpolateGauss(self, *args):
     variableType = args[0]
     routines = {
@@ -206,7 +194,6 @@ Field.ParameterSetAddConstant = Field_ParameterSetAddConstant
 Field.meterSetAddElement = Field_ParameterSetAddElement
 Field.ParameterSetAddNode = Field_ParameterSetAddNode
 
-Field.ParameterSetGetGuassPoint = Field_ParameterSetGetGuassPoint
 Field.ParameterSetInterpolateGauss = Field_ParameterSetInterpolateGauss
 
 
