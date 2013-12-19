@@ -47,6 +47,7 @@ MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
+  USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
@@ -60,6 +61,7 @@ MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
   USE MATRIX_VECTOR
+  USE MPI
   USE PROBLEM_CONSTANTS
   USE STRINGS
   USE SOLVER_ROUTINES
@@ -1452,9 +1454,10 @@ CONTAINS
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_FREQUENCY
+    INTEGER(INTG) :: myComputationalNodeNumber,nodeDomain,meshComponentNumber,MPI_IERROR
 
-    CHARACTER(21) :: FILE,FNAME
-    CHARACTER(21) :: OUTPUT_FILE
+    CHARACTER(27) :: FILE,FNAME
+    CHARACTER(27) :: OUTPUT_FILE
 
     CALL ENTERS("REACTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
@@ -1475,31 +1478,40 @@ CONTAINS
 
                     CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
                     OUTPUT_FREQUENCY=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+                    myComputationalNodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
                     IF(OUTPUT_FREQUENCY>0) THEN
                       IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_FREQUENCY)==0) THEN
                         IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
                           IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS.EQ.1) THEN
                             IF(CURRENT_LOOP_ITERATION<10) THEN
-                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_000",I0)') CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1.part",I0,".000",I0)') &
+                              & myComputationalNodeNumber, CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_00",I0)') CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1.part",I0,".00",I0)') &
+                              & myComputationalNodeNumber,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_0",I0)') CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1.part",I0,".0",I0)') & 
+                              & myComputationalNodeNumber,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1_",I0)') CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE,'("TIME_STEP_SPEC_1.part",I0,".",I0)') &
+                              & CURRENT_LOOP_ITERATION
                             END IF
                           ELSE
                             IF(CURRENT_LOOP_ITERATION<10) THEN
-                              WRITE(FNAME, '(A15,I0,A4)') "TIME_STEP_SPEC_",equations_set_idx,"_000"
+                              WRITE(FNAME, '(A15,I0,A5,I0,A4)') &
+                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_000"
                               WRITE(OUTPUT_FILE,'(A20,I0)') FNAME,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                              WRITE(FNAME, '(A15,I0,A3)') "TIME_STEP_SPEC_",equations_set_idx,"_00"
+                              WRITE(FNAME, '(A15,I0,A5,I0,A3)') &
+                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_00"
                               WRITE(OUTPUT_FILE,'(A19,I0)') FNAME,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                              WRITE(FNAME, '(A15,I0,A2)') "TIME_STEP_SPEC_",equations_set_idx,"_0"
+                              WRITE(FNAME, '(A15,I0,A5,I0,A4)') &
+                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_0"
                               WRITE(OUTPUT_FILE,'(A18,I0)') FNAME,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                              WRITE(FNAME, '(A15,I0,A1)') "TIME_STEP_SPEC_",equations_set_idx,"_"
+                              WRITE(FNAME, '(A15,I0,A5,I0,A4)') &
+                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_"
                               WRITE(OUTPUT_FILE,'(A17,I0)') FNAME,CURRENT_LOOP_ITERATION
                             END IF
                           ENDIF
@@ -1508,8 +1520,9 @@ CONTAINS
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                           CALL REACTION_DIFFUSION_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                             & ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                          CALL MPI_BARRIER(MPI_COMM_WORLD,MPI_IERROR)
+                          !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                          !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                         ENDIF
                       ENDIF 
                     ENDIF
