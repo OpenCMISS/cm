@@ -184,7 +184,6 @@ CONTAINS
       NODE_GLOBAL_NUMBER = COMPUTATIONAL_DOMAIN%TOPOLOGY%NODES%NODES(I)%GLOBAL_NUMBER
       NodeXValue = REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
         & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(I)
-      WRITE(*,*) NodeXValue
       IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
         NodeYValue = REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(I+NumberOfNodes)
