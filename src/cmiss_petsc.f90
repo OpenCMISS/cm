@@ -844,12 +844,39 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatZeroEntries
 
-#if ( PETSC_MAJOR_VERSION == 3 ) 
+#if ( PETSC_MAJOR_VERSION >= 3 ) 
     SUBROUTINE PCFactorSetMatSolverPackage(pc,solverpackage,ierr)
       PC pc
       MatSolverPackage solverpackage
       PetscInt ierr
     END SUBROUTINE PCFactorSetMatSolverPackage
+
+    SUBROUTINE PCFactorSetUpMatSolverPackage(pc,ierr)
+      PC pc
+      PetscInt ierr
+    END SUBROUTINE PCFactorSetUpMatSolverPackage
+
+    SUBROUTINE PCFactorGetMatrix(pc,A,ierr)
+      PC pc
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE PCFactorGetMatrix
+
+    SUBROUTINE MatMumpsSetIcntl(A,icntl,ival,ierr)
+      Mat A
+      PetscInt icntl
+      PetscInt ival
+      PetscInt ierr
+    END SUBROUTINE MatMumpsSetIcntl
+
+#if ( PETSC_VERSION_MINOR >= 4 )
+    SUBROUTINE MatMumpsSetCntl(A,icntl,val,ierr)
+      Mat A
+      PetscInt icntl
+      PetscReal val
+      PetscInt ierr
+    END SUBROUTINE MatMumpsSetCntl
+#endif
 #endif
     
     SUBROUTINE PCSetType(pc,method,ierr)
@@ -1576,6 +1603,12 @@ MODULE CMISS_PETSC
 
 #if ( PETSC_VERSION_MAJOR == 3 )
   PUBLIC PETSC_PCFACTORSETMATSOLVERPACKAGE
+  PUBLIC Petsc_PCFactorSetUpMatSolverPackage
+  PUBLIC Petsc_PCFactorGetMatrix
+  PUBLIC Petsc_MatMumpsSetIcntl
+#if ( PETSC_VERSION_MINOR >= 4 )
+  PUBLIC Petsc_MatMumpsSetCntl
+#endif
 #endif
   
   PUBLIC PETSC_TS_EULER,PETSC_TS_BEULER,PETSC_TS_PSEUDO,PETSC_TS_SUNDIALS,PETSC_TS_CRANK_NICHOLSON,PETSC_TS_RUNGE_KUTTA
@@ -4074,6 +4107,139 @@ CONTAINS
     CALL EXITS("PETSC_PCFACTORSETMATSOLVERPACKAGE")
     RETURN 1
   END SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR == 3 )
+  !>Buffer routine to the PETSc PCFactorSetUpMatSolverPackage routine.
+  SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage(PC_,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_PCFactorSetUpMatSolverPackage",err,error,*999)
+
+    CALL PCFactorSetUpMatSolverPackage(PC_%PC_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PCFactorSetUpMatSolverPackage",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+    RETURN
+999 CALL ERRORS("Petsc_PCFactorSetUpMatSolverPackage",err,error)
+    CALL EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+    RETURN 1
+  END SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR == 3 )
+  !>Buffer routine to the PETSc PCFactorGetMatrix routine.
+  SUBROUTINE Petsc_PCFactorGetMatrix(PC_,factoredMatrix,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
+    TYPE(PETSC_MAT_TYPE), INTENT(OUT) :: factoredMatrix !<The factored matrix to get from preconditioner context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_PCFactorGetMatrix",err,error,*999)
+
+    CALL PCFactorGetMatrix(PC_%PC_,factoredMatrix,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PCFactorGetMatrix",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_PCFactorGetMatrix")
+    RETURN
+999 CALL ERRORS("Petsc_PCFactorGetMatrix",err,error)
+    CALL EXITS("Petsc_PCFactorGetMatrix")
+    RETURN 1
+  END SUBROUTINE Petsc_PCFactorGetMatrix
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 )
+  !>Buffer routine to the PETSc MatMumpsSetIcntl routine.
+  SUBROUTINE Petsc_MatMumpsSetIcntl(factoredMatrix,icntl,ival,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS ICNTL integer control parameter
+    INTEGER(INTG), INTENT(IN) :: ival !<The MUMPS ICNTL integer value to set: ICNTL(icntl)=ival
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_MatMumpsSetIcntl",err,error,*999)
+
+    CALL MatMumpsSetIcntl(factoredMatrix,icntl,ival,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatMumpsSetIcntl",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_MatMumpsSetIcntl")
+    RETURN
+999 CALL ERRORS("Petsc_MatMumpsSetIcntl",err,error)
+    CALL EXITS("Petsc_MatMumpsSetIcntl")
+    RETURN 1
+  END SUBROUTINE Petsc_MatMumpsSetIcntl
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
+  !>Buffer routine to the PETSc MatMumpsSetCntl routine.
+  SUBROUTINE Petsc_MatMumpsSetCntl(factoredMatrix,icntl,val,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS CNTL integer control parameter
+    REAL(DP), INTENT(IN) :: val !<The MUMPS CNTL real value to set: CNTL(icntl)=val
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_MatMumpsSetCntl",err,error,*999)
+
+    CALL MatMumpsSetCntl(factoredMatrix,icntl,val,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatMumpsSetCntl",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_MatMumpsSetCntl")
+    RETURN
+999 CALL ERRORS("Petsc_MatMumpsSetCntl",err,error)
+    CALL EXITS("Petsc_MatMumpsSetCntl")
+    RETURN 1
+  END SUBROUTINE Petsc_MatMumpsSetCntl
 #endif
     
   !
