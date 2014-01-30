@@ -988,10 +988,10 @@ CONTAINS
 
     CALL ENTERS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX", ERR, ERROR, *999)
 
-    VERSION_NUMBER=ELEMENT%ELEMENT_DERIVATIVES(2, DERIVATIVE_NUMBER, NODE_NUMBER)
+    VERSION_NUMBER=ELEMENT%elementVersions(DERIVATIVE_NUMBER, NODE_NUMBER)
     NUMBER_OF_DERIVATIVES=ELEMENT%BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
     FIELD_IO_ELEMENT_DERIVATIVE_INDEX=(VERSION_NUMBER-1)*NUMBER_OF_DERIVATIVES + &
-      & ELEMENT%ELEMENT_DERIVATIVES(1, DERIVATIVE_NUMBER, NODE_NUMBER)
+      & ELEMENT%ELEMENT_DERIVATIVES(DERIVATIVE_NUMBER, NODE_NUMBER)
 
     CALL EXITS("FIELD_IO_ELEMENT_DERIVATIVE_INDEX")
     RETURN
@@ -2464,7 +2464,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ni, na
+    INTEGER(INTG) :: ni
 
     CALL ENTERS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
 
@@ -2560,9 +2560,8 @@ CONTAINS
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
-    INTEGER(INTG), DIMENSION(4,4,4,1) :: NODE_POSITION_INDEX
     INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
-    INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES,dim !NUM_OF_NODES
+    INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SAME_SCALING_SET
@@ -3258,8 +3257,8 @@ CONTAINS
           DO nodeIndex = 1, basis%NUMBER_OF_NODES
             nodeNumber = domainElements%ELEMENTS( localNumber )%ELEMENT_NODES( nodeIndex )
             DO derivativeIndex = 1, basis%NUMBER_OF_DERIVATIVES( nodeIndex )
-              nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(1, derivativeIndex, nodeIndex )
-              nv = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(2, derivativeIndex, nodeIndex )
+              nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(derivativeIndex, nodeIndex )
+              nv = domainElements%ELEMENTS( localNumber )%elementVersions(derivativeIndex, nodeIndex )
               ny2 = domainNodes%NODES( nodeNumber )%DERIVATIVES(nk)%DOF_INDEX(nv)
               scaleFactorCount = scaleFactorCount + 1
               IF( component%FIELD_VARIABLE%FIELD%SCALINGS%SCALING_TYPE /= FIELD_NO_SCALING ) THEN
@@ -3462,7 +3461,8 @@ CONTAINS
                 & component%FIELD_VARIABLE%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
             ALLOCATE(GEOMETRIC_PARAMETERS_DP(SIZE(GEOMETRIC_PARAMETERS_INTG)))
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
-            GEOMETRIC_PARAMETERS_DP=REAL(GEOMETRIC_PARAMETERS_INTG)
+            GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
+              & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
             ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
                 & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
@@ -3483,7 +3483,8 @@ CONTAINS
               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
             ALLOCATE(GEOMETRIC_PARAMETERS_DP(SIZE(GEOMETRIC_PARAMETERS_INTG)))
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
-            GEOMETRIC_PARAMETERS_DP=REAL(GEOMETRIC_PARAMETERS_INTG)
+            GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
+              & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
             ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
               & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
@@ -3734,8 +3735,8 @@ CONTAINS
               !Check that the elements use the same versions of all derivatives for all element nodes
               DO node_idx=1,DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%NUMBER_OF_NODES
                 DO deriv_idx=1,DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                  IF (DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%ELEMENT_DERIVATIVES(2,deriv_idx,node_idx)/= &
-                      & DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%ELEMENT_DERIVATIVES(2,deriv_idx,node_idx)) THEN
+                  IF (DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%elementVersions(deriv_idx,node_idx)/= &
+                      & DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%elementVersions(deriv_idx,node_idx)) THEN
                     SAME_ELEMENT_INFO=.FALSE.
                     EXIT
                   END IF
@@ -3978,7 +3979,7 @@ CONTAINS
               & "Could not allocate component buffer in IO", ERR, ERROR, *999 )
             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS( &
               & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1 &
-              & )%PTR=>FIELD_VARIABLE%COMPONENTS(component_idx)
+              & )%PTR=>FIELD%VARIABLES(var_idx)%COMPONENTS(component_idx)
             !increase number of component
             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS=&
               & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1
@@ -4443,6 +4444,8 @@ CONTAINS
         FIELD_IO_GET_FIELD_INFO_LABEL="field general type"
       CASE(FIELD_MATERIAL_TYPE)
         FIELD_IO_GET_FIELD_INFO_LABEL="field material type"
+       CASE(FIELD_GEOMETRIC_GENERAL_TYPE)
+        FIELD_IO_GET_FIELD_INFO_LABEL="field geometric general type"
       CASE DEFAULT
         FIELD_IO_GET_FIELD_INFO_LABEL="unknown field type"
     END SELECT
@@ -4551,6 +4554,22 @@ CONTAINS
         FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_material,  field,  second time derivative of variable"
       CASE DEFAULT
         FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE(FIELD_GEOMETRIC_GENERAL_TYPE)
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+!kmith - 17.10.08: Fixing general field label
+        !FIELD_IO_GET_VARIABLE_INFO_LABEL="general_variabe,  field,  string"
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="geometric general,  field,  rectangular cartesian"
+!kmith - 17.10.08:
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_dev_variable,  field,  string"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_variable,  field,  first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_variable,  field,  second time derivative of variable"
+      CASE DEFAULT
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  real"
       END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
     CASE DEFAULT
       SELECT CASE(VARIABLE%VARIABLE_TYPE)
@@ -5838,13 +5857,13 @@ CONTAINS
                 MAX_NUMBER_VERSIONS = 1
                 DO deriv_idx=1,DOMAIN_NODES%NODES( np )%NUMBER_OF_DERIVATIVES
                   MAX_NUMBER_VERSIONS = MAX(MAX_NUMBER_VERSIONS, &
-                    & DOMAIN_NODES%NODES(np)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS)
+                    & DOMAIN_NODES%NODES(np)%DERIVATIVES(deriv_idx)%numberOfVersions)
                 END DO
                 !allocate variable component memory
                 CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, 1, &
                   & "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR &
-                  & %NUMBER_OF_COMPONENTS+1)%PTR=>FIELD_VARIABLE%COMPONENTS( component_idx )
+                  & %NUMBER_OF_COMPONENTS+1)%PTR=>FIELD%VARIABLES( var_idx )%COMPONENTS( component_idx )
                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS = &
                   & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1
                 CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENT_VERSIONS, 1, &

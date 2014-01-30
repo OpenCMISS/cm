@@ -117,6 +117,14 @@ MODULE MESH_ROUTINES
   
   PUBLIC DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS,DecompositionTopology_DataPointCheckExists
   
+  PUBLIC DecompositionTopology_DataProjectionCalculate
+
+  PUBLIC DecompositionTopology_ElementDataPointLocalNumberGet
+
+  PUBLIC DecompositionTopology_ElementDataPointUserNumberGet
+
+  PUBLIC DecompositionTopology_NumberOfElementDataPointsGet
+  
   PUBLIC DECOMPOSITION_TYPE_GET,DECOMPOSITION_TYPE_SET
   
   PUBLIC DECOMPOSITION_USER_NUMBER_FIND, DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION
@@ -143,6 +151,8 @@ MODULE MESH_ROUTINES
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET
 
+  PUBLIC MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET
+
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET
@@ -150,15 +160,15 @@ MODULE MESH_ROUTINES
   PUBLIC MESH_TOPOLOGY_ELEMENTS_GET
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET
-  
+
   PUBLIC Mesh_TopologyDataPointsCalculateProjection
 
   PUBLIC MESH_USER_NUMBER_FIND, MESH_USER_NUMBER_TO_MESH
-  
+
   PUBLIC MESH_SURROUNDING_ELEMENTS_CALCULATE_SET
 
   PUBLIC MESH_EMBEDDING_CREATE,MESH_EMBEDDING_SET_CHILD_NODE_POSITION
- 
+
   PUBLIC MESH_EMBEDDING_SET_GAUSS_POINT_DATA
 
   PUBLIC MESHES_INITIALISE,MESHES_FINALISE
@@ -308,6 +318,7 @@ CONTAINS
                 & " has already been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ELSE
+              !\todo Split this into an initialise and create start.
               ALLOCATE(NEW_DECOMPOSITION,STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition.",ERR,ERROR,*999)
               !Set default decomposition properties
@@ -330,6 +341,7 @@ CONTAINS
               NULLIFY(NEW_DECOMPOSITION%DOMAIN)
               !Nullify the topology
               NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
+              !\todo change this to use move alloc.
               !Add new decomposition into list of decompositions on the mesh
               ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions.",ERR,ERROR,*999)
@@ -539,7 +551,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: number_elem_indicies,elem_index,elem_count,ne,nn,my_computational_node_number,number_computational_nodes, &
       & no_computational_node,ELEMENT_START,ELEMENT_STOP,MY_ELEMENT_START,MY_ELEMENT_STOP,NUMBER_OF_ELEMENTS, &
-      & MY_NUMBER_OF_ELEMENTS,MPI_IERROR,MAX_NUMBER_ELEMENTS_PER_NODE,component_idx
+      & MY_NUMBER_OF_ELEMENTS,MPI_IERROR,MAX_NUMBER_ELEMENTS_PER_NODE,component_idx,minNumberXi
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_COUNT(:),ELEMENT_PTR(:),ELEMENT_INDICIES(:),ELEMENT_DISTANCE(:),DISPLACEMENTS(:), &
       & RECEIVE_COUNTS(:)
     INTEGER(INTG) :: ELEMENT_WEIGHT(1),WEIGHT_FLAG,NUMBER_FLAG,NUMBER_OF_CONSTRAINTS, &
@@ -628,9 +640,11 @@ CONTAINS
               elem_index=0
               elem_count=0
               ELEMENT_PTR(0)=0
+              minNumberXi=99999
               DO ne=MY_ELEMENT_START,MY_ELEMENT_STOP
                 elem_count=elem_count+1
                 BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
+                IF(BASIS%NUMBER_OF_XI<minNumberXi) minNumberXi=BASIS%NUMBER_OF_XI
                 DO nn=1,BASIS%NUMBER_OF_NODES
                   ELEMENT_INDICIES(elem_index)=MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)% &
                     & MESH_ELEMENT_NODES(nn)-1 !C numbering
@@ -644,7 +658,11 @@ CONTAINS
               ELEMENT_WEIGHT(1)=1 !Isn't used due to weight flag
               NUMBER_FLAG=0 !C Numbering as there is a bug with Fortran numbering
               NUMBER_OF_CONSTRAINTS=1
-              NUMBER_OF_COMMON_NODES=2
+              IF(minNumberXi==1) THEN
+                NUMBER_OF_COMMON_NODES=1
+              ELSE
+                NUMBER_OF_COMMON_NODES=2
+              ENDIF
               !ParMETIS now has doule precision for these
               !TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
               !UBVEC=1.05_SP
@@ -1236,6 +1254,200 @@ CONTAINS
     CALL EXITS("DecompositionTopology_DataPointsCalculate")
     RETURN 1
   END SUBROUTINE DecompositionTopology_DataPointsCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the decomposition element topology for a data projection (for data projections on fields).
+  SUBROUTINE DecompositionTopology_DataProjectionCalculate(decompositionTopology,err,error,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology !<A pointer to the decomposition topology to calculate the elements for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("DecompositionTopology_DataProjectionCalculate",err,error,*999)
+
+    IF(ASSOCIATED(decompositionTopology)) THEN
+      CALL DECOMPOSITION_TOPOLOGY_DATA_POINTS_INITIALISE(decompositionTopology,err,error,*999)
+      CALL DecompositionTopology_DataPointsCalculate(decompositionTopology,err,error,*999)
+    ELSE
+      CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DecompositionTopology_DataProjectionCalculate")
+    RETURN
+999 CALL ERRORS("DecompositionTopology_DataProjectionCalculate",err,error)
+    CALL EXITS("DecompositionTopology_DataProjectionCalculate")
+    RETURN 1
+  END SUBROUTINE DecompositionTopology_DataProjectionCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the local data point number for data points projected on an element
+  SUBROUTINE DecompositionTopology_ElementDataPointLocalNumberGet(decompositionTopology,elementNumber,dataPointIndex, &
+       & dataPointLocalNumber,err,error,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology !<A pointer to the decomposition topology to calculate the elements for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
+    INTEGER(INTG), INTENT(OUT) :: dataPointLocalNumber !<The data point local number to return
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
+    INTEGER(INTG) :: numberOfDataPoints
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("DecompositionTopology_ElementDataPointLocalNumberGet",err,error,*999)
+
+    IF(ASSOCIATED(decompositionTopology)) THEN
+      decompositionData=>decompositionTopology%dataPoints
+      IF(ASSOCIATED(decompositionData)) THEN
+        numberOfDataPoints = decompositionData%elementDataPoint(elementNumber)%numberOfProjectedData
+        IF(dataPointIndex > 0 .AND. dataPointIndex <= numberOfDataPoints) THEN
+          dataPointLocalNumber = decompositionData%elementDataPoint(elementNumber)%dataIndices(dataPointIndex)%localNumber
+        ELSE
+          localError="Element data point index "//TRIM(NUMBER_TO_VSTRING(dataPointIndex,"*",ERR,ERROR))// &
+           & " out of range for element "//TRIM(NUMBER_TO_VSTRING(elementNumber,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Decomposition topology data points are not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DecompositionTopology_ElementDataPointLocalNumberGet")
+    RETURN
+999 CALL ERRORS("DecompositionTopology_ElementDataPointLocalNumberGet",err,error)
+    CALL EXITS("DecompositionTopology_ElementDataPointLocalNumberGet")
+    RETURN 1
+  END SUBROUTINE DecompositionTopology_ElementDataPointLocalNumberGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the user (global) data point number for data points projected on an element
+  SUBROUTINE DecompositionTopology_ElementDataPointUserNumberGet(decompositionTopology,userElementNumber,dataPointIndex, &
+       & dataPointUserNumber,err,error,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology !<A pointer to the decomposition topology to calculate the elements for
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
+    INTEGER(INTG), INTENT(OUT) :: dataPointUserNumber !<The data point user number to return
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
+    INTEGER(INTG) :: numberOfDataPoints,decompositionLocalElementNumber
+    LOGICAL :: ghostElement,userElementExists
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("DecompositionTopology_ElementDataPointUserNumberGet",err,error,*999)
+
+    IF(ASSOCIATED(decompositionTopology)) THEN
+      decompositionData=>decompositionTopology%dataPoints
+      IF(ASSOCIATED(decompositionData)) THEN
+        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+          & userElementExists,decompositionLocalElementNumber,ghostElement,err,error,*999)
+        IF(userElementExists) THEN
+          IF(ghostElement) THEN
+            localError="Cannot update by data point for user element "// &
+              & TRIM(NUMBER_TO_VSTRING(userElementNumber,"*",err,error))//" as it is a ghost element."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ELSE
+            numberOfDataPoints = decompositionData%elementDataPoint(decompositionLocalElementNumber)%numberOfProjectedData
+            IF(dataPointIndex > 0 .AND. dataPointIndex <= numberOfDataPoints) THEN
+              dataPointUserNumber = decompositionData%elementDataPoint(decompositionLocalElementNumber)% &
+                & dataIndices(dataPointIndex)%userNumber
+            ELSE
+              localError="Element data point index "//TRIM(NUMBER_TO_VSTRING(dataPointIndex,"*",ERR,ERROR))// &
+               & " out of range for element "//TRIM(NUMBER_TO_VSTRING(userElementNumber,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          localError="The specified user element number of "// &
+            & TRIM(NUMBER_TO_VSTRING(userElementNumber,"*",err,error))// &
+            & " does not exist."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Decomposition topology data points are not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DecompositionTopology_ElementDataPointUserNumberGet")
+    RETURN
+999 CALL ERRORS("DecompositionTopology_ElementDataPointUserNumberGet",err,error)
+    CALL EXITS("DecompositionTopology_ElementDataPointUserNumberGet")
+    RETURN 1
+  END SUBROUTINE DecompositionTopology_ElementDataPointUserNumberGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of data points projected on an element
+  SUBROUTINE DecompositionTopology_NumberOfElementDataPointsGet(decompositionTopology,userElementNumber, &
+       & numberOfDataPoints,err,error,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology !<A pointer to the decomposition topology to calculate the elements for
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(OUT) :: numberOfDataPoints !<The data point local number to return
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(DecompositionDataPointsType), POINTER :: decompositionData
+    INTEGER(INTG) :: decompositionLocalElementNumber
+    LOGICAL :: ghostElement,userElementExists
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("DecompositionTopology_NumberOfElementDataPointsGet",err,error,*999)
+
+    IF(ASSOCIATED(decompositionTopology)) THEN
+      decompositionData=>decompositionTopology%dataPoints
+      IF(ASSOCIATED(decompositionData)) THEN
+        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+          & userElementExists,decompositionLocalElementNumber,ghostElement,err,error,*999)
+        IF(userElementExists) THEN
+          IF(ghostElement) THEN
+            localError="Cannot update by data point for user element "// &
+              & TRIM(NUMBER_TO_VSTRING(userElementNumber,"*",err,error))//" as it is a ghost element."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ELSE
+            numberOfDataPoints = decompositionData%elementDataPoint(decompositionLocalElementNumber)%numberOfProjectedData
+          ENDIF
+        ELSE
+          localError="The specified user element number of "// &
+            & TRIM(NUMBER_TO_VSTRING(userElementNumber,"*",err,error))// &
+            & " does not exist."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Decomposition topology data points are not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition topology is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("DecompositionTopology_NumberOfElementDataPointsGet")
+    RETURN
+999 CALL ERRORS("DecompositionTopology_NumberOfElementDataPointsGet",err,error)
+    CALL EXITS("DecompositionTopology_NumberOfElementDataPointsGet")
+    RETURN 1
+  END SUBROUTINE DecompositionTopology_NumberOfElementDataPointsGet
   
   !
   !================================================================================================================================
@@ -2266,23 +2478,23 @@ CONTAINS
                             ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(2,DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                               & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line derivatives in line.",ERR,ERROR,*999)
-                            DOMAIN_LINE%NODES_IN_LINE=TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx), &
-                              & LINE_NUMBER)
+                            DOMAIN_LINE%NODES_IN_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx))= &
+                              & TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx),LINE_NUMBER)
                             DO basis_local_line_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)
                               !Set derivative number of u (NO_GLOBAL_DERIV) for the domain line
                               DOMAIN_LINE%DERIVATIVES_IN_LINE(1,1,basis_local_line_node_idx)=NO_GLOBAL_DERIV
                               !Set version number of u (NO_GLOBAL_DERIV) for the domain line
-                              version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                              version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                & basis_local_line_node_idx,basis_local_line_idx))
                               DOMAIN_LINE%DERIVATIVES_IN_LINE(2,1,basis_local_line_node_idx)=version_idx
                               IF(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
                                 derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                  & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
+                                  & BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
                                   & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
                                 DOMAIN_LINE%DERIVATIVES_IN_LINE(1,2,basis_local_line_node_idx)=derivative_idx
-                                version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                  & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
-                                  & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE( &
+                                  & basis_local_line_node_idx,basis_local_line_idx),BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                  & basis_local_line_node_idx,basis_local_line_idx))
                                 DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
                               ENDIF
                             ENDDO !basis_local_line_node_idx
@@ -2434,17 +2646,16 @@ CONTAINS
                                   !Set derivative number of u (NO_GLOBAL_DERIV) for the domain line
                                   DOMAIN_LINE%DERIVATIVES_IN_LINE(1,1,basis_local_line_node_idx)=NO_GLOBAL_DERIV
                                   !Set version number of u (NO_GLOBAL_DERIV) for the domain line
-                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                  version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                    & basis_local_line_node_idx,basis_local_line_idx))
                                   DOMAIN_LINE%DERIVATIVES_IN_LINE(2,1,basis_local_line_node_idx)=version_idx
                                   IF(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
-                                      & element_local_node_idx)
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE( &
+                                      & basis_local_line_node_idx,basis_local_line_idx),element_local_node_idx)
                                     DOMAIN_LINE%DERIVATIVES_IN_LINE(1,2,basis_local_line_node_idx)=derivative_idx
-                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
-                                      & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                    version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE( &
+                                      & basis_local_line_node_idx,basis_local_line_idx),BASIS%NODE_NUMBERS_IN_LOCAL_LINE( &
+                                      & basis_local_line_node_idx,basis_local_line_idx))
                                     DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
                                   ENDIF
                                   NODES_NUMBER_OF_LINES(node_idx)=NODES_NUMBER_OF_LINES(node_idx)+1
@@ -2924,8 +3135,8 @@ CONTAINS
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face derivatives in face",ERR,ERROR,*999)
                               DOMAIN_FACE%DERIVATIVES_IN_FACE=0
                               !Set nodes in face based upon face number
-                              DOMAIN_FACE%NODES_IN_FACE=TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx), &
-                                & FACE_NUMBER)
+                              DOMAIN_FACE%NODES_IN_FACE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx))= &
+                                & TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx),FACE_NUMBER)
                               !Set derivatives of nodes in domain face from derivatives of nodes in element
                               DO basis_local_face_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)
                                 element_local_node_idx=BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx, &
@@ -2933,19 +3144,19 @@ CONTAINS
                                 !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
                                 DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
                                 !Set version number of u (NO_GLOBAL_DERIV) for the domain face
-                                version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                  & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_FACE( &
+                                  & basis_local_face_node_idx,basis_local_face_idx))
                                 DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                 IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
                                   DO basis_local_face_derivative_idx=2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
-                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                      & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                      & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                      & element_local_node_idx)
                                     DOMAIN_FACE%DERIVATIVES_IN_FACE(1,basis_local_face_derivative_idx, &
                                       & basis_local_face_node_idx)=derivative_idx
-                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                      & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                    version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                      & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                      & element_local_node_idx)
                                     DOMAIN_FACE%DERIVATIVES_IN_FACE(2,basis_local_face_derivative_idx, &
                                       & basis_local_face_node_idx)=version_idx
                                   ENDDO !basis_local_face_derivative_idx
@@ -3106,19 +3317,19 @@ CONTAINS
                                   !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
                                   DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
                                   !Set version number of u (NO_GLOBAL_DERIV) for the domain face
-                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                  version_idx=DOMAIN_ELEMENT%elementVersions(1,BASIS%NODE_NUMBERS_IN_LOCAL_FACE( &
+                                    & basis_local_face_node_idx,basis_local_face_idx))
                                   DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                   IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
                                     DO basis_local_face_derivative_idx=2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES
-                                      derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                        & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                        & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                      derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                        & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                        & element_local_node_idx)
                                       DOMAIN_FACE%DERIVATIVES_IN_FACE(1,basis_local_face_derivative_idx, &
                                         & basis_local_face_node_idx)=derivative_idx
-                                      version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
-                                        & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_derivative_idx, &
-                                        & basis_local_face_node_idx,basis_local_face_idx),element_local_node_idx)
+                                      version_idx=DOMAIN_ELEMENT%elementVersions(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
+                                        & basis_local_face_derivative_idx,basis_local_face_node_idx,basis_local_face_idx), &
+                                        & element_local_node_idx)
                                       DOMAIN_FACE%DERIVATIVES_IN_FACE(2,basis_local_face_derivative_idx, &
                                         & basis_local_face_node_idx)=version_idx
                                     ENDDO !basis_local_face_derivative_idx
@@ -4777,12 +4988,19 @@ CONTAINS
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX
                   DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX= &
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
-                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS= & 
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%numberOfVersions= & 
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                  ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%userVersionNumbers( &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node derivative version numbers.",ERR,ERROR,*999)
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%userVersionNumbers(1: &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS)= &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(1: &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS)
                   ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%DOF_INDEX( &
                     & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node dervative versions dof index.",ERR,ERROR,*999)
-                  DO version_idx=1,DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                  DO version_idx=1,DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%numberOfVersions
                     dof_idx=dof_idx+1
                     DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)=dof_idx
                     DOMAIN_DOFS%DOF_INDEX(1,dof_idx)=version_idx
@@ -4797,12 +5015,16 @@ CONTAINS
                 CALL DOMAIN_TOPOLOGY_ELEMENT_INITIALISE(DOMAIN_ELEMENTS%ELEMENTS(local_element),ERR,ERROR,*999)
                 global_element=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(local_element)               
                 BASIS=>MESH_ELEMENTS%ELEMENTS(global_element)%BASIS
+                DOMAIN_ELEMENTS%ELEMENTS(local_element)%NUMBER=local_element
                 DOMAIN_ELEMENTS%ELEMENTS(local_element)%BASIS=>BASIS
                 ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element nodes",ERR,ERROR,*999)
-                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element nodes.",ERR,ERROR,*999)
+                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                   & BASIS%NUMBER_OF_NODES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element derivatives",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element derivatives.",ERR,ERROR,*999)
+                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%elementVersions(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                  & BASIS%NUMBER_OF_NODES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element versions.",ERR,ERROR,*999)
                 DO nn=1,BASIS%NUMBER_OF_NODES
                   global_node=MESH_ELEMENTS%ELEMENTS(global_element)%MESH_ELEMENT_NODES(nn)
                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(global_node)%LOCAL_NUMBER(1)
@@ -4819,8 +5041,8 @@ CONTAINS
                       ENDIF
                     ENDDO !nkk
                     IF(FOUND) THEN
-                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(1,derivative_idx,nn)=nkk
-                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,derivative_idx,nn) = & 
+                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(derivative_idx,nn)=nkk
+                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%elementVersions(derivative_idx,nn) = & 
                         & MESH_ELEMENTS%ELEMENTS(global_element)%USER_ELEMENT_NODE_VERSIONS(derivative_idx,nn)
                     ELSE
                       CALL FLAG_ERROR("Could not find equivalent node derivative",ERR,ERROR,*999)
@@ -4867,7 +5089,7 @@ CONTAINS
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Partial derivative index = ", &
             & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
-            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,4,4, &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%numberOfVersions,4,4, &
             & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX, &
             & '("        Degree-of-freedom index(version_idx)  :",4(X,I9))','(36X,4(X,I9))',ERR,ERROR,*999)
         ENDDO !derivative_idx
@@ -4893,19 +5115,14 @@ CONTAINS
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES,8,8, &
           & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES,'("    Element nodes(nn) :",8(X,I9))','(23X,8(X,I9))', &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Element derivatives :",ERR,ERROR,*999)
         DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number : ",nn,ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
-            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,:,nn), &
-            & '("        Element derivatives(derivative_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
-        ENDDO !nn
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Element versions :",ERR,ERROR,*999)
-        DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
+            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(:,nn), &
+            & '("        Element derivatives :",8(X,I2))','(29X,8(X,I2))',ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
-            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,:,nn), &
-            & '("        Element derivatives(version_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
+            & DOMAIN_ELEMENTS%ELEMENTS(ne)%elementVersions(:,nn), &
+            & '("        Element versions    :",8(X,I2))','(29X,8(X,I2))',ERR,ERROR,*999)
         ENDDO !nn
       ENDDO !ne
     ENDIF
@@ -5003,6 +5220,7 @@ CONTAINS
 
     IF(ALLOCATED(ELEMENT%ELEMENT_NODES)) DEALLOCATE(ELEMENT%ELEMENT_NODES)
     IF(ALLOCATED(ELEMENT%ELEMENT_DERIVATIVES)) DEALLOCATE(ELEMENT%ELEMENT_DERIVATIVES)
+    IF(ALLOCATED(ELEMENT%elementVersions)) DEALLOCATE(ELEMENT%elementVersions)
  
     CALL EXITS("DOMAIN_TOPOLOGY_ELEMENT_FINALISE")
     RETURN
@@ -5512,8 +5730,7 @@ CONTAINS
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE",ERR,ERROR,*999)
 
-    IF(ALLOCATED(NODE_DERIVATIVE%USER_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%USER_VERSION_NUMBERS)
-    IF(ALLOCATED(NODE_DERIVATIVE%LOCAL_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%LOCAL_VERSION_NUMBERS)
+    IF(ALLOCATED(NODE_DERIVATIVE%userVersionNumbers)) DEALLOCATE(NODE_DERIVATIVE%userVersionNumbers)
     IF(ALLOCATED(NODE_DERIVATIVE%DOF_INDEX)) DEALLOCATE(NODE_DERIVATIVE%DOF_INDEX)
 
     CALL EXITS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE")
@@ -5538,7 +5755,7 @@ CONTAINS
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE",ERR,ERROR,*999)
 
-    NODE_DERIVATIVE%NUMBER_OF_VERSIONS=0
+    NODE_DERIVATIVE%numberOfVersions=0
     NODE_DERIVATIVE%GLOBAL_DERIVATIVE_INDEX=0
     NODE_DERIVATIVE%PARTIAL_DERIVATIVE_INDEX=0
 
@@ -7079,7 +7296,7 @@ CONTAINS
  
     CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_GET",ERR,ERROR,*998)
     
-    IF(ASSOCIATED(MESH)) THEN     
+    IF(ASSOCIATED(MESH)) THEN
       IF(MESH_COMPONENT_NUMBER>0.AND.MESH_COMPONENT_NUMBER<=MESH%NUMBER_OF_COMPONENTS) THEN
         IF(ASSOCIATED(ELEMENTS)) THEN
           CALL FLAG_ERROR("Elements is already associated.",ERR,ERROR,*998)
@@ -7269,8 +7486,63 @@ CONTAINS
   !================================================================================================================================
   !
 
-!!MERGE: user number. Dont use a pointer or allocate.
-  
+  !>Returns the adjacent element number for a mesh element identified by a global number. \todo specify by user number not global number \see OPENCMISS::CMISSMeshElementsNo
+  SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET(GLOBAL_NUMBER,ELEMENTS,ADJACENT_ELEMENT_XI,ADJACENT_ELEMENT_NUMBER, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to get the adjacent element for
+    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS !<A pointer to the elements of a mesh component from which to get the adjacent element from.
+    INTEGER(INTG), INTENT(IN) :: ADJACENT_ELEMENT_XI !< The xi coordinate direction to get the adjacent element Note that -xiCoordinateDirection gives the adjacent element before the element in the xiCoordinateDirection'th direction and +xiCoordinateDirection gives the adjacent element after the element in the xiCoordinateDirection'th direction. The xiCoordinateDirection=0 index will give the information on the current element.
+    INTEGER(INTG), INTENT(OUT) :: ADJACENT_ELEMENT_NUMBER !<On return, the adjacent element number in the specified xi coordinate direction. Return 0 if the specified element has no adjacent elements in the specified xi coordinate direction.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ELEMENTS)) THEN
+      IF(.NOT.ELEMENTS%ELEMENTS_FINISHED) THEN
+        CALL FLAG_ERROR("Elements have not been finished",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+          IF(ADJACENT_ELEMENT_XI>=-ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_XI .AND. &
+            & ADJACENT_ELEMENT_XI<=ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_XI) THEN
+            IF(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%ADJACENT_ELEMENTS(ADJACENT_ELEMENT_XI)%NUMBER_OF_ADJACENT_ELEMENTS > 0) THEN !\todo Currently returns only the first adjacent element for now as the python binding require the output array size of the adjacent element to be known a-prior. Add routine to first output number of adjacent elements and then loop over all adjacent elements
+              ADJACENT_ELEMENT_NUMBER=ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%ADJACENT_ELEMENTS(ADJACENT_ELEMENT_XI)%ADJACENT_ELEMENTS(1)
+            ELSE !Return 0 indicating the specified element has no adjacent elements in the specified xi coordinate direction.
+              ADJACENT_ELEMENT_NUMBER=0
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified adjacent element xi is invalid. The supplied xi is "// &
+            & TRIM(NUMBER_TO_VSTRING(ADJACENT_ELEMENT_XI,"*",ERR,ERROR))//" and needs to be >=-"// &
+            & TRIM(NUMBER_TO_VSTRING(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" and <="// &
+            & TRIM(NUMBER_TO_VSTRING(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Elements is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET",ERR,ERROR)
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET")
+    RETURN 1
+
+  END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Gets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number \see OPENCMISS::CMISSMeshElementsNodesGet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(GLOBAL_NUMBER,ELEMENTS,USER_ELEMENT_NODES,ERR,ERROR,*)
 
@@ -7993,7 +8265,7 @@ CONTAINS
     
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET")
     RETURN
-999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET",ERR,ERROR)    
+999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET",ERR,ERROR)
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET")
     RETURN 1
 
@@ -8075,8 +8347,10 @@ CONTAINS
     TYPE(MeshDataPointsType), POINTER :: dataPointsTopology
     TYPE(DATA_PROJECTION_RESULT_TYPE), POINTER :: dataProjectionResult
     TYPE(MeshComponentElementsType), POINTER :: elements
-    INTEGER(INTG) :: dataPointIdx,elementIdx,countIdx,projectionNumber,globalCountIdx,elementNumber,meshComponentNumber
-       
+    INTEGER(INTG) :: dataPointIdx,elementIdx,countIdx,projectionNumber,globalCountIdx,elementNumber
+
+    CALL ENTERS("Mesh_TopologyDataPointsCalculateProjection",ERR,ERROR,*999)
+
     IF(ASSOCIATED(mesh)) THEN
       IF(dataProjection%DATA_PROJECTION_FINISHED) THEN 
         dataPoints=>dataProjection%DATA_POINTS
@@ -8088,6 +8362,7 @@ CONTAINS
         !\TODO: need to be changed once the elements topology is moved under meshTopologyType.
         elements=>mesh%TOPOLOGY(1)%PTR%ELEMENTS
         ALLOCATE(dataPointsTopology%elementDataPoint(elements%NUMBER_OF_ELEMENTS),STAT=ERR)     
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points topology element.",ERR,ERROR,*999)
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           dataPointsTopology%elementDataPoint(elementIdx)%elementNumber=elements%ELEMENTS(elementIdx)%GLOBAL_NUMBER
           dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData=0
@@ -8107,6 +8382,7 @@ CONTAINS
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
           ALLOCATE(dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(dataPointsTopology% &
             & elementDataPoint(elementIdx)%numberOfProjectedData),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points topology element data points.",ERR,ERROR,*999)
           DO countIdx=1,dataPointsTopology%elementDataPoint(elementIdx)%numberOfProjectedData
             dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%userNumber=0
             dataPointsTopology%elementDataPoint(elementIdx)%dataIndices(countIdx)%globalNumber=0
@@ -8114,6 +8390,7 @@ CONTAINS
         ENDDO     
         !Record the indices of the data that projected on the elements 
         globalCountIdx=0
+        dataPointsTopology%totalNumberOfProjectedData=0
         DO dataPointIdx=1,dataPoints%NUMBER_OF_DATA_POINTS 
           dataProjectionResult=>dataProjection%DATA_PROJECTION_RESULTS(dataPointIdx)
           elementNumber=dataProjectionResult%ELEMENT_NUMBER
@@ -8133,6 +8410,7 @@ CONTAINS
         ENDDO !dataPointIdx
         !Allocate memory to store total data indices in ascending order and element map
         ALLOCATE(dataPointsTopology%dataPoints(dataPointsTopology%totalNumberOfProjectedData),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points topology data points.",ERR,ERROR,*999)
         !The global number for the data points will be looping through elements.
         countIdx=1  
         DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
@@ -8153,7 +8431,7 @@ CONTAINS
       CALL FLAG_ERROR("Mesh is not associated.",err,error,*999)
     ENDIF
     
-  CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
+    CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
     RETURN
 999 CALL ERRORS("Mesh_TopologyDataPointsCalculateProjection",err,error)
     CALL EXITS("Mesh_TopologyDataPointsCalculateProjection")
@@ -9462,10 +9740,12 @@ CONTAINS
     MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%NUMBER_OF_NODES = SIZE(NODE_NUMBERS)
 
     ALLOCATE(MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%NODE_NUMBERS(SIZE(NODE_NUMBERS)))
-    MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%NODE_NUMBERS = NODE_NUMBERS
+    MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%NODE_NUMBERS(1:SIZE(NODE_NUMBERS)) = NODE_NUMBERS(1:SIZE(NODE_NUMBERS))
 
     ALLOCATE(MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%XI_COORDS(SIZE(XI_COORDS,1),SIZE(XI_COORDS,2)))
-    MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%XI_COORDS = XI_COORDS
+    MESH_EMBEDDING%CHILD_NODE_XI_POSITION(ELEMENT_NUMBER)%XI_COORDS(1:SIZE(XI_COORDS,1),1:SIZE(XI_COORDS,2)) = &
+      & XI_COORDS(1:SIZE(XI_COORDS,1),1:SIZE(XI_COORDS,2))
+    
     RETURN
 999 CALL ERRORS("MESH_EMBEDDING_SET_CHILD_NODE_POSITION",ERR,ERROR)
     CALL EXITS("MESH_EMBEDDING_SET_CHILD_NODE_POSITION")
@@ -9508,8 +9788,10 @@ CONTAINS
      & %CHILD_XI_COORD(SIZE(CHILD_XI_COORD)))
 
 
-    MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GAUSSPT_NUMBER,PARENT_ELEMENT_NUMBER)%PARENT_XI_COORD = PARENT_XI_COORD
-    MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GAUSSPT_NUMBER,PARENT_ELEMENT_NUMBER)%CHILD_XI_COORD = CHILD_XI_COORD
+    MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GAUSSPT_NUMBER,PARENT_ELEMENT_NUMBER)%PARENT_XI_COORD(1:SIZE(PARENT_XI_COORD)) = &
+      & PARENT_XI_COORD(1:SIZE(PARENT_XI_COORD))
+    MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GAUSSPT_NUMBER,PARENT_ELEMENT_NUMBER)%CHILD_XI_COORD(1:SIZE(CHILD_XI_COORD)) = &
+      & CHILD_XI_COORD(1:SIZE(CHILD_XI_COORD))
     MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GAUSSPT_NUMBER,PARENT_ELEMENT_NUMBER)%ELEMENT_NUMBER = CHILD_ELEMENT_NUMBER
 
     RETURN

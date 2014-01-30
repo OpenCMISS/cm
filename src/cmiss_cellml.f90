@@ -949,9 +949,9 @@ CONTAINS
                       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of model maps = ",MODEL_MAPS% &
                         & NUMBER_OF_FIELDS_MAPPED_TO,ERR,ERROR,*999)
                     ENDIF
-                    !Loop over the number of CellML to field maps
-                    DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
-                      MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
+                    !Loop over the number of field to CellML maps
+                    DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
+                      MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
                       IF(ASSOCIATED(MODEL_MAP)) THEN
                         !Get the OpenCMISS mapped field DOF value
                         SELECT CASE(dofType)
@@ -1248,11 +1248,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: dof_idx,model_idx
-    INTEGER(INTG), POINTER :: MODELS_DATA(:)
+    INTEGER(INTG) :: model_idx
     TYPE(CELLML_MODEL_MAPS_TYPE), POINTER :: CELLML_MODEL_MAPS
-    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
      
     CALL ENTERS("CELLML_FIELD_MAPS_CREATE_FINISH",ERR,ERROR,*999)
@@ -2286,7 +2283,6 @@ CONTAINS
     !INTEGER(INTG) :: C_NAME_L
     INTEGER(C_INT) :: ERROR_C
     INTEGER(INTG) :: CELLML_VARIABLE_TYPE
-    REAL(DP) :: INITIAL_VALUE
     
     CALL ENTERS("CELLML_CREATE_FIELD_TO_CELLML_MAP_C",ERR,ERROR,*999)
 
@@ -4126,27 +4122,36 @@ CONTAINS
                     & FIELD_VALUES_SET_TYPE,MODELS_DATA,ERR,ERROR,*999)
                   DO models_dof_idx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
                     model_idx=MODELS_DATA(models_dof_idx)
-                    MODEL=>CELLML%MODELS(model_idx)%PTR
-                    IF(ASSOCIATED(MODEL)) THEN
-                      DO parameter_component_idx=1,MODEL%NUMBER_OF_PARAMETERS
-                        CELLML_VARIABLE_TYPE=MAP_CELLML_FIELD_TYPE_TO_VARIABLE_TYPE(CELLML_PARAMETERS_FIELD,ERR,ERROR)
-                        ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE_BY_INDEX(MODEL%PTR,CELLML_VARIABLE_TYPE,&
-                          & parameter_component_idx,INITIAL_VALUE)
-                        IF(ERR /= 0) THEN
-                          !problem getting the initial value
-                          LOCAL_ERROR="Failed to get an initial value for parameter variable with index "//&
-                            & TRIM(NUMBER_TO_VSTRING(parameter_component_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                        !WRITE(*,*) '(multiple models) Initial value for parameter variable: ',parameter_component_idx,'; type: ',&
-                        !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
-                        CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
-                          & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE, &
-                          & ERR,ERROR,*999)
-                      ENDDO !parameter_component_idx
+                    IF(model_idx==0) THEN
+                      ! Do nothing- empty model index specified
+                    ELSE IF(model_idx > 0 .AND. model_idx <= CELLML%NUMBER_OF_MODELS) THEN
+                      MODEL=>CELLML%MODELS(model_idx)%PTR
+                      IF(ASSOCIATED(MODEL)) THEN
+                        DO parameter_component_idx=1,MODEL%NUMBER_OF_PARAMETERS
+                          CELLML_VARIABLE_TYPE=MAP_CELLML_FIELD_TYPE_TO_VARIABLE_TYPE(CELLML_PARAMETERS_FIELD,ERR,ERROR)
+                          ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE_BY_INDEX(MODEL%PTR,CELLML_VARIABLE_TYPE,&
+                            & parameter_component_idx,INITIAL_VALUE)
+                          IF(ERR /= 0) THEN
+                            !problem getting the initial value
+                            LOCAL_ERROR="Failed to get an initial value for parameter variable with index "//&
+                              & TRIM(NUMBER_TO_VSTRING(parameter_component_idx,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                          !WRITE(*,*) '(multiple models) Initial value for parameter variable: ',parameter_component_idx,'; type: ',&
+                          !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
+                          CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE, &
+                            & ERR,ERROR,*999)
+                        ENDDO !parameter_component_idx
+                      ELSE
+                        LOCAL_ERROR="The model is not associated for model index "// &
+                          & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
                     ELSE
-                      LOCAL_ERROR="The model is not associated for model index "// &
-                        & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+                      LOCAL_ERROR="Invalid CellML model index: "// &
+                        & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//". The specified index should be between 1 and "// &
+                        & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !models_dof_idx
@@ -4328,10 +4333,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER(INTG) :: dof_idx
-    INTEGER(INTG), POINTER :: MODELS_DATA(:)    
-    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
  
     CALL ENTERS("CELLML_GENERATE",ERR,ERROR,*999)
 

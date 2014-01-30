@@ -89,6 +89,7 @@
 #define FIELD_FIBRE_TYPE     2 //Fibre field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
 #define FIELD_GENERAL_TYPE   3 //General field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
 #define FIELD_MATERIAL_TYPE  4 //Material field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
+#define FIELD_GEOMETRIC_GENERAL_TYPE 5 //Geometric general field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
 
 #define FIELD_U_VARIABLE_TYPE    1 //Standard variable type i.e., u \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
 #define FIELD_DELUDELN_VARIABLE_TYPE      2 //Normal derivative variable type i.e., du/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
@@ -96,6 +97,8 @@
 #define FIELD_DEL2UDELT2_VARIABLE_TYPE 4 //Second type derivative variable type i.e., d^2u/dt^2 \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
 #define FIELD_V_VARIABLE_TYPE 5 //Second standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
 #define FIELD_DELVDELN_VARIABLE_TYPE 6 //Second normal variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_U1_VARIABLE_TYPE 9 //Third standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_U2_VARIABLE_TYPE 13 //Fourth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
 
 #define COORDINATE_RECTANGULAR_CARTESIAN_TYPE 1 //Rectangular Cartesian coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
 #define COORDINATE_CYCLINDRICAL_POLAR_TYPE    2 //Cylindrical polar coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
@@ -422,6 +425,12 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         {
         case FIELD_U_VARIABLE_TYPE:
             return "field,  rectangular cartesian";
+        case FIELD_V_VARIABLE_TYPE:
+            return "field,  rectangular cartesian";
+        case FIELD_U1_VARIABLE_TYPE:
+            return "field,  rectangular cartesian";
+        case FIELD_U2_VARIABLE_TYPE:
+            return "field,  rectangular cartesian";
         case FIELD_DELUDELN_VARIABLE_TYPE:
             return "field,  rectangular cartesian";
         case FIELD_DELUDELT_VARIABLE_TYPE:
@@ -438,6 +447,20 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
             return "field,  rectangular cartesian";
         case FIELD_DELUDELN_VARIABLE_TYPE:
             return "field,  normal derivative of variable";
+        case FIELD_DELUDELT_VARIABLE_TYPE:
+            return "field,  first time derivative of variable";
+        case FIELD_DEL2UDELT2_VARIABLE_TYPE:
+            return "field,  second time derivative of variable";
+        default:
+            return "field,  real";
+        }
+    case FIELD_GEOMETRIC_GENERAL_TYPE:
+        switch( variableType )
+        {
+        case FIELD_U_VARIABLE_TYPE:
+            return "field,  rectangular cartesian";
+        case FIELD_DELUDELN_VARIABLE_TYPE:
+            return "field,  rectangular cartesian";
         case FIELD_DELUDELT_VARIABLE_TYPE:
             return "field,  first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
