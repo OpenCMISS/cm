@@ -116,6 +116,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
@@ -184,6 +185,10 @@ CONTAINS
         EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
         EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE
+      CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE)
+        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
+        EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
+        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE
       CASE(EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
         EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE
@@ -281,6 +286,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
       CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+        & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
@@ -313,7 +319,8 @@ CONTAINS
                 & SETUP_TYPE,"*",ERR,ERROR))// " is not implemented for a Navier-Stokes fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
-          CASE (EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+          CASE (EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+             &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
              &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -361,7 +368,8 @@ CONTAINS
                   !4 SUPG parameters, 3 boundary normals, 1 boundary identifier, Q, R_proximal, C, R_distal value
                   !component 13: trial node-based field for flux
                   EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 13
-                ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
                   !SUPG parameters: H, Umax, Re, C
                   EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4
                 ENDIF
@@ -396,12 +404,14 @@ CONTAINS
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
             !Do nothing???
-          CASE (EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
+          CASE (EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+             &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+             &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                 EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 13  !SUPG and boundary parameters
-              ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+              ELSE
                 EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4  !SUPG parameters: H, Umax, Re, C
               ENDIF
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
@@ -462,6 +472,7 @@ CONTAINS
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -1277,6 +1288,7 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
             & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
@@ -1495,7 +1507,7 @@ CONTAINS
                     CALL FIELD_CREATE_FINISH(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,ERR,ERROR,*999)
                     !Set the default values for the analytic field
                     SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                    CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE)
+                    CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE)
                       SELECT CASE(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
                         !Default the analytic parameter values (L, H, U_mean, Pout) to 0.0
@@ -1585,6 +1597,7 @@ CONTAINS
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
@@ -1901,6 +1914,7 @@ CONTAINS
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, & 
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
@@ -1929,7 +1943,9 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+            &  EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+            &  EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -3304,7 +3320,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
-    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER,DECOMPOSITION_LOCAL_ELEMENT_NUMBER
+    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: nodeIdx,versionIdx,xiIdx,coordIdx
     INTEGER(INTG) :: numberOfVersions,nodeNumber,local_ny,numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity
@@ -3312,7 +3328,6 @@ CONTAINS
     REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:),materialsParameters1(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
-    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
@@ -3366,6 +3381,7 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
@@ -3398,6 +3414,34 @@ CONTAINS
               IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
               IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
               IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
+            CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE)
+              LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+              NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+              STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+              LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+              NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+              FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+              FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
+              IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
+              IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
+              IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
+              IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+                EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+                IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
+                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                  IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                  ELSE
+                    CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
+                ENDIF
+              END IF
             CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
               DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
               STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
@@ -3451,13 +3495,9 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                    ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -3488,18 +3528,12 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    USER_ELEMENT_EXISTS=.FALSE.
-                    GHOST_ELEMENT=.TRUE.
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                      !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                      IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
-                        CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                      ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                    !If this is a boundary element, calculate RHS vector for multidomain boundaries
+                    IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
+                      CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -3574,6 +3608,7 @@ CONTAINS
             !Start with matrix calculations
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE.OR. &
@@ -3889,7 +3924,8 @@ CONTAINS
                 W_VALUE=0.0_DP
                 mhs=0
 
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
                   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                   U_SUPG(1:3)=0.0_DP
                   DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
@@ -3926,6 +3962,7 @@ CONTAINS
                     SUM=0.0_DP
 
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
                       & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                       !Apply streamline upwind petrov galerkin weights to convective term
                       W_SUPG=0.0_DP
@@ -4197,6 +4234,7 @@ CONTAINS
           nhs_min=mhs
           nhs_max=nhs
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
@@ -4249,7 +4287,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,x
-    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2,DECOMPOSITION_LOCAL_ELEMENT_NUMBER
+    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2
     INTEGER(INTG) :: nodeNumber,numberOfVersions,nodeIdx,versionIdx,xiIdx,coordIdx,local_ny
     INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
@@ -4257,7 +4295,7 @@ CONTAINS
     REAL(DP) :: momentum1,momentum2,continuity,W_SUPG,TAU_SUPG,U_SUPG(3)
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:)
-    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS,UPDATE_JACOBIAN_MATRIX
+    LOGICAL :: UPDATE_JACOBIAN_MATRIX
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
@@ -4291,6 +4329,7 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
@@ -4320,6 +4359,32 @@ CONTAINS
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
                 IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE)
+                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+!               SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+                EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+                IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
+                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                  IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                  ELSE
+                    CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
+                ENDIF
               CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
                 NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                 NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
@@ -4357,13 +4422,9 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)              
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                    ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -4387,16 +4448,12 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION%TOPOLOGY, &
-                      & ELEMENT_NUMBER,USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-                    IF(USER_ELEMENT_EXISTS .AND. .NOT. GHOST_ELEMENT ) THEN
-                      TAU_SUPG=0.0_DP
-                      !Calculate SUPG element metrics
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
-                      !If this is a boundary element, calculate RHS vector for multidomain boundaries
-                       IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
-                         CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
-                       ENDIF
+                    TAU_SUPG=0.0_DP
+                    !Calculate SUPG element metrics
+                    CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
+                    !If this is a boundary element, calculate RHS vector for multidomain boundaries
+                    IF(DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT) THEN
+                      CALL NavierStokes_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
@@ -4463,6 +4520,7 @@ CONTAINS
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
@@ -4498,6 +4556,7 @@ CONTAINS
               END IF
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
@@ -4508,7 +4567,8 @@ CONTAINS
                 !Loop over field components
                 mhs=0
 
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
                   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                   U_SUPG=0.0_DP
                   DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
@@ -4559,9 +4619,10 @@ CONTAINS
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                           SUM=0.0_DP
-                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                          IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
-                          !Add SUPG weighting terms
+                           !Add SUPG weighting terms
                            IF(UPDATE_JACOBIAN_MATRIX) THEN
                              !Calculate J1 only
                              W_SUPG=0.0_DP
@@ -4948,17 +5009,23 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
     TYPE(FIELD_TYPE), POINTER ::  ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: ANALYTIC_VARIABLE,FIELD_VARIABLE,GEOMETRIC_VARIABLE,MATERIALS_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: dependentFieldVariable,independentFieldVariable
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS 
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:),GEOMETRIC_PARAMETERS(:),BOUNDARY_VALUES(:),TANGENTS(:,:),NORMAL(:),TIME
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),MATERIALS_PARAMETERS(:),independentParameters(:),dependentParameters(:)
+    REAL(DP), ALLOCATABLE :: nodeData(:,:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
     REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM,X(3),START_TIME,STOP_TIME
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
-    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx
+    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx,localDof,globalDof
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),componentIdx,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: componentNumberVelocity,numberOfDimensions,numberOfNodes,numberOfGlobalNodes,currentLoopIteration,nodeIdx
+    INTEGER(INTG) :: dependentVariableType,independentVariableType,dependentDof,independentDof,userNodeNumber,localNodeNumber
+    LOGICAL :: ghostNode,nodeExists,importDataFromFile
+    CHARACTER(41) :: inputFile,tempString
 
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
@@ -5010,6 +5077,97 @@ CONTAINS
               EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
               IF(ASSOCIATED(EQUATIONS)) THEN
                 EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+
+                ! Fitting boundary condition- get values from file
+                ! TODO: this should be generalised with input filenames specified from the example file when IO is improved
+                IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN                
+                  !Read in field values to independent field
+                  NULLIFY(independentFieldVariable)
+                  NULLIFY(dependentFieldVariable)
+                  INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+                  DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                  independentVariableType=INDEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE
+                  CALL FIELD_VARIABLE_GET(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,independentFieldVariable,ERR,ERROR,*999)
+                  dependentVariableType=DEPENDENT_FIELD%VARIABLES(1)%VARIABLE_TYPE
+                  CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,dependentFieldVariable,ERR,ERROR,*999)
+                  CALL BOUNDARY_CONDITIONS_VARIABLE_GET(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                    & dependentFieldVariable,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                  !Read in field data from file
+                  !Loop over nodes and update independent field values - if a fixed fitted boundary, also update dependent
+                  IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
+                    componentNumberVelocity = 1
+                    numberOfDimensions = dependentFieldVariable%NUMBER_OF_COMPONENTS - 1
+                    ! Get the nodes on this computational domain
+                    IF(independentFieldVariable%COMPONENTS(componentNumberVelocity)%INTERPOLATION_TYPE== &
+                      & FIELD_NODE_BASED_INTERPOLATION) THEN
+                      domain=>independentFieldVariable%COMPONENTS(componentNumberVelocity)%DOMAIN
+                      IF(ASSOCIATED(domain)) THEN
+                        IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                          DOMAIN_NODES=>domain%TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            numberOfNodes = DOMAIN_NODES%NUMBER_OF_NODES
+                            numberOfGlobalNodes = DOMAIN_NODES%NUMBER_OF_GLOBAL_NODES
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                    ENDIF
+
+                    ! Construct the filename based on the computational node and time step
+                    currentLoopIteration=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    WRITE(tempString,"(I4.4)") currentLoopIteration
+                    inputFile = './interpolatedData/fitData' // tempString(1:4) // '.dat'
+
+                    INQUIRE(FILE=inputFile, EXIST=importDataFromFile)
+                    IF(importDataFromFile) THEN
+                      !Read fitted data from input file (if exists)
+                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Updating independent field and boundary nodes from "//inputFile, &
+                       & ERR,ERROR,*999)
+                      ALLOCATE(nodeData(numberOfGlobalNodes,numberOfDimensions))
+                      OPEN(UNIT=10, FILE=inputFile, STATUS='OLD')                  
+                      DO nodeIdx=1,numberOfGlobalNodes
+                        READ(10,*) (nodeData(nodeIdx,componentIdx), componentIdx=1,numberOfDimensions)
+                      ENDDO
+
+                      !Loop over local nodes and update independent field and (and dependent field for any FixedFitted nodes)
+                      DO nodeIdx=1,numberOfNodes
+                        userNodeNumber=DOMAIN_NODES%NODES(nodeIdx)%USER_NUMBER
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(domain%Topology,userNodeNumber,nodeExists,localNodeNumber, &
+                             & ghostNode,err,error,*999)
+                        IF(nodeExists .AND. .NOT. ghostNode) THEN
+                          DO componentIdx=1,numberOfDimensions
+                            dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                              & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                            independentDof = independentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
+                            VALUE = nodeData(userNodeNumber,componentIdx)
+                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,independentVariableType, &
+                              & FIELD_VALUES_SET_TYPE,independentDof,VALUE,ERR,ERROR,*999)
+                            CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,dependentVariableType,1,1,userNodeNumber, & 
+                              & componentIdx,localDof,globalDof,err,error,*999)
+                            BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES(globalDof)
+                            IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FixedFitted) THEN
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
+                                & FIELD_VALUES_SET_TYPE,localDof,VALUE,ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO !componentIdx
+                        ENDIF ! ghost/exist check
+                      ENDDO !nodeIdx
+                      DEALLOCATE(nodeData)
+                    ENDIF !check import file exists
+                  ELSE
+                    CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+                
+                ! Analytic equations
                 IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                   !Standard analytic functions
                   IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
@@ -6295,11 +6453,16 @@ CONTAINS
                       METHOD="FORTRAN"
                       EXPORT_FIELD=.TRUE.
                       IF(EXPORT_FIELD) THEN          
+                        OUTPUT_FILE = "StaticSolution"
+                        FileNameLength = LEN_TRIM(OUTPUT_FILE)
+                        VFileName = OUTPUT_FILE(1:FileNameLength)
                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
-                        CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,"STATICSOLUTION", &
-                          & ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"STATICSOLUTION",ERR,ERROR,*999)
+                        Fields=>EQUATIONS_SET%REGION%FIELDS
+                        CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+                        CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                        NULLIFY(Fields)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -8197,9 +8360,10 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: dependentField,geometricField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable
 
-    INTEGER(INTG) :: dimensionIdx,derivativeIdx,versionIdx,gaussIdx,parameterIdx,elementNodeIdx
+    INTEGER(INTG) :: gaussIdx,parameterIdx
     INTEGER(INTG) :: fieldVariableType,meshComponent1
-    INTEGER(INTG) :: nodeNumber,numberOfDimensions,local_ny
+    INTEGER(INTG) :: numberOfDimensions
+    INTEGER(INTG) :: numberOfLines,elementLineIdx,lineNumber
     REAL(DP) :: muParameter,rhoParameter,alphaParameter,lengthScale,reynoldsNumber,pecletNumber
     REAL(DP) :: magnitudeVelocitySUPG,maxVelocitySUPG,lineLength
     REAL(DP) :: X1(3),X2(3),velocityGauss(3),velocityGaussSUPG(3)
@@ -8226,7 +8390,8 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet))THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+      CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+        &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
         &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
         equations=>equationsSet%EQUATIONS
         IF(ASSOCIATED(equations)) THEN
@@ -8246,12 +8411,11 @@ CONTAINS
             IF(ASSOCIATED(equationsSetField)) THEN
 
               lengthScale=0.0_DP
-              CALL FIELD_PARAMETER_SET_GET_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & elementNumber,1,lengthScale,err,error,*999)                
 
+              !Calculate element length scale H if not already calc'd for this element
               IF(ABS(lengthScale)<=ZERO_TOLERANCE) THEN
-                !Calculate element length scale H
-                !TODO: calculate this length scale in field_routines instead
                 lengthScale=0.0_DP
                 X1=0.0_DP
                 X2=0.0_DP
@@ -8265,55 +8429,28 @@ CONTAINS
                   & geometricParameters,err,error,*999)
                 numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
 
-                !Loop over element nodes
-                DO elementNodeIdx=1,geometricBasis%NUMBER_OF_NODES
-                  nodeNumber=geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                   & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_NODES(elementNodeIdx)
-                  domain=>geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
-                  IF(ASSOCIATED(domain)) THEN
-                    IF(ASSOCIATED(domain%TOPOLOGY)) THEN
-                      domainNodes=>domain%TOPOLOGY%NODES
-                      !Loop over the derivatives
-                      DO derivativeIdx=1,domainNodes%NODES(nodeNumber)%NUMBER_OF_DERIVATIVES
-                        !Loop over versions
-                        DO versionIdx=1,domainNodes%nodes(nodeNumber)%derivatives(derivativeIdx)%numberOfVersions
-                          !Loop over dimensions
-                          DO dimensionIdx=1,numberOfDimensions
-                            local_ny=fieldVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP% &
-                              & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                            IF(elementNodeIdx==1 .AND. derivativeIdx==1 .AND. versionIdx==1) THEN
-                              !First node that lengths will be calculated relative to:  
-                              X1(dimensionIdx)=geometricParameters(local_ny)
-                            ELSE
-                              X2(dimensionIdx)=geometricParameters(local_ny)
-                            ENDIF
-                          ENDDO !dimensionIdx
-                          lineLength = L2NORM(X1-X2)
-                          lengthScale = MAX(lengthScale,lineLength)
-                        ENDDO !versionIdx
-                      ENDDO !derivativeIdx
-                    ELSE
-                      CALL FLAG_ERROR("Domain topology is not associated.",err,error,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
-                  ENDIF
-                END DO  
+                !Loop over element lines to get longest line
+                numberOfLines=SIZE(geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES)
+                DO elementLineIdx=1,numberOfLines
+                  lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES(elementLineIdx)
+                  lineLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
+                  lengthScale = MAX(lengthScale,lineLength)
+                ENDDO ! element lines
                 lengthScale = lengthScale/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
 
-                !Length scale hadn't been calculated for this element, so add element components for each SUPG metric
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & elementNumber,1,lengthScale,err,error,*999)
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & elementNumber,2,0.0_DP,err,error,*999)
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & elementNumber,3,0.0_DP,err,error,*999)
-                CALL FIELD_PARAMETER_SET_ADD_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & elementNumber,4,0.0_DP,err,error,*999)
+
                 !Restore the geometric distributed vector
                 CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & geometricParameters,err,error,*999)
-              ENDIF !lengthScale unassociated
+              ENDIF !lengthScale not already calculated
 
                 magnitudeVelocitySUPG=0.0_DP
                 maxVelocitySUPG=0.0_DP
