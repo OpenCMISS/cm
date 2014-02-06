@@ -1313,6 +1313,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE FIELD_CREATE_VALUES_CACHE_TYPE
     LOGICAL :: LABEL_LOCKED !<Is .TRUE. if the field label has been locked, .FALSE. if not.
     LOGICAL :: DECOMPOSITION_LOCKED !<Is .TRUE. if the field decomposition has been locked, .FALSE. if not.
+    LOGICAL :: DataProjectionLocked !<Is .TRUE. if the field data projection has been locked, .FALSE. if not.
     LOGICAL :: DEPENDENT_TYPE_LOCKED !<Is .TRUE. if the field dependent type has been locked, .FALSE. if not.
     LOGICAL :: NUMBER_OF_VARIABLES_LOCKED !<Is .TRUE. if the number of field variables has been locked, .FALSE. if not.
     LOGICAL :: GEOMETRIC_FIELD_LOCKED !<Is .TRUE. if the geometric field has been locked, .FALSE. if not.
@@ -1357,6 +1358,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field that this field uses. If the field itself is a geometric field then this will be a pointer back to itself.
     TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<If the field is a geometric field the pointer to the geometric parameters (lines, areas, volumes etc.). If the field is not a geometric field the pointer is NULL.
     TYPE(FIELD_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the field.
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DataProjection !<A pointer to the data projection that this field uses.
   END TYPE FIELD_TYPE
 
   !>A buffer type to allow for an array of pointers to a FIELD_TYPE.
@@ -3092,7 +3094,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS
-    LOGICAL :: WRITE_INTERMEDIATE_RESULTS
   END TYPE CONTROL_LOOP_LOAD_INCREMENT_TYPE
 
   !>A buffer type to allow for an array of pointers to a CONTROL_LOOP_TYPE \see TYPES::CONTROL_LOOP_TYPE
