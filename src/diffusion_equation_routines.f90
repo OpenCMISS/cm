@@ -56,6 +56,7 @@ MODULE DIFFUSION_EQUATION_ROUTINES
   USE EQUATIONS_MAPPING_ROUTINES
   USE EQUATIONS_MATRICES_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
+  USE FIELD_IO_ROUTINES
   USE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
@@ -83,6 +84,8 @@ MODULE DIFFUSION_EQUATION_ROUTINES
 
   PUBLIC DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE,DIFFUSION_EQUATION_ANALYTIC_CALCULATE
 
+  PUBLIC DIFFUSION_EQUATION_CONTROL_LOOP_POST_LOOP  
+
   PUBLIC DIFFUSION_EQUATION_EQUATIONS_SET_SETUP
 
   PUBLIC DIFFUSION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
@@ -106,7 +109,8 @@ MODULE DIFFUSION_EQUATION_ROUTINES
   PUBLIC DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE
   
   PUBLIC DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION
- 
+
+
 CONTAINS
 
   !
@@ -5853,6 +5857,132 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DIFFUSION_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE
  
+  !
+  !================================================================================================================================
+  !
+
+  !>Runs after each control loop iteration
+  SUBROUTINE DIFFUSION_EQUATION_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP,TIME_LOOP_PARENT
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(REGION_TYPE), POINTER :: DEPENDENT_REGION   
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(VARYING_STRING) :: FILENAME,LOCAL_ERROR,METHOD
+    INTEGER(INTG) :: OUTPUT_ITERATION_NUMBER,CURRENT_LOOP_ITERATION
+
+    CALL ENTERS("DIFFUSION_EQUATION_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
+        SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
+        CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
+          !do nothing
+        CASE(PROBLEM_CONTROL_FIXED_LOOP_TYPE)
+          !do nothing
+        CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+          !Export the dependent field for this time step
+          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
+          IF(ASSOCIATED(TIME_LOOP)) THEN
+            PROBLEM=>CONTROL_LOOP%PROBLEM
+            IF(ASSOCIATED(PROBLEM)) THEN
+              NULLIFY(SOLVERS)
+              NULLIFY(SOLVER)
+              !Get the solver. 
+              CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)            
+              CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+              !Loop over the equations sets associated with the solver
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                      NULLIFY(DEPENDENT_REGION)
+                      CALL FIELD_REGION_GET(DEPENDENT_FIELD,DEPENDENT_REGION,ERR,ERROR,*999)
+                      NULLIFY(PARENT_LOOP)
+                      PARENT_LOOP=>CONTROL_LOOP%PARENT_LOOP
+                      IF(ASSOCIATED(PARENT_LOOP)) THEN
+                        !add the iteration number of the parent loop to the filename
+                        NULLIFY(TIME_LOOP_PARENT)
+                        TIME_LOOP_PARENT=>PARENT_LOOP%TIME_LOOP
+                        IF(ASSOCIATED(TIME_LOOP_PARENT)) THEN
+                          OUTPUT_ITERATION_NUMBER=TIME_LOOP_PARENT%OUTPUT_NUMBER
+                          CURRENT_LOOP_ITERATION=TIME_LOOP_PARENT%GLOBAL_ITERATION_NUMBER
+                          FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP_PARENT%GLOBAL_ITERATION_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                        ELSE
+                          OUTPUT_ITERATION_NUMBER=TIME_LOOP%OUTPUT_NUMBER
+                          CURRENT_LOOP_ITERATION=TIME_LOOP%GLOBAL_ITERATION_NUMBER
+                          FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%GLOBAL_ITERATION_NUMBER,"*",ERR,ERROR))
+                        ENDIF
+                      ELSE
+                        OUTPUT_ITERATION_NUMBER=TIME_LOOP%OUTPUT_NUMBER
+                        CURRENT_LOOP_ITERATION=TIME_LOOP%GLOBAL_ITERATION_NUMBER
+                        FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                          & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%GLOBAL_ITERATION_NUMBER,"*",ERR,ERROR))
+                      ENDIF
+                      METHOD="FORTRAN"
+                      IF(OUTPUT_ITERATION_NUMBER/=0.AND.MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0) THEN
+                      !IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0) THEN
+                        CALL FIELD_IO_NODES_EXPORT(DEPENDENT_REGION%FIELDS,FILENAME,METHOD,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      LOCAL_ERROR="Equations set is not associated for equations set index "// &
+                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
+                        & " in the solver mapping."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !equations_set_idx
+                ELSE
+                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver solver equations are not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Time loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
+          !do nothing
+        CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+          !do nothing
+        CASE DEFAULT
+          LOCAL_ERROR="The control loop type of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%LOOP_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DIFFUSION_EQUATION_LOOP_POST_LOOP")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_CONTROL_LOOP_POST_LOOP")
+    RETURN 1
+    
+  END SUBROUTINE DIFFUSION_EQUATION_CONTROL_LOOP_POST_LOOP
+
   !
   !================================================================================================================================
   !

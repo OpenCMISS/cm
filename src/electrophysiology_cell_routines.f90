@@ -408,7 +408,7 @@ contains
         call tentusscher06_dydt(t,y,dydt,activ)
         dt = min(t1-t,1.0/3)  ! default max
         dt = min(dt,1 / abs(dydt(1))) ! maximum increase in Vm
-        
+
         m_inf0 = (1/pow((1+exp((1.10741971207087e-01*(-5.686e+01-Y(1))))),2))
         d_inf0 = (1/(1+exp((1.33333333333333e-01*(-8-Y(1))))))
         
