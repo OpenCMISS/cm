@@ -1301,6 +1301,20 @@ CONTAINS
 
     CALL ENTERS("Characteristic_PreSolveUpdateBC",ERR,ERROR,*999)
 
+    NULLIFY(dependentBasis)
+    NULLIFY(materialsBasis)
+    NULLIFY(dependentDomain)
+    NULLIFY(materialsDomain)
+    NULLIFY(equationsSet)
+    NULLIFY(equations)
+    NULLIFY(dependentField)
+    NULLIFY(independentField)
+    NULLIFY(materialsField)
+    NULLIFY(fieldVariable)
+    NULLIFY(solverEquations)
+    NULLIFY(solverMapping)
+    NULLIFY(independentParameters)
+
     IF(ASSOCIATED(SOLVER)) THEN
       solverEquations=>solver%SOLVER_EQUATIONS
       IF(ASSOCIATED(solverEquations)) THEN
