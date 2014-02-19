@@ -471,6 +471,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta=17 !< A fourier decomposed flow waveform for boundary conditions
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid=18 !< A sinusoidal flow waveform
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateConstant=19 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile=20 !< Spline integration of dependent values specified in a file
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DarcyAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DarcyAnalyticFunctionTypes
   !> \brief The analytic function types for a Darcy equation

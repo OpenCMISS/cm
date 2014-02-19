@@ -177,7 +177,7 @@ MODULE MATHS
   END INTERFACE !COTH
 
   PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT, &
-    & MATRIX_TRANSPOSE,NORMALISE,NORM_CROSS_PRODUCT,SOLVE_SMALL_LINEAR_SYSTEM,COTH
+    & MATRIX_TRANSPOSE,NORMALISE,NORM_CROSS_PRODUCT,SOLVE_SMALL_LINEAR_SYSTEM,COTH,spline,splint
   
   
 CONTAINS
@@ -2004,6 +2004,128 @@ CONTAINS
     RETURN
   END FUNCTION COTH_DP
 
+  !
+  !================================================================================================================================
+  !
+
+  !> Calculates a cubic spline function for a tabulated function y(x) 
+  !> See 'FORTRAN numerical recipes', 2nd ed. Cambridge [England] ; New York: Cambridge University Press, 1996.
+  SUBROUTINE spline(x,y,n,yp1,ypn,y2,err,error,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: n !< size of x,y arrays to interpolate values from
+    REAL(DP), INTENT(IN) :: x(n) !< x array: known values
+    REAL(DP), INTENT(IN) :: y(n) !< y array: values to interpolate
+    REAL(DP), INTENT(IN) :: yp1 !< 1st derivative interpolating function at point 1
+    REAL(DP), INTENT(IN) :: ypn !< 1st derivative interpolating function at point n
+    REAL(DP), INTENT(OUT) :: y2(n) !< 2nd derivatives of interpolating function at x values
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    ! local variables
+    INTEGER(INTG) :: nMax
+    PARAMETER (nMax = 500)
+    INTEGER(INTG) :: i,k
+    REAL(DP) :: p,qn,sig,un,u(nMax)
+
+    CALL ENTERS("spline",ERR,ERROR,*999)
+
+    IF (yp1 .GT. 1e30_DP ) THEN
+      ! set natural lower boundary condition (0)
+      y2(1) = 0.0_DP
+      u(1) = 0.0_DP
+    ELSE
+      ! set lower boundary using specified first derivative
+      y2(1) = -0.5_DP
+      u(1) = (3.0_DP/(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
+    ENDIF
+
+    ! decomposition loop of tridiagonal algorithm
+    DO i = 2,n-1
+      sig = (x(i)-x(i-1))/(x(i+1)-x(i-1))
+      p = sig*y2(i-1)+2.0_DP
+      y2(i) = (sig-1.0_DP)/p
+      u(i) = (6.0_DP*((y(i+1)-y(i))/(x(i+1)-x(i))-(y(i)-y(i-1))/ &
+           & (x(i)-x(i-1)))/(x(i+1)-x(i-1))-sig*u(i-1))/p
+    ENDDO
+
+    IF (ypn .GT. 1e30_DP ) THEN
+      ! set natural upper boundary condition (0)
+      qn = 0.0_DP
+      un = 0.0_DP
+    ELSE
+      ! set upper boundary using specified first derivative
+      qn = 0.5_DP
+      un = (3.0_DP/(x(n)-x(n-1)))*((y(n)-y(n-1))/(x(n)-x(n-1)))
+    ENDIF
+    y2(n) = (un-qn*u(n-1))/(qn*y2(n-1)+1.0_DP)
+
+    ! backsubstitution loop of tridiagonal algorithm
+    DO k = n-1,1,-1
+      y2(k) = y2(k)*y2(k+1)+u(k)
+    ENDDO
+
+    CALL EXITS("spline")
+    RETURN
+999 CALL ERRORS("spline",ERR,ERROR)
+    CALL EXITS("spline")
+    RETURN 1
+  END SUBROUTINE spline
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Interpolates values for a spline function from subroutine spline().
+  !> See 'FORTRAN numerical recipes', 2nd ed. Cambridge [England] ; New York: Cambridge University Press, 1996.
+  SUBROUTINE splint(xa,ya,y2a,n,x,y,err,error,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: n !< size of x,y arrays to interpolate values from
+    REAL(DP), INTENT(IN) :: xa(n) !< x array: known values
+    REAL(DP), INTENT(IN) :: ya(n) !< y array: values to interpolate
+    REAL(DP), INTENT(IN) :: y2a(n) !< 2nd derivatives of interpolating function at x values
+    REAL(DP), INTENT(IN) :: x !< x value to interpolate y at
+    REAL(DP), INTENT(OUT) :: y !< on return, the interpolated y value
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    ! local variables
+    INTEGER(INTG) :: k,khi,klo,i
+    REAL(DP) :: a,b,h
+
+    CALL ENTERS("splint",ERR,ERROR,*999)
+
+    klo = 1
+    khi = n
+
+    ! NOTE: modified from numerical recipes form to avoid using GOTO
+    DO i = 1,n 
+      IF (khi-klo .GT. 1) THEN
+        k = (khi+klo)/2
+        IF (xa(k) .GT. x) THEN
+          khi = k
+        ELSE
+          klo = k
+        ENDIF
+      ELSE
+        EXIT
+      ENDIF
+    ENDDO
+
+    h = xa(khi)-xa(klo)
+    IF (h .EQ. 0.0_DP) THEN
+      CALL FLAG_ERROR("Bad xa input in splint",ERR,ERROR,*999)       
+    ENDIF
+    a = (xa(khi)-x)/h
+    b = (x-xa(klo))/h
+    
+    y = a*ya(klo)+b*ya(khi)+((a**3-a)*y2a(klo)+(b**3-b)*y2a(khi))*(h**2)/6.0_DP
+
+    CALL EXITS("splint")
+    RETURN
+999 CALL ERRORS("splint",ERR,ERROR)
+    CALL EXITS("splint")
+    RETURN 1
+  END SUBROUTINE splint
 
   !
   !================================================================================================================================

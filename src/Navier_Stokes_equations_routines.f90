@@ -1373,6 +1373,22 @@ CONTAINS
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
+                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
+                            !Check that this is a 1D equations set
+                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE .OR. &
+                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE .OR. &
+                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE .OR. &
+                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE) THEN
+                              !Set analytic function type
+                              EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
+                              !Set numbrer of components- Q,A (same as N-S depenedent field)
+                              NUMBER_OF_ANALYTIC_COMPONENTS=2
+                            ELSE
+                              LOCAL_ERROR="Specify a 1DTransient or Coupled1D0D equations set subtype to use "// &
+                                & "an analytic function of type "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
                           CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
                             !Check that domain is 3D
                             IF(NUMBER_OF_DIMENSIONS/=3) THEN
@@ -1591,6 +1607,10 @@ CONTAINS
                         !Default the analytic parameter period values to 1000
                         CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,1,1000.0_DP,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
+                        !Default the analytic parameter period values to 0
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -5205,16 +5225,18 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:),GEOMETRIC_PARAMETERS(:),BOUNDARY_VALUES(:),TANGENTS(:,:),NORMAL(:),TIME
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),MATERIALS_PARAMETERS(:),independentParameters(:),dependentParameters(:)
-    REAL(DP), ALLOCATABLE :: nodeData(:,:)
+    REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qValues(:),tValues(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
     REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM,X(3),START_TIME,STOP_TIME
+    REAL(DP) :: timeData(2),cycTime,shiftedTime
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx,localDof,globalDof
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),componentIdx,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
     INTEGER(INTG) :: componentNumberVelocity,numberOfDimensions,numberOfNodes,numberOfGlobalNodes,currentLoopIteration,nodeIdx
     INTEGER(INTG) :: dependentVariableType,independentVariableType,dependentDof,independentDof,userNodeNumber,localNodeNumber
-    LOGICAL :: ghostNode,nodeExists,importDataFromFile
-    CHARACTER(41) :: inputFile,tempString
+    INTEGER(INTG) :: variableIdx,derivativeIdx,versionIdx,timeIdx,step,dataStep,length,numberOfSourceTimesteps
+    LOGICAL :: ghostNode,nodeExists,importDataFromFile,exists
+    CHARACTER(70) :: inputFile,tempString
 
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
@@ -5811,6 +5833,133 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                       END IF
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
+                      ! Perform spline interpolation of values from a file
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
+                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                      ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+                      DO variableIdx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                        dependentVariableType=DEPENDENT_FIELD%VARIABLES(variableIdx)%VARIABLE_TYPE
+                        NULLIFY(dependentFieldVariable)
+                        CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,dependentVariableType,dependentFieldVariable,ERR,ERROR,*999)
+                        CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS, &
+                         & dependentFieldVariable,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                        IF(ASSOCIATED(dependentFieldVariable)) THEN
+                          DO componentIdx=1,dependentFieldVariable%NUMBER_OF_COMPONENTS
+                            IF(dependentFieldVariable%COMPONENTS(componentIdx)%INTERPOLATION_TYPE== &
+                             & FIELD_NODE_BASED_INTERPOLATION) THEN
+                              domain=>dependentFieldVariable%COMPONENTS(componentIdx)%DOMAIN
+                              IF(ASSOCIATED(domain)) THEN
+                                IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                                  DOMAIN_NODES=>domain%TOPOLOGY%NODES
+                                  IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                    !Loop over the local nodes excluding the ghosts.
+                                    DO nodeIdx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                      userNodeNumber=DOMAIN_NODES%NODES(nodeIdx)%USER_NUMBER
+                                      DO derivativeIdx=1,DOMAIN_NODES%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                                        DO versionIdx=1,DOMAIN_NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
+                                          ! Update analytic field if file exists and dependent field if boundary condition set
+                                          inputFile = './interpolatedData/1D/' 
+                                          IF (dependentVariableType == FIELD_U_VARIABLE_TYPE) THEN
+                                            inputFile = TRIM(inputFile) // 'U/component' 
+                                          ENDIF
+                                          WRITE(tempString,"(I1.1)") componentIdx 
+                                          inputFile = TRIM(inputFile) // tempString(1:1) // '/derivative'
+                                          WRITE(tempString,"(I1.1)") derivativeIdx 
+                                          inputFile = TRIM(inputFile) // tempString(1:1) // '/version'
+                                          WRITE(tempString,"(I1.1)") versionIdx 
+                                          inputFile = TRIM(inputFile) // tempString(1:1) // '/'
+                                          WRITE(tempString,"(I4.4)") userNodeNumber
+                                          inputFile = TRIM(inputFile) // tempString(1:4) // '.dat'
+                                          inputFile = TRIM(inputFile)
+                                          INQUIRE(FILE=inputFile, EXIST=importDataFromFile)
+                                          IF(importDataFromFile) THEN
+                                            ! Create the analytic field values type on the dependent field if it does not exist
+                                            IF(.NOT.ASSOCIATED(dependentFieldVariable%PARAMETER_SETS% &
+                                             & SET_TYPE(FIELD_ANALYTIC_VALUES_SET_TYPE)%PTR)) &
+                                             & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,dependentVariableType, &
+                                             & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                            !Read fitted data from input file (if exists)
+                                            ! CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
+                                            !  & "Updating boundary nodes from "//inputFile,ERR,ERROR,*999)
+                                            OPEN(UNIT=10, FILE=inputFile, STATUS='OLD')                  
+                                            ! Header timeData = numberOfTimesteps, timeIncrement
+                                            READ(10,*) timeData
+                                            numberOfSourceTimesteps = INT(timeData(1)*3)
+                                            ALLOCATE(nodeData(numberOfSourceTimesteps,2))
+                                            ALLOCATE(qValues(numberOfSourceTimesteps))
+                                            ALLOCATE(tValues(numberOfSourceTimesteps))
+                                            ALLOCATE(qSpline(numberOfSourceTimesteps))
+                                            nodeData = 0.0_DP
+                                            cycTime = timeData(1)*timeData(2)
+                                            ! Read in time and dependent value (3 times to capture previous and subsequent cycles)
+                                            DO timeIdx=1,timeData(1)
+                                              READ(10,*) (nodeData(timeIdx,component_idx), component_idx=1,2)
+                                              nodeData(timeIdx+timeData(1),:) = nodeData(timeIdx,:) 
+                                              nodeData(timeIdx+timeData(1),1) = nodeData(timeIdx,1) + cycTime
+                                              nodeData(timeIdx+timeData(1)*2,:) = nodeData(timeIdx,:)
+                                              nodeData(timeIdx+timeData(1)*2,1) = nodeData(timeIdx,1) + cycTime*2.0_DP
+                                            ENDDO
+                                            CLOSE(UNIT=10)
+
+                                            shiftedTime = MOD(CURRENT_TIME,cycTime) + cycTime  
+                                            tValues = nodeData(:,1)
+                                            qValues = nodeData(:,2)
+                                            CALL spline(tValues,qValues,numberOfSourceTimesteps,1e31_DP,1e31_DP, &
+                                             & qSpline,err,error,*999)
+                                            CALL splint(tValues,qValues,qSpline,numberOfSourceTimesteps, &
+                                             & shiftedTime,VALUE,err,error,*999)
+                                            DEALLOCATE(nodeData)
+                                            DEALLOCATE(qSpline)
+                                            DEALLOCATE(qValues)
+                                            DEALLOCATE(tValues)
+
+                                            ! Track interpolated values
+                                            inputFile = './interpolatedDataNode'
+                                            WRITE(tempString,"(I4.4)") userNodeNumber
+                                            inputFile = TRIM(inputFile) // tempString(1:4) // '.dat'
+                                            INQUIRE(FILE=inputFile, EXIST=exists)
+                                            IF (exists) THEN
+                                               open(12, FILE=inputFile, STATUS="OLD", POSITION="APPEND", ACTION="WRITE")
+                                            ELSE
+                                               open(12, FILE=inputFile, STATUS="NEW", ACTION="WRITE")
+                                            END IF
+                                            WRITE(12, *) VALUE
+                                            CLOSE(12)
+
+                                            dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                                             & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
+                                             & FIELD_ANALYTIC_VALUES_SET_TYPE,dependentDof,VALUE,ERR,ERROR,*999)
+                                            ! Update dependent field value if this is a splint BC
+                                            BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                             & CONDITION_TYPES(dependentDof)
+                                            IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FixedFitted) THEN                                            
+                                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
+                                               & FIELD_VALUES_SET_TYPE,dependentDof,VALUE,ERR,ERROR,*999)
+                                            ENDIF
+                                          ENDIF ! check if import data file exists
+                                        ENDDO !versionIdx
+                                      ENDDO !derivativeIdx
+                                    ENDDO !nodeIdx
+                                  ELSE
+                                    CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO !componentIdx
+                        ELSE
+                          CALL FLAG_ERROR("Dependent field variable is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !variableIdx
                     CASE DEFAULT
                       ! Do nothing (might have another use for analytic equations)
                     END SELECT
