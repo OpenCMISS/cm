@@ -4050,7 +4050,7 @@ CONTAINS
     !It can be shown that steps (a),(b) and (c) are equivalent to post-multiplying
     !rotation in (a) by rotation in (b). i.e. Ra*Rb  
        
-    !The normalised reference material CS contains the transformation(rotaion) between 
+    !The normalised reference material CS contains the transformation(rotation) between 
     !the spatial CS -> reference material CS. i.e. Ra 
     DO idx1=1,3
       DO idx2=1,3
@@ -4079,13 +4079,13 @@ CONTAINS
     !IMBRICATION ANGLE (beta) - ANGLE(2)     
     !In order to rotate alpha-rotated material CS by beta(imbrication angle) in anti-clockwise  
     !direction about its new axis 2, following steps are performed.
-    !(a) first align new material direction 2 with Y(spatial) axis by rotating the new matrial CS. 
+    !(a) first align new material direction 2 with Y(spatial) axis by rotating the new material CS. 
     !(b) then rotate the aligned CS by beta about Y axis in anti-clockwise direction
     !(c) apply the inverse of step(a) to the CS in (b)
     !As mentioned above, (a),(b) and (c) are equivalent to post-multiplying
     !rotation in (a) by rotation in (b). i.e. Ra*Rb  
         
-    !DXNU3 contains the transformation(rotaion) between 
+    !DXNU3 contains the transformation(rotation) between 
     !the spatial CS -> alpha-rotated reference material CS. i.e. Ra 
     DO idx1=1,3
       DO idx2=1,3
@@ -4111,7 +4111,7 @@ CONTAINS
 
 
     !SHEET ANGLE (gamma) - ANGLE(3)    
-    !In order to rotate alpha-beta-rotated material CS by gama(sheet angle) in anti-clockwise  
+    !In order to rotate alpha-beta-rotated material CS by gamma(sheet angle) in anti-clockwise  
     !direction about its new axis 1, following steps are performed.
     !(a) first align new material direction 1 with X(spatial) axis by rotating the new matrial CS. 
     !(b) then rotate the aligned CS by gama about X axis in anti-clockwise direction
@@ -4119,7 +4119,7 @@ CONTAINS
     !Again steps (a),(b) and (c) are equivalent to post-multiplying
     !rotation in (a) by rotation in (b). i.e. Ra*Rb  
         
-    !DXNU2 contains the transformation(rotaion) between 
+    !DXNU2 contains the transformation (rotation) between 
     !the spatial CS -> alpha-beta-rotated reference material CS. i.e. Ra 
     DO idx1=1,3
       DO idx2=1,3
