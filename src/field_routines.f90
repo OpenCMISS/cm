@@ -7514,7 +7514,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: var_type_idx,DUMMY_ERR
+    INTEGER(INTG) :: variableTypeIdx,DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
     CALL ENTERS("FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE",ERR,ERROR,*999)
@@ -7525,16 +7525,18 @@ CONTAINS
       ELSE
         ALLOCATE(INTERPOLATED_POINTS_METRICS(FIELD_NUMBER_OF_VARIABLE_TYPES),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interpolated points metrics.",ERR,ERROR,*999)
-        DO var_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-          NULLIFY(INTERPOLATED_POINTS_METRICS(var_type_idx)%PTR)
-          IF(ASSOCIATED(INTERPOLATED_POINTS(var_type_idx)%PTR)) &
-            & CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(INTERPOLATED_POINTS(var_type_idx)%PTR, &
-            & INTERPOLATED_POINTS_METRICS(var_type_idx)%PTR,ERR,ERROR,*999)
-        ENDDO !var_type_idx
+        !Nullify all pointers first so that finalise does not fail on error condition half way through the next loop
+        DO variableTypeIdx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+          NULLIFY(INTERPOLATED_POINTS_METRICS(variableTypeIdx)%PTR)          
+        ENDDO !variableTypeIdx
+        DO variableTypeIdx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+          IF(ASSOCIATED(INTERPOLATED_POINTS(variableTypeIdx)%PTR)) &
+            & CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(INTERPOLATED_POINTS(variableTypeIdx)%PTR, &
+            & INTERPOLATED_POINTS_METRICS(variableTypeIdx)%PTR,ERR,ERROR,*999)
+        ENDDO !variableTypeIdx
       ENDIF
     ELSE
       CALL FLAG_ERROR("Interpolation points is not associated.",ERR,ERROR,*998)
-
     ENDIF
 
     CALL EXITS("FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE")
