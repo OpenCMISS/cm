@@ -7417,7 +7417,7 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_XI_DIMENSIONS,NUMBER_OF_X_DIMENSIONS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR !,LOCAL_ERROR
 
     CALL ENTERS("FIELD_INTERPOLATED_POINT_METRICS_INITIALISE",ERR,ERROR,*999)
 
@@ -7452,11 +7452,13 @@ CONTAINS
           INTERPOLATED_POINT_METRICS%DXI_DX=0.0_DP
           INTERPOLATED_POINT_METRICS%JACOBIAN=0.0_DP
           INTERPOLATED_POINT_METRICS%JACOBIAN_TYPE=0
-        ELSE
-          LOCAL_ERROR="The number of coordinate dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-            & ") does not match the number of components of the interpolated point ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATED_POINT%VALUES,1),"*",ERR,ERROR))//")."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+         !For now don't flag an error if the number of xi dimensions doesn't match the number of x dimensions.
+         !Simply do not allocate the metrics information.
+!        ELSE
+!          LOCAL_ERROR="The number of coordinate dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
+!            & ") does not match the number of components of the interpolated point ("// &
+!            & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATED_POINT%VALUES,1),"*",ERR,ERROR))//")."
+!          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
