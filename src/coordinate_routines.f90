@@ -3943,6 +3943,7 @@ CONTAINS
           & dNudXiTemp(1:numberOfXDimensions,1:numberOfXiDimensions),err,error,*999)
       ELSE
         !No fibre field
+        numberOfNuDimensions=0
         dNudXiTemp(1:numberOfXDimensions,1:numberOfXiDimensions)=geometricInterpPointMetrics%DX_DXI(1:numberOfXDimensions, &
           & 1:numberOfXiDimensions)
       ENDIF
@@ -3956,6 +3957,30 @@ CONTAINS
       ELSE
         CALL FlagError("Not implemented",err,error,*999)
       ENDIF
+
+      IF(DIAGNOSTICS1) THEN
+        CALL WriteString(DIAGNOSTIC_OUTPUT_TYPE,"",err,error,*999)
+        CALL WriteString(DIAGNOSTIC_OUTPUT_TYPE,"Calculated material coordinate system:",err,error,*999)
+        CALL WriteStringValue(DIAGNOSTIC_OUTPUT_TYPE,"  Number of X dimensions  = ",numberOfXDimensions,err,error,*999)
+        CALL WriteStringValue(DIAGNOSTIC_OUTPUT_TYPE,"  Number of Xi dimensions = ",numberOfXiDimensions,err,error,*999)
+        CALL WriteStringValue(DIAGNOSTIC_OUTPUT_TYPE,"  Number of Nu dimensions = ",numberOfNuDimensions,err,error,*999)
+        IF(numberOfNuDimensions>0) THEN
+          CALL WriteStringMatrix(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfXDimensions,1,1,numberOfXDimensions, &
+            & numberOfXDimensions,numberOfXDimensions,dXdNu,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
+            & '("  dXdNu','(",I1,",:)','  :",3(X,E13.6))','(15X,3(X,E13.6))',err,error,*999)
+          CALL WriteStringMatrix(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfXDimensions,1,1,numberOfXDimensions, &
+            & numberOfXDimensions,numberOfXDimensions,dNudX,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
+            & '("  dNudX','(",I1,",:)','  :",3(X,E13.6))','(15X,3(X,E13.6))',err,error,*999)
+        ENDIF
+        CALL WriteStringMatrix(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfXDimensions,1,1,numberOfXiDimensions, &
+          & numberOfXiDimensions,numberOfXiDimensions,dNudXi,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
+          & '("  dNudXi','(",I1,",:)',' :",3(X,E13.6))','(15X,3(X,E13.6))',err,error,*999)
+        CALL WriteStringMatrix(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfXiDimensions,1,1,numberOfXDimensions, &
+          & numberOfXDimensions,numberOfXDimensions,dXidNu,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
+          & '("  dXidNu','(",I1,",:)',' :",3(X,E13.6))','(15X,3(X,E13.6))',err,error,*999)
+        CALL WriteStringValue(DIAGNOSTIC_OUTPUT_TYPE,"  Determinant JNuXi = ",JNuXi,err,error,*999)
+      ENDIF
+      
     ELSE
       CALL FlagError("Geometric interpolated point metrics is not associated.",err,error,*999)
     ENDIF    
