@@ -72,6 +72,8 @@ MODULE INTERFACE_OPERATORS_ROUTINES
   
   PUBLIC FrictionlessContact_FiniteElementCalculate
 
+  PUBLIC SolidFluidOperator_FiniteElementCalculate
+
 CONTAINS
 
   !
@@ -210,7 +212,9 @@ CONTAINS
                 ENDDO !rowComponentIdx
               ELSE
                 !\todo defaults to first mesh component, generalise
-                XI=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                !XI=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                !  & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
+                XI(1:interfaceDependentBasis%NUMBER_OF_XI)=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
                   & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
                 !XI=interfaceCondition%interface%pointsConnectivity%pointsConnectivity(GaussPoint,coupledMeshIdx)%xi
                 ! Loop over number of Lagrange variable components as not all components in the dependent field variable may be coupled
@@ -835,6 +839,347 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FrictionlessContact_FiniteElementCalculate
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Calculates the element stiffness matrices for the given element number for fluid solid operator 
+  !Note First interface matrix must be fluid equations set's interface matrix
+  !SUBROUTINE FluidSolidOperator_FiniteElementCalculate(interfaceCondition,elementNumber,err,error,*)
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Calculates the element stiffness matrices for the given element number for solid fluid operator 
+  !Note First interface matrix must be solid equations set's interface matrix
+  SUBROUTINE SolidFluidOperator_FiniteElementCalculate(interfaceCondition,elementNumber,err,error,*)
+  
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: interfaceCondition !<A pointer to the interface condition
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: interfaceEquations !<A pointer to the interface equations
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to calculate
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: GaussPoint, rowComponentIdx, rowIdx, rowParameterIdx, colComponentIdx, colIdx, colParameterIdx
+    INTEGER(INTG) :: rowMeshComponentNumber,derivativeIdx,derivative,localElementNode,interfaceNode,interfaceDerivative
+    INTEGER(INTG) :: coupledMeshElementNumber,coupledMeshIdx,coupledMeshVariableType,lagrangeVariableType
+    INTEGER(INTG) :: connectedLine,decompositionLineNumber,localLineNodeIdx,connectedFace,decompositionFaceNumber,localFaceNodeIdx
+    REAL(DP) :: XI(3),rwg,PGMSI,PGNSI,matrixCoefficient
+    TYPE(BASIS_TYPE), POINTER :: interfaceDependentBasis,coupledMeshBasis,interfaceGeometricBasis, &
+      & interfacePenaltyBasis,interfaceConnectivityBasis
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: interfaceQuadratureScheme
+    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField,interfaceDependentField,interfaceGeometricField, &
+      & interfacePenaltyField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: interfaceMatrixVariable,lagrangeVariable
+    TYPE(ELEMENT_MATRIX_TYPE), POINTER :: interfaceElementMatrix
+    TYPE(INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_TYPE), POINTER :: interfaceInterpolation
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: elementConnectivity
+    TYPE(DOMAIN_LINE_TYPE), POINTER :: coupledMeshDomainLine
+    TYPE(DOMAIN_FACE_TYPE), POINTER :: coupledMeshDomainFace
+    TYPE(VARYING_STRING) :: localError
+
+    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface 
+    TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the interface points connectivity
+    TYPE(DecompositionElementDataPointsType), POINTER :: decompositionElementData !<A pointer to the decomposition data point topology
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: interpolatedPointsMetrics(:)
+    TYPE(BASIS_TYPE), POINTER :: coupledMeshDependentBasis
+    TYPE(FIELD_TYPE), POINTER :: coupledMeshGeometricField
+    INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp,numberOfInterfaceMeshXi,numberOfCoupledMeshXi, &
+      & numberOfMatrixCoupledElements
+    INTEGER(INTG) :: dataPointIdx,localElementNumber,localFaceLineNumber,matrixElementIdx
+    INTEGER(INTG) :: matrixCoefficients(2),interfaceelementnumber
+
+    CALL ENTERS("SolidFluidOperator_FiniteElementCalculate",err,error,*999)
+
+    IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+    IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FLAG_ERROR("Interface equations is not associated." &
+      & ,err,error,*999)
+    IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE)) CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+
+    interfaceEquations=>interfaceCondition%INTERFACE_EQUATIONS
+
+    !===============================================================================================================================
+    !Select Interface method
+    SELECT CASE(interfaceCondition%METHOD)
+    CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
+      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+    CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+      !=============================================================================================================================
+      !Select Integration type
+      SELECT CASE(interfaceCondition%integrationType)
+      CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
+        !Pointers to interface variables (columns of interface element matrix)
+        interfaceInterpolation=>interfaceEquations%INTERPOLATION%INTERFACE_INTERPOLATION
+        interfaceGeometricField=>interfaceInterpolation%GEOMETRIC_FIELD
+        interfaceDependentField=>interfaceInterpolation%DEPENDENT_FIELD
+        interfaceGeometricBasis=>interfaceGeometricField%DECOMPOSITION%DOMAIN(interfaceGeometricField% &
+          & DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+        interfaceDependentBasis=>interfaceDependentField%DECOMPOSITION%DOMAIN(interfaceDependentField% &
+          & DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+        !Integrate using the interface quadrature scheme
+        interfaceQuadratureScheme=>interfaceGeometricBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+        lagrangeVariable=>interfaceEquations%INTERFACE_MAPPING%LAGRANGE_VARIABLE
+        !lagrangeVariableNumberOfComponents=>interfaceEquations%INTERFACE_MAPPING%LAGRANGE_VARIABLE%NUMBER_OF_COMPONENTS
+        lagrangeVariableType=lagrangeVariable%VARIABLE_TYPE
+        !Get element interpolation parameters from the first geometric interpolation set (to get Jacobian for interface surface integral)
+        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,interfaceInterpolation% &
+          & GEOMETRIC_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+        !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
+        matrixCoefficient=1.0_DP
+        !Loop over interface matrices (1st solid, 2nd fluid)
+        DO coupledMeshIdx=1,interfaceEquations%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
+          IF(interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%UPDATE_MATRIX) THEN
+            !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
+            IF(coupledMeshIdx>1) THEN
+              matrixCoefficient=-1.0_DP
+            ENDIF 
+            !Pointers to the coupledMeshIdx'th coupled mesh variables (rows of interface element matrix)
+            coupledMeshDependentField=>interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)%DEPENDENT_FIELD
+            elementConnectivity=>interfaceCondition%INTERFACE%MESH_CONNECTIVITY%ELEMENT_CONNECTIVITY(elementNumber,coupledMeshIdx)
+            coupledMeshElementNumber=elementConnectivity%COUPLED_MESH_ELEMENT_NUMBER
+            interfaceMatrixVariable=> &
+              & interfaceEquations%INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(coupledMeshIdx)%VARIABLE
+            coupledMeshVariableType=interfaceMatrixVariable%VARIABLE_TYPE
+            interfaceElementMatrix=>interfaceEquations%INTERFACE_MATRICES%MATRICES(coupledMeshIdx)%PTR%ELEMENT_MATRIX
+            interfaceConnectivityBasis=>interfaceCondition%INTERFACE%MESH_CONNECTIVITY%BASIS
+
+            !coupledMeshDependentInterpolation=>interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)% &
+            !  & DEPENDENT_INTERPOLATION
+            
+            !=======================================================================================================================
+            !Loop over gauss points
+            DO GaussPoint=1,interfaceQuadratureScheme%NUMBER_OF_GAUSS
+              !CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,GaussPoint, &
+              !  & coupledMeshDependentInterpolation%GEOMETRIC_INTERPOLATION(1)%INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR, &
+              !  & err,error,*999)
+              !CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(interfaceGeometricBasis%NUMBER_OF_XI,interfaceInterpolation% &
+              !  & GEOMETRIC_INTERPOLATION(1)%INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+              !=====================================================================================================================
+              !Interpolates field at given gauss point, includes first partial derivatives
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,GaussPoint,interfaceInterpolation% &
+                & GEOMETRIC_INTERPOLATION(1)%INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+              !Calculates the interpolated point metrics and the associated interpolated point
+              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(interfaceGeometricBasis%NUMBER_OF_XI,interfaceInterpolation% &
+                & GEOMETRIC_INTERPOLATION(1)%INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
+              !=====================================================================================================================
+              ! R W G = GAUSSWEIGTHS * JACOBIAN
+              rwg=interfaceInterpolation%GEOMETRIC_INTERPOLATION(1)%INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                & JACOBIAN*interfaceQuadratureScheme%GAUSS_WEIGHTS(GaussPoint)
+              IF(interfaceCondition%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
+                  & coupledMeshIdx==interfaceEquations%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
+                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+              ELSE
+                !===================================================================================================================
+                !\todo defaults to first mesh component, generalise
+                !TODO Originally XI=...
+                XI(1:SIZE(elementConnectivity%XI,1))=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                  & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
+                ! Loop over number of Lagrange variable components as not all components in the dependent field variable may be coupled
+                !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
+                DO rowComponentIdx=1,lagrangeVariable%NUMBER_OF_COMPONENTS
+                  rowMeshComponentNumber=interfaceMatrixVariable%COMPONENTS(rowComponentIdx)%MESH_COMPONENT_NUMBER
+                  coupledMeshBasis=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(rowMeshComponentNumber)%PTR%TOPOLOGY% &
+                    & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%BASIS
+
+                  SELECT CASE(interfaceDependentBasis%NUMBER_OF_XI)
+
+                  CASE(1) !1D interface (line)
+                    connectedLine=elementConnectivity%CONNECTED_LINE
+                    decompositionLineNumber=coupledMeshDependentField%DECOMPOSITION%TOPOLOGY% &
+                      & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%ELEMENT_LINES(connectedLine)
+                    coupledMeshDomainLine=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(rowMeshComponentNumber)%PTR%TOPOLOGY% &
+                      & LINES%LINES(decompositionLineNumber)
+                    DO localLineNodeIdx=1,coupledMeshBasis%NUMBER_OF_NODES_IN_LOCAL_LINE(connectedLine)
+                      localElementNode=coupledMeshBasis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
+                      DO derivativeIdx=1,coupledMeshDomainLine%BASIS%NUMBER_OF_DERIVATIVES(localLineNodeIdx)
+                      !???????????????????
+                        derivative=coupledMeshBasis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,connectedLine)
+                        derivative=coupledMeshDomainLine%DERIVATIVES_IN_LINE(1,derivativeIdx,localLineNodeIdx)
+                      !???????????????????
+                        rowParameterIdx=coupledMeshBasis%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
+                        !===========================================================================================================
+                        ! P G M S I - this represents the D E P E N D E N T _ F I E L D S (solid, fluid)
+                        !Evaluates the appropriate partial derivative index at position XI for the basis
+                        PGMSI=BASIS_EVALUATE_XI(coupledMeshBasis,rowParameterIdx,NO_PART_DERIV,XI,err,error)
+                        rowIdx=rowParameterIdx+coupledMeshBasis%NUMBER_OF_ELEMENT_PARAMETERS*(rowComponentIdx-1)
+                        DO interfaceNode=1,interfaceDependentBasis%NUMBER_OF_NODES
+                          DO interfaceDerivative=1,interfaceDependentBasis%NUMBER_OF_DERIVATIVES(interfaceNode)
+                            !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
+                            colParameterIdx=interfaceDependentBasis%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
+                            !=======================================================================================================
+                            ! P G N S I - this represents the L A M B D A
+                            PGNSI=interfaceQuadratureScheme%GAUSS_BASIS_FNS(colParameterIdx,NO_PART_DERIV,GaussPoint)
+                            colIdx=colParameterIdx+interfaceDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(rowComponentIdx-1)
+                            !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
+                            interfaceElementMatrix%MATRIX(rowIdx,colIdx)=interfaceElementMatrix%MATRIX(rowIdx,colIdx)+ &
+                              & PGNSI*PGMSI*rwg*matrixCoefficient
+                          ENDDO !interfaceDerivative
+                        ENDDO !interfaceNode
+                      ENDDO !derivativeIdx
+                    ENDDO !localLineNodeIdx
+
+                  CASE(2) !2D interface (face)
+
+                    SELECT CASE(coupledMeshBasis%NUMBER_OF_XI)
+
+                    CASE(2) !Coupled Mesh has 2 xi directions
+                      DO localElementNode=1,coupledMeshBasis%NUMBER_OF_NODES
+                        DO derivative=1,coupledMeshBasis%NUMBER_OF_DERIVATIVES(localElementNode)
+                          rowParameterIdx=coupledMeshBasis%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
+                          !=========================================================================================================
+                          ! P G M S I
+                          PGMSI=BASIS_EVALUATE_XI(coupledMeshBasis,rowParameterIdx,NO_PART_DERIV, &
+                            & XI(1:coupledMeshBasis%NUMBER_OF_XI),err,error)
+                          rowIdx=rowParameterIdx+coupledMeshBasis%NUMBER_OF_ELEMENT_PARAMETERS*(rowComponentIdx-1)
+                          DO interfaceNode=1,interfaceDependentBasis%NUMBER_OF_NODES
+                            DO interfaceDerivative=1,interfaceDependentBasis%NUMBER_OF_DERIVATIVES(interfaceNode)
+                              !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
+                              colParameterIdx=interfaceDependentBasis%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
+                              !=====================================================================================================
+                              ! P G N S I
+                              PGNSI=interfaceQuadratureScheme%GAUSS_BASIS_FNS(colParameterIdx,NO_PART_DERIV,GaussPoint)
+                              colIdx=colParameterIdx+interfaceDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(rowComponentIdx-1)
+                              !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
+                              interfaceElementMatrix%MATRIX(rowIdx,colIdx)=interfaceElementMatrix%MATRIX(rowIdx,colIdx)+ &
+                                & PGNSI*PGMSI*rwg*matrixCoefficient
+                            ENDDO !interfaceDerivative
+                          ENDDO !interfaceNode
+                        ENDDO !derivative
+                      ENDDO !localElementNode
+
+                    CASE(3) !Coupled Mesh has 3 xi directions
+                      connectedFace = elementConnectivity%CONNECTED_FACE
+                      decompositionFaceNumber=coupledMeshDependentField%DECOMPOSITION%TOPOLOGY% &
+                        & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%ELEMENT_FACES(connectedFace)
+                      coupledMeshDomainFace=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(rowMeshComponentNumber)%PTR%TOPOLOGY% &
+                        & FACES%FACES(decompositionFaceNumber)
+                      DO localFaceNodeIdx=1,coupledMeshBasis%NUMBER_OF_NODES_IN_LOCAL_FACE(connectedFace)
+                        localElementNode=coupledMeshBasis%NODE_NUMBERS_IN_LOCAL_FACE(localFaceNodeIdx,connectedFace)
+                        DO derivativeIdx=1,coupledMeshDomainFace%BASIS%NUMBER_OF_DERIVATIVES(localFaceNodeIdx)
+                          derivative=coupledMeshBasis% &
+                            & DERIVATIVE_NUMBERS_IN_LOCAL_FACE(derivativeIdx,localFaceNodeIdx,connectedFace)
+                          rowParameterIdx=coupledMeshBasis%ELEMENT_PARAMETER_INDEX(derivative,localElementNode)
+                          !=========================================================================================================
+                          ! P G M S I
+                          PGMSI=BASIS_EVALUATE_XI(coupledMeshBasis,rowParameterIdx,NO_PART_DERIV, &
+                            & XI(1:coupledMeshBasis%NUMBER_OF_XI),err,error)
+                          rowIdx=rowParameterIdx+coupledMeshBasis%NUMBER_OF_ELEMENT_PARAMETERS*(rowComponentIdx-1)
+                          DO interfaceNode=1,interfaceDependentBasis%NUMBER_OF_NODES
+                            DO interfaceDerivative=1,interfaceDependentBasis%NUMBER_OF_DERIVATIVES(interfaceNode)
+                              !\todo requires equal number of nodes between interface mesh and coupled mesh. Generalize
+                              colParameterIdx=interfaceDependentBasis%ELEMENT_PARAMETER_INDEX(interfaceDerivative,interfaceNode)
+                              !=====================================================================================================
+                              ! P G N S I
+                              PGNSI=interfaceQuadratureScheme%GAUSS_BASIS_FNS(colParameterIdx,NO_PART_DERIV,GaussPoint)
+                              colIdx=colParameterIdx+interfaceDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(rowComponentIdx-1)
+                              !\todo Use matrix coefficients in solver routines when assembling solver matrices instead of multiplying them here
+                              interfaceElementMatrix%MATRIX(rowIdx,colIdx)=interfaceElementMatrix%MATRIX(rowIdx,colIdx)+ &
+                                & PGNSI*PGMSI*rwg*matrixCoefficient
+                            ENDDO !interfaceDerivative
+                          ENDDO !interfaceNode
+                        ENDDO !derivativeIdx
+                      ENDDO !FaceNodeIdx
+
+                    END SELECT !coupledMeshBasis%NUMBER_OF_XI
+
+                  END SELECT !interfaceDependentBasis%NUMBER_OF_XI
+
+                ENDDO !rowComponentIdx
+              ENDIF
+            ENDDO !GaussPoint
+
+            !Scale factor adjustment
+            !\todo check if scale factor adjustments are already made elsewhere eg when calculating the interface matrix contribution to the residual for non-linear problems
+            !\todo update looping of variables/components for non-zero matrix elements as done above 
+            IF(interfaceCondition%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
+              & coupledMeshIdx==interfaceEquations%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
+              CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            ELSE
+              !Scale factor adjustment for the Lagrange Variable (columns)
+              IF(interfaceDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(elementNumber, &
+                  & interfaceInterpolation%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(lagrangeVariableType)%PTR, &
+                  & err,error,*999)
+                rowIdx=0
+                !Use Lagrange variable number of components here since we are only dealing with Lagrange variable scale factors 
+                !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
+                DO rowComponentIdx=1,lagrangeVariable%NUMBER_OF_COMPONENTS
+                  rowMeshComponentNumber=interfaceMatrixVariable%COMPONENTS(rowComponentIdx)%MESH_COMPONENT_NUMBER
+                  coupledMeshBasis=>coupledMeshDependentField%DECOMPOSITION%DOMAIN(rowMeshComponentNumber)%PTR%TOPOLOGY% & 
+                    & ELEMENTS%ELEMENTS(coupledMeshElementNumber)%BASIS
+                  !Loop over element rows
+                  DO rowParameterIdx=1,coupledMeshBasis%NUMBER_OF_ELEMENT_PARAMETERS
+                    rowIdx=rowIdx+1
+                    colIdx=0
+                    !Loop over element columns
+                    DO colComponentIdx=1,lagrangeVariable%NUMBER_OF_COMPONENTS
+                      DO colParameterIdx=1,interfaceDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS
+                        colIdx=colIdx+1
+                        interfaceElementMatrix%MATRIX(rowIdx,colIdx)=interfaceElementMatrix%MATRIX(rowIdx,colIdx) * &
+                        & interfaceInterpolation%DEPENDENT_INTERPOLATION(1)% &
+                        & INTERPOLATION_PARAMETERS(lagrangeVariableType)%PTR%SCALE_FACTORS(colParameterIdx,colComponentIdx)
+                      ENDDO !colParameterIdx
+                    ENDDO !colComponentIdx
+                  ENDDO !rowParameterIdx
+                ENDDO !rowComponentIdx
+              ENDIF
+              !Scale factor adjustment for the row dependent variable
+              IF(coupledMeshDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(coupledMeshElementNumber, &
+                  & interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)% &
+                  & DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(coupledMeshVariableType)%PTR,err,error,*999)
+                rowIdx=0
+                DO rowComponentIdx=1,interfaceMatrixVariable%NUMBER_OF_COMPONENTS
+                  !Loop over element rows
+                  DO rowParameterIdx=1,coupledMeshBasis%NUMBER_OF_ELEMENT_PARAMETERS
+                    rowIdx=rowIdx+1
+                    colIdx=0
+                    !Loop over element columns
+                    DO colComponentIdx=1,lagrangeVariable%NUMBER_OF_COMPONENTS
+                      DO colParameterIdx=1,interfaceDependentBasis%NUMBER_OF_ELEMENT_PARAMETERS
+                        colIdx=colIdx+1
+                        interfaceElementMatrix%MATRIX(rowIdx,colIdx)=interfaceElementMatrix%MATRIX(rowIdx,colIdx)* &
+                        & interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)% &
+                        & DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(coupledMeshVariableType)%PTR% &
+                        & SCALE_FACTORS(rowParameterIdx,rowComponentIdx)
+                      ENDDO !colParameterIdx
+                    ENDDO !colComponentIdx
+                  ENDDO !rowParameterIdx
+                ENDDO !rowComponentIdx
+              ENDIF
+            ENDIF
+          ENDIF
+        ENDDO ! coupledMeshIdx
+        
+      CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
+        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CASE DEFAULT
+        localError="Interface condition integration type "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType, &
+          & "*",err,error))// " is not valid."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT !interfaceCondition%integrationType
+
+    CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
+      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+    CASE DEFAULT
+      localError="Interface condition method "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%METHOD,"*",err,error))// &
+        & " is not valid."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END SELECT
+
+    CALL EXITS("SolidFluidOperator_FiniteElementCalculate")
+    RETURN
+999 CALL ERRORS("SolidFluidOperator_FiniteElementCalculate",err,error)
+    CALL EXITS("SolidFluidOperator_FiniteElementCalculate")
+    RETURN 1
+  
+  END SUBROUTINE SolidFluidOperator_FiniteElementCalculate
   
   !
   !================================================================================================================================
