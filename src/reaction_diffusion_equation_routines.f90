@@ -1383,7 +1383,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(SOLVER_TYPE), POINTER :: PDE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
+    INTEGER(INTG) :: MPI_IERROR
     CALL ENTERS("REACTION_DIFFUSION_POST_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -1393,8 +1393,10 @@ CONTAINS
             CASE(PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE)
               SELECT CASE(SOLVER%GLOBAL_NUMBER)
                 CASE(1)
+
                 !do nothing
                 CASE(2)
+
                 !do nothing
                 CASE(3)
                   !OUTPUT SOLUTIONS AT EACH TIME STEP - should probably change this bit below to output 
@@ -1520,7 +1522,7 @@ CONTAINS
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                           CALL REACTION_DIFFUSION_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                             & ERR,ERROR,*999)
-                          CALL MPI_BARRIER(MPI_COMM_WORLD,MPI_IERROR)
+
                           !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                           !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                         ENDIF
