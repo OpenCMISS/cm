@@ -1,0 +1,5 @@
+# Strip_epstex_svgs
+
+## prefix includegraphics filename with 'svgs/' (subdirectory)
+s%unitlength\]{%unitlength\]{svgs/CUR_DIR/%
+

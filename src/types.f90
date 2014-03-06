@@ -360,6 +360,7 @@ MODULE TYPES
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
     TYPE(NODE_TYPE), ALLOCATABLE :: NODES(:) !<NODES(nodes_idx). The nodal information for the nodes_idx'th global node.
+    INTEGER(INTG), ALLOCATABLE :: COUPLED_NODES(:,:) !<Coupled meshes nodes numbers
     TYPE(TREE_TYPE), POINTER :: NODES_TREE !<The tree for user to global node mapping
   END TYPE NODES_TYPE
 
@@ -1313,6 +1314,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE FIELD_CREATE_VALUES_CACHE_TYPE
     LOGICAL :: LABEL_LOCKED !<Is .TRUE. if the field label has been locked, .FALSE. if not.
     LOGICAL :: DECOMPOSITION_LOCKED !<Is .TRUE. if the field decomposition has been locked, .FALSE. if not.
+    LOGICAL :: DataProjectionLocked !<Is .TRUE. if the field data projection has been locked, .FALSE. if not.
     LOGICAL :: DEPENDENT_TYPE_LOCKED !<Is .TRUE. if the field dependent type has been locked, .FALSE. if not.
     LOGICAL :: NUMBER_OF_VARIABLES_LOCKED !<Is .TRUE. if the number of field variables has been locked, .FALSE. if not.
     LOGICAL :: GEOMETRIC_FIELD_LOCKED !<Is .TRUE. if the geometric field has been locked, .FALSE. if not.
@@ -1347,7 +1349,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELDS_TYPE), POINTER :: FIELDS !<A pointer to the fields for this region.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field. If the field are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE!<A pointer to the interface containing the field. If the field are in a region rather than an interface then this pointer will be NULL and the interface pointer should be used.
-    INTEGER(INTG) :: TYPE !<The type of the field. \see FIELD_ROUTINES_FieldTypes
+    INTEGER(INTG) :: TYPE !<The type of the field. NOTE: this should be a field variable attribute as you may have a, say, geometric field variable and a general field variable bundled together in the same field. \see FIELD_ROUTINES_FieldTypes
     INTEGER(INTG) :: DEPENDENT_TYPE !<The dependent type of the field. \see FIELD_ROUTINES_DependentTypes
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition of the mesh for which the field is defined on.
     INTEGER(INTG) :: NUMBER_OF_VARIABLES !<The number of variable types in the field. Old CMISS name NCT(nr,nx)
@@ -1357,6 +1359,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field that this field uses. If the field itself is a geometric field then this will be a pointer back to itself.
     TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<If the field is a geometric field the pointer to the geometric parameters (lines, areas, volumes etc.). If the field is not a geometric field the pointer is NULL.
     TYPE(FIELD_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the field.
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DataProjection !<A pointer to the data projection that this field uses.
   END TYPE FIELD_TYPE
 
   !>A buffer type to allow for an array of pointers to a FIELD_TYPE.
@@ -1968,6 +1971,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in this interface matrix
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of rows in this interface matrix
+    INTEGER(INTG) :: INTERFACE_MATRIX_TIME_DEPENDENCE_TYPE !<Determines where the interface matrix is mapped to
+    INTEGER(INTG) :: INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE !<Determines where the transpose of the interface matrix is mapped to
     LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this interface matrix is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this interface matrix has not been assembled
     LOGICAL :: HAS_TRANSPOSE !<Is .TRUE. if this interface matrix has has transpose
@@ -2473,6 +2478,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: EXPLICIT !<Is .TRUE. if the dynamic scheme is an explicit scheme, .FALSE. if not.
     LOGICAL :: RESTART !<Is .TRUE. if the dynamic scheme is to be restarted (i.e., recalculate values at the current time step), .FALSE. if not.
     LOGICAL :: ALE !<Is .TRUE. if the dynamic scheme is an ALE scheme, .FALSE. if not.
+    LOGICAL :: FSI !<Is .TRUE. if the dynamic scheme is an FSI scheme and updates geometric fields, .FALSE. if not
     LOGICAL :: UPDATE_BC !<Is .TRUE. if the dynamic scheme has changing bc, .FALSE. if not.
     REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver.
     REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for.

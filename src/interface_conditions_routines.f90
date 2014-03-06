@@ -398,7 +398,7 @@ CONTAINS
               !not present in each of the coupled bodies, eliminating this dof from the solver matrices
               SELECT CASE(INTERFACE_CONDITION%OPERATOR)
               CASE(INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR,INTERFACE_CONDITION_FLS_CONTACT_OPERATOR, &
-                  & INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR)
+                & INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR,INTERFACE_CONDITION_SOLID_FLUID_OPERATOR)
                 !Check that the dependent variables have the same number of components
                 FIELD_VARIABLE=>INTERFACE_DEPENDENT%FIELD_VARIABLES(1)%PTR
                 IF(ASSOCIATED(FIELD_VARIABLE)) THEN
@@ -417,8 +417,6 @@ CONTAINS
                   CALL FLAG_ERROR("Interface field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(INTERFACE_CONDITION_SOLID_FLUID_OPERATOR)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1512,6 +1510,12 @@ CONTAINS
                       & INTERFACE_DEPENDENT%FIELD_VARIABLES(dependent_variable_number)%PTR%NUMBER_OF_COMPONENTS
                   ENDIF
                 ENDDO
+                ! Remove pressure component from number of coupled components
+                ! INTERFACE_CONDITION_SOLID_FLUID_OPERATOR might not be used as it is equivalent to
+                ! INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR if set up correctly
+                IF (INTERFACE_CONDITION%OPERATOR==INTERFACE_CONDITION_SOLID_FLUID_OPERATOR) THEN
+                  INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS=INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS-1
+                ENDIF
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & INTERFACE_CONDITION%LAGRANGE%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET(INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -2328,7 +2332,8 @@ CONTAINS
         CASE(INTERFACE_CONDITION_FLS_CONTACT_OPERATOR,INTERFACE_CONDITION_FLS_CONTACT_REPROJECT_OPERATOR)
           CALL FrictionlessContact_FiniteElementCalculate(interfaceCondition,interfaceElementNumber,ERR,ERROR,*999)
         CASE(INTERFACE_CONDITION_SOLID_FLUID_OPERATOR)
-          CALL FLAG_ERROR("Not implemented!",ERR,ERROR,*999)
+          CALL SolidFluidOperator_FiniteElementCalculate(interfaceCondition,interfaceElementNumber,ERR,ERROR,*999)
+          !CALL FLAG_ERROR("Not implemented!",ERR,ERROR,*999)
         CASE(INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR)
           CALL FLAG_ERROR("Not implemented!",ERR,ERROR,*999)
         CASE DEFAULT

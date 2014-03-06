@@ -84,6 +84,8 @@ MODULE OPENCMISS
   USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_CONDITIONS_ROUTINES
   USE INTERFACE_EQUATIONS_ROUTINES
+  USE INTERFACE_MATRICES_CONSTANTS
+  USE INTERFACE_MATRICES_ROUTINES
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
@@ -180,7 +182,7 @@ MODULE OPENCMISS
 
   !>Contains information for a fields defined on a region.
   TYPE CMISSFieldsType
-    PRIVATE
+    !PRIVATE
     TYPE(FIELDS_TYPE), POINTER :: FIELDS
   END TYPE CMISSFieldsType
 
@@ -848,6 +850,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL = BOUNDARY_CONDITION_IMPERMEABLE_WALL
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY = BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof
+
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FixedFitted = BOUNDARY_CONDITION_FixedFitted
   !>@}
   !> \addtogroup OPENCMISS_BoundaryConditionSparsityTypes OPENCMISS::BoundaryConditions::SparsityTypes
   !> \brief Storage type for matrices used by boundary conditions.
@@ -925,7 +929,7 @@ MODULE OPENCMISS
     & CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
     & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
     & CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL, &
-    & CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY
+    & CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY,CMISS_BOUNDARY_CONDITION_FixedFitted
 
   PUBLIC CMISS_BOUNDARY_CONDITION_NEUMANN_POINT,CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED,CMISS_BOUNDARY_CONDITION_DIRICHLET
   PUBLIC CMISS_BOUNDARY_CONDITION_CAUCHY,CMISS_BOUNDARY_CONDITION_ROBIN,CMISS_BOUNDARY_CONDITION_FIXED_INCREMENTED
@@ -2213,6 +2217,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PLATE_SUBTYPE = EQUATIONS_SET_PLATE_SUBTYPE !<Plate linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_SHELL_SUBTYPE = EQUATIONS_SET_SHELL_SUBTYPE !<Shell linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE = EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE !< Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE = &
+  & EQUATIONS_SET_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE !< Incompressible Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NEARLY_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE = &
+  & EQUATIONS_SET_NEARLY_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE !< Nearly Incompressible Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE = & 
+    & EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE !< Mooney-Rivlin constitutive law with steady-state active contraction for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STVENANT_KIRCHOFF_ACTIVECONTRACTION_SUBTYPE = & 
+    & EQUATIONS_SET_STVENANT_KIRCHOFF_ACTIVECONTRACTION_SUBTYPE !< St Venant Kirchoff constitutive law with steady-state active contraction for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE =&
     & EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE !< Active contraction/costa-based law with quasistatic time loop for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE = EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2222,6 +2234,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE !< Orthotropic Costa constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE= &
     & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE= &
+    & EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE !<Compressible version for finite elasticity equations set with active contraction subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE= &
@@ -2244,7 +2258,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE= &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE !<Holmes and Mow's poroelastic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE = &
-    & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE !< Transverse isotropic constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+    & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE !<Transverse isotropic constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE= &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE !<Humphrey and Yin transversely isotropic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2258,6 +2272,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = & 
     & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE =  &
+    & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = & 
     & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes equations set with coupled multidomain method subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = &
@@ -2292,6 +2308,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE = EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE = EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXTRACELLULAR_BIDOMAIN_POISSON_SUBTYPE = &
+    & EQUATIONS_SET_EXTRACELLULAR_BIDOMAIN_POISSON_SUBTYPE !<Poisson equations set subtype, that is the extracellular bidomain equation \see OPENCMISS_EquationsSetSubtypes,OPENCMISS  
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE = &
@@ -2409,6 +2427,10 @@ MODULE OPENCMISS
     & EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE = &
+    & EquationsSet_DataPointVectorStaticFittingSubtype !<Standard static Galerkin Projection using data points subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE = &
+    & EquationsSet_DataPointVectorQuasistaticFittingSubtype !<Standard quasistatic Galerkin Projection using data points subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
@@ -2425,6 +2447,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE !<Coupled 1D Monodomain 3D Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE =  &
     & EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE !<Coupled 1D Monodomain 3D Elasticity equations set subtype with titin \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
+    & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE !<Finite Elasticity Navier Stokes ALE equations set subtype \see OPENCMISS_EquationsSetSubtype,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -2669,8 +2693,11 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE,CMISS_EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE, &
     & CMISS_EQUATIONS_SET_PLATE_SUBTYPE, &
     & CMISS_EQUATIONS_SET_SHELL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE,CMISS_EQUATIONS_SET_NEARLY_INCOMPRESSIBLE_MOONEY_RIVLIN_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE,CMISS_EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE,CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE,CMISS_EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE
+    & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE,CMISS_EQUATIONS_SET_STVENANT_KIRCHOFF_ACTIVECONTRACTION_SUBTYPE,&
     & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE,CMISS_EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE, &
     & CMISS_EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,CMISS_EQUATIONS_SET_ELASTICITY_MULTI_COMP_DARCY_INRIA_SUBTYPE, &
@@ -2687,6 +2714,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE, &
     & CMISS_EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE, &
     & CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE, &
@@ -2697,6 +2725,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE,CMISS_EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE, &
     & CMISS_EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE,CMISS_EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_EXTRACELLULAR_BIDOMAIN_POISSON_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE, CMISS_EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE, CMISS_EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE,&
     & CMISS_EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE,CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE, &
@@ -2737,6 +2766,8 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE, &
     & CMISS_EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_MAT_PROP_INRIA_MODEL_DATA_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE, &
     & CMISS_EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE, &
     & CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE, &
@@ -2745,6 +2776,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_STATIC_BURGERS_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE,CMISS_EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE
+    & CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE
 
 
   PUBLIC CMISS_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE, CMISS_EQUATIONS_SET_CELLML_REAC_NO_SPLIT_REAC_DIFF_SUBTYPE, &
@@ -3383,6 +3415,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_MeshDecompositionSetObj
   END INTERFACE !CMISSField_MeshDecompositionSet
 
+  !>Sets/changes the data projection for a field.
+  INTERFACE CMISSField_DataProjectionSet
+    MODULE PROCEDURE CMISSField_DataProjectionSetNumber
+    MODULE PROCEDURE CMISSField_DataProjectionSetObj
+  END INTERFACE !CMISSField_DataProjectionSet
+
   !>Returns the number of field components for a field variable.
   INTERFACE CMISSField_NumberOfComponentsGet
     MODULE PROCEDURE CMISSField_NumberOfComponentsGetNumber
@@ -3653,6 +3691,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_ParameterSetInterpolateMultipleGaussDPObj
   END INTERFACE !CMISSField_ParameterSetInterpolateGauss
 
+  !>Updates the given parameter set with the given value for a particular data point of a field variable component.
+  INTERFACE CMISSField_ParameterSetUpdateElementDataPoint
+    MODULE PROCEDURE CMISSField_ParameterSetUpdateElementDataPointDPObj
+  END INTERFACE !CMISSField_ParameterSetUpdateElementDataPoint
+
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSField_ParameterSetUpdateFinish
   INTERFACE CMISSField_ParameterSetUpdateStart
     MODULE PROCEDURE CMISSField_ParameterSetUpdateStartNumber
@@ -3803,6 +3846,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSField_MeshDecompositionGet,CMISSField_MeshDecompositionSet
 
+  PUBLIC CMISSField_DataProjectionSet
+
   PUBLIC CMISSField_PositionNormalTangentCalculateNode
 
   PUBLIC CMISSField_NumberOfComponentsGet,CMISSField_NumberOfComponentsSet
@@ -3836,6 +3881,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_ParameterSetInterpolateXi
 
   PUBLIC CMISSField_ParameterSetInterpolateGauss
+
+  PUBLIC CMISSField_ParameterSetUpdateElementDataPoint
 
   PUBLIC CMISSField_ParameterSetUpdateFinish,CMISSField_ParameterSetUpdateStart
 
@@ -4203,6 +4250,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementNumberSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
   END INTERFACE !CMISSInterfaceMeshConnectivity_ElementNumberSet
+  
+  !>Sets the coupled node numbers
+  INTERFACE CMISSInterfaceMeshConnectivity_NodeNumberSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivity_NodeNumberSetObj
+  END INTERFACE
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivity_BasisSet
@@ -4282,6 +4335,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceMeshConnectivity_Destroy, CMISSInterfaceMeshConnectivity_BasisSet
 
   PUBLIC CMISSInterfaceMeshConnectivity_ElementNumberSet, CMISSInterfaceMeshConnectivity_ElementXiSet
+  
+  PUBLIC CMISSInterfaceMeshConnectivity_NodeNumberSet
   
   PUBLIC CMISSInterfacePointsConnectivity_CreateFinish,CMISSInterfacePointsConnectivity_CreateStart
   
@@ -4503,6 +4558,35 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceEquations_SparsityGet,CMISSInterfaceEquations_SparsitySet
 
   PUBLIC CMISSInterfaceEquations_OutputTypeGet,CMISSInterfaceEquations_OutputTypeSet
+  
+!!==================================================================================================================================
+!!
+!! INTERFACE MATRICES ROUTINES
+!!
+!!==================================================================================================================================
+  
+  !Module parameters
+
+  !> \addtogroup INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes INTERFACE_MATRICES_ROUTINES::InterfaceMatricesTimeDependenceTypes
+  !> \brief Interface matrices time dependency types
+  !> \see INTERFACE_MATRICES_ROUTINES
+  !>@{
+  INTEGER, PARAMETER :: CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES=NUMBER_OF_INTERFACE_MATRIX_TYPES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_STATIC=INTERFACE_MATRIX_STATIC !<Interface matrix is of static type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_QUASI_STATIC=INTERFACE_MATRIX_QUASI_STATIC !<Interface matrix is of quasi-static type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC=INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC !<Interface matrix is of first order dynamic type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  INTEGER, PARAMETER :: CMISS_INTERFACE_MATRIX_SECOND_ORDER_DYNAMIC=INTERFACE_MATRIX_SECOND_ORDER_DYNAMIC !<Interface matrix is of second order dynamic type \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+  !>@}
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+  PUBLIC CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES,CMISS_INTERFACE_MATRIX_STATIC,CMISS_INTERFACE_MATRIX_QUASI_STATIC, &
+    & CMISS_INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC,CMISS_INTERFACE_MATRIX_SECOND_ORDER_DYNAMIC
+  
+  PUBLIC CMISSInterfaceMatrices_TimeDependenceTypeSet,CMISSInterfaceMatrices_TimeDependenceTypeGet
 
 !!==================================================================================================================================
 !!
@@ -4810,9 +4894,37 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetObj
   END INTERFACE !CMISSDecomposition_ElementDomainGet
 
+  !>Calculates the decomposition topology for data points .
+  INTERFACE CMISSDecomposition_TopologyDataProjectionCalculate
+    MODULE PROCEDURE CMISSDecomposition_TopologyDataProjectionCalculateObj
+  END INTERFACE !CMISSDecomposition_TopologyDataProjectionCalculate
+
+  !>Gets the local data point number for data points projected on an element
+  INTERFACE CMISSDecomposition_TopologyElementDataPointLocalNumberGet
+    MODULE PROCEDURE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj
+  END INTERFACE !CMISSDecomposition_TopologyElementDataPointLocalNumberGet
+
+  !>Gets the user data point number for data points projected on an element
+  INTERFACE CMISSDecomposition_TopologyElementDataPointUserNumberGet
+    MODULE PROCEDURE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj
+  END INTERFACE !CMISSDecomposition_TopologyElementDataPointUserNumberGet
+
+  !>Gets the number of data points projected on an element
+  INTERFACE CMISSDecomposition_TopologyNumberOfElementDataPointsGet
+    MODULE PROCEDURE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj
+  END INTERFACE !CMISSDecomposition_TopologyNumberOfElementDataPointsGet
+
   PUBLIC CMISS_DECOMPOSITION_ALL_TYPE,CMISS_DECOMPOSITION_CALCULATED_TYPE,CMISS_DECOMPOSITION_USER_DEFINED_TYPE
 
   PUBLIC CMISSDecomposition_CreateFinish,CMISSDecomposition_CreateStart
+
+  PUBLIC CMISSDecomposition_TopologyDataProjectionCalculate
+
+  PUBLIC CMISSDecomposition_TopologyElementDataPointLocalNumberGet
+
+  PUBLIC CMISSDecomposition_TopologyElementDataPointUserNumberGet
+
+  PUBLIC CMISSDecomposition_TopologyNumberOfElementDataPointsGet
 
   PUBLIC CMISSDecomposition_Destroy
 
@@ -5127,7 +5239,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE = PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = &
     & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes problem with coupled multidomain method subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5146,6 +5258,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_GENERALISED_LAPLACE_SUBTYPE = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_POISEUILLE_SUBTYPE = PROBLEM_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE = PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_EXTRACELLULAR_BIDOMAIN_POISSON_SUBTYPE = PROBLEM_EXTRACELLULAR_BIDOMAIN_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE = PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE = PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5194,6 +5307,10 @@ MODULE OPENCMISS
     & PROBLEM_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE = &
+    & Problem_DataPointVectorStaticFittingSubtype !<Standard static Galerkin projection problem using data points subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE = &
+    & Problem_DataPointVectorQuasistaticFittingSubtype !<Standard quasistatic Galerkin projection problem using data points subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
@@ -5223,6 +5340,8 @@ MODULE OPENCMISS
     & PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE = & 
     & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE !<Transient monodomain simple elasticity problem subtype with titin \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE = &
+    & PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE !<Coupled Finite Elasticity Navier Stokes moving mesh subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5323,7 +5442,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE,CMISS_PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE, &
     & CMISS_PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE,CMISS_PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
-    & CMISS_PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE, CMISS_PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE
+    & CMISS_PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE, CMISS_PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE, &
+    & CMISS_PROBLEM_EXTRACELLULAR_BIDOMAIN_POISSON_SUBTYPE
 
 
   PUBLIC CMISS_PROBLEM_STANDARD_HELMHOLTZ_SUBTYPE,CMISS_PROBLEM_GENERALISED_HELMHOLTZ_SUBTYPE
@@ -5351,7 +5471,8 @@ MODULE OPENCMISS
   PUBLIC CMISS_PROBLEM_STANDARD_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE, &
     & CMISS_PROBLEM_VECTOR_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE, &
     & CMISS_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE,CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
-    & CMISS_PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE
+    & CMISS_PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_DATA_POINT_VECTOR_STATIC_FITTING_SUBTYPE, &
+    & CMISS_PROBLEM_DATA_PT_VECTOR_QUASISTATIC_FITTING_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE,CMISS_PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE, &
     & CMISS_PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE,CMISS_PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE
@@ -5366,7 +5487,7 @@ MODULE OPENCMISS
    & CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE, CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE, &
    & CMISS_PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE,CMISS_PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE, &
    & CMISS_PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,CMISS_PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE, &
-   & CMISS_PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE
+   & CMISS_PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE,CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_ALE_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE,CMISS_PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE
 !!==================================================================================================================================
@@ -6341,7 +6462,12 @@ MODULE OPENCMISS
     & CMISS_SOLVER_LAPACK_LIBRARY,CMISS_SOLVER_TAO_LIBRARY,CMISS_SOLVER_HYPRE_LIBRARY,CMISS_SOLVER_PASTIX_LIBRARY
 
   PUBLIC CMISS_SOLVER_LINEAR_DIRECT_SOLVE_TYPE,CMISS_SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
+  !################################
+  !These two lines below were changed (first one removed) in most recent merge with main opencmiss/cm on 26 Aug 2013
+  PUBLIC CMISS_SOLVER_DIRECT_LU,CMISS_SOLVER_DIRECT_CHOLESKY,CMISS_SOLVER_DIRECT_SVD
 
+  !PUBLIC CMISS_SOLVER_ITERATIVE_RICHARDSON,CMISS_SOLVER_ITERATIVE_CHEBYCHEV,CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
+  !################################
   PUBLIC CMISS_SOLVER_ITERATIVE_RICHARDSON,CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
     & CMISS_SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,CMISS_SOLVER_ITERATIVE_GMRES,CMISS_SOLVER_ITERATIVE_BiCGSTAB, &
     & CMISS_SOLVER_ITERATIVE_CONJGRAD_SQUARED
@@ -6444,6 +6570,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolver_LibraryTypeGet,CMISSSolver_LibraryTypeSet
 
   PUBLIC CMISSSolver_LinearDirectTypeSet
+
+  PUBLIC CMISSSolver_MumpsSetIcntl,CMISSSolver_MumpsSetCntl
 
   PUBLIC CMISSSolver_LinearIterativeAbsoluteToleranceSet
 
@@ -28003,6 +28131,96 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the data projection for a field identified by a user number.
+  SUBROUTINE CMISSField_DataProjectionSetNumber(regionUserNumber,fieldUserNumber,dataProjectionUserNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the mesh decomposition for.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the field to set the mesh decomposition for.
+    INTEGER(INTG), INTENT(IN) :: dataProjectionUserNumber !<The field data projection user number to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    INTEGER(INTG) :: DATA_PROJECTION_NUMBER
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_DataProjectionSetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,REGION,FIELD,err,error,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,err,error,*999)
+        IF(ASSOCIATED(DATA_POINTS)) THEN
+          CALL DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,dataProjectionUserNumber,DATA_PROJECTION_NUMBER,&
+           & err,ERROR,*999)
+          CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION_NUMBER,DATA_PROJECTION,Err,ERROR,*999)
+          IF(ASSOCIATED(DATA_PROJECTION)) THEN
+            CALL Field_DataProjectionSet(FIELD,DATA_PROJECTION,err,error,*999)
+          ELSE
+            localError="A data projection does not exist for the data points on region number "// &
+             & TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END IF
+        ELSE
+          localError="Data points do not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END IF
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_DataProjectionSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_DataProjectionSetNumber",err,error)
+    CALL EXITS("CMISSField_DataProjectionSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_DataProjectionSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the data projection for a field identified by an object.
+  SUBROUTINE CMISSField_DataProjectionSetObj(field,dataProjection,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to get the mesh decomposition for.
+    TYPE(CMISSDataProjectionType), INTENT(IN) :: dataProjection !<The data projection for the field to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_DataProjectionSetObj",err,error,*999)
+
+    CALL Field_DataProjectionSet(field%FIELD,dataProjection%DATA_PROJECTION,err,error,*999)
+
+    CALL EXITS("CMISSField_DataProjectionSetObj")
+    RETURN
+999 CALL ERRORS("CMISSField_DataProjectionSetObj",err,error)
+    CALL EXITS("CMISSField_DataProjectionSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_DataProjectionSetObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the number of componenets for a field variable for a field identified by a user number.
   SUBROUTINE CMISSField_NumberOfComponentsGetNumber(regionUserNumber,fieldUserNumber,variableType,numberOfComponents,err)
 
@@ -33344,6 +33562,39 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the given parameter set with the given double precision value for the element data point of the field variable component for a field identified by an object.
+  SUBROUTINE CMISSField_ParameterSetUpdateElementDataPointDPObj(field,variableType,fieldSetType,elementNumber,dataPointIndex, &
+       & componentNumber,value,err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The field to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The user element number to update the data point for.
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The index of the data point for the data points projected on this element.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number of the field variable to update the constant value for the field parameter set.
+    REAL(DP), INTENT(IN) :: value !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error,*999)
+
+    CALL Field_ParameterSetUpdateElementDataPoint(field%FIELD,variableType,fieldSetType,elementNumber,&
+    & dataPointIndex,componentNumber,value,err,error,*999)
+
+    CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error)
+    CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_ParameterSetUpdateElementDataPointDPObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by an object.
   SUBROUTINE CMISSField_ParameterSetUpdateGaussPointDPObj(field,variableType,fieldSetType,userElementNumber,gaussPointNumber, &
     & componentNumber, value,err)
@@ -37518,6 +37769,80 @@ CONTAINS
 
   END SUBROUTINE CMISSInterfaceMeshConnectivity_ElementNumberSetObj
 
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber(regionUserNumber,interfaceUserNumber, &
+     &  interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the interface meshe connectivity.
+    INTEGER(INTG), INTENT(IN) :: interfaceUserNumber !<The user number of the interface.
+    INTEGER(INTG), INTENT(IN) :: interfaceElementNumber !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: coupledMeshIndexNumber !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: coupledMeshElementNumber !<The coupled mesh element to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error,*999)
+
+    CALL FLAG_ERROR("Not implemented yet.",err,error,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the connectivity between nodes in coupled meshes to nodes in the interface mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetObj(interfaceMeshConnectivity,interfaceNodeNumbers, &
+     &  firstCoupledMeshIndexNumber,firstCoupledMeshNodeNumbers,secondCoupledMeshIndexNumber,secondCoupledMeshNodeNumbers,err)
+
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: interfaceMeshConnectivity !<The interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: interfaceNodeNumbers(:)  !<The interface mesh node numbers to which the specified coupled mesh nodes would be connected
+    INTEGER(INTG), INTENT(IN) :: firstCoupledMeshIndexNumber,secondCoupledMeshIndexNumber !<The index of the coupled meshes at the interface to set the node connectivity for
+    INTEGER(INTG), INTENT(IN) :: firstCoupledMeshNodeNumbers(:),secondCoupledMeshNodeNumbers(:) !<The coupled meshes nodes to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error,*999)
+    
+    IF(SIZE(interfaceNodeNumbers(:))==SIZE(firstCoupledMeshNodeNumbers(:)) &
+      & .AND.SIZE(interfaceNodeNumbers(:))==SIZE(secondCoupledMeshNodeNumbers(:))) THEN
+      !TODO Check pointers
+      !Set interface mesh connectivity node connectivity
+      CALL INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY%INTERFACE%NODES, &
+        & interfaceNodeNumbers,firstCoupledMeshIndexNumber,firstCoupledMeshNodeNumbers, &
+        & secondCoupledMeshIndexNumber,secondCoupledMeshNodeNumbers,err,error,*999)
+    ELSE
+      LOCAL_ERROR="Interface number of nodes does not match coupled meshes number of nodes."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error)
+    CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSInterfaceMeshConnectivity_NodeNumberSetObj
+
   !
   !================================================================================================================================
   !
@@ -40390,6 +40715,135 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSDecomposition_CreateFinishObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Calculates the decomposition topology for data points
+  SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj(decomposition,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error,*999)
+
+    CALL DecompositionTopology_DataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyDataProjectionCalculateObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyDataProjectionCalculateObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the local data point number for data points projected on an element
+  SUBROUTINE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj(decomposition,elementNumber,dataPointIndex, &
+       & dataPointLocalNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
+    INTEGER(INTG), INTENT(OUT) :: dataPointLocalNumber !<The data point local number to retu
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
+
+    CALL DecompositionTopology_ElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+     & dataPointLocalNumber,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the user data point number for data points projected on an element
+  SUBROUTINE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj(decomposition,elementNumber,dataPointIndex, &
+       & dataPointUserNumber,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(IN) :: dataPointIndex !<The data point index to get the number for
+    INTEGER(INTG), INTENT(OUT) :: dataPointUserNumber !<The data point user number to retu
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
+
+    CALL DecompositionTopology_ElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+     & dataPointUserNumber,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointUserNumberGetObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyElementDataPointUserNumberGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of data points projected on an element
+  SUBROUTINE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj(decomposition,elementNumber,numberOfDataPoints,err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !<The decomposition to finish creating.
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to get the data point for
+    INTEGER(INTG), INTENT(OUT) :: numberOfDataPoints !<The data point local number to return
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
+
+    CALL DecompositionTopology_NumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
+     & numberOfDataPoints,err,error,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj',err,error,*999)
+#endif
+
+    CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error)
+    CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj
 
   !
   !================================================================================================================================
@@ -50726,6 +51180,60 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the MUMPS ICNTL(icntl)=ivalue integer control parameters through the PETSc-MUMPS interface
+  SUBROUTINE CMISSSolver_MumpsSetIcntl(solver,icntl,ivalue,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS ICNTL integer control parameter 
+    INTEGER(INTG), INTENT(IN) :: ivalue !<The MUMPS ICNTL integer value to set: ICNTL(icntl)=ivalue
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_MumpsSetIcntl",err,error,*999)
+
+    CALL Solver_MumpsSetIcntl(solver%SOLVER,icntl,ivalue,err,error,*999)
+
+    CALL EXITS("CMISSSolver_MumpsSetIcntl")
+    RETURN
+999 CALL ERRORS("CMISSSolver_MumpsSetIcntl",err,error)
+    CALL EXITS("CMISSSolver_MumpsSetIcntl")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_MumpsSetIcntl
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the MUMPS CNTL(icntl)=val real/complex control parameters through the PETSc-MUMPS interface
+  SUBROUTINE CMISSSolver_MumpsSetCntl(solver,icntl,val,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS CNTL integer control parameter 
+    REAL(DP), INTENT(IN) :: val !<The MUMPS CNTL real value to set: CNTL(icntl)=val
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_MumpsSetCntl",err,error,*999)
+
+    CALL Solver_MumpsSetCntl(solver%SOLVER,icntl,val,err,error,*999)
+
+    CALL EXITS("CMISSSolver_MumpsSetCntl")
+    RETURN
+999 CALL ERRORS("CMISSSolver_MumpsSetCntl",err,error)
+    CALL EXITS("CMISSSolver_MumpsSetCntl")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_MumpsSetCntl
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the maximum absolute tolerance for an iterative linear solver identified by an user number.
   SUBROUTINE CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
     & absoluteTolerance,err)
@@ -54111,6 +54619,95 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Set the time dependence type of interface matrices
+  SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeSet(interfaceCondition, &
+    & interfaceMatrixIndex,hasTranspose,timeDependenceTypes,Err)
+    
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
+    INTEGER(INTG), INTENT(IN) :: timeDependenceTypes(:) !<Time dependence types for the given interface matrix and it's transpose (if any). \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: interfaceMatrixIndex
+    LOGICAL, INTENT(IN) :: hasTranspose
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error,*999)
+    
+    IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
+    IF(timeDependenceTypes(1)>0.AND.timeDependenceTypes(1)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES) THEN
+      CALL InterfaceMatrix_TimeDependenceTypeSet(interfaceCondition%INTERFACE_CONDITION, &
+        & interfaceMatrixIndex,.FALSE.,timeDependenceTypes(1),err,error,*999)
+      IF(hasTranspose.AND.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+        CALL InterfaceMatrix_TimeDependenceTypeSet(interfaceCondition%INTERFACE_CONDITION, &
+          & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
+      ELSE
+        IF(.NOT.hasTranspose) THEN
+          !ok)
+        ELSEIF(hasTranspose.AND. &
+          & .NOT.(timeDependenceTypes(2)>0.AND.timeDependenceTypes(2)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+          LOCAL_ERROR="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(interfaceMatrixIndex,"*",err,error))// &
+            & " has transpose but invalid time dependence type of "//TRIM(NUMBER_TO_VSTRING(timeDependenceTypes(1), &
+            & "*",err,error))//" ."
+          CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      LOCAL_ERROR="Interface matrix time dependence type of "//TRIM(NUMBER_TO_VSTRING(timeDependenceTypes(1),"*",err,error))// &
+        & " is invalid for interface matrix number "//TRIM(NUMBER_TO_VSTRING(interfaceMatrixIndex,"*",err,error))// &
+        & " ."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error)
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeSet
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Get the time dependence type of interface matrices
+  SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeGet(interfaceCondition, &
+    & interfaceMatrixIndex,hasTranspose,timeDependenceTypes,Err)
+    
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: interfaceCondition !<The interface condition to add.
+    INTEGER(INTG), INTENT(OUT) :: timeDependenceTypes(:) !<Time dependence types for the given interface matrix and it's transpose (if any). \see INTERFACE_MATRICES_ROUTINES_InterfaceMatricesTimeDependenceTypes,INTERFACE_MATRICES_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: interfaceMatrixIndex
+    LOGICAL, INTENT(IN) :: hasTranspose
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error,*999)
+    
+    IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
+    CALL InterfaceMatrix_TimeDependenceTypeGet(interfaceCondition%INTERFACE_CONDITION, &
+      & interfaceMatrixIndex,.FALSE.,timeDependenceTypes(1),err,error,*999)
+    IF(hasTranspose) THEN
+      CALL InterfaceMatrix_TimeDependenceTypeGet(interfaceCondition%INTERFACE_CONDITION, &
+        & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error)
+    CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMatrices_TimeDependenceTypeGet
+  
+  !
+  !================================================================================================================================
+  !
 
   !>Sets/changes the sparsity type for solver equations identified by an user number.
   SUBROUTINE CMISSSolverEquations_SparsityTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,sparsityType,err)
@@ -54876,7 +55473,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: meshArgumentName !< The name of the argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which to create the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: mesh !< On return, the newly created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !< On return, the newly created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartObjVS",err,error,*999)
@@ -54948,7 +55545,7 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName !< The name of the argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which to create the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: mesh !< On return, the newly created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !< On return, the newly created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartObjC",err,error,*999)
@@ -55020,7 +55617,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !< On return, the newly created coordinate system.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: coordinateSystem !< On return, the newly created coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS",err,error,*999)
@@ -55089,7 +55686,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !< On return, the newly created coordinate system.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: coordinateSystem !< On return, the newly created coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartObjC",err,error,*999)
@@ -55193,7 +55790,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
-    TYPE(CMISSBasisType), INTENT(OUT) :: basis !<On return, the newly created basis.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On return, the newly created basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartObjVS",err,error,*999)
@@ -55260,7 +55857,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
-    TYPE(CMISSBasisType), INTENT(OUT) :: basis !<On return, the newly created basis.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On return, the newly created basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartObjC",err,error,*999)
@@ -55292,7 +55889,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the nodes from.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     !Locals
@@ -55328,7 +55925,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the basis from.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes  !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes  !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartObjVS",err,error,*999)
@@ -55360,7 +55957,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the nodes from.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     !Locals
@@ -55396,7 +55993,7 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the basis from.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The user number of the region to create to the nodes in.
-    TYPE(CMISSNodesType), INTENT(OUT) :: nodes  !< On return, the newly created nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: nodes  !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartObjC",err,error,*999)
@@ -55581,7 +56178,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
-    TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjVS",err,error,*999)
@@ -55666,7 +56263,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
-    TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjC",err,error,*999)
