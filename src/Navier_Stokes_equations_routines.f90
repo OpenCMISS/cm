@@ -5330,8 +5330,8 @@ CONTAINS
                                 variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
                                 FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                                 IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                                  CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                                    & ERR,ERROR,*999)
+                                  CALL Field_ParameterSetEnsureCreated(DEPENDENT_FIELD,variable_type, &
+                                    & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
                                   DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                                     IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
                                       & FIELD_NODE_BASED_INTERPOLATION) THEN
@@ -5344,8 +5344,8 @@ CONTAINS
                                             DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                               DO dim_idx=1,NUMBER_OF_DIMENSIONS
                                                 !Default to version 1 of each node derivative
-                                                local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                                  & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
+                                                local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP% &
+                                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                                                 X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                                               ENDDO !dim_idx
 
@@ -5362,7 +5362,8 @@ CONTAINS
                                                 DO version_idx=1, &
                                                   & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%numberOfVersions
                                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(version_idx)
+                                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
+                                                    & VERSIONS(version_idx)
                                                   ! Set analytic values
                                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                     & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
