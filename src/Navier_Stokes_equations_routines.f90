@@ -94,6 +94,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NavierStokes_AnalyticCalculate
   PUBLIC NavierStokes_SUPGCalculate
   PUBLIC NavierStokes_Couple1D0D
+  PUBLIC NavierStokes_FiniteElementPreResidualEvaluate
 
 CONTAINS 
 
@@ -2508,7 +2509,7 @@ CONTAINS
             CASE(2)
               ! Characteristic solver
               CALL Characteristic_PreSolveUpdateBC(SOLVER,ERR,ERROR,*999)
-              CALL NavierStokes_Couple1D0D(CONTROL_LOOP,ERR,ERROR,*999)
+              CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(3)
               ! 1D Navier-Stokes solver
               CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(SOLVER,ERR,ERROR,*999)
@@ -4394,7 +4395,8 @@ CONTAINS
                   H0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                     & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
                   !Pressure equation
-                  pressure=65.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
+!                  pressure=65.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
+                  pressure=SQRT(PI)*E_PARAM*H0_PARAM/(0.75_DP*A0_PARAM)*(SQRT(As*area)-SQRT(A0_PARAM))
                   !Update the dependent field
                   IF(ELEMENT_NUMBER<=DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -5170,11 +5172,14 @@ CONTAINS
               END SELECT
             CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
               SELECT CASE(SOLVER%GLOBAL_NUMBER)
-              CASE(1,2)
-                ! DAE and characteristic solver- do nothing
+              CASE(1)
+                ! DAE solver- do nothing
+                CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CASE(2)
+                ! characteristic solver- do nothing
               CASE(3)
                 ! update 1D/0D coupling parameters and check convergence
-                CALL NavierStokes_Couple1D0D(CONTROL_LOOP,ERR,ERROR,*999)
+                CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 ! output data if 1D-0D coupling converged
                 IF (CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP==.FALSE.) THEN
                   CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(SOLVER,ERR,ERROR,*999)
@@ -9692,10 +9697,11 @@ CONTAINS
 
   !> Update the solution for the 1D solver with boundary conditions from a lumped parameter model defined by CellML. For more information please see chapter 11 of:  
   !> L. Formaggia, A. Quarteroni, and A. Veneziani, Cardiovascular mathematics: modeling and simulation of the circulatory system. Milan; New York: Springer, 2009.
-  SUBROUTINE NavierStokes_Couple1D0D(controlLoop,err,error,*)
+  SUBROUTINE NavierStokes_Couple1D0D(controlLoop,solver,err,error,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop
+    TYPE(SOLVER_TYPE), POINTER :: solver
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: error
     !Local Variables
@@ -9705,15 +9711,19 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
     TYPE(SOLVER_TYPE), POINTER :: solver1D
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     TYPE(VARYING_STRING) :: localError
-    INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfLocalNodes1D,solver1dNavierStokesNumber
+    INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfLocalNodes1D
+    INTEGER(INTG) :: solverCellmlNumber,solver1dNavierStokesNumber,solverNumber
     INTEGER(INTG) :: nodeBCs
     INTEGER(INTG) :: boundaryNumber,numberOfBoundaries,numberOfComputationalNodes
     INTEGER(INTG) :: MPI_IERROR
     REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,aCellML,aBoundary,areaCalculated,normalWave(2)
     REAL(DP) :: qBoundary,qPrevious,pPrevious
+    REAL(DP) :: q1d,q1dPrevious,q0d,q0dPrevious,couplingTolerance
+    REAL(DP) :: a1d,a1dPrevious,a0d,a0dPrevious
     LOGICAL :: boundaryNode,boundaryConverged(30),localConverged,MPI_LOGICAL
-    LOGICAL, ALLOCATABLE :: globalConverged(:)
+    LOGICAL, ALLOCATABLE :: globalConverged(:),coupleChars
 
     CALL ENTERS("NavierStokes_Couple1D0D",ERR,ERROR,*999)
 
@@ -9724,6 +9734,7 @@ CONTAINS
       versionIdx=1
       derivativeIdx=1
     CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+      solverCellmlNumber=1
       solver1dNavierStokesNumber=3
       versionIdx=1
       derivativeIdx=1
@@ -9734,6 +9745,8 @@ CONTAINS
     END SELECT
 
     solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+    solverNumber = solver%GLOBAL_NUMBER
+    couplingTolerance = 0.0001
 
     IF(ASSOCIATED(controlLoop)) THEN
       IF(ASSOCIATED(solver1D)) THEN
@@ -9785,60 +9798,6 @@ CONTAINS
       !!!-- F i n d   B o u n d a r y   N o d e s --!!!
       IF(ABS(normalWave(1))>ZERO_TOLERANCE .AND. boundaryNode) THEN
 
-        ! ! Check for inlet/outlet coupled BCs
-        ! inletNode=.FALSE.
-        ! outletNode=.FALSE.
-        ! nodeBCs = 0
-        ! boundaryConditions=>solver1D%SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-        ! IF(ASSOCIATED(boundaryConditions)) THEN
-        !   DO variableIdx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-        !     dependentVariableType=DEPENDENT_FIELD%VARIABLES(variableIdx)%VARIABLE_TYPE
-        !     NULLIFY(dependentFieldVariable)
-        !     CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,dependentVariableType,dependentFieldVariable,ERR,ERROR,*999)
-        !     CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS, &
-        !      & dependentFieldVariable,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
-        !     IF(ASSOCIATED(dependentFieldVariable)) THEN
-        !       DO componentIdx=1,dependentFieldVariable%NUMBER_OF_COMPONENTS
-        !         DOMAIN_NODES=>dependentFieldVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%NODES
-        !         IF(ASSOCIATED(DOMAIN_NODES)) THEN
-        !           DO derivativeIdx=1,DOMAIN_NODES%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
-        !             DO versionIdx=1,DOMAIN_NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
-        !               dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
-        !                & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-        !               boundaryConditionCheckVariable=boundaryConditionsVariable%CONDITION_TYPES(dependentDof)
-        !               IF(boundaryConditionCheckVariable > 0) nodeBCs = nodeBCs + 1
-        !               ! I n l e t
-        !               IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_INLET) THEN
-        !                 inletNode=.TRUE.
-        !                 returnComponent=1
-        !                 oneDComponent=2
-        !                 boundaryIdx=boundaryIdx+1
-        !               ! O u t l e t
-        !               ELSE IF(boundaryConditionCheckVariable==BOUNDARY_CONDITION_FIXED_OUTLET) THEN
-        !                 outletNode=.TRUE.
-        !                 oneDComponent=1
-        !                 returnComponent=2
-        !                 boundaryIdx=boundaryIdx+1
-        !               ELSE
-        !                 CALL FLAG_ERROR("Please set 1D-0D coupled boundary as inlet or outlet.",ERR,ERROR,*999)
-        !               ENDIF
-        !             ENDDO ! versionIdx
-        !           ENDDO ! derivativeIdx
-        !         ELSE
-        !           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
-        !         ENDIF
-        !       ENDDO ! componentIdx
-        !     ELSE
-        !       CALL FLAG_ERROR("Dependent field variable is not associated.",ERR,ERROR,*999)
-        !     ENDIF
-        !   ENDDO ! variableIdx
-        ! ELSE
-        !   CALL FLAG_ERROR("Boundary conditions not associated on 1D solver.",ERR,ERROR,*999)
-        ! ENDIF
-        ! IF (nodeBCs > 1) THEN
-        !   CALL FLAG_ERROR("Multiple boundary conditions set on coupled 1D0D fluid boundary.",ERR,ERROR,*999)
-        ! ENDIF
-
         boundaryNumber = boundaryNumber + 1
         boundaryConverged(boundaryNumber) = .FALSE.
         !Get material parameters
@@ -9852,112 +9811,95 @@ CONTAINS
           & versionIdx,derivativeIdx,nodeIdx,3,H0_PARAM,err,error,*999)                
         Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
 
-        ! C u r r e n t   Q , A   V a l u e s
-        ! -----------------------------------
-        !Get Q at boundary node
+        ! C u r r e n t   Q 1 D , A 1 D , p C e l l M L   V a l u e s
+        ! ------------------------------------------------------------
+        !Get Q1D
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & versionIdx,derivativeIdx,nodeIdx,1,qBoundary,err,error,*999)         
-        !Get A at boundary node
+          & versionIdx,derivativeIdx,nodeIdx,1,q1d,err,error,*999)         
+        !Get A1D
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & versionIdx,derivativeIdx,nodeIdx,2,aBoundary,err,error,*999)
+          & versionIdx,derivativeIdx,nodeIdx,2,a1d,err,error,*999)
         !Get pCellML
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)
+        !Calculate a0d from pCellML based on pressure-area relationship
+        a0d=(((pCellML)/Beta+SQRT(A0_PARAM))**2.0_DP)/As
 
-        ! U p d a t e   A   f r o m   p C e l l M L
-        ! ------------------------------------------
-        !Recalculate A at boundary node 
-        aCellML=(((pCellML)/Beta+SQRT(A0_PARAM))**2.0_DP)/As
-!        areaCalculated=(((aBoundary**0.25_DP)+(aCellML**0.25_DP))**4.0_DP)/16.0_DP
-        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & versionIdx,derivativeIdx,nodeIdx,2,aCellML,err,error,*999)
-
-
-        ! ! C a l c u l a t e   B o u n d a r y    C h a r a c t e r i s t i c 
-        ! !---------------------------------------------------------------------
-        ! ! Calculate characteristic variable W depending on whether this is an inlet or outlet (other W component will come
-        ! ! from update boundary conditions)
-        ! IF(inletNode .OR. outletNode) THEN
-        !   W(oneDComponent) = qBoundary/aBoundary+normalWave(oneDComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
-        !   W0 = qBoundary/aBoundary+normalWave(returnComponent)*4.0_DP*SQRT(Fr*Beta)*(aboundary**0.25_DP)
-        !   W(returnComponent) = W0 + qBoundary/aBoundary + normalWave(returnComponent)*(16.0_DP*Fr)* &
-        !    & (SQRT(pressure) - SQRT(pVesselWall))
-
-        !   versionIdx=1
-        !   DO componentIdx=1,2
-        !     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_V_VARIABLE_TYPE, &
-        !      & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx,W(componentIdx),ERR,ERROR,*999)
-        !   ENDDO
-        ! ENDIF
-
-
-        ! C h e c k   C o n v e r g e n c e   f o r   t h i s   n o d e
-        ! -------------------------------------------------------------
-        IF (controlLoop%WHILE_LOOP%ITERATION_NUMBER>=2) THEN
-          !Get previous Q value
-          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
-            & versionIdx,derivativeIdx,nodeIdx,1,qPrevious,err,error,*999)         
-          !Get previous pCellML value
-          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
-            & versionIdx,derivativeIdx,nodeIdx,1,pPrevious,err,error,*999)
-          ! Check if the boundary interface values have converged
-          IF (ABS(qPrevious - qBoundary) < ABS(qPrevious/100.0_DP) .AND. &
-            & ABS(pPrevious - pCellML)   < ABS(pPrevious/100.0_DP)) THEN
-            boundaryConverged(boundaryNumber) = .TRUE.
-          ENDIF
-        ELSE
-          ! Create the previous iteration field values type on the dependent field if it does not exist
-          NULLIFY(fieldVariable)
-          CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-          IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE)%PTR)) THEN
-            CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-             & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
-          ENDIF
-          NULLIFY(fieldVariable)
-          CALL FIELD_VARIABLE_GET(dependentField,FIELD_U1_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-          IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE)%PTR)) THEN
-            CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U1_VARIABLE_TYPE, &
-             & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
-          ENDIF
+        !Update A1D = A0D if this is the 0D solver post-solve
+        IF (solverNumber == solverCellMLNumber) THEN
+          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,derivativeIdx,nodeIdx,2,a0d,err,error,*999)
         ENDIF
-        ! store qBoundary as previous iteration value
-        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-         & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,qBoundary,err,error,*999)          
-        ! store pCellML as previous iteration value
-        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE, &
-         & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)          
 
+        ! C h e c k  1 D / 0 D   C o n v e r g e n c e   f o r   t h i s   n o d e
+        ! -------------------------------------------------------------------------
+        IF (solverNumber == solver1dNavierStokesNumber) THEN
+          IF (controlLoop%WHILE_LOOP%ITERATION_NUMBER>=2) THEN
+            !Get previous Q1D 
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeIdx,1,qPrevious,err,error,*999)         
+            !Get previous pCellML value
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeIdx,1,pPrevious,err,error,*999)         
+            ! Check if the boundary interface values have converged
+            IF (ABS(qPrevious - q1d) < couplingTolerance .AND. &
+              & ABS(pCellML - pPrevious) < couplingTolerance) THEN
+              boundaryConverged(boundaryNumber) = .TRUE.
+            ENDIF
+          ELSE
+            ! Create the previous iteration field values type on the dependent field if it does not exist
+            NULLIFY(fieldVariable)
+            CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+            IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE)%PTR)) THEN
+              CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+               & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
+            ENDIF
+            NULLIFY(fieldVariable)
+            CALL FIELD_VARIABLE_GET(dependentField,FIELD_U1_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+            IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE)%PTR)) THEN
+              CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U1_VARIABLE_TYPE, &
+               & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+          ! store Q and A Boundary values as previous iteration value
+          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+           & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,q1d,err,error,*999)          
+          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE, &
+           & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)          
+        ENDIF ! check 1d solver
       ENDIF !Find boundary nodes
     ENDDO !Loop over nodes 
     numberOfBoundaries = boundaryNumber
 
-    ! ------------------------------------------------------------------
-    ! C h e c k   G l o b a l   C o u p l i n g   C o n v e r g e n c e
-    ! ------------------------------------------------------------------
-    ! Check whether all boundaries on the local process have converged
-    IF (numberOfBoundaries == 0 .OR. ALL(boundaryConverged(1:numberOfBoundaries))) THEN
-      localConverged = .TRUE.
-    ELSE
-      localConverged = .FALSE.
-    ENDIF
-    ! Need to check that boundaries have converged globally (on all domains) if this is a parallel problem
-    numberOfComputationalNodes=COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES
-    IF(numberOfComputationalNodes>1) THEN !use mpi
-      !allocate array for mpi communication
-      ALLOCATE(globalConverged(numberOfComputationalNodes),STAT=ERR) 
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global convergence check array.",ERR,ERROR,*999)
-      CALL MPI_ALLGATHER(localConverged,1,MPI_LOGICAL,globalConverged,1,MPI_LOGICAL, &
-       & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
-      CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
-      IF (ALL(globalConverged)) THEN
-        write(*,*)'+++    1D0D coupling converged   +++'
-        controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+    IF (solverNumber == solver1dNavierStokesNumber) THEN
+      ! ------------------------------------------------------------------
+      ! C h e c k   G l o b a l   C o u p l i n g   C o n v e r g e n c e
+      ! ------------------------------------------------------------------
+      ! Check whether all boundaries on the local process have converged
+      IF (numberOfBoundaries == 0 .OR. ALL(boundaryConverged(1:numberOfBoundaries))) THEN
+        localConverged = .TRUE.
+      ELSE
+        localConverged = .FALSE.
       ENDIF
-      DEALLOCATE(globalConverged)
-    ELSE
-      IF (localConverged) THEN
-        write(*,*)'+++    1D0D coupling converged   +++'
-        controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+      ! Need to check that boundaries have converged globally (on all domains) if this is a parallel problem
+      numberOfComputationalNodes=COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES
+      IF(numberOfComputationalNodes>1) THEN !use mpi
+        !allocate array for mpi communication
+        ALLOCATE(globalConverged(numberOfComputationalNodes),STAT=ERR) 
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global convergence check array.",ERR,ERROR,*999)
+        CALL MPI_ALLGATHER(localConverged,1,MPI_LOGICAL,globalConverged,1,MPI_LOGICAL, &
+         & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+        CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
+        IF (ALL(globalConverged)) THEN
+          write(*,*)'+++    1D0D coupling converged   +++'
+          controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+        ENDIF
+        DEALLOCATE(globalConverged)
+      ELSE
+        IF (localConverged) THEN
+          write(*,*)'+++    1D0D coupling converged   +++'
+          controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+        ENDIF
       ENDIF
     ENDIF
 
@@ -9968,6 +9910,58 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Pre-residual evaluation a navier-stokes finite element equations set.
+  SUBROUTINE NavierStokes_FiniteElementPreResidualEvaluate(solver,equationsSet,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer the equations set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("NavierStokes_FiniteElementPreResidualEvaluate",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%SUBTYPE)
+      CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+        ! Call the characteristics solver during the Navier-Stokes nonlinear iteration
+        IF (solver%SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER == 3) THEN
+          CALL SOLVER_SOLVE(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
+        ENDIF
+      CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
+        !Do nothing
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+          & " is not valid for a finite elasticity equation type of an elasticity equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("NavierStokes_FiniteElementPreResidualEvaluate")
+    RETURN
+
+999 CALL ERRORS("NavierStokes_FiniteElementPreResidualEvaluate",err,error)
+    CALL EXITS("NavierStokes_FiniteElementPreResidualEvaluate")
+    RETURN 1
+  END SUBROUTINE NavierStokes_FiniteElementPreResidualEvaluate
 
   !
   !================================================================================================================================
