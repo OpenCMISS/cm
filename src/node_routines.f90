@@ -893,7 +893,7 @@ CONTAINS
             ENDIF
           ENDDO !nodeIdx
           CALL TREE_DESTROY(nodes%NODES_TREE,err,error,*999)
-          nodes%NODES_TREE=newNodesTree
+          nodes%NODES_TREE=>newNodesTree
           NULLIFY(newNodesTree)
           DO nodeIdx=1,nodes%NUMBER_OF_NODES
             nodes%NODES(nodeIdx)%GLOBAL_NUMBER=nodeIdx

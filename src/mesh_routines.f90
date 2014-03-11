@@ -8371,7 +8371,7 @@ CONTAINS
             ENDIF
           ENDDO !elementIdx
           CALL TREE_DESTROY(elements%ELEMENTS_TREE,err,error,*999)
-          elements%ELEMENTS_TREE=newElementsTree
+          elements%ELEMENTS_TREE=>newElementsTree
           NULLIFY(newElementsTree)
           DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
             elements%ELEMENTS(elementIdx)%GLOBAL_NUMBER=elementIdx

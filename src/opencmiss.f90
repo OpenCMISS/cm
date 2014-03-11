@@ -43824,7 +43824,7 @@ CONTAINS
       CALL MESH_USER_NUMBER_FIND(meshUserNumber,REGION,MESH,err,error,*999)
       IF(ASSOCIATED(MESH)) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,meshComponentNumber,MESH_ELEMENTS,err,error,*999)
-        CALL Mesh_TopologyElementsAllUserNumbersSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
+        CALL Mesh_TopologyElementsUserNumbersAllSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
