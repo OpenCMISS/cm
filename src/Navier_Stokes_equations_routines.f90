@@ -4239,11 +4239,11 @@ CONTAINS
               ENDIF
             ENDIF
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!                                        !!!!!
-!!!!!         1 D  T R A N S I E N T         !!!!!
-!!!!!                                        !!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !!!!!                                        !!!!!
+            !!!!!         1 D  T R A N S I E N T         !!!!!
+            !!!!!                                        !!!!!
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             !Start with matrix calculations
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE .OR. &
@@ -9933,6 +9933,7 @@ CONTAINS
       CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
         ! Call the characteristics solver during the Navier-Stokes nonlinear iteration
         IF (solver%SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER == 3) THEN
+          CALL Characteristic_PreSolveUpdateBC(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
           CALL SOLVER_SOLVE(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
         ENDIF
       CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &

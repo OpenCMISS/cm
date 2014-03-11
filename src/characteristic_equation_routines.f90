@@ -1290,13 +1290,14 @@ CONTAINS
     TYPE(DOMAIN_TYPE), POINTER :: dependentDomain,materialsDomain
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
     TYPE(EQUATIONS_TYPE), POINTER :: equations
-    TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField
+    TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField,geometricField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     REAL(DP), POINTER :: independentParameters(:)
-    REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,normalWave(2,4)
-    INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny
+    REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,normalWave(2,4),elementLengths(4)
+    REAL(DP) :: alpha,elementLength,minLength
+    INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny,lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
 
     CALL ENTERS("Characteristic_PreSolveUpdateBC",ERR,ERROR,*999)
@@ -1307,6 +1308,7 @@ CONTAINS
     NULLIFY(materialsDomain)
     NULLIFY(equationsSet)
     NULLIFY(equations)
+    NULLIFY(geometricField)
     NULLIFY(dependentField)
     NULLIFY(independentField)
     NULLIFY(materialsField)
@@ -1325,6 +1327,7 @@ CONTAINS
             equations=>equationsSet%EQUATIONS
             IF(ASSOCIATED(equations)) THEN
               !Set General and Specific Pointer
+              geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
               dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
               independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
               materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
@@ -1356,9 +1359,15 @@ CONTAINS
                 !!!-- F i n d   B r a n c h   N o d e s --!!!
                 IF(ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1))>0) THEN
                   IF(numberOfVersions>1) THEN
-
+                    
+                    elementLengths = 0.0_DP
+                    minLength = 1.0E20_DP
                     DO elementIdx=1,dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
                       elementNumber=dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(elementIdx)
+                      ! Get the line lengths to extrapolate at equidistant points from the branch node
+                      lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)% &
+                       & ELEMENT_LINES(1)
+                      elementLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
                       !Loop over the nodes on this (surrounding) element
                       dependentBasis=>dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
                       materialsBasis=>materialsDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
@@ -1387,22 +1396,27 @@ CONTAINS
                                 & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,3,H0_PARAM(versionIdx),err,error,*999)            
                               Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
                                 & (3.0_DP*A0_PARAM(versionIdx))
+                              ! Get the element length based on this node version and check if it is the smallest
+                              elementLengths(versionIdx) = elementLength
+                              IF (elementLengths(versionIdx) > ZERO_TOLERANCE .AND. elementLengths(versionIdx) < minLength) THEN 
+                                minLength = elementLengths(versionIdx)
+                              ENDIF
                             ENDIF
                           ENDDO
                         ENDIF
                       ENDDO
                     ENDDO
 
-                    !Extrapolate Q & A at branch elements
+                    !Extrapolate Q & A at branch elements at 0.8/0.2 xi scaled to the shortest element
                     DO componentIdx=1,2
                       DO versionIdx=1,numberOfVersions                         
                         IF(ABS(normalWave(componentIdx,versionIdx))> ZERO_TOLERANCE) THEN
                           IF(normalWave(componentIdx,versionIdx)>ZERO_TOLERANCE) THEN
                             !Inlet
-                            XI(1)=0.8_DP
+                            XI(1)=0.8_DP*minLength/elementLengths(versionIdx)
                           ELSE
                             !Outlet
-                            XI(1)=0.2_DP
+                            XI(1)=0.2_DP*minLength/elementLengths(versionIdx)
                           ENDIF
                           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
                             & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
