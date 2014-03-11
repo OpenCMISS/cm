@@ -98,7 +98,7 @@ MODULE NODE_ROUTINES
   
   PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
   
-  PUBLIC Nodes_AllUserNumbersSet
+  PUBLIC Nodes_UserNumbersAllSet
 
   !PUBLIC NODES_NUMBER_OF_VERSIONS_SET
 
@@ -857,8 +857,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the user numbers for all nodes. \see OPENCMISS::CMISSNodes_AllUserNumbersSet
-  SUBROUTINE Nodes_AllUserNumbersSet(nodes,userNumbers,err,error,*)
+  !>Changes/sets the user numbers for all nodes. \see OPENCMISS::CMISSNodes_UserNumbersAllSet
+  SUBROUTINE Nodes_UserNumbersAllSet(nodes,userNumbers,err,error,*)
 
     !Argument variables
     TYPE(NODES_TYPE), POINTER :: nodes !<A pointer to the nodes to set the numbers for
@@ -867,51 +867,59 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     INTEGER(INTG) :: nodeIdx,insertStatus
+    TYPE(TREE_TYPE), POINTER :: newNodesTree
     TYPE(VARYING_STRING) :: localError
+
+    NULLIFY(newNodesTree)
     
-    CALL ENTERS("Nodes_AllUserNumbersSet",err,error,*999)
+    CALL ENTERS("Nodes_UserNumbersAllSet",err,error,*999)
 
     IF(ASSOCIATED(nodes)) THEN
       IF(nodes%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have been finished.",err,error,*999)
+        CALL FlagError("Nodes have been finished.",err,error,*999)
       ELSE
         IF(nodes%NUMBER_OF_NODES==SIZE(userNumbers,1)) THEN
-          CALL TREE_DESTROY(nodes%NODES_TREE,err,error,*999)
-          CALL TREE_CREATE_START(nodes%NODES_TREE,err,error,*999)
-          CALL TREE_INSERT_TYPE_SET(nodes%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,err,error,*999)
-          CALL TREE_CREATE_FINISH(nodes%NODES_TREE,err,error,*999)
+          !Check the users numbers to ensure that there are no duplicates                    
+          CALL TREE_CREATE_START(newNodesTree,err,error,*999)
+          CALL TREE_INSERT_TYPE_SET(newNodesTree,TREE_NO_DUPLICATES_ALLOWED,err,error,*999)
+          CALL TREE_CREATE_FINISH(newNodesTree,err,error,*999)
           DO nodeIdx=1,nodes%NUMBER_OF_NODES
-            IF(userNumbers(nodeIdx)>0) THEN
-              nodes%NODES(nodeIdx)%GLOBAL_NUMBER=nodeIdx
-              nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
-              nodes%NODES(nodeIdx)%LABEL=""
-              CALL TREE_ITEM_INSERT(nodes%NODES_TREE,userNumbers(nodeIdx),nodeIdx,insertStatus,err,error,*999)
-              IF(insertStatus/=TREE_NODE_INSERT_SUCESSFUL) THEN
-                localError="The user number for global node of "//TRIM(NUMBER_TO_VSTRING(nodeIdx,"*",err,error))// &
-                  & " is duplicated. The user node numbers must be unique."
-                CALL FLAG_ERROR(localError,err,error,*999)
-              ENDIF
-              nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
-            ELSE
-              CALL FLAG_ERROR("User node numbers cannot be negative.",err,error,*999)
+            CALL TREE_ITEM_INSERT(newNodesTree,userNumbers(nodeIdx),nodeIdx,insertStatus,err,error,*999)
+            IF(insertStatus/=TREE_NODE_INSERT_SUCESSFUL) THEN
+              localError="The specified user number of "//TRIM(NumberToVstring(userNumbers(nodeIdx),"*",err,error))// &
+                & " for global node number "//TRIM(NumberToVstring(nodeIdx,"*",err,error))// &
+                & " is a duplicate. The user node numbers must be unique."
+              CALL FlagError(localError,err,error,*999)
             ENDIF
           ENDDO !nodeIdx
+          CALL TREE_DESTROY(nodes%NODES_TREE,err,error,*999)
+          nodes%NODES_TREE=newNodesTree
+          NULLIFY(newNodesTree)
+          DO nodeIdx=1,nodes%NUMBER_OF_NODES
+            nodes%NODES(nodeIdx)%GLOBAL_NUMBER=nodeIdx
+            nodes%NODES(nodeIdx)%USER_NUMBER=userNumbers(nodeIdx)
+          ENDDO !nodesIdx
         ELSE
-          CALL FLAG_ERROR("Number of node user numbers input does not match number of nodes.",err,error,*999)
+          localError="The number of specified node user numbers ("// &
+            TRIM(NumberToVstring(SIZE(userNumbers,1),"*",err,error))// &
+            ") does not match number of nodes ("// &
+            TRIM(NumberToVstring(nodes%NUMBER_OF_NODES,"*",err,error))//")."
+          CALL FlagError(localError,err,error,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",err,error,*999)
+      CALL FlagError("Nodes is not associated.",err,error,*999)
     ENDIF
     
-    CALL EXITS("Nodes_AllUserNumbersSet")
+    CALL EXITS("Nodes_UserNumbersAllSet")
     RETURN
-999 CALL ERRORS("Nodes_AllUserNumbersSet",err,error)    
-    CALL EXITS("Nodes_AllUserNumbersSet")
+999 IF(ASSOCIATED(newNodesTree)) CALL TREE_DESTROY(newNodesTree,err,error,*998)
+998 CALL ERRORS("Nodes_UserNumbersAllSet",err,error)    
+    CALL EXITS("Nodes_UserNumbersAllSet")
     RETURN 1
    
-  END SUBROUTINE Nodes_AllUserNumbersSet
-
+  END SUBROUTINE Nodes_UserNumbersAllSet
+  
   !
   !================================================================================================================================
   !
