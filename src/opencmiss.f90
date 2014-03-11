@@ -4880,6 +4880,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElements_UserNumberSetNumber
     MODULE PROCEDURE CMISSMeshElements_UserNumberSetObj
   END INTERFACE !CMISSMeshElements_UserNumberSet
+  
+  !>Sets/changes the element user numbers for all element in a mesh.
+  INTERFACE CMISSMeshElements_UserNumbersAllSet
+    MODULE PROCEDURE CMISSMeshElements_UserNumbersAllSetNumber
+    MODULE PROCEDURE CMISSMeshElements_UserNumbersAllSetObj
+  END INTERFACE CMISSMeshElements_UserNumbersAllSet
 
   !>Returns true if the given node is in the given mesh component.
   INTERFACE CMISSMesh_NodeExists
@@ -4964,6 +4970,8 @@ MODULE OPENCMISS
   PUBLIC CMISSMeshElements_NodesGet,CMISSMeshElements_NodesSet
 
   PUBLIC CMISSMeshElements_UserNumberGet,CMISSMeshElements_UserNumberSet
+  
+  PUBLIC CMISSMeshElements_UserNumbersAllSet
 
   PUBLIC CMISSMesh_ElementsGet
 
@@ -5148,10 +5156,10 @@ MODULE OPENCMISS
   END INTERFACE !CMISSNodes_UserNumberSet
   
   !>Sets/changes the all user number for nodes.
-  INTERFACE CMISSNodes_AllUserNumbersSet
-    MODULE PROCEDURE CMISSNodes_AllUserNumbersSetNumber
-    MODULE PROCEDURE CMISSNodes_AllUserNumbersSetObj
-  END INTERFACE !CMISSNodes_AllUserNumbersSet
+  INTERFACE CMISSNodes_UserNumbersAllSet
+    MODULE PROCEDURE CMISSNodes_UserNumbersAllSetNumber
+    MODULE PROCEDURE CMISSNodes_UserNumbersAllSetObj
+  END INTERFACE CMISSNodes_UserNumbersAllSet
 
   PUBLIC CMISSNodes_CreateFinish,CMISSNodes_CreateStart
 
@@ -5161,7 +5169,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSNodes_LabelGet,CMISSNodes_LabelSet
 
-  PUBLIC CMISSNodes_UserNumberGet,CMISSNodes_UserNumberSet,CMISSNodes_AllUserNumbersSet
+  PUBLIC CMISSNodes_UserNumberGet,CMISSNodes_UserNumberSet,CMISSNodes_UserNumbersAllSet
 
 !!==================================================================================================================================
 !!
@@ -43785,6 +43793,84 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMeshElements_UserNumberSetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the user numbers for all elements in a mesh identified by an user number.
+  SUBROUTINE CMISSMeshElements_UserNumbersAllSetNumber(regionUserNumber,meshUserNumber,meshComponentNumber, &
+    & elementUserNumbers,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to set the element user numbers for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to set the element user numbers for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to set the element user numbers for.
+    INTEGER(INTG), INTENT(IN) :: elementUserNumbers(:) !<The element user numbers to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSMeshElements_UserNumbersAllSetNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(MESH_ELEMENTS)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,REGION,MESH,err,error,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,meshComponentNumber,MESH_ELEMENTS,err,error,*999)
+        CALL Mesh_TopologyElementsUserNumbersAllSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSMeshElements_UserNumbersAllSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElements_AllUserNumbersAllSetNumber",err,error)
+    CALL EXITS("CMISSMeshElements_AllUserNumbersAllSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshElements_UserNumbersAllSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the element user numbers for all elements in a mesh identified by an object.
+  SUBROUTINE CMISSMeshElements_UserNumbersAllSetObj(meshElements,elementUserNumbers,err)
+
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(IN) :: meshElements !<The mesh elements to set the element user numbers for
+    INTEGER(INTG), INTENT(IN) :: elementUserNumbers(:) !<The element user numbers to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSMeshElements_UserNumbersAllSetObj",err,error,*999)
+
+    CALL Mesh_TopologyElementsUserNumbersAllSet(meshElements%MESH_ELEMENTS,elementUserNumbers, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSMeshElements_UserNumbersAllSetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElements_UserNumbersAllSetObj",err,error)
+    CALL EXITS("CMISSMeshElements_UserNumbersAllSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshElements_UserNumbersAllSetObj
 
   !
   !================================================================================================================================
@@ -45220,7 +45306,7 @@ CONTAINS
   !
 
   !>Sets/changes the user numbers for a set of nodes identified by user number.
-  SUBROUTINE CMISSNodes_AllUserNumbersSetNumber(regionUserNumber,nodeUserNumbers,err)
+  SUBROUTINE CMISSNodes_UserNumbersAllSetNumber(regionUserNumber,nodeUserNumbers,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the nodes to set the node user numbers for.
@@ -45231,35 +45317,35 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("CMISSNodes_AllUserNumbersSetNumber",err,error,*999)
+    CALL ENTERS("CMISSNodes_UserNumbersAllSetNumber",err,error,*999)
 
     NULLIFY(region)
     NULLIFY(nodes)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
     IF(ASSOCIATED(region)) THEN
       CALL REGION_NODES_GET(region,nodes,err,error,*999)
-      CALL Nodes_AllUserNumbersSet(nodes,nodeUserNumbers,err,error,*999)
+      CALL Nodes_UserNumbersAllSet(nodes,nodeUserNumbers,err,error,*999)
     ELSE
       localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
         & " does not exist."
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
-    CALL EXITS("CMISSNodes_AllUserNumbersSetNumber")
+    CALL EXITS("CMISSNodes_UserNumbersAllSetNumber")
     RETURN
-999 CALL ERRORS("CMISSNodes_AllUserNumbersSetNumber",err,error)
-    CALL EXITS("CMISSNodes_AllUserNumbersSetNumber")
+999 CALL ERRORS("CMISSNodes_UserNumbersAllSetNumber",err,error)
+    CALL EXITS("CMISSNodes_UserNumbersAllSetNumber")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSNodes_AllUserNumbersSetNumber
+  END SUBROUTINE CMISSNodes_UserNumbersAllSetNumber
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the user numbers for a set of nodes identified by an object. 
-  SUBROUTINE CMISSNodes_AllUserNumbersSetObj(nodes,nodeUserNumbers,err)
+  SUBROUTINE CMISSNodes_UserNumbersAllSetObj(nodes,nodeUserNumbers,err)
 
     !Argument variables
     TYPE(CMISSNodesType), INTENT(IN) :: nodes !<The nodes to set the node user number for.
@@ -45267,18 +45353,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSNodes_AllUserNumbersSetObj",err,error,*999)
+    CALL ENTERS("CMISSNodes_UserNumbersAllSetObj",err,error,*999)
 
-    CALL Nodes_AllUserNumbersSet(nodes%NODES,nodeUserNumbers,err,error,*999)
+    CALL Nodes_UserNumbersAllSet(nodes%NODES,nodeUserNumbers,err,error,*999)
 
-    CALL EXITS("CMISSNodes_AllUserNumbersSetObj")
+    CALL EXITS("CMISSNodes_UserNumbersAllSetObj")
     RETURN
-999 CALL ERRORS("CMISSNodes_AllUserNumbersSetObj",err,error)
-    CALL EXITS("CMISSNodes_AllUserNumbersSetObj")
+999 CALL ERRORS("CMISSNodes_UserNumbersAllSetObj",err,error)
+    CALL EXITS("CMISSNodes_UserNumbersAllSetObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSNodes_AllUserNumbersSetObj
+  END SUBROUTINE CMISSNodes_UserNumbersAllSetObj
 
 !!==================================================================================================================================
 !!
