@@ -5228,7 +5228,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMFE_PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE = &
     & PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   !>@}
-  !> \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
+  !> \addtogroup OPENCMISS_ProblemSubtypes OPENCMISS::Problem::Subtypes
   !> \brief Problem Subtypes.
   !> \see OPENCMISS::Problem,OPENCMISS
   !>@{
