@@ -880,7 +880,7 @@ CONTAINS
     INTEGER(INTG) :: nodes_in_Xi_1,nodes_in_Xi_2,nodes_in_Xi_3,n3,n2,n1,dof_idx,dof_idx2,idx,my_element_idx
     INTEGER(INTG) :: offset,n4
     REAL(DP) :: XVALUE_M,XVALUE_FE,DIST_LEFT,DIST_RIGHT,VALUE,VALUE_LEFT,VALUE_RIGHT,DISTANCE,VELOCITY,VELOCITY_MAX,OLD_DIST
-    REAL(DP) :: XI(3),PREVIOUS_NODE(3),DIST_INIT,SARCO_LENGTH_INIT,TIME_STEP
+    REAL(DP) :: XI(3),PREVIOUS_NODE(3),DIST_INIT,SARCO_LENGTH_INIT,TIME_STEP,DIST
     LOGICAL :: OUTSIDE_NODE
     REAL(DP), POINTER :: GAUSS_POSITIONS(:,:)
 
@@ -1079,7 +1079,7 @@ CONTAINS
 
 
               !get the maximum contraction velocity 
-              dof_idx=FIELD_VAR_IND_M%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+              dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
               CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
                 & FIELD_VALUES_SET_TYPE,dof_idx,VELOCITY_MAX,ERR,ERROR,*999)
               !NOTE: VELOCITY_MAX is the max shortening velocity, and hence negative!!!
@@ -1176,7 +1176,7 @@ CONTAINS
                             & FIELD_VALUES_SET_TYPE,dof_idx2,PREVIOUS_NODE(3),ERR,ERROR,*999)
 
                           !compute the distance between the previous node and the actual node
-                          VALUE=SQRT( &
+                          DIST=SQRT( &
                             & (INTERPOLATED_POINT%VALUES(1,1)-PREVIOUS_NODE(1))*(INTERPOLATED_POINT%VALUES(1,1)-PREVIOUS_NODE(1))+ &
                             & (INTERPOLATED_POINT%VALUES(2,1)-PREVIOUS_NODE(2))*(INTERPOLATED_POINT%VALUES(2,1)-PREVIOUS_NODE(2))+ &
                             & (INTERPOLATED_POINT%VALUES(3,1)-PREVIOUS_NODE(3))*(INTERPOLATED_POINT%VALUES(3,1)-PREVIOUS_NODE(3)))
@@ -1185,13 +1185,13 @@ CONTAINS
                           !CONTRACTION VELOCITY CALCULATION
                           
                           !get the distance between the 2 nodes in the previous time step
-                          dof_idx=FIELD_VAR_IND_M%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)% &
+                          dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)% &
                             & DERIVATIVES(1)%VERSIONS(1)
                           CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
                             & FIELD_VALUES_SET_TYPE,dof_idx,OLD_DIST,ERR,ERROR,*999)
                           
                           !compute the new contraction velocity
-                          VELOCITY=(VALUE-OLD_DIST)/TIME_STEP
+                          VELOCITY=(DIST-OLD_DIST)/TIME_STEP
                           IF(.NOT. CALC_CLOSEST_GAUSS_POINT) THEN
                             !NOTE: VELOCITY_MAX is the max shortening velocity, and hence negative!!!
                             IF(VELOCITY<VELOCITY_MAX) THEN
@@ -1210,7 +1210,7 @@ CONTAINS
 
                           !store the node distance for contraction velocity calculation
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE,ERR,ERROR,*999)
+                            & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,DIST,ERR,ERROR,*999)
 
 
 
@@ -1221,7 +1221,7 @@ CONTAINS
                             & FIELD_VALUES_SET_TYPE,dof_idx2,VALUE_LEFT,ERR,ERROR,*999)
                           !update the current 1D node position
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(GEOMETRIC_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE_LEFT+VALUE,ERR,ERROR,*999)
+                            & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE_LEFT+DIST,ERR,ERROR,*999)
 
                           !get the initial sarcomere half length and initial node distance
                           dof_idx=FIELD_VAR_IND_M%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
@@ -1231,7 +1231,7 @@ CONTAINS
                           CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE, &
                             & FIELD_VALUES_SET_TYPE,dof_idx,DIST_INIT,ERR,ERROR,*999)
                           !update the current sarcomere half length
-                          VALUE=VALUE/DIST_INIT*SARCO_LENGTH_INIT
+                          VALUE=SARCO_LENGTH_INIT*DIST/DIST_INIT
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE, &
                             & FIELD_VALUES_SET_TYPE,1,1,node_idx,1,VALUE,ERR,ERROR,*999)
 
@@ -1240,6 +1240,9 @@ CONTAINS
                             !current sarcomere half length
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE, &
                               & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,1,VALUE,ERR,ERROR,*999)                            
+                            !old node distance
+                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+                              & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,1,DIST,ERR,ERROR,*999)
                             !relative contraction velocity
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
                               & FIELD_VALUES_SET_TYPE,1,1,node_idx-1,3,VELOCITY/ABS(VELOCITY_MAX),ERR,ERROR,*999)
@@ -1854,11 +1857,11 @@ CONTAINS
                   INDEX_REF=1
                   FORCE=0.0_DP                  
                   LENGTH_INIT_TITIN=SARCO_LENGTH_INIT-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
-                  !function to approximate the relation between the initial titin length and the initial force F0
+                  !function to approximate the relation between the initial titin length and the initial passive force F0
                   F0=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
                     & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
                   !function to approximate the relation between the initial sarcomere length and the stiffness of the PEVK region.
-                  STIFFNESS_PEVK=1.0e+03_DP*(0.1880_DP*SARCO_LENGTH_INIT**4-0.8694_DP*SARCO_LENGTH_INIT**3+1.5084_DP* &
+                  STIFFNESS_PEVK=1000.0_DP*(0.1880_DP*SARCO_LENGTH_INIT**4-0.8694_DP*SARCO_LENGTH_INIT**3+1.5084_DP* &
                     & SARCO_LENGTH_INIT**2-1.1577_DP*SARCO_LENGTH_INIT+0.3345_DP)
 
                   INDEX_PSEUDO=CEILING(F0/DX)
