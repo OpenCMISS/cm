@@ -790,7 +790,23 @@ CONTAINS
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        !allow to update the maximum number if iterations at a later time for the load increment loop type
+        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
+          LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
+          IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
+            IF(MAXIMUM_ITERATIONS<=0) THEN
+              LOCAL_ERROR="The specified maximum number of iterations of "// &
+                & TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                & " is invalid. The maximum number of iterations must be greater than zero."          
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+            ENDIF
+            LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
+          ELSE
+            CALL FLAG_ERROR("Control loop load incremented loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        ENDIF
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
           WHILE_LOOP=>CONTROL_LOOP%WHILE_LOOP
