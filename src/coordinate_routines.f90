@@ -4087,13 +4087,13 @@ CONTAINS
       !FIBRE ANGLE(alpha) - angles(1) 
       !In order to rotate reference material CS by alpha(fibre angle) in anti-clockwise  
       !direction about its axis 3, following steps are performed.
-      !(a) first align reference material direction 3 with Z(spatial) axis by rotating the ref matrial CS. 
+      !(a) first align reference material direction 3 with Z(spatial) axis by rotating the ref material CS. 
       !(b) then rotate the aligned material CS by alpha about Z axis in anti-clockwise direction
       !(c) apply the inverse of step(a) to the CS in (b)
       !It can be shown that steps (a),(b) and (c) are equivalent to post-multiplying
       !rotation in (a) by rotation in (b). i.e. Ra*Rb  
       
-      !The normalised reference material CS contains the transformation(rotaion) between 
+      !The normalised reference material CS contains the transformation(rotation) between 
       !the spatial CS -> reference material CS. i.e. Ra
       Ra=dXdNuR
         
@@ -4110,13 +4110,13 @@ CONTAINS
       !IMBRICATION ANGLE (beta) - angles(2)     
       !In order to rotate alpha-rotated material CS by beta(imbrication angle) in anti-clockwise  
       !direction about its new axis 2, following steps are performed.
-      !(a) first align new material direction 2 with Y(spatial) axis by rotating the new matrial CS. 
+      !(a) first align new material direction 2 with Y(spatial) axis by rotating the new material CS. 
       !(b) then rotate the aligned CS by beta about Y axis in anti-clockwise direction
       !(c) apply the inverse of step(a) to the CS in (b)
       !As mentioned above, (a),(b) and (c) are equivalent to post-multiplying
       !rotation in (a) by rotation in (b). i.e. Ra*Rb  
       
-      !dXdNu3 contains the transformation(rotaion) between 
+      !dXdNu3 contains the transformation(rotation) between 
       !the spatial CS -> alpha-rotated reference material CS. i.e. Ra
       Ra=dXdNu3
       !Initialise rotation matrix Rb
@@ -4132,13 +4132,13 @@ CONTAINS
       !SHEET ANGLE (gamma) - angles(3)    
       !In order to rotate alpha-beta-rotated material CS by gama(sheet angle) in anti-clockwise  
       !direction about its new axis 1, following steps are performed.
-      !(a) first align new material direction 1 with X(spatial) axis by rotating the new matrial CS. 
+      !(a) first align new material direction 1 with X(spatial) axis by rotating the new material CS. 
       !(b) then rotate the aligned CS by gama about X axis in anti-clockwise direction
       !(c) apply the inverse of step(a) to the CS in (b)
       !Again steps (a),(b) and (c) are equivalent to post-multiplying
       !rotation in (a) by rotation in (b). i.e. Ra*Rb  
       
-      !dXdNu2 contains the transformation(rotaion) between 
+      !dXdNu2 contains the transformation(rotation) between 
       !the spatial CS -> alpha-beta-rotated reference material CS. i.e. Ra
       Ra=dXdNu2
       !Initialise rotation matrix Rb
@@ -4156,6 +4156,7 @@ CONTAINS
     ENDIF
     
     CALL Exits("CoordinateMaterialSystemCalculatedXdNu3D")
+
     RETURN
 999 CALL Errors("CoordinateMaterialSystemCalculatedXdNu3D",err,error)
     CALL Exits("CoordinateMaterialSystemCalculatedXdNu3D")

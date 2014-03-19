@@ -160,6 +160,8 @@ MODULE MESH_ROUTINES
   PUBLIC MESH_TOPOLOGY_ELEMENTS_GET
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET
+  
+  PUBLIC Mesh_TopologyElementsUserNumbersAllSet
 
   PUBLIC Mesh_TopologyDataPointsCalculateProjection
 
@@ -8329,6 +8331,72 @@ CONTAINS
    
   END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Changes/sets the user numbers for all elements.
+  SUBROUTINE Mesh_TopologyElementsUserNumbersAllSet(elements,userNumbers,err,error,*)
+
+    !Argument variables
+    TYPE(MeshComponentElementsType), POINTER :: elements !<A pointer to the elements to set all the user numbers for 
+    INTEGER(INTG), INTENT(IN) :: userNumbers(:) !<The user numbers to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: elementIdx,insertStatus
+    TYPE(TREE_TYPE), POINTER :: newElementsTree
+    TYPE(VARYING_STRING) :: localError
+
+    NULLIFY(newElementsTree)
+
+    CALL Enters("Mesh_TopologyElementsUserNumbersAllSet",err,error,*999)
+
+    IF(ASSOCIATED(elements)) THEN
+      IF(elements%ELEMENTS_FINISHED) THEN
+        CALL FlagError("Elements have been finished.",err,error,*999)
+      ELSE
+        IF(elements%NUMBER_OF_ELEMENTS==SIZE(userNumbers,1)) THEN
+          !Check the users numbers to ensure that there are no duplicates          
+          CALL TREE_CREATE_START(newElementsTree,err,error,*999)
+          CALL TREE_INSERT_TYPE_SET(newElementsTree,TREE_NO_DUPLICATES_ALLOWED,err,error,*999)
+          CALL TREE_CREATE_FINISH(newElementsTree,err,error,*999)
+          DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
+            CALL TREE_ITEM_INSERT(newElementsTree,userNumbers(elementIdx),elementIdx,insertStatus,err,error,*999)
+            IF(insertStatus/=TREE_NODE_INSERT_SUCESSFUL) THEN
+              localError="The specified user number of "//TRIM(NumberToVstring(userNumbers(elementIdx),"*",err,error))// &
+                & " for global element number "//TRIM(NUMBER_TO_VSTRING(elementIdx,"*",err,error))// &
+                & " is a duplicate. The user element numbers must be unique."
+              CALL FlagError(localError,err,error,*999)
+            ENDIF
+          ENDDO !elementIdx
+          CALL TREE_DESTROY(elements%ELEMENTS_TREE,err,error,*999)
+          elements%ELEMENTS_TREE=>newElementsTree
+          NULLIFY(newElementsTree)
+          DO elementIdx=1,elements%NUMBER_OF_ELEMENTS
+            elements%ELEMENTS(elementIdx)%GLOBAL_NUMBER=elementIdx
+            elements%ELEMENTS(elementIdx)%USER_NUMBER=userNumbers(elementIdx)
+          ENDDO !elementIdx
+        ELSE
+          localError="The number of specified element user numbers ("// &
+            TRIM(NumberToVstring(SIZE(userNumbers,1),"*",err,error))// &
+            ") does not match number of elements ("// &
+            TRIM(NumberToVstring(elements%NUMBER_OF_ELEMENTS,"*",err,error))//")."
+          CALL FlagError(localError,err,error,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FlagError("Elements is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL Exits("Mesh_TopologyElementsUserNumbersAllSet")
+    RETURN
+999 IF(ASSOCIATED(newElementsTree)) CALL TREE_DESTROY(newElementsTree,err,error,*998)
+998 CALL Errors("Mesh_TopologyElementsUserNumbersAllSet",err,error)    
+    CALL Exits("Mesh_TopologyElementsUserNumbersAllSet")
+    RETURN 1
+   
+  END SUBROUTINE Mesh_TopologyElementsUserNumbersAllSet
   
   !
   !================================================================================================================================
