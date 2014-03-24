@@ -1291,115 +1291,115 @@ CONTAINS
 
 
 
-!tomo new
-                      !smooth of the velocity field
+!!tomo new
+!                      !smooth of the velocity field
 
-                      !arithmetic mean of all rel_velo values within one FE element
+!                      !arithmetic mean of all rel_velo values within one FE element
+!!                      VELOCITY=0.0_DP
+!!                      DO n1=1,nodes_in_Xi_1
+!!                        node_idx_2=node_idx_2+1
+!!                        dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!!                          & DERIVATIVES(1)%VERSIONS(1)
+!!                        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!!                          & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!!                        VELOCITY=VELOCITY+VALUE
+!!                      ENDDO
+!!                      VELOCITY=VELOCITY/nodes_in_Xi_1
+
+!!                      node_idx_2=node_idx_2-nodes_in_Xi_1
+!!                      DO n1=1,nodes_in_Xi_1
+!!                        node_idx_2=node_idx_2+1
+!!                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!!                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+!!                      ENDDO
+
+!!--------------------------------------------------------------------------
+
+!                      !moving average
+!                      offset=3
+!                      
+!                      !do the first three nodes of a fibre manually - arithmetic mean
 !                      VELOCITY=0.0_DP
-!                      DO n1=1,nodes_in_Xi_1
-!                        node_idx_2=node_idx_2+1
-!                        dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-!                          & DERIVATIVES(1)%VERSIONS(1)
-!                        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-!                          & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-!                        VELOCITY=VELOCITY+VALUE
-!                      ENDDO
-!                      VELOCITY=VELOCITY/nodes_in_Xi_1
 
-!                      node_idx_2=node_idx_2-nodes_in_Xi_1
-!                      DO n1=1,nodes_in_Xi_1
+!                      node_idx_2=node_idx_2+1
+!                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                        & DERIVATIVES(1)%VERSIONS(1)
+!                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                      VELOCITY=VELOCITY+VALUE
+
+!                      node_idx_2=node_idx_2+1
+!                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                        & DERIVATIVES(1)%VERSIONS(1)
+!                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                      VELOCITY=VELOCITY+VALUE
+
+!                      node_idx_2=node_idx_2+1
+!                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                        & DERIVATIVES(1)%VERSIONS(1)
+!                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                      VELOCITY=VELOCITY+VALUE
+!                      
+!                      VELOCITY=VELOCITY/offset
+
+!                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-2,3,VELOCITY,ERR,ERROR,*999)
+!                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-1,3,VELOCITY,ERR,ERROR,*999)
+!                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+
+!                      !do the major part as moving average
+!                      DO n1=1+offset,nodes_in_Xi_1-offset
 !                        node_idx_2=node_idx_2+1
+!                        VELOCITY=0.0_DP
+!                        DO n4=node_idx_2-offset,node_idx_2+offset
+!                          dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(n4)% &
+!                            & DERIVATIVES(1)%VERSIONS(1)
+!                          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                            & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                          VELOCITY=VELOCITY+VALUE
+!                        ENDDO !n4
+!                        VELOCITY=VELOCITY/(2*offset+1)
 !                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
 !                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
-!                      ENDDO
+!                      ENDDO !n1
+!                      
+!                      !do the last three nodes of a fibre manually - arithmetic mean
+!                      VELOCITY=0.0_DP
 
-!--------------------------------------------------------------------------
+!                      node_idx_2=node_idx_2+1
+!                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                        & DERIVATIVES(1)%VERSIONS(1)
+!                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                      VELOCITY=VELOCITY+VALUE
 
-                      !moving average
-                      offset=3
-                      
-                      !do the first three nodes of a fibre manually - arithmetic mean
-                      VELOCITY=0.0_DP
+!                      node_idx_2=node_idx_2+1
+!                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                        & DERIVATIVES(1)%VERSIONS(1)
+!                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                      VELOCITY=VELOCITY+VALUE
 
-                      node_idx_2=node_idx_2+1
-                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-                        & DERIVATIVES(1)%VERSIONS(1)
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                      VELOCITY=VELOCITY+VALUE
+!                      node_idx_2=node_idx_2+1
+!                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                        & DERIVATIVES(1)%VERSIONS(1)
+!                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                      VELOCITY=VELOCITY+VALUE
+!                      
+!                      VELOCITY=VELOCITY/offset
 
-                      node_idx_2=node_idx_2+1
-                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-                        & DERIVATIVES(1)%VERSIONS(1)
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                      VELOCITY=VELOCITY+VALUE
-
-                      node_idx_2=node_idx_2+1
-                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-                        & DERIVATIVES(1)%VERSIONS(1)
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                      VELOCITY=VELOCITY+VALUE
-                      
-                      VELOCITY=VELOCITY/offset
-
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-2,3,VELOCITY,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-1,3,VELOCITY,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
-
-                      !do the major part as moving average
-                      DO n1=1+offset,nodes_in_Xi_1-offset
-                        node_idx_2=node_idx_2+1
-                        VELOCITY=0.0_DP
-                        DO n4=node_idx_2-offset,node_idx_2+offset
-                          dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(n4)% &
-                            & DERIVATIVES(1)%VERSIONS(1)
-                          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                          VELOCITY=VELOCITY+VALUE
-                        ENDDO !n4
-                        VELOCITY=VELOCITY/(2*offset+1)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
-                      ENDDO !n1
-                      
-                      !do the last three nodes of a fibre manually - arithmetic mean
-                      VELOCITY=0.0_DP
-
-                      node_idx_2=node_idx_2+1
-                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-                        & DERIVATIVES(1)%VERSIONS(1)
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                      VELOCITY=VELOCITY+VALUE
-
-                      node_idx_2=node_idx_2+1
-                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-                        & DERIVATIVES(1)%VERSIONS(1)
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                      VELOCITY=VELOCITY+VALUE
-
-                      node_idx_2=node_idx_2+1
-                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-                        & DERIVATIVES(1)%VERSIONS(1)
-                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-                      VELOCITY=VELOCITY+VALUE
-                      
-                      VELOCITY=VELOCITY/offset
-
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-2,3,VELOCITY,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-1,3,VELOCITY,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
-!tomo new end                       
+!                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-2,3,VELOCITY,ERR,ERROR,*999)
+!                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2-1,3,VELOCITY,ERR,ERROR,*999)
+!                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                        & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+!!tomo new end                       
 
 
                       !if there is not an adjacent element in positive XI_1 direction, go to the next FE element
