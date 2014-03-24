@@ -79,6 +79,7 @@ MODULE ADVECTION_EQUATION_ROUTINES
   PUBLIC ADVECTION_PRE_SOLVE
   PUBLIC ADVECTION_PRE_SOLVE_UPDATE_BC
   PUBLIC ADVECTION_POST_SOLVE
+  PUBLIC Advection_Couple1D0D
 
 CONTAINS
 
@@ -545,71 +546,6 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
         !-----------------------------------------------------------------
-        ! S o u r c e   f i e l d
-        !-----------------------------------------------------------------
-        CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-          CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            IF(EQUATIONS_SET%SOURCE%SOURCE_FIELD_AUTO_CREATED) THEN
-              !Create the auto created source field
-              CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%SOURCE% &
-                & SOURCE_FIELD,ERR,ERROR,*999)
-              CALL FIELD_LABEL_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,"Source Field",ERR,ERROR,*999)
-              CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-              CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-              CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-              CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-              CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,EQUATIONS_SET%GEOMETRY% &
-                & GEOMETRIC_FIELD,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,1,ERR,ERROR,*999)
-              CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-              CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
-              CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_DP_TYPE,ERR,ERROR,*999)
-              !Set the number of source components
-              CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & 1,ERR,ERROR,*999)
-              !Default the source components to the geometric interpolation setup with constant interpolation
-              CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-              CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-              CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & 1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-              !Default the field scaling to that of the geometric field
-              CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-              CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-            ELSE
-              !Check the user specified field
-              CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-              CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-              CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-              CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, &
-                & ERR,ERROR,*999)
-              CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-              CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                & ERR,ERROR,*999)
-            ENDIF
-          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            IF(EQUATIONS_SET%SOURCE%SOURCE_FIELD_AUTO_CREATED) THEN
-              !Finish creating the source field
-              CALL FIELD_CREATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,ERR,ERROR,*999)
-              !Set the default values for the source field
-              CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-              !Now set the source values to 1.0
-              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
-            ENDIF
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        !-----------------------------------------------------------------
         ! E q u a t i o n s    t y p e
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
@@ -637,7 +573,6 @@ CONTAINS
                 CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR, & 
                   & ERROR,*999)
                 CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -923,20 +858,18 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
-    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,STIFFNESS_MATRIX
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,INDEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,SOURCE_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,INDEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: mhs,ms,ng,nhs,ns,xiIdx,coordIdx,MESH_COMPONENT
     REAL(DP) :: JGW,SUM,DXI_DX,DPHIMS_DXI,DPHINS_DXI,PHIMS,PHINS,flow,area,lengthScale,alphaParam,diff,peclet,Conc,dConc
-    LOGICAL :: UPDATE_DAMPING_MATRIX,UPDATE_STIFFNESS_MATRIX,UPDATE_SOURCE_VECTOR
+    LOGICAL :: UPDATE_DAMPING_MATRIX,UPDATE_STIFFNESS_MATRIX
 
     UPDATE_DAMPING_MATRIX = .FALSE.
     UPDATE_STIFFNESS_MATRIX = .FALSE.
-    UPDATE_SOURCE_VECTOR = .FALSE.
 
     CALL ENTERS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
@@ -949,7 +882,6 @@ CONTAINS
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
           INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
-          SOURCE_FIELD=>EQUATIONS%INTERPOLATION%SOURCE_FIELD
           GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -960,7 +892,6 @@ CONTAINS
           DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
           STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
           DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
-          SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
           DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
           FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
@@ -968,7 +899,6 @@ CONTAINS
           DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
           IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
           IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
-          IF(ASSOCIATED(SOURCE_VECTOR)) UPDATE_SOURCE_VECTOR=SOURCE_VECTOR%UPDATE_VECTOR
 
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
@@ -1050,8 +980,8 @@ CONTAINS
                         
                     !!!-- S T I F F N E S S  M A T R I X --!!!
                     IF(UPDATE_STIFFNESS_MATRIX) THEN
-                      SUM=((diff*DPHIMS_DXI*DXI_DX)+ &                                                      !Diffusion Term
-                        & (flow/area)*(PHIMS+lengthScale*alphaParam*DPHIMS_DXI*DXI_DX))*DPHINS_DXI*DXI_DX   !Advection Term
+                      SUM=((diff*DPHIMS_DXI*DXI_DX)+ &                                                           !Diffusion Term
+                        & (flow/area)*(PHIMS+lengthScale*alphaParam*DPHIMS_DXI*DXI_DX))*DPHINS_DXI*DXI_DX        !Advection Term
                       STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                     ENDIF
 
@@ -1109,7 +1039,8 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
           CASE(PROBLEM_ADVECTION_SUBTYPE,PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,Problem_Coupled1dDaeNavierStokesSubtype)
-!            CALL ADVECTION_PRE_SOLVE_UPDATE_BC(SOLVER,ERR,ERROR,*999)
+            CALL ADVECTION_PRE_SOLVE_UPDATE_BC(SOLVER,ERR,ERROR,*999)
+            CALL Advection_Couple1D0D(SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1149,8 +1080,8 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    REAL(DP) :: CONC,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT
-    INTEGER(INTG) :: CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+    REAL(DP) :: CONC,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT,period,delta(300),t(300),c(300),s
+    INTEGER(INTG) :: CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,i,j,n,m
 
     CALL ENTERS("ADVECTION_PRE_SOLVE_UPDATE_BC",ERR,ERROR,*999)
 
@@ -1158,7 +1089,7 @@ CONTAINS
       SOLVERS=>SOLVER%SOLVERS
       IF(ASSOCIATED(SOLVERS)) THEN
         CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
-        CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,CURRENT_TIME,CURRENT_LOOP_ITERATION, &
+        CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT,CURRENT_LOOP_ITERATION, &
           & OUTPUT_ITERATION_NUMBER,ERR,ERROR,*999)
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
@@ -1173,7 +1104,53 @@ CONTAINS
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
 
-                    CONC=1.0_DP
+                    IF(CURRENT_TIME<100)THEN
+
+                      t(1)=0.003228  ; c(1)=0.001513
+                      t(2)=0.077482  ; c(2)=0.001513
+                      t(3)=0.133979  ; c(3)=0.013616
+                      t(4)=0.187248  ; c(4)=0.040847
+                      t(5)=0.237288  ; c(5)=0.108926
+                      t(6)=0.285714  ; c(6)=0.226929
+                      t(7)=0.33414   ; c(7)=0.414523
+                      t(8)=0.417272  ; c(8)=0.800303
+                      t(9)=0.45117   ; c(9)=0.92587
+                      t(10)=0.479419 ; c(10)=0.984871
+                      t(11)=0.499596 ; c(11)=0.995461
+                      t(12)=0.519774 ; c(12)=0.984871
+                      t(13)=0.550444 ; c(13)=0.919818
+                      t(14)=0.583535 ; c(14)=0.795764
+                      t(15)=0.661017 ; c(15)=0.429652
+                      t(16)=0.698951 ; c(16)=0.282905
+                      t(17)=0.722357 ; c(17)=0.208775
+                      t(18)=0.753834 ; c(18)=0.128593
+                      t(19)=0.785311 ; c(19)=0.07413
+                      t(20)=0.824052 ; c(20)=0.034796
+                      t(21)=0.874899 ; c(21)=0.012103
+                      t(22)=0.91364  ; c(22)=0.004539
+                      t(23)=0.999193 ; c(23)=0.0
+
+                      !Initialize variables
+                      period=100
+                      m=1
+                      n=23
+                      !Compute derivation
+                      DO i=1,n-1
+                            delta(i)=(c(i+1)-c(i))/(t(i+1)-t(i))
+                      END DO
+                      delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
+                      !Find subinterval
+                      DO j=1,n-1
+                        IF (t(j) <= (CURRENT_TIME/period)) THEN
+                         m=j
+                        ENDIF
+                      END DO
+                      !Evaluate interpolant
+                      s=(CURRENT_TIME/period)-t(m)
+                      CONC=(c(m)+s*delta(m))
+                    ELSE 
+                      CONC=0.0
+                    ENDIF
 
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & 1,CONC,ERR,ERROR,*999)
@@ -1261,6 +1238,81 @@ CONTAINS
     RETURN 1
   END SUBROUTINE ADVECTION_POST_SOLVE
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Update area for boundary nodes.
+  SUBROUTINE Advection_Couple1D0D(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local Variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(FIELD_TYPE), POINTER :: dependentField
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
+    INTEGER(INTG) :: nodeIdx,numberOfLocalNodes1D
+    REAL(DP) :: conc
+    LOGICAL :: boundaryNode
+
+    CALL ENTERS("Advection_Couple1D0D",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(solver)) THEN
+      solverEquations=>solver%SOLVER_EQUATIONS
+      IF(ASSOCIATED(solverEquations)) THEN
+        solverMapping=>solverEquations%SOLVER_MAPPING
+        IF(ASSOCIATED(solverMapping)) THEN
+          equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
+          IF(ASSOCIATED(equationsSet)) THEN
+            dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
+          ELSE
+            CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+    ENDIF
+
+    !Get the number of local nodes
+    numberOfLocalNodes1D=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+      & TOPOLOGY%NODES%NUMBER_OF_NODES
+
+    !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
+    DO nodeIdx=2,numberOfLocalNodes1D
+      !Check for the boundary node
+      boundaryNode=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+        & TOPOLOGY%NODES%NODES(nodeIdx)%BOUNDARY_NODE
+      !!!-- F i n d   B o u n d a r y   N o d e s --!!!
+      IF(boundaryNode) THEN
+        !Get concentration at boundary node
+        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & 1,1,nodeIdx,1,conc,err,error,*999)
+        !Update concentration in the veins
+        IF(Mod(numberOfLocalNodes1D,2)==0)THEN
+          IF(Mod(nodeIdx,2)/=0)THEN
+            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & 1,1,nodeIdx+(numberOfLocalNodes1D/2),1,conc,err,error,*999)
+          ENDIF
+        ENDIF
+      ENDIF !Find boundary nodes
+    ENDDO !Loop over nodes 
+
+    CALL EXITS("Advection_Couple1D0D")
+    RETURN
+999 CALL ERRORS("Advection_Couple1D0D",err,error)
+    CALL EXITS("Advection_Couple1D0D")
+    RETURN 1
+
+  END SUBROUTINE
+
   !
   !================================================================================================================================
   !

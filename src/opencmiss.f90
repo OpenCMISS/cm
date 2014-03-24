@@ -16946,8 +16946,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the time increment for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the iteration number for the current loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the iteration number for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
@@ -16992,8 +16992,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the time increment for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the iteration number for the current loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the iteration number for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
@@ -17037,8 +17037,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the time increment for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the iteration number for the current loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the iteration number for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
