@@ -2817,9 +2817,21 @@ CONTAINS
     !!$              &ERR,ERROR,*999)
 
           NODE_NUMBER_COUNTER=0
-          NodesX=BASIS%INTERPOLATION_XI(1)+1
-          NodesY=BASIS%INTERPOLATION_XI(2)+1
-          NodesZ=BASIS%INTERPOLATION_XI(3)+1
+          IF(BASIS%INTERPOLATION_XI(1)>3) THEN
+            NodesX=2
+          ELSE
+            NodesX=BASIS%INTERPOLATION_XI(1)+1
+          ENDIF
+          IF(BASIS%INTERPOLATION_XI(2)>3) THEN
+            NodesY=2
+          ELSE
+            NodesY=BASIS%INTERPOLATION_XI(2)+1
+          ENDIF
+          IF(BASIS%INTERPOLATION_XI(3)>3) THEN
+            NodesZ=2
+          ELSE
+            NodesZ=BASIS%INTERPOLATION_XI(3)+1
+          ENDIF
 
 
           !The following if-sentences goes through all possible wedge formed elements and renumber the nodes in order to
@@ -4187,6 +4199,9 @@ CONTAINS
           doesMatch = .FALSE.
           EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
         ENDIF
+      ELSE
+        doesMatch = .FALSE.
+        EXIT
       ENDIF
 
       ! Check that the nodes have the same number of versions, otherwise they must be grouped separately
