@@ -3664,7 +3664,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER
-    INTEGER(INTG) :: nodeIdx,versionIdx,xiIdx,coordIdx
+    INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,xiIdx,coordIdx
     INTEGER(INTG) :: numberOfVersions,nodeNumber,local_ny,numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_BIF,A_BIF,Q_PRE,A_PRE,area,pressure
@@ -3713,7 +3713,7 @@ CONTAINS
     NULLIFY(RHS_VECTOR)
     NULLIFY(STIFFNESS_MATRIX, DAMPING_MATRIX)
     NULLIFY(DEPENDENT_FIELD,INDEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD)
-    NULLIFY(dependentParameters,materialsParameters)
+    NULLIFY(dependentParameters,materialsParameters,materialsParameters1)
     NULLIFY(FIELD_VARIABLE)
     NULLIFY(QUADRATURE_SCHEME)
     NULLIFY(QUADRATURE_SCHEME1, QUADRATURE_SCHEME2)
@@ -4478,6 +4478,7 @@ CONTAINS
               lastNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(numberOfElementNodes)
 
               !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
+              NULLIFY(dependentParameters,materialsParameters,materialsParameters1)
               CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & dependentParameters,err,error,*999)
               CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -4526,37 +4527,35 @@ CONTAINS
                 nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
                 numberOfVersions=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)%DERIVATIVES(1)%numberOfVersions
                 IF(numberOfVersions>1) THEN                  
-                  versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%elementVersions(1,nodeIdx)
+                  derivativeIdx = 1
+                  versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
+                   & elementVersions(derivativeIdx,nodeIdx)
+
+                  !Get material params
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
+                   & Fr,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)
+                  Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
 
                   !Get current Q & A values
-                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & dependentParameters,err,error,*999)
-                  fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                  local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
-                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-                  Q_BIF=dependentParameters(local_ny)
-                  local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
-                   & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-                  A_BIF=dependentParameters(local_ny)
-                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & dependentParameters,err,error,*999)
-
-                  !Get previous Q & A values
-                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                    & dependentParameters,err,error,*999)
-                  fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                  local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP% &
-                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-                  Q_PRE=dependentParameters(local_ny)
-                  local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
-                    & NODE_PARAM2DOF_MAP%NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-                  A_PRE=dependentParameters(local_ny)
-                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                    & dependentParameters,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,Q_BIF,err,error,*999)         
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
+                  !Get Q & A values based on the branch (characteristics) solver
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,Q_PRE,err,error,*999)         
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,2,A_PRE,err,error,*999)         
 
                   !Momentum Equation
-                  momentum=((K*((Q_PRE**2)/A_PRE)+(((2.0_DP/3.0_DP)*(A_PRE**(1.5_DP)))*(Fr*Beta))) &
-                         & -(K*((Q_BIF**2)/A_BIF)+(((2.0_DP/3.0_DP)*(A_BIF**(1.5_DP)))*(Fr*Beta))))
+                  momentum=(K*(Q_PRE**2.0_DP/A_PRE)+2.0_DP*A_PRE*Beta*Fr*(SQRT(A_PRE)-SQRT(A0_PARAM))) - &
+                       &   (K*(Q_BIF**2.0_DP/A_BIF)+2.0_DP*A_BIF*Beta*Fr*(SQRT(A_BIF)-SQRT(A0_PARAM)))
                   !Continuity Equation
                   continuity=(Q_PRE-Q_BIF)/St
 
@@ -4638,7 +4637,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,x
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2
-    INTEGER(INTG) :: nodeNumber,numberOfVersions,nodeIdx,versionIdx,xiIdx,coordIdx,local_ny
+    INTEGER(INTG) :: nodeNumber,numberOfVersions,nodeIdx,versionIdx,xiIdx,coordIdx,local_ny,derivativeIdx
     INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,Q_DERIV,A_VALUE,A_DERIV,Q_BIF,A_BIF
@@ -5170,25 +5169,30 @@ CONTAINS
                   & DERIVATIVES(1)%numberOfVersions
 
                 IF(numberOfVersions>1) THEN
+                  derivativeIdx = 1
                   versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
-                    & elementVersions(1,nodeIdx)
+                    & elementVersions(derivativeIdx,nodeIdx)
 
-                  ! Get current Q and A values
-                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & dependentParameters,err,error,*999)
-                  fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                  local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-                  Q_BIF=dependentParameters(local_ny)
-                  local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-                  A_BIF=dependentParameters(local_ny)
-                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & dependentParameters,err,error,*999)
+                  !Get material params
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
+                   & Fr,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)
+                  Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
+
+                  !Get current Q & A values
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,Q_BIF,err,error,*999)         
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
 
                   !Momentum Equation
                   momentum1=-K*2.0_DP*Q_BIF/A_BIF
-                  momentum2=K*((Q_BIF/A_BIF**2.0_DP))-(SQRT(A_BIF)*(Fr*Beta))
+                  momentum2=K*((Q_BIF/A_BIF)**2.0_DP)+(2.0_DP*Fr*Beta)*(SQRT(A0_PARAM)-3.0_DP/2.0_DP*SQRT(A_BIF))
                   !Continuity Equation
                   continuity=-1.0_DP/St
 
@@ -5247,10 +5251,15 @@ CONTAINS
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(FIELD_TYPE), POINTER :: dependentField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
+    NULLIFY(SOLVERS)
+    NULLIFY(dependentField)
+    NULLIFY(fieldVariable)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -5270,7 +5279,15 @@ CONTAINS
             CASE(PROBLEM_1dTransient_NAVIER_STOKES_SUBTYPE)
               SELECT CASE(SOLVER%GLOBAL_NUMBER)
               CASE(1)
-                ! Characteristic solver- do nothing
+                ! Characteristic solver- copy Q,A values to field
+                dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
+                CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                ENDIF
+                CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
               CASE(2)
                 ! check characteristic/ N-S convergence at branches
                 CALL NavierStokes_CoupleCharacteristics(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -10211,11 +10228,16 @@ CONTAINS
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
       CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
-        ! Call the characteristics solver during each Navier-Stokes minor nonlinear iteration
-        ! IF (solver%SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER == 3) THEN
-        !   CALL Characteristic_PreSolveUpdateBC(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
-        !   CALL SOLVER_SOLVE(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
-        ! ENDIF
+        ! Update the characteristics values during nonlinear iteration
+        IF (solver%SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER == 2) THEN
+          CALL Characteristic_PreSolveUpdateBC(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
+!          CALL SOLVER_SOLVE(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
+        ENDIF
+      CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+        ! Update the characteristics values during nonlinear iteration
+        IF (solver%SOLVER_EQUATIONS%SOLVER%GLOBAL_NUMBER == 1) THEN
+          CALL Characteristic_PreSolveUpdateBC(solver%SOLVER_EQUATIONS%SOLVER%SOLVERS%SOLVERS(2)%PTR,ERR,ERROR,*999)
+        ENDIF
       CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
@@ -10223,7 +10245,6 @@ CONTAINS
          & EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-         & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
          & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &

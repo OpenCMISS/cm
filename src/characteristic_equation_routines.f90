@@ -977,7 +977,7 @@ CONTAINS
                   rowIdx=rowIdx+1
                   nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
                     & +normalWave(componentIdx,versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)))**0.5_DP)* &
-                    & (A_BIF(versionIdx)**0.25_DP)-W(componentIdx,versionIdx)
+                    & (A_BIF(versionIdx)**0.25_DP - (A0_PARAM(versionIdx)/As)**0.25_DP)-W(componentIdx,versionIdx)
                 ENDIF
               ENDDO
             ENDDO
@@ -995,10 +995,15 @@ CONTAINS
                     ENDDO
                     nonlinearMatrices%NodalResidual%vector(rowIdx)=SUM
                   ELSE
-                    nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                      & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                      & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
-                      & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
+                    nonlinearMatrices%NodalResidual%vector(rowIdx)= &
+                    & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
+                    & Beta(1)*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
+                    & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
+                    & Beta(versionIdx)*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
+                      ! ((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+                      ! & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+                      ! & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
+                      ! & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
                   ENDIF
                 ENDIF
               ENDDO
@@ -1232,19 +1237,18 @@ CONTAINS
                   IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                     IF(columnIdx==1) THEN
                       ! dP/dQ
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr*Beta(1)))* &
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr))* &
                         & (Q_BIF(1)/(A_BIF(1)**2.0_DP))
                       ! dP/dA
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=1.0_DP/(2.0_DP*SQRT(A_BIF(1))) - &
-                        & (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
-                        & ((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=Beta(1)/(2.0_DP*SQRT(A_BIF(1))) - &
+                        & (1.0_DP/(2.0_DP*Fr))*((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
                     ELSE IF(columnIdx2==rowIdx) THEN
                       ! dP/dQ
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-1.0_DP/(2.0_DP*Fr*Beta(1)))* &
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-1.0_DP/(2.0_DP*Fr))* &
                         & (Q_BIF(versionIdx)/(A_BIF(versionIdx)**2.0_DP))
                       ! dP/dA
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=-Beta(versionIdx)/Beta(1)* &
-                        & (1/(2.0_DP*SQRT(A_BIF(versionIdx)))) + (1.0_DP/(2.0_DP*Fr*Beta(1)))* &
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=Beta(versionIdx)/ &
+                        & (2.0_DP*SQRT(A_BIF(versionIdx))) + (1.0_DP/(2.0_DP*Fr))* &
                         & (Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP)
                     ELSE
                       jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP
@@ -1278,7 +1282,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Extrapolate W for brnach nodes.
+  !>Extrapolate W for branch nodes.
   SUBROUTINE Characteristic_PreSolveUpdateBC(solver,ERR,ERROR,*)
 
     !Argument variables
@@ -1296,6 +1300,7 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,normalWave(2,4),elementLengths(4)
+    REAL(DP) :: Q_BIF(4),A_BIF(4)
     REAL(DP) :: alpha,elementLength,minLength
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny,lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
@@ -1359,6 +1364,12 @@ CONTAINS
                 !!!-- F i n d   B r a n c h   N o d e s --!!!
                 IF(ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1))>0) THEN
                   IF(numberOfVersions>1) THEN
+
+                    !Get constant material parameters
+                    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,4,As,err,error,*999)
+                    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,6,Fr,err,error,*999)
                     
                     elementLengths = 0.0_DP
                     minLength = 1.0E20_DP
@@ -1382,21 +1393,7 @@ CONTAINS
                             elementNodeVersion=dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%&
                               & elementVersions(1,elementNodeIdx)
                             IF(elementNodeVersion==versionIdx) THEN
-                              !Get the element based material parameters for the surrounding elements
                               versionElementNumber(versionIdx)=elementNumber
-                              CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,4,As,err,error,*999)
-                              CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,6,Fr,err,error,*999)
-                              CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,A0_PARAM(versionIdx),err,error,*999)
-                              CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,E_PARAM(versionIdx),err,error,*999)   
-                              CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,3,H0_PARAM(versionIdx),err,error,*999)            
-                              Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-                                & (3.0_DP*A0_PARAM(versionIdx))
-                              ! Get the element length based on this node version and check if it is the smallest
                               elementLengths(versionIdx) = elementLength
                               IF (elementLengths(versionIdx) > ZERO_TOLERANCE .AND. elementLengths(versionIdx) < minLength) THEN 
                                 minLength = elementLengths(versionIdx)
@@ -1407,17 +1404,22 @@ CONTAINS
                       ENDDO
                     ENDDO
 
-                    !Extrapolate Q & A at branch elements at 0.8/0.2 xi scaled to the shortest element
+                    !Extrapolate Q & A at branch elements at 0.2 xi of shortest element from branch point
                     DO componentIdx=1,2
                       DO versionIdx=1,numberOfVersions                         
                         IF(ABS(normalWave(componentIdx,versionIdx))> ZERO_TOLERANCE) THEN
+                          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,Q_BIF(versionIdx),err,error,*999)            
+                          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,A_BIF(versionIdx),err,error,*999)            
                           IF(normalWave(componentIdx,versionIdx)>ZERO_TOLERANCE) THEN
                             !Inlet
-                            XI(1)=0.8_DP*minLength/elementLengths(versionIdx)
+                            XI(1)=1.0_DP - 0.2_DP*minLength/elementLengths(versionIdx)
                           ELSE
                             !Outlet
                             XI(1)=0.2_DP*minLength/elementLengths(versionIdx)
                           ENDIF
+                          ! Get Q,A values at extrapolated xi locations
                           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
                             & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
                             & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -1427,6 +1429,20 @@ CONTAINS
                             & PTR%VALUES(1,NO_PART_DERIV)
                           A_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
                             & PTR%VALUES(2,NO_PART_DERIV)
+                          ! Get spatially varying material values at extrapolated xi locations
+                          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
+                            & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
+                            & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                            & MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                          A0_PARAM(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
+                            & PTR%VALUES(1,NO_PART_DERIV)
+                          E_PARAM(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
+                            & PTR%VALUES(2,NO_PART_DERIV)
+                          H0_PARAM(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
+                            & PTR%VALUES(3,NO_PART_DERIV)
+                          Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+                            & (3.0_DP*A0_PARAM(versionIdx))
                         ENDIF
                       ENDDO
                     ENDDO
@@ -1438,7 +1454,10 @@ CONTAINS
                         IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                           W(componentIdx,versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+ &
                             & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT((Fr*(Beta(versionIdx))))* &
-                            & (A_EX(versionIdx)**(0.25_DP)))
+                            & (A_EX(versionIdx)**(0.25_DP) - (A0_PARAM(versionIdx)/As)**(0.25_DP)))
+                          ! W(componentIdx,versionIdx)=((Q_BIF(versionIdx)/A_BIF(versionIdx))+ &
+                          !   & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT((Fr*(Beta(versionIdx))))* &
+                          !   & (A_BIF(versionIdx)**(0.25_DP) - A0_PARAM(versionIdx)**(0.25_DP)))
                         ENDIF
                       ENDDO
                     ENDDO
