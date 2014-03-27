@@ -2424,10 +2424,10 @@ CONTAINS
               ! Characteristic solver
               CALL Characteristic_PreSolveUpdateBC(SOLVER,ERR,ERROR,*999)
             CASE(3)
-              ! If this is the first step of the iterative loop, update previous dynamic variable values
-              IF (CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER == 1) THEN
-                CALL SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE(SOLVER,ERR,ERROR,*999)
-              ENDIF
+              ! ! If this is the first step of the iterative loop, update previous dynamic variable values
+              ! IF (CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER == 1) THEN
+              !   CALL SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE(SOLVER,ERR,ERROR,*999)
+              ! ENDIF
               ! 1D Navier-Stokes solver
               CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(SOLVER,ERR,ERROR,*999)
               ! update solver matrix
@@ -4450,12 +4450,13 @@ CONTAINS
                   IF(UPDATE_NONLINEAR_RESIDUAL) THEN
                     !Momentum Equation
                     IF(mh==1) THEN
-                      SUM=(((2.0_DP*K*Q_VALUE*Q_DERIV/A_VALUE)+(-K*A_DERIV*((Q_VALUE/A_VALUE)**2.0_DP))+ &         !Convective
-                        & ((SQRT(A_VALUE))*A_DERIV+ &                                                              !Area Gradient
-                        & (((A_VALUE*(1.0_DP/SQRT(A0_PARAM*As)))-(2.0_DP*(A_VALUE**1.5_DP)/A0_PARAM))*A0_DERIV)+ & !Ref Area Gradient                  
-                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/H0_PARAM)*H0_DERIV)+ &              !Thickness Gradient                    
-                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/E_PARAM)*E_DERIV))*Fr*Beta)* &      !Elasticity Gradient
-                        & DXI_DX(1,1)+(Q_VALUE/A_VALUE)*Re)*PHIMS                                                  !Viscosity
+                      SUM=(((2.0_DP*K*Q_VALUE*Q_DERIV/A_VALUE)+(-K*A_DERIV*((Q_VALUE/A_VALUE)**2.0_DP))+ &                   !Convective
+                        & ((SQRT(A_VALUE))*A_DERIV+ &                                                                        !Area Gradient
+                        & (((A_VALUE*(1.0_DP/SQRT(A0_PARAM/As)))-(2.0_DP*(A_VALUE**1.5_DP)/(A0_PARAM/As)))*(A0_DERIV/As))+ & !Ref Area Gradient                  
+                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/(H0_PARAM/SQRT(As)))*(H0_DERIV/SQRT(As)))+ &  !Thickness Gradient                    
+                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/(E_PARAM/(2.0_DP*RHO_PARAM/(Fr*As))))* &
+                        & (E_DERIV/(2.0_DP*RHO_PARAM/(Fr*As)))))*Fr*Beta)* &                                                 !Elasticity Gradient
+                        & DXI_DX(1,1)+(Q_VALUE/A_VALUE)*Re)*PHIMS                                                            !Viscosity
                       NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                         & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
                     ENDIF
@@ -4534,6 +4535,10 @@ CONTAINS
                   !Get material params
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
                    & Fr,err,error,*999)
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
+                   & As,err,error,*999)
+                  CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)
                   CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)
                   CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -4554,8 +4559,8 @@ CONTAINS
                    & versionIdx,derivativeIdx,nodeNumber,2,A_PRE,err,error,*999)         
 
                   !Momentum Equation
-                  momentum=(K*(Q_PRE**2.0_DP/A_PRE)+2.0_DP*A_PRE*Beta*Fr*(SQRT(A_PRE)-SQRT(A0_PARAM))) - &
-                       &   (K*(Q_BIF**2.0_DP/A_BIF)+2.0_DP*A_BIF*Beta*Fr*(SQRT(A_BIF)-SQRT(A0_PARAM)))
+                  momentum=(K*(Q_PRE**2.0_DP/A_PRE)+2.0_DP*A_PRE*Beta*Fr*(SQRT(A_PRE)-SQRT(A0_PARAM/As))) - &
+                       &   (K*(Q_BIF**2.0_DP/A_BIF)+2.0_DP*A_BIF*Beta*Fr*(SQRT(A_BIF)-SQRT(A0_PARAM/As)))
                   !Continuity Equation
                   continuity=(Q_PRE-Q_BIF)/St
 
@@ -5051,11 +5056,11 @@ CONTAINS
                 ENDDO !mh
               END IF
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!                                        !!!!!
-!!!!!         1 D  T R A N S I E N T         !!!!!
-!!!!!                                        !!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!                                        !!!!!
+              !!!!!         1 D  T R A N S I E N T         !!!!!
+              !!!!!                                        !!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
               !Start with Matrix Calculations
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE .OR. &
@@ -5136,7 +5141,7 @@ CONTAINS
                               & ((2.0_DP*K*PHINS*(Q_VALUE**2.0_DP)*A_DERIV)/(A_VALUE**3.0_DP))+ &             
                               & (-K*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                              !Concevtive
                               & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &  !Area Gradient
-                              & ((1.0_DP/SQRT(A0_PARAM*As))-((3.0_DP/A0_PARAM)*SQRT(A_VALUE)))*A0_DERIV+ &     !Ref Area Gradient
+                              & ((1.0_DP/SQRT(A0_PARAM/As))-((3.0_DP/(A0_PARAM/As))*SQRT(A_VALUE)))*(A0_DERIV/As) + &     !Ref Area Gradient
                               & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))*H0_DERIV/H0_PARAM+ &   !Thickness Gradient
                               & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))*E_DERIV/E_PARAM) &     !Elasticity Gradient
                               & *Fr*Beta)*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP)*Re)*PHIMS               !Viscosity
@@ -5174,6 +5179,8 @@ CONTAINS
                     & elementVersions(derivativeIdx,nodeIdx)
 
                   !Get material params
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
+                   & As,err,error,*999)
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
                    & Fr,err,error,*999)
                   CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -5192,7 +5199,7 @@ CONTAINS
 
                   !Momentum Equation
                   momentum1=-K*2.0_DP*Q_BIF/A_BIF
-                  momentum2=K*((Q_BIF/A_BIF)**2.0_DP)+(2.0_DP*Fr*Beta)*(SQRT(A0_PARAM)-3.0_DP/2.0_DP*SQRT(A_BIF))
+                  momentum2=K*((Q_BIF/A_BIF)**2.0_DP)+(2.0_DP*Fr*Beta)*(SQRT(A0_PARAM/As)-3.0_DP/2.0_DP*SQRT(A_BIF))
                   !Continuity Equation
                   continuity=-1.0_DP/St
 

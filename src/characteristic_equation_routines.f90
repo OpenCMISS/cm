@@ -804,7 +804,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
-    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,SUM
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,SUM,rho
     INTEGER(INTG) :: derivativeIdx,versionIdx,versionIdx2,componentIdx,rowIdx,columnIdx,componentIdx2,numberOfVersions,local_ny
     LOGICAL :: updateStiffnessMatrix,updateNonlinearResidual,boundaryNode
 
@@ -900,6 +900,8 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
             & materialsParameters1,err,error,*999)
           fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+          local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+          rho=materialsParameters(local_ny)
           local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
           As=materialsParameters(local_ny)
           local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
@@ -996,10 +998,15 @@ CONTAINS
                     nonlinearMatrices%NodalResidual%vector(rowIdx)=SUM
                   ELSE
                     nonlinearMatrices%NodalResidual%vector(rowIdx)= &
-                    & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
-                    & Beta(1)*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
-                    & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
-                    & Beta(versionIdx)*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
+                    & ((rho*(As**1.5_DP)/(2.0_DP)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
+                    & (Beta(1)*Fr*2.0_DP*rho*(As**1.5_DP))*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
+                    & ((rho*(As**1.5_DP)/(2.0_DP)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
+                    & (Beta(versionIdx)*Fr*2.0_DP*rho*(As**1.5_DP))*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
+                    ! nonlinearMatrices%NodalResidual%vector(rowIdx)= &
+                    ! & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
+                    ! & Beta(1)*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
+                    ! & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
+                    ! & Beta(versionIdx)*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
                       ! ((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
                       ! & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
                       ! & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
@@ -1053,7 +1060,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
-    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,rho
     INTEGER(INTG) :: numberOfVersions,local_ny,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     LOGICAL :: updateJacobianMatrix,boundaryNode
@@ -1147,6 +1154,8 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
             & materialsParameters1,err,error,*999)
           fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+          local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
+          rho=materialsParameters(local_ny)
           local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
           As=materialsParameters(local_ny)
           local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
@@ -1237,19 +1246,20 @@ CONTAINS
                   IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                     IF(columnIdx==1) THEN
                       ! dP/dQ
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(1.0_DP/(2.0_DP*Fr))* &
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(rho*(As**1.5_DP))* &
                         & (Q_BIF(1)/(A_BIF(1)**2.0_DP))
                       ! dP/dA
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=Beta(1)/(2.0_DP*SQRT(A_BIF(1))) - &
-                        & (1.0_DP/(2.0_DP*Fr))*((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)= &
+                        & (Beta(1)*Fr*2.0_DP*rho*(As**1.5_DP))/(2.0_DP*SQRT(A_BIF(1))) - &
+                        & (rho*(As**1.5_DP))*((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
                     ELSE IF(columnIdx2==rowIdx) THEN
                       ! dP/dQ
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-1.0_DP/(2.0_DP*Fr))* &
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-rho*(As**1.5_DP))* &
                         & (Q_BIF(versionIdx)/(A_BIF(versionIdx)**2.0_DP))
                       ! dP/dA
-                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)=Beta(versionIdx)/ &
-                        & (2.0_DP*SQRT(A_BIF(versionIdx))) + (1.0_DP/(2.0_DP*Fr))* &
-                        & (Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP)
+                      jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)= &
+                        & (-Beta(versionIdx)*Fr*2.0_DP*rho*(As**1.5_DP))/(2.0_DP*SQRT(A_BIF(versionIdx))) - &
+                        & (rho*(As**1.5_DP))*((Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP))
                     ELSE
                       jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP
                       jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=0.0_DP
