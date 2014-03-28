@@ -1500,21 +1500,17 @@ CONTAINS
                             END IF
                           ELSE
                             IF(CURRENT_LOOP_ITERATION<10) THEN
-                              WRITE(FNAME, '(A15,I0,A5,I0,A4)') &
-                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_000"
-                              WRITE(OUTPUT_FILE,'(A20,I0)') FNAME,CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE, '("TIME_STEP_SPEC_",I0,".part",I0,".000",I0)') &
+                                & equations_set_idx,myComputationalNodeNumber,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                              WRITE(FNAME, '(A15,I0,A5,I0,A3)') &
-                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_00"
-                              WRITE(OUTPUT_FILE,'(A19,I0)') FNAME,CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE, '("TIME_STEP_SPEC_",I0,".part",I0,".00",I0)') &
+                                & equations_set_idx,myComputationalNodeNumber,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                              WRITE(FNAME, '(A15,I0,A5,I0,A4)') &
-                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_0"
-                              WRITE(OUTPUT_FILE,'(A18,I0)') FNAME,CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE, '("TIME_STEP_SPEC_",I0,".part",I0,".0",I0)') &
+                                & equations_set_idx,myComputationalNodeNumber,CURRENT_LOOP_ITERATION
                             ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                              WRITE(FNAME, '(A15,I0,A5,I0,A4)') &
-                                & "TIME_STEP_SPEC_",equations_set_idx,".part",myComputationalNodeNumber,"_"
-                              WRITE(OUTPUT_FILE,'(A17,I0)') FNAME,CURRENT_LOOP_ITERATION
+                              WRITE(OUTPUT_FILE, '("TIME_STEP_SPEC_",I0,".part",I0,".",I0)') &
+                                & equations_set_idx,myComputationalNodeNumber,CURRENT_LOOP_ITERATION
                             END IF
                           ENDIF
                           FILE=TRIM(OUTPUT_FILE)
