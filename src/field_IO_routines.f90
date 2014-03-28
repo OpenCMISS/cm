@@ -217,7 +217,7 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_Variable
     END FUNCTION FieldExport_Variable
 
-    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystemType, componentNumber, isNodal, &
+    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystemType, componentNumber, interpType, &
       & numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_CoordinateComponent")
       USE TYPES
@@ -225,29 +225,30 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentNumber
-      INTEGER(C_INT), VALUE :: isNodal
+      INTEGER(C_INT), VALUE :: interpType
       INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
       INTEGER(C_INT) :: FieldExport_CoordinateComponent
     END FUNCTION FieldExport_CoordinateComponent
 
-    FUNCTION FieldExport_Component( handle, componentNumber, isNodal, numberOfXi, interpolationXi ) &
+    FUNCTION FieldExport_Component( handle, componentNumber, interpType, numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_Component")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: componentNumber
-      INTEGER(C_INT), VALUE :: isNodal
+      INTEGER(C_INT), VALUE :: interpType
       INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
       INTEGER(C_INT) :: FieldExport_Component
     END FUNCTION FieldExport_Component
 
-    FUNCTION FieldExport_ElementGridSize( handle, numberOfXi ) &
+    FUNCTION FieldExport_ElementGridSize( handle, headerType, numberOfXi ) &
       & BIND(C,NAME="FieldExport_ElementGridSize")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: headerType
       INTEGER(C_INT), VALUE :: numberOfXi
       INTEGER(C_INT) :: FieldExport_ElementGridSize
     END FUNCTION FieldExport_ElementGridSize
@@ -2562,7 +2563,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
     INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
     INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
-    INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
+    INTEGER(INTG) :: local_number, interpType, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SAME_SCALING_SET
 
@@ -2757,11 +2758,22 @@ CONTAINS
       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
 
-      IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
-        isNodal = 1
-      ELSE
-        isNodal = 0
-      ENDIF
+      SELECT CASE(component%INTERPOLATION_TYPE)
+      CASE(FIELD_CONSTANT_INTERPOLATION)
+        interpType = 1
+      CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+        interpType = 2
+      CASE(FIELD_NODE_BASED_INTERPOLATION)
+        interpType = 3
+      CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+        interpType = 4
+      CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+        interpType = 5
+      CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+        interpType = 6
+      CASE DEFAULT
+        interpType = 0
+      END SELECT
 
       IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
           & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
@@ -2774,7 +2786,7 @@ CONTAINS
         NULLIFY(COORDINATE_SYSTEM)
         CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
         ERR = FieldExport_CoordinateComponent( sessionHandle, COORDINATE_SYSTEM%TYPE, &
-            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
+            & component%COMPONENT_NUMBER,interpType,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
       ELSE
         !!TEMP
         !ERR = FieldExport_Component( sessionHandle, &
@@ -2783,14 +2795,14 @@ CONTAINS
         !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
         INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         ERR = FieldExport_Component( sessionHandle, &
-            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
+            & component%COMPONENT_NUMBER,interpType,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ENDIF
       IF(ERR/=0) THEN
         CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
       ENDIF
 
-      IF( isNodal == 0 ) THEN
-        ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
+      IF( interpType /= 4 .OR. interpType /= 6) THEN
+        ERR = FieldExport_ElementGridSize( sessionHandle, interpType, basis%NUMBER_OF_XI )
       ELSE
         ! IF(.NOT.BASIS%DEGENERATE) THEN
         IF(LIST_COMP_SCALE(comp_idx)==1) THEN
