@@ -137,7 +137,9 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_SOURCE_DESTROY
 
   PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
-  
+
+  PUBLIC EquationsSet_StrainInterpolateXi
+
   PUBLIC EquationsSet_DerivedVariableCalculate,EquationsSet_DerivedVariableSet
 
   PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
@@ -6256,7 +6258,60 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_SPECIFICATION_SET")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET
-  
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location.
+  SUBROUTINE EquationsSet_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to interpolate strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("EquationsSet_StrainInterpolateXi",err,error,*999)
+
+    IF(.NOT.ASSOCIATED(equationsSet)) THEN
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+    IF(.NOT.equationsSet%equations_set_finished) THEN
+      CALL FlagError("Equations set has not been finished.",err,error,*999)
+    END IF
+
+    SELECT CASE(equationsSet%class)
+    CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+      CALL Elasticity_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*999)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_MODAL_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_FITTING_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_OPTIMISATION_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE DEFAULT
+      CALL FlagError("Equations set class "//TRIM(NumberToVstring(equationsSet%class,"*",err,error))// &
+        & " is not valid.",err,error,*999)
+    END SELECT
+
+    CALL Exits("EquationsSet_StrainInterpolateXi")
+    RETURN
+999 CALL Errors("EquationsSet_StrainInterpolateXi",err,error)
+    CALL Exits("EquationsSet_StrainInterpolateXi")
+    RETURN 1
+  END SUBROUTINE EquationsSet_StrainInterpolateXi
+
   !
   !================================================================================================================================
   !

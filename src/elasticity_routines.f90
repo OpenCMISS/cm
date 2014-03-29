@@ -82,6 +82,8 @@ MODULE ELASTICITY_ROUTINES
 
   PUBLIC ElasticityEquationsSet_DerivedVariableCalculate
 
+  PUBLIC Elasticity_StrainInterpolateXi
+
   PUBLIC ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC
   
   PUBLIC ELASTICITY_PROBLEM_CLASS_TYPE_SET
@@ -448,6 +450,44 @@ CONTAINS
     CALL EXITS("ElasticityEquationsSet_DerivedVariableCalculate")
     RETURN 1
   END SUBROUTINE ElasticityEquationsSet_DerivedVariableCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location.
+  SUBROUTINE Elasticity_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to interpolate strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Elasticity_StrainInterpolateXi",err,error,*999)
+
+    IF(.NOT.ASSOCIATED(equationsSet)) THEN
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    SELECT CASE(equationsSet%type)
+    CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+      CALL FiniteElasticity_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*999)
+    CASE DEFAULT
+      CALL FlagError("Equations set type "//TRIM(NumberToVstring(equationsSet%type,"*",err,error))// &
+        & " is not valid for an elasticity class equation.",err,error,*999)
+    END SELECT
+
+    CALL Exits("Elasticity_StrainInterpolateXi")
+    RETURN
+999 CALL Errors("Elasticity_StrainInterpolateXi",err,error)
+    CALL Exits("Elasticity_StrainInterpolateXi")
+    RETURN 1
+  END SUBROUTINE Elasticity_StrainInterpolateXi
 
   !
   !================================================================================================================================

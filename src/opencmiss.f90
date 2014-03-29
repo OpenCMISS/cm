@@ -3080,6 +3080,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_DerivedVariableSetObj
   END INTERFACE !CMISSEquationsSet_DerivedVariableSet
 
+  !>Calculate the strain tensor at a given element xi location.
+  INTERFACE CMISSEquationsSet_StrainInterpolateXi
+    MODULE PROCEDURE CMISSEquationsSet_StrainInterpolateXiNumber
+    MODULE PROCEDURE CMISSEquationsSet_StrainInterpolateXiObj
+  END INTERFACE CMISSEquationsSet_StrainInterpolateXi
+
   !>Gets the equations set analytic user parameter
   INTERFACE CMISSEquationsSet_AnalyticUserParamGet
     MODULE PROCEDURE CMISSEquationsSet_AnalyticUserParamGetNumber
@@ -3133,6 +3139,8 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSet_SourceDestroy
 
   PUBLIC CMISSEquationsSet_SpecificationGet,CMISSEquationsSet_SpecificationSet
+
+  PUBLIC CMISSEquationsSet_StrainInterpolateXi
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
 
@@ -25638,6 +25646,83 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_SpecificationSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location, for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSet_StrainInterpolateXiNumber(regionUserNumber,equationsSetUserNumber,userElementNumber,xi,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to calculate the strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSEquationsSet_StrainInterpolateXiNumber",err,error,*999)
+
+    NULLIFY(equationsSet)
+    NULLIFY(region)
+
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL EquationsSet_StrainInterpolateXi(equationsSet,userElementNumber,xi, &
+          & values,err,error,*999)
+      ELSE
+        localError="An equations set with a user number of "//TRIM(NumberToVstring(equationsSetUserNumber,"*", &
+          & err,error))//" does not exist on region number "//TRIM(NumberToVstring(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVstring(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiNumber")
+    RETURN
+999 CALL Errors("CMISSEquationsSet_StrainInterpolateXiNumber",err,error)
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiNumber")
+    CALL CmissHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_StrainInterpolateXiNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location, for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSet_StrainInterpolateXiObj(equationsSet,userElementNumber,xi,values,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<A pointer to the equations set to interpolate strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL Enters("CMISSEquationsSet_StrainInterpolateXiObj",err,error,*999)
+
+    CALL EquationsSet_StrainInterpolateXi(equationsSet%equations_set,userElementNumber,xi, &
+      & values,err,error,*999)
+
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiObj")
+    RETURN
+999 CALL Errors("CMISSEquationsSet_StrainInterpolateXiObj",err,error)
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiObj")
+    CALL CmissHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_StrainInterpolateXiObj
 
 !!==================================================================================================================================
 !!
