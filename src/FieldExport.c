@@ -626,21 +626,35 @@ static int FieldExport_File_Component( FileSession *const session,
 }
 
 
-static int FieldExport_File_ElementGridSize( FileSession *const session, const int headerType, const int numberOfXi )
+static int FieldExport_File_ElementGridSize( FileSession *const session, const int interpType, const int numberOfXi, const int *const numberGauss )
 {
-  int i,numGrid;
+  int i,numGrid[3];
+  const int headerType = FieldExport_InterpolationType( interpType );
 
   if( headerType == FIELD_IO_INTERPOLATION_HEADER_CONSTANT)
     {
-      numGrid=0;
+      numGrid[0]=0;
+      numGrid[1]=0;
+      numGrid[2]=0;
     }
   else if( headerType == FIELD_IO_INTERPOLATION_HEADER_GRID )
     {
-      numGrid=1;
+      numGrid[0]=1;
+      numGrid[1]=1;
+      numGrid[2]=1;
     }
   else if( headerType == FIELD_IO_INTERPOLATION_HEADER_GAUSS )
     {
-      numGrid=1;
+    for( i = 0; i < numberOfXi; i++ )
+      {
+	numGrid[i]=numberGauss[i]-1;
+      }
+    }
+  else
+    {
+      numGrid[0]=1;
+      numGrid[1]=1;
+      numGrid[2]=1;
     }
 
     if( FieldExport_FPrintf( session, "     " ) != FIELD_EXPORT_NO_ERROR )
@@ -650,7 +664,7 @@ static int FieldExport_File_ElementGridSize( FileSession *const session, const i
 
     for( i = 0; i < numberOfXi; i++ )
     {
-      if( FieldExport_FPrintf( session, "#xi%d=%d", i+1, numGrid ) != FIELD_EXPORT_NO_ERROR )
+      if( FieldExport_FPrintf( session, "#xi%d=%d", i+1, numGrid[i] ) != FIELD_EXPORT_NO_ERROR )
         {
             return session->error;
         }
@@ -768,10 +782,10 @@ static int FieldExport_File_ElementNodeScales( FileSession *session, const int i
 }
 
 
-static int FieldExport_File_ElementGridValues( FileSession *session, const int isFirstSet, const int dimensionCount, const double value )
+static int FieldExport_File_ElementGridValues( FileSession *session, const int isFirstSet, const int valueCount, const double value )
 {
     int i;
-    int valueCount = 1 << dimensionCount;
+    /* int valueCount = 1 << dimensionCount; */
 
     if( isFirstSet )
     {
@@ -1316,7 +1330,7 @@ int FieldExport_Component( const int handle, const int componentNumber, const in
 }
 
 
-int FieldExport_ElementGridSize( const int handle, const int interpType, const int numberOfXi )
+int FieldExport_ElementGridSize( const int handle, const int interpType, const int numberOfXi, const int *const numberGauss  )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1326,7 +1340,7 @@ int FieldExport_ElementGridSize( const int handle, const int interpType, const i
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-      return FieldExport_File_ElementGridSize( &session->fileSession, interpType, numberOfXi );
+      return FieldExport_File_ElementGridSize( &session->fileSession, interpType, numberOfXi, numberGauss );
     }
     else
     {
