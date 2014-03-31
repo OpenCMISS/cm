@@ -95,6 +95,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NavierStokes_SUPGCalculate
   PUBLIC NavierStokes_Couple1D0D
   PUBLIC NavierStokes_FiniteElementPreResidualEvaluate
+  PUBLIC NavierStokes_ControlLoopPostLoop
 
 CONTAINS 
 
@@ -2414,47 +2415,59 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT   
           CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
-            SELECT CASE(SOLVER%GLOBAL_NUMBER)
-            CASE(1)
-              ! DAE solver-set time
-              CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,currentTime,timeIncrement,ERR,ERROR,*999)
-              CALL SOLVER_DAE_TIMES_SET(SOLVER,currentTime,currentTime + timeIncrement,ERR,ERROR,*999)
-              CALL SOLVER_DAE_TIME_STEP_SET(SOLVER,timeIncrement,ERR,ERROR,*999)
-            CASE(2)
-              ! Characteristic solver- calculate new W from extrapolated Q,A
-              CALL Characteristic_PreSolveUpdateBC(SOLVER,ERR,ERROR,*999)
-            CASE(3)
-              ! 1D Navier-Stokes solver
-              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(SOLVER,ERR,ERROR,*999)
-              ! update solver matrix
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                  IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-                    DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-                      SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
-                      IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                        SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
-                      ELSE
-                        CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
+            IF(ASSOCIATED(SOLVER%SOLVERS%CONTROL_LOOP%WHILE_LOOP)) THEN
+              SELECT CASE(SOLVER%GLOBAL_NUMBER)
+              CASE(1)
+                ! Characteristic solver- calculate new W from extrapolated Q,A
+                CALL Characteristic_PreSolveUpdateBC(SOLVER,ERR,ERROR,*999)
+              CASE(2)
+                ! 1D Navier-Stokes solver
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(SOLVER,ERR,ERROR,*999)
+                ! update solver matrix
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                    IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                      DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                        SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                        IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                          SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                        ELSE
+                          CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                    ELSE
+                      CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+                    ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
+              CASE DEFAULT
+                LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                  & " is invalid for the Navier-Stokes/Characteristics iterative loop of a coupled 1D0D N-S problem."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT            
+            ELSE IF (ASSOCIATED(SOLVER%SOLVERS%CONTROL_LOOP%SIMPLE_LOOP)) THEN
+              IF(SOLVER%GLOBAL_NUMBER == 1) THEN
+                ! DAE solver-set time
+                CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,currentTime,timeIncrement,ERR,ERROR,*999)
+                CALL SOLVER_DAE_TIMES_SET(SOLVER,currentTime,currentTime + timeIncrement,ERR,ERROR,*999)
+                CALL SOLVER_DAE_TIME_STEP_SET(SOLVER,timeIncrement,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                  & " is invalid for the CellML DAE simple loop of a 1D0D coupled Navier-Stokes problem."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
-            CASE DEFAULT
-              LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
-                & " is invalid for a coupled CellML DAE / 1D Navier-Stokes problem."
+            ELSE
+              LOCAL_ERROR="The control loop type for solver "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                & " is invalid for the a 1D0D coupled Navier-Stokes problem."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT            
+            ENDIF
           CASE(PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(SOLVER%GLOBAL_NUMBER)
             CASE(1)
@@ -2699,7 +2712,7 @@ CONTAINS
     !Local Variables
     TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: iterativeWhileLoop,iterativeWhileLoop2
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: iterativeWhileLoop,iterativeWhileLoop2,simpleLoop
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS,MESH_SOLVER_EQUATIONS,BIF_SOLVER_EQUATIONS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER, MESH_SOLVER,BIF_SOLVER,cellmlSolver
@@ -2984,10 +2997,15 @@ CONTAINS
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop,1000,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop,"1D-0D Iterative Coupling Convergence Loop",ERR,ERROR,*999)
+                CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(iterativeWhileLoop,2,ERR,ERROR,*999)
+                NULLIFY(simpleLoop)
+                ! The simple CellML solver loop
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,simpleLoop,ERR,ERROR,*999)                
+                CALL CONTROL_LOOP_TYPE_SET(simpleLoop,PROBLEM_CONTROL_SIMPLE_TYPE,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_LABEL_SET(simpleLoop,"0D CellML solver Loop",ERR,ERROR,*999)
                 NULLIFY(iterativeWhileLoop2)
                 ! The Characteristics branch solver/ Navier-Stokes iterative coupling loop
-                CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(iterativeWhileLoop,1,ERR,ERROR,*999)
-                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,iterativeWhileLoop2,ERR,ERROR,*999)                
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,2,iterativeWhileLoop2,ERR,ERROR,*999)                
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop2,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop2,1000,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop2,"1D Characteristic/NSE branch value convergence Loop",ERR,ERROR,*999)
@@ -3102,20 +3120,28 @@ CONTAINS
                 CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
               CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
                 ! Iterative loop 1 couples 1D and 0D problems, checking convergence of boundary values
-                ! (this subloop holds 1 solver and 1 subloop with 2 solvers)
+                ! (this subloop holds 2 subloops)
                 NULLIFY(iterativeWhileLoop)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
-                CALL SOLVERS_CREATE_START(iterativeWhileLoop,solvers,ERR,ERROR,*999)
+
+                ! Simple loop 1 contains the 0D/CellML DAE solver
+                ! (this subloop holds 1 solver)
+                NULLIFY(simpleLoop)
+                NULLIFY(solvers)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,simpleLoop,ERR,ERROR,*999)
+                CALL SOLVERS_CREATE_START(simpleLoop,solvers,ERR,ERROR,*999)
                 CALL SOLVERS_NUMBER_SET(solvers,1,ERR,ERROR,*999)
                 !!!-- D A E --!!!
                 NULLIFY(SOLVER)
                 CALL SOLVERS_SOLVER_GET(solvers,1,solver,ERR,ERROR,*999)
                 CALL SOLVER_TYPE_SET(solver,SOLVER_DAE_TYPE,ERR,ERROR,*999)
                 CALL SOLVER_LABEL_SET(solver,"DAE Solver",ERR,ERROR,*999)
+
                 ! Iterative loop 2 couples N-S and characteristics, checking convergence of branch values
                 ! (this subloop holds 2 solvers)
                 NULLIFY(iterativeWhileLoop2)
-                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,iterativeWhileLoop2,ERR,ERROR,*999)
+                NULLIFY(solvers)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,2,iterativeWhileLoop2,ERR,ERROR,*999)
                 CALL SOLVERS_CREATE_START(iterativeWhileLoop2,solvers,ERR,ERROR,*999)
                 CALL SOLVERS_NUMBER_SET(solvers,2,ERR,ERROR,*999)
                 !!!-- C H A R A C T E R I S T I C --!!!
@@ -3142,14 +3168,19 @@ CONTAINS
               IF (PROBLEM%SUBTYPE==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                 NULLIFY(iterativeWhileLoop)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
-                CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop,SOLVERS,ERR,ERROR,*999)
+                NULLIFY(simpleLoop)
+                NULLIFY(SOLVERS)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,simpleLoop,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_SOLVERS_GET(simpleLoop,SOLVERS,ERR,ERROR,*999)
                 CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
                 NULLIFY(iterativeWhileLoop2)
-                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,iterativeWhileLoop2,ERR,ERROR,*999)
+                NULLIFY(SOLVERS)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,2,iterativeWhileLoop2,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop2,SOLVERS,ERR,ERROR,*999)
                 CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
               ELSE IF (PROBLEM%SUBTYPE==PROBLEM_1DTransient_NAVIER_STOKES_SUBTYPE) THEN
                 NULLIFY(iterativeWhileLoop)
+                NULLIFY(SOLVERS)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop,SOLVERS,ERR,ERROR,*999)
                 CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
@@ -3245,12 +3276,12 @@ CONTAINS
               CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
                 NULLIFY(iterativeWhileLoop)
                 ! Iterative loop 1 couples 1D and 0D problems, checking convergence of boundary values
-                ! (this subloop holds 1 DAE solver and 1 subloop with 2 solvers)
+                ! (this subloop holds 2 subloops)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
                 NULLIFY(iterativeWhileLoop2)
                 ! Iterative loop 2 couples N-S and characteristics, checking convergence of branch values
                 ! (this subloop holds 2 solvers)
-                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,iterativeWhileLoop2,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,2,iterativeWhileLoop2,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop2,SOLVERS,ERR,ERROR,*999)
                 !!!-- C H A R A C T E R I S T I C --!!!
                 CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
@@ -3334,12 +3365,12 @@ CONTAINS
               CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
                 NULLIFY(iterativeWhileLoop)
                 ! Iterative loop 1 couples 1D and 0D problems, checking convergence of boundary values
-                ! (this subloop holds 1 DAE solver and 1 subloop with 2 solvers)
+                ! (this subloop holds 2 subloops)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
                 NULLIFY(iterativeWhileLoop2)
                 ! Iterative loop 2 couples N-S and characteristics, checking convergence of branch values
                 ! (this subloop holds 2 solvers)
-                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,iterativeWhileLoop2,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,2,iterativeWhileLoop2,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop2,SOLVERS,ERR,ERROR,*999)
                 !!!-- C H A R A C T E R I S T I C --!!!
                 CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
@@ -3372,7 +3403,9 @@ CONTAINS
               IF (PROBLEM%SUBTYPE ==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                 NULLIFY(iterativeWhileLoop)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
-                CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop,SOLVERS,ERR,ERROR,*999)
+                NULLIFY(simpleLoop)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,simpleLoop,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_SOLVERS_GET(simpleLoop,SOLVERS,ERR,ERROR,*999)
               ELSE
                 CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
               ENDIF
@@ -3396,7 +3429,9 @@ CONTAINS
               IF (PROBLEM%SUBTYPE ==PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE) THEN
                 NULLIFY(iterativeWhileLoop)
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)
-                CALL CONTROL_LOOP_SOLVERS_GET(iterativeWhileLoop,SOLVERS,ERR,ERROR,*999)
+                NULLIFY(simpleLoop)
+                CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,1,simpleLoop,ERR,ERROR,*999)
+                CALL CONTROL_LOOP_SOLVERS_GET(simpleLoop,SOLVERS,ERR,ERROR,*999)
               ELSE
                 CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
               ENDIF
@@ -5303,37 +5338,52 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
-              SELECT CASE(SOLVER%GLOBAL_NUMBER)
-              CASE(1)
-                ! DAE solver- update boundary values (pCellMl -> A0D, A1D = A0D)
-                CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              CASE(2)
-                ! Characteristic solver- copy branch Q,A values to data field
-                dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
-                CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
-                  CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                   & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
-                ENDIF
-                CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-              CASE(3)
-                IF (CONTROL_LOOP%CONTROL_LOOP_LEVEL==2) THEN
-                  ! update 1D/0D coupling parameters (Q0D = Q1D) and check convergence
-                  CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                  ! output data if 1D-0D coupling converged
-                  IF (CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP==.FALSE.) THEN
-                    CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(SOLVER,ERR,ERROR,*999)
+              IF(ASSOCIATED(SOLVER%SOLVERS%CONTROL_LOOP%WHILE_LOOP)) THEN
+                SELECT CASE(SOLVER%GLOBAL_NUMBER)
+                CASE(1)
+                  ! Characteristic solver- copy branch Q,A values to data field
+                  dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
+                  CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                  IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
                   ENDIF
-                ELSE IF (CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN
-                  ! check characteristic/ N-S convergence at branches
-                  CALL NavierStokes_CoupleCharacteristics(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                CASE(2)
+                  ! ! 1D Navier-Stokes solver
+                  ! ! Couple 1D/0D level
+                  ! IF (CONTROL_LOOP%CONTROL_LOOP_LEVEL==2) THEN
+                  !   ! update 1D/0D coupling parameters (Q0D = Q1D) and check convergence
+                  !   CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  !   ! output data if 1D-0D coupling converged
+                  !   IF (CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP==.FALSE.) THEN
+                  !     CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(SOLVER,ERR,ERROR,*999)
+                  !   ENDIF
+                  IF (CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN
+                    ! Couple N-S/Chars level
+                    ! check characteristic/ N-S convergence at branches
+                    CALL NavierStokes_CoupleCharacteristics(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  ENDIF
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for the iterative 1D-0D coupled Navier-Stokes problem."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE IF (ASSOCIATED(SOLVER%SOLVERS%CONTROL_LOOP%SIMPLE_LOOP)) THEN
+                IF(SOLVER%GLOBAL_NUMBER == 1) THEN
+                  ! DAE solver- update boundary values (pCellMl -> A0D, A1D = A0D)
+                  CALL NavierStokes_Couple1D0D(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                ELSE
+                  LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for the CellML DAE simple loop of a 1D0D coupled Navier-Stokes problem."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
-                  & " is invalid for Coupled1D-DAE Navier-Stokes problem."
+              ELSE
+                LOCAL_ERROR="The control loop type for solver "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                  & " is invalid for the a 1D0D coupled Navier-Stokes problem."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
+              ENDIF
             CASE(PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE)
               SELECT CASE(SOLVER%GLOBAL_NUMBER)
               CASE(1)
@@ -9884,6 +9934,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: error
     !Local Variables
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: iterativeLoop
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
     TYPE(FIELD_TYPE), POINTER :: dependentField,materialsField,independentField
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
@@ -9895,8 +9946,8 @@ CONTAINS
     INTEGER(INTG) :: nodeNumber,nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfLocalNodes1D
     INTEGER(INTG) :: solverCellmlNumber,solver1dNavierStokesNumber,solverNumber
     INTEGER(INTG) :: boundaryNumber,numberOfBoundaries,numberOfComputationalNodes
-    INTEGER(INTG) :: MPI_IERROR
-    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,normalWave(2)
+    INTEGER(INTG) :: MPI_IERROR,timestep,iteration
+    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,normalWave(2),rho,Fr
     REAL(DP) :: qPrevious,pPrevious
     REAL(DP) :: q1d,couplingTolerance
     REAL(DP) :: a1d,a0d
@@ -9908,22 +9959,30 @@ CONTAINS
     !Get solvers based on the problem type
     SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
     CASE(PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+      solverNumber = solver%GLOBAL_NUMBER
       solver1dNavierStokesNumber=3
       versionIdx=1
       derivativeIdx=1
     CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+      solverNumber = solver%GLOBAL_NUMBER
       solverCellmlNumber=1
-      solver1dNavierStokesNumber=3
+      solver1dNavierStokesNumber=2
       versionIdx=1
       derivativeIdx=1
+      IF (solverNumber == solver1dNavierStokesNumber) THEN
+        solver1D=>controlLoop%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+        iterativeLoop=>controlLoop%WHILE_LOOP
+        iteration = iterativeLoop%ITERATION_NUMBER
+        timestep = controlLoop%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER
+      ELSE IF (solverNumber == solverCellmlNumber) THEN
+        solver1D=>controlLoop%PARENT_LOOP%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+      ENDIF
     CASE DEFAULT
       localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
         & " is not valid for 1D-0D Navier-Stokes fluid coupling."
       CALL FLAG_ERROR(localError,ERR,ERROR,*999)
     END SELECT
 
-    solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
-    solverNumber = solver%GLOBAL_NUMBER
     couplingTolerance = 0.0001
 
     IF(ASSOCIATED(controlLoop)) THEN
@@ -9958,8 +10017,9 @@ CONTAINS
     END IF
 
     !Get the number of local nodes
-    numberOfLocalNodes1D=dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-      & TOPOLOGY%NODES%NUMBER_OF_NODES
+    domainNodes=>dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+      & TOPOLOGY%NODES
+    numberOfLocalNodes1D=domainNodes%NUMBER_OF_NODES
 
     boundaryNumber = 0
     boundaryConverged = .TRUE.
@@ -9981,7 +10041,11 @@ CONTAINS
         boundaryConverged(boundaryNumber) = .FALSE.
         !Get material parameters
         CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & 2,rho,err,error,*999)
+        CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & 4,As,err,error,*999)
+        CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+          & 6,Fr,err,error,*999)
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)  
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -10001,11 +10065,11 @@ CONTAINS
         !Get pCellML
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeNumber,1,pCellML,err,error,*999)
-        !Calculate a0d from pCellML based on pressure-area relationship
-        a0d=(((pCellML)/Beta+SQRT(A0_PARAM))**2.0_DP)/As
 
         !Update A1D = A0D if this is the 0D solver post-solve
         IF (solverNumber == solverCellMLNumber) THEN
+          !Calculate a0d from pCellML based on pressure-area relationship
+          a0d=((pCellML/Beta)*Fr*2.0_DP*rho*(As**1.5_DP)+SQRT(A0_PARAM/As))**2.0_DP
           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
            & versionIdx,derivativeIdx,nodeNumber,2,a0d,err,error,*999)
         ENDIF
@@ -10013,19 +10077,8 @@ CONTAINS
         ! C h e c k  1 D / 0 D   C o n v e r g e n c e   f o r   t h i s   n o d e
         ! -------------------------------------------------------------------------
         IF (solverNumber == solver1dNavierStokesNumber) THEN
-          IF (controlLoop%WHILE_LOOP%ITERATION_NUMBER>=2) THEN
-            !Get previous Q1D 
-            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
-              & versionIdx,derivativeIdx,nodeNumber,1,qPrevious,err,error,*999)         
-            !Get previous pCellML value
-            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
-              & versionIdx,derivativeIdx,nodeNumber,1,pPrevious,err,error,*999)         
-            ! Check if the boundary interface values have converged
-            IF (ABS(qPrevious - q1d) < couplingTolerance .AND. &
-              & ABS(pCellML - pPrevious) < couplingTolerance) THEN
-              boundaryConverged(boundaryNumber) = .TRUE.
-            ENDIF
-          ELSE
+
+          IF (iteration == 1 .AND. timestep == 0) THEN
             ! Create the previous iteration field values type on the dependent field if it does not exist
             NULLIFY(fieldVariable)
             CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
@@ -10039,13 +10092,26 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U1_VARIABLE_TYPE, &
                & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
             ENDIF
+          ELSE
+            !Get previous Q1D 
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,1,qPrevious,err,error,*999)         
+            !Get previous pCellML value
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,1,pPrevious,err,error,*999)         
+            ! Check if the boundary interface values have converged
+            IF (ABS(qPrevious - q1d) < couplingTolerance .AND. &
+              & ABS(pCellML - pPrevious) < couplingTolerance) THEN
+              boundaryConverged(boundaryNumber) = .TRUE.
+            ENDIF
           ENDIF
-          ! store Q and A Boundary values as previous iteration value
+
+          ! store current Q and p Boundary values as previous iteration value
           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
            & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,1,q1d,err,error,*999)          
           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U1_VARIABLE_TYPE, &
            & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,1,pCellML,err,error,*999)          
-        ENDIF ! check 1d solver
+        ENDIF ! check if 1d solver
       ENDIF !Find boundary nodes
     ENDDO !Loop over nodes 
     numberOfBoundaries = boundaryNumber
@@ -10070,15 +10136,26 @@ CONTAINS
          & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
         CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
         IF (ALL(globalConverged)) THEN
-          write(*,*)'+++    1D0D coupling converged   +++'
-          controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"1D/0D coupling converged; # iterations: ", &
+           & iteration,err,error,*999)
+          iterativeLoop%CONTINUE_LOOP=.FALSE.
         ENDIF
         DEALLOCATE(globalConverged)
       ELSE
         IF (localConverged) THEN
-          write(*,*)'+++    1D0D coupling converged   +++'
-          controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"1D/0D coupling converged; # iterations: ", &
+           & iteration,err,error,*999)
+          iterativeLoop%CONTINUE_LOOP=.FALSE.
         ENDIF
+      ENDIF
+      ! If the solution hasn't converged, need to revert field values to pre-solve state
+      ! before continued iteration. This will counteract the field updates that occur
+      ! in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE. Ignore for initialisation
+      IF(iterativeLoop%CONTINUE_LOOP==.TRUE. .AND. timestep > 0 ) THEN
+        CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+        CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
       ENDIF
     ENDIF
 
@@ -10103,18 +10180,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: error
     !Local Variables
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: iterativeLoop
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
     TYPE(FIELD_TYPE), POINTER :: dependentField
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
-    TYPE(SOLVER_TYPE), POINTER :: solver1D,solverCharacteristics
+    TYPE(SOLVER_TYPE), POINTER :: solver1D
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: nodeNumber,nodeIdx,derivativeIdx,versionIdx,componentIdx,i
     INTEGER(INTG) :: solver1dNavierStokesNumber,solverNumber,solverCharacteristicsNumber
     INTEGER(INTG) :: branchNumber,numberOfBranches,numberOfComputationalNodes,numberOfVersions
-    INTEGER(INTG) :: MPI_IERROR
+    INTEGER(INTG) :: MPI_IERROR,timestep,iteration
     REAL(DP) :: couplingTolerance,l2Error,wPrevious(10),wCurrent(10)
     LOGICAL :: branchConverged(30),localConverged,MPI_LOGICAL,boundaryNode
     LOGICAL, ALLOCATABLE :: globalConverged(:)
@@ -10126,20 +10204,25 @@ CONTAINS
     CASE(PROBLEM_1DTransient_NAVIER_STOKES_SUBTYPE)
       solverCharacteristicsNumber=1
       solver1dNavierStokesNumber=2
+      solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+      timestep = controlLoop%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER
+      iteration = controlLoop%WHILE_LOOP%ITERATION_NUMBER
     CASE(PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
       solverCharacteristicsNumber=2
       solver1dNavierStokesNumber=3
     CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
       solverCharacteristicsNumber=1
       solver1dNavierStokesNumber=2
+      solver1D=>controlLoop%PARENT_LOOP%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+      iterativeLoop=>controlLoop%WHILE_LOOP
+      iteration = iterativeLoop%ITERATION_NUMBER
+      timestep = controlLoop%PARENT_LOOP%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER
     CASE DEFAULT
       localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
         & " is not valid for 1D-0D Navier-Stokes fluid coupling."
       CALL FLAG_ERROR(localError,ERR,ERROR,*999)
     END SELECT
 
-    solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
-    solverCharacteristics=>controlLoop%SOLVERS%SOLVERS(solverCharacteristicsNumber)%PTR
     solverNumber = solver%GLOBAL_NUMBER
     couplingTolerance = 0.001_DP
 
@@ -10199,7 +10282,7 @@ CONTAINS
         ENDDO
 
         ! Previous W Values if this is not the first iteration
-        IF (controlLoop%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER == 0 .AND. controlLoop%WHILE_LOOP%ITERATION_NUMBER == 1) THEN
+        IF (timestep == 0 .AND. iteration == 1) THEN
           ! Create the previous iteration field values type on the dependent field if it does not exist
           NULLIFY(fieldVariable)
           CALL FIELD_VARIABLE_GET(dependentField,FIELD_V_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
@@ -10261,14 +10344,14 @@ CONTAINS
       CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
       IF (ALL(globalConverged)) THEN
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Navier-Stokes/Characteristic converged; # iterations: ", &
-         & controlLoop%WHILE_LOOP%ITERATION_NUMBER,err,error,*999)
+         & iteration,err,error,*999)
         controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
       ENDIF
       DEALLOCATE(globalConverged)
     ELSE
       IF (localConverged) THEN
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Navier-Stokes/Characteristic converged; # iterations: ", &
-         & controlLoop%WHILE_LOOP%ITERATION_NUMBER,err,error,*999)
+         & iteration,err,error,*999)
         controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
       ENDIF
     ENDIF
@@ -10276,7 +10359,7 @@ CONTAINS
     ! If the solution hasn't converged, need to revert field values to pre-solve state
     ! before continued iteration. This will counteract the field updates that occur
     ! in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE. Ignore for initialisation
-    IF(controlLoop%WHILE_LOOP%CONTINUE_LOOP==.TRUE. .AND. controlLoop%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER > 0 ) THEN
+    IF(controlLoop%WHILE_LOOP%CONTINUE_LOOP==.TRUE. .AND. timestep > 0 ) THEN
       CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
        & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
       CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
@@ -10342,6 +10425,83 @@ CONTAINS
     CALL EXITS("NavierStokes_FiniteElementPreResidualEvaluate")
     RETURN 1
   END SUBROUTINE NavierStokes_FiniteElementPreResidualEvaluate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Runs after each control loop iteration
+  SUBROUTINE NavierStokes_ControlLoopPostLoop(controlLoop,err,error,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop !<A pointer to the control loop.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: navierStokesSolver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("NavierStokes_ControlLoopPostLoop",err,error,*999)
+
+    IF(ASSOCIATED(controlLoop)) THEN
+      SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
+      CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_PGM_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE, & 
+        &  PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_1dTransient_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
+        &  PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
+        ! Do nothing
+      CASE(PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+        ! Do nothing
+      CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+        SELECT CASE(controlLoop%LOOP_TYPE)
+        CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
+          ! CellML simple loop - do nothing 
+        CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+          ! Global time loop - do nothing
+        CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
+          ! Couple 1D/0D loop
+          IF (controlLoop%CONTROL_LOOP_LEVEL==2) THEN
+            navierStokesSolver=>controlLoop%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(2)%PTR
+            ! update 1D/0D coupling parameters (Q0D = Q1D) and check convergence
+            CALL NavierStokes_Couple1D0D(controlLoop,navierStokesSolver,err,error,*999)
+            ! output data once 1D-0D problems converged
+            IF (controlLoop%WHILE_LOOP%CONTINUE_LOOP == .FALSE.) THEN
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(navierStokesSolver,err,error,*999)
+            ENDIF
+          ELSE IF (controlLoop%CONTROL_LOOP_LEVEL==3) THEN
+            ! Post Navier-Stokes/Characteristics loop - do nothing
+          ELSE
+            localError="The while loop level of "//TRIM(NUMBER_TO_VSTRING(controlLoop%CONTROL_LOOP_LEVEL,"*",err,error))// &
+              & " is invalid for a Coupled 1D0D Navier-Stokes problem."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          ENDIF
+        CASE DEFAULT
+          localError="The control loop type of "//TRIM(NUMBER_TO_VSTRING(controlLoop%LOOP_TYPE,"*",err,error))// &
+            & " is invalid for a Coupled 1D0D Navier-Stokes problem."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
+      CASE DEFAULT
+        localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
+          & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("NavierStokes_ControlLoopPostLoop")
+    RETURN
+999 CALL ERRORS("NavierStokes_ControlLoopPostLoop",err,error)
+    CALL EXITS("NavierStokes_ControlLoopPostLoop")
+    RETURN 1
+    
+  END SUBROUTINE NavierStokes_ControlLoopPostLoop
 
   !
   !================================================================================================================================
