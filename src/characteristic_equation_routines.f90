@@ -999,9 +999,9 @@ CONTAINS
                   ELSE
                     nonlinearMatrices%NodalResidual%vector(rowIdx)= &
                     & ((rho*(As**1.5_DP)/(2.0_DP)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
-                    & (Beta(1)*Fr*2.0_DP*rho*(As**1.5_DP))*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
+                    & (Beta(1)*Fr*(As**1.5_DP)*(2.0_DP*rho))*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
                     & ((rho*(As**1.5_DP)/(2.0_DP)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
-                    & (Beta(versionIdx)*Fr*2.0_DP*rho*(As**1.5_DP))*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
+                    & (Beta(versionIdx)*Fr*(As**1.5_DP)*(2.0_DP*rho))*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
                     ! nonlinearMatrices%NodalResidual%vector(rowIdx)= &
                     ! & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
                     ! & Beta(1)*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
@@ -1229,7 +1229,7 @@ CONTAINS
                   columnIdx=columnIdx+1
                   rowIdx=rowIdx+1
                   jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
-                    & +normalWave(componentIdx,versionIdx)*SQRT((Fr*(Beta(versionIdx))))*((A_BIF(versionIdx)**(-0.75_DP)))
+                    & +normalWave(componentIdx,versionIdx)*SQRT(Fr*Beta(versionIdx))*(A_BIF(versionIdx)**(-0.75_DP))
                 ENDIF
               ENDDO
             ENDDO
@@ -1250,7 +1250,7 @@ CONTAINS
                         & (Q_BIF(1)/(A_BIF(1)**2.0_DP))
                       ! dP/dA
                       jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)= &
-                        & (Beta(1)*Fr*2.0_DP*rho*(As**1.5_DP))/(2.0_DP*SQRT(A_BIF(1))) - &
+                        & (Beta(1)*Fr*(As**1.5_DP)*(2.0_DP*rho))/(2.0_DP*SQRT(A_BIF(1))) - &
                         & (rho*(As**1.5_DP))*((Q_BIF(1)**2.0_DP)/(A_BIF(1)**3.0_DP))
                     ELSE IF(columnIdx2==rowIdx) THEN
                       ! dP/dQ
@@ -1258,7 +1258,7 @@ CONTAINS
                         & (Q_BIF(versionIdx)/(A_BIF(versionIdx)**2.0_DP))
                       ! dP/dA
                       jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx2)= &
-                        & (-Beta(versionIdx)*Fr*2.0_DP*rho*(As**1.5_DP))/(2.0_DP*SQRT(A_BIF(versionIdx))) - &
+                        & (-Beta(versionIdx)*Fr*(As**1.5_DP)*(2.0_DP*rho))/(2.0_DP*SQRT(A_BIF(versionIdx))) + &
                         & (rho*(As**1.5_DP))*((Q_BIF(versionIdx)**2.0_DP)/(A_BIF(versionIdx)**3.0_DP))
                     ELSE
                       jacobianMatrix%NodalJacobian%matrix(rowIdx,versionIdx)=0.0_DP

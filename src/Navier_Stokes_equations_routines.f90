@@ -9950,7 +9950,7 @@ CONTAINS
     REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,normalWave(2),rho,Fr
     REAL(DP) :: qPrevious,pPrevious
     REAL(DP) :: q1d,couplingTolerance
-    REAL(DP) :: a1d,a0d
+    REAL(DP) :: a1d,a0d,aIntermediate,aStar,w1d,w0d
     LOGICAL :: boundaryNode,boundaryConverged(30),localConverged,MPI_LOGICAL
     LOGICAL, ALLOCATABLE :: globalConverged(:)
 
@@ -9958,12 +9958,7 @@ CONTAINS
 
     !Get solvers based on the problem type
     SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-    CASE(PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
-      solverNumber = solver%GLOBAL_NUMBER
-      solver1dNavierStokesNumber=3
-      versionIdx=1
-      derivativeIdx=1
-    CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+    CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
       solverNumber = solver%GLOBAL_NUMBER
       solverCellmlNumber=1
       solver1dNavierStokesNumber=2
@@ -9976,6 +9971,7 @@ CONTAINS
         timestep = controlLoop%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER
       ELSE IF (solverNumber == solverCellmlNumber) THEN
         solver1D=>controlLoop%PARENT_LOOP%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
+        iterativeLoop=>controlLoop%PARENT_LOOP%WHILE_LOOP
       ENDIF
     CASE DEFAULT
       localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
@@ -9983,7 +9979,7 @@ CONTAINS
       CALL FLAG_ERROR(localError,ERR,ERROR,*999)
     END SELECT
 
-    couplingTolerance = 0.0001
+    couplingTolerance = iterativeLoop%ABSOLUTE_TOLERANCE
 
     IF(ASSOCIATED(controlLoop)) THEN
       IF(ASSOCIATED(solver1D)) THEN
@@ -10069,7 +10065,14 @@ CONTAINS
         !Update A1D = A0D if this is the 0D solver post-solve
         IF (solverNumber == solverCellMLNumber) THEN
           !Calculate a0d from pCellML based on pressure-area relationship
-          a0d=((pCellML/Beta)*Fr*2.0_DP*rho*(As**1.5_DP)+SQRT(A0_PARAM/As))**2.0_DP
+          a0d=((pCellML/Beta)/(2.0_DP*rho*Fr*(As**1.5_DP))+SQRT(A0_PARAM/As))**2.0_DP
+
+          w1d = q1d/a1d + 4.0_DP*SQRT(Beta*Fr)*(a1d**(0.25_DP) - (A0_PARAM/As)**(0.25_DP))
+          w0d = q1d/a0d - 4.0_DP*SQRT(Beta*Fr)*(a0d**(0.25_DP) - (A0_PARAM/As)**(0.25_DP))
+          aStar = (1.0_DP/(Beta*Fr))**2.0_DP*((w1d-w0d)/8.0_DP+SQRT(Beta*Fr)*(A0_PARAM/As)**0.25_DP)**4.0_DP
+
+          aIntermediate = (2.0_DP*aStar**0.25_DP - a0d**0.25_DP)**4.0_DP
+!          aIntermediate = (a1D**0.25_DP - a0d**0.25_DP)**4.0_DP/16.0_DP
           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
            & versionIdx,derivativeIdx,nodeNumber,2,a0d,err,error,*999)
         ENDIF
@@ -10201,16 +10204,14 @@ CONTAINS
 
     !Get solvers based on the problem type
     SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-    CASE(PROBLEM_1DTransient_NAVIER_STOKES_SUBTYPE)
+    CASE(PROBLEM_1DTransient_NAVIER_STOKES_SUBTYPE,PROBLEM_1DTransientAdv_NAVIER_STOKES_SUBTYPE)
       solverCharacteristicsNumber=1
       solver1dNavierStokesNumber=2
       solver1D=>controlLoop%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
       timestep = controlLoop%PARENT_LOOP%TIME_LOOP%ITERATION_NUMBER
       iteration = controlLoop%WHILE_LOOP%ITERATION_NUMBER
-    CASE(PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
-      solverCharacteristicsNumber=2
-      solver1dNavierStokesNumber=3
-    CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+      iterativeLoop=>controlLoop%WHILE_LOOP
+    CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
       solverCharacteristicsNumber=1
       solver1dNavierStokesNumber=2
       solver1D=>controlLoop%PARENT_LOOP%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(solver1dNavierStokesNumber)%PTR
@@ -10224,7 +10225,7 @@ CONTAINS
     END SELECT
 
     solverNumber = solver%GLOBAL_NUMBER
-    couplingTolerance = 0.001_DP
+    couplingTolerance = iterativeLoop%ABSOLUTE_TOLERANCE
 
     IF(ASSOCIATED(controlLoop)) THEN
       IF(ASSOCIATED(solver1D)) THEN
@@ -10456,9 +10457,7 @@ CONTAINS
         &  PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
         &  PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
         ! Do nothing
-      CASE(PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
-        ! Do nothing
-      CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
+      CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
         SELECT CASE(controlLoop%LOOP_TYPE)
         CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
           ! CellML simple loop - do nothing 
