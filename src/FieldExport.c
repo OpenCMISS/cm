@@ -223,6 +223,7 @@ static SessionListEntry *FieldExport_GetSession( const int handle )
     return NULL;
 }
 
+const int FieldExport_InterpolationType( const int interpType );
 
 /*
     CMISS-formatted file export routines.
@@ -592,8 +593,9 @@ static int FieldExport_File_CoordinateComponent( FileSession *const session, int
     const int componentNumber, const int interpType, const int numberOfXi, const int *const interpolationXi )
 {
     const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystemType, componentNumber );
-    const int headerType = FieldExport_InterpolationType( interpType );
+    int headerType;
 
+    headerType = FieldExport_InterpolationType( interpType );
     if( componentLabel == NULL )
     {
         FieldExport_FPrintf( session, "   %d.  ", componentNumber );

@@ -91,7 +91,7 @@ MODULE FIELD_IO_ROUTINES
 
   !>field variable component type pointer for IO
   TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
-    TYPE(MeshComponentElementsType), POINTER :: PTR !< pointer field variable component
+    TYPE(MeshElementsType), POINTER :: PTR !< pointer field variable component
   END TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
 
   !>field variable component type pointer for IO
