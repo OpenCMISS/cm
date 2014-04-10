@@ -629,11 +629,9 @@ CONTAINS
                 !label the field
                 CALL FIELD_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
                 !define new created field to be dependent
-                CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                  & FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
                 !look for decomposition rule already defined
-                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, &
-                  & ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
                 !apply decomposition rule found on new created field
                 CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
@@ -705,9 +703,9 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                       & FIELD_DELUDELN_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                        & FIELD_U1_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                      & FIELD_U1_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                        & FIELD_U2_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                      & FIELD_U2_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   END DO
                   CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
                     & ERR,ERROR,*999)
@@ -869,9 +867,9 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                   & FIELD_V_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                  & FIELD_U1_VARIABLE_TYPE,1,ERR,ERROR,*999)
+                  & FIELD_U1_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                  & FIELD_U2_VARIABLE_TYPE,1,ERR,ERROR,*999)
+                  & FIELD_U2_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & NUMBER_OF_DIMENSIONS,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 !Default to the geometric interpolation setup
@@ -942,8 +940,7 @@ CONTAINS
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE, &
-                  & ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -4094,12 +4091,12 @@ CONTAINS
                   IF(UPDATE_NONLINEAR_RESIDUAL) THEN
                     !Momentum Equation
                     IF(mh==1) THEN
-                      SUM=(((2.0_DP*K*Q_VALUE*Q_DERIV/A_VALUE)+(-K*A_DERIV*((Q_VALUE/A_VALUE)**2.0_DP))+ &         !Convective
-                        & ((SQRT(A_VALUE))*A_DERIV+ &                                                              !Area Gradient
-                        & (((A_VALUE*(1.0_DP/SQRT(A0_PARAM*As)))-(2.0_DP*(A_VALUE**1.5_DP)/A0_PARAM))*A0_DERIV)+ & !Ref Area Gradient                  
-                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/H0_PARAM)*H0_DERIV)+ &              !Thickness Gradient                    
-                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/E_PARAM)*E_DERIV))*Fr*Beta)* &      !Elasticity Gradient
-                        & DXI_DX(1,1)+(Q_VALUE/A_VALUE)*Re)*PHIMS                                                  !Viscosity
+                      SUM=(((2.0_DP*K*Q_VALUE*Q_DERIV/A_VALUE)+(-K*A_DERIV*((Q_VALUE/A_VALUE)**2.0_DP))+ &       !Convective
+                        & ((SQRT(A_VALUE))*A_DERIV+ &                                                            !Area Gradient
+                        & ((((A_VALUE*SQRT(A0_PARAM/As))-(2.0_DP*(A_VALUE**1.5_DP)))/A0_PARAM)*A0_DERIV)+ &      !Ref Area Gradient                  
+                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/H0_PARAM)*H0_DERIV)+ &            !Thickness Gradient
+                        & ((2.0_DP*A_VALUE*(SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))/E_PARAM)*E_DERIV))*Fr*Beta)* &    !Elasticity Gradient        
+                        & DXI_DX(1,1)+(Q_VALUE/A_VALUE)*Re)*PHIMS                                                !Viscosity
                       NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                         & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
                     ENDIF
@@ -4791,7 +4788,7 @@ CONTAINS
                               & ((2.0_DP*K*PHINS*(Q_VALUE**2.0_DP)*A_DERIV)/(A_VALUE**3.0_DP))+ &             
                               & (-K*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                              !Concevtive
                               & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &  !Area Gradient
-                              & ((1.0_DP/SQRT(A0_PARAM*As))-((3.0_DP/A0_PARAM)*SQRT(A_VALUE)))*A0_DERIV+ &     !Ref Area Gradient
+                              & (SQRT(A0_PARAM/As)-3.0_DP*SQRT(A_VALUE))*A0_DERIV/A0_PARAM+ &                  !Ref Area Gradient
                               & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))*H0_DERIV/H0_PARAM+ &   !Thickness Gradient
                               & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM/As)))*E_DERIV/E_PARAM) &     !Elasticity Gradient
                               & *Fr*Beta)*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP)*Re)*PHIMS               !Viscosity
@@ -7485,36 +7482,8 @@ CONTAINS
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(componentNumber==1) THEN
-               !Abdominal Aorta
-               t(1)= 0.003328  ; q(1)= 0.589213
-               t(2)= 0.119151  ; q(2)= 1.734496
-               t(3)= 0.136672  ; q(3)= -0.635518
-               t(4)= 0.15253   ; q(4)= -3.481171
-               t(5)= 0.170818  ; q(5)= 1.750861
-               t(6)= 0.184854  ; q(6)= 16.64217
-               t(7)= 0.220967  ; q(7)= 79.68522
-               t(8)= 0.238306  ; q(8)= 98.061734
-               t(9)= 0.253223  ; q(9)= 107.568712
-               t(10)= 0.269856 ; q(10)= 111.374882
-               t(11)= 0.290719 ; q(11)= 108.055701
-               t(12)= 0.306623 ; q(12)= 99.983824
-               t(13)= 0.379564 ; q(13)= 49.644986
-               t(14)= 0.418121 ; q(14)= 24.159487
-               t(15)= 0.439111 ; q(15)= 6.270225
-               t(16)= 0.455068 ; q(16)= -7.819729
-               t(17)= 0.471806 ; q(17)= -15.891343
-               t(18)= 0.496822 ; q(18)= -17.78387
-               t(19)= 0.537639 ; q(19)= -15.870491
-               t(20)= 0.564247 ; q(20)= -9.210486
-               t(21)= 0.600854 ; q(21)= -2.388943
-               t(22)= 0.629151 ; q(22)= 1.737663
-               t(23)= 0.670786 ; q(23)= 5.393381
-               t(24)= 0.720749 ; q(24)= 9.526849
-               t(25)= 0.788248 ; q(25)= 9.7066
-               t(26)= 0.818235 ; q(26)= 11.141436
-               t(27)= 0.867445 ; q(27)= 6.247525
-               t(28)= 0.93332  ; q(28)= 1.517264
-               t(29)= 0.994997 ; q(29)= 0.269833
+
+
 
 !Stress-Aorta
 t(	1	)=	0.00E+00	;	q(	1	)=	-3.54E+00
@@ -7922,9 +7891,83 @@ t(	199	)=	4.37E-01	;	q(	199	)=	1.93E+01
 t(	200	)=	4.39E-01	;	q(	200	)=	1.90E+01
 t(	201	)=	4.41E-01	;	q(	201	)=	1.85E+01
 
+               !Abdominal Aorta
+               t(1)= 0.003328  ; q(1)= 0.589213
+               t(2)= 0.119151  ; q(2)= 1.734496
+               t(3)= 0.136672  ; q(3)= -0.635518
+               t(4)= 0.15253   ; q(4)= -3.481171
+               t(5)= 0.170818  ; q(5)= 1.750861
+               t(6)= 0.184854  ; q(6)= 16.64217
+               t(7)= 0.220967  ; q(7)= 79.68522
+               t(8)= 0.238306  ; q(8)= 98.061734
+               t(9)= 0.253223  ; q(9)= 107.568712
+               t(10)= 0.269856 ; q(10)= 111.374882
+               t(11)= 0.290719 ; q(11)= 108.055701
+               t(12)= 0.306623 ; q(12)= 99.983824
+               t(13)= 0.379564 ; q(13)= 49.644986
+               t(14)= 0.418121 ; q(14)= 24.159487
+               t(15)= 0.439111 ; q(15)= 6.270225
+               t(16)= 0.455068 ; q(16)= -7.819729
+               t(17)= 0.471806 ; q(17)= -15.891343
+               t(18)= 0.496822 ; q(18)= -17.78387
+               t(19)= 0.537639 ; q(19)= -15.870491
+               t(20)= 0.564247 ; q(20)= -9.210486
+               t(21)= 0.600854 ; q(21)= -2.388943
+               t(22)= 0.629151 ; q(22)= 1.737663
+               t(23)= 0.670786 ; q(23)= 5.393381
+               t(24)= 0.720749 ; q(24)= 9.526849
+               t(25)= 0.788248 ; q(25)= 9.7066
+               t(26)= 0.818235 ; q(26)= 11.141436
+               t(27)= 0.867445 ; q(27)= 6.247525
+               t(28)= 0.93332  ; q(28)= 1.517264
+               t(29)= 0.994997 ; q(29)= 0.269833
+
+                            !Olufsen Descending aorta
+                            t(1)= 0.051325 ; q(1)=-1.162791
+                            t(2)= 0.071192 ; q(2)=-14.48203
+                            t(3)= 0.087748 ; q(3)=-24.10148
+                            t(4)= 0.100993 ; q(4)=-27.801268
+                            t(5)= 0.112583 ; q(5)=-15.961945
+                            t(6)= 0.120861 ; q(6)=4.756871
+                            t(7)= 0.129139 ; q(7)=45.454545
+                            t(8)= 0.142384 ; q(8)=100.951374
+                            t(9)= 0.150662 ; q(9)=146.088795
+                            t(10)= 0.163907; q(10)=187.526427
+                            t(11)= 0.172185; q(11)=212.684989
+                            t(12)= 0.178808; q(12)=227.484144
+                            t(13)= 0.19702 ; q(13)=234.883721
+                            t(14)= 0.213576; q(14)=251.902748
+                            t(15)= 0.230132; q(15)=265.961945
+                            t(16)= 0.236755; q(16)=270.401691
+                            t(17)= 0.266556; q(17)=254.122622
+                            t(18)= 0.286424; q(18)=222.30444
+                            t(19)= 0.307947; q(19)=169.767442
+                            t(20)= 0.339404; q(20)=109.090909
+                            t(21)= 0.370861; q(21)=63.213531
+                            t(22)= 0.397351; q(22)=21.775899
+                            t(23)= 0.418874; q(23)=-28.541226
+                            t(24)= 0.433775; q(24)=-38.900634
+                            t(25)= 0.453642; q(25)=-21.141649
+                            t(26)= 0.461921; q(26)=-17.44186
+                            t(27)= 0.483444; q(27)=-21.141649
+                            t(28)= 0.503311; q(28)=-20.401691
+                            t(29)= 0.534768; q(29)=-10.782241
+                            t(30)= 0.554636; q(30)=-7.82241
+                            t(31)= 0.594371; q(31)=-11.522199
+                            t(32)= 0.620861; q(32)=-12.262156
+                            t(33)= 0.642384; q(33)=-7.082452
+                            t(34)= 0.660596; q(34)=-2.642706
+                            t(35)= 0.690397; q(35)=-0.422833
+                            t(36)= 0.731788; q(36)=5.496829
+                            t(37)= 0.758278; q(37)=7.716702
+                            t(38)= 0.809603; q(38)=0.317125
+                            t(39)= 0.857616; q(39)=-1.162791
+                            t(40)= 0.905629; q(40)=-7.082452
+                            t(41)= 0.940397; q(41)=-7.82241
+
                !Initialize variables
                m=1
-               n=201
+               n=41
                !Compute derivation
                DO i=1,n-1
                  delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
@@ -8008,9 +8051,6 @@ t(	201	)=	4.41E-01	;	q(	201	)=	1.85E+01
                t(27)= 0.783235 ; q(27)= 18.933425
                t(28)= 0.838848 ; q(28)= 16.112126
                t(29)= 0.998892 ; q(29)= 15.305137
-
-
-
 
 !Rest-Aorta
 t(	1	)=	0.00E+00	;	q(	1	)=	-6.30E+00
@@ -8417,7 +8457,6 @@ t(	198	)=	6.87E-01	;	q(	198	)=	4.01E+00
 t(	199	)=	6.91E-01	;	q(	199	)=	3.99E+00
 t(	200	)=	6.94E-01	;	q(	200	)=	4.06E+00
 t(	201	)=	6.98E-01	;	q(	201	)=	4.24E+00
-
 
                !Initialize variables
                m=1
@@ -10120,7 +10159,7 @@ t(	201	)=	6.98E-01	;	q(	201	)=	4.24E+00
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
     TYPE(SOLVER_TYPE), POINTER :: solver1D
     INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfLocalNodes1D,solver1dNavierStokesNumber
-    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,aCellML,qBoundary,aBoundary,areaCalculated,normalWave(2)
+    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,qCellML,aCellML,qBoundary,aBoundary,areaCalculated,normalWave(2)
     LOGICAL :: boundaryNode
     TYPE(VARYING_STRING) :: localError
 
@@ -10209,7 +10248,7 @@ t(	201	)=	6.98E-01	;	q(	201	)=	4.24E+00
           & versionIdx,derivativeIdx,nodeIdx,2,aBoundary,err,error,*999)
         !Get pCellML
         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)
+          & versionIdx,derivativeIdx,nodeIdx,2,pCellML,err,error,*999)
 
         !Recalculate A at boundary node 
         aCellML=(((pCellML*133.32_DP)/Beta+SQRT(A0_PARAM))**2.0_DP)/As
@@ -10222,6 +10261,9 @@ t(	201	)=	6.98E-01	;	q(	201	)=	4.24E+00
           IF(Mod(nodeIdx,2)/=0)THEN
             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & versionIdx,derivativeIdx,nodeIdx+(numberOfLocalNodes1D/2),1,qBoundary,err,error,*999)
+          ELSE
+            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeIdx,2,areaCalculated,err,error,*999)
           ENDIF
         ENDIF
 
