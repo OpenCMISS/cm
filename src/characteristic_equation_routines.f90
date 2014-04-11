@@ -84,7 +84,7 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   PUBLIC Characteristic_EquationsSet_Setup
   PUBLIC Characteristic_NodalResidualEvaluate
   PUBLIC Characteristic_NodalJacobianEvaluate
-  PUBLIC Characteristic_PreSolveUpdateBC
+  PUBLIC Characteristic_Extrapolate
 
 CONTAINS 
 
@@ -1292,11 +1292,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Extrapolate W for branch nodes.
-  SUBROUTINE Characteristic_PreSolveUpdateBC(solver,ERR,ERROR,*)
+  !>Extrapolate W for branch nodes and boundaries .
+  SUBROUTINE Characteristic_Extrapolate(solver,timeIncrement,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER 
+    REAL(DP), INTENT(IN) :: timeIncrement
     INTEGER(INTG), INTENT(OUT) :: ERR
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables
@@ -1310,12 +1311,13 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,normalWave(2,4),elementLengths(4)
-    REAL(DP) :: Q_BIF(4),A_BIF(4)
-    REAL(DP) :: alpha,elementLength,minLength
+    REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4)
+    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,lambda(2)
+    REAL(DP) :: elementLength,extrapolationDistance
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny,lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
 
-    CALL ENTERS("Characteristic_PreSolveUpdateBC",ERR,ERROR,*999)
+    CALL ENTERS("Characteristic_Extrapolate",ERR,ERROR,*999)
 
     NULLIFY(dependentBasis)
     NULLIFY(materialsBasis)
@@ -1371,119 +1373,181 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & independentParameters,err,error,*999)
 
-                !!!-- F i n d   B r a n c h   N o d e s --!!!
-                IF(ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1))>0) THEN
-                  IF(numberOfVersions>1) THEN
+                !!!-- F i n d   B r a n c h   a n d   B o u n d a r y    N o d e s --!!!
+                IF(ABS(normalWave(1,1)) > ZERO_TOLERANCE .OR. ABS(normalWave(2,1))> ZERO_TOLERANCE) THEN
+                  !Get constant material parameters
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,4,As,err,error,*999)
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,6,Fr,err,error,*999)
 
-                    !Get constant material parameters
-                    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                      & FIELD_VALUES_SET_TYPE,4,As,err,error,*999)
-                    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                      & FIELD_VALUES_SET_TYPE,6,Fr,err,error,*999)
-                    
-                    elementLengths = 0.0_DP
-                    minLength = 1.0E20_DP
-                    DO elementIdx=1,dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
-                      elementNumber=dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(elementIdx)
-                      ! Get the line lengths to extrapolate at equidistant points from the branch node
-                      lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)% &
-                       & ELEMENT_LINES(1)
-                      elementLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
-                      !Loop over the nodes on this (surrounding) element
-                      dependentBasis=>dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
-                      materialsBasis=>materialsDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
-                      DO elementNodeIdx=1,dependentBasis%NUMBER_OF_NODES
-                        elementNodeNumber=dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)% &
-                          & ELEMENT_NODES(elementNodeIdx)
-                        !Check that this node is the same as the current iterative node
-                        IF(elementNodeNumber==nodeIdx) THEN
-                          !Loop over the versions to find the element index that matches the version
-                          DO versionIdx=1,numberOfVersions
-                            !Version number for the local element node
-                            elementNodeVersion=dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%&
-                              & elementVersions(1,elementNodeIdx)
-                            IF(elementNodeVersion==versionIdx) THEN
-                              versionElementNumber(versionIdx)=elementNumber
-                              elementLengths(versionIdx) = elementLength
-                              IF (elementLengths(versionIdx) > ZERO_TOLERANCE .AND. elementLengths(versionIdx) < minLength) THEN 
-                                minLength = elementLengths(versionIdx)
-                              ENDIF
-                            ENDIF
-                          ENDDO
-                        ENDIF
-                      ENDDO
-                    ENDDO
-
-                    !Extrapolate Q & A at branch elements at 0.2 xi of shortest element from branch point
-                    DO componentIdx=1,2
-                      DO versionIdx=1,numberOfVersions                         
-                        IF(ABS(normalWave(componentIdx,versionIdx))> ZERO_TOLERANCE) THEN
-                          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,Q_BIF(versionIdx),err,error,*999)            
-                          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
-                            & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,A_BIF(versionIdx),err,error,*999)            
-                          IF(normalWave(componentIdx,versionIdx)>ZERO_TOLERANCE) THEN
-                            !Inlet
-                            XI(1)=1.0_DP - 0.2_DP*minLength/elementLengths(versionIdx)
-                          ELSE
-                            !Outlet
-                            XI(1)=0.2_DP*minLength/elementLengths(versionIdx)
+                  elementLengths = 0.0_DP
+                  DO elementIdx=1,dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                    elementNumber=dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%SURROUNDING_ELEMENTS(elementIdx)
+                    ! Get the line lengths to extrapolate at equidistant points from the branch node
+                    lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)% &
+                     & ELEMENT_LINES(1)
+                    elementLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
+                    !Loop over the nodes on this (surrounding) element
+                    dependentBasis=>dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+                    materialsBasis=>materialsDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+                    DO elementNodeIdx=1,dependentBasis%NUMBER_OF_NODES
+                      elementNodeNumber=dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)% &
+                        & ELEMENT_NODES(elementNodeIdx)
+                      !Check that this node is the same as the current iterative node
+                      IF(elementNodeNumber==nodeIdx) THEN
+                        !Loop over the versions to find the element index that matches the version
+                        DO versionIdx=1,numberOfVersions
+                          !Version number for the local element node
+                          elementNodeVersion=dependentDomain%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%&
+                            & elementVersions(1,elementNodeIdx)
+                          IF(elementNodeVersion==versionIdx) THEN
+                            versionElementNumber(versionIdx)=elementNumber
+                            elementLengths(versionIdx) = elementLength
                           ENDIF
-                          ! Get Q,A values at extrapolated xi locations
-                          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
-                            & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
-                            & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                            & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                          Q_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                            & PTR%VALUES(1,NO_PART_DERIV)
-                          A_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
-                            & PTR%VALUES(2,NO_PART_DERIV)
-                          ! Get spatially varying material values at extrapolated xi locations
-                          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
-                            & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
-                            & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
-                            & MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                          A0_PARAM(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
-                            & PTR%VALUES(1,NO_PART_DERIV)
-                          E_PARAM(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
-                            & PTR%VALUES(2,NO_PART_DERIV)
-                          H0_PARAM(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
-                            & PTR%VALUES(3,NO_PART_DERIV)
-                          Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-                            & (3.0_DP*A0_PARAM(versionIdx))
-                        ENDIF
-                      ENDDO
+                        ENDDO
+                      ENDIF
                     ENDDO
+                  ENDDO
 
-                    !Extrapolate W at branch elements
-                    W(:,:)=0.0_DP
-                    DO componentIdx=1,2
-                      DO versionIdx=1,numberOfVersions
-                        IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
-                          W(componentIdx,versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+ &
-                            & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT((Fr*(Beta(versionIdx))))* &
-                            & (A_EX(versionIdx)**(0.25_DP) - (A0_PARAM(versionIdx)/As)**(0.25_DP)))
-                          ! W(componentIdx,versionIdx)=((Q_BIF(versionIdx)/A_BIF(versionIdx))+ &
-                          !   & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT((Fr*(Beta(versionIdx))))* &
-                          !   & (A_BIF(versionIdx)**(0.25_DP) - A0_PARAM(versionIdx)**(0.25_DP)))
-                        ENDIF
-                      ENDDO
-                    ENDDO
+                  !Extrapolate Q & A at branch elements at distance lambda*dt from node
+                  DO componentIdx=1,2
+                    DO versionIdx=1,numberOfVersions                         
+                      IF(ABS(normalWave(componentIdx,versionIdx))> ZERO_TOLERANCE) THEN
 
-                    !Update W at branch elements
-                    fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
-                    DO componentIdx=1,2
-                      DO versionIdx=1,numberOfVersions
-                        local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                          & NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,FIELD_V_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,local_ny,W(componentIdx,versionIdx),ERR,ERROR,*999)
-                      ENDDO
+                        ! Get materials values at node
+                        CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
+                         & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,A0_PARAM(versionIdx),err,error,*999)            
+                        CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
+                         & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,E_PARAM(versionIdx),err,error,*999)            
+                        CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
+                         & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,3,H0_PARAM(versionIdx),err,error,*999)            
+                        Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
+                          & (3.0_DP*A0_PARAM(versionIdx))
+
+                        ! Get previous timestep Q,A values at node
+                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QPrevious,err,error,*999)            
+                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,APrevious,err,error,*999)            
+
+                        ! Calculate extrapolation distance and convert to xi-space
+                        IF((normalWave(componentIdx,versionIdx)>ZERO_TOLERANCE)) THEN
+                          ! Parent branch / outlet boundary
+                          extrapolationDistance = ABS(timeIncrement*(QPrevious/APrevious + &
+                           & (APrevious**0.25)*SQRT(Beta(versionIdx)*Fr)))
+                          !convert to xi space
+                          XI(1)=1.0_DP - extrapolationDistance/elementLengths(versionIdx)
+                        ELSE
+                          ! Daughter branch / inlet boundary
+                          extrapolationDistance = ABS(timeIncrement*(QPrevious/APrevious - &
+                           & (APrevious**0.25)*SQRT(Beta(versionIdx)*Fr)))
+                          !convert to xi space
+                          XI(1)= extrapolationDistance/elementLengths(versionIdx)
+                        ENDIF
+
+                        IF (XI(1) > 1.0_DP .OR. XI(1) < 0.0_DP) THEN
+                          CALL FLAG_ERROR("1D extrapolation location outside of element xi space.",ERR,ERROR,*999)
+                        ENDIF
+
+                        ! Get Q,A values at extrapolated xi locations
+                        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
+                          & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
+                          & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                          & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                        Q_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                          & PTR%VALUES(1,NO_PART_DERIV)
+                        A_EX(versionIdx)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+                          & PTR%VALUES(2,NO_PART_DERIV)
+                        ! Get spatially varying material values at extrapolated xi locations
+                        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
+                          & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
+                          & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI,EQUATIONS%INTERPOLATION% &
+                          & MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                        A0_EX(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
+                          & PTR%VALUES(1,NO_PART_DERIV)
+                        E_EX(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
+                          & PTR%VALUES(2,NO_PART_DERIV)
+                        H0_EX(versionIdx)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)% &
+                          & PTR%VALUES(3,NO_PART_DERIV)
+                        Beta_EX(versionIdx) = (4.0_DP*SQRT(PI)*E_EX(versionIdx)*H0_EX(versionIdx))/ &
+                          & (3.0_DP*A0_EX(versionIdx))
+                      ENDIF
                     ENDDO
-                  ENDIF
-                ENDIF !Find branch nodes
+                  ENDDO
+
+                  !Extrapolate W
+                  W(:,:)=0.0_DP
+                  DO componentIdx=1,2
+                    DO versionIdx=1,numberOfVersions
+                      IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                        W(componentIdx,versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+ &
+                          & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT((Fr*(Beta_EX(versionIdx))))* &
+                          & (A_EX(versionIdx)**(0.25_DP) - (A0_EX(versionIdx)/As)**(0.25_DP)))
+                      ENDIF
+                    ENDDO
+                  ENDDO
+                  !Update W
+                  fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
+                  DO componentIdx=1,2
+                    DO versionIdx=1,numberOfVersions
+                      local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                        & NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,FIELD_V_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,local_ny,W(componentIdx,versionIdx),ERR,ERROR,*999)
+                    ENDDO
+                  ENDDO
+
+                  ! Check for a boundary node
+                  IF (numberOfVersions == 1 .AND. L2NORM(normalWave(:,1)) > ZERO_TOLERANCE) THEN
+                    versionIdx = 1
+                    CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QCurrent,err,error,*999)            
+                    CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)            
+
+                    !Get A for boundary wave outside the 1D domain (from 0D solution for 1D0D boundary or fixed for non-coupled)
+                    NULLIFY(fieldVariable)
+                    CALL FIELD_VARIABLE_GET(dependentField,FIELD_U1_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                    IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_VALUES_SET_TYPE)%PTR)) THEN
+                      !Get pCellML --> A0D if this is a coupled problem
+                      CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)                    
+!                      ACellml=(((pCellML*133.32_DP)/(Beta(versionIdx)/(2.0_DP*rho*Fr*(As**1.5_DP)))+SQRT(A0_PARAM(versionIdx)/As))**2.0_DP
+                      ACellml=(((pCellML)/(Beta(versionIdx)*Fr*As**1.5_DP*2.0_DP*rho))+ &
+                       & SQRT(A0_PARAM(versionIdx)/As))**2.0_DP
+
+                      ! The defined component will be the component to get from outside the 1D domain if retrograde flow
+                      lambda(1) = Q_EX(1)/A_EX(1) + (A_EX(1)**0.25)*SQRT(Beta(versionIdx)*Fr)
+                      lambda(2) = QCurrent/ACellml - (ACellml**0.25)*SQRT(Beta(versionIdx)*Fr)
+
+                      ! calculate A1D in terms of the characteristic waves extrapolated from 1d and from 0d
+                      IF (normalWave(1,1) > 0.0_DP) THEN
+                        ! Outlet/terminal boundary
+                        ACurrent = (1.0_DP/(Beta(versionIdx)*Fr))**2.0_DP* &
+                         & ((Q_EX(versionIdx)/A_EX(versionIdx) - QCurrent/ACellml + &
+                         & SQRT(Beta(versionIdx)*Fr)*(A_EX(versionIdx)**0.25_DP + ACellml**0.25_DP))/8.0_DP+ &
+                         & SQRT(Beta(versionIdx)*Fr)*A0_PARAM(versionIdx)**0.25_DP)**4.0_DP
+                      ELSE
+                        ! Inlet/source boundary
+                        ACurrent = (1.0_DP/(Beta(versionIdx)*Fr))**2.0_DP* &
+                         & ((QCurrent/ACellml - Q_EX(versionIdx)/A_EX(versionIdx) + &
+                         & SQRT(Beta(versionIdx)*Fr)*(A_EX(versionIdx)**0.25_DP + ACellml**0.25_DP))/8.0_DP+ &
+                         & SQRT(Beta(versionIdx)*Fr)*A0_PARAM(versionIdx)**0.25_DP)**4.0_DP
+                      ENDIF
+                    ENDIF
+
+                    fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                    local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                     & NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_VALUES_SET_TYPE,local_ny,ACurrent,ERR,ERROR,*999)
+                  ENDIF ! boundary node
+                ENDIF ! branch or boundary node
               ENDDO !Loop over nodes
 
             ELSE
@@ -1502,12 +1566,12 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_PreSolveUpdateBC")
+    CALL EXITS("Characteristic_Extrapolate")
     RETURN
-999 CALL ERRORS("Characteristic_PreSolveUpdateBC",ERR,ERROR)
-    CALL EXITS("Characteristic_PreSolveUpdateBC")
+999 CALL ERRORS("Characteristic_Extrapolate",ERR,ERROR)
+    CALL EXITS("Characteristic_Extrapolate")
     RETURN 1
-  END SUBROUTINE Characteristic_PreSolveUpdateBC
+  END SUBROUTINE Characteristic_Extrapolate
 
   !
   !================================================================================================================================
