@@ -64,39 +64,53 @@ MODULE MATHS
     MODULE PROCEDURE CROSS_PRODUCT_INTG
     MODULE PROCEDURE CROSS_PRODUCT_SP
     MODULE PROCEDURE CROSS_PRODUCT_DP
-  END INTERFACE !CROSS_PRODUCT
+  END INTERFACE CROSS_PRODUCT
+
+  !>Calculates the vector cross product of two vectors
+  INTERFACE CrossProduct
+    MODULE PROCEDURE CROSS_PRODUCT_INTG
+    MODULE PROCEDURE CROSS_PRODUCT_SP
+    MODULE PROCEDURE CROSS_PRODUCT_DP
+  END INTERFACE CrossProduct
 
   !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the derivatives D_A and D_B of A and B
   INTERFACE D_CROSS_PRODUCT
     MODULE PROCEDURE D_CROSS_PRODUCT_INTG
     MODULE PROCEDURE D_CROSS_PRODUCT_SP
     MODULE PROCEDURE D_CROSS_PRODUCT_DP
-  END INTERFACE !D_CROSS_PRODUCT
+  END INTERFACE D_CROSS_PRODUCT
+
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the derivatives D_A and D_B of A and B
+  INTERFACE dCrossProduct
+    MODULE PROCEDURE D_CROSS_PRODUCT_INTG
+    MODULE PROCEDURE D_CROSS_PRODUCT_SP
+    MODULE PROCEDURE D_CROSS_PRODUCT_DP
+  END INTERFACE dCrossProduct
 
   !>Returns the determinant of a matrix
-  INTERFACE DETERMINANT
+  INTERFACE Determinant
     MODULE PROCEDURE DETERMINANT_FULL_INTG
     MODULE PROCEDURE DETERMINANT_FULL_SP
     MODULE PROCEDURE DETERMINANT_FULL_DP
-  END INTERFACE !DETERMINANT
-    
+  END INTERFACE Determinant
+        
   !>Calculates the elliptic integral of the second kind - E(m).
-  INTERFACE EDP
+  INTERFACE Edp
     MODULE PROCEDURE EDP_DP
     MODULE PROCEDURE EDP_SP
-  END INTERFACE !EDP
+  END INTERFACE Edp
 
   !>Returns the eigenvalues of a matrix.
-  INTERFACE EIGENVALUE
+  INTERFACE Eigenvalue
     MODULE PROCEDURE EIGENVALUE_FULL_SP
     MODULE PROCEDURE EIGENVALUE_FULL_DP
-  END INTERFACE !EIGENVALUE
+  END INTERFACE Eigenvalue
 
   !>Returns the eigenvectors of a matrix.
-  INTERFACE EIGENVECTOR
+  INTERFACE Eigenvector
     MODULE PROCEDURE EIGENVECTOR_FULL_SP
     MODULE PROCEDURE EIGENVECTOR_FULL_DP
-  END INTERFACE !EIGENVECTOR
+  END INTERFACE Eigenvector
 
   !>Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun.
   INTERFACE I0
@@ -111,10 +125,10 @@ MODULE MATHS
   END INTERFACE !I1
 
   !>Returns the inverse of a matrix.
-  INTERFACE INVERT
+  INTERFACE Invert
     MODULE PROCEDURE INVERT_FULL_SP
     MODULE PROCEDURE INVERT_FULL_DP
-  END INTERFACE !INVERT
+  END INTERFACE Invert
 
   !>Calculates the modified Bessel FUNCTION of the second kind of order 0 using the approximation of Abromowitz and Stegun.
   INTERFACE K0
@@ -134,29 +148,47 @@ MODULE MATHS
     MODULE PROCEDURE K1_SP
   END INTERFACE !KDP
 
+  !>Returns the identity matrix.
+  INTERFACE IdentityMatrix
+    MODULE PROCEDURE IdentityMatrixSP
+    MODULE PROCEDURE IdentityMatrixDP
+  END INTERFACE IdentityMatrix
+
   !>Returns the L2 norm of a vector.
-  INTERFACE L2NORM
+  INTERFACE L2Norm
     MODULE PROCEDURE L2NORM_SP
     MODULE PROCEDURE L2NORM_DP
-  END INTERFACE !L2NORM
+  END INTERFACE L2Norm
 
   !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
   INTERFACE MATRIX_PRODUCT
     MODULE PROCEDURE MATRIX_PRODUCT_SP
     MODULE PROCEDURE MATRIX_PRODUCT_DP
-  END INTERFACE !MATRIX_PRODUCT
+  END INTERFACE MATRIX_PRODUCT
+  
+  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
+  INTERFACE MatrixProduct
+    MODULE PROCEDURE MATRIX_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_PRODUCT_DP
+  END INTERFACE MatrixProduct
   
   !>Returns the transpose of a matrix A in AT.
   INTERFACE MATRIX_TRANSPOSE
     MODULE PROCEDURE MATRIX_TRANSPOSE_SP
     MODULE PROCEDURE MATRIX_TRANSPOSE_DP
-  END INTERFACE !MATRIX_TRANSPOSE 
+  END INTERFACE MATRIX_TRANSPOSE
+
+ !>Returns the transpose of a matrix A in AT.
+  INTERFACE MatrixTranspose
+    MODULE PROCEDURE MATRIX_TRANSPOSE_SP
+    MODULE PROCEDURE MATRIX_TRANSPOSE_DP
+  END INTERFACE MatrixTranspose
 
   !>Normalises a vector
-  INTERFACE NORMALISE
+  INTERFACE Normalise
     MODULE PROCEDURE NORMALISE_SP
     MODULE PROCEDURE NORMALISE_DP
-  END INTERFACE !NORMALISE
+  END INTERFACE Normalise
 
   !>Calculates the normalised vector cross product of two vectors
   INTERFACE NORM_CROSS_PRODUCT
@@ -164,11 +196,23 @@ MODULE MATHS
     MODULE PROCEDURE NORM_CROSS_PRODUCT_DP
   END INTERFACE NORM_CROSS_PRODUCT
 
+  !>Calculates the normalised vector cross product of two vectors
+  INTERFACE NormCrossProduct
+    MODULE PROCEDURE NORM_CROSS_PRODUCT_SP
+    MODULE PROCEDURE NORM_CROSS_PRODUCT_DP
+  END INTERFACE NormCrossProduct
+
   !>Solves a small linear system Ax=b.
   INTERFACE SOLVE_SMALL_LINEAR_SYSTEM
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_SP
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
-  END INTERFACE !SOLVE_SMALL_LINEAR_SYSTEM
+  END INTERFACE SOLVE_SMALL_LINEAR_SYSTEM
+
+  !>Solves a small linear system Ax=b.
+  INTERFACE SolveSmallLinearSystem
+    MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_SP
+    MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
+  END INTERFACE SolveSmallLinearSystem
 
   !>Returns hyperbolic cotangent of argument
   INTERFACE COTH
@@ -176,8 +220,9 @@ MODULE MATHS
     MODULE PROCEDURE COTH_DP
   END INTERFACE !COTH
 
-  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT, &
-    & MATRIX_TRANSPOSE,NORMALISE,NORM_CROSS_PRODUCT,SOLVE_SMALL_LINEAR_SYSTEM,COTH
+  PUBLIC CROSS_PRODUCT,CrossProduct,D_CROSS_PRODUCT,dCrossProduct,Determinant,Eigenvalue,Eigenvector,IdentityMatrix,Invert, &
+    & L2Norm,MATRIX_PRODUCT,MatrixProduct,MATRIX_TRANSPOSE,MatrixTranspose,Normalise,NORM_CROSS_PRODUCT,NormCrossProduct, &
+    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth
   
   
 CONTAINS
@@ -1122,6 +1167,110 @@ CONTAINS
     RETURN 
   END FUNCTION I1_SP
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns an identity matrix
+  SUBROUTINE IdentityMatrixSP(A,err,error,*)
+    
+    !Argument variables
+    REAL(SP), INTENT(OUT) :: A(:,:) !<On exit, the identity matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: i
+    
+    CALL ENTERS("IdentityMatrixSP",ERR,ERROR,*999)
+
+    IF(SIZE(A,1)==SIZE(A,2)) THEN
+      SELECT CASE(SIZE(A,1)) 
+      CASE(1)
+        A(1,1)=1.0_SP
+      CASE(2)
+        A(1,1)=1.0_SP
+        A(2,1)=0.0_SP
+        A(1,2)=0.0_SP
+        A(2,2)=1.0_SP
+      CASE(3)
+        A(1,1)=1.0_SP
+        A(2,1)=0.0_SP
+        A(3,1)=0.0_SP
+        A(1,2)=0.0_SP
+        A(2,2)=1.0_SP
+        A(3,2)=0.0_SP
+        A(1,3)=0.0_SP
+        A(2,3)=0.0_SP
+        A(3,3)=1.0_SP
+      CASE DEFAULT
+        A=0.0_DP
+        DO i=1,SIZE(A,1)
+          A(i,i)=1.0_SP
+        ENDDO !i
+      END SELECT
+    ELSE
+      CALL FlagError("Matrix A is not square",err,error,*999)
+    ENDIF
+
+    CALL Exits("IdentityMatrixSP")
+    RETURN
+999 CALL Errors("IdentityMatrixSP",err,error)
+    CALL Exits("IdentityMatrixSP")
+    RETURN 1
+  END SUBROUTINE IdentityMatrixSP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns an identity matrix
+  SUBROUTINE IdentityMatrixDP(A,err,error,*)
+    
+    !Argument variables
+    REAL(DP), INTENT(OUT) :: A(:,:) !<On exit, the identity matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: i
+    
+    CALL Enters("IdentityMatrixDP",err,error,*999)
+
+    IF(SIZE(A,1)==SIZE(A,2)) THEN
+      SELECT CASE(SIZE(A,1)) 
+      CASE(1)
+        A(1,1)=1.0_DP
+      CASE(2)
+        A(1,1)=1.0_DP
+        A(2,1)=0.0_DP
+        A(1,2)=0.0_DP
+        A(2,2)=1.0_DP
+      CASE(3)
+        A(1,1)=1.0_DP
+        A(2,1)=0.0_DP
+        A(3,1)=0.0_DP
+        A(1,2)=0.0_DP
+        A(2,2)=1.0_DP
+        A(3,2)=0.0_DP
+        A(1,3)=0.0_DP
+        A(2,3)=0.0_DP
+        A(3,3)=1.0_DP
+      CASE DEFAULT
+        A=0.0_DP
+        DO i=1,SIZE(A,1)
+          A(i,i)=1.0_DP
+        ENDDO !i
+      END SELECT
+    ELSE
+      CALL FlagError("Matrix A is not square",err,error,*999)
+    ENDIF
+
+    CALL Exits("IdentityMatrixDP")
+    RETURN
+999 CALL Errors("IdentityMatrixDP",err,error)
+    CALL Exits("IdentityMatrixDP")
+    RETURN 1
+  END SUBROUTINE IdentityMatrixDP
+
   !
   !================================================================================================================================
   !

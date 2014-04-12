@@ -65,6 +65,7 @@ MODULE PROBLEM_ROUTINES
   USE KINDS
   USE MULTI_PHYSICS_ROUTINES
   USE PROBLEM_CONSTANTS
+  USE REACTION_DIFFUSION_EQUATION_ROUTINES
   USE SOLVER_ROUTINES
   USE SOLVER_MATRICES_ROUTINES
   USE STRINGS
@@ -458,7 +459,7 @@ CONTAINS
             !Set the current time to be the start time. Solvers should use the first time step to do any initialisation.
             TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME
             TIME_LOOP%ITERATION_NUMBER=0
-            DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
+            DO WHILE(TIME_LOOP%CURRENT_TIME<TIME_LOOP%STOP_TIME)
               IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Time control loop iteration: ",TIME_LOOP%ITERATION_NUMBER, &
@@ -1998,6 +1999,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(PROBLEM_TYPE) :: PROBLEM
  
     CALL ENTERS("PROBLEM_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
 
@@ -2013,7 +2015,12 @@ CONTAINS
         CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
           !Do nothing
         CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-          !Do nothing
+          SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+          CASE(PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE)
+            CALL REACTION_DIFFUSION_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE DEFAULT
+            !do nothing
+          END SELECT
         CASE(PROBLEM_FITTING_CLASS)
           !Do nothing
         CASE(PROBLEM_MODAL_CLASS)
@@ -2341,11 +2348,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,loop_idx
+    INTEGER(INTG) :: equations_set_idx,loop_idx,interface_condition_idx
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_TIME_LOOP
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -2367,8 +2375,8 @@ CONTAINS
               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                  IF(DYNAMIC_SOLVER%RESTART.OR..NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                    !If we need to restart or we haven't initialised yet, make sure the equations sets are up to date
+                  IF(DYNAMIC_SOLVER%RESTART.OR..NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN!.OR.DYNAMIC_SOLVER%FSI) THEN
+                    !If we need to restart or we haven't initialised yet or we have an FSI scheme, make sure the equations sets are up to date
                     EQUATIONS=>EQUATIONS_SET%EQUATIONS
                     IF(ASSOCIATED(EQUATIONS)) THEN
                       SELECT CASE(EQUATIONS%LINEARITY)
@@ -2391,6 +2399,11 @@ CONTAINS
                     ENDIF
                   ENDIF
                 ENDDO !equations_set_idx
+                !Make sure the interface matrices are up to date
+                DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+                  INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+                  CALL INTERFACE_CONDITION_ASSEMBLE(INTERFACE_CONDITION,ERR,ERROR,*999)
+                ENDDO !interface_condition_idx
                 !Get current control loop times. The control loop may be a sub loop below a time loop, so iterate up
                 !through loops checking for the time loop
                 CONTROL_TIME_LOOP=>CONTROL_LOOP

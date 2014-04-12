@@ -23,6 +23,7 @@
 \usepackage{alltt}
 \usepackage[centertags]{amsmath}
 \usepackage{amssymb}
+\usepackage{calc}
 \usepackage{epsfig} %package for eps figures
 \usepackage{ifthen}
 \usepackage{xspace}
@@ -80,6 +81,23 @@
     % e.g. \pdftexfigure{figure}{short caption}{long caption}{label}
     % or \pdftexfigure{figure}{}{caption}{label}
 
+\newcommand{\epstexfigure}[5]{ %
+  \begin{figure}[htbp] \centering %
+    \ifthenelse{\equal{#5}{}}{ %
+      \def\svgwidth{\columnwidth}}{ %
+      \def\svgscale{#5} %
+    } %
+    \input{#1} %
+    \ifthenelse{\equal{#2}{}}{ %
+      \caption{#3}}{ %
+      \caption[#2]{#3} %
+    } %
+    \label{#4} %
+  \end{figure} %
+  } % epstex figure i.e. inkscape svgs
+  % e.g. \epstexfigure{figure}{short caption}{long caption}{label}{scale}
+  % or \epstexfigure{figure}{}{caption}{label}{}
+  
 \newcommand{\pstexfigure}[4]{ %
   \begin{figure}[htbp] \centering %
     \input{#1} %
