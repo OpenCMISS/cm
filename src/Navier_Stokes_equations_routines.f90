@@ -6143,18 +6143,20 @@ CONTAINS
                                             ALLOCATE(qValues(numberOfSourceTimesteps))
                                             ALLOCATE(tValues(numberOfSourceTimesteps))
                                             ALLOCATE(qSpline(numberOfSourceTimesteps))
-                                            nodeData = 0.0_DP
-                                            cycTime = timeData(1)*timeData(2)
-                                            ! Read in time and dependent value (3 times to capture previous and subsequent cycles)
+                                            nodeData = 0.0_DP                                            
+                                            ! Read in time and dependent value
                                             DO timeIdx=1,timeData(1)
                                               READ(10,*) (nodeData(timeIdx,component_idx), component_idx=1,2)
+                                            ENDDO
+                                            CLOSE(UNIT=10)
+                                            cycTime = nodeData(timeData(1),1)
+                                            ! Assemble 3 waveforms worth of time dependent data
+                                            DO timeIdx=1,timeData(1)
                                               nodeData(timeIdx+timeData(1),:) = nodeData(timeIdx,:) 
                                               nodeData(timeIdx+timeData(1),1) = nodeData(timeIdx,1) + cycTime
                                               nodeData(timeIdx+timeData(1)*2,:) = nodeData(timeIdx,:)
                                               nodeData(timeIdx+timeData(1)*2,1) = nodeData(timeIdx,1) + cycTime*2.0_DP
                                             ENDDO
-                                            CLOSE(UNIT=10)
-
                                             shiftedTime = MOD(CURRENT_TIME,cycTime) + cycTime  
                                             tValues = nodeData(:,1)
                                             qValues = nodeData(:,2)

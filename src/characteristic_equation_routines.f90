@@ -1301,7 +1301,7 @@ CONTAINS
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,normalWave(2,4),elementLengths(4)
     REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4)
-    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,lambda(2)
+    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,lambda(4)
     REAL(DP) :: elementLength,extrapolationDistance
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny,lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
@@ -1422,18 +1422,22 @@ CONTAINS
                         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,APrevious,err,error,*999)            
 
+                        ! Wave speed
+                        lambda(versionIdx) = QPrevious/APrevious + normalWave(componentIdx,versionIdx)* &
+                         & (APrevious**0.25)*SQRT(Beta(versionIdx)*Fr)
+                        
+                        ! Check that lambda(1) > 0, lambda(2) < 0
+                        IF (lambda(versionIdx)*normalWave(componentIdx,versionIdx) < 0.0_DP) THEN
+                          CALL FLAG_ERROR("Hyperbolic/subcritical 1D system violated.",ERR,ERROR,*999)
+                        ENDIF
+
                         ! Calculate extrapolation distance and convert to xi-space
+                        extrapolationDistance = timeIncrement*lambda(versionIdx)
                         IF((normalWave(componentIdx,versionIdx)>ZERO_TOLERANCE)) THEN
                           ! Parent branch / outlet boundary
-                          extrapolationDistance = ABS(timeIncrement*(QPrevious/APrevious + &
-                           & (APrevious**0.25)*SQRT(Beta(versionIdx)*Fr)))
-                          !convert to xi space
                           XI(1)=1.0_DP - extrapolationDistance/elementLengths(versionIdx)
                         ELSE
                           ! Daughter branch / inlet boundary
-                          extrapolationDistance = ABS(timeIncrement*(QPrevious/APrevious - &
-                           & (APrevious**0.25)*SQRT(Beta(versionIdx)*Fr)))
-                          !convert to xi space
                           XI(1)= extrapolationDistance/elementLengths(versionIdx)
                         ENDIF
 
@@ -1477,6 +1481,13 @@ CONTAINS
                         W(componentIdx,versionIdx)=((Q_EX(versionIdx)/A_EX(versionIdx))+ &
                           & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT((Fr*(Beta_EX(versionIdx))))* &
                           & (A_EX(versionIdx)**(0.25_DP) - (A0_EX(versionIdx)/As)**(0.25_DP)))
+
+                        ! Check wave direction speed is coherent
+                        lambda(versionIdx) = Q_EX(versionIdx)/A_EX(versionIdx) + normalWave(componentIdx,versionIdx)* &
+                         & (A_EX(versionIdx)**0.25)*SQRT(Beta(versionIdx)*Fr)
+                        IF (lambda(versionIdx)*normalWave(componentIdx,versionIdx) < -ZERO_TOLERANCE ) THEN
+                          CALL FLAG_ERROR("Hyperbolic/subcritical 1D system violated.",ERR,ERROR,*999)
+                        ENDIF
                       ENDIF
                     ENDDO
                   ENDDO
@@ -1507,12 +1518,16 @@ CONTAINS
                       CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & versionIdx,derivativeIdx,nodeIdx,1,pCellML,err,error,*999)                    
 !                      ACellml=(((pCellML*133.32_DP)/(Beta(versionIdx)/(2.0_DP*rho*Fr*(As**1.5_DP)))+SQRT(A0_PARAM(versionIdx)/As))**2.0_DP
-                      ACellml=(((pCellML)/(Beta(versionIdx)*Fr*As**1.5_DP*2.0_DP*rho))+ &
+                      ACellml=(((pCellML*133.32_DP)/(Beta(versionIdx)*Fr*As**1.5_DP*2.0_DP*rho))+ &
                        & SQRT(A0_PARAM(versionIdx)/As))**2.0_DP
 
                       ! The defined component will be the component to get from outside the 1D domain if retrograde flow
                       lambda(1) = Q_EX(1)/A_EX(1) + (A_EX(1)**0.25)*SQRT(Beta(versionIdx)*Fr)
                       lambda(2) = QCurrent/ACellml - (ACellml**0.25)*SQRT(Beta(versionIdx)*Fr)
+                      ! Check wave direction speed is coherent
+                      IF (lambda(1) < -ZERO_TOLERANCE .OR. lambda(2) > ZERO_TOLERANCE) THEN
+                        CALL FLAG_ERROR("Hyperbolic/subcritical 1D system violated.",ERR,ERROR,*999)
+                      ENDIF
 
                       ! calculate A1D in terms of the characteristic waves extrapolated from 1d and from 0d
                       IF (normalWave(1,1) > 0.0_DP) THEN
