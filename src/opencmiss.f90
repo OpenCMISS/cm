@@ -250,7 +250,7 @@ MODULE OPENCMISS
   !>Contains information on a mesh elements defined in a mesh
   TYPE CMISSMeshElementsType
     PRIVATE
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
   END TYPE CMISSMeshElementsType
 
   !>Contains information on an embedded mesh
@@ -258,6 +258,12 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(MESH_EMBEDDING_TYPE), POINTER :: MESH_EMBEDDING
   END TYPE CMISSMeshEmbeddingType
+
+  !>Contains information on a mesh nodes defined in a mesh
+  TYPE CMISSMeshNodesType
+    PRIVATE
+    TYPE(MeshNodesType), POINTER :: meshNodes
+  END TYPE CMISSMeshNodesType
 
   !>Contains information on the nodes defined on a region.
   TYPE CMISSNodesType
@@ -375,6 +381,8 @@ MODULE OPENCMISS
   PUBLIC CMISSMeshType,CMISSMesh_Finalise,CMISSMesh_Initialise
 
   PUBLIC CMISSMeshElementsType,CMISSMeshElements_Finalise,CMISSMeshElements_Initialise
+
+  PUBLIC CMISSMeshNodesType,CMISSMeshNodes_Finalise,CMISSMeshNodes_Initialise
 
   PUBLIC CMISSNodesType,CMISSNodes_Finalise,CMISSNodes_Initialise
 
@@ -4871,7 +4879,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElements_LocalElementNodeVersionSetObj
   END INTERFACE !CMISSMeshElements_LocalElementNodeVersionSet
 
-
   !>Returns the element user number for an element in a mesh.
   INTERFACE CMISSMeshElements_UserNumberGet
     MODULE PROCEDURE CMISSMeshElements_UserNumberGetNumber
@@ -4902,7 +4909,31 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMesh_ElementExistsObj
   END INTERFACE !CMISSMesh_ElementExists
 
-    !>Returns the domain for a given element in a decomposition of a mesh.
+  !>Get the mesh nodes belonging to a mesh component.
+  INTERFACE CMISSMesh_NodesGet
+    MODULE PROCEDURE CMISSMesh_NodesGetNumber
+    MODULE PROCEDURE CMISSMesh_NodesGetObj
+  END INTERFACE CMISSMesh_NodesGet
+
+  !>Returns the number of derivatives for a node in a mesh.
+  INTERFACE CMISSMeshNodes_NumberOfDerivativesGet
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfDerivativesGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfDerivativesGetObj
+  END INTERFACE CMISSMeshNodes_NumberOfDerivativesGet
+
+  !>Returns the derivatives for a node in a mesh.
+  INTERFACE CMISSMeshNodes_DerivativesGet
+    MODULE PROCEDURE CMISSMeshNodes_DerivativesGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_DerivativesGetObj
+  END INTERFACE CMISSMeshNodes_DerivativesGet
+
+  !>Returns the number of versions for a derivative at a node in a mesh.
+  INTERFACE CMISSMeshNodes_NumberOfVersionsGet
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfVersionsGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfVersionsGetObj
+  END INTERFACE CMISSMeshNodes_NumberOfVersionsGet
+
+  !>Returns the domain for a given element in a decomposition of a mesh.
   INTERFACE CMISSDecomposition_NodeDomainGet
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetNumber
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetObj
@@ -4976,7 +5007,13 @@ MODULE OPENCMISS
   
   PUBLIC CMISSMeshElements_UserNumbersAllSet
 
+  PUBLIC CMISSMeshNodes_NumberOfDerivativesGet,CMISSMeshNodes_DerivativesGet
+
+  PUBLIC CMISSMeshNodes_NumberOfVersionsGet
+
   PUBLIC CMISSMesh_ElementsGet
+
+  PUBLIC CMISSMesh_NodesGet
 
   PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
 
@@ -8216,6 +8253,57 @@ CONTAINS
   END SUBROUTINE CMISSMeshElements_Initialise
 
   !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSMeshNodesType object.
+  SUBROUTINE CMISSMeshNodes_Finalise(CMISSMeshNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(OUT) :: CMISSMeshNodes !<The CMISSMeshNodesType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_Finalise",err,error,*999)
+
+    IF(ASSOCIATED(CMISSMeshNodes%meshNodes))  &
+      & CALL MeshTopologyNodesDestroy(CMISSMeshNodes%meshNodes,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_Finalise")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_Finalise",err,error)
+    CALL Exits("CMISSMeshNodes_Finalise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_Finalise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSMeshNodesType object.
+  SUBROUTINE CMISSMeshNodes_Initialise(CMISSMeshNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(OUT) :: CMISSMeshNodes !<The CMISSMeshNodesType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_Initialise",err,error,*999)
+
+    NULLIFY(CMISSMeshNodes%meshNodes)
+
+    CALL Exits("CMISSMeshNodes_Initialise")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_Initialise",err,error)
+    CALL Exits("CMISSMeshNodes_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_Initialise
+
+    !
   !================================================================================================================================
   !
 
@@ -40749,7 +40837,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error,*999)
 
-    CALL DecompositionTopology_DataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
+    CALL DecompositionTopologyDataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyDataProjectionCalculateObj',err,error,*999)
@@ -40782,7 +40870,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
 
-    CALL DecompositionTopology_ElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+    CALL DecompositionTopologyElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointLocalNumber,err,error,*999)
 
 #ifdef TAUPROF
@@ -40816,7 +40904,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
 
-    CALL DecompositionTopology_ElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+    CALL DecompositionTopologyElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointUserNumber,err,error,*999)
 
 #ifdef TAUPROF
@@ -40848,7 +40936,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
 
-    CALL DecompositionTopology_NumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
+    CALL DecompositionTopologyNumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
      & numberOfDataPoints,err,error,*999)
 
 #ifdef TAUPROF
@@ -42667,7 +42755,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
       IF(ASSOCIATED(MESH)) THEN
-        CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+        CALL MeshTopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))//"."
@@ -42718,7 +42806,7 @@ CONTAINS
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL MESH_USER_NUMBER_FIND(MeshUserNumber,INTERFACE,MESH,Err,ERROR,*999)
         IF(ASSOCIATED(MESH)) THEN
-          CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
+          CALL MeshTopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
         ELSE
           LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
             & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber, &
@@ -42760,7 +42848,7 @@ CONTAINS
   
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
     
-    CALL Mesh_TopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+    CALL MeshTopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
  
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
     RETURN
@@ -42785,7 +42873,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -42861,7 +42949,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -42935,8 +43023,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the mesh elements for a mesh component on a mesh identified by an
-  !user number.
+  !>Returns the mesh elements for a mesh component on a mesh identified by an user number.
   SUBROUTINE CMISSMesh_ElementsGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,meshElements,err)
 
     !Argument variables
@@ -43028,7 +43115,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43119,7 +43206,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43207,7 +43294,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43289,7 +43376,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43368,7 +43455,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43451,7 +43538,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: localelementnode
@@ -43569,7 +43656,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43657,7 +43744,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43737,7 +43824,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43816,7 +43903,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43830,7 +43917,7 @@ CONTAINS
       CALL MESH_USER_NUMBER_FIND(meshUserNumber,REGION,MESH,err,error,*999)
       IF(ASSOCIATED(MESH)) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,meshComponentNumber,MESH_ELEMENTS,err,error,*999)
-        CALL Mesh_TopologyElementsUserNumbersAllSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
+        CALL MeshTopologyElementsUserNumbersAllSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -43866,7 +43953,7 @@ CONTAINS
 
     CALL ENTERS("CMISSMeshElements_UserNumbersAllSetObj",err,error,*999)
 
-    CALL Mesh_TopologyElementsUserNumbersAllSet(meshElements%MESH_ELEMENTS,elementUserNumbers, &
+    CALL MeshTopologyElementsUserNumbersAllSet(meshElements%MESH_ELEMENTS,elementUserNumbers, &
       & err,error,*999)
 
     CALL EXITS("CMISSMeshElements_UserNumbersAllSetObj")
@@ -43893,24 +43980,23 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to check.
     LOGICAL, INTENT(OUT) :: nodeExists !<True if the node exists, false otherwise.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-
     !Local variables
-    TYPE(MESH_TYPE), POINTER :: Mesh
-    TYPE(REGION_TYPE), POINTER :: Region
-    INTEGER(INTG) :: GlobalNodeNumber
-    TYPE(VARYING_STRING) :: LocalError
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: meshNodeNumber
+    TYPE(VARYING_STRING) :: localError
 
     CALL ENTERS("CMISSMesh_NodeExistsNumber",err,error,*999)
 
     nodeExists = .FALSE.
 
-    NULLIFY( Region )
-    NULLIFY( Mesh )
+    NULLIFY( region )
+    NULLIFY( mesh )
     CALL REGION_USER_NUMBER_FIND( regionUserNumber, Region, err, error, *999 )
-    IF( ASSOCIATED( REGION ) ) THEN
+    IF(ASSOCIATED(region)) THEN
       CALL MESH_USER_NUMBER_FIND( meshUserNumber, Region, Mesh, err, error, *999 )
-      IF( ASSOCIATED( MESH ) ) THEN
-        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(Mesh,meshComponentNumber,nodeUserNumber,nodeExists,GlobalNodeNumber,err,error,*999)
+      IF( ASSOCIATED( mesh ) ) THEN
+        CALL MeshTopologyNodeCheckExists(Mesh,meshComponentNumber,nodeUserNumber,nodeExists,meshNodeNumber,err,error,*999)
       ELSE
         LocalError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -43944,15 +44030,14 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to check.
     LOGICAL, INTENT(OUT) :: nodeExists !<True if the node exists, false otherwise.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-
     !Local variables
-    INTEGER(INTG) :: GlobalNodeNumber
+    INTEGER(INTG) :: meshNodeNumber
 
     nodeExists = .FALSE.
 
     CALL ENTERS("CMISSMesh_NodeExistsObj",err,error,*999)
 
-    CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(mesh%MESH,meshComponentNumber,nodeUserNumber,nodeExists,GlobalNodeNumber,err,error,*999)
+    CALL MeshTopologyNodeCheckExists(mesh%MESH,meshComponentNumber,nodeUserNumber,nodeExists,meshNodeNumber,err,error,*999)
 
     CALL EXITS("CMISSMesh_NodeExistsObj")
     RETURN
@@ -43982,7 +44067,7 @@ CONTAINS
     !Local variables
     TYPE(MESH_TYPE), POINTER :: Mesh
     TYPE(REGION_TYPE), POINTER :: Region
-    INTEGER(INTG) :: GlobalElementNumber
+    INTEGER(INTG) :: meshElementNumber
     TYPE(VARYING_STRING) :: LocalError
 
     CALL ENTERS("CMISSMesh_ElementExistsNumber",err,error,*999)
@@ -43995,8 +44080,8 @@ CONTAINS
     IF( ASSOCIATED( REGION ) ) THEN
       CALL MESH_USER_NUMBER_FIND( meshUserNumber, Region, Mesh, err, error, *999 )
       IF( ASSOCIATED( MESH ) ) THEN
-        CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(Mesh,meshComponentNumber,elementUserNumber,elementExists, &
-          & GlobalElementNumber,err,error,*999)
+        CALL MeshTopologyElementCheckExists(Mesh,meshComponentNumber,elementUserNumber,elementExists, &
+          & meshElementNumber,err,error,*999)
       ELSE
         LocalError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -44032,13 +44117,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
     !Local variables
-    INTEGER(INTG) :: GlobalElementNumber
+    INTEGER(INTG) :: meshElementNumber
 
     CALL ENTERS("CMISSMesh_ElementExistsObj",err,error,*999)
 
     elementExists = .FALSE.
 
-    CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(mesh%MESH,meshComponentNumber,elementUserNumber,elementExists, GlobalElementNumber, &
+    CALL MeshTopologyElementCheckExists(mesh%MESH,meshComponentNumber,elementUserNumber,elementExists,meshElementNumber, &
       & err,error,*999)
 
     CALL EXITS("CMISSMesh_ElementExistsObj")
@@ -44049,6 +44134,321 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMesh_ElementExistsObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the mesh nodes for a mesh component on a mesh identified by an user number.
+  SUBROUTINE CMISSMesh_NodesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,meshNodes,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the nodes for.
+    TYPE(CMISSMeshNodesType), INTENT(INOUT) :: meshNodes !<On return, the mesh nodes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMesh_NodesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes%meshNodes,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMesh_NodesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMesh_NodesGetNumber",err,error)
+    CALL Exits("CMISSMesh_NodesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMesh_NodesGetNumber
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the mesh nodes for a mesh component on a mesh identified by an object.
+  SUBROUTINE CMISSMesh_NodesGetObj(mesh,meshComponentNumber,meshNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh !<The mesh to get the nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the nodes for.
+    TYPE(CMISSMeshNodesType), INTENT(INOUT) :: meshNodes!<On return, the mesh nodes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMesh_NodesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodesGet(mesh%mesh,meshComponentNumber,meshNodes%meshNodes,err,error,*999)
+
+    CALL Exits("CMISSMesh_NodesGetObj")
+    RETURN
+999 CALL Errors("CMISSMesh_NodesGetObj",err,error)
+    CALL Exits("CMISSMesh_NodesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMesh_NodesGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of derivatives at a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,userNodeNumber, &
+    & numberOfDerivatives,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the number of dervatives for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the number of derivatives for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the number of derivatives for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of derivatives for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfDerivatives !<On return, the number of derivatives in the mesh for the user node number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_NumberOfDerivativesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodeNumberOfDerivativesGet(meshNodes,userNodeNumber,numberOfDerivatives,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfDerivativesGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of derivatives for a node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetObj(meshNodes,userNodeNumber,numberOfDerivatives,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes!<The mesh nodes to get the number of derivatives at a node for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of derivatives at a node for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfDerivatives!<On return, the number of derivatives at a node in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_NumberOfDerivativesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodeNumberOfDerivativesGet(meshNodes%meshNodes,userNodeNumber,numberOfDerivatives,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfDerivativesGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the derivatives at a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_DerivativesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,userNodeNumber, &
+    & derivatives,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the derivatives for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the derivatives for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the derivatives for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the derivatives for.
+    INTEGER(INTG), INTENT(OUT) :: derivatives(:) !<On return, the derivatives in the mesh for the user node number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_DerivativesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodeDerivativesGet(meshNodes,userNodeNumber,derivatives,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_DerivativesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_DerivativesGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_DerivativesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_DerivativesGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the derivatives for a node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_DerivativesGetObj(meshNodes,userNodeNumber,derivatives,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes!<The mesh nodes to get the derivatives at a node for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the derivatives at a node for.
+    INTEGER(INTG), INTENT(OUT) :: derivatives(:) !<On return, the derivatives at a node in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_DerivativesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodeDerivativesGet(meshNodes%meshNodes,userNodeNumber,derivatives,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_DerivativesGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_DerivativesGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_DerivativesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_DerivativesGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of version at a derivative for a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,derivativeNumber, &
+    & userNodeNumber,numberOfVersions,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the number of versions.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the node to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of versions for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfVersions !<On return, the number of versions in the mesh for the derivative index of the user node number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_NumberOfVersionsGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodeNumberOfVersionsGet(meshnodes,derivativeNumber,userNodeNumber,numberOfVersions,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfVersionsGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of versions for an node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetObj(meshNodes,derivativeNumber,userNodeNumber,numberOfVersions,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes !<The mesh nodes to get the number of versions at a node for.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of a node to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of versions at a node for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfVersions !<On return, the number of derivatives at the specified node and derivative in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_NumberOfVersionsGetObj",err,error,*999)
+
+    CALL MeshTopologyNodeNumberOfVersionsGet(meshNodes%meshNodes,derivativeNumber,userNodeNumber, &
+      & numberOfVersions,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfVersionsGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetObj
 
 !!==================================================================================================================================
 !!
@@ -45330,7 +45730,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
     IF(ASSOCIATED(region)) THEN
       CALL REGION_NODES_GET(region,nodes,err,error,*999)
-      CALL Nodes_UserNumbersAllSet(nodes,nodeUserNumbers,err,error,*999)
+      CALL NodesUserNumbersAllSet(nodes,nodeUserNumbers,err,error,*999)
     ELSE
       localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
         & " does not exist."
@@ -45361,7 +45761,7 @@ CONTAINS
 
     CALL ENTERS("CMISSNodes_UserNumbersAllSetObj",err,error,*999)
 
-    CALL Nodes_UserNumbersAllSet(nodes%NODES,nodeUserNumbers,err,error,*999)
+    CALL NodesUserNumbersAllSet(nodes%NODES,nodeUserNumbers,err,error,*999)
 
     CALL EXITS("CMISSNodes_UserNumbersAllSetObj")
     RETURN

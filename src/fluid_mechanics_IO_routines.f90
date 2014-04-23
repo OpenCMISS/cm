@@ -462,8 +462,8 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
-      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%number_of_dofs
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
+      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%numberOfDofs
     END DO
 
 !     MaxNodesPerElement=NodesPerElement(1)
@@ -1127,7 +1127,7 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
     END DO
 
 
@@ -1862,7 +1862,7 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
     END DO
 
 
@@ -4287,8 +4287,8 @@ CONTAINS
       STOP "Not implemented."
     ENDIF
     
-    RETURN
-999 RETURN 1
+    RETURN 
+999 RETURN 
   END SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
    
   !
@@ -4493,7 +4493,7 @@ CONTAINS
 !     TYPE(VARYING_STRING):: ERROR
 
     DO I = 1,TotalNumberOfNodes
-      WRITE(*,'("Node ",(I0,4x),1000( F5.3,2x ))')I,OPENCMISS_NODE_COORD(I,1:3)
+      WRITE(*,'("Node ",(I0,4x),1000( F6.3,2x ))')I,OPENCMISS_NODE_COORD(I,1:3)
     END DO
 
   ! where are the element nodes stored -> 3 MATRICES

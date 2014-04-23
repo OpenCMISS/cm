@@ -83,6 +83,8 @@
 #define FIELD_IO_INTERPOLATION_HEADER_SCALE     4
 #define FIELD_IO_INTERPOLATION_HEADER_NODAL     5
 #define FIELD_IO_INTERPOLATION_HEADER_GRID      6
+#define FIELD_IO_INTERPOLATION_HEADER_GAUSS     7
+#define FIELD_IO_INTERPOLATION_HEADER_CONSTANT  8
 
 
 #define FIELD_GEOMETRIC_TYPE 1 //Geometric field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
@@ -221,6 +223,7 @@ static SessionListEntry *FieldExport_GetSession( const int handle )
     return NULL;
 }
 
+const int FieldExport_InterpolationType( const int interpType );
 
 /*
     CMISS-formatted file export routines.
@@ -291,8 +294,17 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
     {
         if( labelType == FIELD_IO_INTERPOLATION_HEADER_GRID )
         {
-            scaleFactorCount *= 2;
-            label = "l.Lagrange";
+	  scaleFactorCount *= 2;
+	  label = "l.Lagrange";
+        }
+        else if( labelType == FIELD_IO_INTERPOLATION_HEADER_CONSTANT )
+        {
+            label = "constant";
+        }
+        else if( labelType == FIELD_IO_INTERPOLATION_HEADER_GAUSS )
+        {
+	  scaleFactorCount *= 2;
+	  label = "l.Lagrange"; 
         }
         else
         {
@@ -378,6 +390,12 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
         FieldExport_FPrintf( session, ", no modify, standard node based.\n" );
         break;
     case FIELD_IO_INTERPOLATION_HEADER_GRID:
+        FieldExport_FPrintf( session, ", no modify, grid based.\n" );
+        break;
+    case FIELD_IO_INTERPOLATION_HEADER_CONSTANT:
+        FieldExport_FPrintf( session, ", no modify, grid based.\n" );
+        break;
+    case FIELD_IO_INTERPOLATION_HEADER_GAUSS:
         FieldExport_FPrintf( session, ", no modify, grid based.\n" );
         break;
     default:
@@ -572,11 +590,12 @@ static int FieldExport_File_Variable( FileSession *const session, const char *va
 
 
 static int FieldExport_File_CoordinateComponent( FileSession *const session, int coordinateSystemType,
-    const int componentNumber, const int isNodal, const int numberOfXi, const int *const interpolationXi )
+    const int componentNumber, const int interpType, const int numberOfXi, const int *const interpolationXi )
 {
     const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystemType, componentNumber );
-    const int headerType = isNodal ? FIELD_IO_INTERPOLATION_HEADER_NODAL : FIELD_IO_INTERPOLATION_HEADER_GRID;
+    int headerType;
 
+    headerType = FieldExport_InterpolationType( interpType );
     if( componentLabel == NULL )
     {
         FieldExport_FPrintf( session, "   %d.  ", componentNumber );
@@ -596,9 +615,9 @@ static int FieldExport_File_CoordinateComponent( FileSession *const session, int
 
 
 static int FieldExport_File_Component( FileSession *const session,
-    const int componentNumber, const int isNodal, const int numberOfXi, const int *const interpolationXi )
+    const int componentNumber, const int interpType, const int numberOfXi, const int *const interpolationXi )
 {
-    const int headerType = isNodal ? FIELD_IO_INTERPOLATION_HEADER_NODAL : FIELD_IO_INTERPOLATION_HEADER_GRID;
+  const int headerType = FieldExport_InterpolationType( interpType );
 
     if( FieldExport_FPrintf( session, "   %d.  ", componentNumber ) != FIELD_EXPORT_NO_ERROR )
     {
@@ -609,9 +628,36 @@ static int FieldExport_File_Component( FileSession *const session,
 }
 
 
-static int FieldExport_File_ElementGridSize( FileSession *const session, const int numberOfXi )
+static int FieldExport_File_ElementGridSize( FileSession *const session, const int interpType, const int numberOfXi, const int *const numberGauss )
 {
-    int i;
+  int i,numGrid[3];
+  const int headerType = FieldExport_InterpolationType( interpType );
+
+  if( headerType == FIELD_IO_INTERPOLATION_HEADER_CONSTANT)
+    {
+      numGrid[0]=0;
+      numGrid[1]=0;
+      numGrid[2]=0;
+    }
+  else if( headerType == FIELD_IO_INTERPOLATION_HEADER_GRID )
+    {
+      numGrid[0]=1;
+      numGrid[1]=1;
+      numGrid[2]=1;
+    }
+  else if( headerType == FIELD_IO_INTERPOLATION_HEADER_GAUSS )
+    {
+    for( i = 0; i < numberOfXi; i++ )
+      {
+	numGrid[i]=numberGauss[i]-1;
+      }
+    }
+  else
+    {
+      numGrid[0]=1;
+      numGrid[1]=1;
+      numGrid[2]=1;
+    }
 
     if( FieldExport_FPrintf( session, "     " ) != FIELD_EXPORT_NO_ERROR )
     {
@@ -620,7 +666,7 @@ static int FieldExport_File_ElementGridSize( FileSession *const session, const i
 
     for( i = 0; i < numberOfXi; i++ )
     {
-        if( FieldExport_FPrintf( session, "#xi%d=1", i+1 ) != FIELD_EXPORT_NO_ERROR )
+      if( FieldExport_FPrintf( session, "#xi%d=%d", i+1, numGrid[i] ) != FIELD_EXPORT_NO_ERROR )
         {
             return session->error;
         }
@@ -738,10 +784,10 @@ static int FieldExport_File_ElementNodeScales( FileSession *session, const int i
 }
 
 
-static int FieldExport_File_ElementGridValues( FileSession *session, const int isFirstSet, const int dimensionCount, const double value )
+static int FieldExport_File_ElementGridValues( FileSession *session, const int isFirstSet, const int valueCount, const double value )
 {
     int i;
-    int valueCount = 1 << dimensionCount;
+    /* int valueCount = 1 << dimensionCount; */
 
     if( isFirstSet )
     {
@@ -1045,6 +1091,41 @@ static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, c
 /*
     Public API implementation
 */
+
+const int FieldExport_InterpolationType( const int interpType )
+{
+    if(interpType == 1) 
+      {
+	return  FIELD_IO_INTERPOLATION_HEADER_CONSTANT;
+      }
+    else if(interpType == 2)
+      {
+	return FIELD_IO_INTERPOLATION_HEADER_CONSTANT;
+      }
+    else if(interpType == 3)
+      {
+	return FIELD_IO_INTERPOLATION_HEADER_NODAL;
+      }
+    else if(interpType == 4)
+      {
+	return FIELD_IO_INTERPOLATION_HEADER_GRID;
+      }
+    else if(interpType == 5)
+      {
+	return FIELD_IO_INTERPOLATION_HEADER_GAUSS;
+      }
+    else if(interpType == 6)
+      {
+	return FIELD_IO_INTERPOLATION_HEADER_NODAL;
+      }
+    else
+      {
+	return FIELD_IO_INTERPOLATION_HEADER_GRID;
+      }
+
+}
+
+
 int FieldExport_OpenSession( const int type, const char *const name, int * const handle )
 {
    if( type == EXPORT_TYPE_FILE )
@@ -1213,7 +1294,7 @@ int FieldExport_Variable( const int handle, const char *variableName, const int 
 
 
 int FieldExport_CoordinateComponent( const int handle, int coordinateSystemType,
-    const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi )
+    const int componentNumber, const int interpType, const int numberOfXi, const int * const interpolationXi )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1223,7 +1304,7 @@ int FieldExport_CoordinateComponent( const int handle, int coordinateSystemType,
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_CoordinateComponent( &session->fileSession, coordinateSystemType, componentNumber, isNodal, numberOfXi, interpolationXi );
+        return FieldExport_File_CoordinateComponent( &session->fileSession, coordinateSystemType, componentNumber, interpType, numberOfXi, interpolationXi );
     }
     else
     {
@@ -1232,7 +1313,7 @@ int FieldExport_CoordinateComponent( const int handle, int coordinateSystemType,
 }
 
 
-int FieldExport_Component( const int handle, const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi )
+int FieldExport_Component( const int handle, const int componentNumber, const int interpType, const int numberOfXi, const int * const interpolationXi )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1242,7 +1323,7 @@ int FieldExport_Component( const int handle, const int componentNumber, const in
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_Component( &session->fileSession, componentNumber, isNodal, numberOfXi, interpolationXi );
+        return FieldExport_File_Component( &session->fileSession, componentNumber, interpType, numberOfXi, interpolationXi );
     }
     else
     {
@@ -1251,7 +1332,7 @@ int FieldExport_Component( const int handle, const int componentNumber, const in
 }
 
 
-int FieldExport_ElementGridSize( const int handle, const int numberOfXi )
+int FieldExport_ElementGridSize( const int handle, const int interpType, const int numberOfXi, const int *const numberGauss  )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1261,7 +1342,7 @@ int FieldExport_ElementGridSize( const int handle, const int numberOfXi )
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_ElementGridSize( &session->fileSession, numberOfXi );
+      return FieldExport_File_ElementGridSize( &session->fileSession, interpType, numberOfXi, numberGauss );
     }
     else
     {

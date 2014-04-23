@@ -1289,7 +1289,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: BASE_NAME !<The root name of the basis evaluator.
     TYPE(VARYING_STRING), INTENT(IN) :: CONNECTIVITY_FORMAT !<The name of the format to use when writing connectivity data.
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The mesh component number for which an evaluator should be constructed.
-    TYPE(MeshComponentElementsType), POINTER, INTENT(IN) :: MESH_ELEMENTS !<The mesh element from which to obtain topology info.
+    TYPE(MeshElementsType), POINTER, INTENT(IN) :: MESH_ELEMENTS !<The mesh element from which to obtain topology info.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
 
@@ -1609,7 +1609,7 @@ CONTAINS
       DO J = 1, COMPONENT_COUNT
         DVALUE = 0
         IF( IS_NODE_BASED(J) ) THEN
-          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS( MESH, MESH_COMPONENT_NUMBERS(J), I, NODE_EXISTS, GLOBAL_NODE_NUMBER, &
+          CALL MeshTopologyNodeCheckExists( MESH, MESH_COMPONENT_NUMBERS(J), I, NODE_EXISTS, GLOBAL_NODE_NUMBER, &
             & ERR, ERROR, *999 )
           IF( NODE_EXISTS ) THEN
             !Default to version 1 of each node derivative (value hardcoded in loop)
@@ -1973,7 +1973,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     INTEGER(INTG) :: COMPONENT_COUNT, I, NODE_COUNT, ELEMENT_COUNT, DIMENSIONS
     INTEGER(INTG) :: REAL_1D_HANDLE, XI_COMPONENT_HANDLE, FML_ERR, SHAPE_HANDLE
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
     TYPE(NODES_TYPE), POINTER :: NODES
     TYPE(VARYING_STRING) :: SHAPE_NAME
