@@ -163,6 +163,11 @@ MODULE BASIS_ROUTINES
     MODULE PROCEDURE BASIS_EVALUATE_XI_DP
   END INTERFACE !BASIS_EVALUATE_XI
 
+  !>Evaluates the list of gauss points and weights for a given basis type and order.
+  INTERFACE BASIS_GAUSS_POINTS_CALCULATE
+    MODULE PROCEDURE  BASIS_GAUSS_POINTS_CALCULATE_DP
+  END INTERFACE !BASIS_GAUSS_POINTS_CALCULATE
+
   !>Interpolates the appropriate partial derivative index of the elements parameters for basis function at a Gauss point \see BASIS_ROUTINES
   INTERFACE BASIS_INTERPOLATE_GAUSS
     MODULE PROCEDURE BASIS_INTERPOLATE_GAUSS_DP
@@ -257,6 +262,8 @@ MODULE BASIS_ROUTINES
   PUBLIC BASIS_COLLAPSED_XI_SET
   
   PUBLIC BASIS_EVALUATE_XI
+
+  PUBLIC BASIS_GAUSS_POINTS_CALCULATE
   
   PUBLIC BASIS_INTERPOLATE_GAUSS,BASIS_INTERPOLATE_XI,BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
 
@@ -740,6 +747,120 @@ CONTAINS
     
   END FUNCTION BASIS_EVALUATE_XI_DP
   
+  !
+  !================================================================================================================================
+  !
+  
+  !> Calculates the gauss points and weights for a basis function of a particular order.
+  SUBROUTINE BASIS_GAUSS_POINTS_CALCULATE_DP(basis,order,numCoords,numberGaussPoints,gaussPoints,gaussWeights,err,error,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: basis !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: order !<The order (for Simplex) or the number of gauss points in a direction (for LHTP)
+    INTEGER(INTG), INTENT(IN) :: numCoords !<The number of coordinate directions of the system in which to calculate gauss points (1D, 2D, 3D)
+    INTEGER(INTG), INTENT(OUT) :: numberGaussPoints !<on return, the number of gauss points calculated
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: gaussPoints(:,:) !<On return, the calculated gauss point coordinates gaussPoints(nj,ng)
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: gaussWeights(:) !<gaussWeights(ng) gauss weight for particular gauss point
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: number_of_vertices,nj,ng,i,j,k,NUM_GAUSS_1,NUM_GAUSS_2,NUM_GAUSS_3,MAX_GAUSS
+    REAL(DP), ALLOCATABLE :: XICOORDS(:,:),W(:,:),XI_MATRIX(:,:,:,:),XI(:)
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("BASIS_GAUSS_POINTS_CALCULATE_DP",err,error,*999)
+    number_of_vertices=0
+    IF(ASSOCIATED(basis)) THEN
+        !current code assumes same order in each direction
+      SELECT CASE(numCoords)
+      CASE(1)
+        NUM_GAUSS_1=order
+        NUM_GAUSS_2=1
+        NUM_GAUSS_3=1
+        MAX_GAUSS=order
+      CASE(2)
+        NUM_GAUSS_1=order
+        NUM_GAUSS_2=order
+        NUM_GAUSS_3=1
+        MAX_GAUSS=order*order
+      CASE(3)
+        NUM_GAUSS_1=order
+        NUM_GAUSS_2=order
+        NUM_GAUSS_3=order
+        MAX_GAUSS=order*order*order
+      CASE DEFAULT
+        LOCAL_ERROR="Number of coordinates " &
+        & //TRIM(NUMBER_TO_VSTRING(numCoords,"*",err,error))//" is invalid or not implemented"
+        CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+      END SELECT
+      !Allocate arrays
+      ALLOCATE(W(MAX_GAUSS,numCoords),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate weights",ERR,ERROR,*999)
+      ALLOCATE(XI(numCoords),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate gauss point coordinates",ERR,ERROR,*999)
+      ALLOCATE(XICOORDS(MAX_GAUSS,numCoords),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate gauss point coordinates",ERR,ERROR,*999)
+      ALLOCATE(XI_MATRIX(MAX_GAUSS,MAX_GAUSS,MAX_GAUSS,numCoords),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate XI matrix",ERR,ERROR,*999)
+
+      SELECT CASE(basis%TYPE)
+      CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+        ALLOCATE(gaussPoints(numCoords,MAX_GAUSS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate weights",ERR,ERROR,*999)
+        ALLOCATE(gaussWeights(MAX_GAUSS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate weights",ERR,ERROR,*999)
+        DO nj=1,numCoords
+          CALL GAUSS_LEGENDRE(order,0.0_DP,1.0_DP,XICOORDS(1:order,nj),W(1:order,nj),err,error,*999)
+          IF(err/=0) GOTO 999
+        ENDDO
+        !Form gauss point array for lagrange hermite type.
+        numberGaussPoints=0
+        DO k=1,NUM_GAUSS_3
+          DO j=1,NUM_GAUSS_2
+            DO i=1,NUM_GAUSS_1
+              XI_MATRIX(i,j,k,1)=XICOORDS(i,1)
+              XI_MATRIX(i,j,k,2)=XICOORDS(j,2)
+              XI_MATRIX(i,j,k,3)=XICOORDS(k,3)
+              XI(1:numCoords)=XI_MATRIX(i,j,k,1:numCoords)
+              ng=i+(j-1+(k-1)*NUM_GAUSS_2)*NUM_GAUSS_1
+              gaussWeights(ng)=W(i,1)*W(j,2)*W(k,3)
+              gaussPoints(1:numCoords,ng)=XI(1:numCoords)
+              numberGaussPoints=numberGaussPoints+1
+            ENDDO
+          ENDDO
+        ENDDO
+      CASE(BASIS_SIMPLEX_TYPE)
+        IF(numCoords==1) THEN
+          number_of_vertices=2
+        ELSEIF(numCoords==2) THEN
+          number_of_vertices=3
+        ELSE
+          number_of_vertices=4
+        ENDIF
+        ALLOCATE(gaussPoints(number_of_vertices,MAX_GAUSS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate weights",ERR,ERROR,*999)
+        ALLOCATE(gaussWeights(MAX_GAUSS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate weights",ERR,ERROR,*999)
+
+        CALL GAUSS_SIMPLEX(order,number_of_vertices,numberGaussPoints,gaussPoints,gaussWeights,err,error,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Basis type "// &
+        & TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",err,error))// &
+        & " is invalid or not implemented"
+        CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",err,error,*999)
+    ENDIF
+
+    CALL EXITS("BASIS_GAUSS_POINTS_CALCULATE_DP")
+    RETURN
+999 CALL ERRORS("BASIS_GAUSS_POINTS_CALCULATE_DP",err,error)
+    CALL EXITS("BASIS_GAUSS_POINTS_CALCULATE_DP")
+    RETURN
+
+  END SUBROUTINE BASIS_GAUSS_POINTS_CALCULATE_DP
+
   !
   !================================================================================================================================
   !
@@ -1341,790 +1462,750 @@ CONTAINS
 
   !>Creates and initialises a Lagrange-Hermite tensor product basis that has already been allocated BASIS_CREATE_START
   !> \see BASIS_ROUTINES::BASIS_CREATE_START
-  SUBROUTINE BASIS_LHTP_BASIS_CREATE(BASIS,ERR,ERROR,*)
+  SUBROUTINE Basis_LHTPBasisCreate(basis,err,error,*)
 
     !Argument variables
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to create
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(BASIS_TYPE), POINTER :: basis !<A pointer to the basis to create
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: MAX_NUM_NODES,NUMBER_OF_DERIVATIVES,ni,ni1,ni2,ni3,nk,nn,nnl,ns,OLD_NUMBER_OF_DERIVATIVES, &
-      & POSITION(4),MAXIMUM_NODE_EXTENT(3),COLLAPSED_XI(3),NUMBER_OF_NODES,NUMBER_OF_LOCAL_LINES,NODE_COUNT, &
-      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT,ef
-    INTEGER, TARGET :: nn1,nn2,nn3,nn4
-    LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:)
-    !move to types.f90
-    TYPE INTG_POINTER
-       INTEGER, POINTER :: a1, a2, a3, a4
-    END TYPE INTG_POINTER
-    TYPE(INTG_POINTER) :: ARGLIST
-    INTEGER, POINTER :: np1, np2, np3, np4
-    LOGICAL :: AT_COLLAPSE,FIRST_COLLAPSED_POSITION,PROCESS_NODE
+    INTEGER(INTG) :: maximumNumberOfNodes,numberOfDerivatives,xiIdx,xiIdx1,xiIdx2,xiIdx3,derivativeIdx,localNode,localLineNodeIdx, &
+      & elementParameter,oldNumberOfDerivatives,position(4),maximumNodeExtent(3),collapsedXi(3),numberOfNodes,numberOfLocalLines, &
+      & nodeCount,specialNodeCount,nodesInLine(4),numberOfLocalFaces,localFaceIdx,localNodeIdx,localNodeIdx1, &
+      & localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount
+    LOGICAL, ALLOCATABLE :: nodeAtCollapse(:)
+    LOGICAL :: atCollapse,collapsedFace,firstCollapsedPosition,processNode
     
-    CALL ENTERS("BASIS_LHTP_BASIS_CREATE",ERR,ERROR,*999)
+    CALL Enters("Basis_LHTPBasisCreate",ERR,error,*999)
 
-    IF(ASSOCIATED(BASIS)) THEN
-      IF(BASIS%TYPE==BASIS_LAGRANGE_HERMITE_TP_TYPE) THEN
-        BASIS%NUMBER_OF_XI_COORDINATES=BASIS%NUMBER_OF_XI
-        BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=BASIS%NUMBER_OF_XI_COORDINATES**2+2
-        ALLOCATE(BASIS%INTERPOLATION_TYPE(BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate the interpolation type array",ERR,ERROR,*999)
-        ALLOCATE(BASIS%INTERPOLATION_ORDER(BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interpolation order array",ERR,ERROR,*999)
-        ALLOCATE(BASIS%NUMBER_OF_NODES_XIC(BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes xic array",ERR,ERROR,*999)
-        NUMBER_OF_NODES=1
-        MAX_NUM_NODES=0
-        BASIS%DEGENERATE=.FALSE.
-        BASIS%NUMBER_OF_COLLAPSED_XI=0
-        DO ni=1,BASIS%NUMBER_OF_XI
+    IF(ASSOCIATED(basis)) THEN
+      IF(basis%type==BASIS_LAGRANGE_HERMITE_TP_TYPE) THEN
+        basis%NUMBER_OF_XI_COORDINATES=basis%NUMBER_OF_XI
+        basis%NUMBER_OF_PARTIAL_DERIVATIVES=basis%NUMBER_OF_XI_COORDINATES**2+2
+        ALLOCATE(basis%INTERPOLATION_TYPE(basis%NUMBER_OF_XI_COORDINATES),STAT=err)
+        IF(ERR/=0) CALL FlagError("Could not allocate basis interpolation type.",err,error,*999)
+        ALLOCATE(basis%INTERPOLATION_ORDER(basis%NUMBER_OF_XI_COORDINATES),STAT=err)
+        IF(ERR/=0) CALL FlagError("Could not allocate basis interpolation order.",err,error,*999)
+        ALLOCATE(basis%NUMBER_OF_NODES_XIC(basis%NUMBER_OF_XI_COORDINATES),STAT=err)
+        IF(ERR/=0) CALL FlagError("Could not allocate basis number of nodes xic.",err,error,*999)
+        numberOfNodes=1
+        maximumNumberOfNodes=0
+        basis%degenerate=.FALSE.
+        basis%NUMBER_OF_COLLAPSED_XI=0
+        DO xiIdx=1,basis%NUMBER_OF_XI
           !Set up the interpolation types, orders and number of nodes in each xi from the user specified interpolation xi.
-          SELECT CASE(BASIS%INTERPOLATION_XI(ni))
+          SELECT CASE(basis%INTERPOLATION_XI(xiIdx))
           CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
-            BASIS%INTERPOLATION_TYPE(ni)=BASIS_LAGRANGE_INTERPOLATION
-            BASIS%INTERPOLATION_ORDER(ni)=BASIS_LINEAR_INTERPOLATION_ORDER
-            BASIS%NUMBER_OF_NODES_XIC(ni)=2            
+            basis%INTERPOLATION_TYPE(xiIdx)=BASIS_LAGRANGE_INTERPOLATION
+            basis%INTERPOLATION_ORDER(xiIdx)=BASIS_LINEAR_INTERPOLATION_ORDER
+            basis%NUMBER_OF_NODES_XIC(xiIdx)=2            
           CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-            BASIS%INTERPOLATION_TYPE(ni)=BASIS_LAGRANGE_INTERPOLATION
-            BASIS%INTERPOLATION_ORDER(ni)=BASIS_QUADRATIC_INTERPOLATION_ORDER
-            BASIS%NUMBER_OF_NODES_XIC(ni)=3
+            basis%INTERPOLATION_TYPE(xiIdx)=BASIS_LAGRANGE_INTERPOLATION
+            basis%INTERPOLATION_ORDER(xiIdx)=BASIS_QUADRATIC_INTERPOLATION_ORDER
+            basis%NUMBER_OF_NODES_XIC(xiIdx)=3
           CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-            BASIS%INTERPOLATION_TYPE(ni)=BASIS_LAGRANGE_INTERPOLATION
-            BASIS%INTERPOLATION_ORDER(ni)=BASIS_CUBIC_INTERPOLATION_ORDER
-            BASIS%NUMBER_OF_NODES_XIC(ni)=4
+            basis%INTERPOLATION_TYPE(xiIdx)=BASIS_LAGRANGE_INTERPOLATION
+            basis%INTERPOLATION_ORDER(xiIdx)=BASIS_CUBIC_INTERPOLATION_ORDER
+            basis%NUMBER_OF_NODES_XIC(xiIdx)=4
           CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
-            BASIS%INTERPOLATION_TYPE(ni)=BASIS_HERMITE_INTERPOLATION
-            BASIS%INTERPOLATION_ORDER(ni)=BASIS_CUBIC_INTERPOLATION_ORDER
-            BASIS%NUMBER_OF_NODES_XIC(ni)=2
+            basis%INTERPOLATION_TYPE(xiIdx)=BASIS_HERMITE_INTERPOLATION
+            basis%INTERPOLATION_ORDER(xiIdx)=BASIS_CUBIC_INTERPOLATION_ORDER
+            basis%NUMBER_OF_NODES_XIC(xiIdx)=2
           CASE(BASIS_QUADRATIC1_HERMITE_INTERPOLATION)
-            BASIS%INTERPOLATION_TYPE(ni)=BASIS_HERMITE_INTERPOLATION
-            BASIS%INTERPOLATION_ORDER(ni)=BASIS_QUADRATIC1_INTERPOLATION_ORDER
-            BASIS%NUMBER_OF_NODES_XIC(ni)=2
+            basis%INTERPOLATION_TYPE(xiIdx)=BASIS_HERMITE_INTERPOLATION
+            basis%INTERPOLATION_ORDER(xiIdx)=BASIS_QUADRATIC1_INTERPOLATION_ORDER
+            basis%NUMBER_OF_NODES_XIC(xiIdx)=2
           CASE(BASIS_QUADRATIC2_HERMITE_INTERPOLATION)
-            BASIS%INTERPOLATION_TYPE(ni)=BASIS_HERMITE_INTERPOLATION
-            BASIS%INTERPOLATION_ORDER(ni)=BASIS_QUADRATIC2_INTERPOLATION_ORDER
-            BASIS%NUMBER_OF_NODES_XIC(ni)=2
+            basis%INTERPOLATION_TYPE(xiIdx)=BASIS_HERMITE_INTERPOLATION
+            basis%INTERPOLATION_ORDER(xiIdx)=BASIS_QUADRATIC2_INTERPOLATION_ORDER
+            basis%NUMBER_OF_NODES_XIC(xiIdx)=2
           CASE DEFAULT 
-            CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
+            CALL FlagError("Invalid interpolation type",err,error,*999)
           END SELECT
-          IF(BASIS%COLLAPSED_XI(ni)==BASIS_XI_COLLAPSED) THEN
-            BASIS%NUMBER_OF_COLLAPSED_XI=BASIS%NUMBER_OF_COLLAPSED_XI+1
-            COLLAPSED_XI(BASIS%NUMBER_OF_COLLAPSED_XI)=ni
-            BASIS%DEGENERATE=.TRUE.
+          IF(basis%COLLAPSED_XI(xiIdx)==BASIS_XI_COLLAPSED) THEN
+            basis%NUMBER_OF_COLLAPSED_XI=basis%NUMBER_OF_COLLAPSED_XI+1
+            collapsedXi(basis%NUMBER_OF_COLLAPSED_XI)=xiIdx
+            basis%degenerate=.TRUE.
           ENDIF
-          NUMBER_OF_NODES=NUMBER_OF_NODES*BASIS%NUMBER_OF_NODES_XIC(ni)
-          IF(BASIS%NUMBER_OF_NODES_XIC(ni)>MAX_NUM_NODES) MAX_NUM_NODES=BASIS%NUMBER_OF_NODES_XIC(ni)
-        ENDDO !ni
+          numberOfNodes=numberOfNodes*basis%NUMBER_OF_NODES_XIC(xiIdx)
+          IF(basis%NUMBER_OF_NODES_XIC(xiIdx)>maximumNumberOfNodes) maximumNumberOfNodes=basis%NUMBER_OF_NODES_XIC(xiIdx)
+        ENDDO !xiIdx
         !If a degenerate (collapsed) basis recalculate the number of nodes from the maximum posible number of nodes
-        IF(BASIS%DEGENERATE) THEN
+        IF(basis%degenerate) THEN
           !Calculate the NODE_AT_COLLAPSE array.
-          ALLOCATE(NODE_AT_COLLAPSE(NUMBER_OF_NODES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate at collapse",ERR,ERROR,*999)
-          POSITION=1
-          BASIS%NUMBER_OF_NODES=0
+          ALLOCATE(nodeAtCollapse(numberOfNodes),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate at collapse",err,error,*999)
+          position=1
+          basis%NUMBER_OF_NODES=0
           !Loop over the maximum number of nodes which is currently set for the basis
-          DO nn=1,NUMBER_OF_NODES
-            AT_COLLAPSE=.FALSE.
-            DO ni=1,BASIS%NUMBER_OF_XI
-              IF(BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI0.AND.POSITION(ni)==1.OR. &
-                & BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI1.AND.POSITION(ni)==BASIS%NUMBER_OF_NODES_XIC(ni)) &
-                & AT_COLLAPSE=.TRUE.
-            ENDDO !ni
-            IF(AT_COLLAPSE) THEN
-              IF(BASIS%NUMBER_OF_COLLAPSED_XI==1) THEN
-                FIRST_COLLAPSED_POSITION=POSITION(COLLAPSED_XI(1))==1
+          DO localNodeIdx=1,numberOfNodes
+            atCollapse=.FALSE.
+            DO xiIdx=1,basis%NUMBER_OF_XI
+              IF(basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI0.AND.position(xiIdx)==1.OR. &
+                & basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI1.AND.position(xiIdx)==basis%NUMBER_OF_NODES_XIC(xiIdx)) &
+                & atCollapse=.TRUE.
+            ENDDO !xiIdx
+            IF(atCollapse) THEN
+              IF(basis%NUMBER_OF_COLLAPSED_XI==1) THEN
+                firstCollapsedPosition=position(collapsedXi(1))==1
               ELSE
-                FIRST_COLLAPSED_POSITION=(POSITION(COLLAPSED_XI(1))==1).AND.(POSITION(COLLAPSED_XI(2))==1)
+                firstCollapsedPosition=(position(collapsedXi(1))==1).AND.(position(collapsedXi(2))==1)
               ENDIF
-              IF(FIRST_COLLAPSED_POSITION) THEN
-                BASIS%NUMBER_OF_NODES=BASIS%NUMBER_OF_NODES+1
-                NODE_AT_COLLAPSE(BASIS%NUMBER_OF_NODES)=.TRUE.
+              IF(firstCollapsedPosition) THEN
+                basis%NUMBER_OF_NODES=basis%NUMBER_OF_NODES+1
+                nodeAtCollapse(basis%NUMBER_OF_NODES)=.TRUE.
               ENDIF
             ELSE
-              BASIS%NUMBER_OF_NODES=BASIS%NUMBER_OF_NODES+1
-              NODE_AT_COLLAPSE(BASIS%NUMBER_OF_NODES)=.FALSE.
+              basis%NUMBER_OF_NODES=basis%NUMBER_OF_NODES+1
+              nodeAtCollapse(basis%NUMBER_OF_NODES)=.FALSE.
             ENDIF
-            POSITION(1)=POSITION(1)+1
-            DO ni=1,BASIS%NUMBER_OF_XI
-              IF(POSITION(ni)>BASIS%NUMBER_OF_NODES_XIC(ni)) THEN
-                POSITION(ni)=1
-                POSITION(ni+1)=POSITION(ni+1)+1
+            position(1)=position(1)+1
+            DO xiIdx=1,basis%NUMBER_OF_XI
+              IF(position(xiIdx)>basis%NUMBER_OF_NODES_XIC(xiIdx)) THEN
+                position(xiIdx)=1
+                position(xiIdx+1)=position(xiIdx+1)+1
               ENDIF
-            ENDDO !ni
-          ENDDO !nn
-          ALLOCATE(BASIS%NODE_AT_COLLAPSE(BASIS%NUMBER_OF_NODES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis node at collapse",ERR,ERROR,*999)
-          BASIS%NODE_AT_COLLAPSE(1:BASIS%NUMBER_OF_NODES)=NODE_AT_COLLAPSE(1:BASIS%NUMBER_OF_NODES)
-          DEALLOCATE(NODE_AT_COLLAPSE)
+            ENDDO !xiIdx
+          ENDDO !localNodeIdx
+          CALL MOVE_ALLOC(nodeAtCollapse,basis%NODE_AT_COLLAPSE)
         ELSE        
-          BASIS%NUMBER_OF_NODES=NUMBER_OF_NODES
-          ALLOCATE(BASIS%NODE_AT_COLLAPSE(BASIS%NUMBER_OF_NODES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis node at collapse",ERR,ERROR,*999)
-          BASIS%NODE_AT_COLLAPSE=.FALSE.
-          COLLAPSED_XI(1)=1
+          basis%NUMBER_OF_NODES=numberOfNodes
+          ALLOCATE(basis%NODE_AT_COLLAPSE(basis%NUMBER_OF_NODES),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate basis node at collapse.",err,error,*999)
+          basis%NODE_AT_COLLAPSE=.FALSE.
+          collapsedXi(1)=1
         ENDIF
-        
-        ALLOCATE(BASIS%NODE_POSITION_INDEX(BASIS%NUMBER_OF_NODES,BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODE_POSITION_INDEX",ERR,ERROR,*999)
-        SELECT CASE(BASIS%NUMBER_OF_XI_COORDINATES)
-        CASE(1)
-          ALLOCATE(BASIS%NODE_POSITION_INDEX_INV(MAX_NUM_NODES,1,1,1),STAT=ERR)
-        CASE(2)
-          ALLOCATE(BASIS%NODE_POSITION_INDEX_INV(MAX_NUM_NODES,MAX_NUM_NODES,1,1),STAT=ERR)
-        CASE(3)
-          ALLOCATE(BASIS%NODE_POSITION_INDEX_INV(MAX_NUM_NODES,MAX_NUM_NODES,MAX_NUM_NODES,1),STAT=ERR)
-        CASE DEFAULT
-          CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
-        END SELECT
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODE_POSITION_INDEX_INV",ERR,ERROR,*999)
-        BASIS%NODE_POSITION_INDEX_INV=0
-        
-        !Determine the node position index and it's inverse
-        POSITION=1
-        nn=0
-        FIRST_COLLAPSED_POSITION=.TRUE.
-        DO nn1=1,NUMBER_OF_NODES
-          AT_COLLAPSE=.FALSE.
-          IF(BASIS%DEGENERATE) THEN
-            DO ni=1,BASIS%NUMBER_OF_XI
-              IF(BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI0.AND.POSITION(ni)==1.OR. &
-                & BASIS%COLLAPSED_XI(ni)==BASIS_COLLAPSED_AT_XI1.AND.POSITION(ni)==BASIS%NUMBER_OF_NODES_XIC(ni)) &
-                & AT_COLLAPSE=.TRUE.
-            ENDDO !ni
-            IF(BASIS%NUMBER_OF_COLLAPSED_XI==1) THEN
-              FIRST_COLLAPSED_POSITION=POSITION(COLLAPSED_XI(1))==1
-            ELSE
-              FIRST_COLLAPSED_POSITION=(POSITION(COLLAPSED_XI(1))==1).AND.(POSITION(COLLAPSED_XI(2))==1)
-            ENDIF
-          ENDIF
-          PROCESS_NODE=(AT_COLLAPSE.AND.FIRST_COLLAPSED_POSITION).OR.(.NOT.AT_COLLAPSE)
-          IF(PROCESS_NODE) THEN
-            nn=nn+1
-            BASIS%NODE_POSITION_INDEX(nn,:)=POSITION(1:BASIS%NUMBER_OF_XI)
-!!Should the inverse of the node position index be adjusted so that the collapsed positions point to the collapsed nn?
-!!At the moment this is not the case and they are just set to zero.
-            SELECT CASE(BASIS%NUMBER_OF_XI)
-            CASE(1)
-              BASIS%NODE_POSITION_INDEX_INV(BASIS%NODE_POSITION_INDEX(nn,1),1,1,1)=nn
-            CASE(2)
-              BASIS%NODE_POSITION_INDEX_INV(BASIS%NODE_POSITION_INDEX(nn,1),BASIS%NODE_POSITION_INDEX(nn,2),1,1)=nn
-            CASE(3)
-              BASIS%NODE_POSITION_INDEX_INV(BASIS%NODE_POSITION_INDEX(nn,1),BASIS%NODE_POSITION_INDEX(nn,2), &
-                & BASIS%NODE_POSITION_INDEX(nn,3),1)=nn
-            CASE DEFAULT
-              CALL FLAG_ERROR("Invalid number of Xi directions",ERR,ERROR,*999)
-            END SELECT
-          ENDIF
-          POSITION(1)=POSITION(1)+1
-          DO ni=1,BASIS%NUMBER_OF_XI
-            IF(POSITION(ni)>BASIS%NUMBER_OF_NODES_XIC(ni)) THEN
-              POSITION(ni)=1
-              POSITION(ni+1)=POSITION(ni+1)+1
-            ENDIF
-          ENDDO !ni
-        ENDDO !nn1
-        !Calculate the maximum number of derivatives and number of element
-        !parameters
-        BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES=-1
-        BASIS%NUMBER_OF_ELEMENT_PARAMETERS=0
-        DO nn=1,BASIS%NUMBER_OF_NODES
-          NUMBER_OF_DERIVATIVES=1
-          DO ni=1,BASIS%NUMBER_OF_XI
-            IF((.NOT.BASIS%NODE_AT_COLLAPSE(nn).OR.BASIS%COLLAPSED_XI(ni)==BASIS_NOT_COLLAPSED).AND. &
-              & BASIS%INTERPOLATION_TYPE(ni)==BASIS_HERMITE_INTERPOLATION.AND. &
-              & (BASIS%INTERPOLATION_ORDER(ni)==BASIS_CUBIC_INTERPOLATION_ORDER.OR. &
-              & (BASIS%NODE_POSITION_INDEX(nn,ni)==1.AND. &
-              & BASIS%INTERPOLATION_ORDER(ni)==BASIS_QUADRATIC2_INTERPOLATION_ORDER).OR. &
-              & (BASIS%NODE_POSITION_INDEX(nn,ni)==2.AND. &
-              & BASIS%INTERPOLATION_ORDER(ni)==BASIS_QUADRATIC1_INTERPOLATION_ORDER))) THEN
-              !Derivative in this direction
-              NUMBER_OF_DERIVATIVES=NUMBER_OF_DERIVATIVES*2
-            ENDIF
-          ENDDO !ni
-          BASIS%NUMBER_OF_ELEMENT_PARAMETERS=BASIS%NUMBER_OF_ELEMENT_PARAMETERS+NUMBER_OF_DERIVATIVES
-          IF(NUMBER_OF_DERIVATIVES>BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES) BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES= &
-            & NUMBER_OF_DERIVATIVES
-        ENDDO !nn
-        !Now set up the number of derivatives and derivative order index
-        ALLOCATE(BASIS%NUMBER_OF_DERIVATIVES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NUMBER_OF_DERIVATIVES",ERR,ERROR,*999)
-        ALLOCATE(BASIS%DERIVATIVE_ORDER_INDEX(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES,BASIS%NUMBER_OF_NODES, &
-          & BASIS%NUMBER_OF_XI),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate DERIVATIVE_ORDER_INDEX",ERR,ERROR,*999)
-        ALLOCATE(BASIS%DERIVATIVE_ORDER_INDEX_INV(FIRST_PART_DERIV,FIRST_PART_DERIV,FIRST_PART_DERIV, &
-          & BASIS%NUMBER_OF_NODES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate DERIVATIVE_ORDER_INDEX_INV",ERR,ERROR,*999)
-        ALLOCATE(BASIS%PARTIAL_DERIVATIVE_INDEX(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES,BASIS%NUMBER_OF_NODES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PARTIAL_DERIVATIVE_INDEX",ERR,ERROR,*999)
-        ALLOCATE(BASIS%ELEMENT_PARAMETER_INDEX(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES,BASIS%NUMBER_OF_NODES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENT_PARAMETER_INDEX",ERR,ERROR,*999)
-        ALLOCATE(BASIS%ELEMENT_PARAMETER_INDEX_INV(2,BASIS%NUMBER_OF_ELEMENT_PARAMETERS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENT_PARAMETER_INDEX_INV",ERR,ERROR,*999)
-        !Set the derivative order index and its inverse, the element parameter index and the partial derivative index.
-        ns=0
-        BASIS%DERIVATIVE_ORDER_INDEX=0
-        BASIS%DERIVATIVE_ORDER_INDEX_INV=0
-        DO nn=1,BASIS%NUMBER_OF_NODES
-          BASIS%NUMBER_OF_DERIVATIVES(nn)=1
-          DO ni=1,BASIS%NUMBER_OF_XI
-            IF((.NOT.BASIS%NODE_AT_COLLAPSE(nn).OR.BASIS%COLLAPSED_XI(ni)==BASIS_NOT_COLLAPSED).AND. &
-              & BASIS%INTERPOLATION_TYPE(ni)==BASIS_HERMITE_INTERPOLATION.AND. &
-              & (BASIS%INTERPOLATION_ORDER(ni)==BASIS_CUBIC_INTERPOLATION_ORDER.OR. &
-              & (BASIS%NODE_POSITION_INDEX(nn,ni)==1.AND. &
-              & BASIS%INTERPOLATION_ORDER(ni)==BASIS_QUADRATIC2_INTERPOLATION_ORDER).OR. &
-              & (BASIS%NODE_POSITION_INDEX(nn,ni)==2.AND. &
-              & BASIS%INTERPOLATION_ORDER(ni)==BASIS_QUADRATIC1_INTERPOLATION_ORDER))) THEN
-              OLD_NUMBER_OF_DERIVATIVES=BASIS%NUMBER_OF_DERIVATIVES(nn)
-              BASIS%NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(nn)*2
-              DO nk=1,OLD_NUMBER_OF_DERIVATIVES
-                BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,ni)=NO_PART_DERIV
-                BASIS%DERIVATIVE_ORDER_INDEX(OLD_NUMBER_OF_DERIVATIVES+nk,nn,ni)=FIRST_PART_DERIV
-                DO ni2=1,ni-1
-                  BASIS%DERIVATIVE_ORDER_INDEX(OLD_NUMBER_OF_DERIVATIVES+nk,nn,ni2)=BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,ni2)
-                ENDDO !ni
-              ENDDO !nk
-            ELSE
-              DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,ni)=1
-              ENDDO !nk
-            ENDIF
-          ENDDO !ni
 
-          DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-            ns=ns+1
-            BASIS%ELEMENT_PARAMETER_INDEX(nk,nn)=ns
-            BASIS%ELEMENT_PARAMETER_INDEX_INV(1,ns)=nn
-            BASIS%ELEMENT_PARAMETER_INDEX_INV(2,ns)=nk
-            SELECT CASE(BASIS%NUMBER_OF_XI)
+        ALLOCATE(basis%NODE_POSITION_INDEX(basis%NUMBER_OF_NODES,basis%NUMBER_OF_XI_COORDINATES),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate basis node position index.",err,error,*999)
+        SELECT CASE(basis%NUMBER_OF_XI_COORDINATES)
+        CASE(1)
+          ALLOCATE(basis%NODE_POSITION_INDEX_INV(maximumNumberOfNodes,1,1,1),STAT=err)
+        CASE(2)
+          ALLOCATE(basis%NODE_POSITION_INDEX_INV(maximumNumberOfNodes,maximumNumberOfNodes,1,1),STAT=err)
+        CASE(3)
+          ALLOCATE(basis%NODE_POSITION_INDEX_INV(maximumNumberOfNodes,maximumNumberOfNodes,maximumNumberOfNodes,1),STAT=err)
+        CASE DEFAULT
+          CALL FlagError("Invalid number of xi coordinates.",err,error,*999)
+        END SELECT
+        IF(ERR/=0) CALL FlagError("Could not allocate node position index inverse.",err,error,*999)
+        basis%NODE_POSITION_INDEX_INV=0
+
+        !Determine the node position index and it's inverse
+        position=1
+        localNode=0
+        firstCollapsedPosition=.TRUE.
+        DO localNodeIdx1=1,numberOfNodes
+          atCollapse=.FALSE.
+          IF(basis%degenerate) THEN
+            DO xiIdx=1,basis%NUMBER_OF_XI
+              IF(basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI0.AND.position(xiIdx)==1.OR. &
+                & basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI1.AND.position(xiIdx)==basis%NUMBER_OF_NODES_XIC(xiIdx)) &
+                & atCollapse=.TRUE.
+            ENDDO !xiIdx
+            IF(basis%NUMBER_OF_COLLAPSED_XI==1) THEN
+              firstCollapsedPosition=position(collapsedXi(1))==1
+            ELSE
+              firstCollapsedPosition=(position(collapsedXi(1))==1).AND.(position(collapsedXi(2))==1)
+            ENDIF
+          ENDIF
+          processNode=(atCollapse.AND.firstCollapsedPosition).OR.(.NOT.atCollapse)
+          IF(processNode) THEN
+            localNode=localNode+1
+            basis%NODE_POSITION_INDEX(localNode,:)=position(1:basis%NUMBER_OF_XI)
+!!Should the inverse of the node position index be adjusted so that the collapsed positions point to the collapsed localNode?
+!!At the moment this is not the case and they are just set to zero.
+            SELECT CASE(basis%NUMBER_OF_XI)
             CASE(1)
-              BASIS%DERIVATIVE_ORDER_INDEX_INV(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,1),1,1,nn)=nk
-              SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,1))
+              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),1,1,1)=localNode
+            CASE(2)
+              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2),1,1)= &
+                & localNode
+            CASE(3)
+              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2), &
+                & basis%NODE_POSITION_INDEX(localNode,3),1)=localNode
+            CASE DEFAULT
+              CALL FlagError("Invalid number of xi directions.",err,error,*999)
+            END SELECT
+          ENDIF
+          position(1)=position(1)+1
+          DO xiIdx=1,basis%NUMBER_OF_XI
+            IF(position(xiIdx)>basis%NUMBER_OF_NODES_XIC(xiIdx)) THEN
+              position(xiIdx)=1
+              position(xiIdx+1)=position(xiIdx+1)+1
+            ENDIF
+          ENDDO !xiIdx
+        ENDDO !localNodeIdx1
+        !Calculate the maximum number of derivatives and the number of element parameters
+        basis%MAXIMUM_NUMBER_OF_DERIVATIVES=-1
+        basis%NUMBER_OF_ELEMENT_PARAMETERS=0
+        DO localNodeIdx=1,basis%NUMBER_OF_NODES
+          numberOfDerivatives=1
+          DO xiIdx=1,basis%NUMBER_OF_XI
+            IF((.NOT.basis%NODE_AT_COLLAPSE(localNodeIdx).OR.basis%COLLAPSED_XI(xiIdx)==BASIS_NOT_COLLAPSED).AND. &
+              & basis%INTERPOLATION_TYPE(xiIdx)==BASIS_HERMITE_INTERPOLATION.AND. &
+              & (basis%INTERPOLATION_ORDER(xiIdx)==BASIS_CUBIC_INTERPOLATION_ORDER.OR. &
+              & (basis%NODE_POSITION_INDEX(localNodeIdx,xiIdx)==1.AND. &
+              & basis%INTERPOLATION_ORDER(xiIdx)==BASIS_QUADRATIC2_INTERPOLATION_ORDER).OR. &
+              & (basis%NODE_POSITION_INDEX(localNodeIdx,xiIdx)==2.AND. &
+              & basis%INTERPOLATION_ORDER(xiIdx)==BASIS_QUADRATIC1_INTERPOLATION_ORDER))) THEN
+              !Derivative in this direction
+              numberOfDerivatives=numberOfDerivatives*2
+            ENDIF
+          ENDDO !xiIdx
+          basis%NUMBER_OF_ELEMENT_PARAMETERS=basis%NUMBER_OF_ELEMENT_PARAMETERS+numberOfDerivatives
+          IF(numberOfDerivatives>basis%MAXIMUM_NUMBER_OF_DERIVATIVES) basis%MAXIMUM_NUMBER_OF_DERIVATIVES=numberOfDerivatives
+        ENDDO !localNodeIdx
+        !Now set up the number of derivatives and derivative order index
+        ALLOCATE(basis%NUMBER_OF_DERIVATIVES(basis%NUMBER_OF_NODES),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate number of derivatives.",err,error,*999)
+        ALLOCATE(basis%DERIVATIVE_ORDER_INDEX(basis%MAXIMUM_NUMBER_OF_DERIVATIVES,basis%NUMBER_OF_NODES, &
+          & basis%NUMBER_OF_XI),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate derivative order index.",err,error,*999)
+        ALLOCATE(basis%DERIVATIVE_ORDER_INDEX_INV(FIRST_PART_DERIV,FIRST_PART_DERIV,FIRST_PART_DERIV, &
+          & basis%NUMBER_OF_NODES),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate derivative order index inverse.",err,error,*999)
+        ALLOCATE(basis%PARTIAL_DERIVATIVE_INDEX(basis%MAXIMUM_NUMBER_OF_DERIVATIVES,basis%NUMBER_OF_NODES),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate partial derivative index.",err,error,*999)
+        ALLOCATE(basis%ELEMENT_PARAMETER_INDEX(basis%MAXIMUM_NUMBER_OF_DERIVATIVES,basis%NUMBER_OF_NODES),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate element parameter index.",err,error,*999)
+        ALLOCATE(basis%ELEMENT_PARAMETER_INDEX_INV(2,basis%NUMBER_OF_ELEMENT_PARAMETERS),STAT=err)
+        IF(err/=0) CALL FlagError("Could not allocate element parameter index inverse.",err,error,*999)
+        !Set the derivative order index and its inverse, the element parameter index and the partial derivative index.
+        elementParameter=0
+        basis%DERIVATIVE_ORDER_INDEX=0
+        basis%DERIVATIVE_ORDER_INDEX_INV=0
+        DO localNodeIdx=1,basis%NUMBER_OF_NODES
+          basis%NUMBER_OF_DERIVATIVES(localNodeIdx)=1
+          DO xiIdx1=1,basis%NUMBER_OF_XI
+            IF((.NOT.basis%NODE_AT_COLLAPSE(localNodeIdx).OR.basis%COLLAPSED_XI(xiIdx1)==BASIS_NOT_COLLAPSED).AND. &
+              & basis%INTERPOLATION_TYPE(xiIdx1)==BASIS_HERMITE_INTERPOLATION.AND. &
+              & (basis%INTERPOLATION_ORDER(xiIdx1)==BASIS_CUBIC_INTERPOLATION_ORDER.OR. &
+              & (basis%NODE_POSITION_INDEX(localNodeIdx,xiIdx1)==1.AND. &
+              & basis%INTERPOLATION_ORDER(xiIdx1)==BASIS_QUADRATIC2_INTERPOLATION_ORDER).OR. &
+              & (basis%NODE_POSITION_INDEX(localNodeIdx,xiIdx1)==2.AND. &
+              & basis%INTERPOLATION_ORDER(xiIdx1)==BASIS_QUADRATIC1_INTERPOLATION_ORDER))) THEN
+              oldNumberOfDerivatives=basis%NUMBER_OF_DERIVATIVES(localNodeIdx)
+              basis%NUMBER_OF_DERIVATIVES(localNodeIdx)=basis%NUMBER_OF_DERIVATIVES(localNodeIdx)*2
+              DO derivativeIdx=1,oldNumberOfDerivatives
+                basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,xiIdx1)=NO_PART_DERIV
+                basis%DERIVATIVE_ORDER_INDEX(oldNumberOfDerivatives+derivativeIdx,localNodeIdx,xiIdx1)=FIRST_PART_DERIV
+                DO xiIdx2=1,xiIdx1-1
+                  basis%DERIVATIVE_ORDER_INDEX(oldNumberOfDerivatives+derivativeIdx,localNodeIdx,xiIdx2)= &
+                    & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,xiIdx2)
+                ENDDO !xiIdx2
+              ENDDO !derivativeIdx
+            ELSE
+              DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNodeIdx)
+                basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,xiIdx1)=1
+              ENDDO !derivativeIdx
+            ENDIF
+          ENDDO !xiIdx1
+
+          DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNodeIdx)
+            elementParameter=elementParameter+1
+            basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,localNodeIdx)=elementParameter
+            basis%ELEMENT_PARAMETER_INDEX_INV(1,elementParameter)=localNodeIdx
+            basis%ELEMENT_PARAMETER_INDEX_INV(2,elementParameter)=derivativeIdx
+            SELECT CASE(basis%NUMBER_OF_XI)
+            CASE(1)
+              basis%DERIVATIVE_ORDER_INDEX_INV(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,1),1,1,localNodeIdx)= &
+                & derivativeIdx
+              SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,1))
               CASE(NO_PART_DERIV)
-                BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=NO_PART_DERIV
+                basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=NO_PART_DERIV
               CASE(FIRST_PART_DERIV)
-                BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1
+                basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1
               CASE DEFAULT
-                CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                CALL FlagError("Invalid derivative order index.",err,error,*999)
               END SELECT
             CASE(2)
-              BASIS%DERIVATIVE_ORDER_INDEX_INV(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,1), &
-                & BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,2),1,nn)=nk            
-              SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,1))
+              basis%DERIVATIVE_ORDER_INDEX_INV(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,1), &
+                & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,2),1,localNodeIdx)=derivativeIdx
+              SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,1))
               CASE(NO_PART_DERIV)
-                SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,2))
+                SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,2))
                 CASE(NO_PART_DERIV)
-                  BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=NO_PART_DERIV
+                  basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=NO_PART_DERIV
                 CASE(FIRST_PART_DERIV)
-                  BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S2
+                  basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S2
                 CASE DEFAULT
-                  CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                  CALL FlagError("Invalid derivative order index.",err,error,*999)
                 END SELECT
               CASE(FIRST_PART_DERIV)
-                SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,2))
+                SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,2))
                 CASE(NO_PART_DERIV)
-                  BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1
+                  basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1
                 CASE(FIRST_PART_DERIV)
-                  BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1_S2
+                  basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1_S2
                 CASE DEFAULT
-                  CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                  CALL FlagError("Invalid derivative order index.",err,error,*999)
                 END SELECT
               CASE DEFAULT
-                CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                CALL FlagError("Invalid derivative order index.",err,error,*999)
               END SELECT
             CASE(3)
-              BASIS%DERIVATIVE_ORDER_INDEX_INV(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,1), &
-                & BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,2),BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,3),nn)=nk           
-              SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,1))
+              basis%DERIVATIVE_ORDER_INDEX_INV(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,1), &
+                & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,2), &
+                & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,3),localNodeIdx)=derivativeIdx
+              SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,1))
               CASE(NO_PART_DERIV)
-                SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,2))
+                SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,2))
                 CASE(NO_PART_DERIV)
-                  SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,3))
+                  SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,3))
                   CASE(NO_PART_DERIV)                
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=NO_PART_DERIV
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=NO_PART_DERIV
                   CASE(FIRST_PART_DERIV)
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S3
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S3
                   CASE DEFAULT
-                    CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                    CALL FlagError("Invalid derivative order index.",err,error,*999)
                   END SELECT
                 CASE(FIRST_PART_DERIV)
-                  SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,3))
+                  SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,3))
                   CASE(NO_PART_DERIV)                
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S2
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S2
                   CASE(FIRST_PART_DERIV)
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S2_S3
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S2_S3
                   CASE DEFAULT
-                    CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                    CALL FlagError("Invalid derivative order index.",err,error,*999)
                   END SELECT
                 CASE DEFAULT
-                  CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                  CALL FlagError("Invalid derivative order index.",err,error,*999)
                 END SELECT
               CASE(FIRST_PART_DERIV)
-                SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,2))
+                SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,2))
                 CASE(NO_PART_DERIV)
-                  SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,3))
+                  SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,3))
                   CASE(NO_PART_DERIV)                
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1
                   CASE(FIRST_PART_DERIV)
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1_S3
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1_S3
                   CASE DEFAULT
-                    CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                    CALL FlagError("Invalid derivative order index.",err,error,*999)
                   END SELECT
                 CASE(FIRST_PART_DERIV)
-                  SELECT CASE(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn,3))
+                  SELECT CASE(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx,3))
                   CASE(NO_PART_DERIV)                
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1_S2
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1_S2
                   CASE(FIRST_PART_DERIV)
-                    BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)=PART_DERIV_S1_S2_S3
+                    basis%PARTIAL_DERIVATIVE_INDEX(derivativeIdx,localNodeIdx)=PART_DERIV_S1_S2_S3
                   CASE DEFAULT
-                    CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                    CALL FlagError("Invalid derivative order index.",err,error,*999)
                   END SELECT
                 CASE DEFAULT
-                  CALL FLAG_ERROR("Invalid derivative order index",ERR,ERROR,*999)
+                  CALL FlagError("Invalid derivative order index.",err,error,*999)
                 END SELECT
               CASE DEFAULT
-                CALL FLAG_ERROR("Invalid derivative order index.",ERR,ERROR,*999)
+                CALL FlagError("Invalid derivative order index.",err,error,*999)
               END SELECT
             CASE DEFAULT
-              CALL FLAG_ERROR("Invalid number of Xi direcions.",ERR,ERROR,*999)
+              CALL FlagError("Invalid number of xi direcions.",err,error,*999)
             END SELECT
-          ENDDO !nk
-        ENDDO !nn
+          ENDDO !derivativeIdx
+        ENDDO !localNodeIdx
 
         !Set up the line information
-        SELECT CASE(BASIS%NUMBER_OF_XI)
+        SELECT CASE(basis%NUMBER_OF_XI)
         CASE(1) !1 xi directions
-          NUMBER_OF_LOCAL_LINES=1
-          BASIS%NUMBER_OF_LOCAL_LINES=1
-          ALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes in local line.",ERR,ERROR,*999)
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(1)=BASIS%NUMBER_OF_NODES_XIC(1)
-          ALLOCATE(BASIS%LOCAL_LINE_XI_DIRECTION(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local line xi direction.",ERR,ERROR,*999)
-          BASIS%LOCAL_LINE_XI_DIRECTION(1)=1
-          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(BASIS%NUMBER_OF_NODES_XIC(1),NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local line.",ERR,ERROR,*999)
-          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(BASIS%NUMBER_OF_NODES_XIC(1),NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line.",ERR,ERROR,*999)
-          BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
-          DO nn2=1,BASIS%NUMBER_OF_NODES_XIC(1)
-            DO nn1=1,BASIS%NUMBER_OF_NODES
-              IF(BASIS%NODE_POSITION_INDEX(nn1,1)==nn2) THEN
-                BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nn2,1)=nn1
-                DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn2)
-                  IF(BASIS%DERIVATIVE_ORDER_INDEX(nk,nn2,1)==FIRST_PART_DERIV) THEN
-                    BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nn2,1)=nk
+          numberOfLocalLines=1
+          basis%NUMBER_OF_LOCAL_LINES=1
+          ALLOCATE(basis%NUMBER_OF_NODES_IN_LOCAL_LINE(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate number of nodes in local line.",err,error,*999)
+          basis%NUMBER_OF_NODES_IN_LOCAL_LINE(1)=basis%NUMBER_OF_NODES_XIC(1)
+          ALLOCATE(basis%LOCAL_LINE_XI_DIRECTION(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate local line xi direction.",err,error,*999)
+          basis%LOCAL_LINE_XI_DIRECTION(1)=1
+          ALLOCATE(basis%NODE_NUMBERS_IN_LOCAL_LINE(basis%NUMBER_OF_NODES_XIC(1),numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate node numbers in local line.",err,error,*999)
+          ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis%NUMBER_OF_NODES_XIC(1),numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local line.",err,error,*999)
+          basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          DO localNodeIdx2=1,basis%NUMBER_OF_NODES_XIC(1)
+            DO localNodeIdx1=1,basis%NUMBER_OF_NODES
+              IF(basis%NODE_POSITION_INDEX(localNodeIdx1,1)==localNodeIdx2) THEN
+                basis%NODE_NUMBERS_IN_LOCAL_LINE(localNodeIdx2,1)=localNodeIdx1
+                DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNodeIdx2)
+                  IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx2,1)==FIRST_PART_DERIV) THEN
+                    basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localNodeIdx2,1)=derivativeIdx
                     EXIT
                   ENDIF
-                ENDDO !nk
+                ENDDO !derivativeIdx
                 EXIT
               ENDIF
-            ENDDO !nn2
-          ENDDO !nn1
+            ENDDO !localNodeIdx2
+          ENDDO !localNodeIdx1
         CASE(2) !2 xi directions
           !Determine the maximum node extent of the basis
-          MAXIMUM_NODE_EXTENT(1)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,1))
-          MAXIMUM_NODE_EXTENT(2)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,2))
+          maximumNodeExtent(1)=MAXVAL(basis%NODE_POSITION_INDEX(:,1))
+          maximumNodeExtent(2)=MAXVAL(basis%NODE_POSITION_INDEX(:,2))
           !Allocate and calculate the lines
-          NUMBER_OF_LOCAL_LINES=4-BASIS%NUMBER_OF_COLLAPSED_XI
-          ALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes in local line.",ERR,ERROR,*999)
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE=0
-          ALLOCATE(BASIS%LOCAL_LINE_XI_DIRECTION(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local line xi direction.",ERR,ERROR,*999)
-          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local line",ERR,ERROR,*999)
-          BASIS%NODE_NUMBERS_IN_LOCAL_LINE=0
-          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line.",ERR,ERROR,*999)
-          BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
-          ALLOCATE(BASIS%LOCAL_XI_NORMAL(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local xi normal.",ERR,ERROR,*999)
+          numberOfLocalLines=4-basis%NUMBER_OF_COLLAPSED_XI
+          ALLOCATE(basis%NUMBER_OF_NODES_IN_LOCAL_LINE(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate number of nodes in local line.",err,error,*999)
+          basis%NUMBER_OF_NODES_IN_LOCAL_LINE=0
+          ALLOCATE(basis%LOCAL_LINE_XI_DIRECTION(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate local line xi direction.",err,error,*999)
+          ALLOCATE(basis%NODE_NUMBERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC),numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate node numbers in local line",err,error,*999)
+          basis%NODE_NUMBERS_IN_LOCAL_LINE=0
+          ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC),numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local line.",err,error,*999)
+          basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(basis%LOCAL_XI_NORMAL(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate local xi normal.",err,error,*999)
           !Find the lines
-          BASIS%NUMBER_OF_LOCAL_LINES=0
-          DO ni1=1,2
-            ni2=OTHER_XI_DIRECTIONS2(ni1)
-            !We are looking for lines in the ni1 direction from the direction of ni1=0
-            !Loop over the element extremes in the ni2 direction
-            DO nn2=1,MAXIMUM_NODE_EXTENT(ni2),MAXIMUM_NODE_EXTENT(ni2)-1
-              NODE_COUNT=0
-              SPECIAL_NODE_COUNT=0
-              NODES_IN_LINE=0
-              DO nn1=1,BASIS%NUMBER_OF_NODES
-                IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_NOT_COLLAPSED) THEN
-                  !The current xi direction, ni1, is in a degenerate plane
-                  IF(BASIS%COLLAPSED_XI(ni2)==BASIS_XI_COLLAPSED) THEN
+          basis%NUMBER_OF_LOCAL_LINES=0
+          DO xiIdx1=1,2
+            xiIdx2=OTHER_XI_DIRECTIONS2(xiIdx1)
+            !We are looking for lines in the xiIdx1 direction from the direction of xiIdx1=0
+            !Loop over the element extremes in the xiIdx2 direction
+            DO localNodeIdx2=1,maximumNodeExtent(xiIdx2),maximumNodeExtent(xiIdx2)-1
+              nodeCount=0
+              specialNodeCount=0
+              nodesInLine=0
+              DO localNodeIdx1=1,basis%NUMBER_OF_NODES
+                IF(basis%COLLAPSED_XI(xiIdx1)/=BASIS_NOT_COLLAPSED) THEN
+                  !The current xi direction, xiIdx1, is in a degenerate plane
+                  IF(basis%COLLAPSED_XI(xiIdx2)==BASIS_XI_COLLAPSED) THEN
                     !The other xi direction is collapsed (must be the case)
-                    IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
-                      IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.OR.BASIS%NODE_POSITION_INDEX(nn1,ni1)==1) THEN
-                        NODE_COUNT=NODE_COUNT+1
-                        NODES_IN_LINE(NODE_COUNT)=nn1
+                    IF(basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
+                      IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.OR. &
+                        & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==1) THEN
+                        nodeCount=nodeCount+1
+                        nodesInLine(nodeCount)=localNodeIdx1
                       ENDIF
                     ELSE !Collapsed at the xi=1 end
-                      IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2) THEN
-                        NODE_COUNT=NODE_COUNT+1
-                        NODES_IN_LINE(NODE_COUNT)=nn1
-                      ELSE IF(BASIS%NODE_POSITION_INDEX(nn1,ni1)==MAXIMUM_NODE_EXTENT(ni1)) THEN
-                        IF(ni1<2) THEN !Special case - put the collapsed node at the end of the line
-                          SPECIAL_NODE_COUNT=SPECIAL_NODE_COUNT+1
-                          NODES_IN_LINE(MAXIMUM_NODE_EXTENT(ni1))=nn1
+                      IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2) THEN
+                        nodeCount=nodeCount+1
+                        nodesInLine(nodeCount)=localNodeIdx1
+                      ELSE IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==maximumNodeExtent(xiIdx1)) THEN
+                        IF(xiIdx1<2) THEN !Special case - put the collapsed node at the end of the line
+                          specialNodeCount=specialNodeCount+1
+                          nodesInLine(maximumNodeExtent(xiIdx1))=localNodeIdx1
                         ELSE
-                          NODE_COUNT=NODE_COUNT+1
-                          NODES_IN_LINE(NODE_COUNT)=nn1
+                          nodeCount=nodeCount+1
+                          nodesInLine(nodeCount)=localNodeIdx1
                         ENDIF
                       ENDIF
                     ENDIF
                   ELSE
                     !The current xi direction must be collapsed
-                    IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2) THEN
-                      NODE_COUNT=NODE_COUNT+1
-                      NODES_IN_LINE(NODE_COUNT)=nn1
+                    IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2) THEN
+                      nodeCount=nodeCount+1
+                      nodesInLine(nodeCount)=localNodeIdx1
                     ENDIF
                   ENDIF
                 ELSE
-                  !The current xi direction, ni1, is not involved in any collapsed (degenerate) planes
-                  IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2) THEN
-                    NODE_COUNT=NODE_COUNT+1
-                    NODES_IN_LINE(NODE_COUNT)=nn1
+                  !The current xi direction, xiIdx1, is not involved in any collapsed (degenerate) planes
+                  IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2) THEN
+                    nodeCount=nodeCount+1
+                    nodesInLine(nodeCount)=localNodeIdx1
                   ENDIF
                 ENDIF
               ENDDO !nn1
-              IF((NODE_COUNT+SPECIAL_NODE_COUNT)>1) THEN !More than one node so it is a proper line 
-                BASIS%NUMBER_OF_LOCAL_LINES=BASIS%NUMBER_OF_LOCAL_LINES+1
-                BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES)=NODE_COUNT+SPECIAL_NODE_COUNT
-                BASIS%NODE_NUMBERS_IN_LOCAL_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES), &
-                  & BASIS%NUMBER_OF_LOCAL_LINES)=NODES_IN_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES))
-                DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES)
-                  DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,BASIS%NUMBER_OF_LOCAL_LINES))
-                    IF(BASIS%DERIVATIVE_ORDER_INDEX(nk,BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,BASIS%NUMBER_OF_LOCAL_LINES),ni1)== &
-                      & FIRST_PART_DERIV) THEN
-                      BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,BASIS%NUMBER_OF_LOCAL_LINES)=nk
+              IF((nodeCount+specialNodeCount)>1) THEN !More than one node so it is a proper line 
+                basis%NUMBER_OF_LOCAL_LINES=basis%NUMBER_OF_LOCAL_LINES+1
+                basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)=nodeCount+specialNodeCount
+                basis%NODE_NUMBERS_IN_LOCAL_LINE(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES), &
+                  & basis%NUMBER_OF_LOCAL_LINES)=nodesInLine(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES))
+                DO localLineNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)
+                  DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                    & basis%NUMBER_OF_LOCAL_LINES))
+                    IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                      & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
+                      basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)=derivativeIdx
                       EXIT
                     ENDIF
-                  ENDDO !nk
-                ENDDO !nnl
-                BASIS%LOCAL_LINE_XI_DIRECTION(BASIS%NUMBER_OF_LOCAL_LINES)=ni1
-                IF(nn2==1) THEN
-                  BASIS%LOCAL_XI_NORMAL(BASIS%NUMBER_OF_LOCAL_LINES)=-ni2
+                  ENDDO !derivativeIdx
+                ENDDO !localLineNodeIdx
+                basis%LOCAL_LINE_XI_DIRECTION(basis%NUMBER_OF_LOCAL_LINES)=xiIdx1
+                IF(localNodeIdx2==1) THEN
+                  basis%LOCAL_XI_NORMAL(basis%NUMBER_OF_LOCAL_LINES)=-xiIdx2
                 ELSE
-                  BASIS%LOCAL_XI_NORMAL(BASIS%NUMBER_OF_LOCAL_LINES)=ni2
+                  basis%LOCAL_XI_NORMAL(basis%NUMBER_OF_LOCAL_LINES)=xiIdx2
                 ENDIF
               ENDIF
-            ENDDO !nn2
-          ENDDO !ni1
+            ENDDO !localNodeIdx2
+          ENDDO !localNodeIdx1
         CASE(3) !3 xi directions
           !Determine the maximum node extent of the basis
-          MAXIMUM_NODE_EXTENT(1)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,1))
-          MAXIMUM_NODE_EXTENT(2)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,2))
-          MAXIMUM_NODE_EXTENT(3)=MAXVAL(BASIS%NODE_POSITION_INDEX(:,3))
+          maximumNodeExtent(1)=MAXVAL(basis%NODE_POSITION_INDEX(:,1))
+          maximumNodeExtent(2)=MAXVAL(basis%NODE_POSITION_INDEX(:,2))
+          maximumNodeExtent(3)=MAXVAL(basis%NODE_POSITION_INDEX(:,3))
           !Allocate and calculate the lines
-          IF(BASIS%NUMBER_OF_COLLAPSED_XI==1) THEN
-            NUMBER_OF_LOCAL_LINES=9
-            NUMBER_OF_LOCAL_FACES=5
-            BASIS%NUMBER_OF_LOCAL_FACES=5
-          ELSE IF(BASIS%NUMBER_OF_COLLAPSED_XI==2) THEN
-            NUMBER_OF_LOCAL_LINES=8
-            NUMBER_OF_LOCAL_FACES=5
-            BASIS%NUMBER_OF_LOCAL_FACES=5
+          IF(basis%NUMBER_OF_COLLAPSED_XI==1) THEN
+            numberOfLocalLines=9
+            numberOfLocalFaces=5
+          ELSE IF(basis%NUMBER_OF_COLLAPSED_XI==2) THEN
+            numberOfLocalLines=8
+            numberOfLocalFaces=5
           ELSE
-            NUMBER_OF_LOCAL_LINES=12
-            NUMBER_OF_LOCAL_FACES=6
-            BASIS%NUMBER_OF_LOCAL_FACES=6
+            numberOfLocalLines=12
+            numberOfLocalFaces=6
           ENDIF
+          basis%NUMBER_OF_LOCAL_FACES=numberOfLocalFaces
 
-          ALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes in local line",ERR,ERROR,*999)
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE=0
+          ALLOCATE(basis%NUMBER_OF_NODES_IN_LOCAL_LINE(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate number of nodes in local line.",err,error,*999)
+          basis%NUMBER_OF_NODES_IN_LOCAL_LINE=0
 
-          ALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of nodes in local face",ERR,ERROR,*999)
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE=0
+          ALLOCATE(basis%NUMBER_OF_NODES_IN_LOCAL_FACE(numberOfLocalFaces),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate number of nodes in local face.",err,error,*999)
+          basis%NUMBER_OF_NODES_IN_LOCAL_FACE=0
 
-          ALLOCATE(BASIS%LOCAL_LINE_XI_DIRECTION(NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local line xi direction",ERR,ERROR,*999)
+          ALLOCATE(basis%LOCAL_LINE_XI_DIRECTION(numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate local line xi direction.",err,error,*999)
 
-          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local line",ERR,ERROR,*999)
-          BASIS%NODE_NUMBERS_IN_LOCAL_LINE=0
+          ALLOCATE(basis%NODE_NUMBERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC),numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate node numbers in local line.",err,error,*999)
+          basis%NODE_NUMBERS_IN_LOCAL_LINE=0
 
-          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),NUMBER_OF_LOCAL_LINES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line",ERR,ERROR,*999)
-          BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC),numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local line.",err,error,*999)
+          basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
 
-          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
-            & MAXVAL(BASIS%NUMBER_OF_NODES_XIC)**2,NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face",ERR,ERROR,*999)
-          BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE=NO_PART_DERIV
+          ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0:basis%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+            & MAXVAL(basis%NUMBER_OF_NODES_XIC)**2,numberOfLocalFaces),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local face.",err,error,*999)
+          basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE=NO_PART_DERIV
+          basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0,:,:)=1
 
-          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(MAX(MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(3), &
-            & MAXIMUM_NODE_EXTENT(3)*MAXIMUM_NODE_EXTENT(1),MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(1)), &
-            & NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face",ERR,ERROR,*999)
-          BASIS%NODE_NUMBERS_IN_LOCAL_FACE=0
-          ALLOCATE(BASIS%LOCAL_XI_NORMAL(NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local xi normal.",ERR,ERROR,*999)
+          ALLOCATE(basis%NODE_NUMBERS_IN_LOCAL_FACE(MAX(maximumNodeExtent(2)*maximumNodeExtent(3), &
+            & maximumNodeExtent(3)*maximumNodeExtent(1),maximumNodeExtent(2)*maximumNodeExtent(1)), &
+            & numberOfLocalFaces),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate node numbers in local face.",err,error,*999)
+          basis%NODE_NUMBERS_IN_LOCAL_FACE=0
           
-          ALLOCATE(BASIS%LOCAL_FACE_XI_DIRECTION(NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local face xi direction",ERR,ERROR,*999)
-          
+          ALLOCATE(basis%LOCAL_XI_NORMAL(numberOfLocalFaces),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate local xi normal.",err,error,*999)
+
+          ALLOCATE(basis%LOCAL_FACE_XI_DIRECTION(numberOfLocalFaces),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate local face xi direction.",err,error,*999)
+
           !Find the lines and faces
-          BASIS%NUMBER_OF_LOCAL_LINES=0
-          DO ni1=1,3
-            ni2=OTHER_XI_DIRECTIONS3(ni1,2,1)
-            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)
-            !We are looking for lines going in the ni1 direction, starting from ni1=0.
-            DO nn3=1,MAXIMUM_NODE_EXTENT(ni3),MAXIMUM_NODE_EXTENT(ni3)-1 
-              DO nn2=1,MAXIMUM_NODE_EXTENT(ni2),MAXIMUM_NODE_EXTENT(ni2)-1
-                NODE_COUNT=0
-                SPECIAL_NODE_COUNT=0
-                NODES_IN_LINE=0
+          basis%NUMBER_OF_LOCAL_LINES=0
+          DO xiIdx1=1,3
+            xiIdx2=OTHER_XI_DIRECTIONS3(xiIdx1,2,1)
+            xiIdx3=OTHER_XI_DIRECTIONS3(xiIdx1,3,1)
+            !We are looking for lines going in the xiIdx1 direction, starting from xiIdx1=0.
+            DO localNodeIdx3=1,maximumNodeExtent(xiIdx3),maximumNodeExtent(xiIdx3)-1 
+              DO localNodeIdx2=1,maximumNodeExtent(xiIdx2),maximumNodeExtent(xiIdx2)-1
+                nodeCount=0
+                specialNodeCount=0
+                nodesInLine=0
                 !Iterate over nodes in the line of interest
-                DO nn1=1,BASIS%NUMBER_OF_NODES
-                  IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_NOT_COLLAPSED) THEN
-                    !The current xi direction, ni1, is involved in a collapsed (degenerate) plane 
-                    IF(BASIS%COLLAPSED_XI(ni2)==BASIS_XI_COLLAPSED.AND.BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED) THEN
+                DO localNodeIdx1=1,basis%NUMBER_OF_NODES
+                  IF(basis%COLLAPSED_XI(xiIdx1)/=BASIS_NOT_COLLAPSED) THEN
+                    !The current xi direction, xiIdx1, is involved in a collapsed (degenerate) plane 
+                    IF(basis%COLLAPSED_XI(xiIdx2)==BASIS_XI_COLLAPSED.AND.basis%COLLAPSED_XI(xiIdx3)==BASIS_XI_COLLAPSED) THEN
                       !Both of the other two xi directions are collapsed
-                      IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
-                        IF((BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.OR.BASIS%NODE_POSITION_INDEX(nn1,ni1)==1).AND. &
-                          & (BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3.OR.BASIS%NODE_POSITION_INDEX(nn1,ni1)==1)) THEN
-                          NODE_COUNT=NODE_COUNT+1
-                          NODES_IN_LINE(NODE_COUNT)=nn1
+                      IF(basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
+                        IF((basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.OR. &
+                          & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==1).AND. &
+                          & (basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3.OR. &
+                          & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==1)) THEN
+                          nodeCount=nodeCount+1
+                          nodesInLine(nodeCount)=localNodeIdx1
                         ENDIF
                       ELSE !Collapsed at the xi=1 end
-                        IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                          NODE_COUNT=NODE_COUNT+1
-                          NODES_IN_LINE(NODE_COUNT)=nn1
-                        ELSE IF(BASIS%NODE_POSITION_INDEX(nn1,ni1)==MAXIMUM_NODE_EXTENT(ni1)) THEN
-                          IF(ni1<3) THEN !Special case - put the collapsed node at the end of the line
-                            SPECIAL_NODE_COUNT=SPECIAL_NODE_COUNT+1
-                            NODES_IN_LINE(MAXIMUM_NODE_EXTENT(ni1))=nn1
+                        IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                          & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                          nodeCount=nodeCount+1
+                          nodesInLine(nodeCount)=localNodeIdx1
+                        ELSE IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==maximumNodeExtent(xiIdx1)) THEN
+                          IF(xiIdx1<3) THEN !Special case - put the collapsed node at the end of the line
+                            specialNodeCount=specialNodeCount+1
+                            nodesInLine(maximumNodeExtent(xiIdx1))=localNodeIdx1
                           ELSE
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
                           ENDIF
                         ENDIF
                       ENDIF
                     ELSE
-                      IF(BASIS%COLLAPSED_XI(ni2)==BASIS_XI_COLLAPSED) THEN
-                        !The other ni2 xi direction is collapsed
-                        IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
-                          IF((BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.OR.BASIS%NODE_POSITION_INDEX(nn1,ni1)==1).AND. &
-                            & BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
+                      IF(basis%COLLAPSED_XI(xiIdx2)==BASIS_XI_COLLAPSED) THEN
+                        !The other xiIdx2 xi direction is collapsed
+                        IF(basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
+                          IF((basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.OR. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==1).AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
                           ENDIF
-                        ELSE IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI1) THEN !Collapsed at the xi=1 end
-                          IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
-                          ELSE IF(BASIS%NODE_POSITION_INDEX(nn1,ni1)==MAXIMUM_NODE_EXTENT(ni1).AND. &
-                            & BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                            IF(ni1<ni2) THEN !Special case - put the collapsed node at the end of the line
-                              SPECIAL_NODE_COUNT=SPECIAL_NODE_COUNT+1
-                              NODES_IN_LINE(MAXIMUM_NODE_EXTENT(ni1))=nn1
+                        ELSE IF(basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI1) THEN !Collapsed at the xi=1 end
+                          IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
+                          ELSE IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==maximumNodeExtent(xiIdx1).AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                            IF(xiIdx1<xiIdx2) THEN !Special case - put the collapsed node at the end of the line
+                              specialNodeCount=specialNodeCount+1
+                              nodesInLine(maximumNodeExtent(xiIdx1))=localNodeIdx1
                             ELSE
-                              NODE_COUNT=NODE_COUNT+1
-                              NODES_IN_LINE(NODE_COUNT)=nn1
+                              nodeCount=nodeCount+1
+                              nodesInLine(nodeCount)=localNodeIdx1
                             ENDIF
                           ENDIF
                         ELSE
                           !Not collapsed at a xi end
-                          IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
+                          IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
                           ENDIF
                         ENDIF
-                      ELSE IF(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED) THEN
-                        !The other ni3 xi direction is collapsed
-                        IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
-                          IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND. &
-                            & (BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3.OR.BASIS%NODE_POSITION_INDEX(nn1,ni1)==1)) THEN
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
+                      ELSE IF(basis%COLLAPSED_XI(xiIdx3)==BASIS_XI_COLLAPSED) THEN
+                        !The other xiIdx3 xi direction is collapsed
+                        IF(basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI0) THEN !Collapsed at the xi=0 end
+                          IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                            & (basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3.OR. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==1)) THEN
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
                           ENDIF
-                        ELSE IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI1) THEN !Collapsed at the xi=1 end
-                          IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
-                          ELSE IF(BASIS%NODE_POSITION_INDEX(nn1,ni1)==MAXIMUM_NODE_EXTENT(ni1).AND. &
-                            & BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2) THEN
-                            IF(ni1<ni3) THEN !Special case - put the collapsed node at the end of the line
-                              SPECIAL_NODE_COUNT=SPECIAL_NODE_COUNT+1
-                              NODES_IN_LINE(MAXIMUM_NODE_EXTENT(ni1))=nn1
+                        ELSE IF(basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI1) THEN !Collapsed at the xi=1 end
+                          IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
+                          ELSE IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx1)==maximumNodeExtent(xiIdx1).AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2) THEN
+                            IF(xiIdx1<xiIdx3) THEN !Special case - put the collapsed node at the end of the line
+                              specialNodeCount=specialNodeCount+1
+                              nodesInLine(maximumNodeExtent(xiIdx1))=localNodeIdx1
                             ELSE
-                              NODE_COUNT=NODE_COUNT+1
-                              NODES_IN_LINE(NODE_COUNT)=nn1
+                              nodeCount=nodeCount+1
+                              nodesInLine(nodeCount)=localNodeIdx1
                             ENDIF
                           ENDIF
                         ELSE
                           !Not collapsed at a xi end
-                          IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                            NODE_COUNT=NODE_COUNT+1
-                            NODES_IN_LINE(NODE_COUNT)=nn1
+                          IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                            & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                            nodeCount=nodeCount+1
+                            nodesInLine(nodeCount)=localNodeIdx1
                           ENDIF
                         ENDIF
                       ELSE
                         !The current xi must be collapsed
-                        IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                          NODE_COUNT=NODE_COUNT+1
-                          NODES_IN_LINE(NODE_COUNT)=nn1
+                        IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                          & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                          nodeCount=nodeCount+1
+                          nodesInLine(nodeCount)=localNodeIdx1
                         ENDIF
                       ENDIF
                     ENDIF
                   ELSE
-                    !The current xi direction, ni1, is not involved in any collapsed (degenerate) planes
-                    IF(BASIS%NODE_POSITION_INDEX(nn1,ni2)==nn2.AND.BASIS%NODE_POSITION_INDEX(nn1,ni3)==nn3) THEN
-                      NODE_COUNT=NODE_COUNT+1
-                      NODES_IN_LINE(NODE_COUNT)=nn1
+                    !The current xi direction, xiIdx1, is not involved in any collapsed (degenerate) planes
+                    IF(basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx2)==localNodeIdx2.AND. &
+                      & basis%NODE_POSITION_INDEX(localNodeIdx1,xiIdx3)==localNodeIdx3) THEN
+                      nodeCount=nodeCount+1
+                      nodesInLine(nodeCount)=localNodeIdx1
                     ENDIF
                   ENDIF
-                ENDDO !nn1
-                IF((NODE_COUNT+SPECIAL_NODE_COUNT)>1) THEN !More than one node so it is a proper line 
-                  BASIS%NUMBER_OF_LOCAL_LINES=BASIS%NUMBER_OF_LOCAL_LINES+1
-                  BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES)=NODE_COUNT+SPECIAL_NODE_COUNT
-                  BASIS%NODE_NUMBERS_IN_LOCAL_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES), &
-                    & BASIS%NUMBER_OF_LOCAL_LINES)=NODES_IN_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE( &
-                    & BASIS%NUMBER_OF_LOCAL_LINES))
-                  DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(BASIS%NUMBER_OF_LOCAL_LINES)
-                    DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,BASIS%NUMBER_OF_LOCAL_LINES))
-                      IF(BASIS%DERIVATIVE_ORDER_INDEX(nk,BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,BASIS%NUMBER_OF_LOCAL_LINES),ni1)== &
-                        & FIRST_PART_DERIV) THEN
-                        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,BASIS%NUMBER_OF_LOCAL_LINES)=nk
+                ENDDO !localNodeIdx1
+                IF((nodeCount+specialNodeCount)>1) THEN !More than one node so it is a proper line 
+                  basis%NUMBER_OF_LOCAL_LINES=basis%NUMBER_OF_LOCAL_LINES+1
+                  basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)=nodeCount+specialNodeCount
+                  basis%NODE_NUMBERS_IN_LOCAL_LINE(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES), &
+                    & basis%NUMBER_OF_LOCAL_LINES)=nodesInLine(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES))
+                  DO localLineNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)
+                    DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                      & basis%NUMBER_OF_LOCAL_LINES))
+                      IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                        & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
+                        basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)=derivativeIdx
                         EXIT
                       ENDIF
-                    ENDDO !nk
-                  ENDDO !nnl
-                  BASIS%LOCAL_LINE_XI_DIRECTION(BASIS%NUMBER_OF_LOCAL_LINES)=ni1
+                    ENDDO !derivativeIdx
+                  ENDDO !localLineNodeIdx
+                  basis%LOCAL_LINE_XI_DIRECTION(basis%NUMBER_OF_LOCAL_LINES)=xiIdx1
                 ENDIF
-              ENDDO !nn2
-            ENDDO !nn3
-          ENDDO !ni1
+              ENDDO !localNodeIdx2
+            ENDDO !localNodeIdx3
+          ENDDO !xiIdx1
 
-         !Find the local nodes in each face and the local face xi direction
-         !\todo code below needs to be tested
-         !Find the faces
-         nn4=1
-         ef=0           !element face counter
-         DO ni1=1,3
-            !Go through all three directions
-            ni2=OTHER_XI_DIRECTIONS3(ni1,2,1)
-            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)
-            !Pointers for argument list
-            np1=>nn1
-            np2=>nn2
-            np3=>nn3
-            np4=>nn4
-            IF (ni1==1) THEN
-               ARGLIST=INTG_POINTER(np1,np2,np3,np4)
-            ELSE IF (ni1==2) THEN
-               ARGLIST=INTG_POINTER(np2,np1,np3,np4)
-            ELSE
-               ARGLIST=INTG_POINTER(np2,np3,np1,np4)
-            ENDIF
-
-            nn1=MAXIMUM_NODE_EXTENT(ni1)
-            !start with eventually upper face of ni1
-            LOCAL_NODE_COUNT=0
-            
-            IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI1) THEN
-               ef=ef+1  
-               DO nn3=1,MAXIMUM_NODE_EXTENT(ni2)
-                  DO nn2=1,MAXIMUM_NODE_EXTENT(ni3)
-                     LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-                     BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
-                          & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
-                     IF (BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)==0) THEN
-                        IF (BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED) THEN
-                           !set Arglist(ni1-direction)=1
-                           nn1=1
-                           BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
-                                & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
-                           nn1=MAXIMUM_NODE_EXTENT(ni1)
-                        ELSE
-                           LOCAL_NODE_COUNT=LOCAL_NODE_COUNT-1
-                        ENDIF
-                     ENDIF
-                  ENDDO
-               ENDDO
-               BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
-               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
-            ENDIF
-           
-            nn1=1
-            LOCAL_NODE_COUNT=0
-            IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI0) THEN
-               ef=ef+1  
-               DO nn3=1,MAXIMUM_NODE_EXTENT(ni2)
-                  DO nn2=1,MAXIMUM_NODE_EXTENT(ni3)
-                     LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-                     BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
-                          & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)  
-                     IF (BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)==0) THEN
-                        IF (BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED) THEN
-                           !set Arglist(ni1-direction)=Max extent
-                           nn1=MAXIMUM_NODE_EXTENT(ni1)
-                           BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
-                                & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
-                           nn1=1
-                        ELSE
-                           LOCAL_NODE_COUNT=LOCAL_NODE_COUNT-1
-                        ENDIF
-                     ENDIF
-                  ENDDO
-               ENDDO
-               BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
-               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=-ni1  
-            ENDIF
-         ENDDO
-         
-      !For each face local derivative index set its corresponding global derivative index
-      BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,:,:)=NO_GLOBAL_DERIV
-      IF(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-        !Face 1 (xi1+)
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,1)=GLOBAL_DERIV_S2
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,1)=GLOBAL_DERIV_S3
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,1)=GLOBAL_DERIV_S2_S3
-        !Face 2 (xi1-)
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,2)=GLOBAL_DERIV_S2
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,2)=GLOBAL_DERIV_S3
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,2)=GLOBAL_DERIV_S2_S3
-        !Face 3 (xi2+)
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,3)=GLOBAL_DERIV_S1
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,3)=GLOBAL_DERIV_S3
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,3)=GLOBAL_DERIV_S1_S3
-        !Face 4 (xi2-)
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,4)=GLOBAL_DERIV_S1
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,4)=GLOBAL_DERIV_S3
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,4)=GLOBAL_DERIV_S1_S3
-        !Face 5 (xi3-)
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,5)=GLOBAL_DERIV_S1
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,5)=GLOBAL_DERIV_S2
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,5)=GLOBAL_DERIV_S1_S2
-        !Face 6 (xi3-)
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(2,:,6)=GLOBAL_DERIV_S1
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,:,6)=GLOBAL_DERIV_S2
-        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(4,:,6)=GLOBAL_DERIV_S1_S2
-      ENDIF
-
-      CASE DEFAULT
-          CALL FLAG_ERROR("Invalid number of xi directions.",ERR,ERROR,*999)
+          !Find the local nodes and derivatives in each face and the local face xi direction
+          localFaceIdx=0
+          !Loop over the -'ve and +'ve xi direction
+          DO directionIdx=-1,1,2
+            !Loop over the three xi directions
+            DO xiIdx1=1,3
+              !xiIdx1 is the +/- face normal direction. xiIdx2 and xiIdx3 are the xi directions in the face.
+              xiIdx2=OTHER_XI_DIRECTIONS3(xiIdx1,2,1)
+              xiIdx3=OTHER_XI_DIRECTIONS3(xiIdx1,3,1)
+              IF(directionIdx==1) THEN
+                !The +'ve xi direction
+                localNodeIdx1=maximumNodeExtent(xiIdx1)
+                !Compute if the face in the +xiIdx1 direction is collapsed.
+                collapsedFace=basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI1
+              ELSE
+                !The -'ve xi direction
+                localNodeIdx1=1
+                !Compute if the face in the +xiIdx1 direction is collapsed.
+                collapsedFace=basis%COLLAPSED_XI(xiIdx1)==BASIS_COLLAPSED_AT_XI0
+              ENDIF
+              localNodeCount=0
+              IF(.NOT.collapsedFace) THEN
+                !If the face has not been collapsed
+                localFaceIdx=localFaceIdx+1
+                !Loop over the local nodes in the face
+                DO localNodeIdx3=1,maximumNodeExtent(xiIdx2)
+                  DO localNodeIdx2=1,maximumNodeExtent(xiIdx3)
+                    IF(xiIdx1==1) THEN
+                      localNodeIdx=basis%NODE_POSITION_INDEX_INV(localNodeIdx1,localNodeIdx2,localNodeIdx3,1)
+                    ELSE IF(xiIdx1==2) THEN
+                      localNodeIdx=basis%NODE_POSITION_INDEX_INV(localNodeIdx2,localNodeIdx1,localNodeIdx3,1)
+                    ELSE
+                      localNodeIdx=basis%NODE_POSITION_INDEX_INV(localNodeIdx2,localNodeIdx3,localNodeIdx1,1)
+                    ENDIF
+                    IF(localNodeIdx/=0) THEN
+                      !The node hasn't been collapsed
+                      localNodeCount=localNodeCount+1
+                      basis%NODE_NUMBERS_IN_LOCAL_FACE(localNodeCount,localFaceIdx)=localNodeIdx
+                    ENDIF
+                  ENDDO !localNodeIdx3
+                ENDDO !localNodexIdx2
+                basis%NUMBER_OF_NODES_IN_LOCAL_FACE(localFaceIdx)=localNodeCount
+                basis%LOCAL_FACE_XI_DIRECTION(localFaceIdx)=directionIdx*xiIdx1
+                !Compute derivatives in the face
+                DO localNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_FACE(localFaceIdx)
+                  localNode=basis%NODE_NUMBERS_IN_LOCAL_FACE(localNodeIdx,localFaceIdx)
+                  localFaceDerivative=0
+                  DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNode)
+                    IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNode,xiIdx2)==FIRST_PART_DERIV.OR. &
+                      & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNode,xiIdx3)==FIRST_PART_DERIV) THEN
+                      localFaceDerivative=localFaceDerivative+1
+                      basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(localFaceDerivative,localNodeIdx,localFaceIdx)=derivativeIdx
+                    ENDIF
+                  ENDDO !derivativeIdx
+                  basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0,localNodeIdx,localFaceIdx)=localFaceDerivative
+                ENDDO !localNodeIdx
+              ENDIF
+            ENDDO !xiIdx1
+          ENDDO !directionIdx
+          
+        CASE DEFAULT
+          CALL FlagError("Invalid number of xi directions.",err,error,*999)
         END SELECT
         
-        CALL BASIS_QUADRATURE_CREATE(BASIS,ERR,ERROR,*999)
-          
+        CALL BASIS_QUADRATURE_CREATE(basis,err,error,*999)
+
       ELSE
-        CALL FLAG_ERROR("Basis is not a Lagrange Hermite tensor product basis.",ERR,ERROR,*999)
+        CALL FlagError("Basis is not a Lagrange Hermite tensor product basis.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FlagError("Basis is not associated.",err,error,*999)
     ENDIF
-
     
-    CALL EXITS("BASIS_LHTP_BASIS_CREATE")
+    CALL Exits("Basis_LHTPBasisCreate")
     RETURN
-999 CALL ERRORS("BASIS_LHTP_BASIS_CREATE",ERR,ERROR)
-    CALL EXITS("BASIS_LHTP_BASIS_CREATE")
+999 IF(ALLOCATED(nodeAtCollapse)) DEALLOCATE(nodeAtCollapse)
+    CALL Errors("Basis_LHTPBasisCreate",err,error)
+    CALL Exits("Basis_LHTPBasisCreate")
     RETURN 1
-  END SUBROUTINE BASIS_LHTP_BASIS_CREATE
+  END SUBROUTINE Basis_LHTPBasisCreate
 
   !
   !
@@ -2282,7 +2363,7 @@ CONTAINS
 
     IF(ASSOCIATED(BASIS)) THEN
       !Create the main (parent) basis
-      CALL BASIS_LHTP_BASIS_CREATE(BASIS,ERR,ERROR,*999)
+      CALL Basis_LHTPBasisCreate(basis,err,error,*999)
       IF(BASIS%NUMBER_OF_XI>1) THEN
         !Create the line bases as sub-basis types
         ALLOCATE(BASIS%LINE_BASES(BASIS%NUMBER_OF_XI),STAT=ERR)
@@ -2303,7 +2384,7 @@ CONTAINS
             !Create the new sub-basis
             CALL BASIS_SUB_BASIS_CREATE(BASIS,1,[ni],NEW_SUB_BASIS,ERR,ERROR,*999)
             !Fill in the basis information
-            CALL BASIS_LHTP_BASIS_CREATE(NEW_SUB_BASIS,ERR,ERROR,*999)
+            CALL Basis_LHTPBasisCreate(NEW_SUB_BASIS,err,error,*999)
             BASIS%LINE_BASES(ni)%PTR=>NEW_SUB_BASIS
           ENDIF
         ENDDO !ni
@@ -2338,7 +2419,7 @@ CONTAINS
               !Create the new sub-basis
               CALL BASIS_SUB_BASIS_CREATE(BASIS,2,[FACE_XI(1),FACE_XI(2)],NEW_SUB_BASIS,ERR,ERROR,*999)
               !Fill in the basis information
-              CALL BASIS_LHTP_BASIS_CREATE(NEW_SUB_BASIS,ERR,ERROR,*999)
+              CALL Basis_LHTPBasisCreate(NEW_SUB_BASIS,err,error,*999)
               NEW_SUB_BASIS%LINE_BASES(1)%PTR=>BASIS%LINE_BASES(FACE_XI(1))%PTR
               NEW_SUB_BASIS%LINE_BASES(2)%PTR=>BASIS%LINE_BASES(FACE_XI(2))%PTR
               BASIS%FACE_BASES(ni)%PTR=>NEW_SUB_BASIS
@@ -2987,7 +3068,7 @@ CONTAINS
           DO ng=1,SCHEME%NUMBER_OF_GAUSS
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Gauss point = ",ng,ERR,ERROR,*999)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,BASIS%NUMBER_OF_XI_COORDINATES,3,3,SCHEME%GAUSS_POSITIONS(:,ng), &
-              & '("          POSITION(ni)   :",3(X,F12.4))','(26X,3(X,F12.4))',ERR,ERROR,*999)
+              & '("          position(ni)   :",3(X,F12.4))','(26X,3(X,F12.4))',ERR,ERROR,*999)
             CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          WEIGHT         : ",SCHEME%GAUSS_WEIGHTS(ng), &
               & "(F12.4)",ERR,ERROR,*999)
           ENDDO !ng          
@@ -4531,26 +4612,28 @@ CONTAINS
             ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
             !\todo Number of local face node derivatives currenlty set to 1 (calculation of BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE for simplex elements has not been implemented yet)
-            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0:1,3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
           CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
             ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
             !\todo Number of local face node derivatives currenlty set to 1 (calculation of BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE for simplex elements has not been implemented yet)
-            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0:1,6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
           CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
             ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
             !\todo Number of local face node derivatives currenlty set to 1 (calculation of BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE for simplex elements has not been implemented yet)
-            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0:1,10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="Interpolation order "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*",ERR,ERROR))// &
               & " is invalid for a simplex basis type."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
+          BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1,:,:)=NO_PART_DERIV
+          BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0,:,:)=1
+          
           ALLOCATE(BASIS%LOCAL_XI_NORMAL(BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local line normal.",ERR,ERROR,*999)
 
@@ -5858,8 +5941,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("GAUSS_SIMPLEX",ERR,ERROR,*999)
-
-    IF(SIZE(X,1)>=NUMBER_OF_VERTICES) THEN
+    IF(SIZE(X,1)>=(NUMBER_OF_VERTICES)) THEN
       SELECT CASE(NUMBER_OF_VERTICES)
       CASE(2)
         !Line
@@ -5990,7 +6072,7 @@ CONTAINS
               X(1,1)=L_C
               X(2,1)=L_C
               X(3,1)=L_C
-              W(1)=W_C
+              W(1)=W_C/2.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6014,17 +6096,17 @@ CONTAINS
               X(1,1)=L1_ALPHA_1
               X(2,1)=L2_ALPHA_1
               X(3,1)=L3_ALPHA_1
-              W(1)=W_ALPHA_1
+              W(1)=W_ALPHA_1/2.0_DP
               !Gauss point 2
               X(1,2)=L3_ALPHA_1
               X(2,2)=L1_ALPHA_1
               X(3,2)=L2_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/2.0_DP
               !Gauss point 3
               X(1,3)=L2_ALPHA_1
               X(2,3)=L3_ALPHA_1
               X(3,3)=L1_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/2.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6052,22 +6134,22 @@ CONTAINS
               X(1,1)=L_C
               X(2,1)=L_C
               X(3,1)=L_C
-              W(1)=W_C
+              W(1)=W_C/2.0_DP
               !Gauss point 2
               X(1,2)=L1_ALPHA_1
               X(2,2)=L2_ALPHA_1
               X(3,2)=L3_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/2.0_DP
               !Gauss point 3
               X(1,3)=L3_ALPHA_1
               X(2,3)=L1_ALPHA_1
               X(3,3)=L2_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/2.0_DP
               !Gauss point 4
               X(1,4)=L2_ALPHA_1
               X(2,4)=L3_ALPHA_1
               X(3,4)=L1_ALPHA_1
-              W(4)=W_ALPHA_1
+              W(4)=W_ALPHA_1/2.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6096,32 +6178,32 @@ CONTAINS
               X(1,1)=L1_ALPHA_1
               X(2,1)=L2_ALPHA_1
               X(3,1)=L3_ALPHA_1
-              W(1)=W_ALPHA_1
+              W(1)=W_ALPHA_1/2.0_DP
               !Gauss point 2
               X(1,2)=L3_ALPHA_1
               X(2,2)=L1_ALPHA_1
               X(3,2)=L2_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/2.0_DP
               !Gauss point 3
               X(1,3)=L2_ALPHA_1
               X(2,3)=L3_ALPHA_1
               X(3,3)=L1_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/2.0_DP
               !Gauss point 4
               X(1,4)=L1_ALPHA_2
               X(2,4)=L2_ALPHA_2
               X(3,4)=L3_ALPHA_2
-              W(4)=W_ALPHA_2
+              W(4)=W_ALPHA_2/2.0_DP
               !Gauss point 5
               X(1,5)=L3_ALPHA_2
               X(2,5)=L1_ALPHA_2
               X(3,5)=L2_ALPHA_2
-              W(5)=W_ALPHA_2
+              W(5)=W_ALPHA_2/2.0_DP
               !Gauss point 6
               X(1,6)=L2_ALPHA_2
               X(2,6)=L3_ALPHA_2
               X(3,6)=L1_ALPHA_2
-              W(6)=W_ALPHA_2
+              W(6)=W_ALPHA_2/2.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6154,37 +6236,37 @@ CONTAINS
               X(1,1)=L_C
               X(2,1)=L_C
               X(3,1)=L_C
-              W(1)=W_C
+              W(1)=W_C/2.0_DP
               !Gauss point 2
               X(1,2)=L1_ALPHA_1
               X(2,2)=L2_ALPHA_1
               X(3,2)=L3_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/2.0_DP
               !Gauss point 3
               X(1,3)=L3_ALPHA_1
               X(2,3)=L1_ALPHA_1
               X(3,3)=L2_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/2.0_DP
               !Gauss point 4
               X(1,4)=L2_ALPHA_1
               X(2,4)=L3_ALPHA_1
               X(3,4)=L1_ALPHA_1
-              W(4)=W_ALPHA_1
+              W(4)=W_ALPHA_1/2.0_DP
               !Gauss point 5
               X(1,5)=L1_ALPHA_2
               X(2,5)=L2_ALPHA_2
               X(3,5)=L3_ALPHA_2
-              W(5)=W_ALPHA_2
+              W(5)=W_ALPHA_2/2.0_DP
               !Gauss point 6
               X(1,6)=L3_ALPHA_2
               X(2,6)=L1_ALPHA_2
               X(3,6)=L2_ALPHA_2
-              W(6)=W_ALPHA_2
+              W(6)=W_ALPHA_2/2.0_DP
               !Gauss point 7
               X(1,7)=L2_ALPHA_2
               X(2,7)=L3_ALPHA_2
               X(3,7)=L1_ALPHA_2
-              W(7)=W_ALPHA_2
+              W(7)=W_ALPHA_2/2.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6213,7 +6295,7 @@ CONTAINS
               X(1,1)=L_C
               X(2,1)=L_C
               X(3,1)=L_C
-              W(1)=W_C
+              W(1)=W_C/6.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6239,25 +6321,25 @@ CONTAINS
               X(2,1)=L2_ALPHA_1
               X(3,1)=L3_ALPHA_1
               X(4,1)=L4_ALPHA_1
-              W(1)=W_ALPHA_1
+              W(1)=W_ALPHA_1/6.0_DP
               !Gauss point 2
               X(1,2)=L4_ALPHA_1
               X(2,2)=L1_ALPHA_1
               X(3,2)=L2_ALPHA_1
               X(4,2)=L3_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/6.0_DP
               !Gauss point 3
               X(1,3)=L3_ALPHA_1
               X(2,3)=L4_ALPHA_1
               X(3,3)=L1_ALPHA_1
               X(4,3)=L2_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/6.0_DP
               !Gauss point 4
               X(1,4)=L2_ALPHA_1
               X(2,4)=L3_ALPHA_1
               X(3,4)=L4_ALPHA_1
               X(4,4)=L1_ALPHA_1
-              W(4)=W_ALPHA_1
+              W(4)=W_ALPHA_1/6.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6287,31 +6369,31 @@ CONTAINS
               X(2,1)=L_C
               X(3,1)=L_C
               X(4,1)=L_C
-              W(1)=W_C
+              W(1)=W_C/6.0_DP
               !Gauss point 2
               X(1,2)=L1_ALPHA_1
               X(2,2)=L2_ALPHA_1
               X(3,2)=L3_ALPHA_1
               X(4,2)=L4_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/6.0_DP
               !Gauss point 3
               X(1,3)=L4_ALPHA_1
               X(2,3)=L1_ALPHA_1
               X(3,3)=L2_ALPHA_1
               X(4,3)=L3_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/6.0_DP
               !Gauss point 4
               X(1,4)=L3_ALPHA_1
               X(2,4)=L4_ALPHA_1
               X(3,4)=L1_ALPHA_1
               X(4,4)=L2_ALPHA_1
-              W(4)=W_ALPHA_1
+              W(4)=W_ALPHA_1/6.0_DP
               !Gauss point 5
               X(1,5)=L2_ALPHA_1
               X(2,5)=L3_ALPHA_1
               X(3,5)=L4_ALPHA_1
               X(4,5)=L1_ALPHA_1
-              W(5)=W_ALPHA_1
+              W(5)=W_ALPHA_1/6.0_DP
             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
@@ -6345,68 +6427,68 @@ CONTAINS
               X(2,1)=L_C
               X(3,1)=L_C
               X(4,1)=L_C
-              W(1)=W_C
+              W(1)=W_C/6.0_DP
               !Gauss point 2
               X(1,2)=L1_ALPHA_1
               X(2,2)=L2_ALPHA_1
               X(3,2)=L3_ALPHA_1
               X(4,2)=L4_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/6.0_DP
               !Gauss point 3
               X(1,3)=L4_ALPHA_1
               X(2,3)=L1_ALPHA_1
               X(3,3)=L2_ALPHA_1
               X(4,3)=L3_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/6.0_DP
               !Gauss point 4
               X(1,4)=L3_ALPHA_1
               X(2,4)=L4_ALPHA_1
               X(3,4)=L1_ALPHA_1
               X(4,4)=L2_ALPHA_1
-              W(4)=W_ALPHA_1
+              W(4)=W_ALPHA_1/6.0_DP
               !Gauss point 5
               X(1,5)=L2_ALPHA_1
               X(2,5)=L3_ALPHA_1
               X(3,5)=L4_ALPHA_1
               X(4,5)=L1_ALPHA_1
-              W(5)=W_ALPHA_1
+              W(5)=W_ALPHA_1/6.0_DP
               !Gauss point 6
               X(1,6)=L1_BETA
               X(2,6)=L2_BETA
               X(3,6)=L3_BETA
               X(4,6)=L4_BETA
-              W(6)=W_BETA
+              W(6)=W_BETA/6.0_DP
               !Gauss point 7
               X(1,7)=L1_BETA
               X(2,7)=L3_BETA
               X(3,7)=L2_BETA
               X(4,7)=L4_BETA
-              W(7)=W_BETA
+              W(7)=W_BETA/6.0_DP
               !Gauss point 8
               X(1,8)=L1_BETA
               X(2,8)=L3_BETA
               X(3,8)=L4_BETA
               X(4,8)=L2_BETA
-              W(8)=W_BETA
+              W(8)=W_BETA/6.0_DP
               !Gauss point 9
               X(1,9)=L3_BETA
               X(2,9)=L1_BETA
               X(3,9)=L2_BETA
               X(4,9)=L4_BETA
-              W(9)=W_BETA
+              W(9)=W_BETA/6.0_DP
               !Gauss point 10
               X(1,10)=L3_BETA
               X(2,10)=L1_BETA
               X(3,10)=L4_BETA
               X(4,10)=L2_BETA
-              W(10)=W_BETA
+              W(10)=W_BETA/6.0_DP
               !Gauss point 11
               X(1,11)=L3_BETA
               X(2,11)=L4_BETA
               X(3,11)=L1_BETA
               X(4,11)=L2_BETA
-              W(11)=W_BETA
-            ELSE
+              W(11)=W_BETA/6.0_DP
+             ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -6449,85 +6531,85 @@ CONTAINS
               X(2,1)=L2_ALPHA_1
               X(3,1)=L3_ALPHA_1
               X(4,1)=L4_ALPHA_1
-              W(1)=W_ALPHA_1
+              W(1)=W_ALPHA_1/6.0_DP
               !Gauss point 2
               X(1,2)=L4_ALPHA_1
               X(2,2)=L1_ALPHA_1
               X(3,2)=L2_ALPHA_1
               X(4,2)=L3_ALPHA_1
-              W(2)=W_ALPHA_1
+              W(2)=W_ALPHA_1/6.0_DP
               !Gauss point 3
               X(1,3)=L3_ALPHA_1
               X(2,3)=L4_ALPHA_1
               X(3,3)=L1_ALPHA_1
               X(4,3)=L2_ALPHA_1
-              W(3)=W_ALPHA_1
+              W(3)=W_ALPHA_1/6.0_DP
               !Gauss point 4
               X(1,4)=L2_ALPHA_1
               X(2,4)=L3_ALPHA_1
               X(3,4)=L4_ALPHA_1
               X(4,4)=L1_ALPHA_1
-              W(4)=W_ALPHA_1
+              W(4)=W_ALPHA_1/6.0_DP
               !Gauss point 5
               X(1,5)=L1_ALPHA_2
               X(2,5)=L2_ALPHA_2
               X(3,5)=L3_ALPHA_2
               X(4,5)=L4_ALPHA_2
-              W(5)=W_ALPHA_2
+              W(5)=W_ALPHA_2/6.0_DP
               !Gauss point 6
               X(1,6)=L4_ALPHA_2
               X(2,6)=L1_ALPHA_2
               X(3,6)=L2_ALPHA_2
               X(4,6)=L3_ALPHA_2
-              W(6)=W_ALPHA_2
+              W(6)=W_ALPHA_2/6.0_DP
               !Gauss point 7
               X(1,7)=L3_ALPHA_2
               X(2,7)=L4_ALPHA_2
               X(3,7)=L1_ALPHA_2
               X(4,7)=L2_ALPHA_2
-              W(7)=W_ALPHA_2
+              W(7)=W_ALPHA_2/6.0_DP
               !Gauss point 8
               X(1,8)=L2_ALPHA_2
               X(2,8)=L3_ALPHA_2
               X(3,8)=L4_ALPHA_2
               X(4,8)=L1_ALPHA_2
-              W(8)=W_ALPHA_2
+              W(8)=W_ALPHA_2/6.0_DP
               !Gauss point 9
               X(1,9)=L1_BETA
               X(2,9)=L2_BETA
               X(3,9)=L3_BETA
               X(4,9)=L4_BETA
-              W(9)=W_BETA
+              W(9)=W_BETA/6.0_DP
               !Gauss point 10
               X(1,10)=L1_BETA
               X(2,10)=L3_BETA
               X(3,10)=L2_BETA
               X(4,10)=L4_BETA
-              W(10)=W_BETA
+              W(10)=W_BETA/6.0_DP
               !Gauss point 11
               X(1,11)=L1_BETA
               X(2,11)=L3_BETA
               X(3,11)=L4_BETA
               X(4,11)=L2_BETA
-              W(11)=W_BETA
+              W(11)=W_BETA/6.0_DP
               !Gauss point 12
               X(1,12)=L3_BETA
               X(2,12)=L1_BETA
               X(3,12)=L2_BETA
               X(4,12)=L4_BETA
-              W(12)=W_BETA
+              W(12)=W_BETA/6.0_DP
               !Gauss point 13
               X(1,13)=L3_BETA
               X(2,13)=L1_BETA
               X(3,13)=L4_BETA
               X(4,13)=L2_BETA
-              W(13)=W_BETA
+              W(13)=W_BETA/6.0_DP
               !Gauss point 14
               X(1,14)=L3_BETA
               X(2,14)=L4_BETA
               X(3,14)=L1_BETA
               X(4,14)=L2_BETA
-              W(14)=W_BETA
+              W(14)=W_BETA/6.0_DP
              ELSE
               LOCAL_ERROR="The first dimension of the W array is "//TRIM(NUMBER_TO_VSTRING(SIZE(W,1),"*",ERR,ERROR))// &
                 & " and it must be >="//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))

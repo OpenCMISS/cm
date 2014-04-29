@@ -42,12 +42,7 @@ MY_TEX_SRC="fem_basis_fns/fem_basis_fns.tex "\
 # if there are none then leave after the ='s sign blank.
 
 MY_EPS_SRC=epsfiles/*.eps
-MY_FIG_SRC="figs/fem_basis_fns/*.fig "\
-"figs/bem/*.fig "\
-"figs/datafitting/*.fig" 
-"figs/heat_conduction/*.fig" 
-"figs/lin_elasticity/*.fig "\
-"figs/transient_heat_condn/*.fig "\
+MY_FIG_SRC="figs/fem_basis_fns/*.fig figs/bem/*.fig figs/datafitting/*.fig figs/heat_conduction/*.fig figs/lin_elasticity/*.fig figs/transient_heat_condn/*.fig"
 MY_PLOT_SRC=
 
 #

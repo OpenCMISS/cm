@@ -12,12 +12,15 @@ INKSCAPE=inkscape
 
 SHELL=/bin/bash
 
-.SUFFIXES:	.pdf .tex .pdf_tex .svg
+.SUFFIXES:	.pdf .eps .tex .pdf_tex .eps_tex .svg
 
-all	:	all_pdf_tex
+all	:	all_eps_tex
 
 .svg.pdf:
 	( cd ${@D} ; ${INKSCAPE} -D -z --export-pdf=${@F} ${*F}.svg )
+
+.svg.eps:
+	( cd ${@D} ; ${INKSCAPE} -D -z --export-eps=${@F} ${*F}.svg )
 
 .svg.tex:
 	( cd ${@D} ; ${INKSCAPE} -D -z --export-latex ${*F}.svg  )
@@ -25,11 +28,18 @@ all	:	all_pdf_tex
 .svg.pdf_tex:	
 	( cd ${@D} ; ${INKSCAPE} -D -z --export-pdf=${*F}.pdf --export-latex ${*F}.svg ; sed -f ${OPENCMISS_ROOT}/cm/doc/latex/Strip_pdftex_svgs ${@F} | sed s%CUR_DIR%${@D}% | sed s%=svgs/./%=svgs/% | sed s%=svgs//%=svgs/% | sed s%{svgs/./%{svgs/% | sed s%{svgs//%{svgs/% > ${*F}.tmp ; mv ${*F}.tmp ${@F} )
 
+.svg.eps_tex:	
+	( cd ${@D} ; ${INKSCAPE} -D -z --export-eps=${*F}.eps --export-latex ${*F}.svg ; sed -f ${OPENCMISS_ROOT}/cm/doc/latex/Strip_epstex_svgs ${@F} | sed s%CUR_DIR%${@D}% | sed s%=svgs/./%=svgs/% | sed s%=svgs//%=svgs/% | sed s%{svgs/./%{svgs/% | sed s%{svgs//%{svgs/% > ${*F}.tmp ; mv ${*F}.tmp ${@F} )
+
 all_pdf_tex:
 	@${OPENCMISS_ROOT}/cm/doc/latex/call_makefile.sh ${OPENCMISS_ROOT}/cm/doc/latex/Makesvgs pdf_tex `find . -name "*.svg" -print`
 
+all_eps_tex:
+	@${OPENCMISS_ROOT}/cm/doc/latex/call_makefile.sh ${OPENCMISS_ROOT}/cm/doc/latex/Makesvgs eps_tex `find . -name "*.svg" -print`
+
 clean:
 	find . -name "*.pdf_tex" -exec rm -f {} \;
+	find . -name "*.eps_tex" -exec rm -f {} \;
 
 clobber:	clean
 

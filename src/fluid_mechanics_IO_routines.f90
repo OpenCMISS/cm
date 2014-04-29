@@ -274,6 +274,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS_ITERATION
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS
+  PUBLIC FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
   PUBLIC FLUID_MECHANICS_IO_READ_DATA
 
   PUBLIC FLUID_MECHANICS_IO_WRITE_CMGUI
@@ -461,8 +462,8 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
-      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%number_of_dofs
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
+      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%numberOfDofs
     END DO
 
 !     MaxNodesPerElement=NodesPerElement(1)
@@ -1125,7 +1126,7 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
     END DO
 
 
@@ -1860,7 +1861,7 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
     END DO
 
 
@@ -4214,9 +4215,82 @@ CONTAINS
 !         WRITE(*,*)'TEST_OUTPUT',BOUNDARY_VALUES(ENDI+1),PI,TIME
     RETURN
 
-  END SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS 
-
-  ! OK
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS
+  !
+  !================================================================================================================================
+  !
+  !> Updates the boundary condition for a given node and component
+  
+  SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes(GeometricField,SolverType,InletNodes, &
+    & BoundaryValues,BoundaryCondition,Option,Time,StopTime)
+    
+    INTEGER(INTG) :: Err
+    TYPE(VARYING_STRING) :: Error
+    TYPE(FIELD_TYPE), POINTER :: GeometricField
+    INTEGER(INTG) :: SolverType,Option
+    REAL(DP) :: Value
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: BoundaryValues(:)
+    INTEGER(INTG) :: BoundaryCondition,MaterialSpecification,arraySize,NodeNumber,I,ComponentNumber
+    INTEGER(INTG), PARAMETER :: Blood=1
+    INTEGER(INTG), PARAMETER :: Plate2D=2
+    INTEGER(INTG),PARAMETER :: Plate3D=3
+    INTEGER(Intg), ALLOCATABLE, INTENT(OUT) :: InletNodes(:)
+    REAL(DP) :: Time,StopTime,Y
+    
+    MaterialSpecification=Option
+    
+    IF(SolverType==3) THEN
+      SELECT CASE(MaterialSpecification)
+      CASE(Blood)
+        ALLOCATE(InletNodes(5))
+        InletNodes=(/29,7,43,13,58/)
+        ALLOCATE(BoundaryValues(5))
+        Y=0.0_DP
+        DO I=1,SIZE(InletNodes)
+          Y=Y+0.5_DP
+        !  BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.75_DP) ! 0.75 cm/s in artery with 2 cm diameter
+        !  BoundaryValues(I)=ABS(SIN(Y*PI/3.0_DP)*SIN(PI*Time/4.0_DP)*0.075_DP) ! 0.75 cm/s in artery with 2 cm diameter
+          BoundaryValues(I)=0.1_DP/(1.0_DP+exp(-0.5_DP*Time+2.0_DP)) ! m / s
+        ENDDO
+      CASE(Plate2D,Plate3D)
+        IF(MaterialSpecification==Plate2D) THEN
+          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
+            & status='old', action='read')
+          ComponentNumber=2
+        ELSE
+          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate3DinletBC.txt', &
+            & status='old', action='read')
+          ComponentNumber=3
+        ENDIF
+        READ(1,*), arraySize
+        IF(arraySize==0) STOP "Number of boundary conditions for fluid domain is zero. Invalid."
+        ALLOCATE(InletNodes(arraySize))
+        ALLOCATE(BoundaryValues(arraySize))
+        READ(1,*) InletNodes(:)
+        arraySize=0
+        CLOSE(1)
+        BoundaryValues=0.0_DP
+        DO I=1,SIZE(InletNodes)
+          NodeNumber=InletNodes(I)
+          CALL FIELD_PARAMETER_SET_GET_NODE(GeometricField,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,1,1,NodeNumber,ComponentNumber,Value,Err,Error,*999)
+        !  BoundaryValues(I)=0.1_DP*Time/StopTime! m / s
+          BoundaryValues(I)=0.01_DP/(1.0_DP+exp(-0.5_DP*Time*1.0_DP+2.0_DP)) ! m / s
+        !  BoundaryValues(I)=0.1_DP/(1.0_DP+exp(-0.5_DP*Time*0.01_DP+5.0_DP)) ! m / s
+        !  BoundaryValues(I)=0.005_DP/(1.0_DP+exp(-0.5_DP*Time*0.5+2.0_DP)) ! m / s
+        ENDDO
+      CASE DEFAULT
+        STOP "Invalid input option for position dependent boundary conditions in FSI problem."
+      END SELECT
+    ELSE
+      STOP "Not implemented."
+    ENDIF
+    
+    RETURN 
+999 RETURN 
+  END SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
+   
+  !
   !================================================================================================================================
   !
 
@@ -4418,7 +4492,7 @@ CONTAINS
 !     TYPE(VARYING_STRING):: ERROR
 
     DO I = 1,TotalNumberOfNodes
-      WRITE(*,'("Node ",(I0,4x),1000( F5.3,2x ))')I,OPENCMISS_NODE_COORD(I,1:3)
+      WRITE(*,'("Node ",(I0,4x),1000( F6.3,2x ))')I,OPENCMISS_NODE_COORD(I,1:3)
     END DO
 
   ! where are the element nodes stored -> 3 MATRICES

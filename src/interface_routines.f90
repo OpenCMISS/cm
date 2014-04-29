@@ -102,6 +102,8 @@ MODULE INTERFACE_ROUTINES
   PUBLIC INTERFACES_FINALISE,INTERFACES_INITIALISE
 
   PUBLIC INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET, INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET
+  
+  PUBLIC INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET
 
   PUBLIC INTERFACE_MESH_CONNECTIVITY_BASIS_SET
   
@@ -1106,6 +1108,51 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Sets the connectivity between an element in a coupled mesh to an element in the interface mesh
+  SUBROUTINE INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET(NODES,INTERFACE_MESH_NODE_NUMBERS, &
+      & FIRST_COUPLED_MESH_INDEX,FIRST_COUPLED_MESH_NODE_NUMBERS,SECOND_COUPLED_MESH_INDEX,SECOND_COUPLED_MESH_NODE_NUMBERS, &
+      & ERR,ERROR,*)        
+        
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the interface mesh connectivity for the interface mesh
+    INTEGER(INTG), INTENT(IN) :: INTERFACE_MESH_NODE_NUMBERS(:) !<The interface mesh element number to which the specified coupled mesh element would be connected
+    INTEGER(INTG), INTENT(IN) :: FIRST_COUPLED_MESH_INDEX,SECOND_COUPLED_MESH_INDEX !<The index of the coupled mesh at the interface to set the element connectivity for
+    INTEGER(INTG), INTENT(IN) :: FIRST_COUPLED_MESH_NODE_NUMBERS(:),SECOND_COUPLED_MESH_NODE_NUMBERS(:) !<The coupled mesh element to be connected to the interface
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: nodeIndex
+    
+    CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%INTERFACE%MESH_CONNECTIVITY%MESH_CONNECTIVITY_FINISHED) THEN
+        PRINT *, 'CHECK how to circumvent! interface_routines.f90:1133'
+        CALL FLAG_ERROR("Interface mesh connectivity has already been finished.",ERR,ERROR,*999)
+      ELSE
+        !Default to two coupled meshes
+        ALLOCATE(NODES%COUPLED_NODES(2,SIZE(INTERFACE_MESH_NODE_NUMBERS(:))))
+        DO nodeIndex=1,SIZE(INTERFACE_MESH_NODE_NUMBERS(:))
+          NODES%COUPLED_NODES(FIRST_COUPLED_MESH_INDEX,nodeIndex)=FIRST_COUPLED_MESH_NODE_NUMBERS(nodeIndex)
+          NODES%COUPLED_NODES(SECOND_COUPLED_MESH_INDEX,nodeIndex)=SECOND_COUPLED_MESH_NODE_NUMBERS(nodeIndex)
+        ENDDO
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes are not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET")
+    RETURN
+999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET")
+    RETURN 1
+    
+  END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_NODE_NUMBER_SET
+
+  !
+  !================================================================================================================================
+  !
+  
   !>Calculate line or face numbers for coupled mesh elements that are connected to the interface mesh
   SUBROUTINE INTERFACE_MESH_CONNECTIVITY_CONNECTED_LINES_CALCULATE(INTERFACE_MESH_CONNECTIVITY,ERR,ERROR,*)
 
@@ -1685,7 +1732,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
+    INTEGER(INTG) :: dataPointGlobalNumber,elementMeshNumber
     LOGICAL :: dataPointExists,elementExists
 
     CALL ENTERS("InterfacePointsConnectivity_ElementNumberSet",err,error,*999)
@@ -1700,11 +1747,11 @@ CONTAINS
           IF ((coupledMeshIndexNumber<=pointsConnectivity%interface%DATA_POINTS%NUMBER_OF_DATA_POINTS).OR. &
               & (coupledMeshIndexNumber>0)) THEN
             IF (ALLOCATED(pointsConnectivity%pointsConnectivity)) THEN
-              CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
-                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementGlobalNumber,err,error,*999) !Make sure user element exists       
+              CALL MeshTopologyElementCheckExists(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
+                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementMeshNumber,err,error,*999) !Make sure user element exists       
               IF(elementExists) THEN
                 pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%coupledMeshElementNumber= &
-                  & elementGlobalNumber
+                  & elementMeshNumber
               ELSE
                 CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
                   & (coupledMeshUserElementNumber,"*",err,error))//") does not exist.",err,error,*999)

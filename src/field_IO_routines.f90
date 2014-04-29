@@ -91,7 +91,7 @@ MODULE FIELD_IO_ROUTINES
 
   !>field variable component type pointer for IO
   TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
-    TYPE(MeshComponentElementsType), POINTER :: PTR !< pointer field variable component
+    TYPE(MeshElementsType), POINTER :: PTR !< pointer field variable component
   END TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
 
   !>field variable component type pointer for IO
@@ -217,7 +217,7 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_Variable
     END FUNCTION FieldExport_Variable
 
-    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystemType, componentNumber, isNodal, &
+    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystemType, componentNumber, interpType, &
       & numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_CoordinateComponent")
       USE TYPES
@@ -225,30 +225,32 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentNumber
-      INTEGER(C_INT), VALUE :: isNodal
+      INTEGER(C_INT), VALUE :: interpType
       INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
       INTEGER(C_INT) :: FieldExport_CoordinateComponent
     END FUNCTION FieldExport_CoordinateComponent
 
-    FUNCTION FieldExport_Component( handle, componentNumber, isNodal, numberOfXi, interpolationXi ) &
+    FUNCTION FieldExport_Component( handle, componentNumber, interpType, numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_Component")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: componentNumber
-      INTEGER(C_INT), VALUE :: isNodal
+      INTEGER(C_INT), VALUE :: interpType
       INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
       INTEGER(C_INT) :: FieldExport_Component
     END FUNCTION FieldExport_Component
 
-    FUNCTION FieldExport_ElementGridSize( handle, numberOfXi ) &
+    FUNCTION FieldExport_ElementGridSize( handle, headerType, numberOfXi, numberGauss ) &
       & BIND(C,NAME="FieldExport_ElementGridSize")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: headerType
       INTEGER(C_INT), VALUE :: numberOfXi
+      TYPE(C_PTR), VALUE :: numberGauss
       INTEGER(C_INT) :: FieldExport_ElementGridSize
     END FUNCTION FieldExport_ElementGridSize
 
@@ -2562,7 +2564,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
     INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
     INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
-    INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
+    INTEGER(INTG) :: local_number, interpType, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SAME_SCALING_SET
 
@@ -2757,40 +2759,54 @@ CONTAINS
       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
 
-      IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
-        isNodal = 1
-      ELSE
-        isNodal = 0
-      ENDIF
+      SELECT CASE(component%INTERPOLATION_TYPE)
+      CASE(FIELD_CONSTANT_INTERPOLATION)
+        interpType = 1
+      CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+        interpType = 2
+      CASE(FIELD_NODE_BASED_INTERPOLATION)
+        interpType = 3
+      CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+        interpType = 4
+      CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+        interpType = 5
+      CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+        interpType = 6
+      CASE DEFAULT
+        interpType = 0
+      END SELECT
 
+      IF(component%INTERPOLATION_TYPE==FIELD_GAUSS_POINT_BASED_INTERPOLATION) THEN
+        !TEMP HACK. Fake gauss point export as regular grid. Use interpolation xi to pass in number of Gauss.
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI)
+      ELSE
+        !Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+        !the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
+      ENDIF
+      
       IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
           & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
         !!TEMP
         !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
         !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
-        !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-        !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         NULLIFY(COORDINATE_SYSTEM)
         CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
         ERR = FieldExport_CoordinateComponent( sessionHandle, COORDINATE_SYSTEM%TYPE, &
-            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
+            & component%COMPONENT_NUMBER,interpType,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
       ELSE
         !!TEMP
         !ERR = FieldExport_Component( sessionHandle, &
         !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
-        !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-        !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         ERR = FieldExport_Component( sessionHandle, &
-            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
+            & component%COMPONENT_NUMBER,interpType,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ENDIF
       IF(ERR/=0) THEN
         CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
       ENDIF
 
-      IF( isNodal == 0 ) THEN
-        ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
+      IF( interpType /= 3 .AND. interpType /= 6) THEN
+        ERR = FieldExport_ElementGridSize( sessionHandle, interpType, basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ELSE
         ! IF(.NOT.BASIS%DEGENERATE) THEN
         IF(LIST_COMP_SCALE(comp_idx)==1) THEN
@@ -2817,9 +2833,21 @@ CONTAINS
     !!$              &ERR,ERROR,*999)
 
           NODE_NUMBER_COUNTER=0
-          NodesX=BASIS%INTERPOLATION_XI(1)+1
-          NodesY=BASIS%INTERPOLATION_XI(2)+1
-          NodesZ=BASIS%INTERPOLATION_XI(3)+1
+          IF(BASIS%INTERPOLATION_XI(1)>3) THEN
+            NodesX=2
+          ELSE
+            NodesX=BASIS%INTERPOLATION_XI(1)+1
+          ENDIF
+          IF(BASIS%INTERPOLATION_XI(2)>3) THEN
+            NodesY=2
+          ELSE
+            NodesY=BASIS%INTERPOLATION_XI(2)+1
+          ENDIF
+          IF(BASIS%INTERPOLATION_XI(3)>3) THEN
+            NodesZ=2
+          ELSE
+            NodesZ=BASIS%INTERPOLATION_XI(3)+1
+          ENDIF
 
 
           !The following if-sentences goes through all possible wedge formed elements and renumber the nodes in order to
@@ -3453,7 +3481,7 @@ CONTAINS
             NULLIFY(GEOMETRIC_PARAMETERS)
             CALL FIELD_PARAMETER_SET_DATA_GET(component%FIELD_VARIABLE%FIELD,&
                 & component%FIELD_VARIABLE%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
                 & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
           ELSE IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_INTG_TYPE) THEN
             NULLIFY(GEOMETRIC_PARAMETERS_INTG)
@@ -3463,7 +3491,7 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
                 & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
@@ -3475,7 +3503,7 @@ CONTAINS
             NULLIFY(GEOMETRIC_PARAMETERS)
             CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
               & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
           ELSE IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_INTG_TYPE) THEN
             NULLIFY(GEOMETRIC_PARAMETERS_INTG)
@@ -3485,8 +3513,32 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
               & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
+            DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
+          ELSE
+            CALL FLAG_ERROR( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
+          ENDIF
+          isFirstValueSet = 0
+        ELSE IF( component%INTERPOLATION_TYPE == FIELD_GAUSS_POINT_BASED_INTERPOLATION) THEN
+          IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_DP_TYPE) THEN
+            NULLIFY(GEOMETRIC_PARAMETERS)
+            CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP( &
+              & BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS, &
+              & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(1,local_number)))
+          ELSE IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_INTG_TYPE) THEN
+            NULLIFY(GEOMETRIC_PARAMETERS_INTG)
+            CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
+            ALLOCATE(GEOMETRIC_PARAMETERS_DP(SIZE(GEOMETRIC_PARAMETERS_INTG)))
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
+            GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
+              & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP( &
+              & BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS, &
+              & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(1,local_number)))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
             CALL FLAG_ERROR( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
@@ -4187,6 +4239,9 @@ CONTAINS
           doesMatch = .FALSE.
           EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
         ENDIF
+      ELSE
+        doesMatch = .FALSE.
+        EXIT
       ENDIF
 
       ! Check that the nodes have the same number of versions, otherwise they must be grouped separately

@@ -844,12 +844,39 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatZeroEntries
 
-#if ( PETSC_MAJOR_VERSION == 3 ) 
+#if ( PETSC_MAJOR_VERSION >= 3 ) 
     SUBROUTINE PCFactorSetMatSolverPackage(pc,solverpackage,ierr)
       PC pc
       MatSolverPackage solverpackage
       PetscInt ierr
     END SUBROUTINE PCFactorSetMatSolverPackage
+
+    SUBROUTINE PCFactorSetUpMatSolverPackage(pc,ierr)
+      PC pc
+      PetscInt ierr
+    END SUBROUTINE PCFactorSetUpMatSolverPackage
+
+    SUBROUTINE PCFactorGetMatrix(pc,A,ierr)
+      PC pc
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE PCFactorGetMatrix
+
+    SUBROUTINE MatMumpsSetIcntl(A,icntl,ival,ierr)
+      Mat A
+      PetscInt icntl
+      PetscInt ival
+      PetscInt ierr
+    END SUBROUTINE MatMumpsSetIcntl
+
+#if ( PETSC_VERSION_MINOR >= 4 )
+    SUBROUTINE MatMumpsSetCntl(A,icntl,val,ierr)
+      Mat A
+      PetscInt icntl
+      PetscReal val
+      PetscInt ierr
+    END SUBROUTINE MatMumpsSetCntl
+#endif
 #endif
     
     SUBROUTINE PCSetType(pc,method,ierr)
@@ -988,6 +1015,23 @@ MODULE CMISS_PETSC
       SNESLineSearchOrder linesearchorder
       PetscInt ierr
     END SUBROUTINE SNESLineSearchSetOrder
+
+    SUBROUTINE SNESLineSearchBTSetAlpha(linesearch,alpha,ierr)
+      SNESLineSearch linesearch
+      PetscReal alpha
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchBTSetAlpha
+
+    SUBROUTINE SNESLineSearchSetTolerances(linesearch,steptol,maxstep,rtol,atol,ltol,maxIt,ierr)
+      SNESLineSearch linesearch
+      PetscReal steptol
+      PetscReal maxstep
+      PetscReal rtol
+      PetscReal atol
+      PetscReal ltol
+      PetscInt maxIt
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetTolerances
 #endif
     
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
@@ -1559,6 +1603,12 @@ MODULE CMISS_PETSC
 
 #if ( PETSC_VERSION_MAJOR == 3 )
   PUBLIC PETSC_PCFACTORSETMATSOLVERPACKAGE
+  PUBLIC Petsc_PCFactorSetUpMatSolverPackage
+  PUBLIC Petsc_PCFactorGetMatrix
+  PUBLIC Petsc_MatMumpsSetIcntl
+#if ( PETSC_VERSION_MINOR >= 4 )
+  PUBLIC Petsc_MatMumpsSetCntl
+#endif
 #endif
   
   PUBLIC PETSC_TS_EULER,PETSC_TS_BEULER,PETSC_TS_PSEUDO,PETSC_TS_SUNDIALS,PETSC_TS_CRANK_NICHOLSON,PETSC_TS_RUNGE_KUTTA
@@ -1631,7 +1681,8 @@ MODULE CMISS_PETSC
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
   PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchComputeNorms, &
-    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType
+    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType, &
+    & Petsc_SnesLineSearchBTSetAlpha,Petsc_SnesLineSearchSetTolerances
 #else
   PUBLIC PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS
 #endif
@@ -4057,6 +4108,139 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE
 #endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR == 3 )
+  !>Buffer routine to the PETSc PCFactorSetUpMatSolverPackage routine.
+  SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage(PC_,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_PCFactorSetUpMatSolverPackage",err,error,*999)
+
+    CALL PCFactorSetUpMatSolverPackage(PC_%PC_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PCFactorSetUpMatSolverPackage",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+    RETURN
+999 CALL ERRORS("Petsc_PCFactorSetUpMatSolverPackage",err,error)
+    CALL EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+    RETURN 1
+  END SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR == 3 )
+  !>Buffer routine to the PETSc PCFactorGetMatrix routine.
+  SUBROUTINE Petsc_PCFactorGetMatrix(PC_,factoredMatrix,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
+    TYPE(PETSC_MAT_TYPE), INTENT(OUT) :: factoredMatrix !<The factored matrix to get from preconditioner context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_PCFactorGetMatrix",err,error,*999)
+
+    CALL PCFactorGetMatrix(PC_%PC_,factoredMatrix,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PCFactorGetMatrix",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_PCFactorGetMatrix")
+    RETURN
+999 CALL ERRORS("Petsc_PCFactorGetMatrix",err,error)
+    CALL EXITS("Petsc_PCFactorGetMatrix")
+    RETURN 1
+  END SUBROUTINE Petsc_PCFactorGetMatrix
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 )
+  !>Buffer routine to the PETSc MatMumpsSetIcntl routine.
+  SUBROUTINE Petsc_MatMumpsSetIcntl(factoredMatrix,icntl,ival,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS ICNTL integer control parameter
+    INTEGER(INTG), INTENT(IN) :: ival !<The MUMPS ICNTL integer value to set: ICNTL(icntl)=ival
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_MatMumpsSetIcntl",err,error,*999)
+
+    CALL MatMumpsSetIcntl(factoredMatrix,icntl,ival,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatMumpsSetIcntl",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_MatMumpsSetIcntl")
+    RETURN
+999 CALL ERRORS("Petsc_MatMumpsSetIcntl",err,error)
+    CALL EXITS("Petsc_MatMumpsSetIcntl")
+    RETURN 1
+  END SUBROUTINE Petsc_MatMumpsSetIcntl
+#endif
+
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
+  !>Buffer routine to the PETSc MatMumpsSetCntl routine.
+  SUBROUTINE Petsc_MatMumpsSetCntl(factoredMatrix,icntl,val,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
+    INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS CNTL integer control parameter
+    REAL(DP), INTENT(IN) :: val !<The MUMPS CNTL real value to set: CNTL(icntl)=val
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_MatMumpsSetCntl",err,error,*999)
+
+    CALL MatMumpsSetCntl(factoredMatrix,icntl,val,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatMumpsSetCntl",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_MatMumpsSetCntl")
+    RETURN
+999 CALL ERRORS("Petsc_MatMumpsSetCntl",err,error)
+    CALL EXITS("Petsc_MatMumpsSetCntl")
+    RETURN 1
+  END SUBROUTINE Petsc_MatMumpsSetCntl
+#endif
     
   !
   !================================================================================================================================
@@ -4784,6 +4968,73 @@ CONTAINS
     CALL Exits("Petsc_SnesLineSearchSetType")
     RETURN 1
   END SUBROUTINE Petsc_SnesLineSearchSetType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchBTSetAlpha routine.
+  SUBROUTINE Petsc_SnesLineSearchBTSetAlpha(lineSearch,alpha,err,error,*)
+
+    !Argument variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES back-tracking LineSearch to set alpha for
+    REAL(DP), INTENT(IN) :: alpha !<The alpha descent parameter to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Petsc_SnesLineSearchBTSetAlpha",err,error,*999)
+
+    CALL SNESLineSearchBTSetAlpha(lineSearch%snesLineSearch,alpha,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      END IF
+      CALL FlagError("PETSc error in SNESLineSearchBTSetAlpha",err,error,*999)
+    END IF
+
+    CALL Exits("Petsc_SnesLineSearchBTSetAlpha")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchBTSetAlpha",err,error)
+    CALL Exits("Petsc_SnesLineSearchBTSetAlpha")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesLineSearchBTSetAlpha
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSetTolerances routine.
+  SUBROUTINE Petsc_SnesLineSearchSetTolerances(lineSearch,steptol,maxstep,rtol,atol,ltol,maxIt,err,error,*)
+
+    !Argument variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set tolerances for
+    REAL(DP), INTENT(IN) :: steptol !<The minimum steplength
+    REAL(DP), INTENT(IN) :: maxstep !<The maximum steplength
+    REAL(DP), INTENT(IN) :: rtol !<The relative tolerance for iterative line searches
+    REAL(DP), INTENT(IN) :: atol !<The absolute tolerance for iterative line searches
+    REAL(DP), INTENT(IN) :: ltol !<The change in lambda tolerance for iterative line searches
+    INTEGER(INTG), INTENT(IN) :: maxIt !<The maximum number of iterations of the line search
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("Petsc_SnesLineSearchSetTolerances",err,error,*999)
+
+    CALL SNESLineSearchSetTolerances(lineSearch%snesLineSearch, &
+      & steptol,maxstep,rtol,atol,ltol,maxIt,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      END IF
+      CALL FlagError("PETSc error in SNESLineSearchSetTolerances",err,error,*999)
+    END IF
+
+    CALL Exits("Petsc_SnesLineSearchSetTolerances")
+    RETURN
+999 CALL Errors("Petsc_SnesLineSearchSetTolerances",err,error)
+    CALL Exits("Petsc_SnesLineSearchSetTolerances")
+    RETURN 1
+
+  END SUBROUTINE Petsc_SnesLineSearchSetTolerances
 #endif
 
   !
