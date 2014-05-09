@@ -319,9 +319,7 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
@@ -329,6 +327,50 @@ CONTAINS
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               !Do nothing
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE, &
+                & "*",ERR,ERROR))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
+                & SETUP_TYPE,"*",ERR,ERROR))// " is not implemented for a Navier-Stokes fluid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE(EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE, &
+             & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+             & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
+             & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
+                & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
+              EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+              EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 1 
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 1
+              EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+              IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
+                !Create the auto created equations set field field for SUPG element metrics
+                CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
+                  & EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
+                EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                CALL FIELD_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,"Equations Set Field",ERR,ERROR,*999)
+                CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_GENERAL_TYPE,&
+                  & ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET_FIELD_FIELD, &
+                  & EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                  & [FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & "Penalty Coefficient",ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                  & FIELD_U_VARIABLE_TYPE,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+              ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              IF(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
+                CALL FIELD_CREATE_FINISH(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
+                !Default the penalty coefficient value to 1E4
+                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1.0E4_DP,ERR,ERROR,*999)
+              ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE, &
                 & "*",ERR,ERROR))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
@@ -417,10 +459,46 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
             !Do nothing???
+          CASE(EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE, &
+             & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+             & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
+             & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 1 ! Penalty coefficient (enforces conservation at discontinuous junctions)
+              EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+              EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+              IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
+                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                  & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,& 
+                  & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
+                DO componentIdx = 1, EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,componentIdx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,componentIdx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                END DO
+                !Default the field scaling to that of the geometric field
+                CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,GEOMETRIC_SCALING_TYPE, &
+                  & ERR,ERROR,*999)
+              ELSE
+                !Do nothing
+              ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              ! do nothing
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for a linear diffusion equation."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE (EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
              &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
              &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
@@ -1742,7 +1820,7 @@ CONTAINS
              & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE)
             !variable X with has Y components
             MATERIAL_FIELD_NUMBER_OF_VARIABLES=2
-            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=7
+            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=9
             MATERIAL_FIELD_NUMBER_OF_COMPONENTS2=3
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Specify start action
@@ -1789,7 +1867,7 @@ CONTAINS
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS1 !(MU,RHO,K,As,Re,Fr,St)
+                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS1 !(MU,RHO,K,As,Re,Fr,St,Xs,Ts)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & I,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
@@ -1845,7 +1923,7 @@ CONTAINS
              & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
             ! 1 variables for the 1D Navier-Stokes materials
             MATERIAL_FIELD_NUMBER_OF_VARIABLES=2
-            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=7
+            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=9
             MATERIAL_FIELD_NUMBER_OF_COMPONENTS2=3
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Specify start action
@@ -2309,6 +2387,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: EQUATIONS_ANALYTIC
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
+    TYPE(FIELD_TYPE), POINTER :: dependentField
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -2316,7 +2395,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2,cellmlSolver
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: solver_matrix_idx
+    INTEGER(INTG) :: solver_matrix_idx,iteration
     REAL(DP) :: timeIncrement,currentTime
 
     CALL ENTERS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR,*999)
@@ -2398,6 +2477,25 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
                   ENDIF
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    dependentField=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                    IF(ASSOCIATED(dependentField)) THEN
+                      ! If this is not the first iteration within this timestep, need to prep fields before
+                      ! updates in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE. Ignore for initialisation
+                      iteration = CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER
+                      IF (iteration > 1) THEN
+                        CALL FIELD_PARAMETER_SETS_COPY(dependentField,EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+                         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SETS_COPY(dependentField,EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+                         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Dependent field is not associated.",err,error,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+                  END IF
                 ELSE
                   CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -3710,9 +3808,9 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER
-    INTEGER(INTG) :: nodeIdx,versionIdx,xiIdx,coordIdx,derivativeIdx
+    INTEGER(INTG) :: nodeIdx,versionIdx,xiIdx,coordIdx,derivativeIdx,componentIdx
     INTEGER(INTG) :: numberOfVersions,nodeNumber,local_ny,numberOfElementNodes,numberOfParameters,firstNode,lastNode
-    REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity
+    REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,continuity,penaltyCoeff
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_BIF,A_BIF,Q_PRE,A_PRE,area,pressure
     REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:),materialsParameters1(:)
@@ -4405,6 +4503,9 @@ CONTAINS
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               H0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
               Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
+
+              ! If A goes negative during nonlinear iteration, give ZERO_TOLERANCE value to avoid segfault
+              IF (A_VALUE < A0_PARAM) A_VALUE = A0_PARAM
              
               mhs=0
               !Loop Over Element Rows
@@ -4517,32 +4618,33 @@ CONTAINS
               !Loop over the element nodes and versions
               DO nodeIdx=1,numberOfElementNodes
                 nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
-                DO versionIdx=1,ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)% &
-                  & DERIVATIVES(1)%numberOfVersions
-                  !Get current Area values
-                  fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                  area=dependentParameters(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)% &
-                    & DERIVATIVES(1)%VERSIONS(versionIdx))
-                  !Get current Materials values
-                  fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                  As=materialsParameters(fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
-                  St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
-                  fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
-                  A0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                    & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
-                  E_PARAM=materialsParameters1(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                    & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
-                  H0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                    & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
-                  Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
-                  !Pressure equation
-                  pressure=45.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
-                  !Update the dependent field
-                  IF(ELEMENT_NUMBER<=DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
-                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & versionIdx,1,nodeNumber,1,pressure,err,error,*999)
-                  ENDIF
-                ENDDO
+                derivativeIdx = 1
+                versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
+                 & elementVersions(derivativeIdx,nodeIdx)
+                !Get current Area values
+                fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                area=dependentParameters(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)% &
+                  & DERIVATIVES(1)%VERSIONS(versionIdx))
+                IF (area < A0_PARAM) area = A0_PARAM
+                !Get current Materials values
+                fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                As=materialsParameters(fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
+                St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
+                fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
+                A0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
+                  & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
+                E_PARAM=materialsParameters1(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
+                  & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
+                H0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                  & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
+                Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
+                !Pressure equation
+                pressure=45.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
+                !Update the dependent field
+                IF(ELEMENT_NUMBER<=DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & versionIdx,1,nodeNumber,1,pressure,err,error,*999)
+                ENDIF
               ENDDO
               !Restore the field parameters
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -4552,7 +4654,12 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & materialsParameters1,err,error,*999)
                 
-              !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
+              !!!-- B R A N C H   F L U X   U P W I N D I N G --!!!
+              !----------------------------------------------------
+              ! In order to enforce conservation of mass and momentum across discontinuous
+              ! branching topologies, flux is upwinded against the conservative branch values 
+              ! established by the characteristic solver. This is essentially a penalty method
+              ! with known penalty parameters. The penalty coefficient is supplied by the user.
               DO nodeIdx=1,numberOfElementNodes
                 nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
                 numberOfVersions=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%NODES%NODES(nodeNumber)%DERIVATIVES(1)%numberOfVersions
@@ -4560,8 +4667,15 @@ CONTAINS
                   derivativeIdx = 1
                   versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
                    & elementVersions(derivativeIdx,nodeIdx)
+                  NULLIFY(EQUATIONS_SET_FIELD_FIELD)
+                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                  IF (.NOT. ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                    CALL FLAG_ERROR("Equations set field is not associated.",err,error,*999)
+                  ENDIF
 
                   !Get material params
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2, &
+                   & RHO_PARAM,err,error,*999)
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
                    & Fr,err,error,*999)
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
@@ -4581,18 +4695,27 @@ CONTAINS
                    & versionIdx,derivativeIdx,nodeNumber,1,Q_BIF,err,error,*999)         
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
-                  !Get Q & A values based on the branch (characteristics) solver
-                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                   & versionIdx,derivativeIdx,nodeNumber,1,Q_PRE,err,error,*999)         
-                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                   & versionIdx,derivativeIdx,nodeNumber,2,A_PRE,err,error,*999)         
 
-                  !Momentum Equation
-                  momentum=(K*(Q_PRE**2.0_DP/A_PRE)+2.0_DP*A_PRE*Beta*Fr*(SQRT(A_PRE)-SQRT(A0_PARAM/As))) - &
-                       &   (K*(Q_BIF**2.0_DP/A_BIF)+2.0_DP*A_BIF*Beta*Fr*(SQRT(A_BIF)-SQRT(A0_PARAM/As)))
+                  !Get Q & A values based on the branch (characteristics) solver
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,1,Q_PRE,err,error,*999)         
+                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
+                   & versionIdx,derivativeIdx,nodeNumber,2,A_PRE,err,error,*999)         
+                  ! If A goes negative during nonlinear iteration, give ZERO_TOLERANCE value to avoid segfault
+                  IF (A_BIF < A0_PARAM) A_BIF = A0_PARAM
+
+                  !Momentum Equation: F_upwind - F_Current
+                  momentum=(K*((Q_PRE**2)/A_PRE)+((2.0_DP/3.0_DP)*(A_PRE**(1.5_DP))*(Fr*Beta))) &
+                        & -(K*((Q_BIF**2)/A_BIF)+((2.0_DP/3.0_DP)*(A_BIF**(1.5_DP))*(Fr*Beta)))
+
                   !Continuity Equation
                   continuity=(Q_PRE-Q_BIF)/St
 
+                  ! Get user defined penalty coefficient- increase if mass/momentum conservation failing across branches
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & 1,penaltyCoeff,err,error,*999)
+                  momentum = momentum*penaltyCoeff
+                  continuity = continuity*penaltyCoeff
                   !Add momentum/continuity contributions to first/last node accordingly
                   IF(nodeNumber==firstNode) THEN
                     NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)= &
@@ -4607,7 +4730,6 @@ CONTAINS
                   ENDIF
                 ENDIF !version>1
               ENDDO !loop nodes
-
             ENDIF
           ENDIF
 
@@ -4691,11 +4813,11 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,x
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2
-    INTEGER(INTG) :: nodeNumber,numberOfVersions,nodeIdx,versionIdx,xiIdx,coordIdx,local_ny,derivativeIdx
+    INTEGER(INTG) :: nodeNumber,numberOfVersions,nodeIdx,versionIdx,xiIdx,coordIdx,local_ny,derivativeIdx,componentIdx
     INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,Q_DERIV,A_VALUE,A_DERIV,Q_BIF,A_BIF
-    REAL(DP) :: momentum1,momentum2,continuity,W_SUPG,TAU_SUPG,U_SUPG(3)
+    REAL(DP) :: momentum1,momentum2,continuity,W_SUPG,TAU_SUPG,U_SUPG(3),penaltyCoeff
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,Beta,As,St,Fr,Re,K
     REAL(DP), POINTER :: dependentParameters(:)
     LOGICAL :: UPDATE_JACOBIAN_MATRIX
@@ -5116,6 +5238,9 @@ CONTAINS
                 H0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
                 Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     !(kg/m2/s2)
 
+                ! If A goes negative during nonlinear iteration, give ZERO_TOLERANCE value to avoid segfault
+                IF (A_VALUE < A0_PARAM) A_VALUE = A0_PARAM
+
                 mhs=0
                 !Loop Over Element Rows
                 DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -5187,7 +5312,7 @@ CONTAINS
               END IF
             ENDDO !ng
 
-            !!!-- B I F U R C A T I O N   F L U X   U P W I N D I N G --!!!
+            !!!-- B R A N C H   F L U X   U P W I N D I N G --!!!
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE .OR. &
                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE .OR. &
                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE .OR. &
@@ -5206,7 +5331,12 @@ CONTAINS
                 IF(numberOfVersions>1) THEN
                   derivativeIdx = 1
                   versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
-                    & elementVersions(derivativeIdx,nodeIdx)
+                   & elementVersions(derivativeIdx,nodeIdx)
+                  NULLIFY(EQUATIONS_SET_FIELD_FIELD)
+                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                  IF (.NOT. ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                    CALL FLAG_ERROR("Equations set field is not associated.",err,error,*999)
+                  ENDIF
 
                   !Get material params
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
@@ -5221,17 +5351,28 @@ CONTAINS
                    & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)
                   Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
 
-                  !Get current Q & A values
+                  !Get current Q & A values from Navier-Stokes nonlinear iteration
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,1,Q_BIF,err,error,*999)         
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
 
-                  !Momentum Equation
+                  ! If A goes negative during nonlinear iteration, give ZERO_TOLERANCE value to avoid segfault
+                  IF (A_BIF < A0_PARAM) A_BIF = A0_PARAM
+
+                  ! dF/dQ (momentum term) of upwinded flux - calculated flux for current values
                   momentum1=-K*2.0_DP*Q_BIF/A_BIF
-                  momentum2=K*((Q_BIF/A_BIF)**2.0_DP)+(2.0_DP*Fr*Beta)*(SQRT(A0_PARAM/As)-3.0_DP/2.0_DP*SQRT(A_BIF))
-                  !Continuity Equation
+                  ! dF/dA (momentum term) of upwinded flux - calculated flux for current values
+                  momentum2=K*(Q_BIF**2.0_DP)/(A_BIF**2.0_DP) - (Fr*Beta*SQRT(A_BIF))
+                  ! dF/dQ (continuity term) of upwinded flux - calculated flux for current values
                   continuity=-1.0_DP/St
+
+                  ! Multiply flux terms by a penalty coefficient to ensure conservation of mass/momentum at branches
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & 1,penaltyCoeff,err,error,*999)
+                  momentum1 = momentum1*penaltyCoeff
+                  momentum2 = momentum2*penaltyCoeff
+                  continuity = continuity*penaltyCoeff
 
                   ! Add momentum/continuity contributions to first/last node accordingly
                   IF(nodeNumber==firstNode) THEN
@@ -5249,7 +5390,7 @@ CONTAINS
                     JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*numberOfParameters,numberOfParameters)= & 
                      & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2*numberOfParameters,numberOfParameters)+continuity
                   ENDIF
-                ENDIF !version>1
+                ENDIF ! check for junction
               ENDDO !loop nodes
             ENDIF
 
@@ -5316,14 +5457,18 @@ CONTAINS
             CASE(PROBLEM_1dTransient_NAVIER_STOKES_SUBTYPE)
               SELECT CASE(SOLVER%GLOBAL_NUMBER)
               CASE(1)
-                ! Characteristic solver- do nothing
+                ! Characteristic solver- copy branch Q,A values to new parameter set
+                dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
+                CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                ENDIF
+                CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
               CASE(2)
                 ! check characteristic/ N-S convergence at branches
                 CALL NavierStokes_CoupleCharacteristics(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                IF (CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP==.FALSE.) THEN
-                  ! 1D NSE solver output data if N-S/Chars converged
-                  CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(SOLVER,ERR,ERROR,*999)
-                ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
                   & " is invalid for a 1D Navier-Stokes problem."
@@ -5333,7 +5478,15 @@ CONTAINS
               IF(ASSOCIATED(SOLVER%SOLVERS%CONTROL_LOOP%WHILE_LOOP)) THEN
                 SELECT CASE(SOLVER%GLOBAL_NUMBER)
                 CASE(1)
-                  ! Characteristic solver- do nothing
+                  ! Characteristic solver- copy branch Q,A values to new parameter set
+                  dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
+                  CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                  IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                  ENDIF
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                 CASE(2)
                   ! ! 1D Navier-Stokes solver
                   IF (CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN
@@ -5361,7 +5514,15 @@ CONTAINS
             CASE(PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE)
               SELECT CASE(SOLVER%GLOBAL_NUMBER)
               CASE(1)
-                ! Characteristic solver- do nothing
+                ! Characteristic solver- copy branch Q,A values to new parameter set
+                dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
+                CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                ENDIF
+                CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
               CASE(2)
                 ! check characteristic/ N-S convergence at branches
                 CALL NavierStokes_CoupleCharacteristics(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -5380,7 +5541,15 @@ CONTAINS
               IF(ASSOCIATED(SOLVER%SOLVERS%CONTROL_LOOP%WHILE_LOOP)) THEN
                 SELECT CASE(SOLVER%GLOBAL_NUMBER)
                 CASE(1)
-                  ! Characteristic solver- do nothing
+                  ! Characteristic solver- copy branch Q,A values to new parameter set
+                  dependentField=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
+                  CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                  IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                  ENDIF
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                 CASE(2)
                   ! ! 1D Navier-Stokes solver
                   IF (CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN
@@ -5480,7 +5649,7 @@ CONTAINS
     REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qValues(:),tValues(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
     REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM,X(3),START_TIME,STOP_TIME
-    REAL(DP) :: timeData(2),cycTime,shiftedTime
+    REAL(DP) :: timeData(2),cycTime,shiftedTime,Q,QP,QPP
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx,localDof,globalDof
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3),componentIdx,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
@@ -6164,6 +6333,10 @@ CONTAINS
                                              & qSpline,err,error,*999)
                                             CALL splint(tValues,qValues,qSpline,numberOfSourceTimesteps, &
                                              & shiftedTime,VALUE,err,error,*999)
+                                            CALL spline_cubic_set(numberOfSourceTimesteps,tValues,qValues,2,0.0_DP,2,0.0_DP, &
+                                             & qSpline,err,error,*999)
+                                            CALL spline_cubic_val(numberOfSourceTimesteps,tValues,qValues,qSpline,shiftedTime, &
+                                             & Q,QP,QPP,err,error,*999)
                                             DEALLOCATE(nodeData)
                                             DEALLOCATE(qSpline)
                                             DEALLOCATE(qValues)
@@ -10723,7 +10896,7 @@ CONTAINS
     REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,normalWave(2),rho,Fr
     REAL(DP) :: qPrevious,pPrevious,aPrevious
     REAL(DP) :: q1d,couplingTolerance
-    REAL(DP) :: a1d,a0d,aIntermediate,aStar,w1d,w0d
+    REAL(DP) :: a1d,a0d,aIntermediate,aStar,w1d,w0d,qError,aError
     LOGICAL :: boundaryNode,boundaryConverged(30),localConverged,MPI_LOGICAL
     LOGICAL, ALLOCATABLE :: globalConverged(:)
 
@@ -10865,8 +11038,9 @@ CONTAINS
             CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
               & versionIdx,derivativeIdx,nodeNumber,1,pPrevious,err,error,*999)         
             ! Check if the boundary interface values have converged
-            IF (ABS(qPrevious - q1d) < couplingTolerance .AND. &
-              & ABS(aPrevious - a1d) < couplingTolerance) THEN
+            qError = ABS(qPrevious - q1d)
+            aError = ABS(aPrevious - a1d)
+            IF ( qError < couplingTolerance .AND. aError < couplingTolerance) THEN
 !              & ABS(pCellML - pPrevious) < couplingTolerance) THEN
               boundaryConverged(boundaryNumber) = .TRUE.
             ENDIF
@@ -10916,10 +11090,14 @@ CONTAINS
           iterativeLoop%CONTINUE_LOOP=.FALSE.
         ENDIF
       ENDIF
+
       ! If the solution hasn't converged, need to revert field values to pre-solve state
       ! before continued iteration. This will counteract the field updates that occur
       ! in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE. Ignore for initialisation
-      IF(iterativeLoop%CONTINUE_LOOP==.TRUE. .AND. timestep > 0 ) THEN
+      IF (timestep == 0) THEN
+        iterativeLoop%CONTINUE_LOOP=.FALSE.
+      ENDIF
+      IF (iterativeLoop%CONTINUE_LOOP==.TRUE. ) THEN
         CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
          & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
         CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
@@ -10962,7 +11140,9 @@ CONTAINS
     INTEGER(INTG) :: branchNumber,numberOfBranches,numberOfComputationalNodes,numberOfVersions
     INTEGER(INTG) :: MPI_IERROR,timestep,iteration
     REAL(DP) :: couplingTolerance,l2Error,wPrevious(10),wCurrent(10)
-    LOGICAL :: branchConverged(30),localConverged,MPI_LOGICAL,boundaryNode
+    REAL(DP) :: l2ErrorQ,qPrevious(10),qCurrent(10)
+    REAL(DP) :: l2ErrorA,aPrevious(10),aCurrent(10)
+    LOGICAL :: branchConverged(30),branchConverged2(30),localConverged,MPI_LOGICAL,boundaryNode
     LOGICAL, ALLOCATABLE :: globalConverged(:)
 
     CALL ENTERS("NavierStokes_CoupleCharacteristics",ERR,ERROR,*999)
@@ -11047,6 +11227,33 @@ CONTAINS
           ENDDO
         ENDDO
 
+        ! Current Q,A Values into flattened array
+        i = 0
+        DO versionIdx=1,numberOfVersions
+          i = i +1
+          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,derivativeIdx,nodeNumber,1,qCurrent(i),err,error,*999)         
+          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,derivativeIdx,nodeNumber,2,aCurrent(i),err,error,*999)         
+        ENDDO
+        ! Pre-Navier-Stokes solve Q,A Values into flattened array
+        i = 0
+        DO versionIdx=1,numberOfVersions
+          i = i +1
+          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
+           & versionIdx,derivativeIdx,nodeNumber,1,qPrevious(i),err,error,*999)         
+          CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
+           & versionIdx,derivativeIdx,nodeNumber,2,aPrevious(i),err,error,*999)         
+        ENDDO
+
+        ! Evaluate error between current and previous Q,A values
+        l2ErrorQ = L2NORM(qCurrent-qPrevious)
+        l2ErrorA = L2NORM(aCurrent-aPrevious)
+        ! Check if the branch values have converged
+        IF ((ABS(l2ErrorQ) < couplingTolerance) .AND. (ABS(l2ErrorA) < couplingTolerance)) THEN
+          branchConverged(branchNumber) = .TRUE.
+        ENDIF
+
         ! Previous W Values if this is not the first iteration
         IF (timestep == 0 .AND. iteration == 1) THEN
           ! Create the previous iteration field values type on the dependent field if it does not exist
@@ -11056,7 +11263,7 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_V_VARIABLE_TYPE, &
              & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
           ENDIF
-          branchConverged(branchNumber) = .FALSE.
+          branchConverged2(branchNumber) = .FALSE.
         ELSE
           ! Previous W Values into flattened array
           i = 0
@@ -11072,7 +11279,7 @@ CONTAINS
           l2Error = L2NORM(wCurrent-wPrevious)
           ! Check if the branch values have converged
           IF (ABS(l2Error) < couplingTolerance) THEN
-            branchConverged(branchNumber) = .TRUE.
+            branchConverged2(branchNumber) = .TRUE.
           ENDIF
         ENDIF
 
@@ -11125,11 +11332,8 @@ CONTAINS
     ! If the solution hasn't converged, need to revert field values to pre-solve state
     ! before continued iteration. This will counteract the field updates that occur
     ! in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE. Ignore for initialisation
-    IF(controlLoop%WHILE_LOOP%CONTINUE_LOOP==.TRUE. .AND. timestep > 0 ) THEN
-      CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
-       & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-      CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
-       & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+    IF (timestep == 0) THEN
+      controlLoop%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
     ENDIF
 
     CALL EXITS("NavierStokes_CoupleCharacteristics")
@@ -11205,9 +11409,14 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(SOLVER_TYPE), POINTER :: navierStokesSolver
+    TYPE(FIELD_TYPE), POINTER :: dependentField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
 
     CALL ENTERS("NavierStokes_ControlLoopPostLoop",err,error,*999)
+
+    NULLIFY(dependentField)
+    NULLIFY(fieldVariable)
 
     IF(ASSOCIATED(controlLoop)) THEN
       SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
