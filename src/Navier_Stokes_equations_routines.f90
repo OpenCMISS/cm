@@ -2535,6 +2535,25 @@ CONTAINS
                     ELSE
                       CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
                     ENDIF
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      dependentField=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                      IF(ASSOCIATED(dependentField)) THEN
+                        ! If this is not the first iteration within this timestep, need to prep fields before
+                        ! updates in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE. Ignore for initialisation
+                        iteration = CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
+                        IF (iteration > 1) THEN
+                          CALL FIELD_PARAMETER_SETS_COPY(dependentField,EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+                           & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SETS_COPY(dependentField,EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+                           & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Dependent field is not associated.",err,error,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+                    END IF
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -5646,7 +5665,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:),GEOMETRIC_PARAMETERS(:),BOUNDARY_VALUES(:),TANGENTS(:,:),NORMAL(:),TIME
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),MATERIALS_PARAMETERS(:),independentParameters(:),dependentParameters(:)
-    REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qValues(:),tValues(:)
+    REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qSpline2(:),qValues(:),tValues(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
     REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM,X(3),START_TIME,STOP_TIME
     REAL(DP) :: timeData(2),cycTime,shiftedTime,Q,QP,QPP
@@ -6312,6 +6331,7 @@ CONTAINS
                                             ALLOCATE(qValues(numberOfSourceTimesteps))
                                             ALLOCATE(tValues(numberOfSourceTimesteps))
                                             ALLOCATE(qSpline(numberOfSourceTimesteps))
+                                            ALLOCATE(qSpline2(numberOfSourceTimesteps))
                                             nodeData = 0.0_DP                                            
                                             ! Read in time and dependent value
                                             DO timeIdx=1,timeData(1)
@@ -6334,11 +6354,12 @@ CONTAINS
                                             CALL splint(tValues,qValues,qSpline,numberOfSourceTimesteps, &
                                              & shiftedTime,VALUE,err,error,*999)
                                             CALL spline_cubic_set(numberOfSourceTimesteps,tValues,qValues,2,0.0_DP,2,0.0_DP, &
-                                             & qSpline,err,error,*999)
-                                            CALL spline_cubic_val(numberOfSourceTimesteps,tValues,qValues,qSpline,shiftedTime, &
+                                             & qSpline2,err,error,*999)
+                                            CALL spline_cubic_val(numberOfSourceTimesteps,tValues,qValues,qSpline2,shiftedTime, &
                                              & Q,QP,QPP,err,error,*999)
                                             DEALLOCATE(nodeData)
                                             DEALLOCATE(qSpline)
+                                            DEALLOCATE(qSpline2)
                                             DEALLOCATE(qValues)
                                             DEALLOCATE(tValues)
 
@@ -11098,10 +11119,10 @@ CONTAINS
         iterativeLoop%CONTINUE_LOOP=.FALSE.
       ENDIF
       IF (iterativeLoop%CONTINUE_LOOP==.TRUE. ) THEN
-        CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
-         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-        CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
-         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+        ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+        !  & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+        ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+        !  & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
       ENDIF
     ENDIF
 
@@ -11425,28 +11446,38 @@ CONTAINS
         &  PROBLEM_PGM_NAVIER_STOKES_SUBTYPE, &
         &  PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE, & 
         &  PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
-        &  PROBLEM_1dTransient_NAVIER_STOKES_SUBTYPE, &
-        &  PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
         &  PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
         &  PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
         &  PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
         ! Do nothing
+      CASE(PROBLEM_1dTransient_NAVIER_STOKES_SUBTYPE, &
+        &  PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE)
+        SELECT CASE(controlLoop%LOOP_TYPE)
+        CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
+          ! Do nothing
+        CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+          ! Global time loop - export data
+          CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(navierStokesSolver,err,error,*999)
+        CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
+          ! Do nothing
+        CASE DEFAULT
+          localError="The control loop type of "//TRIM(NUMBER_TO_VSTRING(controlLoop%LOOP_TYPE,"*",err,error))// &
+            & " is invalid for a Coupled 1D0D Navier-Stokes problem."
+          CALL FLAG_ERROR(localError,err,error,*999)
+        END SELECT
       CASE(PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
         SELECT CASE(controlLoop%LOOP_TYPE)
         CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
           ! CellML simple loop - do nothing 
         CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
           ! Global time loop - do nothing
+          CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(navierStokesSolver,err,error,*999)
         CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
           ! Couple 1D/0D loop
           IF (controlLoop%CONTROL_LOOP_LEVEL==2) THEN
             navierStokesSolver=>controlLoop%SUB_LOOPS(2)%PTR%SOLVERS%SOLVERS(2)%PTR
             ! update 1D/0D coupling parameters (Q0D = Q1D) and check convergence
             CALL NavierStokes_Couple1D0D(controlLoop,navierStokesSolver,err,error,*999)
-            ! output data once 1D-0D problems converged
-            IF (controlLoop%WHILE_LOOP%CONTINUE_LOOP == .FALSE.) THEN
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(navierStokesSolver,err,error,*999)
-            ENDIF
           ELSE IF (controlLoop%CONTROL_LOOP_LEVEL==3) THEN
             ! Post Navier-Stokes/Characteristics loop - do nothing
           ELSE

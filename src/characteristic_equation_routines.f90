@@ -1509,7 +1509,7 @@ CONTAINS
                         l = (1.0_DP/(Q_EX(versionIdx)/A_EX(versionIdx) +  &
                           & normalWave(componentIdx,versionIdx)*A_EX(versionIdx)**0.25_DP*SQRT(Beta_EX(versionIdx)*Fr)))
                         friction = timeIncrement*l*f(versionIdx)
-                        W(componentIdx,versionIdx)= W(componentIdx,versionIdx) + friction
+!                        W(componentIdx,versionIdx)= W(componentIdx,versionIdx) + friction
 
                         ! Check extrapolated wave speed is coherent
                         lambda(versionIdx) = Q_EX(versionIdx)/A_EX(versionIdx) + normalWave(componentIdx,versionIdx)* &
