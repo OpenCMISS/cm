@@ -3481,7 +3481,7 @@ CONTAINS
             NULLIFY(GEOMETRIC_PARAMETERS)
             CALL FIELD_PARAMETER_SET_DATA_GET(component%FIELD_VARIABLE%FIELD,&
                 & component%FIELD_VARIABLE%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
                 & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
           ELSE IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_INTG_TYPE) THEN
             NULLIFY(GEOMETRIC_PARAMETERS_INTG)
@@ -3491,7 +3491,7 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
                 & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
