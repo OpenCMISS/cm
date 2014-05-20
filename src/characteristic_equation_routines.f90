@@ -85,6 +85,7 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   PUBLIC Characteristic_NodalResidualEvaluate
   PUBLIC Characteristic_NodalJacobianEvaluate
   PUBLIC Characteristic_Extrapolate
+  PUBLIC Characteristic_PrimitiveToCharacteristic
 
 CONTAINS 
 
@@ -1493,7 +1494,7 @@ CONTAINS
                     ENDDO
                   ENDDO
 
-                  !Extrapolate W
+                  !Calculate W
                   W(:,:)=0.0_DP
                   NULLIFY(fieldVariable)
                   fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
@@ -1509,7 +1510,7 @@ CONTAINS
                         l = (1.0_DP/(Q_EX(versionIdx)/A_EX(versionIdx) +  &
                           & normalWave(componentIdx,versionIdx)*A_EX(versionIdx)**0.25_DP*SQRT(Beta_EX(versionIdx)*Fr)))
                         friction = timeIncrement*l*f(versionIdx)
-!                        W(componentIdx,versionIdx)= W(componentIdx,versionIdx) + friction
+                        W(componentIdx,versionIdx)= W(componentIdx,versionIdx) + friction
 
                         ! Check extrapolated wave speed is coherent
                         lambda(versionIdx) = Q_EX(versionIdx)/A_EX(versionIdx) + normalWave(componentIdx,versionIdx)* &
@@ -1621,5 +1622,108 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Calculate Characteristic (W) values based on dependent field values
+  SUBROUTINE Characteristic_PrimitiveToCharacteristic(equationsSet,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: nodeNumber,nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfVersions,dofNumber
+    REAL(DP) :: qCurrent(4), aCurrent(4),W(2,4)
+    REAL(DP) :: As,Fr,normalWave,A0_PARAM,E_PARAM,H0_PARAM,Beta
+    LOGICAL :: boundaryNode
+
+    CALL ENTERS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR,*999)
+
+    NULLIFY(dependentField)
+    NULLIFY(independentField)
+    NULLIFY(materialsField)
+    NULLIFY(fieldVariable)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%SUBTYPE)
+      CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+        dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
+        independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
+        materialsField=>equationsSet%MATERIALS%MATERIALS_FIELD
+      CASE DEFAULT
+        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+          & " is not valid for a call to Characteristic_PrimitiveToCharacteristic"
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    END IF
+
+    domainNodes=>dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%NODES
+
+    ! Get material constants
+    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+      & 4,As,err,error,*999)
+    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+      & 6,Fr,err,error,*999)
+
+    !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
+    DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
+      nodeNumber = domainNodes%NODES(nodeIdx)%local_number
+      derivativeIdx = 1
+      numberOfVersions=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%numberOfVersions      
+      boundaryNode=domainNodes%NODES(nodeNumber)%BOUNDARY_NODE
+      !!!-- F i n d    B r a n c h    N o d e s --!!!
+      IF(numberOfVersions > 1 .AND. .NOT. boundaryNode) THEN
+        DO componentIdx=1,2
+          DO versionIdx=1,numberOfVersions
+            CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE, &
+             & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,componentIdx,normalWave,err,error,*999)            
+            IF(ABS(normalWave)>ZERO_TOLERANCE) THEN
+              !Get material parameters
+              CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)  
+              CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)                
+              CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)                
+              Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
+
+              ! Get current Q,A values
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & versionIdx,derivativeIdx,nodeNumber,1,qCurrent(versionIdx),err,error,*999)         
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & versionIdx,derivativeIdx,nodeNumber,2,aCurrent(versionIdx),err,error,*999)
+
+              ! Calculate the characteristic based on current Q,A values
+              W(componentIdx,versionIdx)= ((qCurrent(versionIdx)/aCurrent(versionIdx))+ &
+               & normalWave*4.0_DP*SQRT((Fr*(Beta)))*(aCurrent(versionIdx)**(0.25_DP) - (A0_PARAM/As)**(0.25_DP)))
+
+              !Update W values
+              fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
+              dofNumber=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+               & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,FIELD_V_VARIABLE_TYPE, &
+               & FIELD_VALUES_SET_TYPE,dofNumber,W(componentIdx,versionIdx),ERR,ERROR,*999)
+            ENDIF
+          ENDDO
+        ENDDO 
+      ENDIF ! branch check
+    ENDDO ! Loop over nodes
+
+    CALL EXITS("Characteristic_PrimitiveToCharacteristic")
+    RETURN
+999 CALL ERRORS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR)
+    CALL EXITS("Characteristic_PrimitiveToCharacteristic")
+    RETURN 1
+  END SUBROUTINE Characteristic_PrimitiveToCharacteristic
+
+  !
+  !================================================================================================================================
+  !      
 
 END MODULE CHARACTERISTIC_EQUATION_ROUTINES
