@@ -2464,7 +2464,7 @@ CONTAINS
           PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+C(7)/AZL(3,3)*(AZL(3,3)**(C(8)/2.0_DP)-1.0_DP)
         ENDIF
 
-        VAL1=SQRT(AZL(1,1)/C(9) ! lambda/lambda_opt
+        VAL1=SQRT(AZL(1,1))/C(9) ! lambda/lambda_opt
         IF((VAL1>0.7_DP).AND.(VAL1<1.3_DP)) THEN
           VALUE=(-11.1111_DP*VAL1*VAL1+22.2222_DP*VAL1-10.1111_DP)
           VALUE=VALUE*C(10)*C(11)/SQRT(AZL(1,1))
