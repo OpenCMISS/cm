@@ -2404,18 +2404,8 @@ CONTAINS
         !C(3)=c3...polynomial coefficient
         !C(4)=c4...power coefficient
         IF(AZL(1,1) > 1.0_DP) THEN ! only in the tension range
-!tomo
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(3)/AZL(1,1)*(AZL(1,1)**(C(4)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+0.355439810963035_DP/AZL(1,1)*(AZL(1,1)**(12.660539325481963_DP/2.0_DP)-1.0_DP)
         ENDIF
-!tomo
-!        IF(AZL(2,2) > 1.0_DP) THEN
-!          PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+5316.372204148964_DP/AZL(2,2)*(AZL(2,2)**(0.014991843974911_DP/2.0_DP)-1.0_DP)
-!        ENDIF
-!        IF(AZL(3,3) > 1.0_DP) THEN
-!          PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+5316.372204148964_DP/AZL(3,3)*(AZL(3,3)**(0.014991843974911_DP/2.0_DP)-1.0_DP)
-!        ENDIF
-!tomo end
 
       CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_ACTIVE_SUBTYPE)
         !Isotropic and anisotropic part from above, additionally an active part in fibre direction
@@ -2443,15 +2433,12 @@ CONTAINS
         !C(8)=c8...power coefficient
         IF(AZL(1,1) > 1.0_DP) THEN ! only in the tension range
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(3)/AZL(1,1)*(AZL(1,1)**(C(4)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+0.355439810963035_DP/AZL(1,1)*(AZL(1,1)**(12.660539325481963_DP/2.0_DP)-1.0_DP)
         ENDIF
         IF(AZL(2,2) > 1.0_DP) THEN
-          PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(5)/AZL(1,1)*(AZL(1,1)**(C(6)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+5316.372204148964_DP/AZL(2,2)*(AZL(2,2)**(0.014991843974911_DP/2.0_DP)-1.0_DP)
+          PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+C(5)/AZL(2,2)*(AZL(2,2)**(C(6)/2.0_DP)-1.0_DP)
         ENDIF
         IF(AZL(3,3) > 1.0_DP) THEN
-          PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(7)/AZL(1,1)*(AZL(1,1)**(C(8)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+5316.372204148964_DP/AZL(3,3)*(AZL(3,3)**(0.014991843974911_DP/2.0_DP)-1.0_DP)
+          PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+C(7)/AZL(3,3)*(AZL(3,3)**(C(8)/2.0_DP)-1.0_DP)
         ENDIF
 
       CASE(EQUATIONS_SET_ANISOTROPIC_POLYNOMIAL_ACTIVE_SUBTYPE)
@@ -2469,23 +2456,20 @@ CONTAINS
         !C(11)=alpha...activation parameter [0 1]
         IF(AZL(1,1) > 1.0_DP) THEN ! only in the tension range
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(3)/AZL(1,1)*(AZL(1,1)**(C(4)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+0.355439810963035_DP/AZL(1,1)*(AZL(1,1)**(12.660539325481963_DP/2.0_DP)-1.0_DP)
         ENDIF
         IF(AZL(2,2) > 1.0_DP) THEN
           PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+C(5)/AZL(2,2)*(AZL(2,2)**(C(6)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+5316.372204148964_DP/AZL(2,2)*(AZL(2,2)**(0.014991843974911_DP/2.0_DP)-1.0_DP)
         ENDIF
         IF(AZL(3,3) > 1.0_DP) THEN
           PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+C(7)/AZL(3,3)*(AZL(3,3)**(C(8)/2.0_DP)-1.0_DP)
-!          PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+5316.372204148964_DP/AZL(3,3)*(AZL(3,3)**(0.014991843974911_DP/2.0_DP)-1.0_DP)
         ENDIF
 
-        IF((SQRT(AZL(1,1))>(0.7_DP*C(9))).AND.(SQRT(AZL(1,1))<(1.3_DP*C(9)))) THEN
-          VALUE=(-11.1111_DP*AZL(1,1)/C(9)/C(9) + 22.2222_DP*SQRT(AZL(1,1))/C(9)-10.1111_DP)
-          VALUE=VALUE*(1.0_DP/SQRT(AZL(1,1)))*C(10)*C(11)
+        VAL1=SQRT(AZL(1,1)/C(9) ! lambda/lambda_opt
+        IF((VAL1>0.7_DP).AND.(VAL1<1.3_DP)) THEN
+          VALUE=(-11.1111_DP*VAL1*VAL1+22.2222_DP*VAL1-10.1111_DP)
+          VALUE=VALUE*C(10)*C(11)/SQRT(AZL(1,1))
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
         ENDIF
-
 
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
