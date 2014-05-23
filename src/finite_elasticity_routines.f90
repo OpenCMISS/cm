@@ -2394,8 +2394,22 @@ CONTAINS
         CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
           & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
         !divide by lambda and multiply by P_max
+!tomo RFE
+        VAL1=VALUE
+!tomo REF end
         VALUE=VALUE/SQRT(AZL(1,1))*C(5)
+        
+        
+!tomo RFE
+        !alpha*K_rfe*(lambda-lambda_start)/lambda
+        !TODO make lambda_start variable --> independent field
+!        VAL2=VAL1*100.0_DP*(SQRT(AZL(1,1))-1) !stretch and compression!!!
+        VAL2=100.0_DP*(SQRT(AZL(1,1))-1) !stretch and compression!!!
+        VALUE=VALUE+VAL2/SQRT(AZL(1,1))
         PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
+!tomo REF end
+        
+!        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
 
       CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE)
         !Additional term for transversely isotropic (fibre-reinforced) materials (Markert, 2005)
@@ -2454,6 +2468,7 @@ CONTAINS
         !C(9)=lambda_opt...optimal fibre stretch
         !C(10)=P_max...maximum active tension
         !C(11)=alpha...activation parameter [0 1]
+        !C(12)=K_rfe...stiffness of the residual force enhancement
         IF(AZL(1,1) > 1.0_DP) THEN ! only in the tension range
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(3)/AZL(1,1)*(AZL(1,1)**(C(4)/2.0_DP)-1.0_DP)
         ENDIF
@@ -2464,12 +2479,21 @@ CONTAINS
           PIOLA_TENSOR(3,3)=PIOLA_TENSOR(3,3)+C(7)/AZL(3,3)*(AZL(3,3)**(C(8)/2.0_DP)-1.0_DP)
         ENDIF
 
-        VAL1=SQRT(AZL(1,1))/C(9) ! lambda/lambda_opt
+        VAL1=SQRT(AZL(1,1))/C(9) !lambda/lambda_opt
         IF((VAL1>0.7_DP).AND.(VAL1<1.3_DP)) THEN
+          !active force-length relation
           VALUE=(-11.1111_DP*VAL1*VAL1+22.2222_DP*VAL1-10.1111_DP)
+          !multiply by P_max and alpha, divide by lambda
           VALUE=VALUE*C(10)*C(11)/SQRT(AZL(1,1))
-          PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
+        ELSE
+          VALUE=0.0_DP
         ENDIF
+        !alpha*K_rfe*(lambda-lambda_start)/lambda
+        !TODO make lambda_start variable --> independent field
+        VAL2=C(11)*C(12)*(SQRT(AZL(1,1))-1) !stretch and compression!!!
+        VALUE=VALUE+VAL2/SQRT(AZL(1,1))
+        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
+
 
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
@@ -4978,7 +5002,7 @@ CONTAINS
               CASE(EQUATIONS_SET_ANISOTROPIC_POLYNOMIAL_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 8;
               CASE(EQUATIONS_SET_ANISOTROPIC_POLYNOMIAL_ACTIVE_SUBTYPE)
-                NUMBER_OF_COMPONENTS = 11;
+                NUMBER_OF_COMPONENTS = 12;
               CASE(EQUATIONS_SET_TRANS_ISOTROPIC_ACTIVE_TRANSITION_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 10;
               CASE(EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE,EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE)
