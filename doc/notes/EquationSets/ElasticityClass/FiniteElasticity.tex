@@ -128,7 +128,7 @@ Also note that $\delby{\vect{x}}{\vect{\nu}}$ is an orthogonal tensor. \\
 It is now necessary to establish a relationship between strain and displacement. Referring to figure 1, 
 
 \begin{equation}
-  \vect{z}=\vect{x}-\vect{u}
+  \vect{z}=\vect{x}+\vect{u}
   \label{eqn:displacement}
 \end{equation}
 
@@ -137,24 +137,24 @@ It is now necessary to establish a relationship between strain and displacement.
 \noindent Differentiating \eqnref{eqn:displacement} using the chain rule,
 
 \begin{equation}
-  \delby{\vect{z}}{\vect{\nu}}=\delby{\vect{x}}{\vect{\nu}}-\delby{\vect{u}}{\vect{x}}\delby{\vect{x}}{\vect{\nu}}=
-                               \pbrac{\matr{I}-\delby{\vect{u}}{\vect{x}}}\delby{\vect{x}}{\vect{\nu}}  
+  \delby{\vect{z}}{\vect{\nu}}=\delby{\vect{x}}{\vect{\nu}}+\delby{\vect{u}}{\vect{x}}\delby{\vect{x}}{\vect{\nu}}=
+                               \pbrac{\matr{I}+\delby{\vect{u}}{\vect{x}}}\delby{\vect{x}}{\vect{\nu}}  
   \label{eqn:displacementgradient}
 \end{equation}
 
 \noindent Substituting \eqnref{eqn:displacementgradient} into \eqnref{eqn:greenstrain},
 
 \begin{equation}
-  \matr{E}=\bbrac{\transpose{\delby{\vect{x}}{\vect{\nu}}}\transpose{\pbrac{\matr{I}-\delby{\vect{u}}{\vect{x}}}}
-                  \pbrac{\matr{I}-\delby{\vect{u}}{\vect{x}}}\delby{\vect{x}}{\vect{\nu}}-\matr{I}}
+  \matr{E}=\frac{1}{2}\bbrac{\transpose{\delby{\vect{x}}{\vect{\nu}}}\transpose{\pbrac{\matr{I}+\delby{\vect{u}}{\vect{x}}}}
+                  \pbrac{\matr{I}+\delby{\vect{u}}{\vect{x}}}\delby{\vect{x}}{\vect{\nu}}-\matr{I}}
   \label{eqn:greendisplacement1}
 \end{equation}
 
 \noindent Simplifying,
 
 \begin{equation}
-  \matr{E}=\transpose{\delby{\vect{x}}{\vect{\nu}}}
-           \pbrac{\delby{\vect{u}}{\vect{x}}+\transpose{\delby{\vect{u}}{\vect{x}}}-
+  \matr{E}=\frac{1}{2}\transpose{\delby{\vect{x}}{\vect{\nu}}}
+           \pbrac{\delby{\vect{u}}{\vect{x}}+\transpose{\delby{\vect{u}}{\vect{x}}}+
 	   \transpose{\delby{\vect{u}}{\vect{x}}}\delby{\vect{u}}{\vect{x}}}
 	   \delby{\vect{x}}{\vect{\nu}}
   \label{eqn:greendisplacement2}
@@ -168,7 +168,7 @@ A similar derivation can be employed to establish a relationship between the Alm
 form is given by,
 
 \begin{equation}
-  \vect{e}=\delby{\vect{u}}{\vect{z}}+\transpose{\delby{\vect{u}}{\vect{z}}}+
+  \vect{e}=\frac{1}{2}\delby{\vect{u}}{\vect{z}}+\transpose{\delby{\vect{u}}{\vect{z}}}-
 	   \transpose{\delby{\vect{u}}{\vect{z}}}\delby{\vect{u}}{\vect{z}}
   \label{eqn:almansidisplacement}
 \end{equation}

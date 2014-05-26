@@ -165,6 +165,7 @@ OBJECTS = $(OBJECT_DIR)/advection_equation_routines.o \
 	$(OBJECT_DIR)/Darcy_pressure_equations_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o \
+	$(OBJECT_DIR)/fsi_routines.o \
 	$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
@@ -200,6 +201,7 @@ OBJECTS = $(OBJECT_DIR)/advection_equation_routines.o \
 	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
 	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_matrices_constants.o \
 	$(OBJECT_DIR)/interface_matrices_routines.o \
 	$(OBJECT_DIR)/interface_operators_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -681,6 +683,27 @@ $(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o	:	$(SOURCE_DIR)/finite
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/fsi_routines.o	:	$(SOURCE_DIR)/fsi_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_IO_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/finite_elasticity_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
@@ -1246,6 +1269,9 @@ $(OBJECT_DIR)/interface_mapping_routines.o	:	$(SOURCE_DIR)/interface_mapping_rou
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/interface_matrices_constants.o	:	$(SOURCE_DIR)/interface_matrices_constants.f90 \
+	$(OBJECT_DIR)/kinds.o
+
 $(OBJECT_DIR)/interface_matrices_routines.o	:	$(SOURCE_DIR)/interface_matrices_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
@@ -1462,6 +1488,7 @@ $(OBJECT_DIR)/multi_physics_routines.o	:	$(SOURCE_DIR)/multi_physics_routines.f9
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o \
+	$(OBJECT_DIR)/fsi_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/multi_compartment_transport_routines.o \
@@ -1535,6 +1562,8 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
 	$(OBJECT_DIR)/interface_routines.o \
+	$(OBJECT_DIR)/interface_matrices_constants.o \
+	$(OBJECT_DIR)/interface_matrices_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/mesh_routines.o \
@@ -1696,6 +1725,7 @@ $(OBJECT_DIR)/solver_routines.o	:	$(SOURCE_DIR)/solver_routines.f90 \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_conditions_constants.o \
+	$(OBJECT_DIR)/interface_matrices_constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_constants.o \
