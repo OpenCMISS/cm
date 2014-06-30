@@ -7417,7 +7417,7 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_XI_DIMENSIONS,NUMBER_OF_X_DIMENSIONS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR !,LOCAL_ERROR
 
     CALL ENTERS("FIELD_INTERPOLATED_POINT_METRICS_INITIALISE",ERR,ERROR,*999)
 
@@ -7452,11 +7452,13 @@ CONTAINS
           INTERPOLATED_POINT_METRICS%DXI_DX=0.0_DP
           INTERPOLATED_POINT_METRICS%JACOBIAN=0.0_DP
           INTERPOLATED_POINT_METRICS%JACOBIAN_TYPE=0
-        ELSE
-          LOCAL_ERROR="The number of coordinate dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-            & ") does not match the number of components of the interpolated point ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATED_POINT%VALUES,1),"*",ERR,ERROR))//")."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+         !For now don't flag an error if the number of xi dimensions doesn't match the number of x dimensions.
+         !Simply do not allocate the metrics information.
+!        ELSE
+!          LOCAL_ERROR="The number of coordinate dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
+!            & ") does not match the number of components of the interpolated point ("// &
+!            & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATED_POINT%VALUES,1),"*",ERR,ERROR))//")."
+!          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
@@ -7514,7 +7516,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: var_type_idx,DUMMY_ERR
+    INTEGER(INTG) :: variableTypeIdx,DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
     CALL ENTERS("FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE",ERR,ERROR,*999)
@@ -7525,16 +7527,18 @@ CONTAINS
       ELSE
         ALLOCATE(INTERPOLATED_POINTS_METRICS(FIELD_NUMBER_OF_VARIABLE_TYPES),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interpolated points metrics.",ERR,ERROR,*999)
-        DO var_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-          NULLIFY(INTERPOLATED_POINTS_METRICS(var_type_idx)%PTR)
-          IF(ASSOCIATED(INTERPOLATED_POINTS(var_type_idx)%PTR)) &
-            & CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(INTERPOLATED_POINTS(var_type_idx)%PTR, &
-            & INTERPOLATED_POINTS_METRICS(var_type_idx)%PTR,ERR,ERROR,*999)
-        ENDDO !var_type_idx
+        !Nullify all pointers first so that finalise does not fail on error condition half way through the next loop
+        DO variableTypeIdx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+          NULLIFY(INTERPOLATED_POINTS_METRICS(variableTypeIdx)%PTR)          
+        ENDDO !variableTypeIdx
+        DO variableTypeIdx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+          IF(ASSOCIATED(INTERPOLATED_POINTS(variableTypeIdx)%PTR)) &
+            & CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(INTERPOLATED_POINTS(variableTypeIdx)%PTR, &
+            & INTERPOLATED_POINTS_METRICS(variableTypeIdx)%PTR,ERR,ERROR,*999)
+        ENDDO !variableTypeIdx
       ENDIF
     ELSE
       CALL FLAG_ERROR("Interpolation points is not associated.",ERR,ERROR,*998)
-
     ENDIF
 
     CALL EXITS("FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE")
@@ -12798,9 +12802,14 @@ CONTAINS
                     CALL DISTRIBUTED_VECTOR_COPY(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_TO_PARAMETER_SET%PARAMETERS, &
                       & ALPHA,ERR,ERROR,*999)
                   ELSE
-                    LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
-                      & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ! CHECK what needs to be done here: LagrangeMultipliersField does not have SET_TYPE==PREVIOUS_VALUES
+                    IF(ASSOCIATED(FIELD%INTERFACE)) THEN
+                      !OK if LagrangeMultipliersField?
+                    ELSE
+                      LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                        & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &

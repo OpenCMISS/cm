@@ -50,6 +50,7 @@ MODULE INTERFACE_MATRICES_ROUTINES
   USE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE INTERFACE_CONDITIONS_CONSTANTS
+  USE INTERFACE_MATRICES_CONSTANTS
   USE ISO_VARYING_STRING
   USE KINDS
   USE MATRIX_VECTOR
@@ -105,6 +106,8 @@ MODULE INTERFACE_MATRICES_ROUTINES
   PUBLIC INTERFACE_MATRICES_STRUCTURE_TYPE_SET
 
   PUBLIC INTERFACE_MATRICES_VALUES_INITIALISE
+  
+  PUBLIC InterfaceMatrix_TimeDependenceTypeSet,InterfaceMatrix_TimeDependenceTypeGet
 
 CONTAINS
 
@@ -1600,6 +1603,133 @@ CONTAINS
     CALL EXITS("INTERFACE_MATRICES_VALUES_INITIALISE")
     RETURN 1
   END SUBROUTINE INTERFACE_MATRICES_VALUES_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE InterfaceMatrix_TimeDependenceTypeSet(InterfaceCondition, &
+    & interfaceMatrixIndex,IsTranspose,TimeDependenceType,Err,Error,*)
+    
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: InterfaceCondition
+    INTEGER(INTG), INTENT(IN) :: InterfaceMatrixIndex
+    LOGICAL, INTENT(IN) :: IsTranspose
+    INTEGER(INTG), INTENT(IN) :: TimeDependenceType
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    !Local variables
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: InterfaceEquations
+    TYPE(INTERFACE_MATRICES_TYPE), POINTER :: InterfaceMatrices
+    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: InterfaceMatrix
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("InterfaceMatrix_TimeDependenceTypeSet",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(InterfaceCondition)) THEN
+      InterfaceEquations=>InterfaceCondition%INTERFACE_EQUATIONS
+      IF(ASSOCIATED(InterfaceEquations)) THEN
+        InterfaceMatrices=>InterfaceEquations%INTERFACE_MATRICES
+        IF(ASSOCIATED(InterfaceMatrices)) THEN
+          InterfaceMatrix=>InterfaceMatrices%MATRICES(InterfaceMatrixIndex)%PTR
+          IF(ASSOCIATED(InterfaceMatrix)) THEN
+            IF(.NOT.IsTranspose) THEN
+              InterfaceMatrix%INTERFACE_MATRIX_TIME_DEPENDENCE_TYPE=TimeDependenceType
+            ELSE
+              IF(InterfaceMatrix%HAS_TRANSPOSE) THEN
+                InterfaceMatrix%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE=TimeDependenceType
+              ELSE
+                LOCAL_ERROR="Interface matrices has_transpose flag is .false. but interface matrix type is transpose."
+                CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
+              ENDIF
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface matrix is not associated",Err,Error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface matrices not associated.",Err,Error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface equations not associated.",Err,Error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",Err,Error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfaceMatrix_TimeDependenceTypeSet")
+    RETURN
+999 CALL ERRORS("InterfaceMatrix_TimeDependenceTypeSet",Err,Error)
+    CALL EXITS("InterfaceMatrix_TimeDependenceTypeSet")
+    RETURN 1
+  END SUBROUTINE InterfaceMatrix_TimeDependenceTypeSet
+
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE InterfaceMatrix_TimeDependenceTypeGet(InterfaceCondition, &
+    & interfaceMatrixIndex,IsTranspose,TimeDependenceType,Err,Error,*)
+    
+    !Argument variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: InterfaceCondition
+    INTEGER(INTG), INTENT(IN) :: InterfaceMatrixIndex
+    LOGICAL, INTENT(IN) :: IsTranspose
+    INTEGER(INTG), INTENT(OUT) :: TimeDependenceType
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    !Local variables
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: InterfaceEquations
+    TYPE(INTERFACE_MATRICES_TYPE), POINTER :: InterfaceMatrices
+    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: InterfaceMatrix
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("InterfaceMatrix_TimeDependenceTypeGet",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(InterfaceCondition)) THEN
+      InterfaceEquations=>InterfaceCondition%INTERFACE_EQUATIONS
+      IF(ASSOCIATED(InterfaceEquations)) THEN
+        InterfaceMatrices=>InterfaceEquations%INTERFACE_MATRICES
+        IF(ASSOCIATED(InterfaceMatrices)) THEN
+          InterfaceMatrix=>InterfaceMatrices%MATRICES(InterfaceMatrixIndex)%PTR
+          IF(ASSOCIATED(InterfaceMatrix)) THEN
+            IF(.NOT.IsTranspose) THEN
+              TimeDependenceType=InterfaceMatrix%INTERFACE_MATRIX_TIME_DEPENDENCE_TYPE
+            ELSE
+              IF(InterfaceMatrix%HAS_TRANSPOSE) THEN
+                TimeDependenceType=InterfaceMatrix%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE
+              ELSE
+                LOCAL_ERROR="Interface matrices has_transpose flag is .false. but interface matrix type is transpose."
+                CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
+              ENDIF
+            ENDIF
+            !Sanity check
+            IF(.NOT.(TimeDependenceType>0.AND.TimeDependenceType<=NUMBER_OF_INTERFACE_MATRIX_TYPES)) THEN
+              LOCAL_ERROR="Invalid time dependence type of "//TRIM(NUMBER_TO_VSTRING(TimeDependenceType,"*",ERR,ERROR))// &
+                & ". Must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRIX_TYPES,"*",ERR,ERROR))// &
+                & "."
+              CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface matrix is not associated",Err,Error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface matrices not associated.",Err,Error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface equations not associated.",Err,Error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface condition is not associated.",Err,Error,*999)
+    ENDIF
+    
+    CALL EXITS("InterfaceMatrix_TimeDependenceTypeGet")
+    RETURN
+999 CALL ERRORS("InterfaceMatrix_TimeDependenceTypeGet",Err,Error)
+    CALL EXITS("InterfaceMatrix_TimeDependenceTypeGet")
+    RETURN 1
+  END SUBROUTINE InterfaceMatrix_TimeDependenceTypeGet
 
   !
   !================================================================================================================================
