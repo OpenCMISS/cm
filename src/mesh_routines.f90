@@ -8688,7 +8688,6 @@ CONTAINS
     IF(ASSOCIATED(mesh)) THEN
       DO componentIdx=1,mesh%NUMBER_OF_COMPONENTS
         CALL MeshTopologyComponentFinalise(mesh%topology(componentIdx)%ptr,err,error,*999)
-        DEALLOCATE(mesh%topology(componentIdx)%ptr)
       ENDDO !componentIdx
       DEALLOCATE(mesh%topology)
     ELSE
