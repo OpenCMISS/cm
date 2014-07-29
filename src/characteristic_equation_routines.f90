@@ -982,6 +982,10 @@ CONTAINS
             local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
               & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
             A_BIF(versionIdx)=dependentParameters(local_ny)
+            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+             & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,1,nodeNumber,1,Q_BIF(versionIdx),ERR,ERROR,*999)            
+            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+             & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,1,nodeNumber,2,A_BIF(versionIdx),ERR,ERROR,*999)            
 
             ! If A goes negative during nonlinear iteration, set to A0
             IF (A_BIF(versionIdx) < A0_PARAM(versionIdx)*0.001_DP) A_BIF(versionIdx) = A0_PARAM(versionIdx)*0.001_DP
@@ -1028,6 +1032,7 @@ CONTAINS
                   rowIdx=rowIdx+1
                   nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
                     & +normalWave(componentIdx,versionIdx)*4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
+!                    & (A_BIF(versionIdx)**0.25_DP)-W(componentIdx,versionIdx)
                     & (A_BIF(versionIdx)**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)-W(componentIdx,versionIdx)
 
                   ! nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
@@ -1400,7 +1405,7 @@ CONTAINS
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,Re,normalWave(2,4),elementLengths(4)
     REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction,nodeXi,Ts,Xs,W2Coeff
-    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,qCellml,lambda(4)
+    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,qCellml,lambda(4),QUpwindPrevious,AUpwindPrevious
     REAL(DP) :: elementLength,extrapolationDistance,W1,W2,WPrevious(2,4)
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny,lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
@@ -1532,6 +1537,21 @@ CONTAINS
                         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,APrevious,err,error,*999)            
 
+                        ! Get previous upwind Q,A values at node
+                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QUpwindPrevious,err,error,*999)            
+                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,AUpwindPrevious,err,error,*999)            
+
+                        ! IF (currentTime > 0.0_DP) THEN
+                        !   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                        !     & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QUpwindPrevious, &
+                        !     & err,error,*999)                        
+                        !   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                        !     & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,AUpwindPrevious, &
+                        !     & err,error,*999)                        
+                        ! ENDIF
+
                         WPrevious(componentIdx,versionIdx)= ((QPrevious/APrevious)+ &
                           & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
                           & (APrevious**(0.25_DP) - (A0_PARAM(versionIdx))**(0.25_DP)))
@@ -1597,16 +1617,10 @@ CONTAINS
                   DO componentIdx=1,2
                     DO versionIdx=1,numberOfVersions
                       IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
-                        ! Get previous W values
-                        ! CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        !  & versionIdx,derivativeIdx,nodeIdx,componentIdx,WPrevious(componentIdx,versionIdx),err,error,*999)
-                        ! CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_V_VARIABLE_TYPE, &
-                        !  & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,componentIdx, &
-                        !  & WPrevious(componentIdx,versionIdx),err,error,*999)
-
                         ! W(t+delta(t)) = W_extrap(t)
                         W(componentIdx,versionIdx)= ((Q_EX(versionIdx)/A_EX(versionIdx))+ &
                           & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT(Beta_EX(versionIdx)/(2.0_DP*rho))* &
+!                          & (A_EX(versionIdx)**(0.25_DP)))
                           & (A_EX(versionIdx)**(0.25_DP) - (A0_EX(versionIdx))**(0.25_DP)))
 
                         ! Add friction term if not neglected
@@ -1615,28 +1629,18 @@ CONTAINS
                         friction = timeIncrement*l*f(versionIdx)
 !                        W(componentIdx,versionIdx)= W(componentIdx,versionIdx) + friction
 
-                        ! ! Initialise to only use forward wave
-                        ! IF (currentTime < 800.0_DP) THEN
-                        !   IF (componentIdx == 2) THEN
-                        !     W(componentIdx,versionIdx)= 0.0_DP
-                        !   ENDIF
-                        ! ENDIF
-                                                   
+                        IF (currentTime < W2Coeff) THEN
+                          IF (componentIdx == 2) THEN
+                            W(componentIdx,versionIdx)= 0.0_DP!WPrevious(componentIdx,versionIdx)
+                          ENDIF
+                        ENDIF
+
                         ! Check extrapolated wave speed is coherent
                         lambda(versionIdx) = Q_EX(versionIdx)/A_EX(versionIdx) + normalWave(componentIdx,versionIdx)* &
                          & (A_EX(versionIdx)**0.25)*SQRT(Beta(versionIdx)/(2.0_DP*rho))
                         IF (lambda(versionIdx)*normalWave(componentIdx,versionIdx) < -ZERO_TOLERANCE ) THEN
                           CALL FLAG_ERROR("Subcritical 1D system violated.",ERR,ERROR,*999)
                         ENDIF
-
-                        !Update W value
-!                        IF (componentIdx == 2) THEN
-                          IF (currentTime < W2Coeff) THEN
-                            W(componentIdx,versionIdx)= WPrevious(componentIdx,versionIdx)
-                          ENDIF
-!                        ENDIF
-
-!                        W(componentIdx,versionIdx)= WPrevious(componentIdx,versionIdx)
 
                         IF (.NOT. overExtrapolated) THEN
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_V_VARIABLE_TYPE, &
@@ -1679,7 +1683,8 @@ CONTAINS
                         ! -------------
                         ! Calculate W1 from 1D domain
                         W1 = ((Q_EX(versionIdx)/A_EX(versionIdx)) + 4.0_DP*SQRT(Beta_EX(versionIdx)/(2.0_DP*rho))* &
-                          & (A_EX(versionIdx)**(0.25_DP) - A0_EX(versionIdx)**(0.25_DP)))
+!                         & (A_EX(versionIdx)**(0.25_DP)))
+                         & (A_EX(versionIdx)**(0.25_DP) - A0_EX(versionIdx)**(0.25_DP)))
                         ! Calculate W2 from 0D domain
                         W2 = QCellml/ACellml - 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
                           & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
@@ -1700,6 +1705,10 @@ CONTAINS
                         ! Calculate W2 for the next time step
                         W2 = (W2 + l*(Re*QPrevious/APrevious))
 
+
+                        W1 = W(1,1)
+                        W2 = 0.0_DP
+
                       ELSE
                         !  I n l e t
                         ! -----------
@@ -1711,8 +1720,9 @@ CONTAINS
                           & (A_EX(versionIdx)**(0.25_DP) - A0_EX(versionIdx)**(0.25_DP)))
                       ENDIF
                       ! Calculate new boundary values for Coupled node
-                      ACurrent = ((2.0_DP*rho)/(Beta(versionIdx)))**2.0_DP* &
+                      ACurrent = (((2.0_DP*rho)/(Beta(versionIdx)))**2.0_DP)* &
                        & (((W1-W2)/8.0_DP+SQRT(Beta(versionIdx)/(2.0_DP*rho))*((A0_PARAM(versionIdx))**0.25_DP))**4.0_DP)
+!                       & (((W1-W2)/8.0_DP)**4.0_DP)
                       QCurrent = ((W1+W2)/2.0_DP)*ACurrent
                     ENDIF
 

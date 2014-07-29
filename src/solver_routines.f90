@@ -61,6 +61,7 @@ MODULE SOLVER_ROUTINES
   USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_MATRICES_CONSTANTS
   USE ISO_VARYING_STRING
+  USE MATHS
   USE PROBLEM_CONSTANTS
   USE SOLVER_MAPPING_ROUTINES
   USE SOLVER_MATRICES_ROUTINES
@@ -11416,6 +11417,7 @@ CONTAINS
     TYPE(INTERFACE_TO_SOLVER_MAPS_TYPE), POINTER :: INTERFACE_TO_SOLVER_MAP
 
     REAL(DP), POINTER :: CHECK_DATA(:),PREVIOUS_RESIDUAL_PARAMETERS(:),CHECK_DATA2(:)
+    REAL(DP) :: RESIDUAL_VECTOR_DEBUG(34),RHS_VECTOR_DEBUG(34),residualNorm
     !STABILITY_TEST under investigation
     LOGICAL :: STABILITY_TEST
     !.FALSE. guarantees weighting as described in OpenCMISS notes
@@ -11424,6 +11426,9 @@ CONTAINS
     STABILITY_TEST=.FALSE.
    
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
+
+    RESIDUAL_VECTOR_DEBUG = 0.0_DP
+    RHS_VECTOR_DEBUG = 0.0_DP
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(DYNAMIC_SOLVER)) NULLIFY(DYNAMIC_SOLVER)
@@ -11965,6 +11970,7 @@ CONTAINS
                                           CALL BoundaryConditions_NeumannIntegrate(RHS_BOUNDARY_CONDITIONS, &
                                             & ERR,ERROR,*999)
                                           !Loop over the rows in the equations set
+                                          RHS_VECTOR_DEBUG=0.0_DP
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                             !Get the dynamic contribution to the RHS values
                                           !
@@ -12022,6 +12028,7 @@ CONTAINS
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
                                                VALUE=DYNAMIC_VALUE*row_coupling_coefficient
+                                               RHS_VECTOR_DEBUG(solver_row_number) = VALUE
                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
@@ -12646,6 +12653,7 @@ CONTAINS
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
                                             VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                            RESIDUAL_VECTOR_DEBUG(solver_row_number) = VALUE
 !                                             VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
                                             !Add in nonlinear residual values
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
@@ -12675,6 +12683,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
+                      residualNorm = L2NORM(RESIDUAL_VECTOR_DEBUG)
                   !
                       !Loop over the interface conditions
                       DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -15495,22 +15504,22 @@ CONTAINS
                         CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
                         SELECT CASE(CONVERGED_REASON)
                         CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged function count.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged function count.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_MAX_IT)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
                             & ERR,ERROR,*999)
                         END SELECT
                          IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
@@ -17065,7 +17074,25 @@ CONTAINS
       IF(ASSOCIATED(newtonSolver)) THEN
         SELECT CASE(newtonSolver%convergenceTestType)
           CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
+!            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
+            SELECT CASE(newtonSolver%NEWTON_SOLVE_TYPE)
+            CASE(SOLVER_NEWTON_LINESEARCH)
+              linesearchSolver=>newtonSolver%LINESEARCH_SOLVER
+              IF(ASSOCIATED(linesearchSolver)) THEN
+                CALL petsc_SnesLineSearchGetNorms(linesearchSolver%sneslinesearch,xnorm,fnorm,ynorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Norm    = ",xnorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Update Norm    = ",ynorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",fnorm,err,error,*999)
+              ELSE
+                CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",err,error,*999)
+              ENDIF
+            CASE(SOLVER_NEWTON_TRUSTREGION)
+              CALL FLAG_ERROR("The Newton Trust region solver is not implemented.",err,error,*999)
+            CASE DEFAULT
+              localError="The Newton solve type of "// &
+                & TRIM(NUMBER_TO_VSTRING(newtonSolver%NEWTON_SOLVE_TYPE,"*",err,error))//"is invalid."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT
           CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
             SELECT CASE(newtonSolver%NEWTON_SOLVE_TYPE)
             CASE(SOLVER_NEWTON_LINESEARCH)
