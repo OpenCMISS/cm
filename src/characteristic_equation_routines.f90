@@ -205,8 +205,8 @@ CONTAINS
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
     INTEGER(INTG) :: numberOfDimensions,componentIdx,geometricScalingType,geometricMeshComponent,geometricComponentNumber
-    INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents,numberComponentsU2
-    INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables,numberComponentsV,numberComponentsU1
+    INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents
+    INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
@@ -1032,12 +1032,7 @@ CONTAINS
                   rowIdx=rowIdx+1
                   nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
                     & +normalWave(componentIdx,versionIdx)*4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
-!                    & (A_BIF(versionIdx)**0.25_DP)-W(componentIdx,versionIdx)
                     & (A_BIF(versionIdx)**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)-W(componentIdx,versionIdx)
-
-                  ! nonlinearMatrices%NodalResidual%vector(rowIdx)=(Q_BIF(versionIdx)/A_BIF(versionIdx)) &
-                  !   & +normalWave(componentIdx,versionIdx)*4.0_DP*((Fr*(Beta(versionIdx)))**0.5_DP)* &
-                  !   & (A_BIF(versionIdx)**0.25_DP)-W(componentIdx,versionIdx)
                 ENDIF
               ENDDO
             ENDDO
@@ -1055,36 +1050,10 @@ CONTAINS
                     ENDDO
                     nonlinearMatrices%NodalResidual%vector(rowIdx)=SUM
                   ELSE
-                    ! nonlinearMatrices%NodalResidual%vector(rowIdx)= &
-                    !  & ((rho*(As**1.5_DP)/(2.0_DP)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
-                    !  & (Beta(1)*Fr*(As**1.5_DP)*(2.0_DP*rho))*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
-                    !  & ((rho*(As**1.5_DP)/(2.0_DP)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
-                    !  & (Beta(versionIdx)*Fr*(As**1.5_DP)*(2.0_DP*rho))*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
-
-                    ! nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                    !   & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                    !   & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
-                    !   & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
-
-                    ! nonlinearMatrices%NodalResidual%vector(rowIdx)= &
-                    !   & ((Q_BIF(1)/A_BIF(1))**2.0_DP + 4.0_DP*Beta(1)*Fr*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
-                    !   & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP + &
-                    !   & 4.0_DP*Beta(versionIdx)*Fr*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
-
                     nonlinearMatrices%NodalResidual%vector(rowIdx)= &
                       & (rho/2.0_DP*((Q_BIF(1)/A_BIF(1))**2.0_DP) + Beta(1)*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)))) - &
                       & (rho/2.0_DP*((Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
                       & Beta(versionIdx)*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx))))
-
-                    ! nonlinearMatrices%NodalResidual%vector(rowIdx)= &
-                    ! & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(1)/A_BIF(1))**2.0_DP) + &
-                    ! & Beta(1)*(SQRT(A_BIF(1)) - SQRT(A0_PARAM(1)/As))) - &
-                    ! & ((1.0_DP/(4.0_DP*Fr)*(Q_BIF(versionIdx)/A_BIF(versionIdx))**2.0_DP) + &
-                    ! & Beta(versionIdx)*(SQRT(A_BIF(versionIdx)) - SQRT(A0_PARAM(versionIdx)/As)))
-                      ! ((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                      ! & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                      ! & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
-                      ! & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
                   ENDIF
                 ENDIF
               ENDDO
@@ -1305,9 +1274,6 @@ CONTAINS
                 IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
                   columnIdx=columnIdx+1
                   rowIdx=rowIdx+1
-!                  jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
-!                    & +normalWave(componentIdx,versionIdx)*SQRT(Fr*Beta(versionIdx))*(A_BIF(versionIdx)**(-0.75_DP))
-
                   jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=(-Q_BIF(versionIdx)/(A_BIF(versionIdx)**2)) &
                     & +normalWave(componentIdx,versionIdx)*SQRT(Beta(versionIdx)/(2.0_DP*rho))*(A_BIF(versionIdx)**(-0.75_DP))
                 ENDIF
@@ -1402,14 +1368,19 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
+    TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,Re,normalWave(2,4),elementLengths(4)
-    REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction,nodeXi,Ts,Xs,W2Coeff
-    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,qCellml,lambda(4),QUpwindPrevious,AUpwindPrevious
+    REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction,Ts,Xs,W2Coeff
+    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,qCellml,lambda(4)
     REAL(DP) :: elementLength,extrapolationDistance,W1,W2,WPrevious(2,4)
-    INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny,lineNumber
+    INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
+    INTEGER(INTG) :: dependentDof,boundaryConditionType
     LOGICAL :: overExtrapolated
+
 
     CALL ENTERS("Characteristic_Extrapolate",ERR,ERROR,*999)
 
@@ -1537,21 +1508,6 @@ CONTAINS
                         CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,APrevious,err,error,*999)            
 
-                        ! Get previous upwind Q,A values at node
-                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QUpwindPrevious,err,error,*999)            
-                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,AUpwindPrevious,err,error,*999)            
-
-                        ! IF (currentTime > 0.0_DP) THEN
-                        !   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                        !     & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QUpwindPrevious, &
-                        !     & err,error,*999)                        
-                        !   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                        !     & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,AUpwindPrevious, &
-                        !     & err,error,*999)                        
-                        ! ENDIF
-
                         WPrevious(componentIdx,versionIdx)= ((QPrevious/APrevious)+ &
                           & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
                           & (APrevious**(0.25_DP) - (A0_PARAM(versionIdx))**(0.25_DP)))
@@ -1620,7 +1576,6 @@ CONTAINS
                         ! W(t+delta(t)) = W_extrap(t)
                         W(componentIdx,versionIdx)= ((Q_EX(versionIdx)/A_EX(versionIdx))+ &
                           & normalWave(componentIdx,versionIdx)*4.0_DP*SQRT(Beta_EX(versionIdx)/(2.0_DP*rho))* &
-!                          & (A_EX(versionIdx)**(0.25_DP)))
                           & (A_EX(versionIdx)**(0.25_DP) - (A0_EX(versionIdx))**(0.25_DP)))
 
                         ! Add friction term if not neglected
@@ -1628,12 +1583,6 @@ CONTAINS
                           & normalWave(componentIdx,versionIdx)*A_EX(versionIdx)**0.25_DP*SQRT(Beta_EX(versionIdx)/(2.0_DP*rho))))
                         friction = timeIncrement*l*f(versionIdx)
 !                        W(componentIdx,versionIdx)= W(componentIdx,versionIdx) + friction
-
-                        IF (currentTime < W2Coeff) THEN
-                          IF (componentIdx == 2) THEN
-                            W(componentIdx,versionIdx)= 0.0_DP!WPrevious(componentIdx,versionIdx)
-                          ENDIF
-                        ENDIF
 
                         ! Check extrapolated wave speed is coherent
                         lambda(versionIdx) = Q_EX(versionIdx)/A_EX(versionIdx) + normalWave(componentIdx,versionIdx)* &
@@ -1656,83 +1605,85 @@ CONTAINS
                   IF (numberOfVersions == 1 .AND. L2NORM(normalWave(:,1)) > ZERO_TOLERANCE) THEN
                     versionIdx = 1
 
-                    !Get A for boundary wave outside the 1D domain (from 0D solution for 1D0D boundary)
+                    ! Get the boundary condition type for the dependent field primitive variables (Q,A)
+                    boundaryConditions=>solverEquations%BOUNDARY_CONDITIONS
                     NULLIFY(fieldVariable)
-                    CALL FIELD_VARIABLE_GET(dependentField,FIELD_U1_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                    IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_VALUES_SET_TYPE)%PTR)) THEN
-                      !Get qCellML used in pCellML calculation
-                      CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & versionIdx,derivativeIdx,nodeIdx,1,qCellML,err,error,*999)                    
-                      !Get pCellML if this is a coupled problem
-                      CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & versionIdx,derivativeIdx,nodeIdx,2,pCellML,err,error,*999)                    
-                      ! Convert pCellML --> A0D 
-                      ACellML=(((pCellML*133.32_DP)/Beta(versionIdx)+SQRT(A0_PARAM(versionIdx)))**2.0_DP)
+                    CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                    dependentDof = fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
+                     & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                    CALL BOUNDARY_CONDITIONS_VARIABLE_GET(boundaryConditions, &
+                     & fieldVariable,boundaryConditionsVariable,ERR,ERROR,*999)
+                    boundaryConditionType=boundaryConditionsVariable%CONDITION_TYPES(dependentDof)                       
 
-                      ! The defined component will be the component to get from outside the 1D domain if retrograde flow
-                      lambda(1) = Q_EX(1)/A_EX(1) + (A_EX(1)**0.25)*SQRT(Beta(versionIdx)/(2.0_DP*rho))
-                      lambda(2) = QCellml/ACellml - (ACellml**0.25)*SQRT(Beta(versionIdx)/(2.0_DP*rho))
-                      ! Check wave direction speed is coherent
-                      IF (lambda(1) < -ZERO_TOLERANCE .OR. lambda(2) > ZERO_TOLERANCE) THEN
-                        CALL FLAG_ERROR("Subcritical 1D system violated.",ERR,ERROR,*999)
-                      ENDIF
-
-                      ! calculate A1D in terms of the characteristic waves from 0D solution and extrapolated from 1d
+                    ! N o n - r e f l e c t i n g   B o u n d a r y
+                    ! ----------------------------------------------------
+                    IF (boundaryConditionType == BOUNDARY_CONDITION_FixedNonreflecting) THEN
+                      ! Outlet
                       IF (normalWave(1,1) > 0.0_DP) THEN
-                        !  O u t l e t
-                        ! -------------
-                        ! Calculate W1 from 1D domain
-                        W1 = ((Q_EX(versionIdx)/A_EX(versionIdx)) + 4.0_DP*SQRT(Beta_EX(versionIdx)/(2.0_DP*rho))* &
-!                         & (A_EX(versionIdx)**(0.25_DP)))
-                         & (A_EX(versionIdx)**(0.25_DP) - A0_EX(versionIdx)**(0.25_DP)))
-                        ! Calculate W2 from 0D domain
-                        W2 = QCellml/ACellml - 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
-                          & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
-
-
-                        !DEBUG- set non-reflecting BC
-                        ! Calculate W1 from 1D domain
-
-                        ! Get previous Q,A values at node
-                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,derivativeIdx,nodeIdx,1,QPrevious,err,error,*999)            
-                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,derivativeIdx,nodeIdx,2,APrevious,err,error,*999)            
-
-                        W2 = ((QPrevious/APrevious) - 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
-                         & (APrevious**(0.25_DP) - A0_PARAM(versionIdx)**(0.25_DP)))
-                        l = (1.0_DP/(QPrevious/APrevious - (APrevious**0.25_DP)*SQRT(Beta(versionIdx)/(2.0_DP*rho))))
-                        ! Calculate W2 for the next time step
-                        W2 = (W2 + l*(Re*QPrevious/APrevious))
-
-
+                        ! Allow wave from 1D domain to exit unimpeded
                         W1 = W(1,1)
                         W2 = 0.0_DP
-
+                      ! Inlet
                       ELSE
-                        !  I n l e t
-                        ! -----------
-                        ! Calculate W1 from 0D domain
-                        W1 = QCellml/ACellml + 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
-                         & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
-                        ! Calculate W2 from 1D domain
-                        W2 = ((Q_EX(versionIdx)/A_EX(versionIdx)) - 4.0_DP*SQRT(Beta_EX(versionIdx)/(2.0_DP*rho))* &
-                          & (A_EX(versionIdx)**(0.25_DP) - A0_EX(versionIdx)**(0.25_DP)))
+                        ! Allow wave from 1D domain to exit unimpeded
+                        W1 = 0.0_DP
+                        W2 = W(2,1)
                       ENDIF
-                      ! Calculate new boundary values for Coupled node
-                      ACurrent = (((2.0_DP*rho)/(Beta(versionIdx)))**2.0_DP)* &
-                       & (((W1-W2)/8.0_DP+SQRT(Beta(versionIdx)/(2.0_DP*rho))*((A0_PARAM(versionIdx))**0.25_DP))**4.0_DP)
-!                       & (((W1-W2)/8.0_DP)**4.0_DP)
-                      QCurrent = ((W1+W2)/2.0_DP)*ACurrent
+
+                    ! C o u p l e d   C e l l M L  ( 0 D )   B o u n d a r y
+                    ! ------------------------------------------------------------
+                    ELSE IF (boundaryConditionType == BOUNDARY_CONDITION_FixedCellml) THEN
+  
+                      !Get Q,A for boundary wave outside the 1D domain (from 0D solution for 1D0D boundary)
+                      NULLIFY(fieldVariable)
+                      CALL FIELD_VARIABLE_GET(dependentField,FIELD_U1_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                      IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_VALUES_SET_TYPE)%PTR)) THEN
+                        !Get qCellML used in pCellML calculation
+                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & versionIdx,derivativeIdx,nodeIdx,1,qCellML,err,error,*999)                    
+                        !Get pCellML if this is a coupled problem
+                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & versionIdx,derivativeIdx,nodeIdx,2,pCellML,err,error,*999)                    
+                        ! Convert pCellML --> A0D 
+                        ACellML=(((pCellML*133.32_DP)/Beta(versionIdx)+SQRT(A0_PARAM(versionIdx)))**2.0_DP)
+
+                        ! The defined component will be the component to get from outside the 1D domain if retrograde flow
+                        lambda(2) = QCellml/ACellml - (ACellml**0.25)*SQRT(Beta(versionIdx)/(2.0_DP*rho))
+                        ! Check wave speed is coherent
+                        IF (lambda(2) > ZERO_TOLERANCE) THEN
+                          CALL FLAG_ERROR("Subcritical 1D system violated at boundary node.",ERR,ERROR,*999)
+                        ENDIF
+
+                        !  O u t l e t
+                        IF (normalWave(1,1) > 0.0_DP) THEN
+                          W1 = W(1,1)
+                          ! Calculate W2 from 0D domain
+                          W2 = QCellml/ACellml - 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
+                            & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
+
+                        !  I n l e t
+                        ELSE
+                          ! Calculate W1 from 0D domain
+                          W1 = QCellml/ACellml + 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
+                           & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
+                          ! Calculate W2 from 1D domain
+                          W2 = W(2,1)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Field variable is not associated.",err,error,*999)
+                      ENDIF
+                    ELSE
+                      localError="The boundary conditions type "//TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &
+                       & " is not valid for a coupled characteristic problem."
+                      CALL FLAG_ERROR(localError,err,error,*999)
                     ENDIF
 
-                    ! Update boundary Q,A values- this will update both Q and A but based on user definition of
-                    ! DOF as fixed/free will set as the required boundary condition.
-
-                    ! CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    !  & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,QCurrent,err,error,*999)
+                    ! Calculate new area value based on W1, W2 and update dof
+                    ACurrent = (((2.0_DP*rho)/(Beta(versionIdx)))**2.0_DP)* &
+                     & (((W1-W2)/8.0_DP+SQRT(Beta(versionIdx)/(2.0_DP*rho))*((A0_PARAM(versionIdx))**0.25_DP))**4.0_DP)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
                      & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
+
                     NULLIFY(fieldVariable)
                     CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
                     IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA2_SET_TYPE)%PTR)) THEN
