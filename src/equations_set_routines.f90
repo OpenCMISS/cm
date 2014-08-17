@@ -7078,4 +7078,58 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculate the deformation tensor for the equation set at a specified user element number and xi coordinates \see
+  !OPENCMISS::CMISSEquationsSetDeformationCalculate
+  SUBROUTINE EQUATIONS_SET_DEFORMATION_CALCULATE(EQUATIONS_SET,USER_ELEMENT_NUMBER,XI,C,INV_C,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to create the analytic for.
+    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The user element number.
+    REAL(DP), INTENT(IN) :: XI(:) !<The xi coordinates to calculate the deformation at
+    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
+    REAL(DP), INTENT(OUT) :: INV_C(:) !<The independent values of the inverse deformation tensor
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_DEFORMATION_CALCULATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%CLASS)
+      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+        CALL ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE(EQUATIONS_SET,USER_ELEMENT_NUMBER,XI,C,INV_C,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FITTING_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_MODAL_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_DEFORMATION_CALCULATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_DEFORMATION_CALCULATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_DEFORMATION_CALCULATE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_DEFORMATION_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE EQUATIONS_SET_ROUTINES

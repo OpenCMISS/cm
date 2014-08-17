@@ -1558,8 +1558,8 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate the deformation at
     REAL(DP), INTENT(IN) :: XI(:) !<The xi coordinates to calculate the deformation at
-    REAL(DP), INTENT(OUT) :: C(:) !<The independent deformation tensor values
-    REAL(DP), INTENT(OUT) :: INV_C(:) !<The independent inverse deformation tensor values
+    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
+    REAL(DP), INTENT(OUT) :: INV_C(:) !<The independent values of the inverse deformation tensor
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
