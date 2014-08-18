@@ -2396,9 +2396,9 @@ CONTAINS
       INTERPOLATION=BASIS_CUBIC_LAGRANGE_INTERPOLATION
     CASE("c.Hermite")
       INTERPOLATION=BASIS_CUBIC_HERMITE_INTERPOLATION
-    CASE("q1.Hermite")
+    CASE("LagrangeHermite")
       INTERPOLATION=BASIS_QUADRATIC1_HERMITE_INTERPOLATION
-    CASE("q2.Hermite")
+    CASE("HermiteLagrange")
       INTERPOLATION=BASIS_QUADRATIC2_HERMITE_INTERPOLATION
     CASE DEFAULT
       CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
@@ -2486,13 +2486,13 @@ CONTAINS
         num_scl=num_scl*4
         num_node=num_node*4
       CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
-        num_scl=num_scl*2*2
+        num_scl=num_scl*4
         num_node=num_node*2
       CASE(BASIS_QUADRATIC1_HERMITE_INTERPOLATION)
-        num_scl=num_scl*2*2
+        num_scl=num_scl*3
         num_node=num_node*2
       CASE(BASIS_QUADRATIC2_HERMITE_INTERPOLATION)
-        num_scl=num_scl*2*2
+        num_scl=num_scl*3
         num_node=num_node*2
       CASE DEFAULT
         CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
@@ -2812,7 +2812,7 @@ CONTAINS
         IF(LIST_COMP_SCALE(comp_idx)==1) THEN
           scaleIndex=0
         ELSE
-          scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
+          scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)))-1
         ENDIF
 
         !!TEMP
@@ -2871,9 +2871,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                         & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2896,9 +2897,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2921,9 +2923,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2946,9 +2949,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2973,9 +2977,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -2998,9 +3003,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3023,9 +3029,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3048,9 +3055,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3075,9 +3083,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3100,9 +3109,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3125,9 +3135,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3150,9 +3161,10 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(nn)
+                      ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                      derivativeIndex=derivativeIndex+1
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3503,7 +3515,7 @@ CONTAINS
             NULLIFY(GEOMETRIC_PARAMETERS)
             CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
               & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
           ELSE IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_INTG_TYPE) THEN
             NULLIFY(GEOMETRIC_PARAMETERS_INTG)
@@ -3513,7 +3525,7 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
               & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
