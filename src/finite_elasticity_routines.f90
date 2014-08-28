@@ -2412,7 +2412,7 @@ CONTAINS
 !        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
 
       CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE)
-        !Additional term for transversely isotropic (fibre-reinforced) materials (Markert, 2005)
+        !Additional term for transversely isotropic (fibre-reinforced) materials (Markert et al. 2005)
         ! W_aniso=c3*(sqrt(I4)^(c4-2)-1/I4)M
         ! with M being the mapping towards the fibre direction, here: I4=C_11
         !C(3)=c3...polynomial coefficient
@@ -2429,11 +2429,14 @@ CONTAINS
         IF(AZL(1,1) > 1.0_DP) THEN ! only in the tension range
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+C(3)/AZL(1,1)*(AZL(1,1)**(C(4)/2.0_DP)-1.0_DP)
         ENDIF
-        IF((SQRT(AZL(1,1))>0.84_DP).AND.(SQRT(AZL(1,1))<1.96_DP)) THEN
-          VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.4_DP/1.4_DP + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.4_DP - 5.25_DP) !f
+!        IF((SQRT(AZL(1,1))>0.84_DP).AND.(SQRT(AZL(1,1))<1.96_DP)) THEN
+        if((SQRT(AZL(1,1))>0.72_DP).AND.(SQRT(AZL(1,1))<1.68_DP)) then
+!          VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.4_DP/1.4_DP + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.4_DP - 5.25_DP) !f
+          VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.2_DP/1.2_DP + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.2_DP - 5.25_DP)
           VALUE=VALUE*(1.0_DP/SQRT(AZL(1,1)))*20.0_DP*C(5)
           PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
         ENDIF
+
 
       CASE(EQUATIONS_SET_ANISOTROPIC_POLYNOMIAL_SUBTYPE)
         !Three additional terms for transversely isotropic (fibre-reinforced) materials (Markert, 2005)
