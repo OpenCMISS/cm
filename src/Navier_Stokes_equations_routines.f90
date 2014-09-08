@@ -1482,7 +1482,7 @@ CONTAINS
                             !Set analytic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
                             !Set numbrer of components
-                            NUMBER_OF_ANALYTIC_COMPONENTS=6
+                            NUMBER_OF_ANALYTIC_COMPONENTS=7
                           CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
                             !Set analtyic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
@@ -1669,6 +1669,10 @@ CONTAINS
                           & FIELD_VALUES_SET_TYPE,4,0.0_DP,ERR,ERROR,*999)
                         CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,5,0.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,6,0.0_DP,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,7,0.0_DP,ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -2469,22 +2473,29 @@ CONTAINS
 
                 IF (iteration == 1) THEN
 
-                  ! TEMP: save N-S values to temp field (DATA2) before characteristics solve (will give new Q,A at branch points)
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_RESIDUAL_SET_TYPE, &
+                   & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+
+                  ! ! TEMP: save N-S values to temp field (DATA2) before characteristics solve (will give new Q,A at branch points)
+                  ! NULLIFY(fieldVariable)
+                  ! CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                  ! IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA2_SET_TYPE)%PTR)) THEN
+                  !   CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                  !    & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
+                  ! ENDIF
+                  ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  !  & FIELD_INPUT_DATA2_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                  ! IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA3_SET_TYPE)%PTR)) THEN
+                  !   CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                  !    & FIELD_INPUT_DATA3_SET_TYPE,ERR,ERROR,*999)
+                  ! ENDIF
+                  ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_RESIDUAL_SET_TYPE, &
+                  !  & FIELD_INPUT_DATA3_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+
                   NULLIFY(fieldVariable)
                   CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                  IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA2_SET_TYPE)%PTR)) THEN
-                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                     & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   & FIELD_INPUT_DATA2_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                  IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA3_SET_TYPE)%PTR)) THEN
-                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                     & FIELD_INPUT_DATA3_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_RESIDUAL_SET_TYPE, &
-                   & FIELD_INPUT_DATA3_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-
                   IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_UPWIND_VALUES_SET_TYPE)%PTR)) THEN
                     CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
                      & FIELD_UPWIND_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2514,10 +2525,16 @@ CONTAINS
                    & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
 
                 ELSE
+                  ! ! RESTORE previous solve values
+                  ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA2_SET_TYPE, &
+                  !  & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                  ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA3_SET_TYPE, &
+                  !  & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+
                   ! RESTORE previous solve values
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA2_SET_TYPE, &
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
                    & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA3_SET_TYPE, &
+                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE, &
                    & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                 ENDIF
               CASE(SOLVER_DYNAMIC_TYPE)
@@ -2555,11 +2572,18 @@ CONTAINS
 
                       dependentField=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                       IF(ASSOCIATED(dependentField)) THEN
+
                         ! TEMP: RESTORE N-S solver values (warning: will overwrite previous boundary data for 1d0d/nonreflecting boundaries)
-                        CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA2_SET_TYPE, &
+                        CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
                          & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA3_SET_TYPE, &
+                        CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE, &
                          & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+
+                        ! ! TEMP: RESTORE N-S solver values (warning: will overwrite previous boundary data for 1d0d/nonreflecting boundaries)
+                        ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA2_SET_TYPE, &
+                        !  & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                        ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA3_SET_TYPE, &
+                        !  & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
 
                         ! ! If this is not the first iteration within this timestep, need to prep fields before
                         ! ! updates in SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE.
@@ -8313,7 +8337,7 @@ CONTAINS
 
                       ! --- Set velocity boundary conditions with analytic value ---
                       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN, &
-                        &  EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
                         ! Get geometric position info for this node
                         DO dimensionIdx=1,numberOfDimensions
                           local_ny=geometricVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
@@ -8324,7 +8348,8 @@ CONTAINS
                         DO derivativeIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
                           globalDerivativeIndex=domainNodes%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)% &
                             & GLOBAL_DERIVATIVE_INDEX
-                          IF(componentIdx<=numberOfXi) THEN
+                          IF(componentIdx<=numberOfXi .OR. &
+                            &  analyticFunctionType==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
                             CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(analyticFunctionType,X,TIME,variableType, &
                               & globalDerivativeIndex,componentIdx,numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS, &
                               & analyticParameters,materialsParameters,VALUE,err,error,*999)
@@ -8662,7 +8687,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j,n,m
     REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
-    REAL(DP) :: boundaryNormal(3),amplitude,offset,period,delta(300),t(300),q(300),s
+    REAL(DP) :: boundaryNormal(4),amplitude,offset,period,delta(300),t(300),q(300),s
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
@@ -9999,9 +10024,10 @@ CONTAINS
            boundaryNormal(1) = ANALYTIC_PARAMETERS(1) ! normal vector in x
            boundaryNormal(2) = ANALYTIC_PARAMETERS(2) ! normal vector in y
            boundaryNormal(3) = ANALYTIC_PARAMETERS(3) ! normal vector in z
-           period = ANALYTIC_PARAMETERS(4) ! time period for waveform
+           boundaryNormal(4) = ANALYTIC_PARAMETERS(4) ! normal vector in z
            amplitude = ANALYTIC_PARAMETERS(5) ! amplitude of sine wave
            offset = ANALYTIC_PARAMETERS(6) ! constant value
+           period = ANALYTIC_PARAMETERS(7) ! time period for waveform
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              !Set analytic value for w
@@ -12277,10 +12303,6 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)
-        ! Do nothing
-      CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-        ! Do nothing
       CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
@@ -12289,8 +12311,11 @@ CONTAINS
          & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE, &
          & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
          & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
         !Do nothing
       CASE DEFAULT
