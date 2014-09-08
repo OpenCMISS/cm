@@ -154,6 +154,9 @@ $(OPENCMISS_LIBRARY) :
 run : main
 	$(EXECUTABLE)
 
+test:	main
+	DIR=$(EXAMPLE_ROOT) python $(OPENCMISSEXAMPLES_ROOT)/scripts/run_tests.py 
+
 callgrindrun : main
 	valgrind --tool=callgrind $(EXECUTABLE)
 
@@ -190,11 +193,6 @@ externallibs:
 	$(MAKE) --no-print-directory -f $(UTILS_ROOT)/Makefile DEBUG=$(DEBUG) ABI=$(ABI)
 
 all64: debug64 opt64
-
-# TODO only for linux 64bit for now.
-test:
-# Test for 2x2 mesh using bilinear lagrange basis
-	python $(CURDIR)/testscript.py $(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
 
 #-----------------------------------------------------------------------------
 
@@ -265,7 +263,7 @@ help:
 	@echo "		Run the executable with valgrid memcheck."
 	@echo
 	@echo "	test"
-	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
+	@echo "		Run the executables and test."
 	@echo
 
 #-----------------------------------------------------------------------------
