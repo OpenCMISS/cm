@@ -1683,15 +1683,17 @@ CONTAINS
                      & (((W1-W2)/8.0_DP+SQRT(Beta(versionIdx)/(2.0_DP*rho))*((A0_PARAM(versionIdx))**0.25_DP))**4.0_DP)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
                      & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
-
-                    NULLIFY(fieldVariable)
-                    CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                    IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA2_SET_TYPE)%PTR)) THEN
-                      CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                       & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
-                    ENDIF
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                     & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
+                     & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
+
+                    ! NULLIFY(fieldVariable)
+                    ! CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                    ! IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA2_SET_TYPE)%PTR)) THEN
+                    !   CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                    !    & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
+                    ! ENDIF
+                    ! CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                    !  & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
                   ENDIF ! boundary node
                 ENDIF ! branch or boundary node
               ENDDO !Loop over nodes
