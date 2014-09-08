@@ -4058,6 +4058,8 @@ CONTAINS
       ELSE
         !Check field has a decomposition associated
         IF(ASSOCIATED(FIELD%DECOMPOSITION)) THEN
+          !Check for field validity
+          CALL FieldVariablesCheck(field,err,error,*999)
           !Initialise the components
           CALL FIELD_VARIABLES_INITIALISE(FIELD,ERR,ERROR,*999)
           IF(ASSOCIATED(FIELD%GEOMETRIC_FIELD)) THEN
@@ -16857,66 +16859,71 @@ CONTAINS
           !Check the set type input
           IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
             !Check if this set type has already been created
-            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR)) THEN
-              LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
-                & " has already been created for variable type of "// &
-                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ELSE
-              ALLOCATE(NEW_PARAMETER_SET,STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter set.",ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_INITIALISE(NEW_PARAMETER_SET,ERR,ERROR,*999)
-              NEW_PARAMETER_SET%SET_INDEX=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
-              NEW_PARAMETER_SET%SET_TYPE=FIELD_SET_TYPE
-              NULLIFY(NEW_PARAMETER_SET%PARAMETERS)
-              CALL DISTRIBUTED_VECTOR_CREATE_START(FIELD_VARIABLE%DOMAIN_MAPPING,NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-              SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
-              CASE(FIELD_INTG_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE(FIELD_SP_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_SP_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE(FIELD_DP_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_DP_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE(FIELD_L_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_L_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE DEFAULT
-                LOCAL_ERROR="The field data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
-                  & " is invalid for variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                  & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE)) THEN
+              IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR)) THEN
+                LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has already been created for variable type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-              CALL DISTRIBUTED_VECTOR_CREATE_FINISH(NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-              SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
-              CASE(FIELD_INTG_TYPE)
-                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0_INTG,ERR,ERROR,*999)
-              CASE(FIELD_DP_TYPE)
-                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_DP,ERR,ERROR,*999)
-              END SELECT
-              !Add the new parameter set to the list of parameter sets
-              ALLOCATE(NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter sets.",ERR,ERROR,*999)
-              IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)) THEN
-                DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS
-                  NEW_PARAMETER_SETS(parameter_set_idx)%PTR=>FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR
-                ENDDO !parameter_set_idx
-                DEALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)
               ENDIF
-              NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1)%PTR=>NEW_PARAMETER_SET
-              ALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1), &
-                & STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field parameter sets parameter sets.",ERR,ERROR,*999)
-              DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
-                FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR=>NEW_PARAMETER_SETS(parameter_set_idx)%PTR
-              ENDDO !parameter_set_idx
-              DEALLOCATE(NEW_PARAMETER_SETS)
-              FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
-              FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR=>NEW_PARAMETER_SET
             ENDIF
+            ALLOCATE(NEW_PARAMETER_SET,STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter set.",ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_INITIALISE(NEW_PARAMETER_SET,ERR,ERROR,*999)
+            NEW_PARAMETER_SET%SET_INDEX=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
+            NEW_PARAMETER_SET%SET_TYPE=FIELD_SET_TYPE
+            NULLIFY(NEW_PARAMETER_SET%PARAMETERS)
+            CALL DISTRIBUTED_VECTOR_CREATE_START(FIELD_VARIABLE%DOMAIN_MAPPING,NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+            SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
+            CASE(FIELD_INTG_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE, &
+                & ERR,ERROR,*999)
+            CASE(FIELD_SP_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_SP_TYPE, &
+                & ERR,ERROR,*999)
+            CASE(FIELD_DP_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_DP_TYPE, &
+                & ERR,ERROR,*999)
+            CASE(FIELD_L_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_L_TYPE, &
+                & ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The field data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            CALL DISTRIBUTED_VECTOR_CREATE_FINISH(NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+            SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
+            CASE(FIELD_INTG_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0_INTG,ERR,ERROR,*999)
+            CASE(FIELD_SP_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_SP,ERR,ERROR,*999)
+            CASE(FIELD_DP_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_DP,ERR,ERROR,*999)
+            CASE(FIELD_L_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,.FALSE.,ERR,ERROR,*999)
+            END SELECT
+            !Add the new parameter set to the list of parameter sets
+            ALLOCATE(NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter sets.",ERR,ERROR,*999)
+            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)) THEN
+              DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS
+                NEW_PARAMETER_SETS(parameter_set_idx)%PTR=>FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR
+              ENDDO !parameter_set_idx
+              DEALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)
+            ENDIF
+            NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1)%PTR=>NEW_PARAMETER_SET
+            ALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1), &
+              & STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field parameter sets parameter sets.",ERR,ERROR,*999)
+            DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
+              FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR=>NEW_PARAMETER_SETS(parameter_set_idx)%PTR
+            ENDDO !parameter_set_idx
+            DEALLOCATE(NEW_PARAMETER_SETS)
+            FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
+            FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR=>NEW_PARAMETER_SET
           ELSE
             LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
               & " is invalid. The field parameter set type must be between 1 and "// &
@@ -29629,6 +29636,65 @@ CONTAINS
     CALL EXITS("FIELD_VARIABLE_TYPES_SET_AND_LOCK")
     RETURN 1
   END SUBROUTINE FIELD_VARIABLE_TYPES_SET_AND_LOCK
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks for a valid setup of the field variables
+  SUBROUTINE FieldVariablesCheck(field,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to check the variables for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: variableIdx,variableIdx2,variableType,variableType2
+    LOGICAL :: duplicates
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("FieldVariablesCheck",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(ASSOCIATED(field%CREATE_VALUES_CACHE)) THEN
+        !Check the number of field variables
+        IF(field%NUMBER_OF_VARIABLES>0) THEN
+          !Check that the variable types are unique. Just do an exhaustive check. It is expensive but the list should be short.
+          duplicates=.FALSE.
+          firstVariable: DO variableIdx=1,field%NUMBER_OF_VARIABLES
+            variableType=field%CREATE_VALUES_CACHE%VARIABLE_TYPES(variableIdx)
+            secondVariable: DO variableIdx2=variableIdx+1,field%NUMBER_OF_VARIABLES
+              variableType2=field%CREATE_VALUES_CACHE%VARIABLE_TYPES(variableIdx2)
+              IF(variableType==variableType2) THEN
+                duplicates=.TRUE.
+                EXIT firstVariable
+              ENDIF
+            ENDDO secondVariable !variableIdx2
+          ENDDO firstVariable !variableIdx
+          IF(duplicates) THEN
+            localError="Invalid variable types. Two or more variables have variable type "// &
+              & TRIM(NumberToVString(variableType,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="Invalid field setup. The field has "//TRIM(NumberToVString(field%NUMBER_OF_VARIABLES,"*",err,error))// &
+            & " variables and should have > 0 variables."
+          CALL FlagError(localError,err,error,*999)
+        ENDIF
+      ELSE
+        CALL FlagError("Field create values cache is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL Exits("FieldVariablesCheck")
+    RETURN
+999 CALL Errors("FieldVariablesCheck",err,error)
+    CALL Exits("FieldVariablesCheck")
+    RETURN 1
+    
+  END SUBROUTINE FieldVariablesCheck
 
   !
   !================================================================================================================================
