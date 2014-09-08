@@ -88,6 +88,12 @@ MODULE MATHS
     MODULE PROCEDURE D_CROSS_PRODUCT_DP
   END INTERFACE dCrossProduct
 
+  !>Calculates and returns the MATRIX-VECTOR-prouct of the double precision VECTOR A*B in C.
+  INTERFACE MATRIX_VECTOR_PRODUCT
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
+  END INTERFACE !MATRIX_VECTOR_PRODUCT
+
   !>Returns the determinant of a matrix
   INTERFACE Determinant
     MODULE PROCEDURE DETERMINANT_FULL_INTG
@@ -223,7 +229,8 @@ MODULE MATHS
 
   PUBLIC CROSS_PRODUCT,CrossProduct,D_CROSS_PRODUCT,dCrossProduct,Determinant,Eigenvalue,Eigenvector,IdentityMatrix,Invert, &
     & L2Norm,MATRIX_PRODUCT,MatrixProduct,MATRIX_TRANSPOSE,MatrixTranspose,Normalise,NORM_CROSS_PRODUCT,NormCrossProduct, &
-    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline,splint,spline_cubic_set,s3_fs,spline_cubic_val
+    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline,splint,spline_cubic_set,s3_fs,spline_cubic_val, &
+	& MATRIX_VECTOR_PRODUCT
   
   
   
@@ -513,6 +520,88 @@ CONTAINS
     CALL EXITS("D_CROSS_PRODUCT_DP")
     RETURN 1
   END SUBROUTINE D_CROSS_PRODUCT_DP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates and returns the MATRIX-VECTOR-prouct of the single precision VECTOR A*B in C.
+  SUBROUTINE MATRIX_VECTOR_PRODUCT_SP(A,B,C,err,error,*)
+
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(:,:)  !<The A MATRIX
+    REAL(SP), INTENT(IN) :: B(:)    !<The B VECTOR
+    REAL(SP), INTENT(OUT) :: C(:)   !<On exit, the product VECTOR C=A*B
+    INTEGER(INTG) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("MATRIX_VECTOR_PRODUCT_SP",err,error,*999)
+
+    IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
+       SELECT CASE(SIZE(A,1))
+       CASE(1)
+         C(1)=A(1,1)*B(1)
+       CASE(2)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)
+       CASE(3)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)+A(1,3)*B(3)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
+         C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
+       CASE DEFAULT
+         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+       END SELECT
+     ELSE
+       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+     ENDIF
+
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_SP")
+     RETURN
+ 999 CALL ERRORS("MATRIX_VECTOR_PRODUCT_SP",err,error)
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_SP")
+     RETURN 1
+  END SUBROUTINE MATRIX_VECTOR_PRODUCT_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates and returns the MATRIX-VECTOR-prouct of the double precision VECTOR A*B in C.
+  SUBROUTINE MATRIX_VECTOR_PRODUCT_DP(A,B,C,err,error,*)
+
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(:,:)  !<The A MATRIX
+    REAL(DP), INTENT(IN) :: B(:)    !<The B VECTOR
+    REAL(DP), INTENT(OUT) :: C(:)   !<On exit, the product VECTOR C=A*B
+    INTEGER(INTG) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("MATRIX_VECTOR_PRODUCT_DP",err,error,*999)
+
+    IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
+       SELECT CASE(SIZE(A,1))
+       CASE(1)
+         C(1)=A(1,1)*B(1)
+       CASE(2)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)
+       CASE(3)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)+A(1,3)*B(3)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
+         C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
+       CASE DEFAULT
+         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+       END SELECT
+     ELSE
+       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+     ENDIF
+
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_DP")
+     RETURN
+ 999 CALL ERRORS("MATRIX_VECTOR_PRODUCT_DP",err,error)
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_DP")
+     RETURN 1
+  END SUBROUTINE MATRIX_VECTOR_PRODUCT_DP
   
   !
   !================================================================================================================================
