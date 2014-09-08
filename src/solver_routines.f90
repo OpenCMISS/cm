@@ -11417,7 +11417,6 @@ CONTAINS
     TYPE(INTERFACE_TO_SOLVER_MAPS_TYPE), POINTER :: INTERFACE_TO_SOLVER_MAP
 
     REAL(DP), POINTER :: CHECK_DATA(:),PREVIOUS_RESIDUAL_PARAMETERS(:),CHECK_DATA2(:)
-    REAL(DP) :: RESIDUAL_VECTOR_DEBUG(34),RHS_VECTOR_DEBUG(34),residualNorm
     !STABILITY_TEST under investigation
     LOGICAL :: STABILITY_TEST
     !.FALSE. guarantees weighting as described in OpenCMISS notes
@@ -11426,9 +11425,6 @@ CONTAINS
     STABILITY_TEST=.FALSE.
    
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
-
-    RESIDUAL_VECTOR_DEBUG = 0.0_DP
-    RHS_VECTOR_DEBUG = 0.0_DP
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(DYNAMIC_SOLVER)) NULLIFY(DYNAMIC_SOLVER)
@@ -11970,7 +11966,6 @@ CONTAINS
                                           CALL BoundaryConditions_NeumannIntegrate(RHS_BOUNDARY_CONDITIONS, &
                                             & ERR,ERROR,*999)
                                           !Loop over the rows in the equations set
-                                          RHS_VECTOR_DEBUG=0.0_DP
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                             !Get the dynamic contribution to the RHS values
                                           !
@@ -12028,7 +12023,6 @@ CONTAINS
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
                                                VALUE=DYNAMIC_VALUE*row_coupling_coefficient
-                                               RHS_VECTOR_DEBUG(solver_row_number) = VALUE
                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
@@ -12653,8 +12647,6 @@ CONTAINS
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
                                             VALUE=RESIDUAL_VALUE*row_coupling_coefficient
-                                            RESIDUAL_VECTOR_DEBUG(solver_row_number) = VALUE
-!                                             VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
                                             !Add in nonlinear residual values
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
                                               & ERR,ERROR,*999)
@@ -12683,8 +12675,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
-                      residualNorm = L2NORM(RESIDUAL_VECTOR_DEBUG)
-                  !
+
                       !Loop over the interface conditions
                       DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
                         INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
