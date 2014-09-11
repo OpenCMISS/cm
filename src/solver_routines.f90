@@ -9109,7 +9109,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets MUMPS ICNTL(icntl)=ivalue through PETSc Mat API (see MUMPS user guide for more info). Must be called after the solver equations have been set up.
+!!\todo Allow for the mumps parameters to be set during the solver creation (i.e., cache and defer setting until we have PETSc matrix)
+  
+  !>Sets MUMPS ICNTL(icntl)=ivalue through PETSc Mat API (see MUMPS user guide for more info). Must be called after the boundary conditions have been set up.
   SUBROUTINE Solver_MumpsSetIcntl(solver,icntl,ivalue,err,error,*)
 
     !Argument variables
@@ -9224,7 +9226,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets MUMPS CNTL(icntl)=val through PETSc Mat API (see MUMPS user guide for more info). Must be called after the solver equations have been set up.
+!!\todo Allow for the mumps parameters to be set during the solver creation (i.e., cache and defer setting until we have PETSc matrix)
+
+  !>Sets MUMPS CNTL(icntl)=val through PETSc Mat API (see MUMPS user guide for more info). Must be called after the boundary conditions have been set up.
   SUBROUTINE Solver_MumpsSetCntl(solver,icntl,val,err,error,*)
 
     !Argument variables
