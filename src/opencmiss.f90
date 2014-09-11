@@ -51540,7 +51540,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the MUMPS ICNTL(icntl)=ivalue integer control parameters through the PETSc-MUMPS interface
+  !>Sets/changes the MUMPS ICNTL(icntl)=ivalue integer control parameters through the PETSc-MUMPS interface. Must be called after the boundary conditions have been set up.
   SUBROUTINE CMISSSolver_MumpsSetIcntl(solver,icntl,ivalue,err)
 
     !Argument variables
@@ -51567,7 +51567,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the MUMPS CNTL(icntl)=val real/complex control parameters through the PETSc-MUMPS interface
+  !>Sets/changes the MUMPS CNTL(icntl)=val real/complex control parameters through the PETSc-MUMPS interface. Must be called after the boundary conditions have been set up.
   SUBROUTINE CMISSSolver_MumpsSetCntl(solver,icntl,val,err)
 
     !Argument variables
