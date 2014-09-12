@@ -5872,7 +5872,7 @@ CONTAINS
     REAL(DP), POINTER :: materialsParameters(:)
     REAL(DP) :: normalWave(2,4),lEigenvalue,Bn,Kr,deltaT
     REAL(DP) :: timeData(2),cycTime,shiftedTime,Q,QP,QPP
-    REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qSpline2(:),qValues(:),tValues(:)
+    REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qValues(:),tValues(:)
     INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,materialIdx,elementIdx,elementNumber,versionElementNumber(4)
     INTEGER(INTG) :: variableIdx,numberOfSourceTimesteps,timeIdx
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,variableType
@@ -6537,40 +6537,21 @@ CONTAINS
                                               ALLOCATE(qValues(numberOfSourceTimesteps))
                                               ALLOCATE(tValues(numberOfSourceTimesteps))
                                               ALLOCATE(qSpline(numberOfSourceTimesteps))
-                                              ALLOCATE(qSpline2(numberOfSourceTimesteps))
                                               nodeData = 0.0_DP                                            
                                               ! Read in time and dependent value
                                               DO timeIdx=1,timeData(1)
                                                 READ(10,*) (nodeData(timeIdx,component_idx), component_idx=1,2)
                                               ENDDO
                                               CLOSE(UNIT=10)
-                                              ! cycTime = nodeData(timeData(1),1)
-                                              ! ! Assemble 3 waveforms worth of time dependent data
-                                              ! DO timeIdx=1,timeData(1)
-                                              !   nodeData(timeIdx+timeData(1),:) = nodeData(timeIdx,:) 
-                                              !   nodeData(timeIdx+timeData(1),1) = nodeData(timeIdx,1) + cycTime
-                                              !   nodeData(timeIdx+timeData(1)*2,:) = nodeData(timeIdx,:)
-                                              !   nodeData(timeIdx+timeData(1)*2,1) = nodeData(timeIdx,1) + cycTime*2.0_DP
-                                              ! ENDDO
-                                              ! shiftedTime = MOD(CURRENT_TIME,cycTime) + cycTime  
                                               tValues = nodeData(:,1)
                                               qValues = nodeData(:,2)
-                                              CALL spline(tValues,qValues,numberOfSourceTimesteps,1e31_DP,1e31_DP, &
-                                               & qSpline,err,error,*999)
-                                              CALL splint(tValues,qValues,qSpline,numberOfSourceTimesteps, &
-                                               & CURRENT_TIME,VALUE,err,error,*999)
                                               CALL spline_cubic_set(numberOfSourceTimesteps,tValues,qValues,2,0.0_DP,2,0.0_DP, &
-                                               & qSpline2,err,error,*999)
-                                              CALL spline_cubic_val(numberOfSourceTimesteps,tValues,qValues,qSpline2,CURRENT_TIME, &
-                                               & Q,QP,QPP,err,error,*999)
-
-                                              ! IF (CURRENT_TIME < tValues(1)) THEN
-                                              !   VALUE = qValues(1)
-                                              ! ENDIF
+                                               & qSpline,err,error,*999)
+                                              CALL spline_cubic_val(numberOfSourceTimesteps,tValues,qValues,qSpline,CURRENT_TIME, &
+                                               & VALUE,QP,QPP,err,error,*999)
 
                                               DEALLOCATE(nodeData)
                                               DEALLOCATE(qSpline)
-                                              DEALLOCATE(qSpline2)
                                               DEALLOCATE(qValues)
                                               DEALLOCATE(tValues)
 
