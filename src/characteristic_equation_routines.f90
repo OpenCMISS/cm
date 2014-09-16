@@ -611,8 +611,8 @@ CONTAINS
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
           CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
-            materialsFieldNumberOfVariables=2 ! U type-9 constant / V type-3 variable
-            materialsFieldNumberOfComponents1=9
+            materialsFieldNumberOfVariables=2 ! U type-7 constant / V type-3 variable
+            materialsFieldNumberOfComponents1=7
             materialsFieldNumberOfComponents2=3
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Specify start action
@@ -659,7 +659,7 @@ CONTAINS
                     & 1,geometricComponentNumber,err,error,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsMaterials%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & 1,geometricComponentNumber,err,error,*999)
-                  DO componentIdx=1,materialsFieldNumberOfComponents1 !(MU,RHO,K,As,Re,Fr,St)
+                  DO componentIdx=1,materialsFieldNumberOfComponents1 !(MU,RHO,alpha,pressureExternal,LengthScale,TimeScale,MassScale)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(equationsMaterials%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & componentIdx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
@@ -850,7 +850,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
-    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,SUM,rho
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),SUM,rho
     INTEGER(INTG) :: derivativeIdx,versionIdx,versionIdx2,componentIdx,rowIdx,columnIdx,componentIdx2,numberOfVersions,local_ny
     LOGICAL :: updateStiffnessMatrix,updateNonlinearResidual,boundaryNode
 
@@ -923,89 +923,52 @@ CONTAINS
         & TOPOLOGY%NODES%NODES(nodeNumber)%BOUNDARY_NODE
 
       !Get normal wave direction for nodes
-      CALL FIELD_PARAMETER_SET_DATA_GET(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-        & independentParameters,err,error,*999)
-      fieldVariable=>independentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
       DO componentIdx=1,2
         DO versionIdx=1,numberOfVersions
-          local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-            & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-          normalWave(componentIdx,versionIdx)=independentParameters(local_ny)
+          CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+           & versionIdx,derivativeIdx,nodeNumber,componentIdx,normalWave(componentIdx,versionIdx),err,error,*999)  
         ENDDO
       ENDDO
-      CALL FIELD_PARAMETER_SET_DATA_RESTORE(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-        & independentParameters,err,error,*999)
 
       !!!-- F i n d   B r a n c h   N o d e s --!!!
       IF(ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1))>0) THEN
         IF(.NOT. boundaryNode) THEN
 
-          !Get Material Values at the node
-          CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters,err,error,*999)
-          CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters1,err,error,*999)
-          fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-          local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          rho=materialsParameters(local_ny)
-          local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          As=materialsParameters(local_ny)
-          local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          Fr=materialsParameters(local_ny)
-          fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
+          !Get material constants
+          CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
+          !Get node-based material parameters
           DO versionIdx=1,numberOfVersions
-            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            A0_PARAM(versionIdx)=materialsParameters1(local_ny)
-            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            E_PARAM(versionIdx)=materialsParameters1(local_ny)
-            local_ny=fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            H0_PARAM(versionIdx)=materialsParameters1(local_ny)
-            Beta(versionIdx)=(4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-              & (3.0_DP*A0_PARAM(versionIdx))            
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM(versionIdx),err,error,*999)  
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM(versionIdx),err,error,*999)                
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM(versionIdx),err,error,*999)                
+            beta(versionIdx)=(4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/(3.0_DP*A0_PARAM(versionIdx))     
           ENDDO
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters,err,error,*999)
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters1,err,error,*999)
 
-          !Get current Q & A Values at the node
-          CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
-          fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
           DO versionIdx=1,numberOfVersions
-            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            Q_BIF(versionIdx)=dependentParameters(local_ny)
-            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            A_BIF(versionIdx)=dependentParameters(local_ny)
+            !Get current Q & A Values at the node
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,1,Q_BIF(versionIdx),err,error,*999)                
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,2,A_BIF(versionIdx),err,error,*999)                
+            !Set as upwind field values
             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
              & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,1,nodeNumber,1,Q_BIF(versionIdx),ERR,ERROR,*999)            
             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
              & FIELD_UPWIND_VALUES_SET_TYPE,versionIdx,1,nodeNumber,2,A_BIF(versionIdx),ERR,ERROR,*999)            
-
             ! If A goes negative during nonlinear iteration, set to A0
             IF (A_BIF(versionIdx) < A0_PARAM(versionIdx)*0.001_DP) A_BIF(versionIdx) = A0_PARAM(versionIdx)*0.001_DP
           ENDDO
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
 
           !Get extrapolated W for the node
-          CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
-          fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
           DO componentIdx=1,2
             DO versionIdx=1,numberOfVersions
-              local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-              W(componentIdx,versionIdx)=dependentParameters(local_ny)
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeNumber,componentIdx,W(componentIdx,versionIdx),err,error,*999)                
             ENDDO
           ENDDO
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
 
           !!!-- S T I F F N E S S  M A T R I X  --!!!
           IF(updateStiffnessMatrix) THEN
@@ -1103,7 +1066,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
-    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,rho
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),rho
     INTEGER(INTG) :: numberOfVersions,local_ny,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     LOGICAL :: updateJacobianMatrix,boundaryNode
@@ -1191,68 +1154,36 @@ CONTAINS
       IF(ABS(normalWave(1,1))>0 .OR. ABS(normalWave(2,1))>0) THEN
         IF(.NOT. boundaryNode) THEN
 
-          !Get Material Values at the node
-          CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters,err,error,*999)
-          CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters1,err,error,*999)
-          fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-          local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          rho=materialsParameters(local_ny)
-          local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          As=materialsParameters(local_ny)
-          local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          Fr=materialsParameters(local_ny)
-          fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
+          !Get material constants
+          CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
+          !Get node-based material parameters
           DO versionIdx=1,numberOfVersions
-            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-              & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-            A0_PARAM(versionIdx)=materialsParameters1(local_ny)
-            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-              & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-            E_PARAM(versionIdx)=materialsParameters1(local_ny)
-            local_ny=fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-              & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx)
-            H0_PARAM(versionIdx)=materialsParameters1(local_ny)
-            Beta(versionIdx) = (4.0_DP*(PI**0.5_DP)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
-              & (3.0_DP*A0_PARAM(versionIdx))            
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM(versionIdx),err,error,*999)  
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM(versionIdx),err,error,*999)                
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM(versionIdx),err,error,*999)                
+            beta(versionIdx)=(4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/(3.0_DP*A0_PARAM(versionIdx))     
           ENDDO
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters,err,error,*999)
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & materialsParameters1,err,error,*999)
 
           !Get current Q & A Values at the node
-          CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
-          fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
           DO versionIdx=1,numberOfVersions
-            local_ny=fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            Q_BIF(versionIdx)=dependentParameters(local_ny)
-            local_ny=fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-              & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-            A_BIF(versionIdx)=dependentParameters(local_ny)
-
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,1,Q_BIF(versionIdx),err,error,*999)                
+            CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & versionIdx,derivativeIdx,nodeNumber,2,A_BIF(versionIdx),err,error,*999)                
             ! If A goes negative during nonlinear iteration, set to A0
-            IF (A_BIF(versionIdx) < A0_PARAM(versionIdx)*0.001_DP) A_BIF(versionIdx) = A0_PARAM(versionIdx)**0.001_DP
+            IF (A_BIF(versionIdx) < A0_PARAM(versionIdx)*0.001_DP) A_BIF(versionIdx) = A0_PARAM(versionIdx)*0.001_DP
           ENDDO
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
 
           !Get extrapolated W for the node
-          CALL FIELD_PARAMETER_SET_DATA_GET(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
-          fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
           DO componentIdx=1,2
             DO versionIdx=1,numberOfVersions
-              local_ny=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
-              W(componentIdx,versionIdx)=dependentParameters(local_ny)
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeNumber,componentIdx,W(componentIdx,versionIdx),err,error,*999)                
             ENDDO
           ENDDO
-          CALL FIELD_PARAMETER_SET_DATA_RESTORE(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-            & dependentParameters,err,error,*999)
 
           !!!--  J A C O B I A N   M A T R I X  --!!!
           IF(updateJacobianMatrix) THEN
@@ -1372,8 +1303,8 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: independentParameters(:)
-    REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,Re,normalWave(2,4),elementLengths(4)
-    REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction,Ts,Xs,W2Coeff
+    REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),normalWave(2,4),elementLengths(4)
+    REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction
     REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,qCellml,lambda(4)
     REAL(DP) :: elementLength,extrapolationDistance,W1,W2,WPrevious(2,4)
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),lineNumber
@@ -1437,18 +1368,6 @@ CONTAINS
                   !Get constant material parameters
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,4,As,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,5,Re,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,6,Fr,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,8,Xs,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,9,Ts,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,W2Coeff,err,error,*999)
 
                   overExtrapolated = .FALSE.
 
@@ -1561,7 +1480,7 @@ CONTAINS
                         Beta_EX(versionIdx) = (4.0_DP*SQRT(PI)*E_EX(versionIdx)*H0_EX(versionIdx))/ &
                           & (3.0_DP*A0_EX(versionIdx))
                         ! Calculate friction term if necessary
-                        f(versionIdx) = -Re*Q_EX(versionIdx)/(A_EX(versionIdx)**2.0_DP)
+                        f(versionIdx) = -Q_EX(versionIdx)/(A_EX(versionIdx)**2.0_DP)
                       ENDIF
                     ENDDO
                   ENDDO
@@ -1739,7 +1658,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: nodeNumber,nodeIdx,derivativeIdx,versionIdx,componentIdx,numberOfVersions,dofNumber
     REAL(DP) :: qCurrent(4), aCurrent(4),W(2,4)
-    REAL(DP) :: As,Fr,normalWave,A0_PARAM,E_PARAM,H0_PARAM,Beta
+    REAL(DP) :: normalWave,A0_PARAM,E_PARAM,H0_PARAM,Beta
     LOGICAL :: boundaryNode
 
     CALL ENTERS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR,*999)
@@ -1766,12 +1685,6 @@ CONTAINS
     END IF
 
     domainNodes=>dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%NODES
-
-    ! Get material constants
-    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-      & 4,As,err,error,*999)
-    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-      & 6,Fr,err,error,*999)
 
     !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
     DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
@@ -1803,7 +1716,7 @@ CONTAINS
 
               ! Calculate the characteristic based on current Q,A values
               W(componentIdx,versionIdx)= ((qCurrent(versionIdx)/aCurrent(versionIdx))+ &
-               & normalWave*4.0_DP*SQRT((Fr*(Beta)))*(aCurrent(versionIdx)**(0.25_DP) - (A0_PARAM/As)**(0.25_DP)))
+               & normalWave*4.0_DP*SQRT(((Beta)))*(aCurrent(versionIdx)**(0.25_DP) - (A0_PARAM)**(0.25_DP)))
 
               !Update W values
               fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR

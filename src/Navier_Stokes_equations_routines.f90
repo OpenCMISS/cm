@@ -1829,7 +1829,7 @@ CONTAINS
              & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE)
             !variable X with has Y components
             MATERIAL_FIELD_NUMBER_OF_VARIABLES=2
-            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=9
+            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=7
             MATERIAL_FIELD_NUMBER_OF_COMPONENTS2=3
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Specify start action
@@ -1876,7 +1876,7 @@ CONTAINS
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS1 !(MU,RHO,K,As,Re,Fr,St,Xs,Ts)
+                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS1 !(MU,RHO,alpha,pressureExternal,LengthScale,TimeScale,MassScale)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & I,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO
@@ -1932,7 +1932,7 @@ CONTAINS
              & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
             ! 1 variables for the 1D Navier-Stokes materials
             MATERIAL_FIELD_NUMBER_OF_VARIABLES=2
-            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=9
+            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=7
             MATERIAL_FIELD_NUMBER_OF_COMPONENTS2=3
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Specify start action
@@ -1981,7 +1981,7 @@ CONTAINS
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS1 !(MU,RHO,K,As,Re,Fr,St)
+                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS1 !(MU,RHO,alpha,pressureExternal,LengthScale,TimeScale,MassScale)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & I,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO  
@@ -4000,9 +4000,9 @@ CONTAINS
     INTEGER(INTG) :: numberOfVersions,nodeNumber,local_ny,numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,mass,penaltyCoeff
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_BIF,A_BIF,Q_PRE,A_PRE,area,pressure
-    REAL(DP) :: QUpwind,AUpwind,momentumPrevious,massPrevious,FU(2),F(2),FU_previous(2),massFluxExternal,momentumFluxExternal
-    REAL(DP) :: normalWaveExt,normalWave,pExternal
-    REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,Beta,As,St,Fr,Re,K
+    REAL(DP) :: QUpwind,AUpwind,momentumPrevious,massPrevious,FU,F,massFluxExternal
+    REAL(DP) :: normal,normalWave,pExternal
+    REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,alpha,beta
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:),materialsParameters1(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4674,18 +4674,14 @@ CONTAINS
               A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-              K=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-              As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-              Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-              Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-              St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
+              alpha=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               A0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
               E_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               H0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
-              Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
+              beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
 
               ! If A goes negative during nonlinear iteration, give ZERO_TOLERANCE value to avoid segfault
               IF (A_VALUE < A0_PARAM*0.001_DP) A_VALUE = A0_PARAM*0.001_DP
@@ -4763,14 +4759,14 @@ CONTAINS
                     !Momentum Equation
                     IF(mh==1) THEN
                       
-                      SUM=((2.0_DP*K*(Q_VALUE/A_VALUE)*Q_DERIV - &
-                        & (K*((Q_VALUE/A_VALUE)**2.0_DP)*A_DERIV)+ &
-                        & (Beta/RHO_PARAM)*( &
+                      SUM=((2.0_DP*alpha*(Q_VALUE/A_VALUE)*Q_DERIV - &
+                        & (alpha*((Q_VALUE/A_VALUE)**2.0_DP)*A_DERIV)+ &
+                        & (beta/RHO_PARAM)*( &
                         & (SQRT(A_VALUE)/2.0_DP)*A_DERIV + &                                          !a gradient                                              
                         & (A_VALUE/(2.0_DP*SQRT(A0_PARAM)) - (A_VALUE**1.5_DP)/A0_PARAM)*A0_DERIV + & !a0 gradient                                            
                         & (A_VALUE/H0_PARAM*(SQRT(A_VALUE)-SQRT(A0_PARAM)))*H0_DERIV + &              !h0 gradient
                         & (A_VALUE/E_PARAM*(SQRT(A_VALUE)-SQRT(A0_PARAM)))*E_DERIV))* &               !E gradient
-                        & DXI_DX(1,1)+(Q_VALUE/A_VALUE)*Re)*PHIMS                                     !viscous dampening
+                        & DXI_DX(1,1)+(Q_VALUE/A_VALUE))*PHIMS                                     !viscous dampening
 
                       NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                         & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
@@ -4796,16 +4792,9 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2, &
                & RHO_PARAM,err,error,*999)
               CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
-               & As,err,error,*999)
+               & pExternal,err,error,*999)
 
               !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
-              NULLIFY(dependentParameters,materialsParameters,materialsParameters1)
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & dependentParameters,err,error,*999)
-              CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & materialsParameters,err,error,*999)
-              CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & materialsParameters1,err,error,*999)
               !Loop over the element nodes and versions
               DO nodeIdx=1,numberOfElementNodes
                 nodeNumber=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(nodeIdx)
@@ -4813,39 +4802,25 @@ CONTAINS
                 versionIdx=ELEMENTS_TOPOLOGY%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
                  & elementVersions(derivativeIdx,nodeIdx)
                 !Get current Area values
-                fieldVariable=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                area=dependentParameters(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nodeNumber)% &
-                  & DERIVATIVES(1)%VERSIONS(versionIdx))
+                CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+                 & derivativeIdx,nodeNumber,2,area,err,error,*999)
                 IF (area < A0_PARAM*0.001_DP) area = A0_PARAM*0.001_DP
-                !Get current Materials values
-                fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                As=materialsParameters(fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
-                St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
-                fieldVariable=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
-                A0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                  & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
-                E_PARAM=materialsParameters1(fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% & 
-                  & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
-                H0_PARAM=materialsParameters1(fieldVariable%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                  & NODES(nodeNumber)%DERIVATIVES(1)%VERSIONS(versionIdx))
-                Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
+                !Get material parameters
+                CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+                 & derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999) 
+                CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+                 & derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999) 
+                CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+                 & derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999) 
+                beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
                 !Pressure equation
-                pressure=45.0_DP+(E_PARAM*H0_PARAM*1.7725_DP/A0_PARAM)*((SQRT(As*area))-SQRT(A0_PARAM))*0.0075_DP
-                pExternal = 45.0_DP
-                pressure=pExternal+Beta*(SQRT(area) - SQRT(A0_PARAM))
+                pressure=pExternal+beta*(SQRT(area) - SQRT(A0_PARAM))
                 !Update the dependent field
                 IF(ELEMENT_NUMBER<=DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                     & versionIdx,1,nodeNumber,1,pressure,err,error,*999)
                 ENDIF
               ENDDO
-              !Restore the field parameters
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & dependentParameters,err,error,*999)
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & materialsParameters,err,error,*999)
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & materialsParameters1,err,error,*999)
                 
               !!!-- B R A N C H   F L U X   U P W I N D I N G --!!!
               !----------------------------------------------------
@@ -4866,52 +4841,38 @@ CONTAINS
                     CALL FLAG_ERROR("Equations set field is not associated.",err,error,*999)
                   ENDIF
 
-                  ! Calculate the sum of flux from the other branches (this is used to add another mass constraint,
-                  !  since mass flow should be conserved between all branches)
+                  ! Calculate the sum of flux from the other branches (this is used to improve the mass constraint,
+                  !  such that mass flow should be conserved between all branches at a junction)
                   massFluxExternal = 0.0_DP
-                  momentumFluxExternal = 0.0_DP
                   DO versionIdx2 = 1,numberOfVersions
-                    ! Get values from all branches connected to this node except the current element
-!                    IF (versionIdx2 .NE. versionIdx) THEN
-                      ! Get materials params for node on this elem
-                      CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)
-                      CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)
-                      CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)
-                      Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
-                      !Get current Q & A values
-                      CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,1,Q_BIF,err,error,*999)         
-                      CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
-                      !Get upwind Q & A values from other branches
-                      CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_UPWIND_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,1,QUpwind,err,error,*999)         
-                      CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_UPWIND_VALUES_SET_TYPE, &
-                       & versionIdx2,derivativeIdx,nodeNumber,2,AUpwind,err,error,*999)
-                      IF (A_BIF < A0_PARAM*0.001_DP) THEN
-                        A_BIF = A0_PARAM*0.001_DP
+                    ! Get materials params for node on this elem
+                    CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)
+                    CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)
+                    CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)
+                    beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
+                    !Get current Q & A values
+                    CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,1,Q_BIF,err,error,*999)         
+                    CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
+                    !Get upwind Q & A values from other branches
+                    CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_UPWIND_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,1,QUpwind,err,error,*999)         
+                    CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_UPWIND_VALUES_SET_TYPE, &
+                     & versionIdx2,derivativeIdx,nodeNumber,2,AUpwind,err,error,*999)
+                    IF (A_BIF < A0_PARAM*0.001_DP) THEN
+                      A_BIF = A0_PARAM*0.001_DP
+                    ENDIF
+                    DO componentIdx = 1,2
+                      CALL Field_ParameterSetGetLocalNode(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+                        & versionIdx2,derivativeIdx,nodeNumber,componentIdx,normalWave,err,error,*999)
+                      IF (ABS(normalWave) > ZERO_TOLERANCE) THEN
+                        massFluxExternal = massFluxExternal + normalWave*(QUpwind - Q_BIF)
                       ENDIF
-                      DO componentIdx = 1,2
-                        CALL Field_ParameterSetGetLocalNode(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                          & versionIdx2,derivativeIdx,nodeNumber,componentIdx,normalWaveExt,err,error,*999)
-                        IF (ABS(normalWaveExt) > ZERO_TOLERANCE) THEN
-!                           ! Sum fluxes
-!                           FU(1) = K*(QUpwind**2.0_DP)/AUpwind+(AUpwind**1.5_DP - A0_PARAM**1.5_DP)*(Beta/(3.0_DP*RHO_PARAM))
-!                           F(1) =  K*(Q_BIF**2.0_DP)/A_BIF+(A_BIF**1.5_DP - A0_PARAM**1.5_DP)*(Beta/(3.0_DP*RHO_PARAM))
-! !                          momentumFluxExternal = momentumFluxExternal + (FU(1) - F(1))
-!                           momentumFluxExternal = momentumFluxExternal + normalWaveExt*(FU(1)- F(1))
-! !                          momentumFluxExternal = momentumFluxExternal + normalWaveExt*F(1)
-                          FU(2) = QUpwind
-                          F(2) = Q_BIF
-!                          massFluxExternal = massFluxExternal + (FU(2) - F(2))
-                          massFluxExternal = massFluxExternal + normalWaveExt*(FU(2)- F(2))
-!                          massFluxExternal = massFluxExternal + normalWaveExt*F(2)
-                        ENDIF
-                      ENDDO
-!                    ENDIF
+                    ENDDO
                   ENDDO
                   DO componentIdx = 1,2
                     CALL Field_ParameterSetGetLocalNode(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
@@ -4919,7 +4880,7 @@ CONTAINS
                     IF (ABS(normalWave) > ZERO_TOLERANCE) THEN
 !                      momentumFluxExternal = -normalWave*momentumFluxExternal
 !                      massFluxExternal = -normalWave*massFluxExternal
-                      normalWaveExt = normalWave
+                      normal = normalWave
                     ENDIF
                   ENDDO
 
@@ -4930,7 +4891,7 @@ CONTAINS
                    & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)
                   CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)
-                  Beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
+                  beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)
 
                   !Get current Q & A values
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -4938,65 +4899,41 @@ CONTAINS
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,2,A_BIF,err,error,*999)
 
-                  !Get previous Q & A values
-                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                   & versionIdx,derivativeIdx,nodeNumber,1,Q_PRE,err,error,*999)         
-                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                   & versionIdx,derivativeIdx,nodeNumber,2,A_PRE,err,error,*999)
-
                   !Get upwind Q & A values based on the branch (characteristics) solver
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_UPWIND_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,1,QUpwind,err,error,*999)         
                   CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_UPWIND_VALUES_SET_TYPE, &
                    & versionIdx,derivativeIdx,nodeNumber,2,AUpwind,err,error,*999)
 
-                  !Get previous iteration flux values
-                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                   & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,1,momentumPrevious,err,error,*999)         
-                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                   & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber,2,massPrevious,err,error,*999)         
-
                   ! If A goes negative during nonlinear iteration, set to positive value to avoid segfault
                   IF (A_BIF < A0_PARAM*0.001_DP) THEN
                     A_BIF = A0_PARAM*0.001_DP
                   ENDIF
 
-                  ! Get user defined penalty coefficient- increase if mass/momentum conservation failing across branches
-                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   & 1,penaltyCoeff,err,error,*999)
+                  ! ! Get user defined penalty coefficient- increase if mass/momentum conservation failing across branches
+                  ! CALL FIELD_PARAMETER_SET_GET_CONSTANT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  !  & 1,penaltyCoeff,err,error,*999)
 
                   !Momentum Equation: F_upwind - F_Current
-                  FU(1) = K*(QUpwind**2.0_DP)/AUpwind+(AUpwind**1.5_DP - A0_PARAM**1.5_DP)*(Beta/(3.0_DP*RHO_PARAM))
-                  F(1) =  K*(Q_BIF**2.0_DP)/A_BIF+(A_BIF**1.5_DP  - A0_PARAM**1.5_DP)*(Beta/(3.0_DP*RHO_PARAM))
-                  momentum= ((FU(1) - F(1)))*normalWaveExt + momentumPrevious*penaltyCoeff
-                  momentum= (FU(1) - (F(1) + momentumPrevious))*normalWaveExt
+                  FU = alpha*(QUpwind**2.0_DP)/AUpwind+(AUpwind**1.5_DP - A0_PARAM**1.5_DP)*(beta/(3.0_DP*RHO_PARAM))
+                  F =  alpha*(Q_BIF**2.0_DP)/A_BIF+(A_BIF**1.5_DP  - A0_PARAM**1.5_DP)*(beta/(3.0_DP*RHO_PARAM))
+                  momentum= (FU - F)*normal
 
                   !Continuity Equation
-                  FU(2) = QUpwind
-                  F(2) = Q_BIF
-                  mass= ((FU(2) - F(2)))*normalWaveExt + massPrevious*penaltyCoeff !+ massFluxExternal
-                  mass= (FU(2) - (F(2) + massPrevious))*normalWaveExt  + massFluxExternal*penaltyCoeff
+                  FU = QUpwind
+                  F = Q_BIF
+                  mass= (FU - F)*normal  + massFluxExternal
 
                   !Add momentum/mass contributions to first/last node accordingly
                   IF(nodeNumber==firstNode) THEN
                     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1)-momentum
                     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(numberOfParameters+1)= &
                      & RHS_VECTOR%ELEMENT_VECTOR%VECTOR(numberOfParameters+1)-mass
-
-                    ! NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)= &
-                    !   & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1)+momentum
-                    ! NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters+1)= &
-                    !   & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters+1)+mass
                   ELSE IF(nodeNumber==lastNode) THEN
                     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(numberOfParameters)= &
                      & RHS_VECTOR%ELEMENT_VECTOR%VECTOR(numberOfParameters)-momentum
                     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(numberOfParameters*2)= &
                      & RHS_VECTOR%ELEMENT_VECTOR%VECTOR(numberOfParameters*2)-mass
-
-                    ! NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters)= &
-                    !   & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters)+momentum
-                    ! NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters*2)= &
-                    !   & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(numberOfParameters*2)+mass
                   ENDIF
                 ENDIF !version>1
               ENDDO !loop nodes
@@ -5096,8 +5033,7 @@ CONTAINS
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,Q_DERIV,A_VALUE,A_DERIV,Q_BIF,A_BIF
     REAL(DP) :: momentum1,momentum2,mass,W_SUPG,TAU_SUPG,U_SUPG(3),penaltyCoeff
-    REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,Beta,As,St,Fr,Re,K
-    REAL(DP) :: massFluxExternal,momentumFluxExternalDQ,momentumFluxExternalDA,normalWave,normalWaveExt
+    REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,alpha,beta
     REAL(DP), POINTER :: dependentParameters(:)
     LOGICAL :: UPDATE_JACOBIAN_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5505,18 +5441,14 @@ CONTAINS
                 A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
                 MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                K=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                As=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-                Re=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-                Fr=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-                St=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(7,NO_PART_DERIV)
+                alpha=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
                 A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 A0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
                 E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
                 E_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
                 H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
                 H0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
-                Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     !(kg/m2/s2)
+                beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     !(kg/m2/s2)
 
                 ! If A goes negative during nonlinear iteration, give ZERO_TOLERANCE value to avoid segfault
                 IF (A_VALUE < A0_PARAM*0.001_DP) A_VALUE = A0_PARAM*0.001_DP
@@ -5562,32 +5494,24 @@ CONTAINS
 
                           !Momentum Equation (dF/dQ)
                           IF(mh==1 .AND. nh==1) THEN
-                            ! SUM=((K*2.0_DP*PHINS*Q_DERIV/A_VALUE+ &
-                            !   & K*2.0_DP*Q_VALUE*DPHINS_DXI(1)/A_VALUE+ &
-                            !   & (-2.0_DP)*K*Q_VALUE*PHINS*A_DERIV/(A_VALUE**2.0_DP))*DXI_DX(1,1)+ &   !Convective
-                            !   & ((PHINS/A_VALUE)*Re))*PHIMS                                           !Viscosity
-
-                            SUM=((K*2.0_DP*PHINS*Q_DERIV/A_VALUE +  &
-                              & K*2.0_DP*Q_VALUE*DPHINS_DXI(1)/A_VALUE+ &
-                              & (-2.0_DP)*K*Q_VALUE*PHINS*A_DERIV/(A_VALUE**2.0_DP))*DXI_DX(1,1)+ &   !Convective
-                              & ((PHINS/A_VALUE)*Re))*PHIMS                                           !Viscosity
-
+                            SUM=((alpha*2.0_DP*PHINS*Q_DERIV/A_VALUE +  &
+                              & alpha*2.0_DP*Q_VALUE*DPHINS_DXI(1)/A_VALUE+ &
+                              & (-2.0_DP)*alpha*Q_VALUE*PHINS*A_DERIV/(A_VALUE**2.0_DP))*DXI_DX(1,1)+ &   !Convective
+                              & ((PHINS/A_VALUE)))*PHIMS                                               !Viscosity
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
                               & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
 
                           !Momentum Equation (dF/dA)
                           IF(mh==1 .AND. nh==2) THEN
-
-                            SUM=((((-2.0_DP*K*Q_VALUE*PHINS*Q_DERIV)/(A_VALUE**2.0_DP))+ & 
-                              & ((2.0_DP*K*PHINS*(Q_VALUE**2.0_DP)*A_DERIV)/(A_VALUE**3.0_DP))+ &             
-                              & (-K*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                              !Concevtive
-                              & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &  !Area Gradient
-                              & ((1.0_DP/SQRT(A0_PARAM))-((3.0_DP/(A0_PARAM))*SQRT(A_VALUE)))*(A0_DERIV) + &     !Ref Area Gradient
-                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM)))*H0_DERIV/H0_PARAM+ &   !Thickness Gradient
-                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM)))*E_DERIV/E_PARAM) &     !Elasticity Gradient
-                              & *Beta/(2.0_DP*RHO_PARAM))*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP)*Re)*PHIMS               !Viscosity
-
+                            SUM=((((-2.0_DP*alpha*Q_VALUE*PHINS*Q_DERIV)/(A_VALUE**2.0_DP))+ & 
+                              & ((2.0_DP*alpha*PHINS*(Q_VALUE**2.0_DP)*A_DERIV)/(A_VALUE**3.0_DP))+ &             
+                              & (-alpha*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                              !Convective
+                              & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &      !Area Gradient
+                              & ((1.0_DP/SQRT(A0_PARAM))-((3.0_DP/(A0_PARAM))*SQRT(A_VALUE)))*(A0_DERIV) + &       !Ref Area Gradient
+                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM)))*H0_DERIV/H0_PARAM+ &          !Thickness Gradient
+                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM)))*E_DERIV/E_PARAM) &            !Elasticity Gradient
+                              & *beta/(2.0_DP*RHO_PARAM))*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP))*PHIMS      !Viscosity
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
                               & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
@@ -5857,8 +5781,8 @@ CONTAINS
     REAL(DP), ALLOCATABLE :: BoundaryValues(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3),FluidGFValue,SolidDFValue, &
       & NewLaplaceBoundaryValue
-    REAL(DP) :: T_COORDINATES(20,3),Beta(9),MU_PARAM,RHO_PARAM,A0_PARAM(9),As,Fr
-    REAL(DP) :: X(3),W(2,4),Q_EX(9),A_EX(9),XI(1),areaCalculated,flowCalculated,H0_PARAM(9),E_PARAM(9)
+    REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM
+    REAL(DP) :: X(3)
 
     REAL(DP), POINTER :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
     REAL(DP), POINTER :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
@@ -11676,7 +11600,7 @@ CONTAINS
     INTEGER(INTG) :: solverCellmlNumber,solver1dNavierStokesNumber,solverNumber
     INTEGER(INTG) :: boundaryNumber,numberOfBoundaries,numberOfComputationalNodes
     INTEGER(INTG) :: MPI_IERROR,timestep,iteration
-    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,Beta,As,pCellML,normalWave(2),rho,Fr
+    REAL(DP) :: A0_PARAM,E_PARAM,H0_PARAM,beta,pCellML,normalWave(2)
     REAL(DP) :: qPrevious,pPrevious,aPrevious
     REAL(DP) :: q1d,couplingTolerance
     REAL(DP) :: a1d,a0d,aIntermediate,aStar,w1d,w0d,qError,aError
@@ -11766,19 +11690,13 @@ CONTAINS
         boundaryNumber = boundaryNumber + 1
         boundaryConverged(boundaryNumber) = .FALSE.
         !Get material parameters
-        CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & 2,rho,err,error,*999)
-        CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & 4,As,err,error,*999)
-        CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-          & 6,Fr,err,error,*999)
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeNumber,1,A0_PARAM,err,error,*999)  
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)                
         CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)                
-        Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
+        beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
 
         ! C u r r e n t   Q 1 D , A 1 D , p C e l l M L   V a l u e s
         ! ------------------------------------------------------------
@@ -11929,7 +11847,7 @@ CONTAINS
     REAL(DP) :: massFluxError(30),momentumFluxError(30),totalErrorMass,totalErrorMomentum,massNext(4),momentumNext(4)
     REAL(DP) :: massError(4),momentumError(4),massBranchError
     REAL(DP) :: aValues(2),qValues(2),momentumPrevious(4),massPrevious(4),FU(2),FU_previous(2),F(2),Fprev(2)
-    REAL(DP) :: rho,K,St,As,Fr,normalWave,A0_PARAM,E_PARAM,H0_PARAM,Beta,aNew,initialisationTime,penaltyCoeff
+    REAL(DP) :: rho,alpha,normalWave,A0_PARAM,E_PARAM,H0_PARAM,beta,aNew,initialisationTime,penaltyCoeff
     LOGICAL :: branchConverged(30),branchConverged2(30),localConverged,MPI_LOGICAL,boundaryNode,exists,fluxDiverged
     LOGICAL, ALLOCATABLE :: globalConverged(:)
     CHARACTER(70) :: inputFile,tempString
@@ -12012,13 +11930,7 @@ CONTAINS
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
       & 2,rho,err,error,*999)
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-      & 3,K,err,error,*999)
-    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-      & 4,As,err,error,*999)
-    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-      & 6,Fr,err,error,*999)
-    CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-      & 7,St,err,error,*999)
+      & 3,alpha,err,error,*999)
 
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
       & FIELD_VALUES_SET_TYPE,1,penaltyCoeff,err,error,*999)
@@ -12069,7 +11981,7 @@ CONTAINS
                 & versionIdx,derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999)                
               CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & versionIdx,derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999)                
-              Beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
+              beta=(4.0_DP*SQRT(PI)*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)     
 
               ! Get current Q,A values based on N-S solve
               CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -12080,11 +11992,11 @@ CONTAINS
               ! Calculate the characteristic based on the values converged upon by the 
               !  N-S solver at this iteration.
               wNavierStokes(componentIdx,versionIdx)= ((qNavierStokes(versionIdx)/aNavierStokes(versionIdx))+ &
-               & normalWave*4.0_DP*SQRT(Beta/(2.0_DP*rho))*(aNavierStokes(versionIdx)**(0.25_DP) - (A0_PARAM)**(0.25_DP)))
+               & normalWave*4.0_DP*SQRT(beta/(2.0_DP*rho))*(aNavierStokes(versionIdx)**(0.25_DP) - (A0_PARAM)**(0.25_DP)))
 
               IF (boundaryNode) THEN
-                aNew = (1.0_DP/(Beta/(2.0_DP*rho)))**2.0_DP*((wNavierStokes(componentIdx,versionIdx))/8.0_DP+ &
-                 & SQRT(Beta/(2.0_DP*rho))*((A0_PARAM)**0.25_DP))**4.0_DP
+                aNew = (1.0_DP/(beta/(2.0_DP*rho)))**2.0_DP*((wNavierStokes(componentIdx,versionIdx))/8.0_DP+ &
+                 & SQRT(beta/(2.0_DP*rho))*((A0_PARAM)**0.25_DP))**4.0_DP
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
                  & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeNumber, &
                  & 2,aNew,err,error,*999)
@@ -12098,7 +12010,7 @@ CONTAINS
 
               ! Calculate the characteristic based on the values converged upon by the branch solver
               wCharacteristic(componentIdx,versionIdx)= ((qCharacteristic(versionIdx)/aCharacteristic(versionIdx))+ &
-               & normalWave*4.0_DP*SQRT((Beta/(2.0_DP*rho)))*(aCharacteristic(versionIdx)**(0.25_DP) - (A0_PARAM)**(0.25_DP)))
+               & normalWave*4.0_DP*SQRT((beta/(2.0_DP*rho)))*(aCharacteristic(versionIdx)**(0.25_DP) - (A0_PARAM)**(0.25_DP)))
 
               ! Calculate the absolute error and place into flattened array
               wError(componentIdx,versionIdx) = wNavierStokes(componentIdx,versionIdx) - wCharacteristic(componentIdx,versionIdx)
@@ -12111,10 +12023,10 @@ CONTAINS
 
               IF (numberOfVersions > 1) THEN
                 ! Calculate flux 
-                FU(1) = (K*((qCharacteristic(versionIdx)**2.0_DP)/aCharacteristic(versionIdx))+&
-                     & ((aCharacteristic(versionIdx)**(1.5_DP) - A0_PARAM**1.5_DP)*(Beta/(3.0_DP*rho))))
-                F(1) = (K*((qNavierStokes(versionIdx)**2.0_DP)/aNavierStokes(versionIdx))+&
-                     & ((aNavierStokes(versionIdx)**(1.5_DP) - A0_PARAM**1.5_DP)*(Beta/(3.0_DP*rho))))
+                FU(1) = (alpha*((qCharacteristic(versionIdx)**2.0_DP)/aCharacteristic(versionIdx))+&
+                     & ((aCharacteristic(versionIdx)**(1.5_DP) - A0_PARAM**1.5_DP)*(beta/(3.0_DP*rho))))
+                F(1) = (alpha*((qNavierStokes(versionIdx)**2.0_DP)/aNavierStokes(versionIdx))+&
+                     & ((aNavierStokes(versionIdx)**(1.5_DP) - A0_PARAM**1.5_DP)*(beta/(3.0_DP*rho))))
 
                 FU(2) = qCharacteristic(versionIdx)
                 F(2) = qNavierStokes(versionIdx)
