@@ -9111,7 +9111,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets MUMPS ICNTL(icntl)=ivalue through PETSc Mat API (see MUMPS user guide for more info)
+!!\todo Allow for the mumps parameters to be set during the solver creation (i.e., cache and defer setting until we have PETSc matrix)
+  
+  !>Sets MUMPS ICNTL(icntl)=ivalue through PETSc Mat API (see MUMPS user guide for more info). Must be called after the boundary conditions have been set up.
   SUBROUTINE Solver_MumpsSetIcntl(solver,icntl,ivalue,err,error,*)
 
     !Argument variables
@@ -9124,7 +9126,8 @@ CONTAINS
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: linearSolver
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: solverMatrix
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: linearDirectSolver
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(SOLVER_TYPE), POINTER :: linkingSolver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: linkingSolverEquations,solverEquations
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
     TYPE(PETSC_MAT_TYPE) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
     TYPE(VARYING_STRING) :: localError
@@ -9141,40 +9144,51 @@ CONTAINS
             SELECT CASE(linearDirectSolver%SOLVER_LIBRARY)
             CASE(SOLVER_MUMPS_LIBRARY)
               solverEquations=>solver%SOLVER_EQUATIONS
+              NULLIFY(solverMatrices)
               IF(ASSOCIATED(solverEquations)) THEN
+                !Solver equations for this solver.
                 solverMatrices=>solverEquations%SOLVER_MATRICES
-                IF(ASSOCIATED(solverMatrices)) THEN
-                  IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
-                    solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
-                    IF(ASSOCIATED(solverMatrix)) THEN
-                      IF(ASSOCIATED(solverMatrix%PETSC)) THEN
+              ELSE
+                !No solver equations. See if there are solver equations in the linking solver.
+                linkingSolver=>solver%LINKING_SOLVER
+                IF(ASSOCIATED(linkingSolver)) THEN
+                  linkingSolverEquations=>linkingSolver%SOLVER_EQUATIONS
+                  IF(ASSOCIATED(linkingSolverEquations)) THEN
+                    solverMatrices=>linkingSolverEquations%SOLVER_MATRICES
+                  ELSE
+                    CALL FLAG_ERROR("Solver equations is not associated for the linking solver.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ENDIF
+              IF(ASSOCIATED(solverMatrices)) THEN
+                IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
+                  solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
+                  IF(ASSOCIATED(solverMatrix)) THEN
+                    IF(ASSOCIATED(solverMatrix%PETSC)) THEN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 1 )
-                        !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
-                        CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
-                        CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
-                        !Set ICNTL(icntl)=ivalue
-                        CALL Petsc_MatMumpsSetIcntl(petscFactoredMatrix,icntl,ivalue,err,error,*999)
+                      !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
+                      CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
+                      CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
+                      !Set ICNTL(icntl)=ivalue
+                      CALL Petsc_MatMumpsSetIcntl(petscFactoredMatrix,icntl,ivalue,err,error,*999)
 #else
-                        CALL FLAG_ERROR("MatMumpsSetIcntl not available in this version of PETSc. "// &
+                      CALL FLAG_ERROR("MatMumpsSetIcntl not available in this version of PETSc. "// &
                         & "Use version 3.1 or greater.",ERR,ERROR,*999)
 #endif
-                      ELSE
-                        CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
-                      ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",err,error,*999)
+                      CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
                     ENDIF
                   ELSE
-                    localError="The given number of solver matrices of "// &
-                      & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
-                      & " is invalid. There should only be one solver matrix for a linear direct solver."
-                    CALL FLAG_ERROR(localError,err,error,*999)
+                    CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",err,error,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrices not associated.",ERR,ERROR,*999)
+                  localError="The given number of solver matrices of "// &
+                    & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
+                    & " is invalid. There should only be one solver matrix for a linear direct solver."
+                  CALL FLAG_ERROR(localError,err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Solver matrices not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               localError="The solver library type of "// &
@@ -9214,7 +9228,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets MUMPS CNTL(icntl)=val through PETSc Mat API (see MUMPS user guide for more info)
+!!\todo Allow for the mumps parameters to be set during the solver creation (i.e., cache and defer setting until we have PETSc matrix)
+
+  !>Sets MUMPS CNTL(icntl)=val through PETSc Mat API (see MUMPS user guide for more info). Must be called after the boundary conditions have been set up.
   SUBROUTINE Solver_MumpsSetCntl(solver,icntl,val,err,error,*)
 
     !Argument variables
@@ -9227,7 +9243,8 @@ CONTAINS
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: linearSolver
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: solverMatrix
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: linearDirectSolver
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(SOLVER_TYPE), POINTER :: linkingSolver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: linkingSolverEquations,solverEquations
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
     TYPE(PETSC_MAT_TYPE) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
     TYPE(VARYING_STRING) :: localError
@@ -9244,40 +9261,51 @@ CONTAINS
             SELECT CASE(linearDirectSolver%SOLVER_LIBRARY)
             CASE(SOLVER_MUMPS_LIBRARY)
               solverEquations=>solver%SOLVER_EQUATIONS
+              NULLIFY(solverMatrices)
               IF(ASSOCIATED(solverEquations)) THEN
+                !Solver equations for this solver.
                 solverMatrices=>solverEquations%SOLVER_MATRICES
-                IF(ASSOCIATED(solverMatrices)) THEN
-                  IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
-                    solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
-                    IF(ASSOCIATED(solverMatrix)) THEN
-                      IF(ASSOCIATED(solverMatrix%PETSC)) THEN
+              ELSE
+                !No solver equations. See if there are solver equations in the linking solver.
+                linkingSolver=>solver%LINKING_SOLVER
+                IF(ASSOCIATED(linkingSolver)) THEN
+                  linkingSolverEquations=>linkingSolver%SOLVER_EQUATIONS
+                  IF(ASSOCIATED(linkingSolverEquations)) THEN
+                    solverMatrices=>linkingSolverEquations%SOLVER_MATRICES
+                  ELSE
+                    CALL FLAG_ERROR("Solver equations is not associated for the linking solver.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ENDIF
+              IF(ASSOCIATED(solverMatrices)) THEN
+                IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
+                  solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
+                  IF(ASSOCIATED(solverMatrix)) THEN
+                    IF(ASSOCIATED(solverMatrix%PETSC)) THEN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
-                        !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
-                        CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
-                        CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
-                        !Set CNTL(icntl)=val
-                        CALL Petsc_MatMumpsSetCntl(petscFactoredMatrix,icntl,val,err,error,*999)
+                      !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
+                      CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
+                      CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
+                      !Set CNTL(icntl)=val
+                      CALL Petsc_MatMumpsSetCntl(petscFactoredMatrix,icntl,val,err,error,*999)
 #else
-                        CALL FLAG_ERROR("MatMumpsSetCntl not available in this version of PETSc. "// &
+                      CALL FLAG_ERROR("MatMumpsSetCntl not available in this version of PETSc. "// &
                         & "Use version 3.4 or greater.",ERR,ERROR,*999)
 #endif
-                      ELSE
-                        CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
-                      ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",err,error,*999)
+                      CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
                     ENDIF
                   ELSE
-                    localError="The given number of solver matrices of "// &
-                      & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
-                      & " is invalid. There should only be one solver matrix for a linear direct solver."
-                    CALL FLAG_ERROR(localError,err,error,*999)
+                    CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",err,error,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrices not associated.",ERR,ERROR,*999)
+                  localError="The given number of solver matrices of "// &
+                    & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
+                    & " is invalid. There should only be one solver matrix for a linear direct solver."
+                  CALL FLAG_ERROR(localError,err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Solver matrices not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               localError="The solver library type of "// &
