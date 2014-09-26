@@ -2209,9 +2209,9 @@ CONTAINS
 
     IF(ASSOCIATED(rowsFieldVariable)) THEN
       IF(ASSOCIATED(colsFieldVariable)) THEN
-        nodalMatrix%maxNumberOfRows=rowsFieldVariable%maxNumberElementInterpolationParameters* &
+        nodalMatrix%maxNumberOfRows=rowsFieldVariable%maxNumberNodeInterpolationParameters* &
           & rowsFieldVariable%NUMBER_OF_COMPONENTS
-        nodalMatrix%maxNumberOfColumns=colsFieldVariable%maxNumberElementInterpolationParameters* &
+        nodalMatrix%maxNumberOfColumns=colsFieldVariable%maxNumberNodeInterpolationParameters* &
           & colsFieldVariable%NUMBER_OF_COMPONENTS
         IF(ALLOCATED(nodalMatrix%rowDofs)) THEN
           CALL FLAG_ERROR("Nodal matrix row dofs already allocated.",err,error,*999)
@@ -2265,7 +2265,7 @@ CONTAINS
     CALL ENTERS("EquationsMatrices_NodalVectorSetup",err,error,*998)
 
     IF(ASSOCIATED(rowsFieldVariable)) THEN
-      nodalVector%maxNumberOfRows=rowsFieldVariable%maxNumberElementInterpolationParameters* &
+      nodalVector%maxNumberOfRows=rowsFieldVariable%maxNumberNodeInterpolationParameters* &
         & rowsFieldVariable%NUMBER_OF_COMPONENTS
       IF(ALLOCATED(nodalVector%rowDofs)) THEN
         CALL FLAG_ERROR("Nodal vector row dofs is already allocated.",err,error,*999)        

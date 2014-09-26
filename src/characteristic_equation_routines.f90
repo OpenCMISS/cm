@@ -1305,7 +1305,7 @@ CONTAINS
     REAL(DP), POINTER :: independentParameters(:)
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),normalWave(2,4),elementLengths(4)
     REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction
-    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pCellML,qCellml,lambda(4)
+    REAL(DP) :: QPrevious,APrevious,QCurrent,ACurrent,ACellml,rho,pExternal,pCellML,qCellml,lambda(4)
     REAL(DP) :: elementLength,extrapolationDistance,W1,W2,WPrevious(2,4)
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
@@ -1368,6 +1368,8 @@ CONTAINS
                   !Get constant material parameters
                   CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
+                  CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,4,pExternal,err,error,*999)
 
                   overExtrapolated = .FALSE.
 
@@ -1552,44 +1554,37 @@ CONTAINS
                     ! C o u p l e d   C e l l M L  ( 0 D )   B o u n d a r y
                     ! ------------------------------------------------------------
                     ELSE IF (boundaryConditionType == BOUNDARY_CONDITION_FixedCellml) THEN
-  
-                      !Get Q,A for boundary wave outside the 1D domain (from 0D solution for 1D0D boundary)
-                      NULLIFY(fieldVariable)
-                      CALL FIELD_VARIABLE_GET(dependentField,FIELD_U1_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                      IF(ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_VALUES_SET_TYPE)%PTR)) THEN
-                        !Get qCellML used in pCellML calculation
-                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                          & versionIdx,derivativeIdx,nodeIdx,1,qCellML,err,error,*999)                    
-                        !Get pCellML if this is a coupled problem
-                        CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                          & versionIdx,derivativeIdx,nodeIdx,2,pCellML,err,error,*999)                    
-                        ! Convert pCellML --> A0D 
-                        ACellML=(((pCellML*133.32_DP)/Beta(versionIdx)+SQRT(A0_PARAM(versionIdx)))**2.0_DP)
 
-                        ! The defined component will be the component to get from outside the 1D domain if retrograde flow
-                        lambda(2) = QCellml/ACellml - (ACellml**0.25)*SQRT(Beta(versionIdx)/(2.0_DP*rho))
-                        ! Check wave speed is coherent
-                        IF (lambda(2) > ZERO_TOLERANCE) THEN
-                          CALL FLAG_ERROR("Subcritical 1D system violated at boundary node.",ERR,ERROR,*999)
-                        ENDIF
+                      !Get qCellML used in pCellML calculation
+                      CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                        & versionIdx,derivativeIdx,nodeIdx,1,qCellML,err,error,*999)                    
+                      !Get pCellML if this is a coupled problem
+                      CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & versionIdx,derivativeIdx,nodeIdx,2,pCellML,err,error,*999)                    
+                      ! Convert pCellML --> A0D 
+                      ACellML=(((pCellML-pExternal)/Beta(versionIdx)+SQRT(A0_PARAM(versionIdx)))**2.0_DP)
 
-                        !  O u t l e t
-                        IF (normalWave(1,1) > 0.0_DP) THEN
-                          W1 = W(1,1)
-                          ! Calculate W2 from 0D domain
-                          W2 = QCellml/ACellml - 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
-                            & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
+                      ! The defined component will be the component to get from outside the 1D domain if retrograde flow
+                      lambda(2) = QCellml/ACellml - (ACellml**0.25)*SQRT(Beta(versionIdx)/(2.0_DP*rho))
+                      ! Check wave speed is coherent
+                      IF (lambda(2) > ZERO_TOLERANCE) THEN
+                        CALL FLAG_ERROR("Subcritical 1D system violated at boundary node.",ERR,ERROR,*999)
+                      ENDIF
 
-                        !  I n l e t
-                        ELSE
-                          ! Calculate W1 from 0D domain
-                          W1 = QCellml/ACellml + 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
-                           & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
-                          ! Calculate W2 from 1D domain
-                          W2 = W(2,1)
-                        ENDIF
+                      !  O u t l e t
+                      IF (normalWave(1,1) > 0.0_DP) THEN
+                        W1 = W(1,1)
+                        ! Calculate W2 from 0D domain
+                        W2 = QCellml/ACellml - 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
+                          & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
+
+                      !  I n l e t
                       ELSE
-                        CALL FLAG_ERROR("Field variable is not associated.",err,error,*999)
+                        ! Calculate W1 from 0D domain
+                        W1 = QCellml/ACellml + 4.0_DP*SQRT(Beta(versionIdx)/(2.0_DP*rho))* &
+                         & (ACellml**0.25_DP - A0_PARAM(versionIdx)**0.25_DP)
+                        ! Calculate W2 from 1D domain
+                        W2 = W(2,1)
                       ENDIF
                     ELSE
                       localError="The boundary conditions type "//TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &
@@ -1604,15 +1599,9 @@ CONTAINS
                      & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
                      & FIELD_PREVIOUS_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_INPUT_DATA1_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
 
-                    ! NULLIFY(fieldVariable)
-                    ! CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                    ! IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA2_SET_TYPE)%PTR)) THEN
-                    !   CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    !    & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
-                    ! ENDIF
-                    ! CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    !  & FIELD_INPUT_DATA2_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ACurrent,err,error,*999)
                   ENDIF ! boundary node
                 ENDIF ! branch or boundary node
               ENDDO !Loop over nodes
