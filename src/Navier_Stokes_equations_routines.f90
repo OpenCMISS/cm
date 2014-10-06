@@ -2478,22 +2478,23 @@ CONTAINS
                 iteration = CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER
                 EQUATIONS_SET=>SOLVER%SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
                 dependentField=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                ! Characteristic solver effectively solves for the mass/momentum conserving fluxes at the
+                ! *NEXT* timestep by extrapolating current field values and then solving a system of nonlinear
+                ! equations: cons mass, continuity of pressure, and the characteristics.
+                NULLIFY(fieldVariable)
+                CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+                IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
+                ENDIF
+                CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_RESIDUAL_SET_TYPE, &
+                 & FIELD_INPUT_DATA2_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+
                 IF (iteration == 1) THEN
-                  ! Characteristic solver effectively solves for the mass/momentum conserving fluxes at the
-                  ! *NEXT* timestep by extrapolating current field values and then solving a system of nonlinear
-                  ! equations: cons mass, continuity of pressure, and the characteristics.
-                  NULLIFY(fieldVariable)
-                  CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-                  IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_INPUT_DATA1_SET_TYPE)%PTR)) THEN
-                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                     & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                     & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   & FIELD_INPUT_DATA1_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_RESIDUAL_SET_TYPE, &
-                   & FIELD_INPUT_DATA2_SET_TYPE,1.0_DP,ERR,ERROR,*999)
 
                   ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   !  & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
@@ -2523,12 +2524,12 @@ CONTAINS
                   ! ! First iteration- initalise previous iteration mass values to 0
                   ! CALL FIELD_COMPONENT_VALUES_INITIALISE(dependentField,FIELD_U_VARIABLE_TYPE, &
                   !  & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
-                ELSE
-                  ! RESTORE previous solve values
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                   & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE, &
-                   & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                ! ELSE
+                !   ! RESTORE previous solve values
+                !   CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                !    & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                !   CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE, &
+                !    & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                 ENDIF
 
               ! --- 1 D   N a v i e r - S t o k e s   S o l v e r ---
@@ -2555,11 +2556,12 @@ CONTAINS
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
                       dependentField=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                       IF(ASSOCIATED(dependentField)) THEN
-                        ! Restore N-S solver values 
+                        ! ! Restore N-S solver values 
                         ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE, &
                         !  & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                         ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE, &
                         !  & FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+
                         CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA1_SET_TYPE, &
                          & FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                         CALL FIELD_PARAMETER_SETS_COPY(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_INPUT_DATA2_SET_TYPE, &
@@ -6173,6 +6175,8 @@ CONTAINS
             CASE(PROBLEM_1dTransient_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
                & PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE,PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              ! Update any multiscale boundary values (coupled 0D or non-reflecting)
+              CALL NavierStokes_UpdateMultiscaleBoundary(solver,err,error,*999)
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 !If analytic flow waveform, calculate and update
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -11594,10 +11598,10 @@ CONTAINS
         iterativeLoop%CONTINUE_LOOP=.FALSE.
       ENDIF
       IF (iterativeLoop%CONTINUE_LOOP==.TRUE. ) THEN
-        ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
-        !  & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-        ! CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
-        !  & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+        CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+        CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
+         & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
       ENDIF
     ENDIF
 
@@ -11730,12 +11734,12 @@ CONTAINS
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
       & FIELD_VALUES_SET_TYPE,1,penaltyCoeff,err,error,*999)
 
-    NULLIFY(fieldVariable)
-    CALL FIELD_VARIABLE_GET(dependentField,FIELD_V_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
-    IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE)%PTR)) THEN
-      CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_V_VARIABLE_TYPE, &
-       & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
-    ENDIF
+    ! NULLIFY(fieldVariable)
+    ! CALL FIELD_VARIABLE_GET(dependentField,FIELD_V_VARIABLE_TYPE,fieldVariable,ERR,ERROR,*999)
+    ! IF(.NOT.ASSOCIATED(fieldVariable%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE)%PTR)) THEN
+    !   CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_V_VARIABLE_TYPE, &
+    !    & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
+    ! ENDIF
 
     !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
     DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
@@ -12037,6 +12041,234 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE NavierStokes_ControlLoopPostLoop
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates boundary conditions for multiscale fluid problems
+  SUBROUTINE NavierStokes_UpdateMultiscaleBoundary(solver,err,error,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: error
+    !Local Variables
+    TYPE(DOMAIN_TYPE), POINTER :: dependentDomain
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField,geometricField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
+    TYPE(VARYING_STRING) :: localError
+    REAL(DP) :: rho,A0,H0,E,beta,pExternal,pCellml,qCellml,ABoundary,W1,W2,ACellML
+    REAL(DP) :: normalWave(2,4)
+    INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,componentIdx,numberOfVersions,numberOfLocalNodes
+    INTEGER(INTG) :: dependentDof,boundaryConditionType
+
+    CALL ENTERS("NavierStokes_UpdateMultiscaleBoundary",err,error,*999)
+
+    NULLIFY(dependentDomain)
+    NULLIFY(equationsSet)
+    NULLIFY(equations)
+    NULLIFY(geometricField)
+    NULLIFY(dependentField)
+    NULLIFY(independentField)
+    NULLIFY(materialsField)
+    NULLIFY(fieldVariable)
+    NULLIFY(solverEquations)
+    NULLIFY(solverMapping)
+
+    ! Preliminary checks; get field and domain pointers
+    IF(ASSOCIATED(solver)) THEN
+      solverEquations=>solver%SOLVER_EQUATIONS
+      IF(ASSOCIATED(solverEquations)) THEN
+        solverMapping=>solverEquations%SOLVER_MAPPING
+        IF(ASSOCIATED(solverMapping)) THEN
+          equationsSet=>solverMapping%EQUATIONS_SETS(1)%PTR
+          IF(ASSOCIATED(equationsSet)) THEN
+            equations=>equationsSet%EQUATIONS
+            IF(ASSOCIATED(equations)) THEN
+              geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
+              IF(.NOT.ASSOCIATED(geometricField)) THEN
+                CALL FLAG_ERROR("Geometric field is not associated.",err,error,*999)
+              ENDIF
+              dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
+              IF(ASSOCIATED(dependentField)) THEN
+                dependentDomain=>dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
+                IF(.NOT.ASSOCIATED(dependentDomain)) THEN
+                  CALL FLAG_ERROR("Dependent domain is not associated.",err,error,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Geometric field is not associated.",err,error,*999)
+              ENDIF
+              materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
+              IF(.NOT.ASSOCIATED(materialsField)) THEN
+                CALL FLAG_ERROR("Materials field is not associated.",err,error,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations are not associated.",err,error,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solvers is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+    ENDIF
+              
+    SELECT CASE(equationsSet%SUBTYPE)
+    !!!-- 1 D    E q u a t i o n s   S e t --!!! 
+    CASE(EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+
+      independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
+      numberOfLocalNodes=dependentDomain%TOPOLOGY%NODES%NUMBER_OF_NODES
+      derivativeIdx=1
+      !Get constant material parameters
+      CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+        & FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
+      CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+        & FIELD_VALUES_SET_TYPE,4,pExternal,err,error,*999)
+
+      !!!--  L o o p   o v e r   l o c a l    n o d e s  --!!!
+      DO nodeIdx=1,numberOfLocalNodes
+        numberOfVersions=dependentDomain%TOPOLOGY%NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
+
+        !Get normal wave direction
+        normalWave=0.0_DP
+        DO componentIdx=1,2
+          DO versionIdx=1,numberOfVersions
+            CALL Field_ParameterSetGetLocalNode(independentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+             & derivativeIdx,nodeIdx,componentIdx,normalWave(componentIdx,versionIdx),err,error,*999)
+          ENDDO
+        ENDDO
+        !!!-- F i n d   b o u n d a r y    n o d e s --!!!
+        IF(ABS(normalWave(1,1)) > ZERO_TOLERANCE .OR. ABS(normalWave(2,1))> ZERO_TOLERANCE) THEN
+          IF (numberOfVersions == 1 .AND. L2NORM(normalWave(:,1)) > ZERO_TOLERANCE) THEN
+            versionIdx = 1
+            !Get material parameters
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+             & derivativeIdx,nodeIdx,1,A0,err,error,*999) 
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+             & derivativeIdx,nodeIdx,2,E,err,error,*999) 
+            CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
+             & derivativeIdx,nodeIdx,3,H0,err,error,*999) 
+            beta=(4.0_DP*(SQRT(PI))*E*H0)/(3.0_DP*A0)
+            ! Get the boundary condition type for the dependent field primitive variables (Q,A)
+            boundaryConditions=>solverEquations%BOUNDARY_CONDITIONS
+            NULLIFY(fieldVariable)
+            CALL FIELD_VARIABLE_GET(dependentField,FIELD_U_VARIABLE_TYPE,fieldVariable,err,error,*999)
+            dependentDof = fieldVariable%COMPONENTS(2)%PARAM_TO_DOF_MAP% &
+             & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+            CALL BOUNDARY_CONDITIONS_VARIABLE_GET(boundaryConditions, &
+             & fieldVariable,boundaryConditionsVariable,err,error,*999)
+            boundaryConditionType=boundaryConditionsVariable%CONDITION_TYPES(dependentDof)                       
+            SELECT CASE(boundaryConditionType)
+
+            ! N o n - r e f l e c t i n g   B o u n d a r y
+            ! ----------------------------------------------------
+            CASE(BOUNDARY_CONDITION_FixedNonreflecting)
+              ! Outlet - set W2 to 0, get W1 from the extrapolated value
+              IF (normalWave(1,1) > 0.0_DP) THEN
+                CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & versionIdx,derivativeIdx,nodeIdx,1,W1,err,error,*999)                    
+                W2 = 0.0_DP
+              ! Inlet - set W1 to 0, get W2 from the extrapolated value
+              ELSE
+                W1 = 0.0_DP
+                CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & versionIdx,derivativeIdx,nodeIdx,2,W2,err,error,*999)                    
+              ENDIF
+              ! Calculate new area value based on W1, W2 and update dof
+              ABoundary = (((2.0_DP*rho)/(beta))**2.0_DP)* &
+               & (((W1-W2)/8.0_DP+SQRT(beta/(2.0_DP*rho))*((A0)**0.25_DP))**4.0_DP)
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+               & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ABoundary,err,error,*999)
+
+            ! C o u p l e d   C e l l M L  ( 0 D )   B o u n d a r y
+            ! ------------------------------------------------------------
+            CASE(BOUNDARY_CONDITION_FixedCellml)
+              !Get qCellML used in pCellML calculation
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeIdx,1,QCellML,err,error,*999)                    
+              !Get pCellML if this is a coupled problem
+              CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & versionIdx,derivativeIdx,nodeIdx,2,pCellml,err,error,*999)                    
+              ! Convert pCellML --> A0D 
+              pCellml = pCellml*1.0E-6_DP
+              ACellML=((pCellml-pExternal)/beta+SQRT(A0))**2.0_DP
+              !  O u t l e t
+              IF (normalWave(1,1) > 0.0_DP) THEN
+                CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & versionIdx,derivativeIdx,nodeIdx,1,W1,err,error,*999)                    
+                ! Calculate W2 from 0D domain
+                W2 = QCellml/ACellml - 4.0_DP*SQRT(beta/(2.0_DP*rho))*(ACellml**0.25_DP - A0**0.25_DP)
+              !  I n l e t
+              ELSE
+                ! Calculate W1 from 0D domain
+                W1 = QCellml/ACellml + 4.0_DP*SQRT(beta/(2.0_DP*rho))*(ACellml**0.25_DP - A0**0.25_DP)
+                ! Calculate W2 from 1D domain
+                CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & versionIdx,derivativeIdx,nodeIdx,2,W2,err,error,*999)                    
+              ENDIF
+              ! Calculate new area value based on W1, W2 and update dof
+              ABoundary = (((2.0_DP*rho)/(beta))**2.0_DP)* &
+               & (((W1-W2)/8.0_DP+SQRT(beta/(2.0_DP*rho))*((A0)**0.25_DP))**4.0_DP)
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
+               & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ABoundary,err,error,*999)
+
+            CASE(BOUNDARY_CONDITION_FREE, &
+               & BOUNDARY_CONDITION_FIXED, &
+               & BOUNDARY_CONDITION_FIXED_INLET, &
+               & BOUNDARY_CONDITION_FIXED_OUTLET, &
+               & BOUNDARY_CONDITION_FixedFitted)
+              ! Do nothing
+
+            CASE DEFAULT
+              localError="The boundary conditions type "//TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &
+               & " is not valid for a coupled characteristic problem."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT
+
+          ENDIF ! boundary node
+        ENDIF ! branch or boundary node
+      ENDDO !Loop over nodes
+
+    !!!-- 3 D    E q u a t i o n s   S e t --!!! 
+    CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
+      ! Do nothing
+
+    CASE DEFAULT
+      localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+       & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END SELECT
+
+    CALL EXITS("NavierStokes_UpdateMultiscaleBoundary")
+    RETURN
+999 CALL ERRORS("NavierStokes_UpdateMultiscaleBoundary",err,error)
+    CALL EXITS("NavierStokes_UpdateMultiscaleBoundary")
+    RETURN 1
+  END SUBROUTINE NavierStokes_UpdateMultiscaleBoundary
 
   !
   !================================================================================================================================
