@@ -390,7 +390,7 @@ CONTAINS
               CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
                 & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
-              EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 1 
+              EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 2
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
                 !4 SUPG parameters, 3 boundary normals, 1 boundary identifier, Q, R_proximal, C, R_distal value
                 ! component 13: trial node-based field for boundary flux
@@ -411,13 +411,19 @@ CONTAINS
                  CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET_FIELD_FIELD, &
                    & EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                  CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
-                   & [FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                   & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
                  CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
                    & "ElementMetrics",ERR,ERROR,*999)
+                 CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_V_VARIABLE_TYPE, &
+                   & "CouplingParameters",ERR,ERROR,*999)
                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_DP_TYPE,ERR,ERROR,*999)
+                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_V_VARIABLE_TYPE, &
                    & FIELD_DP_TYPE,ERR,ERROR,*999)
                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
                    & FIELD_U_VARIABLE_TYPE,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                   & FIELD_V_VARIABLE_TYPE,1,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="User-specified fields are not yet implemented for an equations set field field &
                   & setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
@@ -440,6 +446,9 @@ CONTAINS
                   CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx,0.0_DP,ERR,ERROR,*999)
                 END DO ! componentIdx
+                ! Boundary stabilisation scale factor 
+                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.2_DP,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="User-specified fields are not yet implemented for an equations set field field &
                   & setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
@@ -544,6 +553,11 @@ CONTAINS
                       & FIELD_U_VARIABLE_TYPE,componentIdx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
                   END DO
                 ENDIF
+                ! Boundary stabilisation scale factor
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_V_VARIABLE_TYPE,1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_V_VARIABLE_TYPE,1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 !Default the field scaling to that of the geometric field
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,GEOMETRIC_SCALING_TYPE, &
@@ -10626,6 +10640,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: geometricField
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
+    TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: decompElement
@@ -10666,6 +10682,8 @@ CONTAINS
     NULLIFY(geometricVariable)
     NULLIFY(geometricParameters)
     NULLIFY(equations)
+    NULLIFY(equationsSetField)
+    NULLIFY(equationsEquationsSetField)
     NULLIFY(equationsMatrices)
     NULLIFY(face)
     NULLIFY(faceBasis)
@@ -10694,12 +10712,22 @@ CONTAINS
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
       END IF
+      equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
+      IF(ASSOCIATED(equationsEquationsSetField)) THEN
+        equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
+        IF(.NOT.ASSOCIATED(equationsSetField)) THEN
+          CALL FLAG_ERROR("Equations set field (EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations set field (EQUATIONS_EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
+      END IF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     END IF
 
     SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+    CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
        & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
 
       !Get the mesh decomposition and basis
@@ -10729,6 +10757,9 @@ CONTAINS
         CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
           & geometricParameters,ERR,ERROR,*999)
         fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+        ! Get the boundary stabilisation scaling factor
+        CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & 1,beta,err,error,*999)
 
         DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
           !Get the face normal and quadrature information
@@ -10805,8 +10836,7 @@ CONTAINS
 
             ! Stabilisation term to correct for retrograde flow divergence.
             ! See: M. E. Moghadam, Y. Bazilevs, T.-Y. Hsia, I. E. Vignon-Clementel, and A. L. Marsden, “A comparison of outlet boundary treatments for prevention of backflow divergence with relevance to blood flow simulations,” Comput Mech, vol. 48, no. 3, pp. 277–291, Sep. 2011.
-            ! Note: beta is a relative scaling factor 0 < beta < 1
-            beta = 0.2_DP
+            ! Note: beta is a relative scaling factor 0 < beta < 1; default 0.2
             normalFlow = DOT_PRODUCT(velocity,unitNormal)
             IF (normalFlow < ZERO_TOLERANCE) THEN
               DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
@@ -12206,7 +12236,6 @@ CONTAINS
               CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & versionIdx,derivativeIdx,nodeIdx,2,pCellml,err,error,*999)                    
               ! Convert pCellML --> A0D 
-              pCellml = pCellml*1.0E-6_DP
               ACellML=((pCellml-pExternal)/beta+SQRT(A0))**2.0_DP
               !  O u t l e t
               IF (normalWave(1,1) > 0.0_DP) THEN
