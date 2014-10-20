@@ -12094,7 +12094,8 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: boundaryConditionsVariable
     TYPE(VARYING_STRING) :: localError
-    REAL(DP) :: rho,A0,H0,E,beta,pExternal,pCellml,qCellml,ABoundary,W1,W2,ACellML
+    REAL(DP) :: rho,A0,H0,E,beta,pExternal,lengthScale,timeScale,massScale
+    REAL(DP) :: pCellml,qCellml,ABoundary,W1,W2,ACellML
     REAL(DP) :: normalWave(2,4)
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,componentIdx,numberOfVersions,numberOfLocalNodes
     INTEGER(INTG) :: dependentDof,boundaryConditionType
@@ -12170,6 +12171,13 @@ CONTAINS
         & FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
       CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
         & FIELD_VALUES_SET_TYPE,4,pExternal,err,error,*999)
+      !Get materials scale factors
+      CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+        & FIELD_VALUES_SET_TYPE,5,lengthScale,err,error,*999)
+      CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+        & FIELD_VALUES_SET_TYPE,6,timeScale,err,error,*999)
+      CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
+        & FIELD_VALUES_SET_TYPE,7,massScale,err,error,*999)
 
       !!!--  L o o p   o v e r   l o c a l    n o d e s  --!!!
       DO nodeIdx=1,numberOfLocalNodes
@@ -12235,6 +12243,8 @@ CONTAINS
               !Get pCellML if this is a coupled problem
               CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & versionIdx,derivativeIdx,nodeIdx,2,pCellml,err,error,*999)                    
+              ! Convert pCellML from SI base units specified in CellML file to scaled units (e.g., kg/(m.s^2) --> g/(mm.ms^2))
+              pCellml = pCellml*massScale/(lengthScale*(timeScale**2.0_DP))
               ! Convert pCellML --> A0D 
               ACellML=((pCellml-pExternal)/beta+SQRT(A0))**2.0_DP
               !  O u t l e t
