@@ -486,7 +486,7 @@ CONTAINS
                         CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                          CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
+                          CALL Field_ParameterSetUpdateGaussPoint(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
                             & MODEL_MAP%FIELD_PARAMETER_SET,gaussNumber,elementNumber,MODEL_MAP%COMPONENT_NUMBER, &
                             & dofValue,ERR,ERROR,*999)
                         CASE DEFAULT
@@ -916,7 +916,7 @@ CONTAINS
                       gridNumber=MODELS_VARIABLE%DOF_TO_PARAM_MAP%GRID_POINT_DOF2PARAM_MAP(1,dof2ParamIdx)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                       gaussNumber=MODELS_VARIABLE%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,dof2ParamIdx)
-                      elementNumber=MODELS_VARIABLE%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,dof2ParamIdx)
+                      elementNumber=MODELS_VARIABLE%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(2,dof2ParamIdx)
                     CASE DEFAULT
                       LOCAL_ERROR="The DOF type of "//TRIM(NUMBER_TO_VSTRING(dofType,"*",ERR,ERROR))// &
                         & " for local DOF number "//TRIM(NUMBER_TO_VSTRING(dofIdx,"*",ERR,ERROR))//" is invalid."
@@ -998,7 +998,7 @@ CONTAINS
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              CALL Field_ParameterSetUpdateGaussPoint(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & MODEL_MAP%CELLML_PARAMETER_SET,gaussNumber,elementNumber,MODEL_MAP%CELLML_VARIABLE_NUMBER, &
                                 & dofValue,ERR,ERROR,*999)
                             CASE DEFAULT
@@ -1027,7 +1027,7 @@ CONTAINS
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                              CALL Field_ParameterSetUpdateGaussPoint(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,gaussNumber,elementNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE DEFAULT
@@ -1056,7 +1056,7 @@ CONTAINS
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                              CALL Field_ParameterSetUpdateGaussPoint(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,gaussNumber,elementNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE DEFAULT
@@ -2535,7 +2535,7 @@ CONTAINS
         CASE(FIELD_GAUSS_POINT_DOF_TYPE)
           gaussNumber=modelVariable%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,dofParamIdx)
           elementNumber=modelVariable%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(2,dofParamIdx)
-          CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(field,variableType,parameterSetIdx,gaussNumber,elementNumber,componentIdx, &
+          CALL Field_ParameterSetUpdateGaussPoint(field,variableType,parameterSetIdx,gaussNumber,elementNumber,componentIdx, &
             & VALUE,err,error,*999)
         CASE DEFAULT
           localError="The DOF type of "//TRIM(NUMBER_TO_VSTRING(dofType,"*",err,error))// &
