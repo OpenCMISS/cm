@@ -411,7 +411,7 @@ CONTAINS
                  CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
                    & "ElementMetrics",ERR,ERROR,*999)
                  CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_V_VARIABLE_TYPE, &
-                   & "CouplingParameters",ERR,ERROR,*999)
+                   & "EquationsConstants",ERR,ERROR,*999)
                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
                    & FIELD_DP_TYPE,ERR,ERROR,*999)
                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_V_VARIABLE_TYPE, &
@@ -3191,6 +3191,7 @@ CONTAINS
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)                
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop,1000,ERR,ERROR,*999)
+                CALL ControlLoop_AbsoluteToleranceSet(iterativeWhileLoop,0.1,err,error,*999)
                 CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop,"1D-0D Iterative Coupling Convergence Loop",ERR,ERROR,*999)
                 CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(iterativeWhileLoop,2,ERR,ERROR,*999)
                 NULLIFY(simpleLoop)
@@ -3203,6 +3204,7 @@ CONTAINS
                 CALL CONTROL_LOOP_SUB_LOOP_GET(iterativeWhileLoop,2,iterativeWhileLoop2,ERR,ERROR,*999)                
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop2,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop2,1000,ERR,ERROR,*999)
+                CALL ControlLoop_AbsoluteToleranceSet(iterativeWhileLoop2,1.0E6_DP,err,error,*999)
                 CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop2,"1D Characteristic/NSE branch value convergence Loop",ERR,ERROR,*999)
               ELSE
                 NULLIFY(iterativeWhileLoop)
@@ -3211,6 +3213,7 @@ CONTAINS
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)                
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop,1000,ERR,ERROR,*999)
+                CALL ControlLoop_AbsoluteToleranceSet(iterativeWhileLoop2,1.0E6_DP,err,error,*999)
                 CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop,"1D Characteristic/NSE branch value convergence Loop",ERR,ERROR,*999)
               ENDIF
             CASE(PROBLEM_SETUP_FINISH_ACTION)
@@ -7867,8 +7870,10 @@ CONTAINS
                           CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
 !                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
 !                              & ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
-                          CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                          IF(CURRENT_LOOP_ITERATION==0) THEN
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+                            CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                          ENDIF
                           NULLIFY(Fields)
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
@@ -10594,7 +10599,7 @@ CONTAINS
                & elementNumber,1,lengthScale,err,error,*999)                
 
               !Calculate element length scale H if not already calc'd for this element
-              IF(ABS(lengthScale)<=ZERO_TOLERANCE) THEN
+              IF(lengthScale<=ZERO_TOLERANCE) THEN
                 lengthScale=0.0_DP
                 X1=0.0_DP
                 X2=0.0_DP
@@ -10613,6 +10618,10 @@ CONTAINS
                 DO elementLineIdx=1,numberOfLines
                   lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES(elementLineIdx)
                   lineLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
+                  IF (lineLength < -ZERO_TOLERANCE) THEN
+                     CALL FLAG_WARNING("Negative line length detected",err,error,*999)
+                     lineLength = ABS(lineLength)
+                  ENDIF
                   lengthScale = MAX(lengthScale,lineLength)
                 ENDDO ! element lines
                 lengthScale = lengthScale/(2.0_DP*SQRT(REAL(numberOfDimensions))) !H/2SQRT(num_dim) : element length scale
@@ -11033,6 +11042,7 @@ CONTAINS
     INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx
     INTEGER(INTG) :: faceParameterIdx, elementDofIdx,normalComponentIdx
     INTEGER(INTG) :: dimIdx,derivIdx,versionIdx,local_ny,numberOfDimensions,boundaryID,boundaryIdx
+    INTEGER(INTG) :: MPI_IERROR
     REAL(DP) :: gaussWeight, normalProjection,elementNormal(3)
     REAL(DP) :: normalDifference,normalTolerance,delUGauss(3,3),dXi_dX(3,3),faceFlux
     REAL(DP) :: conserveFaces,sumFaceFlux
@@ -11147,238 +11157,242 @@ CONTAINS
       maxCFL = 0.0_DP
       DO elementIdx=elementsMapping%INTERNAL_START,elementsMapping%INTERNAL_FINISH
         !Check computational node for elementIdx
-        elementExists=.FALSE.
-        ghostElement=.TRUE.
-        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(equationsSetField%DECOMPOSITION%TOPOLOGY, &
-          & elementIdx,elementExists,decompositionLocalElementNumber,ghostElement,ERR,ERROR,*999)              
-        IF(elementExists .AND. .NOT. ghostElement ) THEN
-          meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
-            & ELEMENTS(elementIdx)%BASIS
-          decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementIdx)
+        ! elementExists=.FALSE.
+        ! ghostElement=.TRUE.
+        ! CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(equationsSetField%DECOMPOSITION%TOPOLOGY, &
+        !   & elementIdx,elementExists,decompositionLocalElementNumber,ghostElement,ERR,ERROR,*999)              
+        ! IF(elementExists .AND. .NOT. ghostElement ) THEN
+        meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+        dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
+          & ELEMENTS(elementIdx)%BASIS
+        decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementIdx)
 
-          ! C F L  c o n d i t i o n   c h e c k
-          ! ------------------------------------
-          ! Get element metrics
-          CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,1,lengthScale,err,error,*999)
-          CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,2,velocityScale,err,error,*999)
-          ! Calculate the CFL number and update value
-          cfl = velocityScale*timeIncrement/lengthScale
-          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,4,cfl,err,error,*999)
-          IF (cfl > maxCFL) maxCFL = cfl
-          ! Check if element CFL number below specified tolerance
-          IF (cfl > toleranceCFL) THEN
-            LOCAL_ERROR="Element "//TRIM(NUMBER_TO_VSTRING(decompElement%user_number, &
-              & "*",ERR,ERROR))//" has violated the CFL condition "//TRIM(NUMBER_TO_VSTRING(cfl, &
-              & "*",ERR,ERROR))//" <= "//TRIM(NUMBER_TO_VSTRING(toleranceCFL,"*",ERR,ERROR))//". Decrease timestep or increase "// &
-              & "CFL tolerance for the 3D Navier-Stokes problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
+        ! C F L  c o n d i t i o n   c h e c k
+        ! ------------------------------------
+        ! Get element metrics
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,1,lengthScale,err,error,*999)
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,2,velocityScale,err,error,*999)
+        ! Calculate the CFL number and update value
+        cfl = velocityScale*timeIncrement/lengthScale
+        IF (cfl < -ZERO_TOLERANCE) THEN
+          CALL FLAG_WARNING("Negative CFL number.",ERR,ERROR,*999)
+        ENDIF
+        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,4,cfl,err,error,*999)
+        IF (cfl > maxCFL) maxCFL = cfl
+        ! Check if element CFL number below specified tolerance
+        IF (cfl > toleranceCFL) THEN
+          LOCAL_ERROR="Element "//TRIM(NUMBER_TO_VSTRING(decompElement%user_number, &
+            & "*",ERR,ERROR))//" has violated the CFL condition "//TRIM(NUMBER_TO_VSTRING(cfl, &
+            & "*",ERR,ERROR))//" <= "//TRIM(NUMBER_TO_VSTRING(toleranceCFL,"*",ERR,ERROR))//". Decrease timestep or increase "// &
+            & "CFL tolerance for the 3D Navier-Stokes problem."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
 
-          ! B o u n d a r y   c h e c k
-          ! ------------------------------------
-          CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,5,elementNormal(1),err,error,*999)
-          CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,6,elementNormal(2),err,error,*999)
-          CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,7,elementNormal(3),err,error,*999)
-          CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-           & elementIdx,8,boundaryValue,err,error,*999)
-          !Check if boundary element is a multidomain boundary element
-          boundaryID=NINT(boundaryValue)
-          IF(boundaryID>0) THEN
+        ! B o u n d a r y   c h e c k
+        ! ------------------------------------
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,5,elementNormal(1),err,error,*999)
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,6,elementNormal(2),err,error,*999)
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,7,elementNormal(3),err,error,*999)
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,8,boundaryValue,err,error,*999)
+        !Check if boundary element is a multidomain boundary element
+        boundaryID=NINT(boundaryValue)
+        IF(boundaryID>0) THEN
 
-            faceArea=0.0_DP
-            faceVelocity=0.0_DP
-            !Get the dependent interpolation parameters
-            dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
-              & dependentVariable%VARIABLE_TYPE)%PTR
-            dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
-              & dependentVariable%VARIABLE_TYPE)%PTR
-            ! Loop over faces to determine the boundary face contribution
-            DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
-              !Get the face normal and quadrature information
-              IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
-                faceNumber=decompElement%ELEMENT_FACES(faceIdx)
+          faceArea=0.0_DP
+          faceVelocity=0.0_DP
+          !Get the dependent interpolation parameters
+          dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
+            & dependentVariable%VARIABLE_TYPE)%PTR
+          dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
+            & dependentVariable%VARIABLE_TYPE)%PTR
+          ! Loop over faces to determine the boundary face contribution
+          DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
+            !Get the face normal and quadrature information
+            IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
+              faceNumber=decompElement%ELEMENT_FACES(faceIdx)
+            ELSE
+              CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
+            END IF
+            face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
+            !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
+            !correspond to the other element.
+            IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
+
+            SELECT CASE(dependentBasis%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              normalComponentIdx=ABS(face%XI_DIRECTION)
+            CASE(BASIS_SIMPLEX_TYPE)
+              ! Currently problems with normal calculation for simplex elements- this is a workaround
+              geometricFaceBasis=>geometricDecomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+              numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
+              X1=0.0_DP
+              X2=0.0_DP
+              lineLength=0.0_DP
+              lineLength1=0.0_DP
+              lineLength2=0.0_DP
+              faceVector1=0.0_DP
+              faceVector2=0.0_DP
+              !Loop over element nodes
+              DO faceNodeIdx=1,geometricFaceBasis%NUMBER_OF_NODES
+                nodeIdx=geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
+                 & TOPOLOGY%FACES%FACES(faceNumber)%NODES_IN_FACE(faceNodeIdx)
+                domain=>geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR
+                IF(ASSOCIATED(domain)) THEN
+                  IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                    domainNodes=>domain%TOPOLOGY%NODES
+                    !Loop over the derivatives
+                    DO derivIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                      !Loop over versions
+                      DO versionIdx=1,domainNodes%nodes(nodeIdx)%derivatives(derivIdx)%numberOfVersions
+                        !Loop over dimensions
+                        DO dimIdx=1,numberOfDimensions
+                          local_ny=fieldVariable%COMPONENTS(dimIdx)%PARAM_TO_DOF_MAP% &
+                            & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivIdx)%VERSIONS(versionIdx)
+                          IF(faceNodeIdx==1 .AND. derivIdx==1 .AND. versionIdx==1) THEN
+                            !First node that lengths will be calculated relative to:  
+                            X1(dimIdx)=geometricParameters(local_ny)
+                          ELSE
+                            X2(dimIdx)=geometricParameters(local_ny)
+                          ENDIF
+                        ENDDO !dim_idx
+                        IF(faceNodeIdx>1) THEN
+                          lineLength=L2NORM(X1-X2)
+                          IF(lineLength>lineLength1)THEN
+                            lineLength1=lineLength
+                            faceVector1=(X1-X2)
+                          ELSE IF(lineLength>lineLength2)THEN
+                            lineLength2=lineLength
+                            faceVector2=(X1-X2)
+                          ENDIF
+                        ENDIF 
+                      ENDDO !version_idx
+                    ENDDO !deriv_idx
+                  ELSE
+                    CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                ENDIF
+              END DO  
+
+              CALL CROSS_PRODUCT(faceVector1,faceVector2,faceNormal,err,error,*999)
+              IF(L2NORM(faceNormal)>0) THEN
+                unitNormal=faceNormal/L2NORM(faceNormal)          
+                !Check that this boundary face shares the same normal as the specified element normal 
+                normalDifference = L2NORM(unitNormal - elementNormal)
               ELSE
-                CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
-              END IF
-              face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
-              !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
-              !correspond to the other element.
-              IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
+                CALL FLAG_ERROR("0 face normal on boundary!",err,error,*999)
+              ENDIF
+              normalTolerance = 0.1_DP
+              invertedNormal=.FALSE.
+              !Directionality assignment of normals for simplex elements seems questionable
+              ! However, if a face has an inverted normal, we can check and correct for that here as it will
+              ! point in the exact opposite direction as the element (outward facing) normal
+              IF(normalDifference>normalTolerance) THEN
+                normalDifference = L2NORM(unitNormal + elementNormal)
+                IF(normalDifference>normalTolerance) THEN
+                  CYCLE ! next face
+                ELSE
+                  invertedNormal=.TRUE.
+                ENDIF
+              ENDIF
+
+            CASE DEFAULT
+              LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
+                & " is not yet implemented for Navier-Stokes."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+
+            CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
+              & dependentInterpolationParameters,err,error,*999)
+            faceBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+            faceQuadratureScheme=>faceBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+
+            ! Loop over gauss points
+            DO gaussIdx=1,faceQuadratureScheme%NUMBER_OF_GAUSS
+              !Use the geometric field to find the face normal and Jacobian for the face integral
+              geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
+                & FIELD_U_VARIABLE_TYPE)%PTR
+              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementIdx, &
+                & geometricInterpolationParameters,err,error,*999)
+              geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+              CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
+                & geometricInterpolatedPoint,err,error,*999)
+              pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
+              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
+
+              gaussWeight=faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)
+              !Get interpolated velocity
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
+                & dependentInterpolatedPoint,err,error,*999)
+              !Interpolated values at gauss point
+              velocityGauss=dependentInterpolatedPoint%values(1:3,NO_PART_DERIV)
+              delUGauss(1:3,1)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S1)
+              delUGauss(1:3,2)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S2)
+              delUGauss(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
+              dXi_dX=0.0_DP
+              dXi_dX=pointMetrics%DXI_DX(:,:)
+
+              elementBaseDofIdx=0
 
               SELECT CASE(dependentBasis%TYPE)
               CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-                normalComponentIdx=ABS(face%XI_DIRECTION)
+                correctFace=.TRUE.
+                DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+                  normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
+                  IF(face%XI_DIRECTION<0) THEN
+                    normalProjection=-normalProjection
+                  END IF
+                  faceNormal(componentIdx)=normalProjection
+                END DO !componentIdx
+                unitNormal=faceNormal/L2NORM(faceNormal)
+                normalDifference=L2NORM(elementNormal-unitNormal)
+                normalTolerance=0.1_DP
+                IF(normalDifference>normalTolerance) EXIT
               CASE(BASIS_SIMPLEX_TYPE)
-                ! Currently problems with normal calculation for simplex elements- this is a workaround
-                geometricFaceBasis=>geometricDecomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-                numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
-                X1=0.0_DP
-                X2=0.0_DP
-                lineLength=0.0_DP
-                lineLength1=0.0_DP
-                lineLength2=0.0_DP
-                faceVector1=0.0_DP
-                faceVector2=0.0_DP
-                !Loop over element nodes
-                DO faceNodeIdx=1,geometricFaceBasis%NUMBER_OF_NODES
-                  nodeIdx=geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR% &
-                   & TOPOLOGY%FACES%FACES(faceNumber)%NODES_IN_FACE(faceNodeIdx)
-                  domain=>geometricField%DECOMPOSITION%DOMAIN(meshComponentNumber)%PTR
-                  IF(ASSOCIATED(domain)) THEN
-                    IF(ASSOCIATED(domain%TOPOLOGY)) THEN
-                      domainNodes=>domain%TOPOLOGY%NODES
-                      !Loop over the derivatives
-                      DO derivIdx=1,domainNodes%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
-                        !Loop over versions
-                        DO versionIdx=1,domainNodes%nodes(nodeIdx)%derivatives(derivIdx)%numberOfVersions
-                          !Loop over dimensions
-                          DO dimIdx=1,numberOfDimensions
-                            local_ny=fieldVariable%COMPONENTS(dimIdx)%PARAM_TO_DOF_MAP% &
-                              & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivIdx)%VERSIONS(versionIdx)
-                            IF(faceNodeIdx==1 .AND. derivIdx==1 .AND. versionIdx==1) THEN
-                              !First node that lengths will be calculated relative to:  
-                              X1(dimIdx)=geometricParameters(local_ny)
-                            ELSE
-                              X2(dimIdx)=geometricParameters(local_ny)
-                            ENDIF
-                          ENDDO !dim_idx
-                          IF(faceNodeIdx>1) THEN
-                            lineLength=L2NORM(X1-X2)
-                            IF(lineLength>lineLength1)THEN
-                              lineLength1=lineLength
-                              faceVector1=(X1-X2)
-                            ELSE IF(lineLength>lineLength2)THEN
-                              lineLength2=lineLength
-                              faceVector2=(X1-X2)
-                            ENDIF
-                          ENDIF 
-                        ENDDO !version_idx
-                      ENDDO !deriv_idx
-                    ELSE
-                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                END DO  
-
-                CALL CROSS_PRODUCT(faceVector1,faceVector2,faceNormal,err,error,*999)
-                IF(L2NORM(faceNormal)>0) THEN
-                  unitNormal=faceNormal/L2NORM(faceNormal)          
-                  !Check that this boundary face shares the same normal as the specified element normal 
-                  normalDifference = L2NORM(unitNormal - elementNormal)
-                ELSE
-                  CALL FLAG_ERROR("0 face normal on boundary!",err,error,*999)
-                ENDIF
-                normalTolerance = 0.1_DP
-                invertedNormal=.FALSE.
-                !Directionality assignment of normals for simplex elements seems questionable
-                ! However, if a face has an inverted normal, we can check and correct for that here as it will
-                ! point in the exact opposite direction as the element (outward facing) normal
-                IF(normalDifference>normalTolerance) THEN
-                  normalDifference = L2NORM(unitNormal + elementNormal)
-                  IF(normalDifference>normalTolerance) THEN
-                    CYCLE ! next face
-                  ELSE
-                    invertedNormal=.TRUE.
-                  ENDIF
-                ENDIF
-
+                faceNormal=unitNormal
               CASE DEFAULT
                 LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
                   & " is not yet implemented for Navier-Stokes."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
 
-              CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
-                & dependentInterpolationParameters,err,error,*999)
-              faceBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
-              faceQuadratureScheme=>faceBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-
-              ! Loop over gauss points
-              DO gaussIdx=1,faceQuadratureScheme%NUMBER_OF_GAUSS
-                !Use the geometric field to find the face normal and Jacobian for the face integral
-                geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
-                  & FIELD_U_VARIABLE_TYPE)%PTR
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementIdx, &
-                  & geometricInterpolationParameters,err,error,*999)
-                geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-                CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
-                  & geometricInterpolatedPoint,err,error,*999)
-                pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-                CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
-
-                gaussWeight=faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)
-                !Get interpolated velocity
-                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
-                  & dependentInterpolatedPoint,err,error,*999)
-                !Interpolated values at gauss point
-                velocityGauss=dependentInterpolatedPoint%values(1:3,NO_PART_DERIV)
-                delUGauss(1:3,1)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S1)
-                delUGauss(1:3,2)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S2)
-                delUGauss(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
-                dXi_dX=0.0_DP
-                dXi_dX=pointMetrics%DXI_DX(:,:)
-
-                elementBaseDofIdx=0
-
-                SELECT CASE(dependentBasis%TYPE)
-                CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-                  correctFace=.TRUE.
-                  DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                    normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
-                    IF(face%XI_DIRECTION<0) THEN
-                      normalProjection=-normalProjection
-                    END IF
-                    faceNormal(componentIdx)=normalProjection
-                  END DO !componentIdx
-                  unitNormal=faceNormal/L2NORM(faceNormal)
-                  normalDifference=L2NORM(elementNormal-unitNormal)
-                  normalTolerance=0.1_DP
-                  IF(normalDifference>normalTolerance) EXIT
-                CASE(BASIS_SIMPLEX_TYPE)
-                  faceNormal=unitNormal
-                CASE DEFAULT
-                  LOCAL_ERROR="Face integration for basis type "//TRIM(NUMBER_TO_VSTRING(dependentBasis%TYPE,"*",ERR,ERROR))// &
-                    & " is not yet implemented for Navier-Stokes."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-
-                ! Integrate face area and velocity
-                DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-                  normalProjection=faceNormal(componentIdx)
-                  IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
-                  !Work out the first index of the rhs vector for this element - 1
-                  elementBaseDofIdx=dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
-                  DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
-                    elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
-                    DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
-                      nodeDerivativeIdx=1
-                      parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
-                      faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
-                      elementDofIdx=elementBaseDofIdx+parameterIdx
-                      faceArea=faceArea + normalProjection*gaussWeight*pointMetrics%JACOBIAN* &
-                       & faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)
-                      faceVelocity=faceVelocity+velocityGauss(componentIdx)*normalProjection*gaussWeight* &
-                       & pointMetrics%JACOBIAN*faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)
-                    END DO !nodeDerivativeIdx
-                  END DO !faceNodeIdx
-                END DO !componentIdx
-              END DO !gaussIdx
-            END DO !faceIdx
-            boundaryFlux(boundaryID) = boundaryFlux(boundaryID) + faceVelocity
-            boundaryArea(boundaryID) = boundaryArea(boundaryID) + faceArea
-          END IF !boundaryIdentifier
-        END IF ! computational node check
+              ! Integrate face area and velocity
+              DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+                normalProjection=faceNormal(componentIdx)
+                IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
+                !Work out the first index of the rhs vector for this element - 1
+                elementBaseDofIdx=dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
+                DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
+                  elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
+                  DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
+                    nodeDerivativeIdx=1
+                    parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
+                    faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
+                    elementDofIdx=elementBaseDofIdx+parameterIdx
+                    faceArea=faceArea + normalProjection*gaussWeight*pointMetrics%JACOBIAN* &
+                     & faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)
+                    faceVelocity=faceVelocity+velocityGauss(componentIdx)*normalProjection*gaussWeight* &
+                     & pointMetrics%JACOBIAN*faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)
+                  END DO !nodeDerivativeIdx
+                END DO !faceNodeIdx
+              END DO !componentIdx
+            END DO !gaussIdx
+          END DO !faceIdx
+          boundaryFlux(boundaryID) = boundaryFlux(boundaryID) + faceVelocity
+          boundaryArea(boundaryID) = boundaryArea(boundaryID) + faceArea
+        END IF !boundaryIdentifier
+        !END IF ! computational node check
       ENDDO !elementIdx                 
 
+!      CALL MPI_BARRIER(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
       CALL WriteStringTwoValue(DIAGNOSTIC_OUTPUT_TYPE,"Max CFL# for proc ", &
        & COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER," : ",maxCFL,err,error,*999)      
 
