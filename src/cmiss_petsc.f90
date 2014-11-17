@@ -54,20 +54,20 @@ MODULE CMISS_PETSC
  
   PRIVATE
 
-#include "include/petscversion.h"
+#include "petscversion.h"
   
-#include "include/finclude/petsc.h"
+#include "finclude/petsc.h"
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
-#include "include/finclude/petscis.h"
-#include "include/finclude/petscksp.h"
-#include "include/finclude/petscmat.h"
-#include "include/finclude/petscpc.h"
-#include "include/finclude/petscsnes.h"
-#include "include/finclude/petscvec.h"
-#include "include/finclude/petscviewer.h"
+#include "finclude/petscis.h"
+#include "finclude/petscksp.h"
+#include "finclude/petscmat.h"
+#include "finclude/petscpc.h"
+#include "finclude/petscsnes.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscviewer.h"
 #endif
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-#include "include/finclude/petscts.h"
+#include "finclude/petscts.h"
 #endif
   
   !Module parameters
@@ -309,8 +309,13 @@ MODULE CMISS_PETSC
 #endif
   
   !SNES types
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
+  SNESType, PARAMETER :: PETSC_SNESLS = SNESNEWTONLS
+  SNESType, PARAMETER :: PETSC_SNESTR = SNESNEWTONTR
+#else
   SNESType, PARAMETER :: PETSC_SNESLS = SNESLS
   SNESType, PARAMETER :: PETSC_SNESTR = SNESTR
+#endif
   SNESType, PARAMETER :: PETSC_SNESTEST = SNESTEST
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
   SNESType, PARAMETER :: PETSC_SNESPYTHON = SNESPYTHON
@@ -318,8 +323,13 @@ MODULE CMISS_PETSC
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   SNESType, PARAMETER :: PETSC_SNESNRICHARDSON = SNESNRICHARDSON
   SNESType, PARAMETER :: PETSC_SNESKSPONLY = SNESKSPONLY
+#if ( PETSC_VERSION_MINOR >= 4 )
+  SNESType, PARAMETER :: PETSC_SNESVIRS = SNESVINEWTONRSLS
+  SNESType, PARAMETER :: PETSC_SNESVISS = SNESVINEWTONSSLS
+#else
   SNESType, PARAMETER :: PETSC_SNESVIRS = SNESVIRS
   SNESType, PARAMETER :: PETSC_SNESVISS = SNESVISS
+#endif
   SNESType, PARAMETER :: PETSC_SNESNGMRES = SNESNGMRES
   SNESType, PARAMETER :: PETSC_SNESQN = SNESQN
   SNESType, PARAMETER :: PETSC_SNESSHELL = SNESSHELL
@@ -1045,11 +1055,19 @@ MODULE CMISS_PETSC
 #endif    
     
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+#if ( PETSC_VERSION_MINOR >= 4 )
+    SUBROUTINE SNESGetLineSearch(snes,linesearch,ierr)
+#else
     SUBROUTINE SNESGetSNESLineSearch(snes,linesearch,ierr)
+#endif
       SNES snes
       SNESLineSearch linesearch
       PetscInt ierr
+#if ( PETSC_VERSION_MINOR >= 4 )
+    END SUBROUTINE SNESGetLineSearch
+#else
     END SUBROUTINE SNESGetSNESLineSearch
+#endif
 
     SUBROUTINE SNESLineSearchSetType(linesearch,linesearchtype,ierr)
       SNESLineSearch linesearch
@@ -4652,13 +4670,16 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
     CALL Enters("Petsc_SnesGetSnesLineSearch",err,error,*999)
-
+#if ( PETSC_VERSION_MINOR >= 4 )
+    CALL SNESGetLineSearch(snes_%snes_,lineSearch%snesLineSearch,err)
+#else
     CALL SNESGetSNESLineSearch(snes_%snes_,lineSearch%snesLineSearch,err)
+#endif
     IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(err)
       ENDIF
-      CALL FlagError("PETSc error in SNESGetSNESLineSearch",err,error,*999)
+      CALL FlagError("PETSc error in SNESGetLineSearch",err,error,*999)
     ENDIF
 
     CALL Exits("Petsc_SnesGetSnesLineSearch")
@@ -5314,8 +5335,11 @@ CONTAINS
     TYPE(PETSC_MATFDCOLORING_TYPE), POINTER :: CTX !<The passed through context
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR <= 3 )
     CALL SNESDefaultComputeJacobianColor(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
+#else
+    CALL SNESComputeJacobianDefaultColor(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
+#endif
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -5346,7 +5370,11 @@ CONTAINS
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR <= 3 )
     CALL SNESDefaultComputeJacobian(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
+#else
+    CALL SNESComputeJacobianDefault(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
+#endif
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
