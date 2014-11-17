@@ -510,10 +510,21 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE_L
   END INTERFACE !FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE
 
-  !>Updates the given parameter set with the given value for a particular element and gauss point of the field variable component. TODO: sp/int/l versions
+  !>Updates the given parameter set with the given value for a particular element and gauss point of the field variable component. 
+  INTERFACE FieldParameterSetUpdateGaussPoint
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointIntg
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointSP
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointDP
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointL
+  END INTERFACE FieldParameterSetUpdateGaussPoint
+
+  !>Updates the given parameter set with the given value for a particular element and gauss point of the field variable component. 
   INTERFACE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
-    MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP
-  END INTERFACE !FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointIntg
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointSP
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointDP
+    MODULE PROCEDURE FieldParameterSetUpdateGaussPointL
+  END INTERFACE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
 
   !>Updates the given parameter set with the given value for a particular element and data point of the field variable component. TODO: sp/int/l versions
   INTERFACE Field_ParameterSetUpdateElementDataPoint
@@ -714,7 +725,7 @@ MODULE FIELD_ROUTINES
     & Field_ParameterSetNodeScaleFactorsGet,Field_ParameterSetNodeScaleFactorsSet, &
     & Field_ParameterSetNodeNumberOfScaleFactorDofsGet
 
-  PUBLIC FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+  PUBLIC FieldParameterSetUpdateGaussPoint,FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
 
   PUBLIC FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_XI, FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_XI
 
@@ -4061,6 +4072,8 @@ CONTAINS
       ELSE
         !Check field has a decomposition associated
         IF(ASSOCIATED(FIELD%DECOMPOSITION)) THEN
+          !Check for field validity
+          CALL FieldVariablesCheck(field,err,error,*999)
           !Initialise the components
           CALL FIELD_VARIABLES_INITIALISE(FIELD,ERR,ERROR,*999)
           IF(ASSOCIATED(FIELD%GEOMETRIC_FIELD)) THEN
@@ -5477,7 +5490,8 @@ CONTAINS
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(GAUSS_POINT_NUMBER, &
+                  & component_idx)
               CASE DEFAULT
                 LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
                   & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -13129,12 +13143,50 @@ CONTAINS
                                 CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                   CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
                                 CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                ! gp based. dp only. 
+                                  ! gp based.
                                   FROM_DOMAIN_TOPOLOGY=>FROM_DOMAIN%TOPOLOGY
                                   IF(ASSOCIATED(FROM_DOMAIN_TOPOLOGY)) THEN
                                     FROM_DOMAIN_ELEMENTS=>FROM_DOMAIN_TOPOLOGY%ELEMENTS
                                     IF(ASSOCIATED(FROM_DOMAIN_ELEMENTS)) THEN
                                       SELECT CASE(FROM_FIELD_VARIABLE%DATA_TYPE)
+                                      CASE(FIELD_INTG_TYPE)
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
+                                          & FROM_PARAMETER_DATA_INTG,ERR,ERROR,*999)
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                          DO gausspoint_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
+                                              & PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
+                                            local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gausspoint_idx,elem_idx)
+                                            VALUE_INTG=FROM_PARAMETER_DATA_INTG(local_ny)
+                                            local_ny=TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                              &COMPONENTS(TO_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gausspoint_idx,elem_idx)
+                                            CALL DISTRIBUTED_VECTOR_VALUES_SET(TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            & PARAMETER_SETS%SET_TYPE(TO_PARAMETER_SET_TYPE)%PTR%PARAMETERS,local_ny,VALUE_INTG,&
+                                            & ERR,ERROR,*999)
+                                          ENDDO !gausspoint_idx
+                                        ENDDO !elem_idx
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
+                                          & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_INTG,ERR,ERROR,*999)
+                                      CASE(FIELD_SP_TYPE)
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
+                                          & FROM_PARAMETER_DATA_SP,ERR,ERROR,*999)
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                          DO gausspoint_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
+                                              & PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
+                                            local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gausspoint_idx,elem_idx)
+                                            VALUE_SP=FROM_PARAMETER_DATA_SP(local_ny)
+                                            local_ny=TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                              &COMPONENTS(TO_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gausspoint_idx,elem_idx)
+                                            CALL DISTRIBUTED_VECTOR_VALUES_SET(TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            & PARAMETER_SETS%SET_TYPE(TO_PARAMETER_SET_TYPE)%PTR%PARAMETERS,local_ny,VALUE_SP,&
+                                            & ERR,ERROR,*999)
+                                          ENDDO !gausspoint_idx
+                                        ENDDO !elem_idx
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
+                                          & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_SP,ERR,ERROR,*999)
                                       CASE(FIELD_DP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
@@ -13154,6 +13206,25 @@ CONTAINS
                                         ENDDO !elem_idx
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
                                           & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
+                                      CASE(FIELD_L_TYPE)
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
+                                          & FROM_PARAMETER_DATA_L,ERR,ERROR,*999)
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                          DO gausspoint_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
+                                              & PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
+                                            local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gausspoint_idx,elem_idx)
+                                            VALUE_L=FROM_PARAMETER_DATA_L(local_ny)
+                                            local_ny=TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                              &COMPONENTS(TO_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gausspoint_idx,elem_idx)
+                                            CALL DISTRIBUTED_VECTOR_VALUES_SET(TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            & PARAMETER_SETS%SET_TYPE(TO_PARAMETER_SET_TYPE)%PTR%PARAMETERS,local_ny,VALUE_L,&
+                                            & ERR,ERROR,*999)
+                                          ENDDO !gausspoint_idx
+                                        ENDDO !elem_idx
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
+                                          & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_L,ERR,ERROR,*999)
                                       CASE DEFAULT
                                         CALL FLAG_ERROR("Invalid data type or not implemented.",ERR,ERROR,*999)
                                       END SELECT
@@ -13173,22 +13244,22 @@ CONTAINS
                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                 END SELECT
                               ELSE
-                                LOCAL_ERROR="The from field variable component interpolation type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
-                                  & INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                                  & " does not match the to variable component interpolation type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(TO_FIELD_VARIABLE%COMPONENTS(TO_COMPONENT_NUMBER)% &
-                                  & INTERPOLATION_TYPE,"*",ERR,ERROR))//"."
+                                LOCAL_ERROR="The from field variable data type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
+                                  & " does not match the to variable data type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(TO_FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))//"."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              LOCAL_ERROR="The from field variable data type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
-                                & " does not match the to variable data type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(TO_FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))//"."
+                              LOCAL_ERROR="The from field variable component interpolation type of "// &
+                                & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
+                                & INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                                & " does not match the to variable component interpolation type of "// &
+                                & TRIM(NUMBER_TO_VSTRING(TO_FIELD_VARIABLE%COMPONENTS(TO_COMPONENT_NUMBER)% &
+                                & INTERPOLATION_TYPE,"*",ERR,ERROR))//"."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-                          ELSE
+                           ELSE
                             CALL FLAG_ERROR("The from field variable component domain is not associated with the "// &
                               & "to field variable component domain.",ERR,ERROR,*999)
                           ENDIF
@@ -16860,66 +16931,71 @@ CONTAINS
           !Check the set type input
           IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
             !Check if this set type has already been created
-            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR)) THEN
-              LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
-                & " has already been created for variable type of "// &
-                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ELSE
-              ALLOCATE(NEW_PARAMETER_SET,STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter set.",ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_INITIALISE(NEW_PARAMETER_SET,ERR,ERROR,*999)
-              NEW_PARAMETER_SET%SET_INDEX=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
-              NEW_PARAMETER_SET%SET_TYPE=FIELD_SET_TYPE
-              NULLIFY(NEW_PARAMETER_SET%PARAMETERS)
-              CALL DISTRIBUTED_VECTOR_CREATE_START(FIELD_VARIABLE%DOMAIN_MAPPING,NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-              SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
-              CASE(FIELD_INTG_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE(FIELD_SP_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_SP_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE(FIELD_DP_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_DP_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE(FIELD_L_TYPE)
-                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_L_TYPE, &
-                  & ERR,ERROR,*999)
-              CASE DEFAULT
-                LOCAL_ERROR="The field data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
-                  & " is invalid for variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                  & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE)) THEN
+              IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR)) THEN
+                LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has already been created for variable type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-              CALL DISTRIBUTED_VECTOR_CREATE_FINISH(NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-              SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
-              CASE(FIELD_INTG_TYPE)
-                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0_INTG,ERR,ERROR,*999)
-              CASE(FIELD_DP_TYPE)
-                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_DP,ERR,ERROR,*999)
-              END SELECT
-              !Add the new parameter set to the list of parameter sets
-              ALLOCATE(NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter sets.",ERR,ERROR,*999)
-              IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)) THEN
-                DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS
-                  NEW_PARAMETER_SETS(parameter_set_idx)%PTR=>FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR
-                ENDDO !parameter_set_idx
-                DEALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)
               ENDIF
-              NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1)%PTR=>NEW_PARAMETER_SET
-              ALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1), &
-                & STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field parameter sets parameter sets.",ERR,ERROR,*999)
-              DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
-                FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR=>NEW_PARAMETER_SETS(parameter_set_idx)%PTR
-              ENDDO !parameter_set_idx
-              DEALLOCATE(NEW_PARAMETER_SETS)
-              FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
-              FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR=>NEW_PARAMETER_SET
             ENDIF
+            ALLOCATE(NEW_PARAMETER_SET,STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter set.",ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_INITIALISE(NEW_PARAMETER_SET,ERR,ERROR,*999)
+            NEW_PARAMETER_SET%SET_INDEX=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
+            NEW_PARAMETER_SET%SET_TYPE=FIELD_SET_TYPE
+            NULLIFY(NEW_PARAMETER_SET%PARAMETERS)
+            CALL DISTRIBUTED_VECTOR_CREATE_START(FIELD_VARIABLE%DOMAIN_MAPPING,NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+            SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
+            CASE(FIELD_INTG_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE, &
+                & ERR,ERROR,*999)
+            CASE(FIELD_SP_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_SP_TYPE, &
+                & ERR,ERROR,*999)
+            CASE(FIELD_DP_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_DP_TYPE, &
+                & ERR,ERROR,*999)
+            CASE(FIELD_L_TYPE)
+              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NEW_PARAMETER_SET%PARAMETERS,DISTRIBUTED_MATRIX_VECTOR_L_TYPE, &
+                & ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The field data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            CALL DISTRIBUTED_VECTOR_CREATE_FINISH(NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+            SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
+            CASE(FIELD_INTG_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0_INTG,ERR,ERROR,*999)
+            CASE(FIELD_SP_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_SP,ERR,ERROR,*999)
+            CASE(FIELD_DP_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_DP,ERR,ERROR,*999)
+            CASE(FIELD_L_TYPE)
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,.FALSE.,ERR,ERROR,*999)
+            END SELECT
+            !Add the new parameter set to the list of parameter sets
+            ALLOCATE(NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter sets.",ERR,ERROR,*999)
+            IF(ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)) THEN
+              DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS
+                NEW_PARAMETER_SETS(parameter_set_idx)%PTR=>FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR
+              ENDDO !parameter_set_idx
+              DEALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS)
+            ENDIF
+            NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1)%PTR=>NEW_PARAMETER_SET
+            ALLOCATE(FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1), &
+              & STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field parameter sets parameter sets.",ERR,ERROR,*999)
+            DO parameter_set_idx=1,FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
+              FIELD_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(parameter_set_idx)%PTR=>NEW_PARAMETER_SETS(parameter_set_idx)%PTR
+            ENDDO !parameter_set_idx
+            DEALLOCATE(NEW_PARAMETER_SETS)
+            FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS=FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1
+            FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR=>NEW_PARAMETER_SET
           ELSE
             LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
               & " is invalid. The field parameter set type must be between 1 and "// &
@@ -26837,167 +26913,670 @@ CONTAINS
   !================================================================================================================================
   !
 
-!!\todo The interface here is wrong it should by GAUSS_POINT_NUMBER and then USER_ELEMENT_NUMBER. Should also think about quadrature schemes?
+!!\todo Should also think about quadrature schemes?
 
-  !>Updates the given parameter set with the given double precision value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
-  SUBROUTINE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,GAUSS_POINT_NUMBER,&
-  & COMPONENT_NUMBER, VALUE,ERR,ERROR,*)
+  !>Updates the given parameter set with the given integer value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
+  SUBROUTINE FieldParameterSetUpdateGaussPointIntg(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    & componentNumber,value,err,error,*)
 
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
-    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The element number to update
-    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The gauss point number to update
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field variable component to update
-    REAL(DP), INTENT(IN) :: VALUE !<The value to update to
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: variableType!<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The gauss point number to update
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number to update
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The field variable component to update
+    INTEGER, INTENT(IN) :: value !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
-    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
-    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: dofIdx,localElementNumber
+    LOGICAL :: ghostElement,userElementExists
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: parameterSet
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP",ERR,ERROR,*999)
+    CALL Enters("FieldParameterSetUpdateGaussPointDP",err,error,*999)
 
-    IF(ASSOCIATED(FIELD)) THEN
-      IF(FIELD%FIELD_FINISHED) THEN
-        IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
-          FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
-          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-            IF(FIELD_VARIABLE%DATA_TYPE==FIELD_DP_TYPE) THEN
-              IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
-                PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
-                IF(ASSOCIATED(PARAMETER_SET)) THEN
-                  IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-                    SELECT CASE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE)
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        IF(variableType>=1.AND.variableType<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          fieldVariable=>field%VARIABLE_TYPE_MAP(variableType)%PTR
+          IF(ASSOCIATED(fieldVariable)) THEN
+            IF(fieldVariable%DATA_TYPE==FIELD_INTG_TYPE) THEN
+              IF(fieldSetType>0.AND.fieldSetType<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                parameterSet=>fieldVariable%PARAMETER_SETS%SET_TYPE(fieldSetType)%PTR
+                IF(ASSOCIATED(parameterSet)) THEN
+                  IF(componentNumber>=1.AND.componentNumber<=fieldVariable%NUMBER_OF_COMPONENTS) THEN
+                    SELECT CASE(fieldVariable%components(componentNumber)%INTERPOLATION_TYPE)
                     CASE(FIELD_CONSTANT_INTERPOLATION)
-                      LOCAL_ERROR="Can not update by element for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has constant interpolation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has constant interpolation."
+                      CALL FlagError(localError,err,error,*999)
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-                      LOCAL_ERROR="Can not update by element for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has element based interpolation."
+                      CALL FlagError(localError,err,error,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      LOCAL_ERROR="Can not update by element for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has node based interpolation."
+                      CALL FlagError(localError,err,error,*999)
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                      LOCAL_ERROR="Can not update by element for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has grid point based interpolation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has grid point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
-                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
-                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-                        IF(USER_ELEMENT_EXISTS) THEN
-                          IF(GHOST_ELEMENT) THEN
-                            LOCAL_ERROR="Cannot update by element for user element "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      decomposition=>field%decomposition
+                      IF(ASSOCIATED(decomposition)) THEN
+                        decompositionTopology=>decomposition%topology
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+                          & userElementExists,localElementNumber,ghostElement,err,error,*999)
+                        IF(userElementExists) THEN
+                          IF(ghostElement) THEN
+                            localError="Cannot update by Gauss point for user element "// &
+                              & TRIM(NumberToVString(userElementNumber,"*",err,error))//" as it is a ghost element."
+                            CALL FlagError(localError,err,error,*999)
                           ELSE
-                            IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
-                              & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
-                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(GAUSS_POINT_NUMBER,DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
-                              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                            ! TODO: could check for actual # of gp
+                            IF(gaussPointNumber>=1.AND.gaussPointNumber<= SIZE(fieldVariable% &
+                              & components(componentNumber)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
+                              dofIdx=fieldVariable%components(componentNumber)%PARAM_TO_DOF_MAP% &
+                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gaussPointNumber,localElementNumber)
+                              CALL DISTRIBUTED_VECTOR_VALUES_SET(parameterSet%parameters,dofIdx,value,err,error,*999)
                             ELSE
-                              LOCAL_ERROR="The specified gauss point number "// &
-                                & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
+                              localError="The specified Gauss point number "// &
+                                & TRIM(NumberToVString(gaussPointNumber,"*",err,error))// &
                                 & " is not within the expected range."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(localError,err,error,*999)
                             ENDIF
                           ENDIF
                         ELSE
-                          LOCAL_ERROR="The specified user element number of "// &
-                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                          localError="The specified user element number of "// &
+                            & TRIM(NumberToVString(userElementNumber,"*",err,error))// &
                             & " does not exist in the decomposition for field component number "// &
-                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
-                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(componentNumber,"*",err,error))//" of field variable type "// &
+                            & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                            & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                          CALL FlagError(localError,err,error,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Field decomposition is not associated.",err,error,*999)
                       ENDIF
                     CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
-                      LOCAL_ERROR="Can not update by element for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has data point based interpolation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has data point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
                     CASE DEFAULT
-                      LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
-                        & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                        & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                        & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      localError="The field component interpolation type of "//TRIM(NumberToVString(fieldVariable% &
+                        & components(componentNumber)%INTERPOLATION_TYPE,"*",err,error))// &
+                        & " is invalid for component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                        & " of variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                        & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                      CALL FlagError(localError,err,error,*999)
                     END SELECT
                   ELSE
-                    LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                      & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                      & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//" components."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    localError="Component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                      & " is invalid for variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                      & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has "// &
+                      & TRIM(NumberToVString(fieldVariable%NUMBER_OF_COMPONENTS,"*",err,error))//" components."
+                    CALL FlagError(localError,err,error,*999)
                   ENDIF
                 ELSE
-                  LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
-                    & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                    & " has not been created on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))
+                  CALL FlagError(localError,err,error,*999)
                 ENDIF
               ELSE
-                LOCAL_ERROR="The field parameter set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
                   & " is invalid. The field parameter set type must be between 1 and "// &
-                  & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(FIELD_NUMBER_OF_SET_TYPES,"*",err,error))//"."
+                CALL FlagError(localError,err,error,*999)
               ENDIF
             ELSE
-              LOCAL_ERROR="The field variable data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given value."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              localError="The field variable data type of "//TRIM(NumberToVString(fieldVariable%DATA_TYPE,"*",err,error))// &
+                & " does not correspond to the integer data type of the given value."
+              CALL FlagError(localError,err,error,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-              & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            localError="The specified field variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+              & " has not been defined on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The specified variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-            & " is invalid. The variable type must be between 1 and  "// &
-            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          localError="The specified variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+            & " is invalid. The variable type must be between 1 and "// &
+            & TRIM(NumberToVString(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",err,error))//"."
+          CALL FlagError(localError,err,error,*999)
         ENDIF
       ELSE
-        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-          & " has not been finished."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="Field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" has not been finished."
+        CALL FlagError(localError,err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Field is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP")
+    CALL Exits("FieldParameterSetUpdateGaussPointIntg")
     RETURN
-999 CALL ERRORS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP",ERR,ERROR)
-    CALL EXITS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP")
+999 CALL Errors("FieldParameterSetUpdateGaussPointIntg",err,error)
+    CALL Exits("FieldParameterSetUpdateGaussPointIntg")
     RETURN 1
-  END SUBROUTINE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP
+    
+  END SUBROUTINE FieldParameterSetUpdateGaussPointIntg
+
+  !
+  !================================================================================================================================
+  !
+
+!!\todo Should also think about quadrature schemes?
+
+  !>Updates the given parameter set with the given single precision value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
+  SUBROUTINE FieldParameterSetUpdateGaussPointSP(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    & componentNumber,value,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: variableType!<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The gauss point number to update
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number to update
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The field variable component to update
+    REAL(SP), INTENT(IN) :: value !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dofIdx,localElementNumber
+    LOGICAL :: ghostElement,userElementExists
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: parameterSet
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("FieldParameterSetUpdateGaussPointSP",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        IF(variableType>=1.AND.variableType<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          fieldVariable=>field%VARIABLE_TYPE_MAP(variableType)%PTR
+          IF(ASSOCIATED(fieldVariable)) THEN
+            IF(fieldVariable%DATA_TYPE==FIELD_SP_TYPE) THEN
+              IF(fieldSetType>0.AND.fieldSetType<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                parameterSet=>fieldVariable%PARAMETER_SETS%SET_TYPE(fieldSetType)%PTR
+                IF(ASSOCIATED(parameterSet)) THEN
+                  IF(componentNumber>=1.AND.componentNumber<=fieldVariable%NUMBER_OF_COMPONENTS) THEN
+                    SELECT CASE(fieldVariable%components(componentNumber)%INTERPOLATION_TYPE)
+                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has constant interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has element based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_NODE_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has node based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has grid point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                      decomposition=>field%decomposition
+                      IF(ASSOCIATED(decomposition)) THEN
+                        decompositionTopology=>decomposition%topology
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+                          & userElementExists,localElementNumber,ghostElement,err,error,*999)
+                        IF(userElementExists) THEN
+                          IF(ghostElement) THEN
+                            localError="Cannot update by Gauss point for user element "// &
+                              & TRIM(NumberToVString(userElementNumber,"*",err,error))//" as it is a ghost element."
+                            CALL FlagError(localError,err,error,*999)
+                          ELSE
+                            ! TODO: could check for actual # of gp
+                            IF(gaussPointNumber>=1.AND.gaussPointNumber<= SIZE(fieldVariable% &
+                              & components(componentNumber)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
+                              dofIdx=fieldVariable%components(componentNumber)%PARAM_TO_DOF_MAP% &
+                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gaussPointNumber,localElementNumber)
+                              CALL DISTRIBUTED_VECTOR_VALUES_SET(parameterSet%parameters,dofIdx,value,err,error,*999)
+                            ELSE
+                              localError="The specified Gauss point number "// &
+                                & TRIM(NumberToVString(gaussPointNumber,"*",err,error))// &
+                                & " is not within the expected range."
+                              CALL FlagError(localError,err,error,*999)
+                            ENDIF
+                          ENDIF
+                        ELSE
+                          localError="The specified user element number of "// &
+                            & TRIM(NumberToVString(userElementNumber,"*",err,error))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NumberToVString(componentNumber,"*",err,error))//" of field variable type "// &
+                            & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                            & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                          CALL FlagError(localError,err,error,*999)
+                        ENDIF
+                      ELSE
+                        CALL FlagError("Field decomposition is not associated.",err,error,*999)
+                      ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has data point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE DEFAULT
+                      localError="The field component interpolation type of "//TRIM(NumberToVString(fieldVariable% &
+                        & components(componentNumber)%INTERPOLATION_TYPE,"*",err,error))// &
+                        & " is invalid for component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                        & " of variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                        & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                      CALL FlagError(localError,err,error,*999)
+                    END SELECT
+                  ELSE
+                    localError="Component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                      & " is invalid for variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                      & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has "// &
+                      & TRIM(NumberToVString(fieldVariable%NUMBER_OF_COMPONENTS,"*",err,error))//" components."
+                    CALL FlagError(localError,err,error,*999)
+                  ENDIF
+                ELSE
+                  localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                    & " has not been created on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))
+                  CALL FlagError(localError,err,error,*999)
+                ENDIF
+              ELSE
+                localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                  & " is invalid. The field parameter set type must be between 1 and "// &
+                  & TRIM(NumberToVString(FIELD_NUMBER_OF_SET_TYPES,"*",err,error))//"."
+                CALL FlagError(localError,err,error,*999)
+              ENDIF
+            ELSE
+              localError="The field variable data type of "//TRIM(NumberToVString(fieldVariable%DATA_TYPE,"*",err,error))// &
+                & " does not correspond to the single precision data type of the given value."
+              CALL FlagError(localError,err,error,*999)
+            ENDIF
+          ELSE
+            localError="The specified field variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+              & " has not been defined on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="The specified variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+            & " is invalid. The variable type must be between 1 and "// &
+            & TRIM(NumberToVString(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",err,error))//"."
+          CALL FlagError(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="Field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" has not been finished."
+        CALL FlagError(localError,err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL Exits("FieldParameterSetUpdateGaussPointSP")
+    RETURN
+999 CALL Errors("FieldParameterSetUpdateGaussPointSP",err,error)
+    CALL Exits("FieldParameterSetUpdateGaussPointSP")
+    RETURN 1
+    
+  END SUBROUTINE FieldParameterSetUpdateGaussPointSP
+
+  !
+  !================================================================================================================================
+  !
+
+!!\todo Should also think about quadrature schemes?
+
+  !>Updates the given parameter set with the given double precision value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
+  SUBROUTINE FieldParameterSetUpdateGaussPointDP(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    & componentNumber,value,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: variableType!<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The gauss point number to update
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number to update
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The field variable component to update
+    REAL(DP), INTENT(IN) :: value !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dofIdx,localElementNumber
+    LOGICAL :: ghostElement,userElementExists
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: parameterSet
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("FieldParameterSetUpdateGaussPointDP",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        IF(variableType>=1.AND.variableType<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          fieldVariable=>field%VARIABLE_TYPE_MAP(variableType)%PTR
+          IF(ASSOCIATED(fieldVariable)) THEN
+            IF(fieldVariable%DATA_TYPE==FIELD_DP_TYPE) THEN
+              IF(fieldSetType>0.AND.fieldSetType<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                parameterSet=>fieldVariable%PARAMETER_SETS%SET_TYPE(fieldSetType)%PTR
+                IF(ASSOCIATED(parameterSet)) THEN
+                  IF(componentNumber>=1.AND.componentNumber<=fieldVariable%NUMBER_OF_COMPONENTS) THEN
+                    SELECT CASE(fieldVariable%components(componentNumber)%INTERPOLATION_TYPE)
+                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has constant interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has element based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_NODE_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has node based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has grid point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                      decomposition=>field%decomposition
+                      IF(ASSOCIATED(decomposition)) THEN
+                        decompositionTopology=>decomposition%topology
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+                          & userElementExists,localElementNumber,ghostElement,err,error,*999)
+                        IF(userElementExists) THEN
+                          IF(ghostElement) THEN
+                            localError="Cannot update by Gauss point for user element "// &
+                              & TRIM(NumberToVString(userElementNumber,"*",err,error))//" as it is a ghost element."
+                            CALL FlagError(localError,err,error,*999)
+                          ELSE
+                            ! TODO: could check for actual # of gp
+                            IF(gaussPointNumber>=1.AND.gaussPointNumber<= SIZE(fieldVariable% &
+                              & components(componentNumber)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
+                              dofIdx=fieldVariable%components(componentNumber)%PARAM_TO_DOF_MAP% &
+                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gaussPointNumber,localElementNumber)
+                              CALL DISTRIBUTED_VECTOR_VALUES_SET(parameterSet%parameters,dofIdx,value,err,error,*999)
+                            ELSE
+                              localError="The specified Gauss point number "// &
+                                & TRIM(NumberToVString(gaussPointNumber,"*",err,error))// &
+                                & " is not within the expected range."
+                              CALL FlagError(localError,err,error,*999)
+                            ENDIF
+                          ENDIF
+                        ELSE
+                          localError="The specified user element number of "// &
+                            & TRIM(NumberToVString(userElementNumber,"*",err,error))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NumberToVString(componentNumber,"*",err,error))//" of field variable type "// &
+                            & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                            & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                          CALL FlagError(localError,err,error,*999)
+                        ENDIF
+                      ELSE
+                        CALL FlagError("Field decomposition is not associated.",err,error,*999)
+                      ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has data point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE DEFAULT
+                      localError="The field component interpolation type of "//TRIM(NumberToVString(fieldVariable% &
+                        & components(componentNumber)%INTERPOLATION_TYPE,"*",err,error))// &
+                        & " is invalid for component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                        & " of variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                        & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                      CALL FlagError(localError,err,error,*999)
+                    END SELECT
+                  ELSE
+                    localError="Component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                      & " is invalid for variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                      & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has "// &
+                      & TRIM(NumberToVString(fieldVariable%NUMBER_OF_COMPONENTS,"*",err,error))//" components."
+                    CALL FlagError(localError,err,error,*999)
+                  ENDIF
+                ELSE
+                  localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                    & " has not been created on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))
+                  CALL FlagError(localError,err,error,*999)
+                ENDIF
+              ELSE
+                localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                  & " is invalid. The field parameter set type must be between 1 and "// &
+                  & TRIM(NumberToVString(FIELD_NUMBER_OF_SET_TYPES,"*",err,error))//"."
+                CALL FlagError(localError,err,error,*999)
+              ENDIF
+            ELSE
+              localError="The field variable data type of "//TRIM(NumberToVString(fieldVariable%DATA_TYPE,"*",err,error))// &
+                & " does not correspond to the double precision data type of the given value."
+              CALL FlagError(localError,err,error,*999)
+            ENDIF
+          ELSE
+            localError="The specified field variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+              & " has not been defined on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="The specified variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+            & " is invalid. The variable type must be between 1 and "// &
+            & TRIM(NumberToVString(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",err,error))//"."
+          CALL FlagError(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="Field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" has not been finished."
+        CALL FlagError(localError,err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL Exits("FieldParameterSetUpdateGaussPointDP")
+    RETURN
+999 CALL Errors("FieldParameterSetUpdateGaussPointDP",err,error)
+    CALL Exits("FieldParameterSetUpdateGaussPointDP")
+    RETURN 1
+    
+  END SUBROUTINE FieldParameterSetUpdateGaussPointDP
+
+  !
+  !================================================================================================================================
+  !
+
+!!\todo Should also think about quadrature schemes?
+
+  !>Updates the given parameter set with the given logical value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
+  SUBROUTINE FieldParameterSetUpdateGaussPointL(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    & componentNumber,value,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: variableType!<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: fieldSetType !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: gaussPointNumber !<The gauss point number to update
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element number to update
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The field variable component to update
+    LOGICAL, INTENT(IN) :: value !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dofIdx,localElementNumber
+    LOGICAL :: ghostElement,userElementExists
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: parameterSet
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("FieldParameterSetUpdateGaussPointDP",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(field%FIELD_FINISHED) THEN
+        IF(variableType>=1.AND.variableType<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          fieldVariable=>field%VARIABLE_TYPE_MAP(variableType)%PTR
+          IF(ASSOCIATED(fieldVariable)) THEN
+            IF(fieldVariable%DATA_TYPE==FIELD_L_TYPE) THEN
+              IF(fieldSetType>0.AND.fieldSetType<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                parameterSet=>fieldVariable%PARAMETER_SETS%SET_TYPE(fieldSetType)%PTR
+                IF(ASSOCIATED(parameterSet)) THEN
+                  IF(componentNumber>=1.AND.componentNumber<=fieldVariable%NUMBER_OF_COMPONENTS) THEN
+                    SELECT CASE(fieldVariable%components(componentNumber)%INTERPOLATION_TYPE)
+                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has constant interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has element based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_NODE_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has node based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(FIELD%USER_NUMBER,"*",err,error))//" which has grid point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                      decomposition=>field%decomposition
+                      IF(ASSOCIATED(decomposition)) THEN
+                        decompositionTopology=>decomposition%topology
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+                          & userElementExists,localElementNumber,ghostElement,err,error,*999)
+                        IF(userElementExists) THEN
+                          IF(ghostElement) THEN
+                            localError="Cannot update by Gauss point for user element "// &
+                              & TRIM(NumberToVString(userElementNumber,"*",err,error))//" as it is a ghost element."
+                            CALL FlagError(localError,err,error,*999)
+                          ELSE
+                            ! TODO: could check for actual # of gp
+                            IF(gaussPointNumber>=1.AND.gaussPointNumber<= SIZE(fieldVariable% &
+                              & components(componentNumber)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
+                              dofIdx=fieldVariable%components(componentNumber)%PARAM_TO_DOF_MAP% &
+                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gaussPointNumber,localElementNumber)
+                              CALL DISTRIBUTED_VECTOR_VALUES_SET(parameterSet%parameters,dofIdx,value,err,error,*999)
+                            ELSE
+                              localError="The specified Gauss point number "// &
+                                & TRIM(NumberToVString(gaussPointNumber,"*",err,error))// &
+                                & " is not within the expected range."
+                              CALL FlagError(localError,err,error,*999)
+                            ENDIF
+                          ENDIF
+                        ELSE
+                          localError="The specified user element number of "// &
+                            & TRIM(NumberToVString(userElementNumber,"*",err,error))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NumberToVString(componentNumber,"*",err,error))//" of field variable type "// &
+                            & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                            & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                          CALL FlagError(localError,err,error,*999)
+                        ENDIF
+                      ELSE
+                        CALL FlagError("Field decomposition is not associated.",err,error,*999)
+                      ENDIF
+                    CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                      localError="Can not update by Gauss point for component number "// &
+                        & TRIM(NumberToVString(componentNumber,"*",err,error))//" of variable type "// &
+                        & TRIM(NumberToVString(variableType,"*",err,error))//" of field number "// &
+                        & TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has data point based interpolation."
+                      CALL FlagError(localError,err,error,*999)
+                    CASE DEFAULT
+                      localError="The field component interpolation type of "//TRIM(NumberToVString(fieldVariable% &
+                        & components(componentNumber)%INTERPOLATION_TYPE,"*",err,error))// &
+                        & " is invalid for component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                        & " of variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                        & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+                      CALL FlagError(localError,err,error,*999)
+                    END SELECT
+                  ELSE
+                    localError="Component number "//TRIM(NumberToVString(componentNumber,"*",err,error))// &
+                      & " is invalid for variable type "//TRIM(NumberToVString(variableType,"*",err,error))// &
+                      & " of field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" which has "// &
+                      & TRIM(NumberToVString(fieldVariable%NUMBER_OF_COMPONENTS,"*",err,error))//" components."
+                    CALL FlagError(localError,err,error,*999)
+                  ENDIF
+                ELSE
+                  localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                    & " has not been created on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))
+                  CALL FlagError(localError,err,error,*999)
+                ENDIF
+              ELSE
+                localError="The field parameter set type of "//TRIM(NumberToVString(fieldSetType,"*",err,error))// &
+                  & " is invalid. The field parameter set type must be between 1 and "// &
+                  & TRIM(NumberToVString(FIELD_NUMBER_OF_SET_TYPES,"*",err,error))//"."
+                CALL FlagError(localError,err,error,*999)
+              ENDIF
+            ELSE
+              localError="The field variable data type of "//TRIM(NumberToVString(fieldVariable%DATA_TYPE,"*",err,error))// &
+                & " does not correspond to the logical data type of the given value."
+              CALL FlagError(localError,err,error,*999)
+            ENDIF
+          ELSE
+            localError="The specified field variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+              & " has not been defined on field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="The specified variable type of "//TRIM(NumberToVString(variableType,"*",err,error))// &
+            & " is invalid. The variable type must be between 1 and "// &
+            & TRIM(NumberToVString(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",err,error))//"."
+          CALL FlagError(localError,err,error,*999)
+        ENDIF
+      ELSE
+        localError="Field number "//TRIM(NumberToVString(field%USER_NUMBER,"*",err,error))//" has not been finished."
+        CALL FlagError(localError,err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL Exits("FieldParameterSetUpdateGaussPointL")
+    RETURN
+999 CALL Errors("FieldParameterSetUpdateGaussPointL",err,error)
+    CALL Exits("FieldParameterSetUpdateGaussPointL")
+    RETURN 1
+    
+  END SUBROUTINE FieldParameterSetUpdateGaussPointL
+
   !
   !================================================================================================================================
   !
@@ -29632,6 +30211,65 @@ CONTAINS
     CALL EXITS("FIELD_VARIABLE_TYPES_SET_AND_LOCK")
     RETURN 1
   END SUBROUTINE FIELD_VARIABLE_TYPES_SET_AND_LOCK
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks for a valid setup of the field variables
+  SUBROUTINE FieldVariablesCheck(field,err,error,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<A pointer to the field to check the variables for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: variableIdx,variableIdx2,variableType,variableType2
+    LOGICAL :: duplicates
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("FieldVariablesCheck",err,error,*999)
+
+    IF(ASSOCIATED(field)) THEN
+      IF(ASSOCIATED(field%CREATE_VALUES_CACHE)) THEN
+        !Check the number of field variables
+        IF(field%NUMBER_OF_VARIABLES>0) THEN
+          !Check that the variable types are unique. Just do an exhaustive check. It is expensive but the list should be short.
+          duplicates=.FALSE.
+          firstVariable: DO variableIdx=1,field%NUMBER_OF_VARIABLES
+            variableType=field%CREATE_VALUES_CACHE%VARIABLE_TYPES(variableIdx)
+            secondVariable: DO variableIdx2=variableIdx+1,field%NUMBER_OF_VARIABLES
+              variableType2=field%CREATE_VALUES_CACHE%VARIABLE_TYPES(variableIdx2)
+              IF(variableType==variableType2) THEN
+                duplicates=.TRUE.
+                EXIT firstVariable
+              ENDIF
+            ENDDO secondVariable !variableIdx2
+          ENDDO firstVariable !variableIdx
+          IF(duplicates) THEN
+            localError="Invalid variable types. Two or more variables have variable type "// &
+              & TRIM(NumberToVString(variableType,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)
+          ENDIF
+        ELSE
+          localError="Invalid field setup. The field has "//TRIM(NumberToVString(field%NUMBER_OF_VARIABLES,"*",err,error))// &
+            & " variables and should have > 0 variables."
+          CALL FlagError(localError,err,error,*999)
+        ENDIF
+      ELSE
+        CALL FlagError("Field create values cache is not associated.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Field is not associated.",err,error,*999)
+    ENDIF
+
+    CALL Exits("FieldVariablesCheck")
+    RETURN
+999 CALL Errors("FieldVariablesCheck",err,error)
+    CALL Exits("FieldVariablesCheck")
+    RETURN 1
+    
+  END SUBROUTINE FieldVariablesCheck
 
   !
   !================================================================================================================================
