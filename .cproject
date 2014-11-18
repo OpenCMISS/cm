@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?fileVersion 4.0.0?>
-
-<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+<?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.1908287639">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.1908287639" moduleId="org.eclipse.cdt.core.settings" name="Debug">
@@ -21,43 +19,9 @@
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildProperties="" description="" errorParsers="org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.photran.core.GFortranErrorParser;org.eclipse.photran.errorparsers.xlf.XLFCompilerErrorParser;org.eclipse.photran.core.intel.IntelCompilerErrorParser" id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.1908287639" name="Debug" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.1908287639.1715893141" name="/" resourcePath="">
-						<toolChain errorParsers="" id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.240013761" name="GCC Fortran" superClass="photran.managedbuild.toolchain.gnu.fortran.exe.debug">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="photran.managedbuild.target.gnu.platform.exe.debug.1787612866" name="Debug Platform" osList="solaris,linux,hpux,aix,qnx" superClass="photran.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder errorParsers="org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.CWDLocator" id="photran.managedbuild.target.gnu.builder.exe.debug.837681399" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="photran.managedbuild.target.gnu.builder.exe.debug"/>
-							<tool errorParsers="org.eclipse.cdt.core.GCCErrorParser" id="photran.managedbuild.tool.gnu.c.compiler.exe.debug.1144724532" name="GCC C Compiler" superClass="photran.managedbuild.tool.gnu.c.compiler.exe.debug">
-								<option id="gnu.c.compiler.option.include.paths.1010251247" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/opt/intel/composer_xe_2011_sp1.6.233/mkl/include"/>
-									<listOptionValue builtIn="false" value="/opt/intel/composer_xe_2011_sp1.6.233/tbb/include"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}/include/finclude&quot;"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1913120720" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool errorParsers="" id="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug.1081109099" name="GNU Fortran Compiler" superClass="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug">
-								<option id="gnu.fortran.compiler.option.include.paths.1738140667" name="Include paths (-I)" superClass="gnu.fortran.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/opt/intel/composer_xe_2011_sp1.6.233/mkl/include"/>
-									<listOptionValue builtIn="false" value="/opt/intel/composer_xe_2011_sp1.6.233/tbb/include"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}/include/finclude&quot;"/>
-								</option>
-								<inputType id="photran.managedbuild.tool.gnu.fortran.compiler.input.1722919790" superClass="photran.managedbuild.tool.gnu.fortran.compiler.input"/>
-							</tool>
-							<tool errorParsers="" id="photran.managedbuild.tool.gnu.fortran.linker.exe.debug.809154819" name="GNU Fortran Linker" superClass="photran.managedbuild.tool.gnu.fortran.linker.exe.debug">
-								<inputType id="photran.managedbuild.tool.gnu.fortran.linker.input.707847449" superClass="photran.managedbuild.tool.gnu.fortran.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool errorParsers="org.eclipse.cdt.core.GASErrorParser" id="photran.managedbuild.tool.gnu.assembler.exe.debug.1060653371" name="GCC Assembler" superClass="photran.managedbuild.tool.gnu.assembler.exe.debug">
-								<option id="gnu.both.asm.option.include.paths.397937906" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/opt/intel/composer_xe_2011_sp1.6.233/mkl/include"/>
-									<listOptionValue builtIn="false" value="/opt/intel/composer_xe_2011_sp1.6.233/tbb/include"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}/include/finclude&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${OPENCMISSEXTRAS_ROOT}/cm/external/${OPENCMISSEXTRAS_ARCHITECTURE}/${OPENCMISS_MPI_PATH}/${OPENCMISS_COMPILER_PATH}&quot;"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1485018516" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
+						<toolChain errorParsers="" id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.240013761" name="GCC Fortran">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="photran.managedbuild.target.gnu.platform.exe.debug.1787612866" name="Debug Platform" osList="solaris,linux,hpux,aix,qnx"/>
+							<builder errorParsers="org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.CWDLocator" id="photran.managedbuild.target.gnu.builder.exe.debug.837681399" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder"/>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
@@ -119,4 +83,5 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 </cproject>

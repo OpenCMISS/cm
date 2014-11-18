@@ -175,22 +175,22 @@ ENDIF(${OPERATING_SYSTEM} MATCHES "linux")
 # Useful functions
 
 # This returns an empty string if not found
-SET(searchdirs COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)))))
+#SET(searchdirs COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)))))
 
 # This still returns the name of the desired file if not found and so is useful for error checking and reporting.
-SET(searchdirsforce COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)) $2)))
+#SET(searchdirsforce COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)) $2)))
 
 # Convert a cygwin path to a normal windows path
-SET(cygwintowin $($1))
+#SET(cygwintowin $($1))
 
 # Create a shell that can pass environment variables
-SET(ENV_FILE  /tmp/env)
-SET(env_shell1 COMMAND($(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo 'rm -f $3' >> $(ENV_FILE))$(shell echo '$2 >& $3' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE) )))
-SET(env_shell2  $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo '$2' >> $(ENV_FILE))$(shell echo 'rm -f $4'>> $(ENV_FILE))$(shell echo '$3 >& $4' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE)))
+#SET(ENV_FILE  /tmp/env)
+#SET(env_shell1 COMMAND($(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo 'rm -f $3' >> $(ENV_FILE))$(shell echo '$2 >& $3' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE) )))
+#SET(env_shell2  $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo '$2' >> $(ENV_FILE))$(shell echo 'rm -f $4'>> $(ENV_FILE))$(shell echo '$3 >& $4' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE)))
 
 # Create a shell that can call nmake from make 
-SET(NMAKE_ENV_FILE /tmp/nmake_env)
-SET(nmake_shell COMMAND($(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) ))) 
+#SET(NMAKE_ENV_FILE /tmp/nmake_env)
+#SET(nmake_shell COMMAND($(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) ))) 
 
 #-------------------------------------------------------------------------------------------------------------------
 
