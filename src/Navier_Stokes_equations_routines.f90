@@ -3191,7 +3191,7 @@ CONTAINS
                 CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,iterativeWhileLoop,ERR,ERROR,*999)                
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop,1000,ERR,ERROR,*999)
-                CALL ControlLoop_AbsoluteToleranceSet(iterativeWhileLoop,0.1,err,error,*999)
+                CALL ControlLoop_AbsoluteToleranceSet(iterativeWhileLoop,0.1_DP,err,error,*999)
                 CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop,"1D-0D Iterative Coupling Convergence Loop",ERR,ERROR,*999)
                 CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(iterativeWhileLoop,2,ERR,ERROR,*999)
                 NULLIFY(simpleLoop)
