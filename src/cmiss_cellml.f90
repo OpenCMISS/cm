@@ -487,8 +487,8 @@ CONTAINS
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                           CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
-                            & MODEL_MAP%FIELD_PARAMETER_SET,gaussNumber,elementNumber, &
-                            & MODEL_MAP%COMPONENT_NUMBER,dofValue,ERR,ERROR,*999)
+                            & MODEL_MAP%FIELD_PARAMETER_SET,gaussNumber,elementNumber,MODEL_MAP%COMPONENT_NUMBER, &
+                            & dofValue,ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The DOF type of "//TRIM(NUMBER_TO_VSTRING(dofType,"*",ERR,ERROR))// &
                             & " for local DOF number "//TRIM(NUMBER_TO_VSTRING(dofIdx,"*",ERR,ERROR))//" is invalid."
