@@ -44,22 +44,7 @@ IF(NOT ${OPERATING_SYSTEM} STREQUAL aix)
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
 ENDIF()
 
-# Todo: write a script that parses the config files for added targets
-SET(PARMETIS_TARGETS parmetis metis)
-SET(PTSCOTCH_TARGETS scotch ptscotch)
-SET(SUITESPARSE_TARGETS suitesparseconfig amd btf camd cholmod colamd ccolamd klu umfpack)
-SET(PASTIX_TARGETS pastix)
-SET(SCALAPACK_TARGETS scalapack)
-SET(MUMPS_TARGETS mumps)
-SET(SUPERLU_DIST_TARGETS superlu_dist)
-SET(SUPERLU_TARGETS superlu)
-SET(SUNDIALS_TARGETS sundials_cvode sundials_fcvode sundials_cvodes
-    sundials_ida sundials_fida sundials_idas
-    sundials_kinsol sundials_fkinsol
-    sundials_nvecparallel sundials_nvecserial
-    )
-SET(HYPRE_TARGETS hypre)
-SET(PETSC_TARGETS petsc)
+include(DependenciesTargets)
 SET(DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK) #BLACS
 SET(LINK_LIBS )
 foreach(DEP ${DEPS})
