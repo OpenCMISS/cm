@@ -2439,7 +2439,7 @@ CONTAINS
         EXIT
       ENDIF
     ENDDO
-    IF (foundInterval == .FALSE.) THEN
+    IF (foundInterval .EQV. .FALSE.) THEN
       left = n - 1
       right = n
     ENDIF

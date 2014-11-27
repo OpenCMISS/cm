@@ -3205,7 +3205,8 @@ CONTAINS
                 CALL CONTROL_LOOP_TYPE_SET(iterativeWhileLoop2,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
                 CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(iterativeWhileLoop2,1000,ERR,ERROR,*999)
                 CALL ControlLoop_AbsoluteToleranceSet(iterativeWhileLoop2,1.0E6_DP,err,error,*999)
-                CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop2,"1D Characteristic/NSE branch value convergence Loop",ERR,ERROR,*999)
+                CALL CONTROL_LOOP_LABEL_SET(iterativeWhileLoop2,"1D Characteristic/NSE branch value convergence Loop", &
+                 & ERR,ERROR,*999)
               ELSE
                 NULLIFY(iterativeWhileLoop)
                 ! The Characteristics branch solver/ Navier-Stokes iterative coupling loop
@@ -5560,7 +5561,7 @@ CONTAINS
 !                CALL NavierStokes_CoupleCharacteristics(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(3)
               ! Advection solver output data if necessary
-              IF (CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP==.FALSE.) THEN
+              IF (CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP .EQV. .FALSE.) THEN
                 ! 1D NSE solver output data if N-S/Chars converged
                 CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,err,error,*999)
               ENDIF
@@ -5939,8 +5940,8 @@ CONTAINS
                                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                   & GLOBAL_DERIVATIVE_INDEX
                                                 CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(ANALYTIC_FUNCTION_TYPE,X, &
-                                                  & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS, & 
-                                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
+                                                  & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX,componentIdx, &
+                                                  & NUMBER_OF_DIMENSIONS,FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
                                                   & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
                                                 DO version_idx=1, &
                                                   & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%numberOfVersions
@@ -10813,6 +10814,16 @@ CONTAINS
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
       END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    END IF
+
+    SELECT CASE(equationsSet%SUBTYPE)
+    CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
+       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
+
+      !Check for the equations set field
       equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
       IF(ASSOCIATED(equationsEquationsSetField)) THEN
         equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
@@ -10822,14 +10833,6 @@ CONTAINS
       ELSE
         CALL FLAG_ERROR("Equations set field (EQUATIONS_EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
       END IF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-    END IF
-
-    SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
-       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
-       & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
 
       !Get the mesh decomposition and basis
       decomposition=>dependentVariable%FIELD%DECOMPOSITION
@@ -11749,7 +11752,7 @@ CONTAINS
       IF (timestep == 0) THEN
         iterativeLoop%CONTINUE_LOOP=.FALSE.
       ENDIF
-      IF (iterativeLoop%CONTINUE_LOOP==.TRUE. ) THEN
+      IF (iterativeLoop%CONTINUE_LOOP .EQV. .TRUE. ) THEN
         CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
          & DYNAMIC_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
         CALL FIELD_PARAMETER_SETS_COPY(dependentField,equationsSet%EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING% &
