@@ -4295,7 +4295,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
       IF(ASSOCIATED(newtonSolver)) THEN 
         reason=PETSC_SNES_CONVERGED_ITERATING
         SELECT CASE(newtonSolver%convergenceTestType)
-        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM) 
+        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
           IF(iterationNumber>0) THEN
             CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
             CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
@@ -4311,21 +4311,21 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
                 reason=PETSC_SNES_CONVERGED_FNORM_ABS
               ELSE
                 newtonSolver%convergenceTest%energyFirstIter=energy
+                newtonSolver%convergenceTest%normalisedEnergy=1.0
               ENDIF
             ELSE
               normalisedEnergy=energy/newtonSolver%convergenceTest%energyFirstIter
               newtonSolver%convergenceTest%normalisedEnergy=normalisedEnergy
               IF(ABS(normalisedEnergy)<newtonSolver%ABSOLUTE_TOLERANCE) THEN
                 reason=PETSC_SNES_CONVERGED_FNORM_ABS
+                newtonSolver%convergenceTest%energyFirstIter=0.0_DP
+                newtonSolver%convergenceTest%normalisedEnergy=0.0_DP
               ENDIF
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"*********************************************",err,error,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Normalised energy = ",normalisedEnergy,err,error,*999)
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"*********************************************",err,error,*999)
             ENDIF
             CALL Petsc_SnesLineSearchFinalise(lineSearch,err,error,*999)
-          ELSE
-            newtonSolver%convergenceTest%energyFirstIter=0.0_DP
-            newtonSolver%convergenceTest%normalisedEnergy=0.0_DP
           ENDIF
         CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
           CALL FLAG_ERROR("Differentiated ratio convergence test not implemented.",err,error,*999)

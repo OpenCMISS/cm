@@ -2135,6 +2135,7 @@ CONTAINS
               !xiIdx1 is the +/- face normal direction. xiIdx2 and xiIdx3 are the xi directions in the face.
               xiIdx2=OTHER_XI_DIRECTIONS3(xiIdx1,2,1)
               xiIdx3=OTHER_XI_DIRECTIONS3(xiIdx1,3,1)
+
               IF(directionIdx==1) THEN
                 !The +'ve xi direction
                 localNodeIdx1=maximumNodeExtent(xiIdx1)
@@ -2174,8 +2175,7 @@ CONTAINS
                   localNode=basis%NODE_NUMBERS_IN_LOCAL_FACE(localNodeIdx,localFaceIdx)
                   localFaceDerivative=0
                   DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNode)
-                    IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNode,xiIdx2)==FIRST_PART_DERIV.OR. &
-                      & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNode,xiIdx3)==FIRST_PART_DERIV) THEN
+                    IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNode,xiIdx1)==NO_PART_DERIV) THEN
                       localFaceDerivative=localFaceDerivative+1
                       basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(localFaceDerivative,localNodeIdx,localFaceIdx)=derivativeIdx
                     ENDIF
