@@ -248,8 +248,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
 	endif
       endif
     endif
-    OPTF_FLGS = -Ofast -Wuninitialized -funroll-all-loops
-    #OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    # OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+     OPTF_FLGS = -Ofast -Wuninitialized -funroll-all-loops
     ELFLAGS += -m$(ABI)
   else
     ifeq ($(COMPILER),intel)

@@ -2487,13 +2487,13 @@ CONTAINS
         num_scl=num_scl*4
         num_node=num_node*4
       CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
-        num_scl=num_scl*2*2
+        num_scl=num_scl*4
         num_node=num_node*2
       CASE(BASIS_QUADRATIC1_HERMITE_INTERPOLATION)
-        num_scl=num_scl*2*2
+        num_scl=num_scl*3
         num_node=num_node*2
       CASE(BASIS_QUADRATIC2_HERMITE_INTERPOLATION)
-        num_scl=num_scl*2*2
+        num_scl=num_scl*3
         num_node=num_node*2
       CASE DEFAULT
         CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )

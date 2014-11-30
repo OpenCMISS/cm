@@ -2250,6 +2250,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE !<Compressible version for finite elasticity equations set with active contraction subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE = &
+    & EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE= &
@@ -2265,6 +2267,9 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE !< Orthotropic Holzapfel-Ogden constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_HOLZAPFEL_OGDEN_ACTIVECONTRACTION_SUBTYPE = &
+    & EQUATIONS_SET_HOLZAPFEL_OGDEN_ACTIVECONTRACTION_SUBTYPE &
+    & !< Orthotropic Holzapfel-Ogden constitutive law with active contraction for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE = &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE !< Static finite elasticity coupled with fluid pressure set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE= &
@@ -2717,7 +2722,9 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_INCOMPRESS_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INCOMPRESS_ELAST_MULTI_COMP_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_HOLZAPFEL_OGDEN_ACTIVECONTRACTION_SUBTYPE,  &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE,&
     & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE,&
@@ -2928,6 +2935,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_CreateStartObj
   END INTERFACE !CMISSEquationsSet_CreateStart
 
+  !>Calculate the deformation for a specified user element number and xi coordinates.
+  INTERFACE CMISSEquationsSet_DeformationCalculate
+    MODULE PROCEDURE CMISSEquationsSet_DeformationCalculateNumber
+    MODULE PROCEDURE CMISSEquationsSet_DeformationCalculateObj
+  END INTERFACE
+ 
   !>Destroy an equations set.
   INTERFACE CMISSEquationsSet_Destroy
     MODULE PROCEDURE CMISSEquationsSet_DestroyNumber
@@ -3060,6 +3073,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_AnalyticUserParamSetObj
   END INTERFACE
 
+
   PUBLIC CMISSEquationsSet_AnalyticCreateFinish,CMISSEquationsSet_AnalyticCreateStart
 
   PUBLIC CMISSEquationsSet_AnalyticDestroy
@@ -3070,6 +3084,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSet_CreateFinish,CMISSEquationsSet_CreateStart
 
+  PUBLIC CMISSEquationsSet_DeformationCalculate
+  
   PUBLIC CMISSEquationsSet_Destroy
 
   PUBLIC CMISSEquationsSet_DependentCreateFinish,CMISSEquationsSet_DependentCreateStart
@@ -3097,6 +3113,7 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSet_SpecificationGet,CMISSEquationsSet_SpecificationSet
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
+  
 
 !!==================================================================================================================================
 !!
@@ -25324,6 +25341,82 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_SpecificationSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSEquationsSet_DeformationCalculateNumber(regionUserNumber,equationsSetUserNumber,userElementNumber,xi,C,invC,err)
+
+    !>Calculate the deformation for a specified user element number and xi coordinates.
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the Region containing the equations set to set the specification for.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to set the specification for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number.
+    REAL(DP), INTENT(IN) :: xi(:) !<The xi coordinates to calculate the deformation at
+    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
+    REAL(DP), INTENT(OUT) :: invC(:) !<The independent values of the inverse deformation tensor
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSet_DeformationCalculateNumber",err,error,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_DEFORMATION_CALCULATE(EQUATIONS_SET,userElementNumber,xi,C,invC,err,error,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+      END IF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSEquationsSet_DeformationCalculateNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DeformationCalculateNumber",err,error)
+    CALL EXITS("CMISSEquationsSet_DeformationCalculateNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DeformationCalculateNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the deformation for a specified user element number and xi coordinates.
+  SUBROUTINE CMISSEquationsSet_DeformationCalculateObj(equationsSet,userElementNumber,xi,C,invC,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to calculate the deformation for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number.
+    REAL(DP), INTENT(IN) :: xi(:) !<The xi coordinates to calculate the deformation at
+    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
+    REAL(DP), INTENT(OUT) :: invC(:) !<The independent values of the inverse deformation tensor
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSEquationsSet_DeformationCalculateObj",err,error,*999)
+
+    CALL EQUATIONS_SET_DEFORMATION_CALCULATE(equationsSet%EQUATIONS_SET,userElementNumber,xi,C,invC,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DeformationCalculateObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DeformationCalculateObj",err,error)
+    CALL EXITS("CMISSEquationsSet_DeformationCalculateObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DeformationCalculateObj
 
 !!==================================================================================================================================
 !!
