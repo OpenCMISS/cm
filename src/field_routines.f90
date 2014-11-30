@@ -3829,17 +3829,30 @@ CONTAINS
                 ENDDO
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters = MAXINTERP
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters = 0
-              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION) 
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                WRITE(*,*) "In datapointbasedinterpolation"
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters=-1
+                WRITE(*,*) "DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS", DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                  WRITE(*,*) "In forloop", ne
                   globalElementNumber=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
+                  WRITE(*,*) "DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER", &
+                      & DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
+                  WRITE(*,*) "Before if"
+                  IF(ASSOCIATED(DECOMPOSITION%TOPOLOGY%dataPoints)) THEN
+                    WRITE(*,*) "DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)"
+                  ELSE
+                    WRITE(*,*) "NOT ALLOCATED"
+                  ENDIF
                   IF(DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)> &
                       & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters) THEN
                     FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters= &
                       &  DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)
+                    WRITE(*,*) "In if loop"
                   ENDIF
                 ENDDO
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=0
+                WRITE(*,*) "BEFORE PARAM TO DOF MAP"
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                   & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &

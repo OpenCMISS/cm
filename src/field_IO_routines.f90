@@ -164,13 +164,14 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_ScalingFactorCount
     END FUNCTION FieldExport_ScalingFactorCount
 
-    FUNCTION FieldExport_ScaleFactors( handle, numberOfXi, interpolationXi ) &
+    FUNCTION FieldExport_ScaleFactors( handle, numberOfXi, interpolationXi, numberOfScaleFactors ) &
       & BIND(C,NAME="FieldExport_ScaleFactors")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
+      INTEGER(C_INT), VALUE :: numberOfScaleFactors
       INTEGER(C_INT) :: FieldExport_ScaleFactors
     END FUNCTION FieldExport_ScaleFactors
 
@@ -255,7 +256,7 @@ MODULE FIELD_IO_ROUTINES
     END FUNCTION FieldExport_ElementGridSize
 
     FUNCTION FieldExport_NodeScaleIndexes( handle, nodeCount, derivativeCount, elementDerivatives, nodeIndexes, &
-      & firstScaleIndex ) &
+      & scaleIndexes ) &
       & BIND(C,NAME="FieldExport_NodeScaleIndexes")
       USE TYPES
       USE ISO_C_BINDING
@@ -264,7 +265,7 @@ MODULE FIELD_IO_ROUTINES
       TYPE(C_PTR), VALUE :: derivativeCount
       TYPE(C_PTR), VALUE :: elementDerivatives
       TYPE(C_PTR), VALUE :: nodeIndexes
-      INTEGER(C_INT), VALUE :: firstScaleIndex
+      TYPE(C_PTR), VALUE :: scaleIndexes
       INTEGER(C_INT) :: FieldExport_NodeScaleIndexes
     END FUNCTION FieldExport_NodeScaleIndexes
 
@@ -2396,9 +2397,9 @@ CONTAINS
       INTERPOLATION=BASIS_CUBIC_LAGRANGE_INTERPOLATION
     CASE("c.Hermite")
       INTERPOLATION=BASIS_CUBIC_HERMITE_INTERPOLATION
-    CASE("q1.Hermite")
+    CASE("LagrangeHermite")
       INTERPOLATION=BASIS_QUADRATIC1_HERMITE_INTERPOLATION
-    CASE("q2.Hermite")
+    CASE("HermiteLagrange")
       INTERPOLATION=BASIS_QUADRATIC2_HERMITE_INTERPOLATION
     CASE DEFAULT
       CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
@@ -2548,6 +2549,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: i,LENGTH
+    INTEGER(INTG) :: NUMBER_OF_UNIQUE_NODES
     CHARACTER(LEN=MAXSTRLEN) :: fvar_name
     CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
@@ -2562,13 +2564,18 @@ CONTAINS
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
-    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
+    !INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
+    INTEGER(C_INT), ALLOCATABLE, TARGET :: INTERPOLATION_XI(:),ELEMENT_DERIVATIVES(:),NUMBER_OF_DERIVATIVES(:), NODE_INDEXES(:)
+    INTEGER(C_INT), ALLOCATABLE, TARGET :: SCALE_INDEXES(:) !Array for holding scale indexes, useful for collapsed nodes.
     INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number, interpType, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SAME_SCALING_SET
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)
+
+    !SANDER
+    ALLOCATE(INTERPOLATION_XI(3), STAT = ERR)
 
     !colllect nodal header information for IO first
 
@@ -2690,6 +2697,12 @@ CONTAINS
       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
+    CALL REALLOCATE(INTERPOLATION_XI, BASIS%NUMBER_OF_XI, &
+        & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
+    CALL REALLOCATE(ELEMENT_DERIVATIVES, SUM(GROUP_SCALE_FACTORS(:)), &
+        & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
+
+
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
       basis => listScaleBases( scaleIndex )%PTR
       SELECT CASE( basis%TYPE )
@@ -2699,7 +2712,8 @@ CONTAINS
         !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
         !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
         INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-        ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI) );
+        ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI), &
+          & basis%NUMBER_OF_ELEMENT_PARAMETERS );
         IF( ERR /= 0 ) THEN
           CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
         ENDIF
@@ -2723,7 +2737,6 @@ CONTAINS
     var_idx=0
     NULLIFY(variable_ptr)
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
-
       component => elementalInfoSet%COMPONENTS(comp_idx)%PTR
 
       !grouping field variables and components together
@@ -2759,6 +2772,22 @@ CONTAINS
       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
 
+      SELECT CASE( BASIS%TYPE )
+      CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
+        CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+      CASE( BASIS_SIMPLEX_TYPE )
+        CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+      CASE DEFAULT
+        CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
+            &ERR,ERROR,*999)
+      END SELECT
+      CALL REALLOCATE(NUMBER_OF_DERIVATIVES, num_node, &
+          & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
+      CALL REALLOCATE(SCALE_INDEXES, num_scl, &
+          & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
+      CALL REALLOCATE(NODE_INDEXES, num_node, &
+          & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
+      
       SELECT CASE(component%INTERPOLATION_TYPE)
       CASE(FIELD_CONSTANT_INTERPOLATION)
         interpType = 1
@@ -2812,8 +2841,11 @@ CONTAINS
         IF(LIST_COMP_SCALE(comp_idx)==1) THEN
           scaleIndex=0
         ELSE
-          scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
+          scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)))-1
         ENDIF
+
+        ! Fortran numbering instead of c numbering
+        scaleIndex1 = scaleIndex + 1
 
         !!TEMP
         ! ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
@@ -2833,6 +2865,7 @@ CONTAINS
     !!$              &ERR,ERROR,*999)
 
           NODE_NUMBER_COUNTER=0
+          NUMBER_OF_UNIQUE_NODES = 0
           IF(BASIS%INTERPOLATION_XI(1)>3) THEN
             NodesX=2
           ELSE
@@ -2848,7 +2881,6 @@ CONTAINS
           ELSE
             NodesZ=BASIS%INTERPOLATION_XI(3)+1
           ENDIF
-
 
           !The following if-sentences goes through all possible wedge formed elements and renumber the nodes in order to
           !attach the node_index and the number of derivatives to the numbering corresponding to not collapsed elements
@@ -2871,10 +2903,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
-                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -2896,10 +2942,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -2921,10 +2981,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -2946,10 +3020,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -2973,10 +3061,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -2998,10 +3100,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3023,10 +3139,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3048,10 +3178,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3075,10 +3219,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3100,10 +3258,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3125,10 +3297,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3150,10 +3336,24 @@ CONTAINS
                     ENDIF
                     NODE_INDEXES(nn)=NODE_NUMBER
                     NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                      ELEMENT_DERIVATIVES(nn)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                    IF(NODE_NUMBER>NUMBER_OF_UNIQUE_NODES) THEN
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                           & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
-                    ENDDO
+                        SCALE_INDEXES(derivativeIndex)=scaleIndex1 
+                        derivativeIndex=derivativeIndex+1
+                        scaleIndex1=scaleIndex1+1
+                      ENDDO
+                      NUMBER_OF_UNIQUE_NODES=NUMBER_OF_UNIQUE_NODES+1
+                    ELSE
+                      DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                        ELEMENT_DERIVATIVES(derivativeIndex)=FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,NODE_NUMBER,ERR,ERROR)
+                        SCALE_INDEXES(derivativeIndex) = SCALE_INDEXES(SUM(NUMBER_OF_DERIVATIVES(1:NODE_NUMBER+ &
+                          & nn-NUMBER_OF_UNIQUE_NODES-2))+mm)
+                        derivativeIndex = derivativeIndex + 1
+                      ENDDO
+                    ENDIF
                   ENDDO
                 ENDDO
               ENDDO
@@ -3168,7 +3368,9 @@ CONTAINS
             DO mm=1,NUMBER_OF_DERIVATIVES(nn)
               ELEMENT_DERIVATIVES(derivativeIndex) = FIELD_IO_ELEMENT_DERIVATIVE_INDEX( &
                 & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx)),mm,nn,ERR,ERROR)
+              SCALE_INDEXES(derivativeIndex) = scaleIndex1
               derivativeIndex = derivativeIndex + 1
+              scaleIndex1 = scaleIndex1 + 1
             ENDDO !mm
           ENDDO !nn
 
@@ -3186,14 +3388,12 @@ CONTAINS
           NUMBER_OF_ELEMENT_NODES= BASIS%NUMBER_OF_NODES
         ENDIF
 
+
         IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
-          !Overloading the scaleIndex parameter is something of a hack.
-          ERR = FieldExport_NodeScaleIndexes( sessionHandle,  NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), -1 )
-        ELSE
-          ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), scaleIndex )
+          SCALE_INDEXES(:) = -1
         ENDIF
+        ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+            & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), C_LOC( SCALE_INDEXES ) )
         ! ELSE
         !  CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
         ! ENDIF
@@ -3212,6 +3412,12 @@ CONTAINS
     CALL CHECKED_DEALLOCATE( GROUP_SCALE_FACTORS )
     CALL CHECKED_DEALLOCATE( GROUP_NODE )
     CALL CHECKED_DEALLOCATE( GROUP_VARIABLES )
+    CALL CHECKED_DEALLOCATE( INTERPOLATION_XI )
+    CALL CHECKED_DEALLOCATE( ELEMENT_DERIVATIVES )
+    CALL CHECKED_DEALLOCATE( NUMBER_OF_DERIVATIVES )
+    CALL CHECKED_DEALLOCATE( NODE_INDEXES )
+    CALL CHECKED_DEALLOCATE( SCALE_INDEXES )
+
 
     CALL EXITS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN")
     RETURN
@@ -3281,7 +3487,7 @@ CONTAINS
             & SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
         ENDIF
 
-        IF( .NOT.basis%DEGENERATE ) THEN
+        !IF( .NOT.basis%DEGENERATE ) THEN
           DO nodeIndex = 1, basis%NUMBER_OF_NODES
             nodeNumber = domainElements%ELEMENTS( localNumber )%ELEMENT_NODES( nodeIndex )
             DO derivativeIndex = 1, basis%NUMBER_OF_DERIVATIVES( nodeIndex )
@@ -3296,22 +3502,22 @@ CONTAINS
               ENDIF
             ENDDO !derivativeIndex
           ENDDO !nodeIndex
-        ELSE
+        !ELSE
           !This is just a hack, forcing to write out the correct number of scale factors equal to one!!!!
-          NodesX=BASIS%INTERPOLATION_XI(1)+1
-          NodesY=BASIS%INTERPOLATION_XI(2)+1
-          NodesZ=BASIS%INTERPOLATION_XI(3)+1
-          CALL REALLOCATE( scaleBuffer, (NodesX*NodesY*NodesZ), &
-               & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
-          DO nz=1,NodesZ
-            DO ny=1,NodesY
-              DO nx=1,NodesX
-                scaleFactorCount=scaleFactorCOUNT+1
-                scaleBuffer( scaleFactorCount ) = 1
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDIF
+        !  NodesX=BASIS%INTERPOLATION_XI(1)+1
+        !  NodesY=BASIS%INTERPOLATION_XI(2)+1
+        !  NodesZ=BASIS%INTERPOLATION_XI(3)+1
+        !  CALL REALLOCATE( scaleBuffer, (NodesX*NodesY*NodesZ), &
+        !       & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
+        !  DO nz=1,NodesZ
+        !    DO ny=1,NodesY
+        !      DO nx=1,NodesX
+        !        scaleFactorCount=scaleFactorCOUNT+1
+        !        scaleBuffer( scaleFactorCount ) = 1
+        !      ENDDO
+        !    ENDDO
+        !  ENDDO
+        !ENDIF
 
         NULLIFY( SCALE_FACTORS )
 
@@ -3503,7 +3709,7 @@ CONTAINS
             NULLIFY(GEOMETRIC_PARAMETERS)
             CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
               & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
           ELSE IF(component%FIELD_VARIABLE%DATA_TYPE==FIELD_INTG_TYPE) THEN
             NULLIFY(GEOMETRIC_PARAMETERS_INTG)
@@ -3513,7 +3719,7 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 2**BASIS%NUMBER_OF_XI, &
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
               & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
