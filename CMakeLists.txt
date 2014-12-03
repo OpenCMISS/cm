@@ -1,6 +1,24 @@
 cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 project(Iron VERSION 1.0 LANGUAGES C Fortran)
 
+# See if we're running outside of the opencmiss main build script
+# We still need the dependencies
+if (NOT OPENCMISS_BUILD)
+    if (NOT OPENCMISS_UTILITIES_DIR) 
+        SET(OPENCMISS_UTILITIES_DIR ${Iron_SOURCE_DIR}/../utilities)
+    endif()
+    if(NOT EXISTS ${OPENCMISS_UTILITIES_DIR})
+        message(FATAL_ERROR "Cant build dependencies directly: Utilities folder ${OPENCMISS_UTILITIES_DIR} missing.")
+    endif()
+    LIST(APPEND CMAKE_MODULE_PATH 
+        ${OPENCMISS_UTILITIES_DIR}/CMakeFindModuleWrappers
+        ${OPENCMISS_UTILITIES_DIR}/CMakeModules
+        ${OPENCMISS_UTILITIES_DIR}/CMakeScripts)
+endif()
+
+# Read config file
+include(OpenCMISSConfig)
+
 #################Define OPENCMISS_ROOT & OPENCMISSEXTRAS_ROOT##################
 
 # Set OPENCMISS_ROOT
