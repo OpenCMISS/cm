@@ -115,8 +115,10 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_PRE_SOLVE,FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP,FiniteElasticity_ControlLoadIncrementLoopPostLoop, &
     & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS, &
     & FiniteElasticityGaussDeformationGradientTensor,FINITE_ELASTICITY_LOAD_INCREMENT_APPLY, &
-    & FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE, &
     & FINITE_ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE,FINITE_ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
+
+  PUBLIC FiniteElasticityEquationsSet_DerivedVariableCalculate, &
+    & FiniteElasticity_StrainInterpolateXi
 
 CONTAINS
 
@@ -752,8 +754,10 @@ CONTAINS
         GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
         IF(ASSOCIATED(FIBRE_FIELD)) THEN
           FIBRE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
-        END IF
-        MATERIALS_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+        ENDIF
+        IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+          MATERIALS_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+        ENDIF
         IF(DARCY_DEPENDENT) THEN
           DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR
         ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
@@ -766,8 +770,10 @@ CONTAINS
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
             & FIBRE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         END IF
-        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & MATERIALS_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+        IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+            & MATERIALS_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+        ENDIF
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         IF(DARCY_DEPENDENT) THEN
@@ -784,7 +790,9 @@ CONTAINS
         IF(ASSOCIATED(FIBRE_FIELD)) THEN
           FIBRE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
         END IF
-        MATERIALS_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+        IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+          MATERIALS_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+        ENDIF
         DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
         DEPENDENT_INTERPOLATED_POINT_METRICS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS(FIELD_VAR_TYPE)%PTR
         IF(DARCY_DEPENDENT) THEN
@@ -953,11 +961,15 @@ CONTAINS
               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERPOLATED_POINT_METRICS, &
               & ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-              & FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-              & MATERIALS_INTERPOLATED_POINT,ERR,ERROR,*999)
-
+            IF(ASSOCIATED(FIBRE_FIELD)) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                & FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
+            ENDIF
+            IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                & MATERIALS_INTERPOLATED_POINT,ERR,ERROR,*999)
+            ENDIF
+            
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
             CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
               & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
@@ -1036,6 +1048,7 @@ CONTAINS
               & NUMBER_OF_XI,DFDZ,ERR,ERROR,*999)
 
             !For membrane theory in 3D space, the final equation is multiplied by thickness. Default to unit thickness if equation set subtype is not membrane
+            !!TODO Maybe have the thickness as a component in the equations set field.
             THICKNESS = 1.0_DP
             IF(EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
               IF(NUMBER_OF_DIMENSIONS == 3) THEN
@@ -1449,13 +1462,16 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
 
     CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
       CASE(EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+        CALL FiniteElasticity_StrainCalculate(EQUATIONS_SET,DEPENDENT_FIELD, &
+          & FIELD_U1_VARIABLE_TYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_MEMBRANE_SUBTYPE,EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE, &
           & EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE, &
           & EQUATIONS_SET_STVENANT_KIRCHOFF_ACTIVECONTRACTION_SUBTYPE, &
@@ -1551,17 +1567,69 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculated the strain field for a finite elasticity finite element equations set.
-  SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+  !>Calculated an output field for a finite elasticity equations set.
+  SUBROUTINE FiniteElasticityEquationsSet_DerivedVariableCalculate(equationsSet,derivedType,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to calculate the output for
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived field type to calculate. \see EQUATIONS_SET_CONSTANTS_DerivedTypes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Local variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: derivedVariable
+
+    CALL ENTERS("FiniteElasticityEquationsSet_DerivedVariableCalculate",err,error,*999)
+
+    NULLIFY(derivedVariable)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(.NOT.equationsSet%EQUATIONS_SET_FINISHED) THEN
+        CALL FLAG_ERROR("Equations set has not been finished.",err,error,*999)
+      ELSE
+        IF(ASSOCIATED(equationsSet%equations)) THEN
+          CALL Equations_DerivedVariableGet(equationsSet%equations,derivedType,derivedVariable,err,error,*999)
+          SELECT CASE(derivedType)
+          CASE(EQUATIONS_SET_DERIVED_STRAIN)
+            CALL FiniteElasticity_StrainCalculate(equationsSet, &
+              & derivedVariable%field,derivedVariable%variable_type,err,error,*999)
+          CASE(EQUATIONS_SET_DERIVED_STRESS)
+            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CASE DEFAULT
+            CALL FLAG_ERROR("Equations set derived field type of "//TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))// &
+              & " is not valid for a finite elasticity equations set type.",err,error,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Equations set equations are not associated.",err,error,*999)
+        END IF
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("FiniteElasticityEquationsSet_DerivedVariableCalculate")
+    RETURN
+999 CALL ERRORS("FiniteElasticityEquationsSet_DerivedVariableCalculate",err,error)
+    CALL EXITS("FiniteElasticityEquationsSet_DerivedVariableCalculate")
+    RETURN 1
+  END SUBROUTINE FiniteElasticityEquationsSet_DerivedVariableCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculated the strain field for a finite elasticity finite element equations set.
+  SUBROUTINE FiniteElasticity_StrainCalculate(equationsSet,strainField,strainFieldVariableType,err,error,*)
+
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to calculate strain for
+    TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: strainField !<The field to store the strain in.
+    INTEGER(INTG), INTENT(IN) :: strainFieldVariableType !<The field variable type of the output field to store the strain in.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,FIBRE_FIELD
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: DEPENDENT_QUADRATURE_SCHEME
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERPOLATION_PARAMETERS, &
       & FIBRE_INTERPOLATION_PARAMETERS,DEPENDENT_INTERPOLATION_PARAMETERS
@@ -1571,28 +1639,27 @@ CONTAINS
       & DEPENDENT_INTERPOLATED_POINT_METRICS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR   
-
-    INTEGER(INTG) :: gauss_idx,i,NUMBER_OF_TIMES
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: gauss_idx,i,NUMBER_OF_TIMES,componentIdx
     INTEGER(INTG) :: element_idx,ne
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: DEPENDENT_NUMBER_OF_COMPONENTS
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_XI,PRESSURE_COMPONENT
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_XI
     INTEGER(INTG) :: DEPENDENT_NUMBER_OF_GAUSS_POINTS
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: var1 ! Variable number corresponding to 'U' in single physics case
     INTEGER(INTG) :: var2 ! Variable number corresponding to 'DELUDLEN' in single physics case
-    REAL(DP) :: DZDNU(3,3),P,E(3,3),AZL(3,3),AZU(3,3),DZDNUT(3,3)
+    REAL(DP) :: DZDNU(3,3),E(3,3),AZL(3,3),AZU(3,3),DZDNUT(3,3)
     REAL(DP) :: Jznu,Jxxi,I3
     REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),SYSTEM_ELAPSED,SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1)
 
-    CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE",ERR,ERROR,*999)
+    CALL ENTERS("FiniteElasticity_StrainCalculate",err,error,*999)
 
     NULLIFY(GEOMETRIC_BASIS,DEPENDENT_BASIS)
     NULLIFY(EQUATIONS)
-    NULLIFY(DEPENDENT_FIELD,GEOMETRIC_FIELD)
+    NULLIFY(DEPENDENT_FIELD,GEOMETRIC_FIELD,FIBRE_FIELD)
     NULLIFY(DEPENDENT_QUADRATURE_SCHEME)
     NULLIFY(GEOMETRIC_INTERPOLATION_PARAMETERS,FIBRE_INTERPOLATION_PARAMETERS)
     NULLIFY(DEPENDENT_INTERPOLATION_PARAMETERS)
@@ -1601,31 +1668,61 @@ CONTAINS
     NULLIFY(GEOMETRIC_INTERPOLATED_POINT_METRICS,DEPENDENT_INTERPOLATED_POINT_METRICS)
     NULLIFY(DECOMPOSITION)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+    IF(ASSOCIATED(equationsSet)) THEN
+      EQUATIONS=>equationsSet%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN 
+        NUMBER_OF_DIMENSIONS=equationsSet%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
+
+        !Check the provided strain field has appropriate components and interpolation
+        IF(ASSOCIATED(strainField)) THEN
+          CALL FIELD_VARIABLE_TYPE_CHECK(strainField,strainFieldVariableType,err,error,*999)
+          SELECT CASE(NUMBER_OF_DIMENSIONS)
+          CASE(3)
+            CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(strainField,strainFieldVariableType,6,err,error,*999)
+            DO componentIdx=1,6
+              CALL FIELD_COMPONENT_INTERPOLATION_CHECK(strainField,strainFieldVariableType,componentIdx, &
+                & FIELD_GAUSS_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
+            END DO
+          CASE(2)
+            CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(strainField,strainFieldVariableType,3,err,error,*999)
+            DO componentIdx=1,3
+              CALL FIELD_COMPONENT_INTERPOLATION_CHECK(strainField,strainFieldVariableType,componentIdx, &
+                & FIELD_GAUSS_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
+            END DO
+          CASE(1)
+            CALL FLAG_ERROR("1D strain calculation not implemented.",err,error,*999)
+          CASE DEFAULT
+            CALL FLAG_ERROR("Invalid dimension of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+              & " for the equations set.",err,error,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Strain field is not associated.",err,error,*999)
+        END IF
       
         !Which variables are we working with - find the variable pair used for this equations set
         !\todo: put in checks for all the objects/mappings below TODO
 
-        var1=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_NUMBER ! number for 'U'
-        var2=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELUDELN'
+        var1=equationsSet%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_NUMBER ! number for 'U'
+        var2=equationsSet%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELUDELN'
 
         !Grab pointers: fields, decomposition, basis
-        NUMBER_OF_DIMENSIONS=EQUATIONS_SET%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
+        NUMBER_OF_DIMENSIONS=equationsSet%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
 
         GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
         DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+        FIBRE_FIELD    =>EQUATIONS%INTERPOLATION%FIBRE_FIELD
         DEPENDENT_NUMBER_OF_COMPONENTS=DEPENDENT_FIELD%VARIABLES(var1)%NUMBER_OF_COMPONENTS
         
         DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
         MESH_COMPONENT_NUMBER=DECOMPOSITION%MESH_COMPONENT_NUMBER
 
         !Grab interpolation parameters
-        FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_TYPE
+        FIELD_VAR_TYPE=equationsSet%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_TYPE
         DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
         GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
-        FIBRE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+        IF(ASSOCIATED(FIBRE_FIELD)) THEN
+          FIBRE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+        END IF
 
         ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
           & MAPPINGS%ELEMENTS
@@ -1645,23 +1742,21 @@ CONTAINS
 
           NUMBER_OF_XI=DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_XI
 
-          !Initialise tensors and matrices
-          DZDNU=0.0_DP
-          DO i=1,3 !NUMBER_OF_DIMENSIONS
-            DZDNU(i,i)=1.0_DP
-          ENDDO
-
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne, &
             & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne, &
-            & FIBRE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+          IF(ASSOCIATED(FIBRE_FIELD)) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne, &
+              & FIBRE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+          END IF
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne, &
             & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
 
           !Point interpolation pointer
           GEOMETRIC_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
           GEOMETRIC_INTERPOLATED_POINT_METRICS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-          FIBRE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+          IF(ASSOCIATED(FIBRE_FIELD)) THEN
+            FIBRE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+          END IF
           DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
           DEPENDENT_INTERPOLATED_POINT_METRICS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS(FIELD_VAR_TYPE)%PTR
 
@@ -1676,8 +1771,10 @@ CONTAINS
               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERPOLATED_POINT_METRICS, &
               & ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-              & FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
+            IF(ASSOCIATED(FIBRE_FIELD)) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                & FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
+            END IF
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
             CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
@@ -1689,18 +1786,11 @@ CONTAINS
             ENDIF
 
             !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
-            !AZU - deformed contravariant tensor; I3 = det(C)
             !E = Green-Lagrange strain tensor = 0.5*(C-I)
-            !P is the actual hydrostatic pressure, not double it
 
             CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999)
 
-            PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-            P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,1)
-
-            CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999)
-            Jznu=I3**0.5_DP
             E = 0.5_DP*AZL 
             DO i=1,3 !NUMBER_OF_DIMENSIONS
               E(i,i)=E(i,i)-0.5_DP
@@ -1710,27 +1800,27 @@ CONTAINS
             IF(NUMBER_OF_DIMENSIONS==3) THEN
               ! 3 dimensional problem
               ! ORDER OF THE COMPONENTS: U_11, U_12, U_13, U_22, U_23, U_33 (upper triangular matrix)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,1,E(1,1),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,2,E(1,2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,3,E(1,3),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,4,E(2,2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,5,E(2,3),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,6,E(3,3),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,1,E(1,1),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,2,E(1,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,3,E(1,3),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,4,E(2,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,5,E(2,3),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,6,E(3,3),ERR,ERROR,*999)
             ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
               ! 2 dimensional problem
               ! ORDER OF THE COMPONENTS: U_11, U_12, U_22 (upper triangular matrix)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,1,E(1,1),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,2,E(1,2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,3,E(2,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,1,E(1,1),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,2,E(1,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,3,E(2,2),ERR,ERROR,*999)
             ELSE !NUMBER_OF_DIMENSIONS
               LOCAL_ERROR="Only 2 dimensional and 3 dimensional problems are implemented at the moment."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -1773,12 +1863,6 @@ CONTAINS
 
           NUMBER_OF_XI=DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_XI
 
-          !Initialise tensors and matrices
-          DZDNU=0.0_DP
-          DO i=1,3 !NUMBER_OF_DIMENSIONS
-            DZDNU(i,i)=1.0_DP
-          ENDDO
-
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne, &
             & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ne, &
@@ -1817,18 +1901,11 @@ CONTAINS
             ENDIF
 
             !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
-            !AZU - deformed contravariant tensor; I3 = det(C)
             !E = Green-Lagrange strain tensor = 0.5*(C-I)
-            !P is the actual hydrostatic pressure, not double it
 
             CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999)
 
-            PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-            P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,1)
-
-            CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999)
-            Jznu=I3**0.5_DP
             E = 0.5_DP*AZL 
             DO i=1,3 !NUMBER_OF_DIMENSIONS ???
               E(i,i)=E(i,i)-0.5_DP
@@ -1838,27 +1915,27 @@ CONTAINS
             IF(NUMBER_OF_DIMENSIONS==3) THEN
               ! 3 dimensional problem
               ! ORDER OF THE COMPONENTS: U_11, U_12, U_13, U_22, U_23, U_33 (upper triangular matrix)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,1,E(1,1),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,2,E(1,2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,3,E(1,3),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,4,E(2,2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,5,E(2,3),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,6,E(3,3),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,1,E(1,1),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,2,E(1,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,3,E(1,3),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,4,E(2,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,5,E(2,3),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,6,E(3,3),ERR,ERROR,*999)
             ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
               ! 2 dimensional problem
               ! ORDER OF THE COMPONENTS: U_11, U_12, U_22 (upper triangular matrix)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,1,E(1,1),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,2,E(1,2),ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ne, &
-                & gauss_idx,3,E(2,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,1,E(1,1),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,2,E(1,2),ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(strainField,strainFieldVariableType,FIELD_VALUES_SET_TYPE, &
+                & gauss_idx,ne,3,E(2,2),ERR,ERROR,*999)
             ELSE !NUMBER_OF_DIMENSIONS
               LOCAL_ERROR="Only 2 dimensional and 3 dimensional problems are implemented at the moment."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -1891,13 +1968,162 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE")
+    CALL EXITS("FiniteElasticity_StrainCalculate")
+    RETURN
+999 CALL ERRORS("FiniteElasticity_StrainCalculate",err,error)
+    CALL EXITS("FiniteElasticity_StrainCalculate")
+    RETURN 1
+  END SUBROUTINE FiniteElasticity_StrainCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the Green-Lagrange strain tensor at a given element xi location.
+  SUBROUTINE FiniteElasticity_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*)
+    ! Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to calculate strain for
+    INTEGER(INTG), INTENT(IN) :: userElementNumber
+    REAL(DP), INTENT(IN) :: xi(:)
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string.
+    ! Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(FIELD_TYPE), POINTER :: dependentField
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint, &
+      & fibreInterpolatedPoint,dependentInterpolatedPoint
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: geometricInterpolatedPointMetrics, &
+      & dependentInterpolatedPointMetrics
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: domainTopology
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+    TYPE(BASIS_TYPE), POINTER :: elementBasis
+    LOGICAL :: userElementExists,ghostElement
+    INTEGER(INTG) :: dependentVarType,meshComponentNumber
+    INTEGER(INTG) :: numberOfDimensions,numberOfXi
+    INTEGER(INTG) :: localElementNumber,i
+    REAL(DP) :: dZdNu(3,3),dZdNuT(3,3),AZL(3,3),E(3,3)
+    REAL(DP) :: JXXi
+
+    CALL Enters("FiniteElasticity_StrainInterpolateXi",err,error,*999)
+
+    NULLIFY(equations)
+    NULLIFY(dependentField)
+    NULLIFY(geometricInterpolatedPoint)
+    NULLIFY(fibreInterpolatedPoint)
+    NULLIFY(dependentInterpolatedPoint)
+    NULLIFY(decomposition)
+    NULLIFY(decompositionTopology)
+    NULLIFY(domainTopology)
+    NULLIFY(elementBasis)
+
+    IF(.NOT.ASSOCIATED(equationsSet)) THEN
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+    equations=>equationsSet%equations
+    IF(.NOT.ASSOCIATED(equations)) THEN
+      CALL FlagError("Equations set equations is not associated.",err,error,*999)
+    END IF
+
+    nonlinearMapping=>equations%equations_mapping%nonlinear_mapping
+    IF(.NOT.ASSOCIATED(equations)) THEN
+      CALL FlagError("Equations nonlinear mapping is not associated.",err,error,*999)
+    END IF
+    dependentVarType=nonlinearMapping%residual_variables(1)%ptr%variable_type
+
+    IF(.NOT.ASSOCIATED(equations%interpolation)) THEN
+      CALL FlagError("Equations interpolation is not associated.",err,error,*999)
+    END IF
+    dependentField=>equations%interpolation%dependent_field
+    IF(.NOT.ASSOCIATED(dependentField)) THEN
+      CALL FlagError("Equations dependent field is not associated.",err,error,*999)
+    END IF
+    decomposition=>dependentField%decomposition
+    IF(.NOT.ASSOCIATED(decomposition)) THEN
+      CALL FlagError("Dependent field decomposition is not associated.",err,error,*999)
+    END IF
+    CALL DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(decomposition,meshComponentNumber,err,error,*999)
+    decompositionTopology=>decomposition%topology
+    domainTopology=>decomposition%domain(meshComponentNumber)%ptr%topology
+    CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+      & userElementExists,localElementNumber,ghostElement,err,error,*999)
+    IF(.NOT.userElementExists) THEN
+      CALL FlagError("The specified user element number of "// &
+        & TRIM(NumberToVstring(userElementNumber,"*",err,error))// &
+        & " does not exist in the decomposition for the dependent field.",err,error,*999)
+    END IF
+    CALL DomainTopology_ElementBasisGet( &
+      & domainTopology,userElementNumber,elementBasis,err,error,*999)
+
+    !Get the interpolation parameters for this element
+    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,localElementNumber, &
+      & equations%interpolation%geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+    IF(ASSOCIATED(equations%interpolation%fibre_interp_parameters)) THEN
+      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,localElementNumber, &
+        & equations%interpolation%fibre_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+    END IF
+    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,localElementNumber, &
+      & equations%interpolation%dependent_interp_parameters(dependentVarType)%ptr,err,error,*999)
+
+    !Get interpolated points
+    geometricInterpolatedPoint=>equations%interpolation%geometric_interp_point(FIELD_U_VARIABLE_TYPE)%ptr
+    IF(ASSOCIATED(equations%interpolation%fibre_interp_point)) THEN
+      fibreInterpolatedPoint=>equations%interpolation%fibre_interp_point(FIELD_U_VARIABLE_TYPE)%ptr
+    END IF
+    dependentInterpolatedPoint=>equations%interpolation%dependent_interp_point(dependentVarType)%ptr
+
+    !Get interpolated point metrics
+    geometricInterpolatedPointMetrics=>equations%interpolation% &
+      & geometric_interp_point_metrics(FIELD_U_VARIABLE_TYPE)%ptr
+    dependentInterpolatedPointMetrics=>equations%interpolation% &
+      & dependent_interp_point_metrics(dependentVarType)%ptr
+
+
+    !Interpolate fields at xi position
+    CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,xi,dependentInterpolatedPoint,err,error,*999)
+    CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,xi,geometricInterpolatedPoint,err,error,*999)
+    IF(ASSOCIATED(fibreInterpolatedPoint)) THEN
+      CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,xi,fibreInterpolatedPoint,err,error,*999)
+    END IF
+
+    ! Calculate field metrics
+    CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE( &
+      & elementBasis%number_of_xi,geometricInterpolatedPointMetrics,err,error,*999)
+    CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE( &
+      & elementBasis%number_of_xi,dependentInterpolatedPointMetrics,err,error,*999)
+
+    !Calculate F=dZ/dNU, the deformation gradient tensor at the xi location
+    numberOfDimensions=equationsSet%region%coordinate_system%number_of_dimensions
+    numberOfXi=elementBasis%number_of_xi
+    CALL FiniteElasticityGaussDeformationGradientTensor(dependentInterpolatedPointMetrics, &
+      & geometricInterpolatedPointMetrics,fibreInterpolatedPoint, &
+      & dZdNu,JXXi,err,error,*999)
+
+    !Calculate E
+    CALL MATRIX_TRANSPOSE(dZdNu,dZdNuT,err,error,*999)
+    CALL MATRIX_PRODUCT(dZdNuT,dZdNu,AZL,err,error,*999)
+    E=0.5_DP*AZL
+    DO i=1,3
+      E(i,i)=E(i,i)-0.5_DP
+    END DO
+
+    !Set output E components
+    values(1)=E(1,1)
+    values(2)=E(1,2)
+    values(3)=E(1,3)
+    values(4)=E(2,2)
+    values(5)=E(2,3)
+    values(6)=E(3,3)
+
+    CALL Exits("FiniteElasticity_StrainInterpolateXi")
     RETURN
 
-999 CALL ERRORS("FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE",ERR,ERROR)
-    CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE")
+999 CALL Errors("FiniteElasticity_StrainInterpolateXi",err,error)
+    CALL Exits("FiniteElasticity_StrainInterpolateXi")
     RETURN 1
-  END SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE
+  END SUBROUTINE FiniteElasticity_StrainInterpolateXi
 
   !
   !================================================================================================================================
@@ -2738,9 +2964,13 @@ CONTAINS
 
     CASE (EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE) ! added by Thomas 2010-04-13
       !Form of the constitutive model is:
-      ! W = a/(2*b)*exp[b*(I1-3)] + sum_(i=f,s)[a_i/(2*b_i)*(exp[b_i*(I4i-1)^2]-1)] + a_fs/(2*b_fs)*(exp[b_fs*I8fs^2]-1)
+      ! W = a/(2*b)*exp[b*(I1-3)] + sum_(i=f,s)[H(I4i-1)*a_i/(2*b_i)*(exp[b_i*(I4i-1)^2]-1)] + a_fs/(2*b_fs)*(exp[b_fs*I8fs^2]-1)
+      !where H is the Heaviside step function. Fibres only contribute stiffness if in tension.
       !Also assumed I3 = det(AZL) = J^2 = 1.0  -  incompressible material
       !Assume directions: fibre f_0=[1 0 0], sheet s_0=[0 1 0], (sheet) normal n_0=[0 0 1]
+      !Based on: Holzapfel, G. A., & Ogden, R. W. (2009). Constitutive modelling of passive myocardium: A structurally based
+      !  framework for material characterization. Philosophical Transactions of the Royal Society A: Mathematical, Physical and
+      !  Engineering Sciences, 367(1902), 3445–3475. doi:10.1098/rsta.2009.0091
       C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1) !a
       C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1) !b
       C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1) !a_f
@@ -2751,11 +2981,17 @@ CONTAINS
       C(8)=MATERIALS_INTERPOLATED_POINT%VALUES(8,1) !b_fs
       I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
       TEMPTERM=C(1)*EXP(C(2)*(I1-3.0_DP))
-      PIOLA_TENSOR(1,1)=-P*AZU(1,1)+TEMPTERM+2.0_DP*C(3)*(AZL(1,1)-1.0_DP)*EXP(C(5)*(AZL(1,1)-1.0_DP)**2.0_DP)
+      PIOLA_TENSOR(1,1)=-P*AZU(1,1)+TEMPTERM
+      IF(AZL(1,1)>1.0_DP) THEN
+        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+2.0_DP*C(3)*(AZL(1,1)-1.0_DP)*EXP(C(5)*(AZL(1,1)-1.0_DP)**2.0_DP)
+      END IF
       PIOLA_TENSOR(1,2)=-P*AZU(1,2)+C(7)*AZL(1,2)*EXP(C(8)*AZL(1,2)**2.0_DP)
       PIOLA_TENSOR(1,3)=-P*AZU(1,3)
       PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
-      PIOLA_TENSOR(2,2)=-P*AZU(2,2)+TEMPTERM+2.0_DP*C(4)*(AZL(2,2)-1.0_DP)*EXP(C(6)*(AZL(2,2)-1.0_DP)**2.0_DP)
+      PIOLA_TENSOR(2,2)=-P*AZU(2,2)+TEMPTERM
+      IF(AZL(2,2)>1.0_DP) THEN
+        PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+2.0_DP*C(4)*(AZL(2,2)-1.0_DP)*EXP(C(6)*(AZL(2,2)-1.0_DP)**2.0_DP)
+      END IF
       PIOLA_TENSOR(2,3)=-P*AZU(2,3)
       PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
       PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
@@ -2847,7 +3083,7 @@ CONTAINS
     QL(4) = LAMBDA  ! bounds applied in FMM, Qi integrated
     DO I=1,4
       CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-        &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 6+I, QL(I),ERR,ERROR,*999) ! store Q(1) Q(2) Q(3) Lambda for next in 7/8/9/10
+        &  FIELD_VALUES_SET_TYPE,GAUSS_POINT_NUMBER,ELEMENT_NUMBER, 6+I, QL(I),ERR,ERROR,*999) ! store Q(1) Q(2) Q(3) Lambda for next in 7/8/9/10
     END DO
 
     PIOLA_FF = PIOLA_FF + TA
@@ -2995,7 +3231,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: GEOMETRIC_MESH_COMPONENT,GEOMETRIC_SCALING_TYPE,NUMBER_OF_COMPONENTS, &
       & NUMBER_OF_DIMENSIONS, NUMBER_OF_DARCY_COMPONENTS,GEOMETRIC_COMPONENT_NUMBER,NUMBER_OF_COMPONENTS_2,component_idx, &
-      & NUMBER_OF_FLUID_COMPONENTS
+      & derivedIdx,varIdx,variableType,NUMBER_OF_FLUID_COMPONENTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -5141,6 +5377,104 @@ CONTAINS
               & " is invalid for a finite elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+        CASE(EQUATIONS_SET_SETUP_DERIVED_TYPE)
+          ! We want to be able to set which derived variables are calculated before finishing the derived
+          ! field, so don't create field variables or check the provided field until the finish action.
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+          CASE(EQUATIONS_SET_SETUP_START_ACTION)
+            IF(EQUATIONS_SET%derived%derivedFieldAutoCreated) THEN
+              CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%derived% &
+                & derivedField,ERR,ERROR,*999)
+              CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+              CALL FIELD_LABEL_SET(EQUATIONS_SET%derived%derivedField,"Derived Field",ERR,ERROR,*999)
+              CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,FIELD_DEPENDENT_TYPE, &
+                & ERR,ERROR,*999)
+              CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+              CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,GEOMETRIC_DECOMPOSITION, &
+                & ERR,ERROR,*999)
+              CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,EQUATIONS_SET%GEOMETRY% &
+                & GEOMETRIC_FIELD,ERR,ERROR,*999)
+            END IF
+          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+            IF(ASSOCIATED(EQUATIONS_SET%derived)) THEN
+              ALLOCATE(VARIABLE_TYPES(EQUATIONS_SET%derived%numberOfVariables),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derived field variable types.",ERR,ERROR,*999)
+              varIdx=0
+              DO derivedIdx=1,EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES
+                IF(EQUATIONS_SET%derived%variableTypes(derivedIdx)/=0) THEN
+                  varIdx=varIdx+1
+                  VARIABLE_TYPES(varIdx)=EQUATIONS_SET%derived%variableTypes(derivedIdx)
+                END IF
+              END DO
+              IF(EQUATIONS_SET%derived%derivedFieldAutoCreated) THEN
+                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField, &
+                  & EQUATIONS_SET%derived%numberOfVariables,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,VARIABLE_TYPES,ERR,ERROR,*999)
+                DO derivedIdx=1,EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES
+                  variableType=EQUATIONS_SET%derived%variableTypes(derivedIdx)
+                  IF(variableType/=0) THEN
+                    CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,variableType, &
+                      & FIELD_DP_TYPE,ERR,ERROR,*999)
+                    SELECT CASE(derivedidx)
+                    CASE(EQUATIONS_SET_DERIVED_STRAIN)
+                      CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%derived%derivedField,variableType,"Strain",ERR,ERROR,*999)
+                      CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & 6,ERR,ERROR,*999)
+                    CASE(EQUATIONS_SET_DERIVED_STRESS)
+                      CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%derived%derivedField,variableType,"Stress",ERR,ERROR,*999)
+                      CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & 6,ERR,ERROR,*999)
+                    CASE DEFAULT
+                      CALL FLAG_ERROR("The specified derived field type of "//TRIM(NUMBER_TO_VSTRING(derivedIdx,"*",ERR,ERROR))// &
+                        & " is not supported for a finite elasticity equations set type.",ERR,ERROR,*999)
+                    END SELECT
+                  END IF
+                END DO
+                !Finish creating the derived field
+                CALL FIELD_CREATE_FINISH(EQUATIONS_SET%derived%derivedField,ERR,ERROR,*999)
+              ELSE
+                !Check the user specified derived field
+                CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD, &
+                  & EQUATIONS_SET%derived%numberOfVariables,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,VARIABLE_TYPES,ERR,ERROR,*999)
+
+                DO derivedIdx=1,EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES
+                  variableType=EQUATIONS_SET%derived%variableTypes(derivedIdx)
+                  IF(variableType/=0) THEN
+                    CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                    SELECT CASE(derivedidx)
+                    CASE(EQUATIONS_SET_DERIVED_STRAIN)
+                      CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & 6,ERR,ERROR,*999)
+                    CASE(EQUATIONS_SET_DERIVED_STRESS)
+                      CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET%derived%derivedField,variableType, &
+                        & 6,ERR,ERROR,*999)
+                    CASE DEFAULT
+                      CALL FLAG_ERROR("The specified derived field type of "//TRIM(NUMBER_TO_VSTRING(derivedIdx,"*",ERR,ERROR))// &
+                        & " is not supported for a finite elasticity equations set type.",ERR,ERROR,*999)
+                    END SELECT
+                  END IF
+                END DO
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Equations set derived is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a finite elasticity equation."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a finite elasticity equation."
@@ -6172,6 +6506,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER
     LOGICAL :: VALID_SUBTYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     
     CALL ENTERS("FINITE_ELASTICITY_PRE_SOLVE",ERR,ERROR,*999)
 
@@ -6192,7 +6527,9 @@ CONTAINS
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE) THEN
                       VALID_SUBTYPE=.TRUE.
                       !compute the strain field
-                      CALL FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
+                      DEPENDENT_FIELD=>EQUATIONS_SET%EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+                      CALL FiniteElasticity_StrainCalculate(EQUATIONS_SET,DEPENDENT_FIELD, &
+                        & FIELD_U1_VARIABLE_TYPE,ERR,ERROR,*999)
                       !check for a linked CellML solver 
                       CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
                       IF(ASSOCIATED(CELLML_SOLVER)) THEN
