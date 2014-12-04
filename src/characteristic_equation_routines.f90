@@ -103,7 +103,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-    CALL ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
+!    CALL ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
@@ -137,10 +137,10 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
        
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
+!    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
     RETURN
 999 CALL ERRORS("Characteristic_EquationsSet_SolutionMethodSet",err,error)
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
+!    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
     RETURN 1
   END SUBROUTINE Characteristic_EquationsSet_SolutionMethodSet
 
@@ -159,7 +159,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
+!    CALL ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
@@ -176,10 +176,10 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
+!    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
     RETURN
 999 CALL ERRORS("Characteristic_EquationsSet_SubtypeSet",err,error)
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
+!    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
     RETURN 1
   END SUBROUTINE Characteristic_EquationsSet_SubtypeSet
 
@@ -207,7 +207,7 @@ CONTAINS
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
+!    CALL ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -759,10 +759,10 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_EquationsSet_Setup")
+!    CALL EXITS("Characteristic_EquationsSet_Setup")
     RETURN
 999 CALL ERRORS("Characteristic_EquationsSet_Setup",err,error)
-    CALL EXITS("Characteristic_EquationsSet_Setup")
+!    CALL EXITS("Characteristic_EquationsSet_Setup")
     RETURN 1
   END SUBROUTINE Characteristic_EquationsSet_Setup
 
@@ -793,11 +793,11 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
-    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr,SUM
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),Fr,SUM
     INTEGER(INTG) :: derivativeIdx,versionIdx,versionIdx2,componentIdx,rowIdx,columnIdx,componentIdx2,numberOfVersions,local_ny
     LOGICAL :: updateStiffnessMatrix,updateNonlinearResidual,boundaryNode
 
-    CALL ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
+!    CALL ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -889,8 +889,6 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
             & materialsParameters1,err,error,*999)
           fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-          local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          As=materialsParameters(local_ny)
           local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
           Fr=materialsParameters(local_ny)
           fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
@@ -985,8 +983,8 @@ CONTAINS
                     nonlinearMatrices%NodalResidual%vector(rowIdx)=SUM
                   ELSE
                     nonlinearMatrices%NodalResidual%vector(rowIdx)=((A_BIF(1)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                      & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1)/As)**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
-                      & ((A0_PARAM(versionIdx)/As)**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
+                      & (A_BIF(versionIdx)**0.5_DP))-(((A0_PARAM(1))**0.5_DP)-(Beta(versionIdx)/Beta(1))* &
+                      & ((A0_PARAM(versionIdx))**0.5_DP))+(1.0_DP/(Fr*Beta(1))*0.25_DP*(((Q_BIF(1)/A_BIF(1))**2)- &
                       & ((Q_BIF(versionIdx)/A_BIF(versionIdx))**2)))
                   ENDIF
                 ENDIF
@@ -1003,10 +1001,10 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
 
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
+!    CALL EXITS("Characteristic_NodalResidualEvaluate")
     RETURN
 999 CALL ERRORS("Characteristic_NodalResidualEvaluate",err,error)
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
+!    CALL EXITS("Characteristic_NodalResidualEvaluate")
     RETURN 1
   END SUBROUTINE Characteristic_NodalResidualEvaluate
 
@@ -1037,12 +1035,12 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
-    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),As,Fr
+    REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),Fr
     INTEGER(INTG) :: numberOfVersions,local_ny,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     LOGICAL :: updateJacobianMatrix,boundaryNode
 
-    CALL ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
+!    CALL ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -1131,8 +1129,6 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(materialsField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
             & materialsParameters1,err,error,*999)
           fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-          local_ny=fieldVariable%COMPONENTS(4)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-          As=materialsParameters(local_ny)
           local_ny=fieldVariable%COMPONENTS(6)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
           Fr=materialsParameters(local_ny)
           fieldVariable=>materialsField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
@@ -1256,10 +1252,10 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
        
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
+!    CALL EXITS("Characteristic_NodalJacobianEvaluate")
     RETURN
 999 CALL ERRORS("Characteristic_NodalJacobianEvaluate",err,error)
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
+!    CALL EXITS("Characteristic_NodalJacobianEvaluate")
     RETURN 1
   END SUBROUTINE Characteristic_NodalJacobianEvaluate
 
@@ -1279,16 +1275,16 @@ CONTAINS
     TYPE(DOMAIN_TYPE), POINTER :: dependentDomain,materialsDomain
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
     TYPE(EQUATIONS_TYPE), POINTER :: equations
-    TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField
+    TYPE(FIELD_TYPE), POINTER ::  geometricField,dependentField,materialsField,independentField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
     REAL(DP), POINTER :: independentParameters(:)
-    REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),As,Fr,normalWave(2,4)
+    REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),Fr,normalWave(2,4),elementLength(4)
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),local_ny
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
 
-    CALL ENTERS("Characteristic_PreSolveUpdateBC",ERR,ERROR,*999)
+!    CALL ENTERS("Characteristic_PreSolveUpdateBC",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       solverEquations=>solver%SOLVER_EQUATIONS
@@ -1303,6 +1299,7 @@ CONTAINS
               dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
               independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
               materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
+              geometricField=>equations%INTERPOLATION%GEOMETRIC_FIELD
               dependentDomain=>dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
               materialsDomain=>materialsField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
 
@@ -1351,8 +1348,6 @@ CONTAINS
                               !Get the element based material parameters for the surrounding elements
                               versionElementNumber(versionIdx)=elementNumber
                               CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,4,As,err,error,*999)
-                              CALL FIELD_PARAMETER_SET_GET_CONSTANT(materialsField,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,6,Fr,err,error,*999)
                               CALL Field_ParameterSetGetLocalNode(materialsField,FIELD_V_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,A0_PARAM(versionIdx),err,error,*999)
@@ -1362,6 +1357,7 @@ CONTAINS
                                 & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,3,H0_PARAM(versionIdx),err,error,*999)            
                               Beta(versionIdx) = (4.0_DP*SQRT(PI)*E_PARAM(versionIdx)*H0_PARAM(versionIdx))/ &
                                 & (3.0_DP*A0_PARAM(versionIdx))
+                              elementLength(elementNodeVersion)=geometricField%geometric_field_parameters%lengths(elementNumber)
                             ENDIF
                           ENDDO
                         ENDIF
@@ -1374,10 +1370,10 @@ CONTAINS
                         IF(ABS(normalWave(componentIdx,versionIdx))> ZERO_TOLERANCE) THEN
                           IF(normalWave(componentIdx,versionIdx)>ZERO_TOLERANCE) THEN
                             !Inlet
-                            XI(1)=0.8_DP
+                            XI(1)=0.8
                           ELSE
                             !Outlet
-                            XI(1)=0.2_DP
+                            XI(1)=0.2
                           ENDIF
                           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE, &
                             & versionElementNumber(versionIdx),EQUATIONS%INTERPOLATION% &
@@ -1434,10 +1430,10 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_PreSolveUpdateBC")
+!    CALL EXITS("Characteristic_PreSolveUpdateBC")
     RETURN
 999 CALL ERRORS("Characteristic_PreSolveUpdateBC",ERR,ERROR)
-    CALL EXITS("Characteristic_PreSolveUpdateBC")
+!    CALL EXITS("Characteristic_PreSolveUpdateBC")
     RETURN 1
   END SUBROUTINE Characteristic_PreSolveUpdateBC
 
