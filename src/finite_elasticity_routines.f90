@@ -2749,9 +2749,13 @@ CONTAINS
 
     CASE (EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE) ! added by Thomas 2010-04-13
       !Form of the constitutive model is:
-      ! W = a/(2*b)*exp[b*(I1-3)] + sum_(i=f,s)[a_i/(2*b_i)*(exp[b_i*(I4i-1)^2]-1)] + a_fs/(2*b_fs)*(exp[b_fs*I8fs^2]-1)
+      ! W = a/(2*b)*exp[b*(I1-3)] + sum_(i=f,s)[H(I4i-1)*a_i/(2*b_i)*(exp[b_i*(I4i-1)^2]-1)] + a_fs/(2*b_fs)*(exp[b_fs*I8fs^2]-1)
+      !where H is the Heaviside step function. Fibres only contribute stiffness if in tension.
       !Also assumed I3 = det(AZL) = J^2 = 1.0  -  incompressible material
       !Assume directions: fibre f_0=[1 0 0], sheet s_0=[0 1 0], (sheet) normal n_0=[0 0 1]
+      !Based on: Holzapfel, G. A., & Ogden, R. W. (2009). Constitutive modelling of passive myocardium: A structurally based
+      !  framework for material characterization. Philosophical Transactions of the Royal Society A: Mathematical, Physical and
+      !  Engineering Sciences, 367(1902), 3445–3475. doi:10.1098/rsta.2009.0091
       C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1) !a
       C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1) !b
       C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1) !a_f
@@ -2762,11 +2766,17 @@ CONTAINS
       C(8)=MATERIALS_INTERPOLATED_POINT%VALUES(8,1) !b_fs
       I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
       TEMPTERM=C(1)*EXP(C(2)*(I1-3.0_DP))
-      PIOLA_TENSOR(1,1)=-P*AZU(1,1)+TEMPTERM+2.0_DP*C(3)*(AZL(1,1)-1.0_DP)*EXP(C(5)*(AZL(1,1)-1.0_DP)**2.0_DP)
+      PIOLA_TENSOR(1,1)=-P*AZU(1,1)+TEMPTERM
+      IF(AZL(1,1)>1.0_DP) THEN
+        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+2.0_DP*C(3)*(AZL(1,1)-1.0_DP)*EXP(C(5)*(AZL(1,1)-1.0_DP)**2.0_DP)
+      END IF
       PIOLA_TENSOR(1,2)=-P*AZU(1,2)+C(7)*AZL(1,2)*EXP(C(8)*AZL(1,2)**2.0_DP)
       PIOLA_TENSOR(1,3)=-P*AZU(1,3)
       PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
-      PIOLA_TENSOR(2,2)=-P*AZU(2,2)+TEMPTERM+2.0_DP*C(4)*(AZL(2,2)-1.0_DP)*EXP(C(6)*(AZL(2,2)-1.0_DP)**2.0_DP)
+      PIOLA_TENSOR(2,2)=-P*AZU(2,2)+TEMPTERM
+      IF(AZL(2,2)>1.0_DP) THEN
+        PIOLA_TENSOR(2,2)=PIOLA_TENSOR(2,2)+2.0_DP*C(4)*(AZL(2,2)-1.0_DP)*EXP(C(6)*(AZL(2,2)-1.0_DP)**2.0_DP)
+      END IF
       PIOLA_TENSOR(2,3)=-P*AZU(2,3)
       PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
       PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
