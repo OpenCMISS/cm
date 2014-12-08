@@ -8715,11 +8715,13 @@ CONTAINS
                       CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
                     CASE(SOLVER_LAPACK_LIBRARY)
+#if ( PETSC_VERSION_MINOR < 4 )
                       !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
                       IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
                         CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
                           & ERR,ERROR,*999)
                       ENDIF
+#endif
                     CASE(SOLVER_PASTIX_LIBRARY)
 #if ( PETSC_VERSION_MINOR >= 1 )
                       !Set the PC factorisation package to PaStiX
