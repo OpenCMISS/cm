@@ -5701,7 +5701,7 @@ CONTAINS
     REAL(DP), POINTER :: dependentParameters(:)
     REAL(DP), POINTER :: materialsParameters(:)
     REAL(DP) :: normalWave(2,4),lEigenvalue,Bn,Kr,deltaT
-    REAL(DP) :: timeData(2),cycTime,shiftedTime,Q,QP,QPP
+    REAL(DP) :: timeData(2),cycTime,shiftedTime,Q,QP,QPP,componentValues(3)
     REAL(DP), ALLOCATABLE :: nodeData(:,:),qSpline(:),qValues(:),tValues(:)
     INTEGER(INTG) :: nodeIdx,derivativeIdx,versionIdx,materialIdx,elementIdx,elementNumber,versionElementNumber(4)
     INTEGER(INTG) :: variableIdx,numberOfSourceTimesteps,timeIdx
@@ -5714,7 +5714,7 @@ CONTAINS
     INTEGER(INTG) :: componentNumberVelocity,numberOfDimensions,numberOfNodes,numberOfGlobalNodes,currentLoopIteration
     INTEGER(INTG) :: dependentVariableType,independentVariableType,dependentDof,independentDof,userNodeNumber,localNodeNumber
     INTEGER(INTG) :: localDof,globalDof
-    INTEGER(INTG) :: componentBC
+    INTEGER(INTG) :: componentBC,previousNodeNumber
     INTEGER(INTG) :: EquationsSetIndex,SolidNodeNumber,FluidNodeNumber
     INTEGER(INTG), ALLOCATABLE :: InletNodes(:)
     LOGICAL :: inletNode,outletNode,fixedNode,nonReflecting,solverCharacteristicFlag,solverNavierStokesFlag
@@ -5827,24 +5827,27 @@ CONTAINS
                         !Read fitted data from input file (if exists)
                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Updating independent field and boundary nodes from "//inputFile, &
                           & ERR,ERROR,*999)
-                        ALLOCATE(nodeData(numberOfGlobalNodes,numberOfDimensions))
                         OPEN(UNIT=10, FILE=inputFile, STATUS='OLD')                  
-                        DO nodeIdx=1,numberOfGlobalNodes
-                          READ(10,*) (nodeData(nodeIdx,componentIdx), componentIdx=1,numberOfDimensions)
-                        ENDDO !nodeIdx
-
                         !Loop over local nodes and update independent field and (and dependent field for any FixedFitted nodes)
+                        previousNodeNumber=0
                         DO nodeIdx=1,numberOfNodes
                           userNodeNumber=DOMAIN_NODES%NODES(nodeIdx)%USER_NUMBER
                           CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(domain%Topology,userNodeNumber,nodeExists,localNodeNumber, &
                             & ghostNode,err,error,*999)
                           IF(nodeExists .AND. .NOT. ghostNode) THEN
+                            ! Move to line in file for this node (dummy read)
+                            ! NOTE: this takes advantage of the user number increasing ordering of domain nodes 
+                            DO search_idx=1,userNodeNumber-previousNodeNumber-1
+                              READ(10,*)
+                            ENDDO
+                            ! Read in the node data for this timestep file
+                            READ(10,*) (componentValues(componentIdx), componentIdx=1,numberOfDimensions)
                             DO componentIdx=1,numberOfDimensions
                               dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                 & NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
                               independentDof = independentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(1)%VERSIONS(1)
-                              VALUE = nodeData(userNodeNumber,componentIdx)
+                              VALUE = componentValues(componentIdx)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,independentVariableType, &
                                 & FIELD_VALUES_SET_TYPE,independentDof,VALUE,ERR,ERROR,*999)
                               CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,dependentVariableType,1,1,userNodeNumber, & 
@@ -5855,9 +5858,10 @@ CONTAINS
                                   & FIELD_VALUES_SET_TYPE,localDof,VALUE,ERR,ERROR,*999)
                               ENDIF
                             ENDDO !componentIdx
+                            previousNodeNumber=userNodeNumber
                           ENDIF ! ghost/exist check
                         ENDDO !nodeIdx
-                        DEALLOCATE(nodeData)
+                        CLOSE(UNIT=10)
                       ENDIF !check import file exists
                     ELSE
                       CALL FLAG_ERROR("Equations set independent field is not associated.",ERR,ERROR,*999)
