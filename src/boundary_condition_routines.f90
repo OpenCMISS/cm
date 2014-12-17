@@ -105,9 +105,11 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_LINEAR_CONSTRAINT=21 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED=22!<A Neumann point boundary condition that is incremented inside a load increment control loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FixedFitted=23 !<The dof is fixed as a boundary condition to be updated from fitting data \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FixedNonreflecting=24 !<The dof is fixed and set to a non-reflecting type for 1D wave propagation problems. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FixedCellml=25 !<The dof is fixed and set to values specified based on the coupled CellML solution at the dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=23 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=25 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
 
   !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_SparsityTypes BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
   !> \brief Storage type for matrices used by boundary conditions.
@@ -143,7 +145,7 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
     & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
     & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED, &
-    & BOUNDARY_CONDITION_FixedFitted
+    & BOUNDARY_CONDITION_FixedFitted,BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml
 
   PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -194,7 +196,7 @@ CONTAINS
     TYPE(LinkedList),POINTER :: LIST(:)
     INTEGER(INTG), ALLOCATABLE:: COLUMN_ARRAY(:)
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED)
 
@@ -645,10 +647,10 @@ CONTAINS
       ENDDO !variable_idx
     ENDIF
     
-!    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
+    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
+    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
     RETURN 1
     
   END SUBROUTINE BOUNDARY_CONDITIONS_CREATE_FINISH
@@ -668,7 +670,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_START",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)) THEN
@@ -692,10 +694,10 @@ CONTAINS
       CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_START")
+    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_START")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_CREATE_START",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_START")
+    CALL EXITS("BOUNDARY_CONDITIONS_CREATE_START")
     RETURN 1
 
   END SUBROUTINE BOUNDARY_CONDITIONS_CREATE_START
@@ -713,7 +715,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       CALL BOUNDARY_CONDITIONS_FINALISE(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
@@ -721,10 +723,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITIONS_DESTROY")
+    CALL EXITS("BOUNDARY_CONDITIONS_DESTROY")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_DESTROY",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_DESTROY")
+    CALL EXITS("BOUNDARY_CONDITIONS_DESTROY")
     RETURN 1
     
   END SUBROUTINE BOUNDARY_CONDITIONS_DESTROY
@@ -743,7 +745,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: variable_idx
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_FINALISE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
@@ -761,10 +763,10 @@ CONTAINS
       DEALLOCATE(BOUNDARY_CONDITIONS)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_FINALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_FINALISE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_FINALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_FINALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_FINALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_FINALISE
 
@@ -794,7 +796,7 @@ CONTAINS
     TYPE(INTERFACE_MAPPING_RHS_TYPE), POINTER :: INTERFACE_RHS_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_INITIALISE",ERR,ERROR,*998)
+    CALL ENTERS("BOUNDARY_CONDITIONS_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)) THEN
@@ -982,11 +984,11 @@ CONTAINS
       CALL FLAG_ERROR("Solver equations is not associated",ERR,ERROR,*998)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE")
     RETURN
 999 CALL BOUNDARY_CONDITIONS_FINALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,DUMMY_ERR,DUMMY_ERROR,*998)
 998 CALL ERRORS("BOUNDARY_CONDITIONS_INITIALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE")
     RETURN 1
 
   END SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE
@@ -1013,7 +1015,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-!    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_CONSTANT",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_CONSTANT",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
     NULLIFY(DEPENDENT_FIELD_VARIABLE)
@@ -1046,10 +1048,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITION_ADD_CONSTANT")
+    CALL EXITS("BOUNDARY_CONDITION_ADD_CONSTANT")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITION_ADD_CONSTANT",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITION_ADD_CONSTANT")
+    CALL EXITS("BOUNDARY_CONDITION_ADD_CONSTANT")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_ADD_CONSTANT
   
@@ -1075,7 +1077,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SET_CONSTANT",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SET_CONSTANT",ERR,ERROR,*999)
 
     !Note: This routine is for constant interpolation
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -1104,10 +1106,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITION_SET_CONSTANT")
+    CALL EXITS("BOUNDARY_CONDITION_SET_CONSTANT")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITION_SET_CONSTANT",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITION_SET_CONSTANT")
+    CALL EXITS("BOUNDARY_CONDITION_SET_CONSTANT")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_CONSTANT
   
@@ -1129,15 +1131,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-!    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1",ERR,ERROR,*999)
 
     CALL BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE,(/DOF_INDEX/),(/CONDITION/),(/VALUE/), &
         & ERR,ERROR,*999)
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1")
+    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1")
+    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1
   
@@ -1165,7 +1167,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS",ERR,ERROR,*999)
     NULLIFY(dependent_variable)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -1250,7 +1252,7 @@ CONTAINS
                           ! dof value directly
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
-                        CASE(BOUNDARY_CONDITION_FixedFitted)
+                        CASE(BOUNDARY_CONDITION_FixedFitted,BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml)
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE DEFAULT
@@ -1299,10 +1301,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS")
+    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS")
+    CALL EXITS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS
   
@@ -1324,15 +1326,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1",ERR,ERROR,*999)
 
     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOFS(BOUNDARY_CONDITIONS,FIELD,VARIABLE_TYPE,(/DOF_INDEX/),(/CONDITION/),(/VALUE/), &
       & ERR,ERROR,*999)
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOF1")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_LOCAL_DOF1
   
@@ -1359,7 +1361,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
@@ -1433,7 +1435,7 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
-                        CASE(BOUNDARY_CONDITION_FixedFitted)
+                        CASE(BOUNDARY_CONDITION_FixedFitted,BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE DEFAULT
@@ -1482,10 +1484,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_LOCAL_DOFS")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_LOCAL_DOFS
 
@@ -1506,7 +1508,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: dofType, previousCondition, previousDof
 
-!    CALL ENTERS("BoundaryConditions_SetConditionType",err,error,*999)
+    CALL ENTERS("BoundaryConditions_SetConditionType",err,error,*999)
 
     ! We won't do much checking here as this is only used internally and everything has been checked for
     ! association already
@@ -1571,7 +1573,7 @@ CONTAINS
       boundaryConditionsVariable%parameterSetRequired(FIELD_INTEGRATED_NEUMANN_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
-    CASE(BOUNDARY_CONDITION_FixedFitted)
+    CASE(BOUNDARY_CONDITION_FixedFitted,BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE DEFAULT
       CALL FLAG_ERROR("The specified boundary condition type for dof number "// &
@@ -1608,10 +1610,10 @@ CONTAINS
     boundaryConditionsVariable%CONDITION_TYPES(globalDof)=condition
     boundaryConditionsVariable%DOF_TYPES(globalDof)=dofType
 
-!    CALL EXITS("BoundaryConditions_SetConditionType")
+    CALL EXITS("BoundaryConditions_SetConditionType")
     RETURN
 999 CALL ERRORS("BoundaryConditions_SetConditionType",err,error)
-!    CALL EXITS("BoundaryConditions_SetConditionType")
+    CALL EXITS("BoundaryConditions_SetConditionType")
     RETURN 1
   END SUBROUTINE BoundaryConditions_SetConditionType
 
@@ -1639,7 +1641,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_ELEMENT",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_ELEMENT",ERR,ERROR,*999)
 
     !Note: this routine is for element based interpolation
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -1674,10 +1676,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITION_ADD_ELEMENT")
+    CALL EXITS("BOUNDARY_CONDITION_ADD_ELEMENT")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITION_ADD_ELEMENT",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITION_ADD_ELEMENT")
+    CALL EXITS("BOUNDARY_CONDITION_ADD_ELEMENT")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_ADD_ELEMENT
   
@@ -1699,7 +1701,7 @@ CONTAINS
     INTEGER(INTG) :: interpolationType
     LOGICAL :: validCondition
 
-!    CALL ENTERS("BoundaryConditions_CheckInterpolationType",err,error,*999)
+    CALL ENTERS("BoundaryConditions_CheckInterpolationType",err,error,*999)
 
     CALL FIELD_COMPONENT_INTERPOLATION_GET(field,variableType,componentNumber,interpolationType,err,error,*999)
 
@@ -1741,7 +1743,7 @@ CONTAINS
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
-    CASE(BOUNDARY_CONDITION_FixedFitted)
+    CASE(BOUNDARY_CONDITION_FixedFitted,BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml)
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
@@ -1757,10 +1759,10 @@ CONTAINS
         & err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_CheckInterpolationType")
+    CALL EXITS("BoundaryConditions_CheckInterpolationType")
     RETURN
 999 CALL ERRORS("BoundaryConditions_CheckInterpolationType",err,error)
-!    CALL EXITS("BoundaryConditions_CheckInterpolationType")
+    CALL EXITS("BoundaryConditions_CheckInterpolationType")
     RETURN 1
   END SUBROUTINE BoundaryConditions_CheckInterpolationType
 
@@ -1782,7 +1784,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
     LOGICAL :: validEquationsSetFound
 
-!    CALL ENTERS("BoundaryConditions_CheckEquations",err,error,*999)
+    CALL ENTERS("BoundaryConditions_CheckEquations",err,error,*999)
 
     !Get and check pointers we need
     solverEquations=>boundaryConditionsVariable%BOUNDARY_CONDITIONS%SOLVER_EQUATIONS
@@ -1861,6 +1863,12 @@ CONTAINS
                 & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF
+          CASE(BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml)
+            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                & (equationsSet%TYPE==EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE.OR. &
+                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
+              validEquationsSetFound=.TRUE.
+            END IF
           CASE DEFAULT
             CALL FLAG_ERROR("The specified boundary condition type of "// &
               & TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &
@@ -1876,10 +1884,10 @@ CONTAINS
       END IF
     END DO
 
-!    CALL EXITS("BoundaryConditions_CheckEquations")
+    CALL EXITS("BoundaryConditions_CheckEquations")
     RETURN
 999 CALL ERRORS("BoundaryConditions_CheckEquations",err,error)
-!    CALL EXITS("BoundaryConditions_CheckEquations")
+    CALL EXITS("BoundaryConditions_CheckEquations")
     RETURN 1
   END SUBROUTINE BoundaryConditions_CheckEquations
 
@@ -1907,7 +1915,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SET_ELEMENT",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SET_ELEMENT",ERR,ERROR,*999)
 
     !Note: this routine is for element based interpolation
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -1942,10 +1950,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITION_SET_ELEMENT")
+    CALL EXITS("BOUNDARY_CONDITION_SET_ELEMENT")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITION_SET_ELEMENT",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITION_SET_ELEMENT")
+    CALL EXITS("BOUNDARY_CONDITION_SET_ELEMENT")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_ELEMENT
   
@@ -1975,7 +1983,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_NODE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_NODE",ERR,ERROR,*999)
 
     NULLIFY(FIELD_VARIABLE)
     NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
@@ -2010,10 +2018,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITIONS_ADD_NODE")
+    CALL EXITS("BOUNDARY_CONDITIONS_ADD_NODE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_ADD_NODE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_ADD_NODE")
+    CALL EXITS("BOUNDARY_CONDITIONS_ADD_NODE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE
 
@@ -2034,7 +2042,7 @@ CONTAINS
     INTEGER(INTG) :: dummyErr
     TYPE(VARYING_STRING) :: dummyError
 
-!    CALL ENTERS("BoundaryConditions_NeumannInitialise",err,error,*998)
+    CALL ENTERS("BoundaryConditions_NeumannInitialise",err,error,*998)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       numberOfValues=boundaryConditionsVariable%DOF_COUNTS(BOUNDARY_CONDITION_NEUMANN_POINT)+ &
@@ -2058,11 +2066,11 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*998)
     END IF
 
-!    CALL EXITS("BoundaryConditions_NeumannInitialise")
+    CALL EXITS("BoundaryConditions_NeumannInitialise")
     RETURN
 999 CALL BoundaryConditions_NeumannFinalise(boundaryConditionsVariable,dummyErr,dummyError,*998)
 998 CALL ERRORS("BoundaryConditions_NeumannInitialise",err,error)
-!    CALL EXITS("BoundaryConditions_NeumannInitialise")
+    CALL EXITS("BoundaryConditions_NeumannInitialise")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannInitialise
 
@@ -2096,7 +2104,7 @@ CONTAINS
     INTEGER(INTG) :: dummyErr
     TYPE(VARYING_STRING) :: dummyError
 
-!    CALL ENTERS("BoundaryConditions_NeumannMatricesInitialise",err,error,*999)
+    CALL ENTERS("BoundaryConditions_NeumannMatricesInitialise",err,error,*999)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       rhsVariable=>boundaryConditionsVariable%variable
@@ -2406,7 +2414,7 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*998)
     END IF
 
-!    CALL EXITS("BoundaryConditions_NeumannMatricesInitialise")
+    CALL EXITS("BoundaryConditions_NeumannMatricesInitialise")
     RETURN
 999 IF(ALLOCATED(rowIndices)) THEN
       DEALLOCATE(rowIndices)
@@ -2419,7 +2427,7 @@ CONTAINS
     END IF
     CALL BoundaryConditions_NeumannMatricesFinalise(boundaryConditionsVariable,dummyErr,dummyError,*998)
 998 CALL ERRORS("BoundaryConditions_NeumannMatricesInitialise",err,error)
-!    CALL EXITS("BoundaryConditions_NeumannMatricesInitialise")
+    CALL EXITS("BoundaryConditions_NeumannMatricesInitialise")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannMatricesInitialise
 
@@ -2437,7 +2445,7 @@ CONTAINS
     !Local Variables
     TYPE(BoundaryConditionsNeumannType), POINTER :: boundaryConditionsNeumann
 
-!    CALL ENTERS("BoundaryConditions_NeumannFinalise",err,error,*999)
+    CALL ENTERS("BoundaryConditions_NeumannFinalise",err,error,*999)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
@@ -2452,10 +2460,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_NeumannFinalise")
+    CALL EXITS("BoundaryConditions_NeumannFinalise")
     RETURN
 999 CALL ERRORS("BoundaryConditions_NeumannFinalise",err,error)
-!    CALL EXITS("BoundaryConditions_NeumannFinalise")
+    CALL EXITS("BoundaryConditions_NeumannFinalise")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannFinalise
 
@@ -2473,7 +2481,7 @@ CONTAINS
     !Local Variables
     TYPE(BoundaryConditionsNeumannType), POINTER :: boundaryConditionsNeumann
 
-!    CALL ENTERS("BoundaryConditions_NeumannMatricesFinalise",err,error,*999)
+    CALL ENTERS("BoundaryConditions_NeumannMatricesFinalise",err,error,*999)
 
     IF(ASSOCIATED(boundaryConditionsVariable)) THEN
       boundaryConditionsNeumann=>boundaryConditionsVariable%neumannBoundaryConditions
@@ -2488,10 +2496,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_NeumannMatricesFinalise")
+    CALL EXITS("BoundaryConditions_NeumannMatricesFinalise")
     RETURN
 999 CALL ERRORS("BoundaryConditions_NeumannMatricesFinalise",err,error)
-!    CALL EXITS("BoundaryConditions_NeumannMatricesFinalise")
+    CALL EXITS("BoundaryConditions_NeumannMatricesFinalise")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannMatricesFinalise
 
@@ -2533,7 +2541,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: quadratureScheme
 
-!    CALL ENTERS("BoundaryConditions_NeumannIntegrate",err,error,*999)
+    CALL ENTERS("BoundaryConditions_NeumannIntegrate",err,error,*999)
 
     NULLIFY(scalingParameters)
     NULLIFY(interpolationParameters)
@@ -2832,10 +2840,10 @@ CONTAINS
 
     END IF !Neumann conditions associated
 
-!    CALL EXITS("BoundaryConditions_NeumannIntegrate")
+    CALL EXITS("BoundaryConditions_NeumannIntegrate")
     RETURN
 999 CALL ERRORS("BoundaryConditions_NeumannIntegrate",err,error)
-!    CALL EXITS("BoundaryConditions_NeumannIntegrate")
+    CALL EXITS("BoundaryConditions_NeumannIntegrate")
     RETURN 1
   END SUBROUTINE BoundaryConditions_NeumannIntegrate
 
@@ -2853,7 +2861,7 @@ CONTAINS
     !Local Variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
 
-!    CALL ENTERS("BoundaryConditions_NeumannSparsityTypeSet",ERR,ERROR,*999)
+    CALL ENTERS("BoundaryConditions_NeumannSparsityTypeSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(boundaryConditions)) THEN
       SELECT CASE(sparsityType)
@@ -2869,10 +2877,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions are not associated.",err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_NeumannSparsityTypeSet")
+    CALL EXITS("BoundaryConditions_NeumannSparsityTypeSet")
     RETURN
 999 CALL ERRORS("BoundaryConditions_NeumannSparsityTypeSet",err,error)
-!    CALL EXITS("BoundaryConditions_NeumannSparsityTypeSet")
+    CALL EXITS("BoundaryConditions_NeumannSparsityTypeSet")
     RETURN 1
 
   END SUBROUTINE BoundaryConditions_NeumannSparsityTypeSet
@@ -2903,7 +2911,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SET_NODE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SET_NODE",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
     NULLIFY(FIELD_VARIABLE)
@@ -2939,10 +2947,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITIONS_SET_NODE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_NODE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_SET_NODE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_SET_NODE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_NODE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE
   
@@ -2962,7 +2970,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: numberOfDofs,dofIdx,dofIdx2
 
-!    CALL ENTERS("BoundaryConditions_ConstrainDofsEqual",err,error,*999)
+    CALL Enters("BoundaryConditions_ConstrainDofsEqual",err,error,*999)
 
     numberOfDofs=SIZE(globalDofs,1)
     IF(numberOfDofs<2) THEN
@@ -2987,10 +2995,10 @@ CONTAINS
         & boundaryConditions,fieldVariable,globalDofs(dofIdx),[globalDofs(1)],[1.0_DP],err,error,*999)
     END DO
 
-!    CALL EXITS("BoundaryConditions_ConstrainDofsEqual")
+    CALL Exits("BoundaryConditions_ConstrainDofsEqual")
     RETURN
 999 CALL Errors("BoundaryConditions_ConstrainDofsEqual",err,error)
-!    CALL EXITS("BoundaryConditions_ConstrainDofsEqual")
+    CALL Exits("BoundaryConditions_ConstrainDofsEqual")
     RETURN 1
   END SUBROUTINE BoundaryConditions_ConstrainDofsEqual
 
@@ -3017,7 +3025,7 @@ CONTAINS
     INTEGER(INTG) :: numberOfNodes, nodeIdx, dof
     INTEGER(INTG), ALLOCATABLE :: globalDofs(:)
 
-!    CALL ENTERS("BoundaryConditions_ConstrainNodeDofsEqual",err,error,*998)
+    CALL Enters("BoundaryConditions_ConstrainNodeDofsEqual",err,error,*998)
 
     NULLIFY(fieldVariable)
 
@@ -3041,11 +3049,11 @@ CONTAINS
 
     DEALLOCATE(globalDofs)
 
-!    CALL EXITS("BoundaryConditions_ConstrainNodeDofsEqual")
+    CALL Exits("BoundaryConditions_ConstrainNodeDofsEqual")
     RETURN
 999 IF(ALLOCATED(globalDofs)) DEALLOCATE(globalDofs)
 998 CALL Errors("BoundaryConditions_ConstrainNodeDofsEqual",err,error)
-!    CALL EXITS("BoundaryConditions_ConstrainNodeDofsEqual")
+    CALL Exits("BoundaryConditions_ConstrainNodeDofsEqual")
     RETURN 1
   END SUBROUTINE BoundaryConditions_ConstrainNodeDofsEqual
 
@@ -3074,7 +3082,7 @@ CONTAINS
     NULLIFY(dofConstraint)
     NULLIFY(dofConstraints)
 
-!    CALL ENTERS("BoundaryConditions_DofConstraintSet",err,error,*998)
+    CALL Enters("BoundaryConditions_DofConstraintSet",err,error,*998)
 
     !Check pointers for association
     IF(.NOT.ASSOCIATED(boundaryConditions)) THEN
@@ -3153,7 +3161,7 @@ CONTAINS
     CALL BoundaryConditions_SetConditionType(boundaryConditionsVariable,globalDof,BOUNDARY_CONDITION_LINEAR_CONSTRAINT, &
       & err,error,*999)
 
-!    CALL EXITS("BoundaryConditions_DofConstraintSet")
+    CALL Exits("BoundaryConditions_DofConstraintSet")
     RETURN
 999 IF(ASSOCIATED(dofConstraint)) THEN
       IF(ALLOCATED(dofConstraint%dofs)) DEALLOCATE(dofConstraint%dofs)
@@ -3162,7 +3170,7 @@ CONTAINS
     END IF
     IF(ALLOCATED(newConstraints)) DEALLOCATE(newConstraints)
 998 CALL Errors("BoundaryConditions_DofConstraintSet",err,error)
-!    CALL EXITS("BoundaryConditions_DofConstraintSet")
+    CALL Exits("BoundaryConditions_DofConstraintSet")
     RETURN 1
   END SUBROUTINE BoundaryConditions_DofConstraintSet
 
@@ -3189,7 +3197,7 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: variableDomainMapping
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
 
-!    CALL ENTERS("BoundaryConditions_DofConstraintsCreateFinish",err,error,*998)
+    CALL Enters("BoundaryConditions_DofConstraintsCreateFinish",err,error,*998)
 
     NULLIFY(dofCoupling)
 
@@ -3313,14 +3321,14 @@ CONTAINS
       CALL FlagError("Boundary conditions variable is not associated.",err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_DofConstraintsCreateFinish")
+    CALL Exits("BoundaryConditions_DofConstraintsCreateFinish")
     RETURN
 999 IF(ALLOCATED(newCoupledGlobalDofs)) DEALLOCATE(newCoupledGlobalDofs)
     IF(ALLOCATED(newCoupledLocalDofs)) DEALLOCATE(newCoupledLocalDofs)
     IF(ALLOCATED(newCoefficients)) DEALLOCATE(newCoefficients)
     CALL BoundaryConditions_DofConstraintsFinalise(dofConstraints,err,error,*999)
 998 CALL Errors("BoundaryConditions_DofConstraintsCreateFinish",err,error)
-!    CALL EXITS("BoundaryConditions_DofConstraintsCreateFinish")
+    CALL Exits("BoundaryConditions_DofConstraintsCreateFinish")
     RETURN 1
 
   END SUBROUTINE BoundaryConditions_DofConstraintsCreateFinish
@@ -3339,7 +3347,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: constraintIdx,dofIdx
 
-!    CALL ENTERS("BoundaryConditions_DofConstraintsFinalise",err,error,*999)
+    CALL Enters("BoundaryConditions_DofConstraintsFinalise",err,error,*999)
 
     IF(ASSOCIATED(dofConstraints)) THEN
       IF(ALLOCATED(dofConstraints%constraints)) THEN
@@ -3376,10 +3384,10 @@ CONTAINS
       CALL FlagError("dofConstraints pointer is not associated.",err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_DofConstraintsFinalise")
+    CALL Exits("BoundaryConditions_DofConstraintsFinalise")
     RETURN
 999 CALL Errors("BoundaryConditions_DofConstraintsFinalise",err,error)
-!    CALL EXITS("BoundaryConditions_DofConstraintsFinalise")
+    CALL Exits("BoundaryConditions_DofConstraintsFinalise")
     RETURN 1
 
   END SUBROUTINE BoundaryConditions_DofConstraintsFinalise
@@ -3396,7 +3404,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-!    CALL ENTERS("BoundaryConditions_DofConstraintsInitialise",err,error,*999)
+    CALL Enters("BoundaryConditions_DofConstraintsInitialise",err,error,*999)
 
     IF(ASSOCIATED(dofConstraints)) THEN
       dofConstraints%numberOfConstraints=0
@@ -3405,10 +3413,10 @@ CONTAINS
       CALL FlagError("dofConstraints pointer is not associated.",err,error,*999)
     END IF
 
-!    CALL EXITS("BoundaryConditions_DofConstraintsInitialise")
+    CALL Exits("BoundaryConditions_DofConstraintsInitialise")
     RETURN
 999 CALL Errors("BoundaryConditions_DofConstraintsInitialise",err,error)
-!    CALL EXITS("BoundaryConditions_DofConstraintsInitialise")
+    CALL Exits("BoundaryConditions_DofConstraintsInitialise")
     RETURN 1
 
   END SUBROUTINE BoundaryConditions_DofConstraintsInitialise
@@ -3427,7 +3435,7 @@ CONTAINS
     !Local Variables
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: BOUNDARY_CONDITIONS_DIRICHLET
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
       IF(ALLOCATED(BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES))  &
@@ -3455,10 +3463,10 @@ CONTAINS
       DEALLOCATE(BOUNDARY_CONDITIONS_VARIABLE)
     ENDIF
        
-!    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_FINALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_VARIABLE_FINALISE
 
@@ -3477,7 +3485,7 @@ CONTAINS
     INTEGER(INTG) :: equ_set_idx, equ_matrix_idx
     TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
     
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE",ERR,ERROR,*999)
     
     IF (ALLOCATED(SPARSITY_INDICES_ARRAY)) THEN
       DO equ_set_idx=1,SIZE(SPARSITY_INDICES_ARRAY,1)
@@ -3497,10 +3505,10 @@ CONTAINS
       DEALLOCATE(SPARSITY_INDICES_ARRAY)
     ENDIF
     
-!    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SPARSITY_INDICES_ARRAY_FINALISE
 
@@ -3523,7 +3531,7 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: NEW_BOUNDARY_CONDITIONS_VARIABLES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE",ERR,ERROR,*998)
+    CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(ASSOCIATED(FIELD_VARIABLE)) THEN
@@ -3586,12 +3594,12 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*998)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE")
     RETURN
 999 CALL BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS_VARIABLE,DUMMY_ERR,DUMMY_ERROR,*998)
     DEALLOCATE(NEW_BOUNDARY_CONDITIONS_VARIABLES)
 998 CALL ERRORS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_VARIABLE_INITIALISE
 
@@ -3613,7 +3621,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
     LOGICAL :: VARIABLE_FOUND
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_GET",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_GET",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS_VARIABLE)
 
@@ -3650,10 +3658,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_GET")
+    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_GET")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_VARIABLE_GET",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_GET")
+    CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_GET")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_VARIABLE_GET
 
@@ -3679,7 +3687,7 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
       IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
@@ -3748,13 +3756,13 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",ERR,ERROR,*998)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
     RETURN
 
 999 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR)
 !!TODO \todo write BOUNDARY_CONDITIONS_DIRICHLET_FINALISE
 998 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE
 
@@ -3772,7 +3780,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SPARSITY_INDICES)) THEN
      CALL FLAG_ERROR("Sparsity Indices are already associated.",ERR,ERROR,*998)
@@ -3783,12 +3791,12 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sparsity column indices array",ERR,ERROR,*999)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR)
 !!TODO \todo write BOUNDARY_CONDITIONS_SPARSITY_INDICES_FINALISE
 998 CALL ERRORS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE
 
@@ -3806,7 +3814,7 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
 
-!    CALL ENTERS("BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
       IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) THEN
@@ -3825,13 +3833,13 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions variable is not associated.",ERR,ERROR,*998)
     ENDIF
 
-!    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
     RETURN
 
 999 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR)
 !!TODO \todo write BOUNDARY_CONDITIONS_DIRICHLET_FINALISE
 998 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR)
-!    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_INITIALISE
 
