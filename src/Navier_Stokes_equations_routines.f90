@@ -5820,7 +5820,7 @@ CONTAINS
                       ! Construct the filename based on the computational node and time step
                       currentLoopIteration=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
                       WRITE(tempString,"(I4.4)") currentLoopIteration
-                      inputFile = './interpolatedData/fitData' // tempString(1:4) // '.dat'
+                      inputFile = './../interpolatedData/fitData' // tempString(1:4) // '.dat'
 
                       INQUIRE(FILE=inputFile, EXIST=importDataFromFile)
                       IF(importDataFromFile) THEN
@@ -7856,47 +7856,45 @@ CONTAINS
                       FILE=OUTPUT_FILE
                       METHOD="FORTRAN"
                       EXPORT_FIELD=.TRUE.
-                      IF(EXPORT_FIELD .AND. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)) THEN
-                        IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                          !Use standard field IO routines (also only export nodes after first step as not a moving mesh case)
-                          FileNameLength = LEN_TRIM(OUTPUT_FILE)
-                          VFileName = OUTPUT_FILE(1:FileNameLength)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                          Fields=>EQUATIONS_SET%REGION%FIELDS
-                          CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
+                      IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                        !Use standard field IO routines (also only export nodes after first step as not a moving mesh case)
+                        FileNameLength = LEN_TRIM(OUTPUT_FILE)
+                        VFileName = OUTPUT_FILE(1:FileNameLength)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                        Fields=>EQUATIONS_SET%REGION%FIELDS
+                        CALL FIELD_IO_NODES_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
 !                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
 !                              & ERR,ERROR,*999)
-                          IF(CURRENT_LOOP_ITERATION==0) THEN
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
-                            CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
-                          ENDIF
-                          NULLIFY(Fields)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                        ENDIF                          
-                      ELSE IF(EXPORT_FIELD) THEN          
-                        IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
-                          CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                            & ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                          CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                            & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                          IF(NUMBER_OF_DIMENSIONS==3) THEN
-!\todo: Allow user to choose whether or not ENCAS ouput is activated (default = NO)
-                            EXPORT_FIELD=.FALSE.
-                            IF(EXPORT_FIELD) THEN
-                              CALL FLUID_MECHANICS_IO_WRITE_ENCAS(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                                & ERR,ERROR,*999)
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                            ENDIF
-                          ENDIF
+                        IF(CURRENT_LOOP_ITERATION==0) THEN
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export elements... ",ERR,ERROR,*999)
+                          CALL FIELD_IO_ELEMENTS_EXPORT(Fields,VFileName,METHOD,ERR,ERROR,*999)
                         ENDIF
-                      ENDIF 
+                        NULLIFY(Fields)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                      ENDIF                          
+!                       ELSE IF(EXPORT_FIELD) THEN          
+!                         IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+!                           CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                             & ERR,ERROR,*999)
+!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                           CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+!                             & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+!                           IF(NUMBER_OF_DIMENSIONS==3) THEN
+! !\todo: Allow user to choose whether or not ENCAS ouput is activated (default = NO)
+!                             EXPORT_FIELD=.FALSE.
+!                             IF(EXPORT_FIELD) THEN
+!                               CALL FLUID_MECHANICS_IO_WRITE_ENCAS(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                                 & ERR,ERROR,*999)
+!                               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                             ENDIF
+!                           ENDIF
+!                         ENDIF
+!                       ENDIF 
                       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                         IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
                           & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5.OR. &
