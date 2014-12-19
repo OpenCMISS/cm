@@ -638,7 +638,7 @@ CONTAINS
     !AZU - deformed contravariant tensor; I3 = det(C)
     !E = Green-Lagrange strain tensor = 0.5*(C-I)
     !PIOLA_TENSOR is the second Piola-Kirchoff tensor (PK2 or S)
-    !P is the actual hydrostatic pressure, not double it
+    !P is the hydrostatic pressure
 
     PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
     P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,NO_PART_DERIV)
@@ -648,11 +648,11 @@ CONTAINS
     SELECT CASE(EQUATIONS_SET_SUBTYPE)
     CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE)
       !Form of constitutive model is:
-      ! W=c1*(I1-3)+c2*(I2-3)-1/2*p*(I3-1)
+      ! W=c1*(I1-3)+c2*(I2-3)+p*(I3-1)
       !Also assumed I3 = det(AZL) = 1.0
-      P=Jznu*P !Better convergence?
+      !P=Jznu*P !Better convergence?
     
-      TEMPTERM1=4.0_DP*C(2)
+      TEMPTERM1=2.0_DP*C(2)
       
       ! Do there exist more efficient ways? e.g. with outer product of matrices, maybe with intrinsic spread?   
       DO l=1,3
@@ -660,8 +660,8 @@ CONTAINS
           DO j=1,3
             DO i=1,3
               ELASTICITY_TENSOR(i,j,k,l)=TEMPTERM1* &
-                & (IDENTITY(i,j)*IDENTITY(k,l)-0.5*(IDENTITY(i,k)*IDENTITY(j,l)+IDENTITY(i,l)*IDENTITY(j,k))) &
-                & -P*(AZU(i,j)*AZU(k,l)-AZU(i,k)*AZU(j,l)-AZU(i,l)*AZU(j,k))
+                & (2.0_DP*IDENTITY(i,j)*IDENTITY(k,l)-IDENTITY(i,k)*IDENTITY(j,l)-IDENTITY(i,l)*IDENTITY(j,k)) &
+                & +P*(AZU(i,j)*AZU(k,l)-AZU(i,k)*AZU(j,l)-AZU(i,l)*AZU(j,k))
             ENDDO !i
           ENDDO !j
         ENDDO !k
@@ -705,14 +705,14 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2
     INTEGER(INTG) :: numberOfXDimensions, numberOfXiDimensions, numberOfZDimensions
-    INTEGER(INTG) :: i,j,k,l
+    INTEGER(INTG) :: i1,j1,k1,l1,i2,j2,k2,l2,i,j,k,l
     REAL(DP) :: DZDNU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),TEMP(3,3),DNUDXI(3,3),DXIDNU(3,3),DXIDNUT(3,3)
     REAL(DP) :: AZL(3,3), AZU(3,3)
     REAL(DP) :: ELASTICITY_TENSOR(3,3,3,3),TEMP_ELASTICITY_TENSOR(3,3,3,3)
     REAL(DP) :: DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: I3,Jznu
     REAL(DP) :: JGW,SUM1,SUM2
-    REAL(DP) :: TEMPTERM1
+    REAL(DP) :: TEMPTERM1,TEMPTERM2
     LOGICAL :: EVALUATE_JACOBIAN
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT,FIBRE_INTERP_POINT, &
@@ -727,7 +727,7 @@ CONTAINS
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,FIBRE_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: DEPENDENT_QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
 
     CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -749,7 +749,7 @@ CONTAINS
           DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           
-          QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+          DEPENDENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
           NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
@@ -784,7 +784,7 @@ CONTAINS
           DEPENDENT_INTERP_POINT_METRICS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS(FIELD_VAR_TYPE)%PTR
         
           !Loop over all Gauss points 
-          DO ng=1,QUADRATURE_SCHEME1%NUMBER_OF_GAUSS
+          DO ng=1,DEPENDENT_QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
               & DEPENDENT_INTERP_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
@@ -838,14 +838,15 @@ CONTAINS
                   DO i2=1,3
                     SUM1=0.0_DP
                     DO l1=1,3
-                      TEMPTERM1=DZDNU(l2,l1)
+                      !TEMPTERM1=DZDNU(l2,l1)
                       DO k1=1,3
-                        TEMPTERM1=TEMPTERM1*DXIDNU(k2,k1)
+                        !TEMPTERM1=TEMPTERM1*DXIDNU(k2,k1)
                         DO j1=1,3
-                          TEMPTERM1=TEMPTERM1*DZDNU(j2,j1)
+                          !TEMPTERM1=TEMPTERM1*DZDNU(j2,j1)
                           DO i1=1,3
-                            TEMPTERM1=TEMPTERM1*DXIDNU(i2,i1)
-                            SUM1=SUM1+TEMPTERM1*ELASTICITY_TENSOR(i1,j1,k1,l1)
+                            !TEMPTERM1=TEMPTERM1*DXIDNU(i2,i1)
+                            SUM1=SUM1+DXIDNU(i2,i1)* &
+                              & DZDNU(j2,j1)*DXIDNU(k2,k1)*DZDNU(l2,l1)*ELASTICITY_TENSOR(i1,j1,k1,l1)
                           ENDDO !i1
                         ENDDO !j1
                       ENDDO !k1
@@ -856,19 +857,23 @@ CONTAINS
               ENDDO !k2
             ENDDO !l2
 
+
             ! Transform 2nd Piola-Kirchhoff tensor to xi-coordinates          
             CALL MATRIX_PRODUCT(DXIDNU,PIOLA_TENSOR,TEMP,ERR,ERROR,*999)
+            CALL MATRIX_TRANSPOSE(DXIDNU,DXIDNUT,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(TEMP,DXIDNUT,PIOLA_TENSOR,ERR,ERROR,*999)
 
             ! Add for j=l the 2nd Piola-Kirchhoff tensor to the elasticity tensor
             DO k=1,3
               DO j=1,3
                 DO i=1,3
-                  ELASTICITY_TENSOR(i,j,k,l)=ELASTICITY_TENSOR(i,j,k,j)+PIOLA_TENSOR(i,k)
+                  ELASTICITY_TENSOR(i,j,k,j)=ELASTICITY_TENSOR(i,j,k,j)+PIOLA_TENSOR(i,k)
                 ENDDO !i
               ENDDO !j
             ENDDO !k
 
+            JGW=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+            
             nhs=0
             !Loop over element columns belonging to geometric dependent variables
             DO nh=1,numberOfZDimensions
@@ -876,7 +881,6 @@ CONTAINS
               DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
               QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              JGW=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
               DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                 nhs=nhs+1
                 DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
@@ -899,11 +903,11 @@ CONTAINS
                     ! Is it faster to first copy for each mh,nh the elasticity tensor to a matrix?
                     SUM1=0.0_DP
                     DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                      SUM2=0.0_DP
+                      !SUM2=0.0_DP
                       DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                        SUM2=SUM2+DPHIMS_DXI(mi)*ELASTICITY_TENSOR(mi,mh,ni,nh)
+                        SUM1=SUM1+DPHIMS_DXI(mi)*ELASTICITY_TENSOR(mi,mh,ni,nh)*DPHINS_DXI(ni)
                       ENDDO !mi
-                      SUM1=SUM1+SUM2*DPHINS_DXI(ni)
+                      !SUM1=SUM1+SUM2*DPHINS_DXI(ni)
                     ENDDO !ni
                     JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
                       & SUM1*JGW
@@ -911,18 +915,46 @@ CONTAINS
                 ENDDO !mh
               ENDDO !ns
             ENDDO !nh
-          
-            ! Loop over element columns belonging to hydrostatic pressure  
+         
             MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
             DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
               & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
             QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-            JGW=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
-            TEMPTERM1=JGW*Jznu
-            DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+            IF(FIELD_VARIABLE%COMPONENTS(nh)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
+              ! Loop over element columns belonging to hydrostatic pressure  
+              !TEMPTERM1=JGW*Jznu
+              DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+                nhs=nhs+1
+                PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                !TEMPTERM2=TEMPTERM1*PHINS
+                mhs=0
+                !Loop over element rows belonging to geometric dependent variables
+                DO mh=1,numberOfZDimensions
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                    &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                      DPHIMS_DXI(mi)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                    ENDDO !mi
+                    SUM1=0.0_DP
+                    DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                      SUM1=SUM1+DPHIMS_DXI(mi)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(mi,mh)
+                    ENDDO !mi
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
+                      & JGW*Jznu*PHINS*SUM1
+                    ! Is it the fastest way to put this in here, or should it go in separate loop?
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(nhs,mhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)
+                  ENDDO !ms    
+                ENDDO !mh
+              ENDDO !ns
+            ELSEIF(FIELD_VARIABLE%COMPONENTS(nh)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
+              ! Loop over element columns belonging to hydrostatic pressure  
+              !TEMPTERM1=JGW*Jznu
               nhs=nhs+1
-              PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-              TEMPTERM1=TEMPTERM1*PHINS
               mhs=0
               !Loop over element rows belonging to geometric dependent variables
               DO mh=1,numberOfZDimensions
@@ -940,14 +972,13 @@ CONTAINS
                   DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                     SUM1=SUM1+DPHIMS_DXI(mi)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(mi,mh)
                   ENDDO !mi
-                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)- &
-                    & SUM1*TEMPTERM1
+                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
+                    & JGW*Jznu*SUM1
                   ! Is it the fastest way to put this in here, or should it go in separate loop?
                   JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(nhs,mhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)
                 ENDDO !ms    
               ENDDO !mh
-            ENDDO !ns
-
+            ENDIF
             ! No loop over element columns and rows belonging both to hydrostatic pressure because it is zero.
           ENDDO !ng
 
@@ -955,7 +986,7 @@ CONTAINS
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
             nhs=0          
             ! Loop over element columns
-            DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+            DO nh=1,numberOfZDimensions
               MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
               DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -963,7 +994,7 @@ CONTAINS
                 nhs=nhs+1
                 mhs=0
                 ! Loop over element rows
-                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                DO mh=1,numberOfZDimensions
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -976,9 +1007,46 @@ CONTAINS
                 ENDDO !mh
               ENDDO !ns
             ENDDO !nh
+            
+            IF(FIELD_VARIABLE%COMPONENTS(nh)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
+              MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+              DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+                nhs=nhs+1
+                mhs=0
+                ! Loop over element rows
+                DO mh=1,numberOfZDimensions
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)* &
+                      & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
+                      & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                    JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(nhs,mhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)
+                  ENDDO !ms
+                ENDDO !mh
+              ENDDO !ns
+            ELSEIF(FIELD_VARIABLE%COMPONENTS(nh)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
+              nhs=nhs+1
+              mhs=0
+              ! Loop over element rows
+              DO mh=1,numberOfZDimensions
+                MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                  mhs=mhs+1
+                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)* &
+                    & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
+                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(nhs,mhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)
+                ENDDO !ms
+              ENDDO !mh
+            ENDIF
           ENDIF
         ENDIF
-
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -1250,6 +1318,8 @@ CONTAINS
             CALL MATRIX_PRODUCT(DXIDNU,PIOLA_TENSOR,TEMP,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(TEMP,DZDNUT,PIOLA_TENSOR,ERR,ERROR,*999)
 
+            JGW=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
+
             !Now add up the residual terms
             mhs=0
             DO mh=1,NUMBER_OF_DIMENSIONS
@@ -1257,7 +1327,6 @@ CONTAINS
               DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR% &
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
               COMPONENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              JGW=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN*COMPONENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
               DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 mhs=mhs+1
                 DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
@@ -1273,33 +1342,27 @@ CONTAINS
             ENDDO !mh
 
             !Hydrostatic pressure component
-            DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(mh)%INTERPOLATION_TYPE
-            IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
-              MESH_COMPONENT_NUMBER=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-              DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR% &
-                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-              COMPONENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              JGW=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN*COMPONENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
-              TEMPTERM1=JGW*(Jznu-1.0_DP)
+            MESH_COMPONENT_NUMBER=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+            DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR% &
+              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+            COMPONENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+            TEMPTERM1=JGW*(Jznu-1.0_DP)
+            IF(FIELD_VARIABLE%COMPONENTS(mh)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
               DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 mhs=mhs+1 
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+ &
                   & TEMPTERM1*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,gauss_idx)
               ENDDO
-            ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
+            ELSEIF(FIELD_VARIABLE%COMPONENTS(mh)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
               mhs=mhs+1
-              MESH_COMPONENT_NUMBER=DECOMPOSITION%MESH_COMPONENT_NUMBER
-              DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS       
-              COMPONENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              JGW=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN*COMPONENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
-              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+JGW*(Jznu-1.0_DP)
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+TEMPTERM1
             ENDIF
           ENDDO !gauss_idx
 
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
             mhs=0          
-            DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+            DO mh=1,NUMBER_OF_DIMENSIONS
               MESH_COMPONENT_NUMBER=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
               DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR% &
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -1310,6 +1373,16 @@ CONTAINS
                 & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ms,mh)
               ENDDO !ms
             ENDDO !mh
+            IF(FIELD_VARIABLE%COMPONENTS(mh)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
+              MESH_COMPONENT_NUMBER=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+              DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR% &
+                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                mhs=mhs+1 
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)* &
+                & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ms,mh)
+              ENDDO
+            ENDIF
           ENDIF
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
@@ -3632,13 +3705,13 @@ CONTAINS
     SELECT CASE(EQUATIONS_SET_SUBTYPE)
     CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE)
       !Form of constitutive model is:
-      ! W=c1*(I1-3)+c2*(I2-3)-1/2*p*(I3-1)
+      ! W=c1*(I1-3)+c2*(I2-3)+1/2*p*(I3-1)
       !Also assumed I3 = det(AZL) = 1.0
-      P=Jznu*P
+      !P=Jznu*P
       I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
       TEMPTERM1=-2.0_DP*C(2)
       TEMPTERM2=2.0_DP*(C(1)+I1*C(2))
-      PIOLA_TENSOR=TEMPTERM1*AZL-P*AZU
+      PIOLA_TENSOR=TEMPTERM1*AZL+P*AZU
       DO i=1,3
         PIOLA_TENSOR(i,i)=PIOLA_TENSOR(i,i)+TEMPTERM2
       ENDDO !i
@@ -6016,6 +6089,14 @@ CONTAINS
                   LOCAL_ERROR="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE)
+                ! Use the analytic Jacobian calculation
+                CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                  & ERR,ERROR,*999)
+              CASE DEFAULT
+                  ! Do nothing
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
