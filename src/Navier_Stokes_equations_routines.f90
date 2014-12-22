@@ -10543,7 +10543,7 @@ CONTAINS
     INTEGER(INTG) :: fieldVariableType,meshComponent1
     INTEGER(INTG) :: numberOfDimensions
     INTEGER(INTG) :: numberOfLines,elementLineIdx,lineNumber
-    REAL(DP) :: muParameter,rhoParameter,alphaParameter,lengthScale,reynoldsNumber,pecletNumber
+    REAL(DP) :: muParameter,rhoParameter,alphaParameter,lengthScale,cellReynoldsNumber
     REAL(DP) :: magnitudeVelocitySUPG,maxVelocitySUPG,lineLength
     REAL(DP) :: X1(3),X2(3),velocityGauss(3),velocityGaussSUPG(3)
     TYPE(VARYING_STRING) :: localError
@@ -10678,17 +10678,16 @@ CONTAINS
                  & elementNumber,2,maxVelocitySUPG,err,error,*999)
 
               !Calculate cell Reynolds (Re) and Peclet (Pe) numbers
-              reynoldsNumber=maxVelocitySUPG*lengthScale*rhoParameter/muParameter
-              pecletNumber=reynoldsNumber*maxVelocitySUPG*lengthScale
+              cellReynoldsNumber=maxVelocitySUPG*lengthScale*rhoParameter/muParameter
               !Store element (cell) Reynolds number
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & elementNumber,3,reynoldsNumber,err,error,*999)
-              IF(pecletNumber.GT.ZERO_TOLERANCE) THEN
-                IF(pecletNumber.GT.100) THEN
+                & elementNumber,3,cellReynoldsNumber,err,error,*999)
+              IF(cellReynoldsNumber.GT.ZERO_TOLERANCE) THEN
+                IF(cellReynoldsNumber.GT.100) THEN
                   !Approximation to avoid overflow FPEs
-                  alphaParameter = 1.0_DP - 1.0_DP/pecletNumber
+                  alphaParameter = 1.0_DP - 1.0_DP/cellReynoldsNumber
                 ELSE
-                  alphaParameter = COTH(pecletNumber/2.0_DP) - (2.0_DP/pecletNumber)
+                  alphaParameter = COTH(cellReynoldsNumber/2.0_DP) - (2.0_DP/cellReynoldsNumber)
                 ENDIF
                 tauSUPG=(alphaParameter*lengthScale)/(2.0_DP*maxVelocitySUPG)
               ELSE
