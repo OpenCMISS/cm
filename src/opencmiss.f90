@@ -2125,7 +2125,7 @@ MODULE OPENCMISS
   PUBLIC CMISSEquations_NumberOfDynamicMatricesGet
 
   PUBLIC CMISSEquations_LinearMatrixGet
-
+  
   PUBLIC CMISSEquations_JacobianMatrixGet
 
   PUBLIC CMISSEquations_DynamicMatrixGet
