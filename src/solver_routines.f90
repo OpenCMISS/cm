@@ -8713,12 +8713,17 @@ CONTAINS
                       !Set the PC factorisation package to SuperLU_DIST
                       CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
+
                     CASE(SOLVER_LAPACK_LIBRARY)
                       !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
+#if ( PETSC_VERSION_MINOR < 4 )
                       IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
                         CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
                           & ERR,ERROR,*999)
                       ENDIF
+#else
+                      CALL FLAG_ERROR("LAPACK not available in this version of PETSc.",ERR,ERROR,*999)
+#endif
                     CASE(SOLVER_PASTIX_LIBRARY)
 #if ( PETSC_VERSION_MINOR >= 1 )
                       !Set the PC factorisation package to PaStiX
@@ -15192,7 +15197,11 @@ CONTAINS
                       & LINESEARCH_SOLVER%LINESEARCH_MAXSTEP,LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE, &
                       & ERR,ERROR,*999)
 #else
+#if ( PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR == 3 )
                     CALL Petsc_SnesGetSnesLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
+#else
+                    CALL Petsc_SnesGetLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
+#endif
                     !Set the line search type and order where applicable
                     SELECT CASE(linesearch_solver%linesearch_type)
                     CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
@@ -16700,6 +16709,11 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NEWTON_TYPE_SET
+        
+  !
+  !================================================================================================================================
+  !
+
         
   !
   !================================================================================================================================

@@ -4060,6 +4060,8 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
   USE SOLVER_ROUTINES
   USE STRINGS
   USE TYPES
+  
+#include "include/petscversion.h"
 
   IMPLICIT NONE
 
@@ -4100,12 +4102,20 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
                   CASE(SOLVER_SPARSE_MATRICES)
                     JACOBIAN_FDCOLORING=>LINESEARCH_SOLVER%JACOBIAN_FDCOLORING
                     IF(ASSOCIATED(JACOBIAN_FDCOLORING)) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
+                      CALL PETSC_SNESCOMPUTEJACOBIANDEFAULTCOLOR(SNES,X,A,B,FLAG,JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+#else
                       CALL PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR(SNES,X,A,B,FLAG,JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+#endif
                     ELSE
                       CALL FLAG_ERROR("Linesearch solver FD colouring is not associated.",ERR,ERROR,*998)
                     ENDIF
                   CASE(SOLVER_FULL_MATRICES)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
+                    CALL PETSC_SNESCOMPUTEJACOBIANDEFAULT(SNES,X,A,B,FLAG,CTX,ERR,ERROR,*999)
+#else
                     CALL PETSC_SNESDEFAULTCOMPUTEJACOBIAN(SNES,X,A,B,FLAG,CTX,ERR,ERROR,*999)
+#endif
                   CASE DEFAULT
                     LOCAL_ERROR="The specified solver equations sparsity type of "// &
                       & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -4269,6 +4279,8 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   USE TYPES
   USE CMISS_PETSC
 
+#include "include/petscversion.h"
+
   IMPLICIT NONE
   
   !Argument variables
@@ -4298,7 +4310,11 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
         CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
           IF(iterationNumber>0) THEN
             CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR == 3 )
             CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
+#elif ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
+            CALL Petsc_SnesGetLineSearch(snes,lineSearch,err,error,*999)
+#endif
             CALL PETSC_VECINITIALISE(x,err,error,*999)
             CALL PETSC_VECINITIALISE(f,err,error,*999)
             CALL PETSC_VECINITIALISE(y,err,error,*999)
