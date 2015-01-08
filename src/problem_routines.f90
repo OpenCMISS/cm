@@ -3948,11 +3948,216 @@ CONTAINS
 
   
 END MODULE PROBLEM_ROUTINES
+#include "include/petscversion.h"
 
 !
 !================================================================================================================================
 !
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+!>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver
+SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC(SNES,X,A,B,CTX,ERR)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC_TYPES
+  USE DISTRIBUTED_MATRIX_VECTOR
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE SOLVER_MATRICES_ROUTINES
+  USE STRINGS
+  USE TYPES
+
+  IMPLICIT NONE
+  
+  !Argument variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES
+  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The PETSc A Mat
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
+  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  !Local Variables
+  INTEGER(INTG) :: DUMMY_ERR
+  TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
+  TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+  TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+  TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+  TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+  TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+  TYPE(VARYING_STRING) :: DUMMY_ERROR,ERROR,LOCAL_ERROR
+
+  IF(ASSOCIATED(CTX)) THEN
+    NONLINEAR_SOLVER=>CTX%NONLINEAR_SOLVER
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+      IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+        SOLVER_EQUATIONS=>CTX%SOLVER_EQUATIONS
+        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+          SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+          IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+            IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+              SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
+              IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
+                IF(ASSOCIATED(SOLVER_VECTOR)) THEN
+                  CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_ON(SOLVER_VECTOR,X,ERR,ERROR,*999)
+                  
+                  CALL PROBLEM_SOLVER_JACOBIAN_EVALUATE(CTX,ERR,ERROR,*999)
+                  
+                  CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(SOLVER_VECTOR,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*998)              
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The number of solver matrices of "// &
+                & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                & " is invalid. There should be 1 solver matrix."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*998)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*998)
+        ENDIF
+!!TODO: move this to PROBLEM_SOLVER_JACOBIAN_EVALUATE or elsewhere?
+        NEWTON_SOLVER%TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS=NEWTON_SOLVER%TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS+1
+      ELSE
+        CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*997)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+  ELSE
+    CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*998)
+  ENDIF
+  
+  RETURN
+999 CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(SOLVER_VECTOR,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL WRITE_ERROR(ERR,ERROR,*997)
+997 CALL FLAG_WARNING("Error evaluating nonlinear Jacobian.",ERR,ERROR,*996)
+996 RETURN 
+END SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC
+
+!
+!================================================================================================================================
+!
+
+!>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver using PETSc's FD Jacobian calculation
+SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,CTX,ERR)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC
+  USE CMISS_PETSC_TYPES
+  USE DISTRIBUTED_MATRIX_VECTOR
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE SOLVER_MATRICES_ROUTINES
+  USE SOLVER_ROUTINES
+  USE STRINGS
+  USE TYPES
+  
+
+  IMPLICIT NONE
+
+  !Argument variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES
+  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The PETSc A Mat
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
+  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  !Local Variables
+  INTEGER(INTG) :: DUMMY_ERR
+  TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+  TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+  TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
+  TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+  TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+  TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+  TYPE(PETSC_MATFDCOLORING_TYPE), POINTER :: JACOBIAN_FDCOLORING
+  TYPE(VARYING_STRING) :: DUMMY_ERROR,ERROR,LOCAL_ERROR
+
+  IF(ASSOCIATED(CTX)) THEN
+    NONLINEAR_SOLVER=>CTX%NONLINEAR_SOLVER
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+      IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+        LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+        IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+          SOLVER_EQUATIONS=>CTX%SOLVER_EQUATIONS
+          IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+            SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+            IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
+                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                  CASE(SOLVER_SPARSE_MATRICES)
+                    JACOBIAN_FDCOLORING=>LINESEARCH_SOLVER%JACOBIAN_FDCOLORING
+                    IF(ASSOCIATED(JACOBIAN_FDCOLORING)) THEN
+                      CALL PETSC_SNESCOMPUTEJACOBIANDEFAULTCOLOR(SNES,X,A,B,JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Linesearch solver FD colouring is not associated.",ERR,ERROR,*998)
+                    ENDIF
+                  CASE(SOLVER_FULL_MATRICES)
+                    CALL PETSC_SNESCOMPUTEJACOBIANDEFAULT(SNES,X,A,B,CTX,ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  IF(CTX%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
+                    CALL DISTRIBUTED_MATRIX_OVERRIDE_SET_ON(SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX,A,ERR,ERROR,*999)
+                    CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES_JACOBIAN_ONLY,SOLVER_MATRICES,ERR,ERROR,*998)
+                    CALL DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF(SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX,ERR,ERROR,*999)
+                  ENDIF
+
+                ELSE
+                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The number of solver matrices of "// &
+                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & " is invalid. There should be 1 solver matrix."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*998)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*998)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+  ELSE
+    CALL FLAG_ERROR("Newton linesearch solver context is not associated.",ERR,ERROR,*998)
+  ENDIF
+
+  RETURN
+999 CALL DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF(SOLVER_MATRIX%MATRIX,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL WRITE_ERROR(ERR,ERROR,*997)
+997 CALL FLAG_WARNING("Error evaluating nonlinear Jacobian.",ERR,ERROR,*996)
+996 RETURN
+END SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
+
+!
+!================================================================================================================================
+!
+
+#else
 !>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver
 SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
 
@@ -4061,7 +4266,6 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
   USE STRINGS
   USE TYPES
   
-#include "include/petscversion.h"
 
   IMPLICIT NONE
 
@@ -4161,6 +4365,7 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
 997 CALL FLAG_WARNING("Error evaluating nonlinear Jacobian.",ERR,ERROR,*996)
 996 RETURN
 END SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
+#endif
 
 !
 !================================================================================================================================
@@ -4278,8 +4483,6 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   USE STRINGS
   USE TYPES
   USE CMISS_PETSC
-
-#include "include/petscversion.h"
 
   IMPLICIT NONE
   
