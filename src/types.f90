@@ -2654,12 +2654,64 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
     TYPE(SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the linked CellML solver
   END TYPE NEWTON_SOLVER_TYPE
+
+  !>Contains information for a Quasi-Newton line search nonlinear solver
+  TYPE QUASI_NEWTON_LINESEARCH_SOLVER_TYPE
+    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Quasi-Newton linesearch solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Quasi-Newton linesearch solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG) :: LINESEARCH_TYPE !<The line search type \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
+    REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
+    REAL(DP) :: LINESEARCH_STEPTOLERANCE !<The line search step tolerance
+    TYPE(PETSC_ISCOLORING_TYPE) :: JACOBIAN_ISCOLORING !<The Jacobian matrix index set colouring
+    TYPE(PETSC_MATCOLORING_TYPE) :: JACOBIAN_COLORING !<The Jacobian matrix colouring
+    TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
+    TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+    TYPE(PetscSnesLineSearchType) :: snesLineSearch !<The PETSc SNES line search object
+    LOGICAL :: linesearchMonitorOutput !<Flag to determine whether to enable/disable linesearch monitor output.
+  END TYPE QUASI_NEWTON_LINESEARCH_SOLVER_TYPE
   
+  !>Contains information for a Quasi-Newton trust region nonlinear solver
+  TYPE QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE
+    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver 
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Quasi-Newton trustregion solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    REAL(DP) :: TRUSTREGION_TOLERANCE !<The trust region tolerance
+    REAL(DP) :: TRUSTREGION_DELTA0 !<The trust region delta0
+    TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+  END TYPE QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE
+  
+  !>Contains information for a Quasi-Newton nonlinear solver
+  TYPE QUASI_NEWTON_SOLVER_TYPE
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
+    INTEGER(INTG) :: QUASI_NEWTON_SOLVE_TYPE !<The type of Quasi-Newton solver
+    INTEGER(INTG) :: QUASI_NEWTON_TYPE !<The type of Quasi-Newton variant
+    INTEGER(INTG) :: RESTART_TYPE !<The restart type of the Quasi-Newton solver
+    INTEGER(INTG) :: RESTART !<Number of saved states Quasi-Newton solver.
+    INTEGER(INTG) :: SCALE_TYPE !<The scaling type of the Quasi-Newton solver
+    INTEGER(INTG) :: SOLUTION_INITIALISE_TYPE !<The type of solution vector initialisation \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS !<The number of function evaluations performed by the nonlinear solver
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS !<The number of Jacobian evaluations performed by the nonlinear solver
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS !<The maximum number of function evaluations
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of calculation used for the Jacobian \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: convergenceTestType !<The type of convergence test \see SOLVER_ROUTINES_NewtonConvergenceTestTypes,SOLVER_ROUTINES
+    REAL(DP) :: ABSOLUTE_TOLERANCE !<The tolerance between the absolute decrease between the solution norm and the initial guess
+    REAL(DP) :: RELATIVE_TOLERANCE !<The tolerance between the relative decrease between the solution norm and the initial guess
+    REAL(DP) :: SOLUTION_TOLERANCE !<The tolerance of the change in the norm of the solution
+    TYPE(NewtonSolverConvergenceTest), POINTER :: convergenceTest !<A pointer to the (Quasi-)Newton solver convergence test 
+    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Quasi-Newton line search solver information
+    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Quasi-Newton trust region solver information
+    TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
+    TYPE(SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the linked CellML solver
+  END TYPE QUASI_NEWTON_SOLVER_TYPE
+
   !>Contains information for a nonlinear solver
   TYPE NONLINEAR_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: NONLINEAR_SOLVE_TYPE !<The type of nonlinear solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
+    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
   !>Contains information for an eigenproblem solver
