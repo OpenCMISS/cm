@@ -2855,12 +2855,9 @@ CONTAINS
     INTEGER(INTG) :: FIELD_VAR_U_TYPE,FIELD_VAR_DUDN_TYPE,MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: element_face_idx,face_number,normal_component_idx,gauss_idx
     INTEGER(INTG) :: FACE_NUMBER_OF_GAUSS_POINTS
-    INTEGER(INTG) :: component_idx,element_base_dof_idx,face_node_idx
-    INTEGER(INTG) :: node_derivative_idx,element_dof_idx,element_node_idx,parameter_idx
-    INTEGER(INTG) :: face_parameter_idx,face_node_derivative_idx
+    INTEGER(INTG) :: component_idx,element_base_dof_idx,element_dof_idx,parameter_idx,face_parameter_idx
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_LOCAL_FACES
-    REAL(DP) :: PRESSURE_GAUSS
-    REAL(DP) :: JGW_PRESSURE,JGW_PRESSURE_NORMAL_PROJECTION
+    REAL(DP) :: PRESSURE_GAUSS,JGW_PRESSURE,JGW_PRESSURE_NORMAL_PROJECTION
     LOGICAL :: NONZERO_PRESSURE
 
     CALL ENTERS("FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE",ERR,ERROR,*999)
@@ -2964,20 +2961,14 @@ CONTAINS
                 & DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI(component_idx,:))*JGW_PRESSURE
               IF(ABS(JGW_PRESSURE_NORMAL_PROJECTION)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
               !Looping here is a bit different to reduce redundancy
-              DO face_node_idx=1,FACE_BASIS%NUMBER_OF_NODES !nnf
-                element_node_idx=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx,element_face_idx) !nn
-                DO face_node_derivative_idx=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx) !nkf
-                  node_derivative_idx=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE( &
-                    & face_node_derivative_idx,face_node_idx,element_face_idx)
-                  parameter_idx=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx,element_node_idx)
-                  face_parameter_idx=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx,face_node_idx)
-                  element_dof_idx=element_base_dof_idx+parameter_idx
-                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
-                    & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ & ! sign: double -'s. p(appl) always opposite to normal'
-                    & JGW_PRESSURE_NORMAL_PROJECTION* &
-                    & FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx,NO_PART_DERIV,gauss_idx)
-                ENDDO !node_derivative_idx
-              ENDDO !face_node_idx
+              DO face_parameter_idx=1,FACE_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                parameter_idx=DEPENDENT_BASIS%ELEMENT_PARAMETERS_IN_LOCAL_FACE(face_parameter_idx,element_face_idx)
+                element_dof_idx=element_base_dof_idx+parameter_idx
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
+                  & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ & ! sign: double -'s. p(appl) always opposite to normal'
+                  & JGW_PRESSURE_NORMAL_PROJECTION* &
+                  & FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx,NO_PART_DERIV,gauss_idx)
+              ENDDO !face_parameter_idx
               !Update element_base_dof_idx
               element_base_dof_idx=element_base_dof_idx+DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
             ENDDO !component_idx

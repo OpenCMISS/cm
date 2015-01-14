@@ -1039,10 +1039,12 @@ CONTAINS
       IF(ALLOCATED(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE)) DEALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE)
       IF(ALLOCATED(BASIS%NODE_NUMBERS_IN_LOCAL_LINE)) DEALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_LINE)
       IF(ALLOCATED(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE)) DEALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE)
+      IF(ALLOCATED(BASIS%ELEMENT_PARAMETERS_IN_LOCAL_LINE)) DEALLOCATE(BASIS%ELEMENT_PARAMETERS_IN_LOCAL_LINE)
       IF(ALLOCATED(BASIS%LOCAL_FACE_XI_DIRECTION)) DEALLOCATE(BASIS%LOCAL_FACE_XI_DIRECTION)
       IF(ALLOCATED(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE)) DEALLOCATE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE)
       IF(ALLOCATED(BASIS%NODE_NUMBERS_IN_LOCAL_FACE)) DEALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE)
       IF(ALLOCATED(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE)) DEALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE)
+      IF(ALLOCATED(BASIS%ELEMENT_PARAMETERS_IN_LOCAL_FACE)) DEALLOCATE(BASIS%ELEMENT_PARAMETERS_IN_LOCAL_FACE)
       IF(ALLOCATED(BASIS%LOCAL_XI_NORMAL)) DEALLOCATE(BASIS%LOCAL_XI_NORMAL)
       IF(ASSOCIATED(BASIS%LINE_BASES)) DEALLOCATE(BASIS%LINE_BASES)
       IF(ASSOCIATED(BASIS%FACE_BASES)) DEALLOCATE(BASIS%FACE_BASES)
@@ -1472,7 +1474,7 @@ CONTAINS
     INTEGER(INTG) :: maximumNumberOfNodes,numberOfDerivatives,xiIdx,xiIdx1,xiIdx2,xiIdx3,derivativeIdx,localNode,localLineNodeIdx, &
       & elementParameter,oldNumberOfDerivatives,position(4),maximumNodeExtent(3),collapsedXi(3),numberOfNodes,numberOfLocalLines, &
       & nodeCount,specialNodeCount,nodesInLine(4),numberOfLocalFaces,localFaceIdx,localNodeIdx,localNodeIdx1, &
-      & localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount
+      & localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount,localLineParameter,localFaceParameter
     LOGICAL, ALLOCATABLE :: nodeAtCollapse(:)
     LOGICAL :: atCollapse,collapsedFace,firstCollapsedPosition,processNode
     
@@ -1820,11 +1822,18 @@ CONTAINS
           ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis%NUMBER_OF_NODES_XIC(1),numberOfLocalLines),STAT=err)
           IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local line.",err,error,*999)
           basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(basis%NUMBER_OF_NODES_XIC(1)**2,numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate element parameters in local line.",err,error,*999)
+          basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE=1
+          localLineParameter=0
           DO localNodeIdx2=1,basis%NUMBER_OF_NODES_XIC(1)
             DO localNodeIdx1=1,basis%NUMBER_OF_NODES
               IF(basis%NODE_POSITION_INDEX(localNodeIdx1,1)==localNodeIdx2) THEN
                 basis%NODE_NUMBERS_IN_LOCAL_LINE(localNodeIdx2,1)=localNodeIdx1
                 DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNodeIdx2)
+                  localLineParameter=localLineParameter+1
+                  basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineParameter,1)=basis%ELEMENT_PARAMETER_INDEX( &
+                    & derivativeIdx,localNodeIdx1)
                   IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNodeIdx2,1)==FIRST_PART_DERIV) THEN
                     basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localNodeIdx2,1)=derivativeIdx
                     EXIT
@@ -1851,6 +1860,9 @@ CONTAINS
           ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC),numberOfLocalLines),STAT=err)
           IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local line.",err,error,*999)
           basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC)**2,numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate element parameters in local line.",err,error,*999)
+          basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE=1
           ALLOCATE(basis%LOCAL_XI_NORMAL(numberOfLocalLines),STAT=err)
           IF(err/=0) CALL FlagError("Could not allocate local xi normal.",err,error,*999)
           !Find the lines
@@ -1908,8 +1920,13 @@ CONTAINS
                 basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)=nodeCount+specialNodeCount
                 basis%NODE_NUMBERS_IN_LOCAL_LINE(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES), &
                   & basis%NUMBER_OF_LOCAL_LINES)=nodesInLine(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES))
+                localLineParameter=0
                 DO localLineNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)
                   DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                    & basis%NUMBER_OF_LOCAL_LINES))
+                    localLineParameter=localLineParameter+1
+                    basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineParameter,basis%NUMBER_OF_LOCAL_LINES)= &
+                      & basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
                     & basis%NUMBER_OF_LOCAL_LINES))
                     IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
                       & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
@@ -1964,11 +1981,20 @@ CONTAINS
           IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local line.",err,error,*999)
           basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
 
+          ALLOCATE(basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(MAXVAL(basis%NUMBER_OF_NODES_XIC)**2,numberOfLocalLines),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate element parameters in local line.",err,error,*999)
+          basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE=1
+
           ALLOCATE(basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0:basis%MAXIMUM_NUMBER_OF_DERIVATIVES, &
             & MAXVAL(basis%NUMBER_OF_NODES_XIC)**2,numberOfLocalFaces),STAT=err)
           IF(err/=0) CALL FlagError("Could not allocate derivative numbers in local face.",err,error,*999)
           basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE=NO_PART_DERIV
           basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0,:,:)=1
+
+          ALLOCATE(basis%ELEMENT_PARAMETERS_IN_LOCAL_FACE(MAXVAL(basis%NUMBER_OF_NODES_XIC)**2* &
+            & basis%MAXIMUM_NUMBER_OF_DERIVATIVES,numberOfLocalFaces),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate element parameters in local face.",err,error,*999)
+          basis%ELEMENT_PARAMETERS_IN_LOCAL_FACE=1
 
           ALLOCATE(basis%NODE_NUMBERS_IN_LOCAL_FACE(MAX(maximumNodeExtent(2)*maximumNodeExtent(3), &
             & maximumNodeExtent(3)*maximumNodeExtent(1),maximumNodeExtent(2)*maximumNodeExtent(1)), &
@@ -2110,8 +2136,13 @@ CONTAINS
                   basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)=nodeCount+specialNodeCount
                   basis%NODE_NUMBERS_IN_LOCAL_LINE(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES), &
                     & basis%NUMBER_OF_LOCAL_LINES)=nodesInLine(1:basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES))
+                  localLineParameter=0
                   DO localLineNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)
                     DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                      & basis%NUMBER_OF_LOCAL_LINES))
+                      localLineParameter=localLineParameter+1
+                      basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)= &
+                        basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
                       & basis%NUMBER_OF_LOCAL_LINES))
                       IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
                         & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
@@ -2170,14 +2201,18 @@ CONTAINS
                 ENDDO !localNodexIdx2
                 basis%NUMBER_OF_NODES_IN_LOCAL_FACE(localFaceIdx)=localNodeCount
                 basis%LOCAL_FACE_XI_DIRECTION(localFaceIdx)=directionIdx*xiIdx1
-                !Compute derivatives in the face
+                !Compute derivatives and element parameters in the face
+                localFaceParameter=0
                 DO localNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_FACE(localFaceIdx)
                   localNode=basis%NODE_NUMBERS_IN_LOCAL_FACE(localNodeIdx,localFaceIdx)
                   localFaceDerivative=0
                   DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(localNode)
                     IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,localNode,xiIdx1)==NO_PART_DERIV) THEN
+                      localFaceParameter=localFaceParameter+1
                       localFaceDerivative=localFaceDerivative+1
                       basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(localFaceDerivative,localNodeIdx,localFaceIdx)=derivativeIdx
+                      basis%ELEMENT_PARAMETERS_IN_LOCAL_FACE(localFaceParameter,localFaceIdx)= &
+                        & basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,localNode)
                     ENDIF
                   ENDDO !derivativeIdx
                   basis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0,localNodeIdx,localFaceIdx)=localFaceDerivative
@@ -4474,6 +4509,10 @@ CONTAINS
           ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(BASIS%NUMBER_OF_NODES_XIC(1),BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line.",ERR,ERROR,*999)
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(basis%NUMBER_OF_NODES_XIC(1)**2,BASIS%NUMBER_OF_LOCAL_LINES) &
+            & ,STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate element parameters in local line.",err,error,*999)
+          basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE=1
           !Set the line values
           SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
           CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
@@ -4512,6 +4551,10 @@ CONTAINS
           ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line.",ERR,ERROR,*999)
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(BASIS%ELEMENT_PARAMETERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC)**2,BASIS%NUMBER_OF_LOCAL_LINES) &
+            & ,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element parameters in local line.",ERR,ERROR,*999)
+          BASIS%ELEMENT_PARAMETERS_IN_LOCAL_LINE=1
           ALLOCATE(BASIS%LOCAL_XI_NORMAL(BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local line normal.",ERR,ERROR,*999)
           !Set the line values
@@ -4606,6 +4649,10 @@ CONTAINS
           ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line.",ERR,ERROR,*999)
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+          ALLOCATE(BASIS%ELEMENT_PARAMETERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC)**2,BASIS%NUMBER_OF_LOCAL_LINES), &
+            & STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element parameters in local line.",ERR,ERROR,*999)
+          BASIS%ELEMENT_PARAMETERS_IN_LOCAL_LINE=1
 
           SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
           CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
