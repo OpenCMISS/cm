@@ -955,7 +955,7 @@ CONTAINS
                     CALL CROSS_PRODUCT(METRICS%DX_DXI(:,2),METRICS%DX_DXI(:,3),METRICS%DXI_DX(1,:),ERR,ERROR,*999)
                     CALL CROSS_PRODUCT(METRICS%DX_DXI(:,3),METRICS%DX_DXI(:,1),METRICS%DXI_DX(2,:),ERR,ERROR,*999)
                     ! Normalise them, so that g_M.g^N=kroneckerdelta(M,N)
-                    METRICS%DX_DXI(:,1:2)=METRICS%DX_DXI(:,1:2)/METRICS%JACOBIAN
+                    METRICS%DXI_DX(1:2,:)=METRICS%DXI_DX(1:2,:)/METRICS%JACOBIAN
                 ELSE
                   CALL FLAG_ERROR("Invalid embedding of a surface in space.",ERR,ERROR,*999)
                 ENDIF
