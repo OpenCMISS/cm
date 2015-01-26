@@ -206,7 +206,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
     INTEGER(INTG) :: numberOfDimensions,componentIdx,geometricScalingType,geometricMeshComponent,geometricComponentNumber
     INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents
-    INTEGER(INTG) :: independentFieldNumberOfComponents,independentFieldNumberOfVariables
+    INTEGER(INTG) :: independentFieldNumberOfVariables,independentFieldNumberOfComponents
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
@@ -448,8 +448,6 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & numberOfDimensions,err,error,*999)
                 !calculate number of components (Q,A) for U and dUdN
                 dependentFieldNumberOfComponents=2
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -506,7 +504,8 @@ CONTAINS
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              independentFieldNumberOfComponents=2 ! normalDirection for wave relative to node for W1,W2
+              independentFieldNumberOfVariables=1   !set number of variables to 1 (W)
+              independentFieldNumberOfComponents=2 !normalDirection for wave relative to node for W1,W2
               IF(equationsSet%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                 !Create the auto created independent field
                 !start field creation with name 'INDEPENDENT_FIELD'
@@ -527,21 +526,17 @@ CONTAINS
                 CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, &
                   & geometricDecomposition,err,error,*999)
                 !point new field to geometric field
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,equationsSet% & 
-                  & GEOMETRY%GEOMETRIC_FIELD,err,error,*999)
-                !set number of variables to 1
-                independentFieldNumberOfVariables=1
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, &
+                  & equationsSet%GEOMETRY%GEOMETRIC_FIELD,err,error,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, &
                   & independentFieldNumberOfVariables,err,error,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
                   & [FIELD_U_VARIABLE_TYPE],err,error,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,err,error,*999)
-                ! characteristic normal direction (normalWave) is +/- 1
+                !characteristic normal direction (normalWave) is +/- 1
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_DP_TYPE,err,error,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & numberOfDimensions,err,error,*999)
                 !calculate number of components with one component for each dimension
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSet%INDEPENDENT%INDEPENDENT_FIELD, & 
                   & FIELD_U_VARIABLE_TYPE,independentFieldNumberOfComponents,err,error,*999)
@@ -560,15 +555,12 @@ CONTAINS
                   END DO !componentIdx
                   CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType, &
                     & err,error,*999)
-                  CALL FIELD_SCALING_TYPE_SET(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,geometricScalingType, &
-                    & err,error,*999)
                 CASE DEFAULT
                   localError="The solution method of " &
                     & //TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
                   CALL FLAG_ERROR(localError,err,error,*999)
                 END SELECT 
               ELSE
-                independentFieldNumberOfVariables=1
                 !Check the user specified field
                 CALL FIELD_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_GENERAL_TYPE,err,error,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_INDEPENDENT_TYPE,err,error,*999)
@@ -577,8 +569,6 @@ CONTAINS
                 CALL FIELD_DIMENSION_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                   & err,error,*999)
                 CALL FIELD_DATA_TYPE_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,err,error,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & numberOfDimensions,err,error,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(equationsSetSetup%FIELD,FIELD_U_VARIABLE_TYPE, &
                   & independentFieldNumberOfComponents,err,error,*999)
               ENDIF    
@@ -586,12 +576,6 @@ CONTAINS
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               IF(equationsSet%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                 CALL FIELD_CREATE_FINISH(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,err,error,*999)
-                CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_MESH_DISPLACEMENT_SET_TYPE,err,error,*999)
-                CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_MESH_VELOCITY_SET_TYPE,err,error,*999)
-                CALL FIELD_PARAMETER_SET_CREATE(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_BOUNDARY_SET_TYPE,err,error,*999)
               ENDIF
             CASE DEFAULT
               localError="The action type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%ACTION_TYPE,"*",err,error))// &
