@@ -75,6 +75,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISEUILLE_EQUATION_TYPE=5
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BURGERS_EQUATION_TYPE=6
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE=7
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STREE_EQUATION_TYPE=8
   !Electromagnetics class
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ELECTROSTATIC_TYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MAGNETOSTATIC_TYPE=2
@@ -169,6 +170,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE=13
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_1dTransientAdv_NAVIER_STOKES_SUBTYPE=14
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE=15
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_Stree1D0D_SUBTYPE=16
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_Stree1D0DAdv_SUBTYPE=17
   !  Characteristics equations
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE=1
   !  Darcy equation
@@ -473,13 +476,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1=11 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE=12 !< fully developed 2D channel flow (parabolic), u=u_max(1-y^2/H^2)
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN=13 !< 2D dynamic nonlinear Taylor-Green vortex decay
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield=14 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds=15 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen=16 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta=17 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid=18 !< A sinusoidal flow waveform
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateConstant=19 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile=20 !< Spline integration of dependent values specified in a file
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta=14 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid=15 !< A sinusoidal flow waveform
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateConstant=16 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile=17 !< Spline integration of dependent values specified in a file
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen=18 !< A fourier decomposed flow waveform for boundary conditions
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DarcyAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DarcyAnalyticFunctionTypes
   !> \brief The analytic function types for a Darcy equation
