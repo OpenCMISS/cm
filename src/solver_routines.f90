@@ -73,7 +73,8 @@ MODULE SOLVER_ROUTINES
   PRIVATE
 
 #include "include/petscversion.h"
- 
+
+
   !Module parameters
 
   !> \addtogroup SOLVER_ROUTINES_SolverTypes SOLVER_ROUTINES::SolverTypes
@@ -3454,15 +3455,17 @@ CONTAINS
     TYPE(PETSC_TS_TYPE) :: TS !<The PETSc TS type
     INTEGER(INTG) :: STEPS !<The iteration number
     REAL(DP) :: TIME !<The current time
-    TYPE(PETSC_VEC_TYPE) :: X !<The current iterate
+    TYPE(PETSC_VEC_TYPE) :: PETSC_STATES !<The current iterate
     TYPE(SOLVER_TYPE) :: CTX !<The passed through context
     INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
       & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
-      & STATE_END_DOF,state_idx,STATE_START_DOF
+      & STATE_END_DOF,state_idx,STATE_START_DOF,ARRAY_INDICES(MAX(1,MAX_NUMBER_STATES)),array_idx
     REAL(DP) :: INTERMEDIATES(MAX(1,MAX_NUMBER_INTERMEDIATES)),PARAMETERS(MAX(1,MAX_NUMBER_PARAMETERS)), &
       & RATES(MAX(1,MAX_NUMBER_STATES)),STATES(MAX(1,MAX_NUMBER_STATES))
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    EXTERNAL :: CELLML_DAE_RHS
+  
     
     CALL ENTERS("SOLVER_DAE_BFD_INTEGRATE",ERR,ERROR,*999)
 
@@ -3516,12 +3519,22 @@ CONTAINS
                             CALL PETSC_TSCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TS,ERR,ERROR,*999)
                             CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_LINEAR,ERR,ERROR,*999)
                             CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
-                            CALL PETSC_TSSETSOLUTION(TS,STATE_DATA(STATE_START_DOF:STATE_END_DOF),ERR,ERROR,*999)
+
+                            CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_STATES,ERR,ERROR,*999)
+                            CALL PETSC_VECSETSIZES(PETSC_STATES, &
+                              & PETSC_DECIDE,(MAX(1,MAX_NUMBER_STATES)),ERR,ERROR,*999)
+                            CALL PETSC_VECSETFROMOPTIONS(PETSC_STATES,ERR,ERROR,*999)
+                            ARRAY_INDICES = (/(array_idx,array_idx=0,(STATE_END_DOF-STATE_START_DOF))/)
+                            CALL PETSC_VECSETVALUES(PETSC_STATES,(STATE_END_DOF-STATE_START_DOF+1), &
+                              & ARRAY_INDICES,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                              & PETSC_INSERT_VALUES,ERR,ERROR,*999)
+                            CALL PETSC_VECASSEMBLYBEGIN(PETSC_STATES,ERR,ERROR,*999)
+                            CALL PETSC_VECASSEMBLYEND(PETSC_STATES,ERR,ERROR,*999)
+                            CALL PETSC_TSSETSOLUTION(TS,PETSC_STATES,ERR,ERROR,*999)
                             CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
                             CALL PETSC_TSSETDURATION(TS,STEPS,END_TIME,ERR,ERROR,*999)
-                            CALL PETSC_TSSETRHSFUNCTION(TS, &
-                            & CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE,BDF_SOLVER%DAE_SOLVER%SOLVER,ERR,ERROR,*999)
-                            CALL PETSC_TSSolve(TS,STATE_DATA(STATE_START_DOF:STATE_END_DOF),ERR,ERROR,*999)              
+                            CALL PETSC_TSSETRHSFUNCTION(TS,CELLML_DAE_RHS,BDF_SOLVER%DAE_SOLVER%SOLVER,ERR,ERROR,*999)
+                            CALL PETSC_TSSolve(TS,PETSC_STATES,ERR,ERROR,*999)              
                     
                             !CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, &
                             !  & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
@@ -18874,6 +18887,8 @@ CONTAINS
     RETURN 1
   END SUBROUTINE SOLVER_LINKED_SOLVER_REMOVE
 
+
+
   !
   !================================================================================================================================
   !
@@ -18929,10 +18944,10 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
 997 RETURN    
 END SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC
 
+
 !
 !================================================================================================================================
 !
-
 !>Called from the PETSc SNES solvers to monitor the Newton nonlinear solver
 SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
 
@@ -18976,4 +18991,36 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
 998 CALL FLAG_WARNING("Error monitoring nonlinear solve.",ERR,ERROR,*997)
 997 RETURN    
 END SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC
+!
+!================================================================================================================================
+!
+!>Called from the PETSc TS solvers to solve cellml DAE
+FUNCTION CELLML_DAE_RHS(TS_, TIME, STATES, RATES, CTX,ERR)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC_TYPES
+  USE TYPES
+  USE SOLVER_ROUTINES
+
+#include "include/finclude/petsc.h"
+!#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
+!#include "include/finclude/petscvec.h"
+!#endif
+!#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
+!#include "include/finclude/petscts.h"
+!#endif
+
+
+  !Argument variables
+  TS, INTENT(INOUT) :: TS_ !<The PETSc TS type
+  PetscScalar, INTENT(INOUT) :: TIME !<The current time
+  Vec :: STATES,RATES !<current states and returned rates
+  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  PetscErrorCode :: CELLML_DAE_RHS
+  CELLML_DAE_RHS = 0
+  WRITE(*,*) 'HELLO'
+  RETURN 
+
+END FUNCTION CELLML_DAE_RHS    
 
