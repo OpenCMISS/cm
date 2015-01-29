@@ -1169,9 +1169,10 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetProblemType
     
-    SUBROUTINE TSSetRHSFunction(ts,rhsfunc,ctx,ierr)
+    SUBROUTINE TSSetRHSFunction(ts,r,rhsfunc,ctx,ierr)
       USE TYPES
       TS ts
+      Vec r
       EXTERNAL rhsfunc
       TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
@@ -5722,7 +5723,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_TSSETRHSFUNCTION",ERR,ERROR,*999)
 
-    CALL TSSetRHSFunction(TS_%TS_,RHSFUNCTION,CTX,ERR)
+    CALL TSSetRHSFunction(TS_%TS_,PETSC_NULL_OBJECT,RHSFUNCTION,CTX,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -7002,7 +7003,8 @@ CONTAINS
     CALL EXITS("PETSC_VECVIEW")
     RETURN 1
   END SUBROUTINE PETSC_VECVIEW
-    
+
+
   !
   !================================================================================================================================
   !
