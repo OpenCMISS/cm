@@ -119,6 +119,10 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_DEPENDENT_CREATE_START,EQUATIONS_SET_DEPENDENT_CREATE_FINISH
 
   PUBLIC EQUATIONS_SET_DEPENDENT_DESTROY
+
+  PUBLIC EquationsSet_DerivedCreateStart,EquationsSet_DerivedCreateFinish
+
+  PUBLIC EquationsSet_DerivedDestroy
   
   PUBLIC EQUATIONS_SET_INDEPENDENT_CREATE_START,EQUATIONS_SET_INDEPENDENT_CREATE_FINISH
 
@@ -131,9 +135,13 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_SOURCE_CREATE_START,EQUATIONS_SET_SOURCE_CREATE_FINISH
 
   PUBLIC EQUATIONS_SET_SOURCE_DESTROY
-  
+
   PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
-  
+
+  PUBLIC EquationsSet_StrainInterpolateXi
+
+  PUBLIC EquationsSet_DerivedVariableCalculate,EquationsSet_DerivedVariableSet
+
   PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
   
   PUBLIC EQUATIONS_SET_LOAD_INCREMENT_APPLY
@@ -2439,13 +2447,6 @@ CONTAINS
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ENDIF
-                      !Initialise the equations set materials
-!                       CALL EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
-!                        WRITE(*,'(A)') "equations set initialise called"
-!                       IF(.NOT.ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-!                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
-!                       ENDIF
-!--- tob 1            
                       !Initalise equations set
                       CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
                       !Set default equations set values
@@ -2712,7 +2713,8 @@ CONTAINS
       CALL EQUATIONS_SET_SOURCE_FINALISE(EQUATIONS_SET%SOURCE,ERR,ERROR,*999)
       CALL EQUATIONS_SET_ANALYTIC_FINALISE(EQUATIONS_SET%ANALYTIC,ERR,ERROR,*999)
       CALL EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD,ERR,ERROR,*999)
-      IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS))CALL EQUATIONS_DESTROY(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
+      CALL EquationsSet_DerivedFinalise(EQUATIONS_SET%derived,ERR,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) CALL EQUATIONS_DESTROY(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
       DEALLOCATE(EQUATIONS_SET)
     ENDIF
        
@@ -3619,6 +3621,7 @@ CONTAINS
       NULLIFY(EQUATIONS_SET%MATERIALS)
       NULLIFY(EQUATIONS_SET%SOURCE)
       NULLIFY(EQUATIONS_SET%ANALYTIC)
+      NULLIFY(EQUATIONS_SET%derived)
       NULLIFY(EQUATIONS_SET%EQUATIONS)
       NULLIFY(EQUATIONS_SET%BOUNDARY_CONDITIONS)
     ENDIF
@@ -4142,7 +4145,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   !>Finalises the dependent variables for an equation set and deallocates all memory.
   SUBROUTINE EQUATIONS_SET_DEPENDENT_FINALISE(EQUATIONS_SET_DEPENDENT,ERR,ERROR,*)
 
@@ -4200,6 +4203,265 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Finish the creation of a derived variables field for an equations set. \see OPENCMISS::CMISSEquationsSet_DerivedCreateFinish
+  SUBROUTINE EquationsSet_DerivedCreateFinish(equationsSet,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to finish the derived variable creation for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_SET_SETUP_TYPE) :: equationsSetSetupInfo
+    TYPE(FIELD_TYPE), POINTER :: derivedField
+
+    CALL ENTERS("EquationsSet_DerivedCreateFinish",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(ASSOCIATED(equationsSet%derived)) THEN
+        IF(equationsSet%derived%derivedFinished) THEN
+          CALL FLAG_ERROR("Equations set derived field information has already been finished",err,error,*999)
+        ELSE
+          !Initialise the setup
+          CALL EQUATIONS_SET_SETUP_INITIALISE(equationsSetSetupInfo,err,error,*999)
+          equationsSetSetupInfo%SETUP_TYPE=EQUATIONS_SET_SETUP_DERIVED_TYPE
+          equationsSetSetupInfo%ACTION_TYPE=EQUATIONS_SET_SETUP_FINISH_ACTION
+          derivedField=>equationsSet%derived%derivedField
+          IF(ASSOCIATED(derivedField)) THEN
+            equationsSetSetupInfo%FIELD_USER_NUMBER=derivedField%USER_NUMBER
+            equationsSetSetupInfo%field=>derivedField
+            !Finish equations set specific setup
+            CALL EQUATIONS_SET_SETUP(equationsSet,equationsSetSetupInfo,err,error,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set derived field is not associated.",err,error,*999)
+          END IF
+          !Finalise the setup
+          CALL EQUATIONS_SET_SETUP_FINALISE(equationsSetSetupInfo,err,error,*999)
+          !Finish the equations set derived creation
+          equationsSet%derived%derivedFinished=.TRUE.
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations set derived is not associated",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_DerivedCreateFinish")
+    RETURN
+999 CALL ERRORS("EquationsSet_DerivedCreateFinish",err,error)
+    CALL EXITS("EquationsSet_DerivedCreateFinish")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedCreateFinish
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of derived variables field for an equations set. \see OPENCMISS::CMISSEquationsSet_DerivedCreateStart
+  SUBROUTINE EquationsSet_DerivedCreateStart(equationsSet,derivedFieldUserNumber,derivedField,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to start the creation of a derived field on
+    INTEGER(INTG), INTENT(IN) :: derivedFieldUserNumber !<The user specified derived field number
+    TYPE(FIELD_TYPE), POINTER :: derivedField !<If associated on entry, a pointer to the user created derived field which has the same user number as the specified derived field user number. If not associated on entry, on exit, a pointer to the created derived field for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dummyErr
+    TYPE(EQUATIONS_SET_SETUP_TYPE) :: equationsSetSetupInfo
+    TYPE(FIELD_TYPE), POINTER :: field,geometricField
+    TYPE(REGION_TYPE), POINTER :: region,derivedFieldRegion
+    TYPE(VARYING_STRING) :: dummyError,localError
+
+    CALL ENTERS("EquationsSet_DerivedCreateStart",err,error,*998)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(ASSOCIATED(equationsSet%derived)) THEN
+        CALL FLAG_ERROR("Equations set derived is already associated.",err,error,*998)
+      ELSE
+        region=>equationsSet%REGION
+        IF(ASSOCIATED(region)) THEN
+          IF(ASSOCIATED(derivedField)) THEN
+            !Check the derived field has been finished
+            IF(derivedField%FIELD_FINISHED) THEN
+              !Check the user numbers match
+              IF(derivedFieldUserNumber/=derivedField%USER_NUMBER) THEN
+                localError="The specified derived field user number of "// &
+                  & TRIM(NUMBER_TO_VSTRING(derivedFieldUserNumber,"*",err,error))// &
+                  & " does not match the user number of the specified derived field of "// &
+                  & TRIM(NUMBER_TO_VSTRING(derivedField%USER_NUMBER,"*",err,error))//"."
+                CALL FLAG_ERROR(localError,err,error,*999)
+              END IF
+              derivedFieldRegion=>derivedField%REGION
+              IF(ASSOCIATED(derivedFieldRegion)) THEN
+                !Check the field is defined on the same region as the equations set
+                IF(derivedFieldRegion%USER_NUMBER/=region%USER_NUMBER) THEN
+                  localError="Invalid region setup. The specified derived field has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(derivedFieldRegion%USER_NUMBER,"*",err,error))// &
+                    & " and the specified equations set has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(region%USER_NUMBER,"*",err,error))//"."
+                  CALL FLAG_ERROR(localError,err,error,*999)
+                END IF
+                !Check the specified derived field has the same decomposition as the geometric field
+                geometricField=>equationsSet%GEOMETRY%GEOMETRIC_FIELD
+                IF(ASSOCIATED(geometricField)) THEN
+                  IF(.NOT.ASSOCIATED(geometricField%DECOMPOSITION,derivedField%DECOMPOSITION)) THEN
+                    CALL FLAG_ERROR("The specified derived field does not have the same decomposition as the geometric "// &
+                      & "field for the specified equations set.",err,error,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("The geometric field is not associated for the specified equations set.",err,error,*999)
+                END IF
+              ELSE
+                CALL FLAG_ERROR("The specified derived field region is not associated.",err,error,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("The specified derived field has not been finished.",err,error,*999)
+            END IF
+          ELSE
+            !Check the user number has not already been used for a field in this region.
+            NULLIFY(field)
+            CALL FIELD_USER_NUMBER_FIND(derivedFieldUserNumber,region,field,err,error,*999)
+            IF(ASSOCIATED(field)) THEN
+              localError="The specified derived field user number of "// &
+                & TRIM(NUMBER_TO_VSTRING(derivedFieldUserNumber,"*",err,error))// &
+                & " has already been used to create a field on region number "// &
+                & TRIM(NUMBER_TO_VSTRING(region%USER_NUMBER,"*",err,error))//"."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END IF
+            equationsSet%derived%derivedFieldAutoCreated=.TRUE.
+          END IF
+          CALL EquationsSet_DerivedInitialise(equationsSet,err,error,*999)
+          !Initialise the setup
+          CALL EQUATIONS_SET_SETUP_INITIALISE(equationsSetSetupInfo,err,error,*999)
+          equationsSetSetupInfo%SETUP_TYPE=EQUATIONS_SET_SETUP_DERIVED_TYPE
+          equationsSetSetupInfo%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+          equationsSetSetupInfo%FIELD_USER_NUMBER=derivedFieldUserNumber
+          equationsSetSetupInfo%FIELD=>derivedField
+          !Start the equations set specfic solution setup
+          CALL EQUATIONS_SET_SETUP(equationsSet,equationsSetSetupInfo,err,error,*999)
+          !Finalise the setup
+          CALL EQUATIONS_SET_SETUP_FINALISE(equationsSetSetupInfo,err,error,*999)
+          !Set pointers
+          IF(.NOT.equationsSet%derived%derivedFieldAutoCreated) THEN
+            equationsSet%derived%derivedField=>derivedField
+          END IF
+        ELSE
+          CALL FLAG_ERROR("Equation set region is not associated.",err,error,*999)
+        END IF
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*998)
+    END IF
+
+    CALL EXITS("EquationsSet_DerivedCreateStart")
+    RETURN
+999 CALL EquationsSet_DerivedFinalise(equationsSet%derived,dummyErr,dummyError,*998)
+998 CALL ERRORS("EquationsSet_DerivedCreateStart",err,error)
+    CALL EXITS("EquationsSet_DerivedCreateStart")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedCreateStart
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the derived variables for an equations set. \see OPENCMISS::CMISSEquationsSet_DerivedDestroy
+  SUBROUTINE EquationsSet_DerivedDestroy(equationsSet,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<The pointer to the equations set to destroy the derived fields for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("EquationsSet_DerivedDestroy",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      CALL EquationsSet_DerivedFinalise(equationsSet%derived,err,error,*999)
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_DerivedDestroy")
+    RETURN
+999 CALL ERRORS("EquationsSet_DerivedDestroy",err,error)
+    CALL EXITS("EquationsSet_DerivedDestroy")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedDestroy
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the derived variables for an equation set and deallocates all memory.
+  SUBROUTINE EquationsSet_DerivedFinalise(equationsSetDerived,err,error,*)
+
+    !Argument variables
+    TYPE(EquationsSetDerivedType), POINTER :: equationsSetDerived !<The pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("EquationsSet_DerivedFinalise",err,error,*999)
+
+    IF(ASSOCIATED(equationsSetDerived)) THEN
+      IF(ALLOCATED(equationsSetDerived%variableTypes)) DEALLOCATE(equationsSetDerived%variableTypes)
+      DEALLOCATE(equationsSetDerived)
+    END IF
+
+    CALL EXITS("EquationsSet_DerivedFinalise")
+    RETURN
+999 CALL ERRORS("EquationsSet_DerivedFinalise",err,error)
+    CALL EXITS("EquationsSet_DerivedFinalise")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedFinalise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the derived variables for a equations set.
+  SUBROUTINE EquationsSet_DerivedInitialise(equationsSet,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to initialise the derived field for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("EquationsSet_DerivedInitialise",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(ASSOCIATED(equationsSet%derived)) THEN
+        CALL FLAG_ERROR("Derived information is already associated for this equations set.",err,error,*998)
+      ELSE
+        ALLOCATE(equationsSet%derived,stat=err)
+        IF(err/=0) CALL FLAG_ERROR("Could not allocate equations set derived information.",err,error,*998)
+        ALLOCATE(equationsSet%derived%variableTypes(EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES),stat=err)
+        IF(err/=0) CALL FLAG_ERROR("Could not allocate equations set derived variable types.",err,error,*999)
+        equationsSet%derived%variableTypes=0
+        equationsSet%derived%numberOfVariables=0
+        equationsSet%derived%equationsSet=>equationsSet
+        equationsSet%derived%derivedFinished=.FALSE.
+        equationsSet%derived%derivedFieldAutoCreated=.FALSE.
+        NULLIFY(equationsSet%derived%derivedField)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_DerivedInitialise")
+    RETURN
+999 CALL EquationsSet_DerivedFinalise(equationsSet%derived,err,error,*999)
+998 CALL ERRORS("EquationsSet_DerivedInitialise",err,error)
+    CALL EXITS("EquationsSet_DerivedInitialise")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedInitialise
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finalises the dependent variables for an equation set and deallocates all memory.
   SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET_FIELD,ERR,ERROR,*)
 
@@ -5824,7 +6086,116 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_SPECIFICATION_GET")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET
-  
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates a derived variable value for the equations set. \see OPENCMISS::CMISSEquationsSet_DerivedVariableCalculate
+  SUBROUTINE EquationsSet_DerivedVariableCalculate(equationsSet,derivedType,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to calculate output for
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived value type to calculate. \see EQUATIONS_SET_CONSTANTS_DerivedTypes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("EquationsSet_DerivedVariableCalculate",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(.NOT.equationsSet%EQUATIONS_SET_FINISHED) THEN
+        CALL FLAG_ERROR("Equations set has not been finished.",err,error,*999)
+      ELSE
+        SELECT CASE(equationsSet%CLASS)
+        CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+          CALL ElasticityEquationsSet_DerivedVariableCalculate(equationsSet,derivedType,err,error,*999)
+        CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_FITTING_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_MODAL_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          CALL FLAG_ERROR("Equations set class "//TRIM(NUMBER_TO_VSTRING(equationsSet%CLASS,"*",ERR,ERROR))// &
+            & " is not valid.",ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    ENDIF
+
+    CALL EXITS("EquationsSet_DerivedVariableCalculate")
+    RETURN
+999 CALL ERRORS("EquationsSet_DerivedVariableCalculate",err,error)
+    CALL EXITS("EquationsSet_DerivedVariableCalculate")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedVariableCalculate
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field variable type of the derived field to be used to store a derived variable. \see OPENCMISS::CMISSEquationsSet_DerivedVariableSet
+  SUBROUTINE EquationsSet_DerivedVariableSet(equationsSet,derivedType,fieldVariableType,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to calculate a derived field for
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived value type to calculate. \see EQUATIONS_SET_CONSTANTS_DerivedTypes.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type used to store the calculated derived value
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("EquationsSet_DerivedVariableSet",err,error,*999)
+
+    !Check pointers and finished state
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(equationsSet%EQUATIONS_SET_FINISHED) THEN
+        IF(ASSOCIATED(equationsSet%derived)) THEN
+          IF(equationsSet%derived%derivedFinished) THEN
+            CALL FLAG_ERROR("Equations set derived information is already finished.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("Equations set derived information is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    ENDIF
+
+    IF(derivedType>0.AND.derivedType<=EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES) THEN
+      IF(fieldVariableType>0.AND.fieldVariableType<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+        IF(equationsSet%derived%variableTypes(derivedType)==0) THEN
+          equationsSet%derived%numberOfVariables=equationsSet%derived%numberOfVariables+1
+        END IF
+        equationsSet%derived%variableTypes(derivedType)=fieldVariableType
+      ELSE
+        CALL FLAG_ERROR("The field variable type of "//TRIM(NUMBER_TO_VSTRING(fieldVariableType,"*",err,error))// &
+          & " is invalid. It should be between 1 and "//TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*", &
+          & err,error))//" inclusive.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("The derived variable type of "//TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))// &
+        & " is invalid. It should be between 1 and "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES,"*", &
+        & err,error))//" inclusive.",err,error,*999)
+    END IF
+
+    CALL EXITS("EquationsSet_DerivedVariableSet")
+    RETURN
+999 CALL ERRORS("EquationsSet_DerivedVariableSet",err,error)
+    CALL EXITS("EquationsSet_DerivedVariableSet")
+    RETURN 1
+  END SUBROUTINE EquationsSet_DerivedVariableSet
+
   !
   !================================================================================================================================
   !
@@ -5876,18 +6247,10 @@ CONTAINS
           LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",ERR,ERROR))//" is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-        !Initialise the setup
-!         CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-!         EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
-!         EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-!         !Peform the initial equations set setup
-!         CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-!         !Finalise the setup
-!         CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-      ENDIF
+      END IF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
+    END IF
     
     CALL EXITS("EQUATIONS_SET_SPECIFICATION_SET")
     RETURN
@@ -5895,7 +6258,60 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_SPECIFICATION_SET")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET
-  
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location.
+  SUBROUTINE EquationsSet_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to interpolate strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL Enters("EquationsSet_StrainInterpolateXi",err,error,*999)
+
+    IF(.NOT.ASSOCIATED(equationsSet)) THEN
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+    IF(.NOT.equationsSet%equations_set_finished) THEN
+      CALL FlagError("Equations set has not been finished.",err,error,*999)
+    END IF
+
+    SELECT CASE(equationsSet%class)
+    CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+      CALL Elasticity_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*999)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_MODAL_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_FITTING_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE(EQUATIONS_SET_OPTIMISATION_CLASS)
+      CALL FlagError("Not implemented.",err,error,*999)
+    CASE DEFAULT
+      CALL FlagError("Equations set class "//TRIM(NumberToVstring(equationsSet%class,"*",err,error))// &
+        & " is not valid.",err,error,*999)
+    END SELECT
+
+    CALL Exits("EquationsSet_StrainInterpolateXi")
+    RETURN
+999 CALL Errors("EquationsSet_StrainInterpolateXi",err,error)
+    CALL Exits("EquationsSet_StrainInterpolateXi")
+    RETURN 1
+  END SUBROUTINE EquationsSet_StrainInterpolateXi
+
   !
   !================================================================================================================================
   !
