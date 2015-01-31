@@ -3456,12 +3456,13 @@ CONTAINS
     INTEGER(INTG) :: STEPS !<The iteration number
     REAL(DP) :: TIME !<The current time
     TYPE(PETSC_VEC_TYPE) :: PETSC_STATES !<The current iterate
-    TYPE(SOLVER_TYPE) :: CTX !<The passed through context
+    TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The passed through context
     INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
       & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
       & STATE_END_DOF,state_idx,STATE_START_DOF,ARRAY_INDICES(MAX(1,MAX_NUMBER_STATES)),array_idx
     REAL(DP) :: INTERMEDIATES(MAX(1,MAX_NUMBER_INTERMEDIATES)),PARAMETERS(MAX(1,MAX_NUMBER_PARAMETERS)), &
       & RATES(MAX(1,MAX_NUMBER_STATES)),STATES(MAX(1,MAX_NUMBER_STATES))
+    REAL(DP), ALLOCATABLE  :: STATES_TEMP(:)
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     EXTERNAL :: CELLML_DAE_RHS
@@ -3469,152 +3470,91 @@ CONTAINS
     
     CALL ENTERS("SOLVER_DAE_BFD_INTEGRATE",ERR,ERROR,*999)
 
+   
 
     IF(ASSOCIATED(BDF_SOLVER)) THEN
       IF(ASSOCIATED(CELLML)) THEN
         IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
-          CALL FIELD_DOF_ORDER_TYPE_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
+        SELECT CASE(BDF_SOLVER%SOLVER_LIBRARY)   
+        CASE(SOLVER_PETSC_LIBRARY)
+          CALL FIELD_DOF_ORDER_TYPE_GET(CELLML%MODELS_FIELD%MODELS_FIELD, & 
+            & FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
           IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
-            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
-            
-            ELSE
-              !one model
-              CALL PETSC_TSCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TS,ERR,ERROR,*999)
-              CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_LINEAR,ERR,ERROR,*999)
-              CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
 
-              !CALL PETSC_TSSETSOLUTION(TS,X,ERR,ERROR,*999)
-              !CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-              !CALL PETSC_TSSETDURATION(TS,STEPS,END_TIME,ERR,ERROR,*999)
-              !CALL PETSC_TSSETRHSFUNCTION()
-              !CALL PETSC_TSSolve(TS_,X,ERR,ERROR)              
-            ENDIF
-          ELSE
+          ELSE !dof component order is contiguous
             IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
-            
-            ELSE
-              !one model
+
+            ELSE !only one model
               MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
               IF(ASSOCIATED(MODEL)) THEN
-                NUMBER_STATES=MODEL%NUMBER_OF_STATE
-                NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-#ifdef USECELLML                    
-                !Call RHS. Note some models might not have state, rates, intermediate or parameter data so call accordingly
-                !to avoid referencing null pointers
-                IF(NUMBER_STATES>0) THEN
-                  IF(NUMBER_INTERMEDIATES>0) THEN
-                    IF(NUMBER_PARAMETERS>0) THEN
-                      !We have states, intermediate and parameters for the model
-                        DO dof_idx=1,N
-                          model_idx=MODELS_DATA(dof_idx)
-                          IF(model_idx.GT.0) THEN
-                            STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                            STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                            INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                            INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                            PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                            PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                NUMBER_STATES = MODEL%NUMBER_OF_STATE
+                DO dof_idx=1,N     
+                  model_idx = MODELS_DATA(dof_idx)
+                  IF(model_idx>0) THEN !if model is assigned to dof
+  
+                    !access the state field data
+                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
 
-                            CALL PETSC_TSCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TS,ERR,ERROR,*999)
-                            CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_LINEAR,ERR,ERROR,*999)
-                            CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
+                    !Set up PETSC TS context for sundials BDF solver
+                    CALL PETSC_TSCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TS,ERR,ERROR,*999)
+                    CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_LINEAR,ERR,ERROR,*999)
+                    CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
 
-                            CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_STATES,ERR,ERROR,*999)
-                            CALL PETSC_VECSETSIZES(PETSC_STATES, &
-                              & PETSC_DECIDE,(MAX(1,MAX_NUMBER_STATES)),ERR,ERROR,*999)
-                            CALL PETSC_VECSETFROMOPTIONS(PETSC_STATES,ERR,ERROR,*999)
-                            ARRAY_INDICES = (/(array_idx,array_idx=0,(STATE_END_DOF-STATE_START_DOF))/)
-                            CALL PETSC_VECSETVALUES(PETSC_STATES,(STATE_END_DOF-STATE_START_DOF+1), &
-                              & ARRAY_INDICES,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                              & PETSC_INSERT_VALUES,ERR,ERROR,*999)
-                            CALL PETSC_VECASSEMBLYBEGIN(PETSC_STATES,ERR,ERROR,*999)
-                            CALL PETSC_VECASSEMBLYEND(PETSC_STATES,ERR,ERROR,*999)
-                            CALL PETSC_TSSETSOLUTION(TS,PETSC_STATES,ERR,ERROR,*999)
-                            CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-                            CALL PETSC_TSSETDURATION(TS,STEPS,END_TIME,ERR,ERROR,*999)
-                            CALL PETSC_TSSETRHSFUNCTION(TS,CELLML_DAE_RHS,BDF_SOLVER%DAE_SOLVER%SOLVER,ERR,ERROR,*999)
-                            CALL PETSC_TSSolve(TS,PETSC_STATES,ERR,ERROR,*999)              
-                    
-                            !CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, &
-                            !  & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                            !  & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA( &
-                            !  & PARAMETER_START_DOF:PARAMETER_END_DOF))                            
-                          ENDIF !model_idx
-                        ENDDO !dof_idx
-                    ELSE
-                      !We do not have parameters in the model
-                      DO dof_idx=1,N
-                        model_idx=MODELS_DATA(dof_idx)
-                        IF(model_idx.GT.0) THEN
+                    !create PETSC states vector to initialize solver
+                    CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_STATES,ERR,ERROR,*999)
+                    CALL PETSC_VECSETSIZES(PETSC_STATES, &
+                      & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
+                    CALL PETSC_VECSETFROMOPTIONS(PETSC_STATES,ERR,ERROR,*999)
 
-                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                          INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
-                          INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    
-                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
-                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                            & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS)
-                             
-                        ENDIF !model_idx
-                      ENDDO !dof_idx
-                    ENDIF                      
-                  ELSE
-                    IF(NUMBER_PARAMETERS>0) THEN
-                    !We do not have intermediates in the model  
-                      DO dof_idx=1,N
-                        model_idx=MODELS_DATA(dof_idx)
-                        IF(model_idx.GT.0) THEN
+                    !set the initial solution to the current state
+                    ARRAY_INDICES = (/(array_idx,array_idx=0,(NUMBER_STATES-1))/)
+                    CALL PETSC_VECSETVALUES(PETSC_STATES,(NUMBER_STATES), &
+                      & ARRAY_INDICES,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                      & PETSC_INSERT_VALUES,ERR,ERROR,*999)
+                    CALL PETSC_VECASSEMBLYBEGIN(PETSC_STATES,ERR,ERROR,*999)
+                    CALL PETSC_VECASSEMBLYEND(PETSC_STATES,ERR,ERROR,*999)
+                    CALL PETSC_TSSETSOLUTION(TS,PETSC_STATES,ERR,ERROR,*999)
 
-                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                          PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
-                          PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
-                    
-                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
-                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                            & RATES,INTERMEDIATES,PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
-                            
-                        ENDIF !model_idx
-                      ENDDO !dof_idx
-                    ELSE
-                      !We do not have intermediates or parameters in the model
-                      DO dof_idx=1,N
-                        model_idx=MODELS_DATA(dof_idx)
-                        IF(model_idx.GT.0) THEN
+                    !set up the time data
+                    CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                    CALL PETSC_TSSETDURATION(TS,1000,END_TIME,ERR,ERROR,*999)
 
-                          STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
-                          STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
-                     
-                          CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, & 
-                            & STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
-                            & RATES,INTERMEDIATES,PARAMETERS)
-                            
-                        ENDIF !model_idx
-                      ENDDO !dof_idx
-                    ENDIF
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
-                ENDIF
-#else
-                CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-#endif
+                    !set rhs function and pass through the cellml model context 
 
-              ENDIF!1 model
-            ENDIF!model associated
-          ENDIF!dof are separated
-        ENDIF!cellml models field
-      ENDIF!cellml
-    ENDIF!bdf_solver
+                    CTX%SOLVER=BDF_SOLVER%DAE_SOLVER%SOLVER
+                    CTX%DOF_NUMBER=dof_idx
+                    CALL PETSC_TSSETRHSFUNCTION(TS,CELLML_DAE_RHS,CTX,ERR,ERROR,*999)
+                    CALL PETSC_TSSolve(TS,PETSC_STATES,ERR,ERROR,*999)   
 
-  !For time - start to end with timestep
-  !  integrate
-  !  update fields for next time step
-  !end loop.
-
-
+                    ALLOCATE(STATES_TEMP(NUMBER_STATES),STAT=ERR)
+                    !update the states to new integrated values
+                    CALL PETSC_VECGETVALUES(PETSC_STATES, &
+                      & NUMBER_STATES, ARRAY_INDICES &
+                      & STATES_TEMP, &
+                      & ERR,ERROR,*999)
+                    CALL PETSC_TSFINALISE(TS,ERR,ERROR,*999) 
+                  ENDIF !model_idx
+                ENDDO !dof_idx
+              ELSE
+                CALL FLAG_ERROR("Cellml model is not associated.",ERR,ERROR,*999)
+              ENDIF   
+            ENDIF
+          ENDIF !dof continguous
+        CASE DEFAULT
+          LOCAL_ERROR="The BDF solver library type of  "// &
+            & TRIM(NUMBER_TO_VSTRING(BDF_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is not implemented."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT 
+        ELSE
+          CALL FLAG_ERROR("CELLML models field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("CELLML environment is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("BDF solver is not associated.",ERR,ERROR,*999)
+    ENDIF 
 
 999 CALL ERRORS("SOLVER_DAE_BDF_INTEGRATE",ERR,ERROR)
     CALL EXITS("SOLVER_DAE_BDF_INTEGRATE")
@@ -3646,7 +3586,8 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+    TYPE(PETSC_TS_TYPE) :: TS
+    TYPE(PETSC_VEC_TYPE) :: PETSC_STATES
     CALL ENTERS("SOLVER_DAE_BDF_SOLVE",ERR,ERROR,*999)
 
     NULLIFY(MODELS_DATA)
@@ -3705,8 +3646,9 @@ CONTAINS
                           & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
                       ENDIF
                     ENDIF
-
+                    
                     !Integrate these CellML equations
+
                     CALL SOLVER_DAE_BDF_INTEGRATE(BDF_SOLVER,CELLML_ENVIRONMENT,MODELS_VARIABLE% &
                       & TOTAL_NUMBER_OF_DOFS,DAE_SOLVER%START_TIME,DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP, &
                       & CELLML_ENVIRONMENT%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,MODELS_DATA,CELLML_ENVIRONMENT% &
@@ -3725,7 +3667,7 @@ CONTAINS
                       
                     !Make sure fields have been updated to the current value of any mapped CellML fields
                     CALL CELLML_CELLML_TO_FIELD_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
-                      
+                                        
                   ELSE
                     LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
                       & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
@@ -19006,21 +18948,15 @@ SUBROUTINE CELLML_DAE_RHS(TS_, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
 #endif
   USE CMISS_CELLML
   USE FIELD_ROUTINES
-
+  USE COMP_ENVIRONMENT
 #include "include/finclude/petsc.h"
-!#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
-!#include "include/finclude/petscvec.h"
-!#endif
-!#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-!#include "include/finclude/petscts.h"
-!#endif
 
 
   !Argument variables
   TS, INTENT(INOUT) :: TS_ !<The PETSc TS type
   PetscScalar, INTENT(INOUT) :: TIME !<The current time
   Vec :: PETCS_STATES,PETSC_RATES !<current states and returned rates
-  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+  TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The passed through context
   INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
 
   !Local Variables
@@ -19031,72 +18967,131 @@ SUBROUTINE CELLML_DAE_RHS(TS_, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
   TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
   TYPE(FIELD_TYPE), POINTER :: PARAMETERS_FIELD,INTERMEDIATE_FIELD
   INTEGER(INTG), POINTER :: MODELS_DATA(:)
-  REAL(DP), POINTER :: INTERMEDIATE_DATA(:),PARAMETERS_DATA(:),STATE_DATA(:)
+  REAL(DP), POINTER :: INTERMEDIATES_DATA(:),PARAMETERS_DATA(:),STATES_DATA(:)
   REAL(DP), ALLOCATABLE :: INTERMEDIATES(:),PARAMETERS(:),RATES(:),STATES(:)
-
-  INTEGER(Intg) :: cellml_idx
+  INTEGER(Intg) :: cellml_idx,parameter_idx,state_idx,model_idx,array_idx
+  INTEGER(INTG) :: DOF_NUMBER,ONLY_ONE_MODEL_INDEX,PARAMETER_START_DOF,STATE_START_DOF, &
+    & INTERMEDIATE_START_DOF,PARAMETER_END_DOF,STATE_END_DOF,INTERMEDIATE_END_DOF, &
+    & DOF_ORDER_TYPE,MAX_NUMBER_STATES,MAX_NUMBER_PARAMETERS,MAX_NUMBER_INTERMEDIATES
+  TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
   TYPE(VARYING_STRING) :: ERROR
+  INTEGER(INTG), ALLOCATABLE :: ARRAY_INDICES(:)
 
   NULLIFY(MODELS_DATA)
-  NULLIFY(INTERMEDIATE_DATA)
+  NULLIFY(INTERMEDIATES_DATA)
   NULLIFY(PARAMETERS_DATA)
-  NULLIFY(STATE_DATA)
+  NULLIFY(STATES_DATA)
   NULLIFY(MODELS_VARIABLE)
 
+  WRITE(*,*) 'CODE IN RHS ROUTINE'
   IF(ASSOCIATED(CTX)) THEN
-    CELLML_EQUATIONS=>CTX%CELLML_EQUATIONS
-    IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
-      DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
-        CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
-        IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN                  
-          CELLMLMODELSFIELD=>CELLML_ENVIRONMENT%MODELS_FIELD
-          IF(ASSOCIATED(CELLMLMODELSFIELD)) THEN
-            MODELS_FIELD=>CELLMLMODELSFIELD%MODELS_FIELD
-            IF(ASSOCIATED(MODELS_FIELD)) THEN
+    DOF_NUMBER = CTX%DOF_NUMBER
+    IF(ASSOCIATED(CTX%SOLVER)) THEN
+      CELLML_EQUATIONS=>CTX%SOLVER%CELLML_EQUATIONS
+      IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+        DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+          CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+           MAX_NUMBER_STATES=CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_STATE
+           MAX_NUMBER_INTERMEDIATES=CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_INTERMEDIATE
+           MAX_NUMBER_PARAMETERS=CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS
+          !Make sure CellML fields have been updated to the current value of any mapped fields
+          CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+          IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN                  
+            CELLMLMODELSFIELD=>CELLML_ENVIRONMENT%MODELS_FIELD
 
-!!TODO: Maybe move this getting of fields earlier up the DAE solver chain? For now keep here.
-                      
-              !Make sure CellML fields have been updated to the current value of any mapped fields
-              CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
-
-              CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & MODELS_DATA,ERR,ERROR,*999)
-                                            
-              !Get the parameters information if this environment has any.
-              IF(ASSOCIATED(CELLML_ENVIRONMENT%PARAMETERS_FIELD)) THEN
-                PARAMETERS_FIELD=>CELLML_ENVIRONMENT%PARAMETERS_FIELD%PARAMETERS_FIELD
-                IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
-                  CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & PARAMETERS_DATA,ERR,ERROR,*999)
-                ENDIF
+            !Get the parameters information if this environment has any.
+            IF(ASSOCIATED(CELLML_ENVIRONMENT%PARAMETERS_FIELD)) THEN
+              PARAMETERS_FIELD=>CELLML_ENVIRONMENT%PARAMETERS_FIELD%PARAMETERS_FIELD
+              IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
+                CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD, &
+                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & PARAMETERS_DATA,ERR,ERROR,*999)
               ENDIF
-                      
-              !Get the intermediate information if this environment has any.
-              IF(ASSOCIATED(CELLML_ENVIRONMENT%INTERMEDIATE_FIELD)) THEN
-                INTERMEDIATE_FIELD=>CELLML_ENVIRONMENT%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
-                IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
-                  CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
-                ENDIF
-              ENDIF!associated intermediate
-              ALLOCATE(STATES(MAX(1,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_STATE)))
-              ALLOCATE(RATES(MAX(1,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_STATE)))
+            ENDIF
+
+            !Get the intermediate information if this environment has any.
+            IF(ASSOCIATED(CELLML_ENVIRONMENT%INTERMEDIATE_FIELD)) THEN
+              INTERMEDIATE_FIELD=>CELLML_ENVIRONMENT%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
+              IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
+                 CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD, &
+                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & INTERMEDIATES_DATA,ERR,ERROR,*999)                            
+              ENDIF
+            ENDIF!associated intermediate
+
+            IF(ASSOCIATED(CELLMLMODELSFIELD)) THEN
+              MODELS_FIELD=>CELLMLMODELSFIELD%MODELS_FIELD
+
+              IF(ASSOCIATED(MODELS_FIELD)) THEN
+                CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
+                CALL FIELD_DOF_ORDER_TYPE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & MODELS_DATA,ERR,ERROR,*999)
+                model_idx = MODELS_DATA(DOF_NUMBER)
+                IF(ASSOCIATED(CELLML_ENVIRONMENT%MODELS(model_idx)%PTR)) THEN
+                  MODEL=>CELLML_ENVIRONMENT%MODELS(DOF_NUMBER)%PTR
+                  NUMBER_STATES = MODEL%NUMBER_OF_STATE
+                  NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                  NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                  !Get the states from PETSc
+                  ALLOCATE(STATES(NUMBER_STATES),STAT=ERR)
+                  ALLOCATE(RATES(NUMBER_STATES),STAT=ERR)
+                  ALLOCATE(ARRAY_INDICES(NUMBER_STATES),STAT=ERR)
+                  CALL VecGetArrayF90(PETSC_STATES,STATES,ERR,ERROR,*999)
+
+                  IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
+
+                  ELSE !continguous dof ordering    
+                    STATE_START_DOF = (DOF_NUMBER-1)*MAX_NUMBER_STATES+1
+                    STATE_END_DOF = STATE_START_DOF+NUMBER_STATES-1
+                    PARAMETER_START_DOF = (DOF_NUMBER-1)*MAX_NUMBER_PARAMETERS+1
+                    PARAMETER_END_DOF = PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    INTERMEDIATE_START_DOF = (DOF_NUMBER-1)*MAX_NUMBER_INTERMEDIATES+1
+                    INTERMEDIATE_END_DOF = INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+
+                 
 #ifdef USECELLML                    
-              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
-                & PARAMETERS)
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, &
+                      & STATES, &
+                      & RATES,INTERMEDIATES_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF), &
+                      & PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
 #else
-              CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.", &
+                       & ERR,ERROR,*999)
 #endif
+                    !Map calculated rates to PETSC_RATES
+                    CALL VecCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM, &
+                      & PETSC_RATES,ERR,ERROR,*999)
+                    CALL VecSetSizes(PETSC_RATES, &
+                      & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
+                    CALL VecSetFromOptions(PETSC_RATES,ERR,ERROR,*999)
 
-            ENDIF!associated models field
-          ENDIF!associated cellml models field
-        ENDIF!associated cellml environment
-      ENDDO !cellml_idx
-    ENDIF!associated cellml equations
-  ENDIF! associated ctx
+                    !set the PETSC_RATES solution to the current RATES
+                    ARRAY_INDICES = (/(array_idx,array_idx=0,(NUMBER_STATES-1))/)
+                    CALL VecSetValues(PETSC_RATES,(NUMBER_STATES), &
+                      & ARRAY_INDICES,RATES, &
+                      & PETSC_INSERT_VALUES,ERR,ERROR,*999)
+                    CALL VecAssemblyBegin(PETSC_RATES,ERR,ERROR,*999)
+                    CALL VecAssemblyEnd(PETSC_RATES,ERR,ERROR,*999)
+                    
+                  ENDIF !dof_order
+                ELSE
+                  CALL FLAG_ERROR("Cellml Model not associated.",ERR,ERROR,*999)
+                ENDIF !associated model
+                CALL FLAG_ERROR("Cellml Models Field not associated.",ERR,ERROR,*999)
+              ENDIF!associated models field
+              CALL FLAG_ERROR("Cellml models field not associated.",ERR,ERROR,*999)
+            ENDIF!associated cellml models field
+            CALL FLAG_ERROR("Cellml environment not associated.",ERR,ERROR,*999)
+          ENDIF!associated cellml environment
+        ENDDO !cellml_idx
+        CALL FLAG_ERROR("Cellml equations not associated.",ERR,ERROR,*999)
+      ENDIF!associated cellml equations
+      CALL FLAG_ERROR("Cellml PETSC CTX solver not associated.",ERR,ERROR,*999)
+   ENDIF !associated CTX solver
+   CALL FLAG_ERROR("Cellml PETSC Context not associated.",ERR,ERROR,*999)
+ ENDIF! associated ctx
 
-  WRITE(*,*) 'HELLO'
 999 CALL WRITE_ERROR(ERR,ERROR,*998)
 998 CALL FLAG_WARNING("Error calling CELLML_DAE_RHS routine from PETSc.",ERR,ERROR,*997)
 997 RETURN    
