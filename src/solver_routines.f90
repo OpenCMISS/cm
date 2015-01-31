@@ -436,7 +436,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_DAE_DIFFERENTIAL_ONLY,SOLVER_DAE_INDEX_1,SOLVER_DAE_INDEX_2,SOLVER_DAE_INDEX_3
 
   PUBLIC SOLVER_DAE_EULER,SOLVER_DAE_CRANK_NICOLSON,SOLVER_DAE_RUNGE_KUTTA,SOLVER_DAE_ADAMS_MOULTON,SOLVER_DAE_BDF, &
-    & SOLVER_DAE_RUSH_LARSON,SOLVER_DAE_EXTERNAL
+    & SOLVER_DAE_RUSH_LARSON,SOLVER_DAE_EXTERNAL, SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE, &
+    & SOLVER_DAE_CELLML_PETSC_CONTEXT_SET
 
   PUBLIC SOLVER_DAE_EULER_FORWARD,SOLVER_DAE_EULER_BACKWARD,SOLVER_DAE_EULER_IMPROVED
 
@@ -622,6 +623,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVERS_SOLVER_GET
 
   PUBLIC SOLVER_NEWTON_CELLML_EVALUATOR_CREATE,SOLVER_CELLML_EVALUATOR_FINALISE
+
+  PUBLIC SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE
 
   PUBLIC SOLVER_LINKED_SOLVER_ADD,SOLVER_LINKED_SOLVER_REMOVE
 
@@ -3425,6 +3428,107 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE SOLVER_DAE_BDF_INITIALISE
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a CellML evaluator solver.
+  SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE(CTX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<A pointer the CellML-PETSc solver context to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CTX)) THEN        
+      DEALLOCATE(CTX)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE",ERR,ERROR)
+    CALL EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a CELLML_PETSC_CONTEXT
+  SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE(CTX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_PETSC_CONTEXT_TYPE), INTENT(OUT), POINTER :: CTX !<A pointer to initialise a CELLML_PETSC_CONTEXT
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(CTX)) THEN
+      CALL FLAG_ERROR("CTX is already associated.",ERR,ERROR,*998)
+    ELSE
+      !Allocate the CTX
+      ALLOCATE(CTX,STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate context.",ERR,ERROR,*999)
+      !Initialise
+      NULLIFY(CTX%SOLVER)
+      CTX%DOF_NUMBER=0
+      !Defaults
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE(CTX,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE",ERR,ERROR)
+    CALL EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE
+  !
+  !================================================================================================================================
+  !
+
+  !>Set a CELLML_PETSC_CONTEXT
+  SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_SET(CTX,SOLVER,DOF_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_PETSC_CONTEXT_TYPE), INTENT(IN), POINTER :: CTX !<A pointer to initialise a CELLML_PETSC_CONTEXT
+    TYPE(SOLVER_TYPE), POINTER, INTENT(IN) :: SOLVER !<A point to the solver to set to CTX
+    INTEGER(INTG), INTENT(IN) :: DOF_NUMBER !<The DOF ID of the cellml-petsc context
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CTX)) THEN
+      !Set
+      CTX%SOLVER=>SOLVER
+      CTX%DOF_NUMBER=DOF_NUMBER
+      !Defaults
+    ELSE
+      CALL FLAG_ERROR("CTX is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET")
+    RETURN
+
+999 CALL ERRORS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET",ERR,ERROR)
+    CALL EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_SET
 
   !
   !================================================================================================================================
@@ -3470,7 +3574,7 @@ CONTAINS
     
     CALL ENTERS("SOLVER_DAE_BFD_INTEGRATE",ERR,ERROR,*999)
 
-   
+   NULLIFY(CTX)
 
     IF(ASSOCIATED(BDF_SOLVER)) THEN
       IF(ASSOCIATED(CELLML)) THEN
@@ -3519,21 +3623,27 @@ CONTAINS
                     !set up the time data
                     CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
                     CALL PETSC_TSSETDURATION(TS,1000,END_TIME,ERR,ERROR,*999)
-
+                    WRITE(*,*) 'TIMES SET'
                     !set rhs function and pass through the cellml model context 
 
-                    CTX%SOLVER=BDF_SOLVER%DAE_SOLVER%SOLVER
-                    CTX%DOF_NUMBER=dof_idx
+                    CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE(CTX,ERR,ERROR,*999)
+                    CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_SET(CTX, &
+                      & BDF_SOLVER%DAE_SOLVER%SOLVER,dof_idx,ERR,ERROR,*999)
+                    WRITE(*,*) 'CTX set'
                     CALL PETSC_TSSETRHSFUNCTION(TS,CELLML_DAE_RHS,CTX,ERR,ERROR,*999)
                     CALL PETSC_TSSolve(TS,PETSC_STATES,ERR,ERROR,*999)   
 
                     ALLOCATE(STATES_TEMP(NUMBER_STATES),STAT=ERR)
                     !update the states to new integrated values
                     CALL PETSC_VECGETVALUES(PETSC_STATES, &
-                      & NUMBER_STATES, ARRAY_INDICES &
+                      & NUMBER_STATES, ARRAY_INDICES, &
                       & STATES_TEMP, &
                       & ERR,ERROR,*999)
                     CALL PETSC_TSFINALISE(TS,ERR,ERROR,*999) 
+                    WRITE(*,*) 'PETSC INTEGRATION DONE'
+                    DO state_idx=1,NUMBER_STATES
+                      STATE_DATA(STATE_START_DOF+state_idx-1)=STATES_TEMP(state_idx)
+                    ENDDO
                   ENDIF !model_idx
                 ENDDO !dof_idx
               ELSE
