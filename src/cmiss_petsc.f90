@@ -1174,7 +1174,7 @@ MODULE CMISS_PETSC
       TS ts
       Vec r
       EXTERNAL rhsfunc
-      TYPE(SOLVER_TYPE), POINTER :: ctx
+      TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE TSSetRHSFunction
 
@@ -5716,7 +5716,7 @@ CONTAINS
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
     EXTERNAL RHSFUNCTION !<The external RHS function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
