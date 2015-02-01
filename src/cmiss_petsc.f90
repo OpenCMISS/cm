@@ -389,7 +389,6 @@ MODULE CMISS_PETSC
   TSType, PARAMETER :: PETSC_TS_GL = TSGL
 #endif
 #endif
-  
   !TS problem types
   TSProblemType, PARAMETER :: PETSC_TS_LINEAR = TS_LINEAR
   TSProblemType, PARAMETER :: PETSC_TS_NONLINEAR = TS_NONLINEAR
@@ -1156,6 +1155,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetFromOptions
 
+    SUBROUTINE TSSetExactFinalTime(ts,eftopt,ierr)
+      TS ts
+      PetscBool eftopt
+      PetscInt ierr
+    END SUBROUTINE TSSetExactFinalTime
+
     SUBROUTINE TSSetInitialTimeStep(ts,initial_time,time_step,ierr)
       TS ts
       PetscReal initial_time
@@ -1208,6 +1213,13 @@ MODULE CMISS_PETSC
       PetscReal ptime
       PetscInt ierr
     END SUBROUTINE TSStep
+
+    SUBROUTINE TSSundialsSetType(ts,sundialstype,ierr)
+      TS ts
+      TSSundialsType sundialstype
+      PetscInt ierr
+    END SUBROUTINE TSSundialsSetType
+
 
     SUBROUTINE VecAssemblyBegin(x,ierr)
       Vec x
@@ -1582,8 +1594,10 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_SUNDIALS_ADAMS,PETSC_SUNDIALS_BDF,PETSC_SUNDIALS_MODIFIED_GS,PETSC_SUNDIALS_CLASSICAL_GS
 
   PUBLIC PETSC_TSCREATE,PETSC_TSDESTROY,PETSC_TSFINALISE,PETSC_TSINITIALISE,PETSC_TSMONITORSET, &
-    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS,PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETSOLUTION, &
-    & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE,PETSC_TSSOLVE,PETSC_TSSTEP
+    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS, PETSC_TSSETEXACTFINALTIME, &
+    & PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETSOLUTION, &
+    & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE, &
+    & PETSC_TSSUNDIALSSETTYPE, PETSC_TSSOLVE,PETSC_TSSTEP
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
   PUBLIC PETSC_TSSETMATRICES
 #endif
@@ -5608,7 +5622,36 @@ CONTAINS
     CALL EXITS("PETSC_TSSETFROMOPTIONS")
     RETURN 1
   END SUBROUTINE PETSC_TSSETFROMOPTIONS
+
+  !
+  !================================================================================================================================
+  !
     
+  !>Buffer routine to the PETSc TSSetExactFinalTime routine.
+  SUBROUTINE PETSC_TSSETEXACTFINALTIME(TS_,EFTOPT,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the initial time step for
+    LOGICAL, INTENT(IN) :: EFTOPT !<The option for exact final time to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSETEXACTFINALTIME",ERR,ERROR,*999)
+
+    CALL TSSetExactFinalTime(TS_%TS_,EFTOPT,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSetExactFinalTime",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSETEXACTFINALTIME")
+    RETURN
+999 CALL ERRORS("PETSC_TTSSETEXACTFINALTIME",ERR,ERROR)
+    CALL EXITS("PETSC_TSSETEXACTFINALTIME")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSETEXACTFINALTIME    
   !
   !================================================================================================================================
   !
@@ -5889,7 +5932,36 @@ CONTAINS
     CALL EXITS("PETSC_TSSTEP")
     RETURN 1
   END SUBROUTINE PETSC_TSSTEP
-  
+
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSundialsSetType routine.
+  SUBROUTINE PETSC_TSSUNDIALSSETTYPE(TS_,SUNDIALSTYPE,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to step
+    TSSundialsType, INTENT(IN) :: SUNDIALSTYPE
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSUNDIALSSETTYPE",ERR,ERROR,*999)
+
+    CALL TSSundialsSetType(TS_%TS_,SUNDIALSTYPE,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSUNDIALSSETTYPE",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSUNDIALSSETTYPE")
+    RETURN
+999 CALL ERRORS("PETSC_TSSUNDIALSSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_TSSUNDIALSSETTYPE")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSUNDIALSSETTYPE  
   !
   !================================================================================================================================
   !
