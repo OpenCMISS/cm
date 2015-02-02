@@ -320,11 +320,9 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
                 label = "c.Hermite";
                 break;
             case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
-                scaleFactorCount *= 3;
                 label = "LagrangeHermite";
                 break;
             case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
-                scaleFactorCount *= 3;
                 label = "HermiteLagrange";
                 break;
             case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
