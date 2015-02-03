@@ -1188,6 +1188,12 @@ MODULE CMISS_PETSC
       Vec initialsolution
       PetscInt ierr
     END SUBROUTINE TSSetSolution
+
+    SUBROUTINE TSGetSolution(ts,currentsolution,ierr)
+      TS ts
+      Vec currentsolution
+      PetscInt ierr
+    END SUBROUTINE TSGetSolution
     
     SUBROUTINE TSSetTimeStep(ts,time_step,ierr)
       TS ts
@@ -1201,9 +1207,10 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetType
     
-    SUBROUTINE TSSolve(ts,x,ierr)
+    SUBROUTINE TSSolve(ts,x,ftime,ierr)
       TS ts
       Vec x
+      PetscReal ftime
       PetscInt ierr
     END SUBROUTINE TSSolve
 
@@ -1595,7 +1602,7 @@ MODULE CMISS_PETSC
 
   PUBLIC PETSC_TSCREATE,PETSC_TSDESTROY,PETSC_TSFINALISE,PETSC_TSINITIALISE,PETSC_TSMONITORSET, &
     & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS, PETSC_TSSETEXACTFINALTIME, &
-    & PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETSOLUTION, &
+    & PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETSOLUTION, PETSC_TSGETSOLUTION, &
     & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE, &
     & PETSC_TSSUNDIALSSETTYPE, PETSC_TSSOLVE,PETSC_TSSTEP
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
@@ -5755,9 +5762,10 @@ CONTAINS
   !
     
   !>Buffer routine to the PETSc TSSetRHSFunction routine.
-  SUBROUTINE PETSC_TSSETRHSFUNCTION(TS_,RHSFUNCTION,CTX,ERR,ERROR,*)
+  SUBROUTINE PETSC_TSSETRHSFUNCTION(TS_,PETSC_RATES,RHSFUNCTION,CTX,ERR,ERROR,*)
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: PETSC_RATES
     EXTERNAL RHSFUNCTION !<The external RHS function to call
     TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -5766,7 +5774,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_TSSETRHSFUNCTION",ERR,ERROR,*999)
 
-    CALL TSSetRHSFunction(TS_%TS_,PETSC_NULL_OBJECT,RHSFUNCTION,CTX,ERR)
+    CALL TSSetRHSFunction(TS_%TS_,PETSC_RATES%VEC,RHSFUNCTION,CTX,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -5811,6 +5819,35 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_TSSETSOLUTION
 
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSGetSolution routine.
+  SUBROUTINE PETSC_TSGETSOLUTION(TS_,CURRENTSOLUTION,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the time step for
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: CURRENTSOLUTION !<The current solution to be set for the TS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSETSOLUTION",ERR,ERROR,*999)
+
+    CALL TSGetSolution(TS_%TS_,CURRENTSOLUTION%VEC,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSGetSolution",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSGETSOLUTION")
+    RETURN
+999 CALL ERRORS("PETSC_TSGETSOLUTION",ERR,ERROR)
+    CALL EXITS("PETSC_TSGETSOLUTION")
+    RETURN 1
+  END SUBROUTINE PETSC_TSGETSOLUTION
     
   !
   !================================================================================================================================
@@ -5877,17 +5914,18 @@ CONTAINS
   !
     
   !>Buffer routine to the PETSc TSSolve routine.
-  SUBROUTINE PETSC_TSSOLVE(TS_,X,ERR,ERROR,*)
+  SUBROUTINE PETSC_TSSOLVE(TS_,X,FINALTIME,ERR,ERROR,*)
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to solve
-    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: X !<The solution vector
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The solution vector
+    REAL(DP), INTENT(OUT) :: FINALTIME
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_TSSOLVE",ERR,ERROR,*999)
 
-    CALL TSSolve(TS_%TS_,X%VEC,ERR)
+    CALL TSSolve(TS_%TS_,X%VEC,FINALTIME,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
