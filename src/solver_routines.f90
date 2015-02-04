@@ -3560,7 +3560,7 @@ CONTAINS
     INTEGER(INTG) :: STEPS !<The iteration number
     REAL(DP) :: TIME !<The current time
     REAL(DP) :: FINALSOLVEDTIME,TIMESTEP
-    TYPE(PETSC_VEC_TYPE) :: PETSC_INITIAL_STATES,PETSC_NEW_STATES !<The initial and final states for the DAE
+    TYPE(PETSC_VEC_TYPE) :: PETSC_CURRENT_STATES !<The initial and final states for the DAE
     TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The passed through context
     INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
       & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
@@ -3594,11 +3594,27 @@ CONTAINS
             ELSE !only one model
               MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
               IF(ASSOCIATED(MODEL)) THEN
+                !determine no. of states in model and allocate necessary arrays
                 NUMBER_STATES = MODEL%NUMBER_OF_STATE
                 ALLOCATE(STATES_TEMP(0:NUMBER_STATES-1),STAT=ERR)
                 ALLOCATE(RATES_TEMP(0:NUMBER_STATES-1),STAT=ERR)
                 ALLOCATE(ARRAY_INDICES(0:NUMBER_STATES-1),STAT=ERR)
                 ARRAY_INDICES = (/(array_idx,array_idx=0,(NUMBER_STATES-1))/)
+
+
+                !create PETSC states vector to initialize solver
+                CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                CALL PETSC_VECSETSIZES(PETSC_CURRENT_STATES, &
+                  & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
+                CALL PETSC_VECSETFROMOPTIONS(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+
+                !create PETSC rates vector to return values from evaluating rhs routine
+                CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_RATES,ERR,ERROR,*999)
+                CALL PETSC_VECSETSIZES(PETSC_RATES, &
+                  & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
+                CALL PETSC_VECSETFROMOPTIONS(PETSC_RATES,ERR,ERROR,*999)
+
+                !initialize context for petsc solving.
                 CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE(CTX,ERR,ERROR,*999)
                 DO dof_idx=1,N     
                   model_idx = MODELS_DATA(dof_idx)
@@ -3609,78 +3625,59 @@ CONTAINS
                     DO state_idx=1,NUMBER_STATES
                       STATES_TEMP(state_idx-1) = STATE_DATA(STATE_START_DOF+state_idx-1)
                     ENDDO
-                    WRITE(*,*) 'INITIAL STATES', STATE_DATA
                     !Set up PETSC TS context for sundials BDF solver
                     CALL PETSC_TSCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TS,ERR,ERROR,*999)
                     CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_NONLINEAR,ERR,ERROR,*999)
                     CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
                     CALL PETSC_TSSUNDIALSSETTYPE(TS,PETSC_SUNDIALS_BDF,ERR,ERROR,*999)
-                    !create PETSC states vector to initialize solver
-                    CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_INITIAL_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECSETSIZES(PETSC_INITIAL_STATES, &
-                      & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
-                    CALL PETSC_VECSETFROMOPTIONS(PETSC_INITIAL_STATES,ERR,ERROR,*999)
 
                     !set the initial solution to the current state
-                    CALL PETSC_VECSETVALUES(PETSC_INITIAL_STATES,(NUMBER_STATES), &
+                    CALL PETSC_VECSETVALUES(PETSC_CURRENT_STATES,(NUMBER_STATES), &
                       & ARRAY_INDICES,STATES_TEMP, &
                       & PETSC_INSERT_VALUES,ERR,ERROR,*999)
-                    CALL PETSC_VECASSEMBLYBEGIN(PETSC_INITIAL_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECASSEMBLYEND(PETSC_INITIAL_STATES,ERR,ERROR,*999)
-                    CALL PETSC_TSSETSOLUTION(TS,PETSC_INITIAL_STATES,ERR,ERROR,*999)
+                    CALL PETSC_VECASSEMBLYBEGIN(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                    CALL PETSC_VECASSEMBLYEND(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                    CALL PETSC_TSSETSOLUTION(TS,PETSC_CURRENT_STATES,ERR,ERROR,*999)
+
                     !set up the time data
                     CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
                     CALL PETSC_TSSETDURATION(TS,5000,END_TIME,ERR,ERROR,*999)
                     CALL PETSC_TSSETEXACTFINALTIME(TS,PETSC_TRUE,ERR,ERROR,*999)
+
                     IF(DIAGNOSTICS1) THEN
                       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DAE START TIME = ",START_TIME,ERR,ERROR,*999)
                       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DAE END TIME = ",END_TIME,ERR,ERROR,*999)
                     ENDIF
+
                     !set rhs function and pass through the cellml model context 
                     CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_SET(CTX, &
                       & BDF_SOLVER%DAE_SOLVER%SOLVER,dof_idx,ERR,ERROR,*999)
-
-                    CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_RATES,ERR,ERROR,*999)
-                    CALL PETSC_VECSETSIZES(PETSC_RATES, &
-                      & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
-                    CALL PETSC_VECSETFROMOPTIONS(PETSC_RATES,ERR,ERROR,*999)
                     CALL PETSC_TSSETRHSFUNCTION(TS,PETSC_RATES,CELLML_DAE_RHS,CTX,ERR,ERROR,*999)
 
-                    CALL PETSC_VECCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_NEW_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECSETSIZES(PETSC_NEW_STATES, &
-                      & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
-                    CALL PETSC_VECSETFROMOPTIONS(PETSC_NEW_STATES,ERR,ERROR,*999)
-                    CALL PETSC_TSSolve(TS,PETSC_NEW_STATES,FINALSOLVEDTIME,ERR,ERROR,*999) 
+                    CALL PETSC_TSSolve(TS,PETSC_CURRENT_STATES,FINALSOLVEDTIME,ERR,ERROR,*999) 
                     IF(DIAGNOSTICS1) THEN
-                      WRITE(*,*) "  FINAL SOLVED TIME = ",FINALSOLVEDTIME
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  FINAL SOLVED TIME = ", &
+                        & FINALSOLVEDTIME,ERR,ERROR,*999)
                     ENDIF
 
                     !update the states to new integrated values
-                    CALL PETSC_VECASSEMBLYBEGIN(PETSC_NEW_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECASSEMBLYEND(PETSC_NEW_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECGETVALUES(PETSC_NEW_STATES, &
+                    CALL PETSC_VECASSEMBLYBEGIN(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                    CALL PETSC_VECASSEMBLYEND(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                    CALL PETSC_VECGETVALUES(PETSC_CURRENT_STATES, &
                       & NUMBER_STATES, ARRAY_INDICES, &
                       & STATES_TEMP, &
                       & ERR,ERROR,*999)
-                    CALL PETSC_VECASSEMBLYBEGIN(PETSC_RATES,ERR,ERROR,*999)
-                    CALL PETSC_VECASSEMBLYEND(PETSC_RATES,ERR,ERROR,*999)
-                    CALL PETSC_VECGETVALUES(PETSC_RATES, &
-                      & NUMBER_STATES, ARRAY_INDICES, &
-                      & RATES_TEMP, &
-                      & ERR,ERROR,*999)
-
 
                     DO state_idx=1,NUMBER_STATES                      
                       STATE_DATA(STATE_START_DOF+state_idx-1)=  & 
-                        & STATE_DATA(STATE_START_DOF+state_idx-1)+ &
                         & STATES_TEMP(state_idx-1)
                     ENDDO
                     CALL PETSC_TSFINALISE(TS,ERR,ERROR,*999) 
-                    CALL PETSC_VECDESTROY(PETSC_INITIAL_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECDESTROY(PETSC_NEW_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECDESTROY(PETSC_RATES,ERR,ERROR,*999)
                   ENDIF !model_idx
                 ENDDO !dof_idx
+
+                CALL PETSC_VECDESTROY(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                CALL PETSC_VECDESTROY(PETSC_RATES,ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("Cellml model is not associated.",ERR,ERROR,*999)
               ENDIF   
@@ -19179,18 +19176,18 @@ SUBROUTINE CELLML_DAE_RHS(TS_, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
                 IF(ASSOCIATED(CELLML_ENVIRONMENT%MODELS(model_idx)%PTR)) THEN
                   MODEL=>CELLML_ENVIRONMENT%MODELS(model_idx)%PTR
                   NUMBER_STATES = MODEL%NUMBER_OF_STATE
+                  WRITE(*,*) 'NUMBER OF STATES: ',NUMBER_STATES
                   NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
                   NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
                   !Get the states from PETSc
                   ALLOCATE(STATES(NUMBER_STATES),STAT=ERR)
-                  ALLOCATE(PETSC_STATES_ARRAY(0:NUMBER_STATES),STAT=ERR)
+                  ALLOCATE(PETSC_STATES_ARRAY(0:NUMBER_STATES-1),STAT=ERR)
                   ALLOCATE(RATES(NUMBER_STATES),STAT=ERR)
-                  ALLOCATE(PETSC_RATES_ARRAY(0:NUMBER_STATES),STAT=ERR)
-                  ALLOCATE(ARRAY_INDICES(0:NUMBER_STATES),STAT=ERR)
+                  ALLOCATE(PETSC_RATES_ARRAY(0:NUMBER_STATES-1),STAT=ERR)
+                  ALLOCATE(ARRAY_INDICES(0:NUMBER_STATES-1),STAT=ERR)
                   ARRAY_INDICES = (/(array_idx,array_idx=0,(NUMBER_STATES-1))/)
                   CALL VecAssemblyBegin(PETSC_STATES,ERR)
-                  CALL VecAssemblyEnd(PETSC_STATES,ERR)
-              
+                  CALL VecAssemblyEnd(PETSC_STATES,ERR)              
                   CALL VecGetValues(PETSC_STATES,NUMBER_STATES, & 
                     & ARRAY_INDICES,PETSC_STATES_ARRAY,ERR)
 
