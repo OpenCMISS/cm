@@ -1429,7 +1429,16 @@ CONTAINS
                   !Caculate the strain field for an CellML evaluator solver
                   CALL PROBLEM_PRE_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*999)
                   !check for a linked CellML solver 
-                  CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                  SELECT CASE(SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+                  CASE(SOLVER_NONLINEAR_NEWTON)
+                    CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                  CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
+                    CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                  CASE DEFAULT
+                    LOCAL_ERROR="Linked CellML solver is not implemented for nonlinear solver type " &
+                      & //TRIM(NUMBER_TO_VSTRING(SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
                   IF(ASSOCIATED(CELLML_SOLVER)) THEN
                     CALL SOLVER_SOLVE(CELLML_SOLVER,ERR,ERROR,*999)
                   ENDIF
@@ -1456,11 +1465,20 @@ CONTAINS
                 CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
                 !Caculate the strain field for an CellML evaluator solver
                 CALL PROBLEM_PRE_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*999)
-                !check for a linked CellML solver 
-                !CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
-                !IF(ASSOCIATED(CELLML_SOLVER)) THEN
-                !  CALL SOLVER_SOLVE(CELLML_SOLVER,ERR,ERROR,*999)
-                !ENDIF
+                !check for a linked CellML solver
+                SELECT CASE(SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+                CASE(SOLVER_NONLINEAR_NEWTON)
+                  CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
+                  CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                CASE DEFAULT
+                  LOCAL_ERROR="Linked CellML solver is not implemented for nonlinear solver type " &
+                    & //TRIM(NUMBER_TO_VSTRING(SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+                IF(ASSOCIATED(CELLML_SOLVER)) THEN
+                  CALL SOLVER_SOLVE(CELLML_SOLVER,ERR,ERROR,*999)
+                ENDIF
                 !Make sure the equations sets are up to date
                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR

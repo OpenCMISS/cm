@@ -2935,12 +2935,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_CreateStartObj
   END INTERFACE !CMISSEquationsSet_CreateStart
 
-  !>Calculate the deformation for a specified user element number and xi coordinates.
-  INTERFACE CMISSEquationsSet_DeformationCalculate
-    MODULE PROCEDURE CMISSEquationsSet_DeformationCalculateNumber
-    MODULE PROCEDURE CMISSEquationsSet_DeformationCalculateObj
-  END INTERFACE
- 
   !>Destroy an equations set.
   INTERFACE CMISSEquationsSet_Destroy
     MODULE PROCEDURE CMISSEquationsSet_DestroyNumber
@@ -3084,8 +3078,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSet_CreateFinish,CMISSEquationsSet_CreateStart
 
-  PUBLIC CMISSEquationsSet_DeformationCalculate
-  
   PUBLIC CMISSEquationsSet_Destroy
 
   PUBLIC CMISSEquationsSet_DependentCreateFinish,CMISSEquationsSet_DependentCreateStart
@@ -6734,7 +6726,9 @@ MODULE OPENCMISS
     & CMISS_SOLVER_NONLINEAR_QUASI_NEWTON
 
   PUBLIC CMISS_SOLVER_QUASI_NEWTON_LINESEARCH,CMISS_SOLVER_QUASI_NEWTON_TRUSTREGION
-  
+
+  PUBLIC CMISS_SOLVER_QUASI_NEWTON_LBFGS,CMISS_SOLVER_QUASI_NEWTON_GOODBROYDEN,CMISS_SOLVER_QUASI_NEWTON_BADBROYDEN
+
   PUBLIC CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_BASIC,CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_L2, &
     & CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_CP
 
@@ -25574,82 +25568,6 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_SpecificationSetObj
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISSEquationsSet_DeformationCalculateNumber(regionUserNumber,equationsSetUserNumber,userElementNumber,xi,C,invC,err)
-
-    !>Calculate the deformation for a specified user element number and xi coordinates.
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the Region containing the equations set to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number.
-    REAL(DP), INTENT(IN) :: xi(:) !<The xi coordinates to calculate the deformation at
-    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
-    REAL(DP), INTENT(OUT) :: invC(:) !<The independent values of the inverse deformation tensor
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSEquationsSet_DeformationCalculateNumber",err,error,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(EQUATIONS_SET)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,REGION,EQUATIONS_SET,err,error,*999)
-      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-        CALL EQUATIONS_SET_DEFORMATION_CALCULATE(EQUATIONS_SET,userElementNumber,xi,C,invC,err,error,*999)
-      ELSE
-        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
-          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-      END IF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
-    END IF
-
-    CALL EXITS("CMISSEquationsSet_DeformationCalculateNumber")
-    RETURN
-999 CALL ERRORS("CMISSEquationsSet_DeformationCalculateNumber",err,error)
-    CALL EXITS("CMISSEquationsSet_DeformationCalculateNumber")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSEquationsSet_DeformationCalculateNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Calculate the deformation for a specified user element number and xi coordinates.
-  SUBROUTINE CMISSEquationsSet_DeformationCalculateObj(equationsSet,userElementNumber,xi,C,invC,err)
-
-    !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to calculate the deformation for.
-    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number.
-    REAL(DP), INTENT(IN) :: xi(:) !<The xi coordinates to calculate the deformation at
-    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
-    REAL(DP), INTENT(OUT) :: invC(:) !<The independent values of the inverse deformation tensor
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    !Local variables
-
-    CALL ENTERS("CMISSEquationsSet_DeformationCalculateObj",err,error,*999)
-
-    CALL EQUATIONS_SET_DEFORMATION_CALCULATE(equationsSet%EQUATIONS_SET,userElementNumber,xi,C,invC,err,error,*999)
-
-    CALL EXITS("CMISSEquationsSet_DeformationCalculateObj")
-    RETURN
-999 CALL ERRORS("CMISSEquationsSet_DeformationCalculateObj",err,error)
-    CALL EXITS("CMISSEquationsSet_DeformationCalculateObj")
-    CALL CMISS_HANDLE_ERROR(err,error)
-    RETURN
-
-  END SUBROUTINE CMISSEquationsSet_DeformationCalculateObj
 
 !!==================================================================================================================================
 !!

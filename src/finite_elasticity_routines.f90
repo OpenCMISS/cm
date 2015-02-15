@@ -26,7 +26,7 @@
 !> Auckland, the University of Oxford and King's College, London.
 !> All Rights Reserved.
 !>
-!> Contributor(s): Kumar Mithraratne, Jack Lee, Alice Hung
+!> Contributor(s): Kumar Mithraratne, Jack Lee, Alice Hung, Sander Arens
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -95,6 +95,9 @@ MODULE FINITE_ELASTICITY_ROUTINES
   INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX=8 !<c2 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
   !>@}
 
+  INTEGER(INTG), PARAMETER :: TENSOR_TO_VOIGT(3,3)=RESHAPE([1,4,5,4,2,6,5,6,3],[3,3]) !Converts from rank 2 symmetric tensor indices to Voigt index.
+  INTEGER(INTG), PARAMETER :: VOIGT_TO_TENSOR(2,6)=RESHAPE([1,1,2,2,3,3,2,1,3,1,3,2],[2,6]) !Converts from Voigt index to rank 2 symmetric tensor.
+
   !Module types
 
   !Module variables
@@ -118,7 +121,6 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE, &
     & FINITE_ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE,FINITE_ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
 
-  PUBLIC FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE
   PUBLIC FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
 
@@ -618,8 +620,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: EQUATIONS_SET_SUBTYPE !<The equation subtype
-    INTEGER(INTG) :: PRESSURE_COMPONENT,i,j
+    INTEGER(INTG) :: PRESSURE_COMPONENT,i,j,dof_idx
     REAL(DP) :: P
     REAL(DP) :: TEMPTERM1,TEMPTERM2
     REAL(DP), PARAMETER :: ONETHIRD=1.0_DP/3.0_DP,TWOTHIRDS=2.0_DP/3.0_DP
@@ -631,34 +632,35 @@ CONTAINS
                                                   0.0_DP,0.0_DP,0.0_DP,0.0_DP,1.0_DP,0.0_DP, &
                                                   0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,1.0_DP],[6,6])
     REAL(DP), PARAMETER :: TWOTHIRDS_UNITY(6) = [TWOTHIRDS,TWOTHIRDS,TWOTHIRDS,0.0_DP,0.0_DP,0.0_DP] !Rank 2 unit tensor times 2/3 in Voigt form.
-    REAL(DP), PARAMETER :: UNITY_DIAGONAL(6)=[1.0_DP,1.0_DP,1.0_DP,0.5_DP,0.5_DP,0.5_DP] !Rank 4 unit tensor in Voigt form.
+    REAL(DP), PARAMETER :: UNITY_DIAGONAL(6)=[1.0_DP,1.0_DP,1.0_DP,0.5_DP,0.5_DP,0.5_DP] !Diagonal of rank 4 unit tensor in Voigt form.
     REAL(DP), PARAMETER :: UNITY(6) = [1.0_DP,1.0_DP,1.0_DP,0.0_DP,0.0_DP,0.0_DP] !Rank 2 unit tensor in Voigt form.
     REAL(DP), POINTER :: C(:) !Parameters for constitutive laws
     REAL(DP) :: MOD_DZDNU(3,3),MOD_DZDNUT(3,3),AZL(3,3),AZU(3,3)
     REAL(DP) :: TRACE,TWOTHIRDS_TRACE
     REAL(DP) :: B(6),E(6),DQ_DE(6)
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FINITE_ELASTICITY_GAUSS_ELASTICITY_TENSOR",ERR,ERROR,*999)
+    
+    NULLIFY(FIELD_VARIABLE,C)
 
     !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
     !AZU - deformed contravariant tensor; I3 = det(C)
     !E = Green-Lagrange strain tensor = 0.5*(C-I)
-    !PIOLA_TENSOR is the second Piola-Kirchoff tensor (PK2 or S)
     !P is the hydrostatic pressure
 
     ! From now on, we calculate with the modified deformation tensor (=F*Jznu**(-1/3))
     MOD_DZDNU=DZDNU*Jznu**(-ONETHIRD)
     CALL MATRIX_TRANSPOSE(MOD_DZDNU,MOD_DZDNUT,ERR,ERROR,*999)
     CALL MATRIX_PRODUCT(MOD_DZDNUT,MOD_DZDNU,AZL,ERR,ERROR,*999)
-    CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999) !I3 should be equal to one now.
 
     C=>MATERIALS_INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
 
     ELASTICITY_TENSOR=0.0_DP
 
     SELECT CASE(EQUATIONS_SET%SUBTYPE)
-    CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE)
+    CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE,EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE)
       PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
       P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,NO_PART_DERIV)
       !Form of constitutive model is:
@@ -671,9 +673,23 @@ CONTAINS
       STRESS_TENSOR(1)=TEMPTERM1*AZL(1,1)+TEMPTERM2
       STRESS_TENSOR(2)=TEMPTERM1*AZL(2,2)+TEMPTERM2
       STRESS_TENSOR(3)=TEMPTERM1*AZL(3,3)+TEMPTERM2
-      STRESS_TENSOR(4)=TEMPTERM1*AZL(1,2)
-      STRESS_TENSOR(5)=TEMPTERM1*AZL(1,3)
-      STRESS_TENSOR(6)=TEMPTERM1*AZL(2,3)
+      STRESS_TENSOR(4)=TEMPTERM1*AZL(2,1)
+      STRESS_TENSOR(5)=TEMPTERM1*AZL(3,1)
+      STRESS_TENSOR(6)=TEMPTERM1*AZL(3,2)
+      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE) THEN
+        !add active contraction stress values
+        !the active stress is stored inside the independent field that has been set up in the user program.
+        !for generality we could set up 3 components in independent field for 3 different active stress components
+        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+        DO i=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          dof_idx=FIELD_VARIABLE%COMPONENTS(i)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
+            & GAUSS_POINTS(GAUSS_POINT_NUMBER,ELEMENT_NUMBER)
+          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,dof_idx,TEMPTERM1,ERR,ERROR,*999)
+          STRESS_TENSOR(i)=STRESS_TENSOR(i)+TEMPTERM1
+        ENDDO
+      ENDIF
 
       ! Calculate isochoric fictitious material elasticity tensor (in Voigt form), without the factor Jznu**(-4.0_DP/3.0_DP), as
       ! this will be compensated for in the push-forward with the modified deformation gradient.
@@ -693,24 +709,21 @@ CONTAINS
       CALL FINITE_ELASTICITY_PUSH_STRESS_TENSOR(STRESS_TENSOR,MOD_DZDNU,Jznu,ERR,ERROR,*999)
       CALL FINITE_ELASTICITY_PUSH_ELASTICITY_TENSOR(ELASTICITY_TENSOR,MOD_DZDNU,Jznu,ERR,ERROR,*999)
       
-      TRACE=STRESS_TENSOR(1)+STRESS_TENSOR(2)+STRESS_TENSOR(3)
+      TRACE=SUM(STRESS_TENSOR(1:3))
+      !Calculate isochoric Cauchy tensor (the deviatoric part).
+      STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD*TRACE
       TWOTHIRDS_TRACE=TWOTHIRDS*TRACE
+
       DO i=1,6
         ELASTICITY_TENSOR(i,i)=ELASTICITY_TENSOR(i,i)+TWOTHIRDS_TRACE*UNITY_DIAGONAL(i)
       ENDDO
-
       ELASTICITY_TENSOR=MATMUL(DEV_PROJ,MATMUL(ELASTICITY_TENSOR,DEV_PROJ))
-
-      !Calculate isochoric Cauchy tensor (the deviatoric part).
-      STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD*TRACE
-
       DO j=1,6
         DO i=1,6
           ELASTICITY_TENSOR(i,j)=ELASTICITY_TENSOR(i,j)- &
             & (TWOTHIRDS_UNITY(i)*STRESS_TENSOR(j)+TWOTHIRDS_UNITY(j)*STRESS_TENSOR(i))
         ENDDO
       ENDDO
-
       ! Add volumetric parts.
       STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)+P
       ELASTICITY_TENSOR(1,1)=ELASTICITY_TENSOR(1,1)-P
@@ -730,11 +743,25 @@ CONTAINS
       PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
       P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,NO_PART_DERIV)
       B=[2.0_DP*C(2),2.0_DP*C(3),2.0_DP*C(3),C(4),C(4),C(3)] ![2*b_f,2*b_t,2*b_t,b_ft,b_ft,b_t]
-      E=[0.5*(AZL(1,1)-1.0_DP),0.5*(AZL(2,2)-1.0_DP),0.5*(AZL(3,3)-1.0_DP),AZL(2,1),AZL(3,1),AZL(3,2)] !(Modified) strain tensor in Voigt form.
+      E=[0.5_DP*(AZL(1,1)-1.0_DP),0.5_DP*(AZL(2,2)-1.0_DP),0.5_DP*(AZL(3,3)-1.0_DP),AZL(2,1),AZL(3,1),AZL(3,2)] !(Modified) strain tensor in Voigt form.
       DQ_DE=B*E
-      TEMPTERM1=0.5*C(1)*EXP(0.5*DOT_PRODUCT(E,DQ_DE))
+      TEMPTERM1=0.5_DP*C(1)*EXP(0.5_DP*DOT_PRODUCT(E,DQ_DE))
       ! Calculate isochoric fictitious 2nd Piola tensor (in Voigt form)
       STRESS_TENSOR=TEMPTERM1*DQ_DE
+      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) THEN
+        !add active contraction stress values
+        !the active stress is stored inside the independent field that has been set up in the user program.
+        !for generality we could set up 3 components in independent field for 3 different active stress components
+        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+        DO i=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          dof_idx=FIELD_VARIABLE%COMPONENTS(i)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
+            & GAUSS_POINTS(GAUSS_POINT_NUMBER,ELEMENT_NUMBER)
+          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,dof_idx,TEMPTERM1,ERR,ERROR,*999)
+          STRESS_TENSOR(i)=STRESS_TENSOR(i)+TEMPTERM1
+        ENDDO
+      ENDIF
 
       ! Calculate isochoric fictitious material elasticity tensor (in Voigt form), without the factor Jznu**(-4.0_DP/3.0_DP), as
       ! this will be compensated for in the push-forward with the modified deformation gradient.
@@ -754,29 +781,26 @@ CONTAINS
         ENDDO
       ENDDO
 
-      ! Do push-forward of 2nd Piola tensor and the material elasticity tensor. 
+      !Do push-forward of 2nd Piola tensor and the material elasticity tensor. 
       CALL FINITE_ELASTICITY_PUSH_STRESS_TENSOR(STRESS_TENSOR,MOD_DZDNU,Jznu,ERR,ERROR,*999)
       CALL FINITE_ELASTICITY_PUSH_ELASTICITY_TENSOR(ELASTICITY_TENSOR,MOD_DZDNU,Jznu,ERR,ERROR,*999)
       
-      TRACE=STRESS_TENSOR(1)+STRESS_TENSOR(2)+STRESS_TENSOR(3)
+      TRACE=SUM(STRESS_TENSOR(1:3))
+      !Calculate isochoric Cauchy tensor (the deviatoric part) and volumetric part (hydrostatic pressure).
+      STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD*TRACE
+
       TWOTHIRDS_TRACE=TWOTHIRDS*TRACE
       DO i=1,6
         ELASTICITY_TENSOR(i,i)=ELASTICITY_TENSOR(i,i)+TWOTHIRDS_TRACE*UNITY_DIAGONAL(i)
       ENDDO
-
       ELASTICITY_TENSOR=MATMUL(DEV_PROJ,MATMUL(ELASTICITY_TENSOR,DEV_PROJ))
-
-      !Calculate isochoric Cauchy tensor (the deviatoric part).
-      STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD*TRACE
-
       DO j=1,6
         DO i=1,6
           ELASTICITY_TENSOR(i,j)=ELASTICITY_TENSOR(i,j)- &
             & (TWOTHIRDS_UNITY(i)*STRESS_TENSOR(j)+TWOTHIRDS_UNITY(j)*STRESS_TENSOR(i))
         ENDDO
       ENDDO
-
-      ! Add volumetric parts.
+      !Add volumetric parts.
       STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)+P
       ELASTICITY_TENSOR(1,1)=ELASTICITY_TENSOR(1,1)-P
       ELASTICITY_TENSOR(2,2)=ELASTICITY_TENSOR(2,2)-P
@@ -791,7 +815,7 @@ CONTAINS
       ELASTICITY_TENSOR(1,3)=ELASTICITY_TENSOR(1,3)+P
       ELASTICITY_TENSOR(2,3)=ELASTICITY_TENSOR(2,3)+P
     CASE DEFAULT
-      LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+      LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
         & " is not valid for a finite elasticity equation type of an elasticity equation set class."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     END SELECT
@@ -822,7 +846,6 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_XI 
     INTEGER(INTG) :: ELEMENT_BASE_DOF_INDEX(4)
     INTEGER(INTG), PARAMETER :: OFF_DIAG_COMP(3)=[0,1,3],OFF_DIAG_DEP_VAR1(3)=[1,1,2],OFF_DIAG_DEP_VAR2(3)=[2,3,3]
-    INTEGER(INTG), PARAMETER :: IDX(3,3)=RESHAPE([1,4,5,4,2,6,5,6,3],[3,3]) !First index refers to derivative and second index to coordinate number of basis function 
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER,NUMBER_OF_ELEMENT_PARAMETERS(4)
     REAL(DP) :: DZDNU(3,3),CAUCHY_TENSOR(3,3),DNUDXI(3,3),DXIDNU(3,3)
     REAL(DP) :: JGW_SUB_MAT(3,3) 
@@ -967,18 +990,20 @@ CONTAINS
             ! Convert from Voigt form to tensor form.
             DO nh=1,NUMBER_OF_DIMENSIONS
               DO mh=1,NUMBER_OF_DIMENSIONS
-                CAUCHY_TENSOR(mh,nh)=STRESS_TENSOR(IDX(mh,nh))
+                CAUCHY_TENSOR(mh,nh)=STRESS_TENSOR(TENSOR_TO_VOIGT(mh,nh))
               ENDDO
             ENDDO
-            
+           
+            !First: loop over mh=nh
             !Loop over element columns belonging to geometric dependent variables
             nhs=0
             DO nh=1,NUMBER_OF_DIMENSIONS
-              JGW_SUB_MAT=JGW*(ELASTICITY_TENSOR(IDX(:,nh),IDX(:,nh))+CAUCHY_TENSOR)
+              JGW_SUB_MAT=JGW*(ELASTICITY_TENSOR(TENSOR_TO_VOIGT(:,nh),TENSOR_TO_VOIGT(:,nh))+CAUCHY_TENSOR)
               DO ns=1,NUMBER_OF_ELEMENT_PARAMETERS(nh)
                 TEMPVEC=MATMUL(JGW_SUB_MAT,DPHIDZ(:,ns,nh))
                 nhs=nhs+1
                 mhs=nhs-1
+                !Loop over element rows belonging to geometric dependent variables
                 DO ms=ns,NUMBER_OF_ELEMENT_PARAMETERS(nh)
                   mhs=mhs+1
                   JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
@@ -987,11 +1012,13 @@ CONTAINS
               ENDDO !ns
             ENDDO !nh
          
+            !Second: loop over mh>nh
+            !Loop over element columns belonging to geometric dependent variables
             DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
               nh=OFF_DIAG_DEP_VAR1(oh)
               mh=OFF_DIAG_DEP_VAR2(oh)
               nhs=ELEMENT_BASE_DOF_INDEX(nh)
-              JGW_SUB_MAT=JGW*ELASTICITY_TENSOR(IDX(:,mh),IDX(:,nh))
+              JGW_SUB_MAT=JGW*ELASTICITY_TENSOR(TENSOR_TO_VOIGT(:,mh),TENSOR_TO_VOIGT(:,nh))
               DO ns=1,NUMBER_OF_ELEMENT_PARAMETERS(nh)
                 !Loop over element rows belonging to geometric dependent variables
                 TEMPVEC=MATMUL(JGW_SUB_MAT,DPHIDZ(:,ns,nh))
@@ -1005,6 +1032,7 @@ CONTAINS
               ENDDO !ns
             ENDDO
 
+            !Third: loop over all nh and pressure component
             nhs=0
             IF(FIELD_VARIABLE%COMPONENTS(PRESSURE_COMPONENT)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
               !Loop over element rows belonging to geometric dependent variables
@@ -1038,6 +1066,7 @@ CONTAINS
             ! No loop over element columns and rows belonging both to hydrostatic pressure because it is zero.
           ENDDO !ng
 
+          !If symmetric pressure Jacobian uncomment this.
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
 !          IF(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT.AND. &
 !            & TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
@@ -1119,7 +1148,8 @@ CONTAINS
             ENDDO !mhs
           ENDDO !nhs
 
-!          !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
+          !If unsymmetric pressure Jacobian uncomment this.
+!         !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
           IF(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT.AND. &
             & TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
@@ -1271,7 +1301,8 @@ CONTAINS
     INTEGER(INTG) :: var2 ! Variable number corresponding to 'DELUDLEN' in single physics case
     INTEGER(INTG) :: numberOfXDimensions,numberOfZDimensions,numberOfXiDimensions
     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
-    REAL(DP) :: DZDNU(3,3),CAUCHY_TENSOR(3,3),DZDNUT(3,3),AZL(3,3),AZU(3,3),I3,P,PIOLA_TENSOR(3,3),TEMP(3,3)
+    REAL(DP) :: DZDNU(3,3),DZDNUT(3,3),AZL(3,3),AZU(3,3),I3,P,PIOLA_TENSOR(3,3),TEMP(3,3)
+    REAL(DP) :: CAUCHY_TENSOR(3,3),JGW_CAUCHY_TENSOR(3,3),STRESS_TENSOR(6)
     REAL(DP) :: DNUDXI(3,3),DXIDNU(3,3)
     REAL(DP) :: DFDZ(64,3,3) !temporary until a proper alternative is found
     REAL(DP) :: DPHIDZ(3,64,3) !temporary until a proper alternative is found
@@ -1422,8 +1453,8 @@ CONTAINS
         !SELECT: Compressible or incompressible cases, or poro multicompartment
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         ! ---------------------------------------------------------------
-        CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
-            & EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) ! 4 dependent components
+        CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE,EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE, &
+            & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE,EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) ! 4 dependent components
           !Loop over gauss points and add residuals
           DO gauss_idx=1,DEPENDENT_NUMBER_OF_GAUSS_POINTS
             !Interpolate dependent, geometric, fibre and materials fields
@@ -1460,17 +1491,25 @@ CONTAINS
                 ENDDO !mh
               ENDDO !ns
             ENDDO !nh
-
+            
             CALL CoordinateMaterialSystemCalculate(GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT, &
               & DNUDXI,DXIDNU,ERR,ERROR,*999)
             !dZ/dNu = dZ/dXi * dXi/dNu  (deformation gradient tensor, F)
             CALL MATRIX_PRODUCT(DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI,DXIDNU,DZDNU,ERR,ERROR,*999)
 
+            Jznu=DEPENDENT_INTERPOLATED_POINT_METRICS%JACOBIAN/GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
+            JGW=DEPENDENT_INTERPOLATED_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
+
            !Calculate the Cauchy stress tensor at the gauss point.
            CALL FINITE_ELASTICITY_GAUSS_STRESS_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-             & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
+             & MATERIALS_INTERPOLATED_POINT,STRESS_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
             
-            JGW=DEPENDENT_INTERPOLATED_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
+            ! Convert from Voigt form to tensor form and multiply with Jacobian and Gauss weight.
+            DO nh=1,NUMBER_OF_DIMENSIONS
+              DO mh=1,NUMBER_OF_DIMENSIONS
+                JGW_CAUCHY_TENSOR(mh,nh)=JGW*STRESS_TENSOR(TENSOR_TO_VOIGT(mh,nh))
+              ENDDO
+            ENDDO
 
             !Now add up the residual terms
             mhs=0
@@ -1480,11 +1519,8 @@ CONTAINS
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
               DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 mhs=mhs+1
-                SUM1=0.0_DP
-                DO nh=1,NUMBER_OF_DIMENSIONS
-                  SUM1=SUM1+DPHIDZ(nh,ms,mh)*CAUCHY_TENSOR(nh,mh)
-                ENDDO !mi
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+JGW*SUM1
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+ &
+                  & DOT_PRODUCT(DPHIDZ(:,ms,mh),JGW_CAUCHY_TENSOR(:,mh))
               ENDDO !ms
             ENDDO !mh
             
@@ -1545,7 +1581,7 @@ CONTAINS
           ENDIF
 
         ! ---------------------------------------------------------------
-        CASE(EQUATIONS_SET_NO_SUBTYPE,EQUATIONS_SET_MEMBRANE_SUBTYPE, EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE, &
+        CASE(EQUATIONS_SET_NO_SUBTYPE,EQUATIONS_SET_MEMBRANE_SUBTYPE, &
           & EQUATIONS_SET_STVENANT_KIRCHOFF_ACTIVECONTRACTION_SUBTYPE, &
           & EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
           & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
@@ -2303,230 +2339,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculate the deformation tensor for a finite elasticity finite element equations set.
-  SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE(EQUATIONS_SET,USER_ELEMENT_NUMBER,XI,C,INV_C,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The element number to calculate the deformation at
-    REAL(DP), INTENT(IN) :: XI(:) !<The xi coordinates to calculate the deformation at
-    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
-    REAL(DP), INTENT(OUT) :: INV_C(:) !<The independent values of the inverse deformation tensor
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERPOLATION_PARAMETERS, &
-      & FIBRE_INTERPOLATION_PARAMETERS,DEPENDENT_INTERPOLATION_PARAMETERS
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT, &
-      & DEPENDENT_INTERPOLATED_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT_METRICS, &
-      & DEPENDENT_INTERPOLATED_POINT_METRICS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR   
-
-    LOGICAL :: GHOST_ELEMENT, USER_ELEMENT_EXISTS
-    INTEGER(INTG) :: i
-    INTEGER(INTG) :: ELEMENT_NUMBER
-    INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: DEPENDENT_NUMBER_OF_COMPONENTS
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_XI
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER
-    INTEGER(INTG) :: var1 ! Variable number corresponding to 'U' in single physics case
-    REAL(DP) :: DZDNU(3,3),AZL(3,3),AZU(3,3),DZDNUT(3,3)
-    REAL(DP) :: Jxxi,I3
-    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
-      & USER_TIME5(1),SYSTEM_ELAPSED,SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
-      & SYSTEM_TIME5(1)
-
-    CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE",ERR,ERROR,*999)
-
-    NULLIFY(GEOMETRIC_BASIS,DEPENDENT_BASIS)
-    NULLIFY(EQUATIONS)
-    NULLIFY(DEPENDENT_FIELD,GEOMETRIC_FIELD)
-    NULLIFY(GEOMETRIC_INTERPOLATION_PARAMETERS,FIBRE_INTERPOLATION_PARAMETERS)
-    NULLIFY(DEPENDENT_INTERPOLATION_PARAMETERS)
-    NULLIFY(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT)
-    NULLIFY(DEPENDENT_INTERPOLATED_POINT)
-    NULLIFY(GEOMETRIC_INTERPOLATED_POINT_METRICS,DEPENDENT_INTERPOLATED_POINT_METRICS)
-    NULLIFY(DECOMPOSITION)
-    NULLIFY(DECOMPOSITION_TOPOLOGY)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN 
-      
-        !Which variables are we working with - find the variable pair used for this equations set
-        !\todo: put in checks for all the objects/mappings below TODO
-
-        var1=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_NUMBER ! number for 'U'
-
-        !Grab pointers: fields, decomposition, basis
-        NUMBER_OF_DIMENSIONS=EQUATIONS_SET%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-
-        GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-        DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-        DEPENDENT_NUMBER_OF_COMPONENTS=DEPENDENT_FIELD%VARIABLES(var1)%NUMBER_OF_COMPONENTS
-        
-        DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
-        MESH_COMPONENT_NUMBER=DECOMPOSITION%MESH_COMPONENT_NUMBER
-
-        !Grab interpolation parameters
-        FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_TYPE
-        DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
-        GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
-        FIBRE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
-
-        IF(ASSOCIATED(DECOMPOSITION)) THEN
-          DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
-          CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
-              & USER_ELEMENT_EXISTS,ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
-          IF(USER_ELEMENT_EXISTS) THEN
-            IF(GHOST_ELEMENT) THEN
-              LOCAL_ERROR="Cannot calculate deformation tensor for user element "// &
-                & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ELSE
-              GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-              DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS       
-
-              NUMBER_OF_XI=DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)% &
-                & BASIS%NUMBER_OF_XI
-
-              !Initialise tensors and matrices
-              DZDNU=0.0_DP
-              DO i=1,3 !NUMBER_OF_DIMENSIONS
-                DZDNU(i,i)=1.0_DP
-              ENDDO
-
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-                & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-                & FIBRE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-                & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-
-              !Point interpolation pointer
-              GEOMETRIC_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-              GEOMETRIC_INTERPOLATED_POINT_METRICS=>EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-              FIBRE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-              DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
-              DEPENDENT_INTERPOLATED_POINT_METRICS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS(FIELD_VAR_TYPE)%PTR
-
-              !Interpolate dependent, geometric, fibre fields
-              CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,XI,DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(DEPENDENT_BASIS%NUMBER_OF_XI,DEPENDENT_INTERPOLATED_POINT_METRICS, &
-                & ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,XI,GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(DEPENDENT_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERPOLATED_POINT_METRICS, &
-                & ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,XI,FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
-
-              !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-              CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-                & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
-
-              IF(DIAGNOSTICS1) THEN
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-              ENDIF
-
-              !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
-              !AZU - deformed contravariant tensor; I3 = det(C)
-
-              CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)
-              CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999)
-              CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999)
-
-              ! we only want to store the indepent components of the STRAIN FIELD
-              IF(NUMBER_OF_DIMENSIONS==3) THEN
-                ! 3 dimensional problem
-                ! ORDER OF THE COMPONENTS: U_11, U_12, U_13, U_22, U_23, U_33 (upper triangular matrix)
-                C(1)=AZL(1,1)
-                C(2)=AZL(1,2)
-                C(3)=AZL(1,3)
-                C(4)=AZL(2,2)
-                C(5)=AZL(2,3)
-                C(6)=AZL(3,3)
-                INV_C(1)=AZU(1,1)
-                INV_C(2)=AZU(1,2)
-                INV_C(3)=AZU(1,3)
-                INV_C(4)=AZU(2,2)
-                INV_C(5)=AZU(2,3)
-                INV_C(6)=AZU(3,3)
-              ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
-                ! 2 dimensional problem
-                ! ORDER OF THE COMPONENTS: U_11, U_12, U_22 (upper triangular matrix)
-                C(1)=AZL(1,1)
-                C(2)=AZL(1,2)
-                C(3)=AZL(2,2)
-                INV_C(1)=AZU(1,1)
-                INV_C(2)=AZU(1,2)
-                INV_C(3)=AZU(2,2)
-              ELSE !NUMBER_OF_DIMENSIONS
-                LOCAL_ERROR="Only 2 dimensional and 3 dimensional problems are implemented at the moment."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF !NUMBER_OF_DIMENSIONS
-
-              !Output timing information if required
-              IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
-                CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
-                CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
-                USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
-                  SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
-                  ELEMENT_USER_ELAPSED=USER_ELAPSED
-                  ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for deformation field calculation = ", &
-                    & USER_ELAPSED,ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for deformation field calculation = ", &
-                    & SYSTEM_ELAPSED,ERR,ERROR,*999)
-              ENDIF !EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT
-              !Output timing information if required
-              IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
-                CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
-                CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
-                USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
-                SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
-                   & ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
-                   & ERR,ERROR,*999)              
-              ENDIF !EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT
-            ENDIF
-          ELSE
-            LOCAL_ERROR="The specified user element number of "// &
-              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-              & " does not exist in the decomposition of field number "// &
-              & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE")
-    RETURN
-
-999 CALL ERRORS("FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE",ERR,ERROR)
-    CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE")
-    RETURN 1
-  END SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE
-
-  !
-  !================================================================================================================================
-  !
-
   !>Calculated the strain field for a finite elasticity finite element equations set.
   SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -3012,6 +2824,7 @@ CONTAINS
 
             JGW_PRESSURE=DEPENDENT_INTERP_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)*PRESSURE_GAUSS
 
+            !\todo Find a way to correctly multiply with the scale factors if we have an unsymmetric Jacobian.
             !Loop over element columns belonging to geometric dependent variables
             DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
               nh=OFF_DIAG_DEP_VAR1(oh)
@@ -3075,60 +2888,6 @@ CONTAINS
                 ENDDO !ms    
               ENDDO !ns
             ENDDO !oh
-!            DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
-!              nh=OFF_DIAG_DEP_VAR1(oh)
-!              mh=OFF_DIAG_DEP_VAR2(oh)
-!              JGW_PRESSURE_W(1)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,nh)- &
-!                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-!              JGW_PRESSURE_W(2)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,nh)- &
-!                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-!              DO ns=1,NUMBER_OF_FACE_PARAMETERS(nh)
-!                !Loop over element rows belonging to geometric dependent variables
-!                nhs=ELEMENT_BASE_DOF_INDEX(nh)+ &
-!                  & BASES(nh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ns,naf)
-!                TEMPVEC1(1)=JGW_PRESSURE_W(1)*QUADRATURE_SCHEMES(nh)%PTR% &
-!                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1),ng)
-!                TEMPVEC1(2)=JGW_PRESSURE_W(2)*QUADRATURE_SCHEMES(nh)%PTR% &
-!                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2),ng)
-!                DO ms=1,NUMBER_OF_FACE_PARAMETERS(mh)
-!                  mhs=ELEMENT_BASE_DOF_INDEX(mh)+ &
-!                    & BASES(mh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ms,naf)
-!                  TEMPVEC2(1)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-!                  TEMPVEC2(2)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-!                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
-!                    DOT_PRODUCT(TEMPVEC1(1:2),TEMPVEC2(1:2))* &
-!                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ms,mh)* &
-!                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,nh)
-!                ENDDO !ms    
-!              ENDDO !ns
-!            ENDDO !oh
-!            DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
-!              nh=OFF_DIAG_DEP_VAR2(oh)
-!              mh=OFF_DIAG_DEP_VAR1(oh)
-!              JGW_PRESSURE_W(1)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,nh)- &
-!                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-!              JGW_PRESSURE_W(2)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,nh)- &
-!                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-!              DO ns=1,NUMBER_OF_FACE_PARAMETERS(nh)
-!                !Loop over element rows belonging to geometric dependent variables
-!                nhs=ELEMENT_BASE_DOF_INDEX(nh)+ &
-!                  & BASES(nh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ns,naf)
-!                TEMPVEC1(1)=JGW_PRESSURE_W(1)*QUADRATURE_SCHEMES(nh)%PTR% &
-!                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1),ng)
-!                TEMPVEC1(2)=JGW_PRESSURE_W(2)*QUADRATURE_SCHEMES(nh)%PTR% &
-!                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2),ng)
-!                DO ms=1,NUMBER_OF_FACE_PARAMETERS(mh)
- !                 mhs=ELEMENT_BASE_DOF_INDEX(mh)+ &
- !                   & BASES(mh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ms,naf)
- !                 TEMPVEC2(1)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-!                  TEMPVEC2(2)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-!                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
-!                    DOT_PRODUCT(TEMPVEC1(1:2),TEMPVEC2(1:2))* &
-!                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ms,mh)* &
-!                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,nh)
-!                ENDDO !ms    
-!              ENDDO !ns
-!            ENDDO !oh
           ENDDO !ng
         ENDIF !Non-zero pressure on face
       ENDIF !Boundary face
@@ -4067,12 +3826,12 @@ CONTAINS
 
   !>Evaluates the Cauchy stress tensor at a given Gauss point
   SUBROUTINE FINITE_ELASTICITY_GAUSS_STRESS_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-      & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
+      & MATERIALS_INTERPOLATED_POINT,STRESS_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
-    REAL(DP), INTENT(OUT) :: CAUCHY_TENSOR(:,:)
+    REAL(DP), INTENT(OUT) :: STRESS_TENSOR(:)
     REAL(DP), INTENT(IN) :: DZDNU(3,3) !Deformation gradient tensor at the gauss point
     REAL(DP), INTENT(IN) :: Jznu !Determinant of deformation gradient tensor (AZL)
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER,GAUSS_POINT_NUMBER !<Element/Gauss point number
@@ -4083,12 +3842,13 @@ CONTAINS
     REAL(DP) :: P
     REAL(DP) :: I1,I2,I3 !Invariants, if needed
     REAL(DP) :: ACTIVE_STRESS_11,ACTIVE_STRESS_22,ACTIVE_STRESS_33 !Active stress to be copied in from independent field.
-    REAL(DP) :: PIOLA_TENSOR(3,3),TEMPTERM1,TEMPTERM2 !Temporary variables
+    REAL(DP) :: TEMPTERM1,TEMPTERM2 !Temporary variables
     REAL(DP) :: ONETHIRD_TRACE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    REAL(DP) :: MOD_DZDNU(3,3),MOD_DZDNUT(3,3),AZL(3,3),AZU(3,3),E(3,3)
-    REAL(DP), DIMENSION (:), POINTER :: C !Parameters for constitutive laws
+    REAL(DP) :: MOD_DZDNU(3,3),MOD_DZDNUT(3,3),AZL(3,3),AZU(3,3)
+    REAL(DP) :: B(6),E(6),DQ_DE(6)
+    REAL(DP), POINTER :: C(:) !Parameters for constitutive laws
 
     CALL ENTERS("FINITE_ELASTICITY_GAUSS_STRESS_TENSOR",ERR,ERROR,*999)
 
@@ -4100,87 +3860,79 @@ CONTAINS
     MOD_DZDNU=DZDNU*Jznu**(-1.0_DP/3.0_DP)
     CALL MATRIX_TRANSPOSE(MOD_DZDNU,MOD_DZDNUT,ERR,ERROR,*999)
     CALL MATRIX_PRODUCT(MOD_DZDNUT,MOD_DZDNU,AZL,ERR,ERROR,*999)
-    CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999) !I3 should be equal to one now.
     C=>MATERIALS_INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV)
+
     SELECT CASE(EQUATIONS_SET%SUBTYPE)
-    CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE)
+    CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE,EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE)
       PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
       P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,NO_PART_DERIV)
       !Form of constitutive model is:
-      ! W=c1*(I1-3)+c2*(I2-3)+p/2*(I3-1)
+      !W=c1*(I1-3)+c2*(I2-3)+p/2*(I3-1)
+
+      !Calculate isochoric fictitious 2nd Piola tensor (in Voigt form)
       I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
       TEMPTERM1=-2.0_DP*C(2)
       TEMPTERM2=2.0_DP*(C(1)+I1*C(2))
-      PIOLA_TENSOR=TEMPTERM1*AZL
-      DO i=1,3
-        PIOLA_TENSOR(i,i)=PIOLA_TENSOR(i,i)+TEMPTERM2
-      ENDDO !i
-      !add active contraction stress value to the trace of the stress tensor - basically adding to hydrostatic pressure.
-      !the active stress is stored inside the independent field that has been set up in the user program.
-      !for generality we could set up 3 components in independent field for 3 different active stress components
-      !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+      STRESS_TENSOR(1)=TEMPTERM1*AZL(1,1)+TEMPTERM2
+      STRESS_TENSOR(2)=TEMPTERM1*AZL(2,2)+TEMPTERM2
+      STRESS_TENSOR(3)=TEMPTERM1*AZL(3,3)+TEMPTERM2
+      STRESS_TENSOR(4)=TEMPTERM1*AZL(2,1)
+      STRESS_TENSOR(5)=TEMPTERM1*AZL(3,1)
+      STRESS_TENSOR(6)=TEMPTERM1*AZL(3,2)
 
-      CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
-      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-        dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
-          & GAUSS_POINTS(GAUSS_POINT_NUMBER,ELEMENT_NUMBER)
-        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-          & FIELD_VALUES_SET_TYPE,dof_idx,TEMPTERM1,ERR,ERROR,*999)
-        PIOLA_TENSOR(component_idx,component_idx)=PIOLA_TENSOR(component_idx,component_idx)+TEMPTERM1
-      ENDDO
-      ! Calculate the Cauchy tensor
-      CAUCHY_TENSOR=MATMUL(MOD_DZDNU,MATMUL(PIOLA_TENSOR,MOD_DZDNUT))/Jznu
-      ONETHIRD_TRACE=(CAUCHY_TENSOR(1,1)+CAUCHY_TENSOR(2,2)+CAUCHY_TENSOR(3,3))/3.0_DP
-      DO component_idx=1,3
-        CAUCHY_TENSOR(component_idx,component_idx)=CAUCHY_TENSOR(component_idx,component_idx)-ONETHIRD_TRACE+P
-      ENDDO
+      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE) THEN
+        !add active contraction stress values
+        !the active stress is stored inside the independent field that has been set up in the user program.
+        !for generality we could set up 3 components in independent field for 3 different active stress components
+        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
+            & GAUSS_POINTS(GAUSS_POINT_NUMBER,ELEMENT_NUMBER)
+          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,dof_idx,TEMPTERM1,ERR,ERROR,*999)
+          STRESS_TENSOR(component_idx)=STRESS_TENSOR(component_idx)+TEMPTERM1
+        ENDDO
+      ENDIF
+
+      !Do push-forward of 2nd Piola tensor. 
+      CALL FINITE_ELASTICITY_PUSH_STRESS_TENSOR(STRESS_TENSOR,MOD_DZDNU,Jznu,ERR,ERROR,*999)
+      !Calculate isochoric Cauchy tensor (the deviatoric part) and add the volumetric part (the hydrostatic pressure).
+      ONETHIRD_TRACE=SUM(STRESS_TENSOR(1:3))/3.0_DP
+      STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD_TRACE+P
     CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE,EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE)
-      E=0.5_DP*AZL 
-      DO i=1,3
-        E(i,i)=E(i,i)-0.5_DP
-      ENDDO
-      TEMPTERM1=C(1)*EXP(C(2)*E(1,1)**2+C(3)*(E(2,2)**2+E(3,3)**2+2.0_DP*E(2,3)**2)+2.0_DP*C(4)*(E(1,2)**2+E(1,3)**2))
-      PIOLA_TENSOR(1,1)=TEMPTERM1*C(2)*E(1,1)
-      PIOLA_TENSOR(2,2)=TEMPTERM1*C(3)*E(2,2)
-      PIOLA_TENSOR(3,3)=TEMPTERM1*C(3)*E(3,3)
-      PIOLA_TENSOR(2,1)=TEMPTERM1*C(4)*E(2,1)
-      PIOLA_TENSOR(3,1)=TEMPTERM1*C(4)*E(3,1)
-      PIOLA_TENSOR(3,2)=TEMPTERM1*C(3)*E(3,2)
-      PIOLA_TENSOR(1,2)=PIOLA_TENSOR(2,1)
-      PIOLA_TENSOR(1,3)=PIOLA_TENSOR(3,1)
-      PIOLA_TENSOR(3,2)=PIOLA_TENSOR(3,2)
-
-      !add active contraction stress value to the trace of the stress tensor - basically adding to hydrostatic pressure.
-      !the active stress is stored inside the independent field that has been set up in the user program.
-      !for generality we could set up 3 components in independent field for 3 different active stress components
-
-      !!!!! Be aware for modified DZDNU, check if this the right way to do it?
-      CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
-      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-        dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
-          & GAUSS_POINTS(GAUSS_POINT_NUMBER,ELEMENT_NUMBER)
-        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-          & FIELD_VALUES_SET_TYPE,dof_idx,TEMPTERM1,ERR,ERROR,*999)
-        PIOLA_TENSOR(component_idx,component_idx)=PIOLA_TENSOR(component_idx,component_idx)+TEMPTERM1
-      ENDDO
-      ! Calculate the Cauchy tensor
-      CAUCHY_TENSOR=MATMUL(MOD_DZDNU,MATMUL(PIOLA_TENSOR,MOD_DZDNUT))/Jznu
-      ONETHIRD_TRACE=(CAUCHY_TENSOR(1,1)+CAUCHY_TENSOR(2,2)+CAUCHY_TENSOR(3,3))/3.0_DP
-      DO component_idx=1,3
-        CAUCHY_TENSOR(component_idx,component_idx)=CAUCHY_TENSOR(component_idx,component_idx)-ONETHIRD_TRACE+P
-      ENDDO
+      PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+      P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,NO_PART_DERIV)
+      B=[2.0_DP*C(2),2.0_DP*C(3),2.0_DP*C(3),C(4),C(4),C(3)] ![2*b_f,2*b_t,2*b_t,b_ft,b_ft,b_t]
+      E=[0.5_DP*(AZL(1,1)-1.0_DP),0.5_DP*(AZL(2,2)-1.0_DP),0.5_DP*(AZL(3,3)-1.0_DP),AZL(2,1),AZL(3,1),AZL(3,2)] !(Modified) strain tensor in Voigt form.
+      DQ_DE=B*E
+      TEMPTERM1=0.5_DP*C(1)*EXP(0.5_DP*DOT_PRODUCT(E,DQ_DE))
+      ! Calculate isochoric fictitious 2nd Piola tensor (in Voigt form)
+      STRESS_TENSOR=TEMPTERM1*DQ_DE
+      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) THEN
+        !add active contraction stress values
+        !the active stress is stored inside the independent field that has been set up in the user program.
+        !for generality we could set up 3 components in independent field for 3 different active stress components
+        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
+            & GAUSS_POINTS(GAUSS_POINT_NUMBER,ELEMENT_NUMBER)
+          CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,dof_idx,TEMPTERM1,ERR,ERROR,*999)
+          STRESS_TENSOR(component_idx)=STRESS_TENSOR(component_idx)+TEMPTERM1
+        ENDDO
+      ENDIF
+      ! Do push-forward of 2nd Piola tensor. 
+      CALL FINITE_ELASTICITY_PUSH_STRESS_TENSOR(STRESS_TENSOR,MOD_DZDNU,Jznu,ERR,ERROR,*999)
+      !Calculate isochoric Cauchy tensor (the deviatoric part) and add the volumetric part (the hydrostatic pressure).
+      ONETHIRD_TRACE=SUM(STRESS_TENSOR(1:3))/3.0_DP
+      STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD_TRACE+P
     CASE DEFAULT
       LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
         & " is not valid for a finite elasticity equation type of an elasticity equation set class."
      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     END SELECT
-    IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE," ELEMENT_NUMBER = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE," gauss_idx = ",GAUSS_POINT_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-        & 3,3,PIOLA_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'(" PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
-        & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-    ENDIF
   
     CALL EXITS("FINITE_ELASTICITY_GAUSS_STRESS_TENSOR")
     RETURN
@@ -6529,7 +6281,8 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE)
+              CASE(EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE,EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE, & 
+                  & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE,EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE)
                 ! Use the analytic Jacobian calculation
                 CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
                   & ERR,ERROR,*999)

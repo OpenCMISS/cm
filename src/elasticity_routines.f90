@@ -72,8 +72,6 @@ MODULE ELASTICITY_ROUTINES
 
   PUBLIC ELASTICITY_FINITE_ELEMENT_CALCULATE
 
-  PUBLIC ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE
-
   PUBLIC ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE,ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
   PUBLIC ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE,ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
@@ -800,48 +798,5 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculate the deformation tensor for the equation set at a specified user element number and xi coordinates \see
-  !OPENCMISS::CMISSEquationsSetDeformationCalculate
-  SUBROUTINE ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE(EQUATIONS_SET,USER_ELEMENT_NUMBER,XI,C,INV_C,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to create the analytic for.
-    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The user element number.
-    REAL(DP), INTENT(IN) :: XI(:) !<The xi coordinates to calculate the deformation at
-    REAL(DP), INTENT(OUT) :: C(:) !<The independent values of the deformation tensor
-    REAL(DP), INTENT(OUT) :: INV_C(:) !<The independent values of the inverse deformation tensor
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
-      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE(EQUATIONS_SET,USER_ELEMENT_NUMBER, &
-          & XI,C,INV_C,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-          LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
-          & " is not valid for an elasticity equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE")
-    RETURN
-999 CALL ERRORS("ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE")
-    RETURN 1
-  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_DEFORMATION_CALCULATE
-
-  !
-  !================================================================================================================================
-  !
 END MODULE ELASTICITY_ROUTINES
 

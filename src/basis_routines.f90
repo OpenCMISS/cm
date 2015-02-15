@@ -1924,14 +1924,16 @@ CONTAINS
                 DO localLineNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)
                   DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
                     & basis%NUMBER_OF_LOCAL_LINES))
-                    localLineParameter=localLineParameter+1
-                    basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineParameter,basis%NUMBER_OF_LOCAL_LINES)= &
-                      & basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
-                    & basis%NUMBER_OF_LOCAL_LINES))
                     IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
-                      & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
-                      basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)=derivativeIdx
-                      EXIT
+                      & basis%NUMBER_OF_LOCAL_LINES),xiIdx2)==NO_PART_DERIV) THEN
+                      localLineParameter=localLineParameter+1
+                      basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineParameter,basis%NUMBER_OF_LOCAL_LINES)= &
+                        & basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                        & basis%NUMBER_OF_LOCAL_LINES))
+                      IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                        & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
+                        basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)=derivativeIdx
+                      ENDIF
                     ENDIF
                   ENDDO !derivativeIdx
                 ENDDO !localLineNodeIdx
@@ -2140,14 +2142,18 @@ CONTAINS
                   DO localLineNodeIdx=1,basis%NUMBER_OF_NODES_IN_LOCAL_LINE(basis%NUMBER_OF_LOCAL_LINES)
                     DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
                       & basis%NUMBER_OF_LOCAL_LINES))
-                      localLineParameter=localLineParameter+1
-                      basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)= &
-                        basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
-                      & basis%NUMBER_OF_LOCAL_LINES))
                       IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
-                        & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
-                        basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)=derivativeIdx
-                        EXIT
+                        & basis%NUMBER_OF_LOCAL_LINES),xiIdx2)==NO_PART_DERIV.AND. &
+                        & basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                        & basis%NUMBER_OF_LOCAL_LINES),xiIdx3)==NO_PART_DERIV) THEN
+                        localLineParameter=localLineParameter+1
+                        basis%ELEMENT_PARAMETERS_IN_LOCAL_LINE(localLineParameter,basis%NUMBER_OF_LOCAL_LINES)= &
+                          & basis%ELEMENT_PARAMETER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                          & basis%NUMBER_OF_LOCAL_LINES))
+                        IF(basis%DERIVATIVE_ORDER_INDEX(derivativeIdx,basis%NODE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx, &
+                          & basis%NUMBER_OF_LOCAL_LINES),xiIdx1)==FIRST_PART_DERIV) THEN
+                          basis%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(localLineNodeIdx,basis%NUMBER_OF_LOCAL_LINES)=derivativeIdx
+                        ENDIF
                       ENDIF
                     ENDDO !derivativeIdx
                   ENDDO !localLineNodeIdx
