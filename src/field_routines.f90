@@ -1251,7 +1251,7 @@ CONTAINS
                   decompositionTopology=>decomposition%TOPOLOGY
                   userDataPointExists=.TRUE.
                   IF(ASSOCIATED(decompositionTopology)) THEN
-                    CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber,userDataPointExists, &
+                    CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber,userDataPointExists, &
                       & decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                     IF(userDataPointExists) THEN
                       localDof=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -3842,17 +3842,30 @@ CONTAINS
                 ENDDO
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters = MAXINTERP
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters = 0
-              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION) 
+              CASE(FIELD_DATA_POINT_BASED_INTERPOLATION)
+                WRITE(*,*) "In datapointbasedinterpolation"
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters=-1
+                WRITE(*,*) "DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS", DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                 DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                  WRITE(*,*) "In forloop", ne
                   globalElementNumber=DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
+                  WRITE(*,*) "DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER", &
+                      & DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER
+                  WRITE(*,*) "Before if"
+                  IF(ASSOCIATED(DECOMPOSITION%TOPOLOGY%dataPoints)) THEN
+                    WRITE(*,*) "DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)"
+                  ELSE
+                    WRITE(*,*) "NOT ALLOCATED"
+                  ENDIF
                   IF(DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)> &
                       & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters) THEN
                     FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberElementInterpolationParameters= &
                       &  DECOMPOSITION%TOPOLOGY%dataPoints%numberOfElementDataPoints(globalElementNumber)
+                    WRITE(*,*) "In if loop"
                   ENDIF
                 ENDDO
                 FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%maxNumberNodeInterpolationParameters=0
+                WRITE(*,*) "BEFORE PARAM TO DOF MAP"
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                   & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -18551,7 +18564,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -18703,7 +18716,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -18855,7 +18868,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -19007,7 +19020,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23226,7 +23239,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23379,7 +23392,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23532,7 +23545,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23685,7 +23698,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -27960,9 +27973,12 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local Variables
     INTEGER(INTG) :: Gauss_point
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATED_PARAMETERS(:)
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -27981,70 +27997,82 @@ CONTAINS
               IF(FIELD_VARIABLE%DATA_TYPE==FIELD_DP_TYPE) THEN
                 IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
                   DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(DECOMPOSITION%MESH_COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%ELEMENTS
-                  IF(USER_ELEMENT_NUMBER>0.AND.USER_ELEMENT_NUMBER<=DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS) THEN
-                    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATED_PARAMETERS,ERR,ERROR,*999)
-                    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
-                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,USER_ELEMENT_NUMBER, &
-                      & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,VARIABLE_TYPE,numberOfComponents,ERR,ERROR,*999)
-                    QUADRATURE_SCHEME=>DOMAIN_ELEMENTS%ELEMENTS(USER_ELEMENT_NUMBER)%BASIS%QUADRATURE% &
-                      & QUADRATURE_SCHEME_MAP(SCHEME)%PTR
-                    IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
-                      IF(SIZE(VALUES,1)==numberOfComponents) THEN
-                        IF(SIZE(GAUSS_POINTS)==0) THEN !Interpolate all Gauss points.
-                          IF(SIZE(VALUES,2)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
-                            DO Gauss_point=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                              CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,Gauss_point, &
-                                & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                              VALUES(1:numberOfComponents,Gauss_point)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR% &
-                                & VALUES(1:numberOfComponents,DERIVATIVE_NUMBER)
-                            ENDDO
-                          ELSE
-                            LOCAL_ERROR="The number of Gauss points in the field interpolated values output array is "// & 
-                              & "invalid. For returning the interpolated field values at all element Gauss points, the "//&
-                              & "output array is required to be allocated for "// &
-                              & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))// &
-                              & " Gauss points for the specified quadrature scheme."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          ENDIF
-                        ELSE !Interpolate only at the specified Gauss points.
-                          IF(SIZE(VALUES,2)==SIZE(GAUSS_POINTS)) THEN
-                            DO Gauss_point=1,SIZE(GAUSS_POINTS)
-                              IF(GAUSS_POINTS(Gauss_point)>0.AND.GAUSS_POINTS(Gauss_point)<=QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
-                                CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,GAUSS_POINTS(Gauss_point), &
+                  DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                  CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                    & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                  IF(USER_ELEMENT_EXISTS) THEN
+                    IF(GHOST_ELEMENT) THEN
+                      LOCAL_ERROR="Cannot interpolate Gauss points for user element "// &
+                        & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATED_PARAMETERS,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATED_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,DECOMPOSITION_LOCAL_ELEMENT_NUMBER, &
+                        & INTERPOLATED_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,VARIABLE_TYPE,numberOfComponents,ERR,ERROR,*999)
+                      QUADRATURE_SCHEME=>DOMAIN_ELEMENTS%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)%BASIS%QUADRATURE% &
+                        & QUADRATURE_SCHEME_MAP(SCHEME)%PTR
+                      IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
+                        IF(SIZE(VALUES,1)==numberOfComponents) THEN
+                          IF(SIZE(GAUSS_POINTS)==0) THEN !Interpolate all Gauss points.
+                            IF(SIZE(VALUES,2)==QUADRATURE_SCHEME%NUMBER_OF_GAUSS) THEN
+                              DO Gauss_point=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+                                CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,Gauss_point, &
                                   & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                VALUES(:,Gauss_point)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
-                              ELSE
-                                LOCAL_ERROR="The specified Gauss point number of "// & 
-                                  & TRIM(NUMBER_TO_VSTRING(GAUSS_POINTS(Gauss_point),"*",ERR,ERROR))//"is invalid for "// &
-                                  & "the specified quadrature scheme of the specified element for this field which has "// &
-                                  & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              ENDIF
-                            ENDDO
-                          ELSE
-                            LOCAL_ERROR="The number of Gauss points in the field interpolated values output array is "// &
-                              & "not the same as the number to be interpolated."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                VALUES(1:numberOfComponents,Gauss_point)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR% &
+                                  & VALUES(1:numberOfComponents,DERIVATIVE_NUMBER)
+                              ENDDO
+                            ELSE
+                              LOCAL_ERROR="The number of Gauss points in the field interpolated values output array is "// & 
+                                & "invalid. For returning the interpolated field values at all element Gauss points, the "//&
+                                & "output array is required to be allocated for "// &
+                                & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))// &
+                                & " Gauss points for the specified quadrature scheme."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          ELSE !Interpolate only at the specified Gauss points.
+                            IF(SIZE(VALUES,2)==SIZE(GAUSS_POINTS)) THEN
+                              DO Gauss_point=1,SIZE(GAUSS_POINTS)
+                                IF(GAUSS_POINTS(Gauss_point)>0.AND.GAUSS_POINTS(Gauss_point)<=QUADRATURE_SCHEME% &
+                                  & NUMBER_OF_GAUSS) THEN
+                                  CALL FIELD_INTERPOLATE_GAUSS(DERIVATIVE_NUMBER,SCHEME,GAUSS_POINTS(Gauss_point), &
+                                    & INTERPOLATED_POINT(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                  VALUES(:,Gauss_point)=INTERPOLATED_POINT(VARIABLE_TYPE)%PTR%VALUES(:,DERIVATIVE_NUMBER)
+                                ELSE
+                                  LOCAL_ERROR="The specified Gauss point number of "// & 
+                                    & TRIM(NUMBER_TO_VSTRING(GAUSS_POINTS(Gauss_point),"*",ERR,ERROR))//"is invalid for "// &
+                                    & "the specified quadrature scheme of the specified element for this field which has "// &
+                                    & TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,"*",ERR,ERROR))//" Gauss points."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                ENDIF
+                              ENDDO
+                            ELSE
+                              LOCAL_ERROR="The number of Gauss points in the field interpolated values output array is "// &
+                                & "not the same as the number to be interpolated."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
+                        ELSE
+                          LOCAL_ERROR="The number of the coordinate values to return the interpolated field to is invalid. "// &
+                            & "The supplied size is "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//" and should be "// &
+                            & TRIM(NUMBER_TO_VSTRING(numberOfComponents,"*",ERR,ERROR))//" for this field."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        LOCAL_ERROR="The number of the coordinate values to return the interpolated field to is invalid. "// &
-                          & "The supplied size is "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//" and should be "// &
-                          & TRIM(NUMBER_TO_VSTRING(numberOfComponents,"*",ERR,ERROR))//" for this field."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FLAG_ERROR("The specified quadrature scheme is not associated the specified element's basis.", &
+                          & ERR,ERROR,*999)
                       ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("The specified quadrature scheme is not associated the specified element's basis.", &
-                        & ERR,ERROR,*999)
+                      !Finalise the interpolated point and parameters
+                      CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATED_PARAMETERS,ERR,ERROR,*999)
                     ENDIF
-                    !Finalise the interpolated point and parameters
-                    CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
-                    CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATED_PARAMETERS,ERR,ERROR,*999)
                   ELSE
-                    LOCAL_ERROR="The specified element number of "//TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                      & " is invalid. The element number must be between 1 and "// &
-                      & TRIM(NUMBER_TO_VSTRING(DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                    LOCAL_ERROR="The specified user element number of "// &
+                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                      & " does not exist in the decomposition for field variable type "// &
+                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
@@ -30594,7 +30622,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) ::  CHILD_COMPONENT  !<Component of the child  field, must be nodally based
 
     !Local variables
-    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
+    TYPE(MeshElementsType), POINTER :: ELEMENTS
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: E,GP,B, NGP,version
@@ -30646,7 +30674,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR     !<The error string
   
     !Local variables
-    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
+    TYPE(MeshElementsType), POINTER :: ELEMENTS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: GP
 

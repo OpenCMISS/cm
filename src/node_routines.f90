@@ -98,7 +98,7 @@ MODULE NODE_ROUTINES
   
   PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
   
-  PUBLIC Nodes_UserNumbersAllSet
+  PUBLIC NodesUserNumbersAllSet
 
   !PUBLIC NODES_NUMBER_OF_VERSIONS_SET
 
@@ -858,7 +858,7 @@ CONTAINS
   !
 
   !>Changes/sets the user numbers for all nodes. \see OPENCMISS::CMISSNodes_UserNumbersAllSet
-  SUBROUTINE Nodes_UserNumbersAllSet(nodes,userNumbers,err,error,*)
+  SUBROUTINE NodesUserNumbersAllSet(nodes,userNumbers,err,error,*)
 
     !Argument variables
     TYPE(NODES_TYPE), POINTER :: nodes !<A pointer to the nodes to set the numbers for
@@ -872,7 +872,7 @@ CONTAINS
 
     NULLIFY(newNodesTree)
     
-    CALL ENTERS("Nodes_UserNumbersAllSet",err,error,*999)
+    CALL ENTERS("NodesUserNumbersAllSet",err,error,*999)
 
     IF(ASSOCIATED(nodes)) THEN
       IF(nodes%NODES_FINISHED) THEN
@@ -911,14 +911,14 @@ CONTAINS
       CALL FlagError("Nodes is not associated.",err,error,*999)
     ENDIF
     
-    CALL EXITS("Nodes_UserNumbersAllSet")
+    CALL EXITS("NodesUserNumbersAllSet")
     RETURN
 999 IF(ASSOCIATED(newNodesTree)) CALL TREE_DESTROY(newNodesTree,err,error,*998)
-998 CALL ERRORS("Nodes_UserNumbersAllSet",err,error)    
-    CALL EXITS("Nodes_UserNumbersAllSet")
+998 CALL ERRORS("NodesUserNumbersAllSet",err,error)    
+    CALL EXITS("NodesUserNumbersAllSet")
     RETURN 1
    
-  END SUBROUTINE Nodes_UserNumbersAllSet
+  END SUBROUTINE NodesUserNumbersAllSet
   
   !
   !================================================================================================================================

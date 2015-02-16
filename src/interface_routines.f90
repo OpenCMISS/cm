@@ -1732,7 +1732,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: dataPointGlobalNumber,elementGlobalNumber
+    INTEGER(INTG) :: dataPointGlobalNumber,elementMeshNumber
     LOGICAL :: dataPointExists,elementExists
 
     CALL ENTERS("InterfacePointsConnectivity_ElementNumberSet",err,error,*999)
@@ -1747,11 +1747,11 @@ CONTAINS
           IF ((coupledMeshIndexNumber<=pointsConnectivity%interface%DATA_POINTS%NUMBER_OF_DATA_POINTS).OR. &
               & (coupledMeshIndexNumber>0)) THEN
             IF (ALLOCATED(pointsConnectivity%pointsConnectivity)) THEN
-              CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
-                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementGlobalNumber,err,error,*999) !Make sure user element exists       
+              CALL MeshTopologyElementCheckExists(pointsConnectivity%INTERFACE%COUPLED_MESHES(coupledMeshIndexNumber)%PTR, &
+                & meshComponentNumber,coupledMeshUserElementNumber,elementExists,elementMeshNumber,err,error,*999) !Make sure user element exists       
               IF(elementExists) THEN
                 pointsConnectivity%pointsConnectivity(dataPointGlobalNumber,coupledMeshIndexNumber)%coupledMeshElementNumber= &
-                  & elementGlobalNumber
+                  & elementMeshNumber
               ELSE
                 CALL FLAG_ERROR("Element with user number ("//TRIM(NUMBER_TO_VSTRING &
                   & (coupledMeshUserElementNumber,"*",err,error))//") does not exist.",err,error,*999)

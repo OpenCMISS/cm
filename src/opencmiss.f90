@@ -250,7 +250,7 @@ MODULE OPENCMISS
   !>Contains information on a mesh elements defined in a mesh
   TYPE CMISSMeshElementsType
     PRIVATE
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
   END TYPE CMISSMeshElementsType
 
   !>Contains information on an embedded mesh
@@ -258,6 +258,12 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(MESH_EMBEDDING_TYPE), POINTER :: MESH_EMBEDDING
   END TYPE CMISSMeshEmbeddingType
+
+  !>Contains information on a mesh nodes defined in a mesh
+  TYPE CMISSMeshNodesType
+    PRIVATE
+    TYPE(MeshNodesType), POINTER :: meshNodes
+  END TYPE CMISSMeshNodesType
 
   !>Contains information on the nodes defined on a region.
   TYPE CMISSNodesType
@@ -375,6 +381,8 @@ MODULE OPENCMISS
   PUBLIC CMISSMeshType,CMISSMesh_Finalise,CMISSMesh_Initialise
 
   PUBLIC CMISSMeshElementsType,CMISSMeshElements_Finalise,CMISSMeshElements_Initialise
+
+  PUBLIC CMISSMeshNodesType,CMISSMeshNodes_Finalise,CMISSMeshNodes_Initialise
 
   PUBLIC CMISSNodesType,CMISSNodes_Finalise,CMISSNodes_Initialise
 
@@ -2117,7 +2125,7 @@ MODULE OPENCMISS
   PUBLIC CMISSEquations_NumberOfDynamicMatricesGet
 
   PUBLIC CMISSEquations_LinearMatrixGet
-
+  
   PUBLIC CMISSEquations_JacobianMatrixGet
 
   PUBLIC CMISSEquations_DynamicMatrixGet
@@ -2242,6 +2250,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE !<Compressible version for finite elasticity equations set with active contraction subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE = &
+    & EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE= &
@@ -2257,6 +2267,9 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE !< Orthotropic Holzapfel-Ogden constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_HOLZAPFEL_OGDEN_ACTIVECONTRACTION_SUBTYPE = &
+    & EQUATIONS_SET_HOLZAPFEL_OGDEN_ACTIVECONTRACTION_SUBTYPE &
+    & !< Orthotropic Holzapfel-Ogden constitutive law with active contraction for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE = &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE !< Static finite elasticity coupled with fluid pressure set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE= &
@@ -2717,7 +2730,9 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_INCOMPRESS_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INCOMPRESS_ELAST_MULTI_COMP_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_HOLZAPFEL_OGDEN_ACTIVECONTRACTION_SUBTYPE,  &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE,&
     & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_HUMPHREY_YIN_SUBTYPE,&
@@ -3098,6 +3113,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_AnalyticUserParamSetObj
   END INTERFACE
 
+
   PUBLIC CMISSEquationsSet_AnalyticCreateFinish,CMISSEquationsSet_AnalyticCreateStart
 
   PUBLIC CMISSEquationsSet_AnalyticDestroy
@@ -3143,6 +3159,7 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSet_StrainInterpolateXi
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
+  
 
 !!==================================================================================================================================
 !!
@@ -4928,7 +4945,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElements_LocalElementNodeVersionSetObj
   END INTERFACE !CMISSMeshElements_LocalElementNodeVersionSet
 
-
   !>Returns the element user number for an element in a mesh.
   INTERFACE CMISSMeshElements_UserNumberGet
     MODULE PROCEDURE CMISSMeshElements_UserNumberGetNumber
@@ -4959,7 +4975,31 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMesh_ElementExistsObj
   END INTERFACE !CMISSMesh_ElementExists
 
-    !>Returns the domain for a given element in a decomposition of a mesh.
+  !>Get the mesh nodes belonging to a mesh component.
+  INTERFACE CMISSMesh_NodesGet
+    MODULE PROCEDURE CMISSMesh_NodesGetNumber
+    MODULE PROCEDURE CMISSMesh_NodesGetObj
+  END INTERFACE CMISSMesh_NodesGet
+
+  !>Returns the number of derivatives for a node in a mesh.
+  INTERFACE CMISSMeshNodes_NumberOfDerivativesGet
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfDerivativesGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfDerivativesGetObj
+  END INTERFACE CMISSMeshNodes_NumberOfDerivativesGet
+
+  !>Returns the derivatives for a node in a mesh.
+  INTERFACE CMISSMeshNodes_DerivativesGet
+    MODULE PROCEDURE CMISSMeshNodes_DerivativesGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_DerivativesGetObj
+  END INTERFACE CMISSMeshNodes_DerivativesGet
+
+  !>Returns the number of versions for a derivative at a node in a mesh.
+  INTERFACE CMISSMeshNodes_NumberOfVersionsGet
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfVersionsGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfVersionsGetObj
+  END INTERFACE CMISSMeshNodes_NumberOfVersionsGet
+
+  !>Returns the domain for a given element in a decomposition of a mesh.
   INTERFACE CMISSDecomposition_NodeDomainGet
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetNumber
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetObj
@@ -5033,7 +5073,13 @@ MODULE OPENCMISS
   
   PUBLIC CMISSMeshElements_UserNumbersAllSet
 
+  PUBLIC CMISSMeshNodes_NumberOfDerivativesGet,CMISSMeshNodes_DerivativesGet
+
+  PUBLIC CMISSMeshNodes_NumberOfVersionsGet
+
   PUBLIC CMISSMesh_ElementsGet
+
+  PUBLIC CMISSMesh_NodesGet
 
   PUBLIC CMISSMesh_NodeExists,CMISSMesh_ElementExists
 
@@ -5924,6 +5970,47 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_NEWTON = SOLVER_NONLINEAR_NEWTON !<Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_BFGS_INVERSE = SOLVER_NONLINEAR_BFGS_INVERSE !<BFGS inverse nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_SQP = SOLVER_NONLINEAR_SQP !<Sequential Quadratic Program nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_QUASI_NEWTON = SOLVER_NONLINEAR_QUASI_NEWTON !<Quasi-Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_QuasiNewtonSolverTypes OPENCMISS::Solver::QuasiNewtonSolverTypes
+  !> \brief The types of nonlinear Quasi-Newton solvers
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_LINESEARCH=SOLVER_QUASI_NEWTON_LINESEARCH !<Quasi-Newton line search nonlinear solver type \see OPENCMISS_QuasiNewtonSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_TRUSTREGION=SOLVER_QUASI_NEWTON_TRUSTREGION !<Quasi-Newton trust region nonlinear solver type \see OPENCMISS_QuasiNewtonSolverTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_QuasiNewtonTypes OPENCMISS::Solver::QuasiNewtonTypes
+  !> \brief The nonlinear Quasi-Newton types
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_LBFGS=SOLVER_QUASI_NEWTON_LBFGS !<LBFGS Quasi-Newton type \see OPENCMISS_QuasiNewtonTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_GOODBROYDEN=SOLVER_QUASI_NEWTON_GOODBROYDEN !<"Good" Broyden Quasi-Newton type \see OPENCMISS_QuasiNewtonTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_BADBROYDEN=SOLVER_QUASI_NEWTON_BADBROYDEN !<"Bad" Broyden Quasi-Newton type \see OPENCMISS_QuasiNewtonTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_QuasiNewtonLineSearchTypes OPENCMISS::Solver::NonlinearQuasiNewtonLineSearchTypes
+  !> \brief The types line search techniques for Quasi-Newton line search nonlinear solvers
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_BASIC=SOLVER_QUASI_NEWTON_LINESEARCH_BASIC !<Simple damping line search. \see OPENCMISS_QuasiNewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_L2=SOLVER_QUASI_NEWTON_LINESEARCH_L2 !<Secant line search over the L2 norm of the function \see OPENCMISS_QuasiNewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_CP=SOLVER_QUASI_NEWTON_LINESEARCH_CP !<Critical point secant line search \see OPENCMISS_QuasiNewtonLineSearchTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_QuasiNewtonRestartTypes OPENCMISS::Solver::QuasiNewtonRestartTypes
+  !> \brief The nonlinear Quasi-Newton restart types
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_RESTART_NONE=SOLVER_QUASI_NEWTON_RESTART_NONE !<Never restart \see OPENCMISS_QuasiNewtonRestartTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_RESTART_POWELL=SOLVER_QUASI_NEWTON_RESTART_POWELL !<Restart based upon descent criteria \see OPENCMISS_QuasiNewtonRestartTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_RESTART_PERIODIC=SOLVER_QUASI_NEWTON_RESTART_PERIODIC !<Restart after a fixed number of iterations \see OPENCMISS_QuasiNewtonRestartTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_QuasiNewtonScaleTypes OPENCMISS::Solver::QuasiNewtonScaleTypes
+  !> \brief The nonlinear Quasi-Newton scale types
+  !> \see OPENCMISS::Solver::Constants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_SCALE_NONE=SOLVER_QUASI_NEWTON_SCALE_NONE !<Don't scale the problem \see OPENCMISS_QuasiNewtonScaleTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_SCALE_SHANNO=SOLVER_QUASI_NEWTON_SCALE_SHANNO !<Use Shanno scaling \see OPENCMISS_QuasiNewtonScaleTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_SCALE_LINESEARCH=SOLVER_QUASI_NEWTON_SCALE_LINESEARCH !<Scale based upon line search lambda \see OPENCMISS_QuasiNewtonScaleTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_SCALE_JACOBIAN=SOLVER_QUASI_NEWTON_SCALE_JACOBIAN !<Scale by inverting a previously computed Jacobian \see OPENCMISS_QuasiNewtonScaleTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NewtonSolverTypes OPENCMISS::Solver::NewtonSolverTypes
   !> \brief The types of nonlinear Newton solvers.
@@ -6344,6 +6431,146 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_LinearTypeSetObj
   END INTERFACE !CMISSSolver_LinearTypeSet
 
+  !>Sets/changes the absolute tolerance for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonAbsoluteToleranceSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonAbsoluteToleranceSet
+
+  !>Enables/disables output monitoring for a nonlinear Quasi-Newton line search solver.
+  INTERFACE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
+
+  !>Sets/changes the Jacobian calculation type for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
+
+  !>Returns the linear solver associated with a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonLinearSolverGet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLinearSolverGetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLinearSolverGetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLinearSolverGetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonLinearSolverGet
+
+  !>Returns the linear solver associated with a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonCellMLSolverGet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonCellMLSolverGetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonCellMLSolverGetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonCellMLSolverGetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonCellMLSolverGet
+
+  !>Sets/change the convergence test for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonConvergenceTestTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj
+  END INTERFACE CMISSSolver_QuasiNewtonConvergenceTestTypeSet
+
+  !>Sets/changes the line search maximum step for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonLineSearchMaxStepSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonLineSearchMaxStepSet
+
+  !>Sets/changes the line search step tolerance for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonLineSearchStepTolSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchStepTolSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonLineSearchStepTolSet
+
+  !>Sets/changes the type of line search for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonLineSearchTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonLineSearchTypeSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonLineSearchTypeSet
+
+  !>Sets/changes the maximum number of function evaluations for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
+
+  !>Sets/changes the maximum number of iterations for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonMaximumIterationsSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonMaximumIterationsSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonMaximumIterationsSet
+
+  !>Sets/changes the relative tolerance for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonRelativeToleranceSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRelativeToleranceSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonRelativeToleranceSet
+
+  !>Sets/changes the solution tolerance for a nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonSolutionToleranceSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonSolutionToleranceSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonSolutionToleranceSet
+
+  !>Sets/changes the trust region delta0 tolerance for a nonlinear Quasi-Newton trust region solver.
+  INTERFACE CMISSSolver_QuasiNewtonTrustRegionDelta0Set
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonTrustRegionDelta0Set
+
+  !>Sets/changes the trust region tolerance for a nonlinear Quasi-Newton trust region solver.
+  INTERFACE CMISSSolver_QuasiNewtonTrustRegionToleranceSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonTrustRegionToleranceSet
+
+  !>Sets/changes the nonlinear Quasi-Newton restart.
+  INTERFACE CMISSSolver_QuasiNewtonRestartSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRestartSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRestartSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRestartSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonRestartSet
+
+  !>Sets/changes the nonlinear Quasi-Newton restart type.
+  INTERFACE CMISSSolver_QuasiNewtonRestartTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRestartTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRestartTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonRestartTypeSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonRestartTypeSet
+
+  !>Sets/changes the nonlinear Quasi-Newton scale type.
+  INTERFACE CMISSSolver_QuasiNewtonScaleTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonScaleTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonScaleTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonScaleTypeSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonScaleTypeSet
+
+  !>Sets/changes the type of nonlinear Quasi-Newton solver.
+  INTERFACE CMISSSolver_QuasiNewtonSolveTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonSolveTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonSolveTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonSolveTypeSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonSolveTypeSet
+
+  !>Sets/changes the nonlinear Quasi-Newton type.
+  INTERFACE CMISSSolver_QuasiNewtonTypeSet
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTypeSetNumber0
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTypeSetNumber1
+    MODULE PROCEDURE CMISSSolver_QuasiNewtonTypeSetObj
+  END INTERFACE !CMISSSolver_QuasiNewtonTypeSet
+
   !>Sets/changes the absolute tolerance for a nonlinear Newton solver.
   INTERFACE CMISSSolver_NewtonAbsoluteToleranceSet
     MODULE PROCEDURE CMISSSolver_NewtonAbsoluteToleranceSetNumber0
@@ -6555,7 +6782,21 @@ MODULE OPENCMISS
     & CMISS_SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER, &
     & CMISS_SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER
 
-  PUBLIC CMISS_SOLVER_NONLINEAR_NEWTON,CMISS_SOLVER_NONLINEAR_BFGS_INVERSE,CMISS_SOLVER_NONLINEAR_SQP
+  PUBLIC CMISS_SOLVER_NONLINEAR_NEWTON,CMISS_SOLVER_NONLINEAR_BFGS_INVERSE,CMISS_SOLVER_NONLINEAR_SQP, &
+    & CMISS_SOLVER_NONLINEAR_QUASI_NEWTON
+
+  PUBLIC CMISS_SOLVER_QUASI_NEWTON_LINESEARCH,CMISS_SOLVER_QUASI_NEWTON_TRUSTREGION
+
+  PUBLIC CMISS_SOLVER_QUASI_NEWTON_LBFGS,CMISS_SOLVER_QUASI_NEWTON_GOODBROYDEN,CMISS_SOLVER_QUASI_NEWTON_BADBROYDEN
+
+  PUBLIC CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_BASIC,CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_L2, &
+    & CMISS_SOLVER_QUASI_NEWTON_LINESEARCH_CP
+
+  PUBLIC CMISS_SOLVER_QUASI_NEWTON_RESTART_NONE,CMISS_SOLVER_QUASI_NEWTON_RESTART_POWELL, &
+    & CMISS_SOLVER_QUASI_NEWTON_RESTART_PERIODIC
+
+  PUBLIC CMISS_SOLVER_QUASI_NEWTON_SCALE_NONE,CMISS_SOLVER_QUASI_NEWTON_SCALE_SHANNO, &
+    & CMISS_SOLVER_QUASI_NEWTON_SCALE_LINESEARCH,CMISS_SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
 
   PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH,CMISS_SOLVER_NEWTON_TRUSTREGION
 
@@ -6695,6 +6936,46 @@ MODULE OPENCMISS
   PUBLIC CMISSSolver_NewtonTrustRegionToleranceSet
 
   PUBLIC CMISSSolver_NewtonTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
+
+  PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
+
+  PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
+
+  PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
+
+  PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
+
+  PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
+
+  PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
+
+  PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
+
+  PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
+
+  PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
+
+  PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
+
+  PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
+
+  PUBLIC CMISSSolver_QuasiNewtonRestartSet
+
+  PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
+
+  PUBLIC CMISSSolver_QuasiNewtonTypeSet
 
   PUBLIC CMISSSolver_NonlinearTypeSet
 
@@ -8270,6 +8551,57 @@ CONTAINS
   END SUBROUTINE CMISSMeshElements_Initialise
 
   !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSMeshNodesType object.
+  SUBROUTINE CMISSMeshNodes_Finalise(CMISSMeshNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(OUT) :: CMISSMeshNodes !<The CMISSMeshNodesType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_Finalise",err,error,*999)
+
+    IF(ASSOCIATED(CMISSMeshNodes%meshNodes))  &
+      & CALL MeshTopologyNodesDestroy(CMISSMeshNodes%meshNodes,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_Finalise")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_Finalise",err,error)
+    CALL Exits("CMISSMeshNodes_Finalise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_Finalise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSMeshNodesType object.
+  SUBROUTINE CMISSMeshNodes_Initialise(CMISSMeshNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(OUT) :: CMISSMeshNodes !<The CMISSMeshNodesType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_Initialise",err,error,*999)
+
+    NULLIFY(CMISSMeshNodes%meshNodes)
+
+    CALL Exits("CMISSMeshNodes_Initialise")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_Initialise",err,error)
+    CALL Exits("CMISSMeshNodes_Initialise")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_Initialise
+
+    !
   !================================================================================================================================
   !
 
@@ -41493,7 +41825,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error,*999)
 
-    CALL DecompositionTopology_DataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
+    CALL DecompositionTopologyDataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyDataProjectionCalculateObj',err,error,*999)
@@ -41526,7 +41858,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
 
-    CALL DecompositionTopology_ElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+    CALL DecompositionTopologyElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointLocalNumber,err,error,*999)
 
 #ifdef TAUPROF
@@ -41560,7 +41892,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
 
-    CALL DecompositionTopology_ElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
+    CALL DecompositionTopologyElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointUserNumber,err,error,*999)
 
 #ifdef TAUPROF
@@ -41592,7 +41924,7 @@ CONTAINS
 
     CALL ENTERS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
 
-    CALL DecompositionTopology_NumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
+    CALL DecompositionTopologyNumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
      & numberOfDataPoints,err,error,*999)
 
 #ifdef TAUPROF
@@ -43411,7 +43743,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
       IF(ASSOCIATED(MESH)) THEN
-        CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+        CALL MeshTopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",Err,ERROR))//"."
@@ -43462,7 +43794,7 @@ CONTAINS
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL MESH_USER_NUMBER_FIND(MeshUserNumber,INTERFACE,MESH,Err,ERROR,*999)
         IF(ASSOCIATED(MESH)) THEN
-          CALL Mesh_TopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
+          CALL MeshTopologyDataPointsCalculateProjection(MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)        
         ELSE
           LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
             & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(parentregionUserNumber, &
@@ -43504,7 +43836,7 @@ CONTAINS
   
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
     
-    CALL Mesh_TopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+    CALL MeshTopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
  
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
     RETURN
@@ -43529,7 +43861,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43605,7 +43937,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43679,8 +44011,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the mesh elements for a mesh component on a mesh identified by an
-  !user number.
+  !>Returns the mesh elements for a mesh component on a mesh identified by an user number.
   SUBROUTINE CMISSMesh_ElementsGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,meshElements,err)
 
     !Argument variables
@@ -43772,7 +44103,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43863,7 +44194,7 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -43951,7 +44282,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44033,7 +44364,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44112,7 +44443,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44195,7 +44526,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: localelementnode
@@ -44313,7 +44644,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44401,7 +44732,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44481,7 +44812,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44560,7 +44891,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MeshComponentElementsType), POINTER :: MESH_ELEMENTS
+    TYPE(MeshElementsType), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -44574,7 +44905,7 @@ CONTAINS
       CALL MESH_USER_NUMBER_FIND(meshUserNumber,REGION,MESH,err,error,*999)
       IF(ASSOCIATED(MESH)) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,meshComponentNumber,MESH_ELEMENTS,err,error,*999)
-        CALL Mesh_TopologyElementsUserNumbersAllSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
+        CALL MeshTopologyElementsUserNumbersAllSet(MESH_ELEMENTS,elementUserNumbers,err,error,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -44610,7 +44941,7 @@ CONTAINS
 
     CALL ENTERS("CMISSMeshElements_UserNumbersAllSetObj",err,error,*999)
 
-    CALL Mesh_TopologyElementsUserNumbersAllSet(meshElements%MESH_ELEMENTS,elementUserNumbers, &
+    CALL MeshTopologyElementsUserNumbersAllSet(meshElements%MESH_ELEMENTS,elementUserNumbers, &
       & err,error,*999)
 
     CALL EXITS("CMISSMeshElements_UserNumbersAllSetObj")
@@ -44637,24 +44968,23 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to check.
     LOGICAL, INTENT(OUT) :: nodeExists !<True if the node exists, false otherwise.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-
     !Local variables
-    TYPE(MESH_TYPE), POINTER :: Mesh
-    TYPE(REGION_TYPE), POINTER :: Region
-    INTEGER(INTG) :: GlobalNodeNumber
-    TYPE(VARYING_STRING) :: LocalError
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: meshNodeNumber
+    TYPE(VARYING_STRING) :: localError
 
     CALL ENTERS("CMISSMesh_NodeExistsNumber",err,error,*999)
 
     nodeExists = .FALSE.
 
-    NULLIFY( Region )
-    NULLIFY( Mesh )
+    NULLIFY( region )
+    NULLIFY( mesh )
     CALL REGION_USER_NUMBER_FIND( regionUserNumber, Region, err, error, *999 )
-    IF( ASSOCIATED( REGION ) ) THEN
+    IF(ASSOCIATED(region)) THEN
       CALL MESH_USER_NUMBER_FIND( meshUserNumber, Region, Mesh, err, error, *999 )
-      IF( ASSOCIATED( MESH ) ) THEN
-        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(Mesh,meshComponentNumber,nodeUserNumber,nodeExists,GlobalNodeNumber,err,error,*999)
+      IF( ASSOCIATED( mesh ) ) THEN
+        CALL MeshTopologyNodeCheckExists(Mesh,meshComponentNumber,nodeUserNumber,nodeExists,meshNodeNumber,err,error,*999)
       ELSE
         LocalError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -44688,15 +45018,14 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: nodeUserNumber !<The user number of the node to check.
     LOGICAL, INTENT(OUT) :: nodeExists !<True if the node exists, false otherwise.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-
     !Local variables
-    INTEGER(INTG) :: GlobalNodeNumber
+    INTEGER(INTG) :: meshNodeNumber
 
     nodeExists = .FALSE.
 
     CALL ENTERS("CMISSMesh_NodeExistsObj",err,error,*999)
 
-    CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(mesh%MESH,meshComponentNumber,nodeUserNumber,nodeExists,GlobalNodeNumber,err,error,*999)
+    CALL MeshTopologyNodeCheckExists(mesh%MESH,meshComponentNumber,nodeUserNumber,nodeExists,meshNodeNumber,err,error,*999)
 
     CALL EXITS("CMISSMesh_NodeExistsObj")
     RETURN
@@ -44726,7 +45055,7 @@ CONTAINS
     !Local variables
     TYPE(MESH_TYPE), POINTER :: Mesh
     TYPE(REGION_TYPE), POINTER :: Region
-    INTEGER(INTG) :: GlobalElementNumber
+    INTEGER(INTG) :: meshElementNumber
     TYPE(VARYING_STRING) :: LocalError
 
     CALL ENTERS("CMISSMesh_ElementExistsNumber",err,error,*999)
@@ -44739,8 +45068,8 @@ CONTAINS
     IF( ASSOCIATED( REGION ) ) THEN
       CALL MESH_USER_NUMBER_FIND( meshUserNumber, Region, Mesh, err, error, *999 )
       IF( ASSOCIATED( MESH ) ) THEN
-        CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(Mesh,meshComponentNumber,elementUserNumber,elementExists, &
-          & GlobalElementNumber,err,error,*999)
+        CALL MeshTopologyElementCheckExists(Mesh,meshComponentNumber,elementUserNumber,elementExists, &
+          & meshElementNumber,err,error,*999)
       ELSE
         LocalError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(meshUserNumber,"*",err,error))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
@@ -44776,13 +45105,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
     !Local variables
-    INTEGER(INTG) :: GlobalElementNumber
+    INTEGER(INTG) :: meshElementNumber
 
     CALL ENTERS("CMISSMesh_ElementExistsObj",err,error,*999)
 
     elementExists = .FALSE.
 
-    CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(mesh%MESH,meshComponentNumber,elementUserNumber,elementExists, GlobalElementNumber, &
+    CALL MeshTopologyElementCheckExists(mesh%MESH,meshComponentNumber,elementUserNumber,elementExists,meshElementNumber, &
       & err,error,*999)
 
     CALL EXITS("CMISSMesh_ElementExistsObj")
@@ -44793,6 +45122,321 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSMesh_ElementExistsObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the mesh nodes for a mesh component on a mesh identified by an user number.
+  SUBROUTINE CMISSMesh_NodesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,meshNodes,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the nodes for.
+    TYPE(CMISSMeshNodesType), INTENT(INOUT) :: meshNodes !<On return, the mesh nodes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMesh_NodesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes%meshNodes,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMesh_NodesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMesh_NodesGetNumber",err,error)
+    CALL Exits("CMISSMesh_NodesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMesh_NodesGetNumber
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the mesh nodes for a mesh component on a mesh identified by an object.
+  SUBROUTINE CMISSMesh_NodesGetObj(mesh,meshComponentNumber,meshNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh !<The mesh to get the nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the nodes for.
+    TYPE(CMISSMeshNodesType), INTENT(INOUT) :: meshNodes!<On return, the mesh nodes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMesh_NodesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodesGet(mesh%mesh,meshComponentNumber,meshNodes%meshNodes,err,error,*999)
+
+    CALL Exits("CMISSMesh_NodesGetObj")
+    RETURN
+999 CALL Errors("CMISSMesh_NodesGetObj",err,error)
+    CALL Exits("CMISSMesh_NodesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMesh_NodesGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of derivatives at a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,userNodeNumber, &
+    & numberOfDerivatives,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the number of dervatives for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the number of derivatives for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the number of derivatives for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of derivatives for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfDerivatives !<On return, the number of derivatives in the mesh for the user node number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_NumberOfDerivativesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodeNumberOfDerivativesGet(meshNodes,userNodeNumber,numberOfDerivatives,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfDerivativesGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of derivatives for a node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetObj(meshNodes,userNodeNumber,numberOfDerivatives,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes!<The mesh nodes to get the number of derivatives at a node for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of derivatives at a node for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfDerivatives!<On return, the number of derivatives at a node in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_NumberOfDerivativesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodeNumberOfDerivativesGet(meshNodes%meshNodes,userNodeNumber,numberOfDerivatives,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfDerivativesGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfDerivativesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the derivatives at a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_DerivativesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,userNodeNumber, &
+    & derivatives,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the derivatives for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the derivatives for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the derivatives for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the derivatives for.
+    INTEGER(INTG), INTENT(OUT) :: derivatives(:) !<On return, the derivatives in the mesh for the user node number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_DerivativesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodeDerivativesGet(meshNodes,userNodeNumber,derivatives,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_DerivativesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_DerivativesGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_DerivativesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_DerivativesGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the derivatives for a node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_DerivativesGetObj(meshNodes,userNodeNumber,derivatives,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes!<The mesh nodes to get the derivatives at a node for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the derivatives at a node for.
+    INTEGER(INTG), INTENT(OUT) :: derivatives(:) !<On return, the derivatives at a node in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_DerivativesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodeDerivativesGet(meshNodes%meshNodes,userNodeNumber,derivatives,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_DerivativesGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_DerivativesGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_DerivativesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_DerivativesGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of version at a derivative for a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,derivativeNumber, &
+    & userNodeNumber,numberOfVersions,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the number of versions.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of the node to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of versions for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfVersions !<On return, the number of versions in the mesh for the derivative index of the user node number.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_NumberOfVersionsGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodeNumberOfVersionsGet(meshnodes,derivativeNumber,userNodeNumber,numberOfVersions,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfVersionsGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of versions for an node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetObj(meshNodes,derivativeNumber,userNodeNumber,numberOfVersions,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes !<The mesh nodes to get the number of versions at a node for.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumber !<The derivative number of a node to get the number of versions for.
+    INTEGER(INTG), INTENT(IN) :: userNodeNumber !<The user node number to get the number of versions at a node for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfVersions !<On return, the number of derivatives at the specified node and derivative in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_NumberOfVersionsGetObj",err,error,*999)
+
+    CALL MeshTopologyNodeNumberOfVersionsGet(meshNodes%meshNodes,derivativeNumber,userNodeNumber, &
+      & numberOfVersions,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfVersionsGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfVersionsGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfVersionsGetObj
 
 !!==================================================================================================================================
 !!
@@ -46074,7 +46718,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
     IF(ASSOCIATED(region)) THEN
       CALL REGION_NODES_GET(region,nodes,err,error,*999)
-      CALL Nodes_UserNumbersAllSet(nodes,nodeUserNumbers,err,error,*999)
+      CALL NodesUserNumbersAllSet(nodes,nodeUserNumbers,err,error,*999)
     ELSE
       localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))// &
         & " does not exist."
@@ -46105,7 +46749,7 @@ CONTAINS
 
     CALL ENTERS("CMISSNodes_UserNumbersAllSetObj",err,error,*999)
 
-    CALL Nodes_UserNumbersAllSet(nodes%NODES,nodeUserNumbers,err,error,*999)
+    CALL NodesUserNumbersAllSet(nodes%NODES,nodeUserNumbers,err,error,*999)
 
     CALL EXITS("CMISSNodes_UserNumbersAllSetObj")
     RETURN
@@ -54791,6 +55435,2198 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_NewtonTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the absolute tolerance for an Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & absoluteTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,absoluteTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the absolute tolerance for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1(problemUserNumber, &
+      & controlLoopIdentifiers,solverIndex,absoluteTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,absoluteTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the absolute tolerance for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj(solver,absoluteTolerance,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET(solver%SOLVER,absoluteTolerance,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Quasi-Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0(problemUserNumber, &
+      & controlLoopIdentifier,solverIndex,monitorLinesearchFlag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the linesearch monitoring for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL Solver_QuasiNewtonLineSearchMonitorOutputSet(SOLVER,monitorLinesearchFlag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Quasi-Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+      & monitorLinesearchFlag,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the linesearch monitoring for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the absolute tolerance for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL Solver_QuasiNewtonLineSearchMonitorOutputSet(SOLVER,monitorLinesearchFlag,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Enables/disables output monitoring for a nonlinear Quasi-Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj(solver,monitorLinesearchFlag,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the linesearch monitoring for.
+    LOGICAL, INTENT(IN) :: monitorLinesearchFlag !<Flag to determine whether to enable/disable linsearch monitor output.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj",err,error,*999)
+
+    CALL Solver_QuasiNewtonLineSearchMonitorOutputSet(solver%SOLVER,monitorLinesearchFlag,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the Jacobian calculation type for an Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & jacobianCalculationType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: jacobianCalculationType !<The Jacobian calculation type for the Quasi-Newton solver to set. \see OPENCMISS_JacobianCalculationTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,jacobianCalculationType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the Jacobian calculation type for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+      & jacobianCalculationType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: jacobianCalculationType !<The Jacobian calculation type for the Quasi-Newton solver to set. \see OPENCMISS_JacobianCalculationTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,jacobianCalculationType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the Jacobian calculation type for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj(solver,jacobianCalculationType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: jacobianCalculationType !<The Jacobian calculation type for the Quasi-Newton solver to set. \see OPENCMISS_JacobianCalculationTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(solver%SOLVER,jacobianCalculationType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLinearSolverGetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,linearSolverIndex,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the Quasi-Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to get the Quasi-Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the Quasi-Newton linear solver for.
+    INTEGER(INTG), INTENT(OUT) :: linearSolverIndex !<On return, the solver index of the linear solver.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(LINEAR_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,err,error,*999)
+      !todo: get the solver index from linear solver
+      linearSolverIndex=LINEAR_SOLVER%GLOBAL_NUMBER
+      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLinearSolverGetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLinearSolverGetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,linearSolverIndex,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the Quasi-Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to get the Quasi-Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the Quasi-Newton linear solver for.
+    INTEGER(INTG), INTENT(OUT) :: linearSolverIndex !<On return, the Quasi-Newton linear solver index.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(LINEAR_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,err,error,*999)
+      !todo: get the solver index from linear solver
+      linearSolverIndex=LINEAR_SOLVER%GLOBAL_NUMBER
+      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLinearSolverGetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonLinearSolverGetObj(solver,linearSolver,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to get the Quasi-Newton linear solver for.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: linearSolver !<On return, the Quasi-Newton linear solver.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLinearSolverGetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET(solver%SOLVER,linearSolver%SOLVER,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLinearSolverGetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLinearSolverGetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML solver associated with a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonCellMLSolverGetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,CellMLSolverIndex,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the Quasi-Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the solver to get the Quasi-Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the Quasi-Newton CellML solver for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLSolverIndex !<On return, the solver index of the CellML solver.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(CELLML_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,err,error,*999)
+      !todo: get the solver index from CellML solver
+      CellMLSolverIndex=CELLML_SOLVER%GLOBAL_NUMBER
+      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonCellMLSolverGetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML solver associated with a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonCellMLSolverGetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,CellMLSolverIndex,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the solver to get the Quasi-Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to get the Quasi-Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to get the Quasi-Newton CellML solver for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLSolverIndex !<On return, the Quasi-Newton CellML solver index.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(CELLML_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,err,error,*999)
+      !todo: get the solver index from CellML solver
+      CellMLSolverIndex=CELLML_SOLVER%GLOBAL_NUMBER
+      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonCellMLSolverGetNumber1
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML solver associated with a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonCellMLSolverGetObj(solver,CellMLSolver,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The solver to get the Quasi-Newton CellML solver for.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: CellMLSolver !<On return, the Quasi-Newton CellML solver.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonCellMLSolverGetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET(solver%SOLVER,CellMLSolver%SOLVER,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonCellMLSolverGetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonCellMLSolverGetObj
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for an Quasi-Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & convergenceTestType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the convergence test for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifier,solverIndex,solver,err,error,*999)
+      CALL Solver_QuasiNewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*999)
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+      & convergenceTestType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_TYPE), POINTER :: solver
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1",err,error,*999)
+
+    NULLIFY(problem)
+    NULLIFY(solver)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,problem,err,error,*999)
+    IF(ASSOCIATED(problem)) THEN
+      CALL PROBLEM_SOLVER_GET(problem,controlLoopIdentifiers,solverIndex,solver,err,error,*999)
+      CALL Solver_QuasiNewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*999)
+    ELSE
+      localError="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1
+  
+  ! 
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the convergence test type for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj(solver,convergenceTestType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the convergence test type for.
+    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj",err,error,*999)
+
+    CALL Solver_QuasiNewtonConvergenceTestTypeSet(solver%SOLVER,convergenceTestType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search maximum step for an Quasi-Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,maxStep,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton line search solver to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton line search solver to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the line search maximum step for.
+    REAL(DP), INTENT(IN) :: maxStep !<The maximum step for the Quasi-Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,maxStep,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search maximum step for a Quasi-Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,maxStep,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton line search solver to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the maximum step for.
+    REAL(DP), INTENT(IN) :: maxStep !<The maximum step for the Quasi-Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,maxStep,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search maximum step for a Quasi-Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj(solver,maxStep,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton line search solver to set the maximum step for.
+    REAL(DP), INTENT(IN) :: maxStep !<The maximum step for the Quasi-Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET(solver%SOLVER,maxStep,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search step tolerance for an Quasi-Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,stepTol,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton line search solver to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton line search solver to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the line search step tolerance for.
+    REAL(DP), INTENT(IN) :: stepTol !<The step tolerance for the Quasi-Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,stepTol,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search step tolerance for a Quasi-Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,stepTol,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton line search solver to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the step tolerance for.
+    REAL(DP), INTENT(IN) :: stepTol !<The step tolerance for the Quasi-Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,stepTol,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search step tolerance for a Quasi-Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchStepTolSetObj(solver,stepTol,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton line search solver to set the step tolerance for.
+    REAL(DP), INTENT(IN) :: stepTol !<The step tolerance for the Quasi-Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET(solver%SOLVER,stepTol,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchStepTolSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search type for an Quasi-Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,lineSearchType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: lineSearchType !<The type of line search for the Quasi-Newton line search solver to set. \see OPENCMISS_QuasiNewtonLineSearchTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET(SOLVER,lineSearchType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of line search for a Quasi-Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,lineSearchType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: lineSearchType !<The type of line search for the Quasi-Newton line search solver to set. \see OPENCMISS_QuasiNewtonLineSearchTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET(SOLVER,lineSearchType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of line search for a Quasi-Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonLineSearchTypeSetObj(solver,lineSearchType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: lineSearchType !<The type of line search for the Quasi-Newton line search solver to set. \see OPENCMISS_QuasiNewtonLineSearchTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET(solver%SOLVER,lineSearchType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonLineSearchTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of function evaluations for an Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
+      & maximumFunctionEvaluations,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: maximumFunctionEvaluations !<The maximum number of function evaluations for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,maximumFunctionEvaluations,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of function evaluations for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex, &
+      & maximumFunctionEvaluations,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: maximumFunctionEvaluations !<The maximum number of function evaluations for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,maximumFunctionEvaluations,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of function evaluations for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj(solver,maximumFunctionEvaluations,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the maximum number of function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: maximumFunctionEvaluations !<The maximum number of function evaluations for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(solver%SOLVER,maximumFunctionEvaluations,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for an Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,maximumIterations,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: maximumIterations !<The maximum number of iterations for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,maximumIterations,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,maximumIterations,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: maximumIterations !<The maximum number of iterations for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,maximumIterations,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonMaximumIterationsSetObj(solver,maximumIterations,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the maximum number of iterations for.
+    INTEGER(INTG), INTENT(IN) :: maximumIterations !<The maximum number of iterations for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET(solver%SOLVER,maximumIterations,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonMaximumIterationsSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the relative tolerance for an Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,relativeTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: relativeTolerance !<The relative tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,relativeTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the relative tolerance for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+    & solverIndex,relativeTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: relativeTolerance !<The relative tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,relativeTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the relative tolerance for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonRelativeToleranceSetObj(solver,relativeTolerance,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: relativeTolerance !<The relative tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET(solver%SOLVER,relativeTolerance,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRelativeToleranceSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution tolerance for an Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,solutionTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the solution tolerance for.
+    REAL(DP), INTENT(IN) :: solutionTolerance !<The solution tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,solutionTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution tolerance for a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+    & solverIndex,solutionTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the solution tolerance for.
+    REAL(DP), INTENT(IN) :: solutionTolerance !<The absolulte tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,solutionTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution tolerance for a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonSolutionToleranceSetObj(solver,solutionTolerance,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the solution tolerance for.
+    REAL(DP), INTENT(IN) :: solutionTolerance !<The solution tolerance for the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET(solver%SOLVER,solutionTolerance,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonSolutionToleranceSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the delta0 for a Quasi-Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex,delta0,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton trust region solver to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton trust region solver to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the delta0 for.
+    REAL(DP), INTENT(IN) :: delta0 !<The delta0 for the Quasi-Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,delta0,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the delta0 for a Quasi-Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1(problemUserNumber,controlLoopIdentifiers,solverIndex,delta0,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton trust region solver to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the delta0 for.
+    REAL(DP), INTENT(IN) :: delta0 !<The delta0 for the Quasi-Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,delta0,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the delta0 for a Quasi-Newton trust region solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj(solver,delta0,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton trust region solver to set the delta0 for.
+    REAL(DP), INTENT(IN) :: delta0 !<The delta0 for the Quasi-Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET(solver%SOLVER,delta0,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the tolerance for a Quasi-Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,tolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton trust region solver to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton trust region solver to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the tolerance for.
+    REAL(DP), INTENT(IN) :: tolerance !<The tolerance for the Quasi-Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,tolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the tolerance for a Quasi-Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,tolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton trust region solver to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the tolerance for.
+    REAL(DP), INTENT(IN) :: tolerance !<The tolerance for the Quasi-Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,tolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the tolerance for a Quasi-Newton trust region solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj(solver,tolerance,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton trust region solver to set the tolerance for.
+    REAL(DP), INTENT(IN) :: tolerance !<The tolerance for the Quasi-Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET(solver%SOLVER,tolerance,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonRestartSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,quasiNewtonRestart,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonRestart !<The restart of the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRestartSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_RESTART_SET(SOLVER,quasiNewtonRestart,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRestartSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonRestartSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,quasiNewtonRestart,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonRestart !<The restart of the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRestartSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_RESTART_SET(SOLVER,quasiNewtonRestart,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRestartSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart of a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonRestartSetObj(solver,quasiNewtonRestart,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonRestart !<The restart of the Quasi-Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRestartSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_RESTART_SET(solver%SOLVER,quasiNewtonRestart,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRestartSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonRestartTypeSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,quasiNewtonRestartType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonRestartType !<The restart type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonRestartTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_RESTART_TYPE_SET(SOLVER,quasiNewtonRestartType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRestartTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonRestartTypeSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,quasiNewtonRestartType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonRestartType !<The restart type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonRestartTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_RESTART_TYPE_SET(SOLVER,quasiNewtonRestartType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRestartTypeSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart type of a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonRestartTypeSetObj(solver,quasiNewtonRestartType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonRestartType !<The restart type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonRestartTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonRestartTypeSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_RESTART_TYPE_SET(solver%SOLVER,quasiNewtonRestartType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonRestartTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the scale type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonScaleTypeSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,quasiNewtonScaleType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonScaleType !<The scale type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonScaleTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_SCALE_TYPE_SET(SOLVER,quasiNewtonScaleType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonScaleTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the scale type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonScaleTypeSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,quasiNewtonScaleType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonScaleType !<The scale type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonScaleTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_SCALE_TYPE_SET(SOLVER,quasiNewtonScaleType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonScaleTypeSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the scale type of a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonScaleTypeSetObj(solver,quasiNewtonScaleType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonScaleType !<The scale type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonScaleTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonScaleTypeSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_SCALE_TYPE_SET(solver%SOLVER,quasiNewtonScaleType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonScaleTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonScaleTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonSolveTypeSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,quasiNewtonSolveType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonSolveType !<The type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET(SOLVER,quasiNewtonSolveType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonSolveTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonSolveTypeSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,quasiNewtonSolveType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonSolveType !<The type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET(SOLVER,quasiNewtonSolveType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonSolveTypeSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonSolveTypeSetObj(solver,quasiNewtonSolveType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonSolveType !<The type of the Quasi-Newton solver to set. \see OPENCMISS_QuasiNewtonSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonSolveTypeSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET(solver%SOLVER,quasiNewtonSolveType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonSolveTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonSolveTypeSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonTypeSetNumber0(problemUserNumber,controlLoopIdentifier, &
+      & solverIndex,quasiNewtonType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonType !<The Quasi-Newton type to set. \see OPENCMISS_QuasiNewtonTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTypeSetNumber0",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifier,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_TYPE_SET(SOLVER,quasiNewtonType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTypeSetNumber0",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Quasi-Newton solver identified by an user number.
+  SUBROUTINE CMISSSolver_QuasiNewtonTypeSetNumber1(problemUserNumber,controlLoopIdentifiers, &
+      & solverIndex,quasiNewtonType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem number with the Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<controlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonType !<The Quasi-Newton type to set. \see OPENCMISS_QuasiNewtonTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTypeSetNumber1",err,error,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,controlLoopIdentifiers,solverIndex,SOLVER,err,error,*999)
+      CALL SOLVER_QUASI_NEWTON_TYPE_SET(SOLVER,quasiNewtonType,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTypeSetNumber1",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTypeSetNumber1
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Quasi-Newton solver identified by an object.
+  SUBROUTINE CMISSSolver_QuasiNewtonTypeSetObj(solver,quasiNewtonType,err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: solver !<The Quasi-Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: quasiNewtonType !<The Quasi-Newton type to set. \see OPENCMISS_QuasiNewtonTypes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolver_QuasiNewtonTypeSetObj",err,error,*999)
+
+    CALL SOLVER_QUASI_NEWTON_TYPE_SET(solver%SOLVER,quasiNewtonType,err,error,*999)
+
+    CALL EXITS("CMISSSolver_QuasiNewtonTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolver_QuasiNewtonTypeSetObj",err,error)
+    CALL EXITS("CMISSSolver_QuasiNewtonTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSSolver_QuasiNewtonTypeSetObj
 
   !
   !================================================================================================================================

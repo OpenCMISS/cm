@@ -688,7 +688,7 @@ CONTAINS
               METRICS%GL(1,1)=1.0_DP
               METRICS%GL(1,2)=0.0_DP
               METRICS%GL(2,1)=0.0_DP
-              METRICS%GL(2,2)=0.0_DP
+              METRICS%GL(2,2)=1.0_DP
             CASE(3)
               !Calculate the derivatives of X with respect to XI
               nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1)
@@ -813,6 +813,30 @@ CONTAINS
             CALL INVERT(METRICS%GL(1:METRICS%NUMBER_OF_XI_DIMENSIONS,1:METRICS%NUMBER_OF_XI_DIMENSIONS), &
               & METRICS%GU(1:METRICS%NUMBER_OF_XI_DIMENSIONS,1:METRICS%NUMBER_OF_XI_DIMENSIONS),DET_GL, &
               & ERR,ERROR,*999)
+
+            !Calculate the Jacobian
+            SELECT CASE(JACOBIAN_TYPE)
+            CASE(COORDINATE_JACOBIAN_NO_TYPE)
+              METRICS%JACOBIAN=0.0
+              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_NO_TYPE
+            CASE(COORDINATE_JACOBIAN_LINE_TYPE)
+              METRICS%JACOBIAN=SQRT(ABS(METRICS%GL(1,1)))
+              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_LINE_TYPE
+            CASE(COORDINATE_JACOBIAN_AREA_TYPE)
+              IF(METRICS%NUMBER_OF_XI_DIMENSIONS==3) THEN
+                METRICS%JACOBIAN=SQRT(ABS(DET_GL*METRICS%GU(3,3)))
+              ELSE
+                METRICS%JACOBIAN=SQRT(ABS(DET_GL))
+              ENDIF
+              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_AREA_TYPE
+            CASE(COORDINATE_JACOBIAN_VOLUME_TYPE)
+              METRICS%JACOBIAN=SQRT(ABS(DET_GL))
+              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_VOLUME_TYPE
+            CASE DEFAULT
+              LOCAL_ERROR="The Jacobian type of "//TRIM(NUMBER_TO_VSTRING(JACOBIAN_TYPE,"*",ERR,ERROR))// &
+                & " is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
             
             !Calculate the derivatives of Xi with respect to X - DXI_DX
             IF(METRICS%NUMBER_OF_XI_DIMENSIONS==METRICS%NUMBER_OF_X_DIMENSIONS) THEN
@@ -887,29 +911,51 @@ CONTAINS
                 !Surface in space
                 IF(METRICS%NUMBER_OF_X_DIMENSIONS==3) THEN
                   !Surface in 3D space.
-                  !Form the third vector by the normalised cross product and then take the inverse.
-                  CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(:,1),METRICS%DX_DXI(:,2),DX_DXI3,ERR,ERROR,*999)
-                  DET_DX_DXI=METRICS%DX_DXI(1,1)*(METRICS%DX_DXI(2,2)*DX_DXI3(3)-METRICS%DX_DXI(3,2)*DX_DXI3(2))+ &
-                    & METRICS%DX_DXI(1,2)*(METRICS%DX_DXI(3,1)*DX_DXI3(2)-DX_DXI3(3)*METRICS%DX_DXI(2,1))+ &
-                    & DX_DXI3(1)*(METRICS%DX_DXI(2,1)*METRICS%DX_DXI(3,2)-METRICS%DX_DXI(3,1)*METRICS%DX_DXI(2,2))
-                  IF(ABS(DET_DX_DXI)>ZERO_TOLERANCE) THEN
-                    METRICS%DXI_DX(1,1)=(DX_DXI3(3)*METRICS%DX_DXI(2,2)-METRICS%DX_DXI(3,2)*DX_DXI3(2))/DET_DX_DXI
-                    METRICS%DXI_DX(2,1)=-1.0_DP*(DX_DXI3(3)*METRICS%DX_DXI(2,1)-METRICS%DX_DXI(3,1)*DX_DXI3(2))/DET_DX_DXI
-                    METRICS%DXI_DX(1,2)=-1.0_DP*(DX_DXI3(3)*METRICS%DX_DXI(1,2)-METRICS%DX_DXI(3,2)*DX_DXI3(1))/DET_DX_DXI
-                    METRICS%DXI_DX(2,2)=(DX_DXI3(3)*METRICS%DX_DXI(1,1)-METRICS%DX_DXI(3,1)*DX_DXI3(1))/DET_DX_DXI
-                    METRICS%DXI_DX(1,3)=(DX_DXI3(2)*METRICS%DX_DXI(1,2)-METRICS%DX_DXI(2,2)*DX_DXI3(1))/DET_DX_DXI
-                    METRICS%DXI_DX(2,3)=-1.0_DP*(DX_DXI3(2)*METRICS%DX_DXI(1,1)-METRICS%DX_DXI(2,1)*DX_DXI3(1))/DET_DX_DXI
-                    !Normalise to ensure that g^11=g^1.g^1 and g^22=g^2.g^2
-                    LENGTH=L2NORM(METRICS%DXI_DX(1,1:3))
-                    SCALE=SQRT(ABS(METRICS%GU(1,1)))/LENGTH
-                    METRICS%DXI_DX(1,1:3)=SCALE*METRICS%DXI_DX(1,1:3)
-                    LENGTH=L2NORM(METRICS%DXI_DX(2,1:3))
-                    SCALE=SQRT(ABS(METRICS%GU(2,2)))/LENGTH
-                    METRICS%DXI_DX(2,1:3)=SCALE*METRICS%DXI_DX(2,1:3)
-                  ELSE
-                    CALL FLAG_WARNING("Zero determinant. Unable to obtain dxi/dx.",ERR,ERROR,*999)
-                    METRICS%DXI_DX=0.0_DP                    
-                  ENDIF
+                  !Calculate the covariant normal vector.
+                  CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(:,1),METRICS%DX_DXI(:,2),METRICS%DXI_DX(3,:),ERR,ERROR,*999)
+                  !Calculate the contravariant normal vector.
+                  SELECT CASE(COORDINATE_SYSTEM%TYPE)
+                  CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
+                    METRICS%DX_DXI(:,3)=METRICS%DXI_DX(3,:)
+                  CASE(COORDINATE_CYLINDRICAL_POLAR_TYPE)
+                    R=INTERPOLATED_POINT%VALUES(1,1)
+                    RR=R*R
+                    METRICS%DX_DXI(1,3)=METRICS%DXI_DX(3,1)
+                    METRICS%DX_DXI(2,3)=METRICS%DXI_DX(3,2)/RR
+                    METRICS%DX_DXI(3,3)=METRICS%DXI_DX(3,3)
+                  CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
+                    R=INTERPOLATED_POINT%VALUES(1,1)
+                    RR=R*R
+                    RC=R*COS(INTERPOLATED_POINT%VALUES(3,1))
+                    RCRC=RC*RC          
+                    METRICS%DX_DXI(1,3)=METRICS%DXI_DX(3,1)
+                    METRICS%DX_DXI(2,3)=METRICS%DXI_DX(3,2)/RCRC
+                    METRICS%DX_DXI(3,3)=METRICS%DXI_DX(3,3)/RR
+                  CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
+                    IF(ABS(INTERPOLATED_POINT%VALUES(2,1))<ZERO_TOLERANCE) THEN
+                      CALL FLAG_WARNING("Mu is zero.",ERR,ERROR,*999)
+                    ELSE
+                      FF=COORDINATE_SYSTEM%FOCUS*COORDINATE_SYSTEM%FOCUS
+                      R=INTERPOLATED_POINT%VALUES(1,1)
+                      MU=INTERPOLATED_POINT%VALUES(2,1)
+                      G1=FF*(SINH(R)*SINH(R)+SIN(MU)*SIN(MU))
+                      G3=FF*SINH(R)*SINH(R)*SIN(MU)*SIN(MU)
+                      METRICS%DX_DXI(1,3)=METRICS%DXI_DX(3,1)/G1
+                      METRICS%DX_DXI(2,3)=METRICS%DXI_DX(3,2)/G1
+                      METRICS%DX_DXI(3,3)=METRICS%DXI_DX(3,3)/G3
+                    ENDIF
+                  CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                    ! Calculate the other two covariant vectors
+                    CALL CROSS_PRODUCT(METRICS%DX_DXI(:,2),METRICS%DX_DXI(:,3),METRICS%DXI_DX(1,:),ERR,ERROR,*999)
+                    CALL CROSS_PRODUCT(METRICS%DX_DXI(:,3),METRICS%DX_DXI(:,1),METRICS%DXI_DX(2,:),ERR,ERROR,*999)
+                    ! Normalise them, so that g_M.g^N=kroneckerdelta(M,N)
+                    METRICS%DXI_DX(1:2,:)=METRICS%DXI_DX(1:2,:)/METRICS%JACOBIAN
                 ELSE
                   CALL FLAG_ERROR("Invalid embedding of a surface in space.",ERR,ERROR,*999)
                 ENDIF
@@ -917,30 +963,6 @@ CONTAINS
                 CALL FLAG_ERROR("Invalid embedding in space.",ERR,ERROR,*999)
               END SELECT
             ENDIF
-            
-            !Calculate the Jacobian
-            SELECT CASE(JACOBIAN_TYPE)
-            CASE(COORDINATE_JACOBIAN_NO_TYPE)
-              METRICS%JACOBIAN=0.0
-              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_NO_TYPE
-            CASE(COORDINATE_JACOBIAN_LINE_TYPE)
-              METRICS%JACOBIAN=SQRT(ABS(METRICS%GL(1,1)))
-              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_LINE_TYPE
-            CASE(COORDINATE_JACOBIAN_AREA_TYPE)
-              IF(METRICS%NUMBER_OF_XI_DIMENSIONS==3) THEN
-                METRICS%JACOBIAN=SQRT(ABS(DET_GL*METRICS%GU(3,3)))
-              ELSE
-                METRICS%JACOBIAN=SQRT(ABS(DET_GL))
-              ENDIF
-              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_AREA_TYPE
-            CASE(COORDINATE_JACOBIAN_VOLUME_TYPE)
-              METRICS%JACOBIAN=SQRT(ABS(DET_GL))
-              METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_VOLUME_TYPE
-            CASE DEFAULT
-              LOCAL_ERROR="The Jacobian type of "//TRIM(NUMBER_TO_VSTRING(JACOBIAN_TYPE,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
           ELSE
             CALL FLAG_ERROR("Metrics interpolated point has not been interpolated to include first derivatives.",ERR,ERROR,*999)
           ENDIF
