@@ -1891,6 +1891,16 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
   END TYPE EQUATIONS_SET_DEPENDENT_TYPE
 
+  !>Contains information on the derived variables for the equations set, eg. stress or strain
+  TYPE EquationsSetDerivedType
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer back to the equations set.
+    LOGICAL :: derivedFinished !<Is .TRUE. if the derived variables for the equations set have finished being created, .FALSE. if not.
+    LOGICAL :: derivedFieldAutoCreated !<Is .TRUE. if the derived field has been or will be auto created by the equations set setup, .FALSE. if it was already created.
+    TYPE(FIELD_TYPE), POINTER :: derivedField !<A pointer to the derived field for the equations set.
+    INTEGER(INTG) :: numberOfVariables !<The number of derived variables used.
+    INTEGER(INTG), ALLOCATABLE :: variableTypes(:) !<variableTypes(DERIVED_TYPE) is zero if the derived type is not used, otherwise it is the field variable type in the derived field for the derived variable type
+  END TYPE EquationsSetDerivedType
+
   !>Contains information on the independent variables for the equations set.
   TYPE EQUATIONS_SET_INDEPENDENT_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
@@ -1942,6 +1952,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
     TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: INDEPENDENT !<A pointer to the indepedent field information for the equations set.
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
+    TYPE(EquationsSetDerivedType), POINTER :: derived !<A pointer to the derived field information.
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations information for the equations set
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE) :: EQUATIONS_SET_FIELD !<A pointer to the equations set field for the equations set.
