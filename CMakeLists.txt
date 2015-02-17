@@ -1,100 +1,52 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
+project(Iron VERSION 1.0 LANGUAGES C Fortran)
 
-project (OpenCMISS C Fortran) 
+# Config
+SET(IRON_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
+INCLUDE(${IRON_MODULES}/MacroDefinitions.cmake)
+INCLUDE(${IRON_MODULES}/CompileFlags.cmake)
 
-#################Define OPENCMISS_ROOT & OPENCMISSEXTRAS_ROOT##################
-
-# Set OPENCMISS_ROOT
-IF(NOT DEFINED OPENCMISS_ROOT)
-  IF(DEFINED ENV{OPENCMISS_ROOT})
-    SET(OPENCMISS_ROOT $ENV{OPENCMISS_ROOT})
-  ELSE(DEFINED ENV{OPENCMISS_ROOT})
-    SET(OPENCMISS_ROOT ..)
-  ENDIF(DEFINED ENV{OPENCMISS_ROOT})
-ENDIF(NOT DEFINED OPENCMISS_ROOT) 
-SET(GLOBAL_CM_ROOT ${OPENCMISS_ROOT}/cm)
-SET(GLOBAL_CELLML_ROOT ${OPENCMISS_ROOT}/cellml)
-
-# Need some way of getting OPENCMISSEXTRAS_ROOT defined.
-IF(NOT DEFINED OPENCMISSEXTRAS_ROOT)
-  IF(DEFINED ENV{OPENCMISSEXTRAS_ROOT})
-    set (OPENCMISSEXTRAS_ROOT $ENV{OPENCMISSEXTRAS_ROOT}) 
-  ELSE(DEFINED ENV{OPENCMISSEXTRAS_ROOT})
-    set (OPENCMISSEXTRAS_ROOT ${OPENCMISS_ROOT}/../opencmissextras) 
-  ENDIF(DEFINED ENV{OPENCMISSEXTRAS_ROOT})
-ENDIF(NOT DEFINED OPENCMISSEXTRAS_ROOT)
-set (EXTERNAL_CM_ROOT ${OPENCMISSEXTRAS_ROOT}/cm/external)
-SET(GLOBAL_FIELDML_ROOT ${OPENCMISSEXTRAS_ROOT}/fieldml)
-
-SET(CMAKE_MODULE_PATH "${GLOBAL_CM_ROOT}/cmake_modules")
-INCLUDE( ${CMAKE_MODULE_PATH}/GeneralConfiguration.cmake )
-INCLUDE( ${CMAKE_MODULE_PATH}/MacroDefinitions.cmake )
-INCLUDE( ${CMAKE_MODULE_PATH}/CompileFlags.cmake )
-
-########################Include opencmissextras libraries#############################################
-
-IF(${OPERATING_SYSTEM} STREQUAL win32)
-  #TODO This is to be removed while new opencmissextras is available.
-  list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${EXTERNAL_CM_ROOT}/i386-win32-debug)
-ELSE(${OPERATING_SYSTEM} STREQUAL win32)
-  list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${EXTERNAL_CM_ROOT}/${LIB_ARCH_DIR}${DEBUG_SUFFIX}${PROF_SUFFIX}/${MPI}/${COMPILER})
-ENDIF(${OPERATING_SYSTEM} STREQUAL win32)
-
+# External components
 # MPI
-IF(NOT ${OPERATING_SYSTEM} STREQUAL aix) 
-  FIND_PACKAGE(MPI REQUIRED)
-  INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
-ENDIF(NOT ${OPERATING_SYSTEM} STREQUAL aix) 
-#PETSC
-FIND_PACKAGE(PETSC REQUIRED)
-INCLUDE_DIRECTORIES(${PETSC_INCLUDES})
-#TAO
-FIND_PACKAGE(TAO)
-INCLUDE_DIRECTORIES(${TAO_INCLUDES})
-#SUNDIALS
-FIND_PACKAGE(SUNDIALS)
-INCLUDE_DIRECTORIES(${SUNDIALS_INCLUDES})
-#HYPRE
-FIND_PACKAGE(HYPRE)
-INCLUDE_DIRECTORIES(${HYPRE_INCLUDES})
-#MUMPS
-FIND_PACKAGE(MUMPS)
-INCLUDE_DIRECTORIES(${MUMPS_INCLUDES})
-#SCALAPACK
-FIND_PACKAGE(SCALAPACK)
-INCLUDE_DIRECTORIES(${SCALAPACK_INCLUDES})
-#BLACS
-FIND_PACKAGE(BLACS)
-INCLUDE_DIRECTORIES(${BLACS_INCLUDES})
+find_package(MPI REQUIRED)
 
-IF(USECELLML)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSECELLML ")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSECELLML ")
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DUSECELLML ")
-  INCLUDE_DIRECTORIES(${GLOBAL_CELLML_ROOT}/${LIB_ARCH_DIR}${DEBUG_SUFFIX}${PROF_SUFFIX}/${COMPILER}/include)
-ENDIF(USECELLML)
+SET(LINK_LIBS )
+# CellML
+if (WITH_CELLML)
+    find_package(LIBCELLML CONFIG REQUIRED)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSECELLML ")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSECELLML ")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DUSECELLML ")
+endif()
+# FieldML
+if (WITH_FIELDML)
+    find_package(FIELDML REQUIRED)
+endif()
 
-IF(USEFIELDML)
-  INCLUDE_DIRECTORIES(${GLOBAL_FIELDML_ROOT}/${LIB_ARCH_DIR}${DEBUG_SUFFIX}${PROF_SUFFIX}/include)
-  INCLUDE_DIRECTORIES(${GLOBAL_FIELDML_ROOT}/${LIB_ARCH_DIR}${DEBUG_SUFFIX}${PROF_SUFFIX}/${COMPILER}/include)
-ENDIF(USEFIELDML)
+# Other Dependencies
+include(Variables)
+SET(DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK) #BLACS
+foreach(DEP ${DEPS})
+    # Look for config-aware implementations first
+    find_package(${DEP} CONFIG QUIET)
+    if (NOT ${DEP}_FOUND)
+        FIND_PACKAGE(${DEP} REQUIRED)
+        INCLUDE_DIRECTORIES(${${DEP}_INCLUDES})
+    else()
+        LIST(APPEND LINK_LIBS ${${DEP}_TARGETS})
+    endif()
+endforeach()
+message("Link libaries: ${LINK_LIBS}")
 
-SET(SOURCE_DIR ${GLOBAL_CM_ROOT}/src)
-SET(CMAKE_INSTALL_PREFIX ${GLOBAL_CM_ROOT})
-SET(OBJECT_DIR object/${LIB_ARCH_DIR}${MY_SUFFIX}${DEBUG_SUFFIX}${PROF_SUFFIX}/${MPI}/${COMPILER})
-SET(MODULE_DIR ${OBJECT_DIR})
-SET(INC_DIR include/${BIN_ARCH_DIR}/${MPI}/${COMPILER})
-SET(MOD_INC_NAME opencmiss.mod)
-SET(MOD_SOURCE_INC ${CMAKE_BINARY_DIR}/${MOD_INC_NAME})
+# Config
+SET(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 SET(HEADER_INC_NAME opencmiss.h)
 SET(HEADER_SOURCE_INC ${SOURCE_DIR}/${HEADER_INC_NAME})
-SET(LIB_DIR lib/${BIN_ARCH_DIR}/${MPI}/${COMPILER})
-SET(LIBRARY_TARGET_NAME ${CMAKE_PROJECT_NAME}${EXE_ABI_SUFFIX}${MT_SUFFIX}${DEBUG_SUFFIX}${PRO_SUFFIX})
-SET(LIBRARY_BUILD_TYPE STATIC)
 SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 
+# Remove some source files from compilation
 FILE(GLOB OPENCMISS_SRCS ${SOURCE_DIR}/*.*)
-INCLUDE( ${CMAKE_MODULE_PATH}/Entries.cmake )
+INCLUDE(${IRON_MODULES}/Entries.cmake)
 FOREACH(infileName ${EXCLUDED_ROUTINES})
     FILE(GLOB infileName ${infileName}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
     IF (infileName) # if file was found
@@ -102,60 +54,37 @@ FOREACH(infileName ${EXCLUDED_ROUTINES})
     ENDIF (infileName)
 ENDFOREACH(infileName)
 
-# Preprocess files mentioned in "PreprocessedSources.cmake"
-INCLUDE( ${CMAKE_MODULE_PATH}/PreprocessedSources.cmake )
-FOREACH(filenameSrc ${PREPROCESSED_SRCS})
-    
-    # Get full filename of raw, unexpanded src file
-    SET(fullFilenameSrc "${SOURCE_DIR}/${filenameSrc}")
-    
-    # Generate filename for expanded (intermediate) file
-    GET_FILENAME_COMPONENT(filenameBase ${filenameSrc} NAME_WE)
-    GET_FILENAME_COMPONENT(filenameExtension ${filenameSrc} EXT)
-    SET(fullFilenameExpanded "${OBJECT_DIR}/${filenameBase}-expanded${filenameExtension}")
-    
-    # Don't compile the raw, unexpanded source file...
-    FILE(GLOB fullFilenameSrc ${fullFilenameSrc}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
-    LIST(REMOVE_ITEM OPENCMISS_SRCS ${fullFilenameSrc})
-    
-    # ...but compile the preprocessed (expanded) intermediate file instead!
-    LIST(APPEND OPENCMISS_SRCS ${fullFilenameExpanded})
-    
-    # Add rule that tells cmake how to create the intermediate file
-    ADD_CUSTOM_COMMAND(OUTPUT      ${fullFilenameExpanded}
-                       COMMAND     mkdir
-                         ARGS      -p ${OBJECT_DIR}
-                         VERBATIM
-                       COMMAND     m4
-                         ARGS      --prefix-builtins ${fullFilenameSrc} > ${fullFilenameExpanded}
-                         VERBATIM
-                       DEPENDS     ${fullFilenameSrc}
-    )
-    
-ENDFOREACH(filenameSrc)
-
-IF(${OPERATING_SYSTEM} STREQUAL win32)
+# Libraries / targets
+IF(WIN32)
+  # Need separate C/Fortran code due to Project natures in VS
   FILE(GLOB OPENCMISS_FORTRAN_SRCS ${SOURCE_DIR}/*.f90)
   FILE(GLOB OPENCMISS_C_SRCS ${SOURCE_DIR}/*.c)
   FILE(GLOB OPENCMISS_C_HEADER ${SOURCE_DIR}/*.h)
   LIST(APPEND OPENCMISS_C_SRCS ${OPENCMISS_C_HEADER})
-  INCLUDE( ${CMAKE_MODULE_PATH}/Entries.cmake ) 
+  
+  INCLUDE(${IRON_MODULES}/Entries.cmake ) 
   FOREACH(infileName ${EXCLUDED_ROUTINES})
     LIST(REMOVE_ITEM OPENCMISS_FORTRAN_SRCS ${infileName})
     LIST(REMOVE_ITEM OPENCMISS_C_SRCS ${infileName})
   ENDFOREACH(infileName)
-  ADD_LIBRARY(${LIBRARY_TARGET_NAME}_Fortran ${LIBRARY_BUILD_TYPE} ${OPENCMISS_FORTRAN_SRCS} ${PUBLIC_HDRS} ${PRIVATE_HDRS})
-  ADD_LIBRARY(${LIBRARY_TARGET_NAME}_C ${LIBRARY_BUILD_TYPE} ${OPENCMISS_C_SRCS} ${PUBLIC_HDRS} ${PRIVATE_HDRS})
-ELSE(${OPERATING_SYSTEM} STREQUAL win32)
-  ADD_LIBRARY(${LIBRARY_TARGET_NAME} ${LIBRARY_BUILD_TYPE} ${OPENCMISS_SRCS} ${PUBLIC_HDRS} ${PRIVATE_HDRS})
-ENDIF(${OPERATING_SYSTEM} STREQUAL win32)
+  
+  # ? maybe use object target an then combine to one target..
+  ADD_LIBRARY(iron_Fortran ${OPENCMISS_FORTRAN_SRCS} ${PUBLIC_HDRS} ${PRIVATE_HDRS})
+  target_include_directories(iron_Fortran PUBLIC ${MPI_Fortran_INCLUDE_PATH})
+  ADD_LIBRARY(iron_C ${OPENCMISS_C_SRCS} ${PUBLIC_HDRS} ${PRIVATE_HDRS})
+  target_include_directories(iron_C PUBLIC ${MPI_C_INCLUDE_PATH})
 
-IF(${OPERATING_SYSTEM} STREQUAL linux)
-  INSTALL(TARGETS ${LIBRARY_TARGET_NAME} ${LIBRARY_INSTALL_TYPE} DESTINATION lib/x86_64-linux/mpich2/gnu)
-  INSTALL(FILES ${MOD_SOURCE_INC} ${HEADER_SOURCE_INC} DESTINATION ${INC_DIR})
+ELSE()
+  ADD_LIBRARY(iron ${OPENCMISS_SRCS} ${PUBLIC_HDRS} ${PRIVATE_HDRS})
+  target_include_directories(iron PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
+  target_link_libraries(iron ${LINK_LIBS})
+ENDIF()
 
-  FILE(GLOB OPENCMISS_MODS ${CMAKE_BINARY_DIR}/*.mod)
-  INSTALL(FILES ${OPENCMISS_MODS} DESTINATION ${MODULE_DIR})
-  FILE(GLOB OPENCMISS_OBJS ${CMAKE_BINARY_DIR}/CMakeFiles/${CMAKE_PROJECT_NAME}${EXE_ABI_SUFFIX}${MT_SUFFIX}${DEBUG_SUFFIX}${PRO_SUFFIX}.dir/src/*.o)
-  INSTALL(FILES ${OPENCMISS_OBJS} DESTINATION ${OBJECT_DIR})
-ENDIF(${OPERATING_SYSTEM} STREQUAL linux)
+# Install steps
+INSTALL(TARGETS iron 
+      DESTINATION iron
+      INCLUDES DESTINATION include)
+INSTALL(FILES ${HEADER_SOURCE_INC} DESTINATION include)
+
+FILE(GLOB OPENCMISS_MODS ${CMAKE_BINARY_DIR}/*.mod)
+INSTALL(FILES ${OPENCMISS_MODS} DESTINATION include)
