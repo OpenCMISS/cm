@@ -632,7 +632,6 @@ CONTAINS
                                                   0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,1.0_DP],[6,6])
     REAL(DP), PARAMETER :: TWOTHIRDS_UNITY(6) = [TWOTHIRDS,TWOTHIRDS,TWOTHIRDS,0.0_DP,0.0_DP,0.0_DP] !Rank 2 unit tensor times 2/3 in Voigt form.
     REAL(DP), PARAMETER :: UNITY_DIAGONAL(6)=[1.0_DP,1.0_DP,1.0_DP,0.5_DP,0.5_DP,0.5_DP] !Diagonal of rank 4 unit tensor in Voigt form.
-    REAL(DP), PARAMETER :: UNITY(6) = [1.0_DP,1.0_DP,1.0_DP,0.0_DP,0.0_DP,0.0_DP] !Rank 2 unit tensor in Voigt form.
     REAL(DP), POINTER :: C(:) !Parameters for constitutive laws
     REAL(DP) :: MOD_DZDNU(3,3),MOD_DZDNUT(3,3),AZL(3,3),AZU(3,3)
     REAL(DP) :: TRACE,TWOTHIRDS_TRACE
