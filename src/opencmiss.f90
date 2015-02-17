@@ -5970,6 +5970,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_NEWTON = SOLVER_NONLINEAR_NEWTON !<Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_BFGS_INVERSE = SOLVER_NONLINEAR_BFGS_INVERSE !<BFGS inverse nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_SQP = SOLVER_NONLINEAR_SQP !<Sequential Quadratic Program nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+!#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_QUASI_NEWTON = SOLVER_NONLINEAR_QUASI_NEWTON !<Quasi-Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_QuasiNewtonSolverTypes OPENCMISS::Solver::QuasiNewtonSolverTypes
@@ -6012,6 +6013,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_SCALE_LINESEARCH=SOLVER_QUASI_NEWTON_SCALE_LINESEARCH !<Scale based upon line search lambda \see OPENCMISS_QuasiNewtonScaleTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_SOLVER_QUASI_NEWTON_SCALE_JACOBIAN=SOLVER_QUASI_NEWTON_SCALE_JACOBIAN !<Scale by inverting a previously computed Jacobian \see OPENCMISS_QuasiNewtonScaleTypes,OPENCMISS
   !>@}
+!#endif
   !> \addtogroup OPENCMISS_NewtonSolverTypes OPENCMISS::Solver::NewtonSolverTypes
   !> \brief The types of nonlinear Newton solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
@@ -6431,6 +6433,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_LinearTypeSetObj
   END INTERFACE !CMISSSolver_LinearTypeSet
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   !>Sets/changes the absolute tolerance for a nonlinear Quasi-Newton solver.
   INTERFACE CMISSSolver_QuasiNewtonAbsoluteToleranceSet
     MODULE PROCEDURE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0
@@ -6570,6 +6573,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolver_QuasiNewtonTypeSetNumber1
     MODULE PROCEDURE CMISSSolver_QuasiNewtonTypeSetObj
   END INTERFACE !CMISSSolver_QuasiNewtonTypeSet
+#endif
 
   !>Sets/changes the absolute tolerance for a nonlinear Newton solver.
   INTERFACE CMISSSolver_NewtonAbsoluteToleranceSet
@@ -6782,8 +6786,9 @@ MODULE OPENCMISS
     & CMISS_SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER, &
     & CMISS_SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER
 
-  PUBLIC CMISS_SOLVER_NONLINEAR_NEWTON,CMISS_SOLVER_NONLINEAR_BFGS_INVERSE,CMISS_SOLVER_NONLINEAR_SQP, &
-    & CMISS_SOLVER_NONLINEAR_QUASI_NEWTON
+  PUBLIC CMISS_SOLVER_NONLINEAR_NEWTON,CMISS_SOLVER_NONLINEAR_BFGS_INVERSE,CMISS_SOLVER_NONLINEAR_SQP
+!#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )  
+  PUBLIC CMISS_SOLVER_NONLINEAR_QUASI_NEWTON
 
   PUBLIC CMISS_SOLVER_QUASI_NEWTON_LINESEARCH,CMISS_SOLVER_QUASI_NEWTON_TRUSTREGION
 
@@ -6797,6 +6802,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_SOLVER_QUASI_NEWTON_SCALE_NONE,CMISS_SOLVER_QUASI_NEWTON_SCALE_SHANNO, &
     & CMISS_SOLVER_QUASI_NEWTON_SCALE_LINESEARCH,CMISS_SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
+!#endif
 
   PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH,CMISS_SOLVER_NEWTON_TRUSTREGION
 
@@ -6937,45 +6943,48 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolver_NewtonTypeSet
 
-  PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
-
-  PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
-
-  PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
-
-  PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
-
-  PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
-
-  PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
-
-  PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
-
-  PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
-
-  PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
-
-  PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
-
-  PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
-
-  PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
-
-  PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
-
-  PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
-
-  PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
-
-  PUBLIC CMISSSolver_QuasiNewtonRestartSet
-
-  PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
-
-  PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
-
-  PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
-
-  PUBLIC CMISSSolver_QuasiNewtonTypeSet
+! Uncomment if you have PETSC 3.5, otherwise this gives problems for the Python interface
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+! PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
+!
+! PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
+!
+! PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
+!
+! PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonRestartSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
+!
+! PUBLIC CMISSSolver_QuasiNewtonTypeSet
+#endif
 
   PUBLIC CMISSSolver_NonlinearTypeSet
 
@@ -55439,7 +55448,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   !>Sets/changes the absolute tolerance for an Quasi-Newton solver identified by an user number.
   SUBROUTINE CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0(problemUserNumber,controlLoopIdentifier,solverIndex, &
       & absoluteTolerance,err)
@@ -57627,6 +57636,7 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolver_QuasiNewtonTypeSetObj
+#endif
 
   !
   !================================================================================================================================

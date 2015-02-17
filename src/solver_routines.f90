@@ -616,6 +616,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_MATRICES_DYNAMIC_ASSEMBLE,SOLVER_MATRICES_STATIC_ASSEMBLE
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   PUBLIC SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET
 
   PUBLIC Solver_QuasiNewtonLineSearchMonitorOutputSet
@@ -657,6 +658,7 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_QUASI_NEWTON_SCALE_TYPE_SET
 
   PUBLIC SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET
+#endif
 
   PUBLIC SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET
 
@@ -14360,7 +14362,7 @@ CONTAINS
    
   END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET
 
-!SANDER QUASI-NEWTON
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
 
   !
   !================================================================================================================================
@@ -15264,7 +15266,7 @@ CONTAINS
                   END SELECT
 
                   !Set the Quasi-Newton restart
-                  ! SANDER: To be implemented, also in PETSc!
+                  ! To be implemented, also in PETSc!
 
                   !Create the solver matrices and vectors
                   LINEAR_SOLVER=>QUASI_NEWTON_SOLVER%LINEAR_SOLVER
@@ -17147,7 +17149,8 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET
-        
+#endif
+
   !
   !================================================================================================================================
   !
@@ -19805,8 +19808,10 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         CALL SOLVER_QUASI_NEWTON_CREATE_FINISH(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
+#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -19889,6 +19894,7 @@ CONTAINS
         !Not yet implemented. Don't kick up a fuss, just exit
       CASE(SOLVER_NONLINEAR_SQP)
         !Not yet implemented. Don't kick up a fuss, just exit
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -19921,6 +19927,7 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
+#endif
       END SELECT
     ELSE
       CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
@@ -19957,8 +19964,10 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
+#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20050,6 +20059,7 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -20058,6 +20068,7 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
+#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20107,6 +20118,7 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -20115,6 +20127,7 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
+#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20164,6 +20177,7 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -20172,6 +20186,7 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
+#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20265,6 +20280,7 @@ CONTAINS
         !Do nothing
       CASE(SOLVER_NONLINEAR_SQP)
         !Do nothing
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>nonlinearSolver%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -20296,6 +20312,7 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
         ENDIF
+#endif
       CASE DEFAULT
         localError="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(nonlinearSolver%NONLINEAR_SOLVE_TYPE,"*",err,error))// &
@@ -20343,8 +20360,10 @@ CONTAINS
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_SQP)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
         CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
           CALL SOLVER_QUASI_NEWTON_SOLVE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
+#endif
         CASE DEFAULT
           LOCAL_ERROR="The nonlinear solver type of "// &
             & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20433,8 +20452,10 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                
               CASE(SOLVER_NONLINEAR_SQP)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
               CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
                 CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
+#endif
               CASE DEFAULT
                 LOCAL_ERROR="The nonlinear solver type of "// &
                   & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20450,9 +20471,11 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_SQP)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
               CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
                 NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER)
                 CALL SOLVER_QUASI_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
+#endif
               CASE DEFAULT
                 LOCAL_ERROR="The specified nonlinear solver type of "// &
                   & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20479,8 +20502,10 @@ CONTAINS
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)                
     CASE(SOLVER_NONLINEAR_SQP)
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)      
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
     CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
       CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+#endif
     END SELECT
 998 CALL ERRORS("SOLVER_NONLINEAR_TYPE_SET",ERR,ERROR)
     CALL EXITS("SOLVER_NONLINEAR_TYPE_SET")

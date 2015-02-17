@@ -1627,7 +1627,7 @@ MODULE CMISS_PETSC
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   PUBLIC PETSC_DEFAULT_REAL
 #else
-  PUBLIC PETSC_DOUBLE_PRECISION
+  PUBLIC PETSC_DEFAULT_DOUBLE_PRECISION
 #endif
   
   PUBLIC PETSC_KSPRICHARDSON,PETSC_KSPCG,PETSC_KSPCGNE,PETSC_KSPSTCG,PETSC_KSPGMRES,PETSC_KSPFGMRES, &
@@ -4248,38 +4248,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc MatRestoreArray routine.
-  SUBROUTINE PETSC_MATRESTOREARRAY(A,ARRAY,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
-    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("PETSC_MATRESTOREARRAY",ERR,ERROR,*999)
-
-    CALL FLAG_ERROR("PETSC_MATRESTOREARRAY not implemented",ERR,ERROR,*999)
-    !CALL MatRestoreArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
-    !IF(ERR/=0) THEN
-    !  IF(PETSC_HANDLE_ERROR) THEN
-    !    CHKERRQ(ERR)
-    !  ENDIF
-    !  CALL FLAG_ERROR("PETSc error in MatRestoreArray",ERR,ERROR,*999)
-    !ENDIF
-    
-    CALL EXITS("PETSC_MATRESTOREARRAY")
-    RETURN
-999 CALL ERRORS("PETSC_MATRESTOREARRAY",ERR,ERROR)
-    CALL EXITS("PETSC_MATRESTOREARRAY")
-    RETURN 1
-  END SUBROUTINE PETSC_MATRESTOREARRAY
-    
-  !
-  !================================================================================================================================
-  !
-
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
   !>Buffer routine to the PETSc MatDenseRestoreArray routine.
   SUBROUTINE PETSC_MATDENSERESTOREARRAY(A,ARRAY,ERR,ERROR,*)
@@ -5910,11 +5878,12 @@ CONTAINS
     CALL EXITS("PETSC_SNESMONITORSET")
     RETURN 1
   END SUBROUTINE PETSC_SNESMONITORSET
-    
+
   !
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )   
   !>Buffer routine to the PETSc SNESQNSetType routine.
   SUBROUTINE PETSC_SNESQNSETTYPE(SNES_,QTYPE,ERR,ERROR,*)
 
@@ -5941,6 +5910,7 @@ CONTAINS
     CALL EXITS("PETSC_SNESQNSETTYPE")
     RETURN 1
   END SUBROUTINE PETSC_SNESQNSETTYPE
+#endif
 
   !
   !================================================================================================================================
