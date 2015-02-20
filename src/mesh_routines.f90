@@ -183,6 +183,8 @@ MODULE MESH_ROUTINES
 
   PUBLIC MeshTopologyNodeNumberOfVersionsGet
 
+  PUBLIC MeshTopologyNodesNumberOfNodesGet
+
   PUBLIC MeshTopologyNodesDestroy
   
   PUBLIC MeshTopologyNodesGet
@@ -9673,6 +9675,40 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE MeshTopologyNodeNumberOfVersionsGet
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of nodes for a node in a mesh
+  SUBROUTINE MeshTopologyNodesNumberOfNodesGet(meshNodes,numberOfNodes,err,error,*)
+
+    !Argument variables
+    TYPE(MeshNodesType), POINTER :: meshNodes !<A pointer to the mesh nodes containing the nodes to get the number of nodes for
+    INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<On return, the number of nodes in the mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: meshComponentNumber,meshNumber
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshComponentTopologyType), POINTER :: meshComponentTopology
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("MeshTopologyNodesNumberOfNodesGet",err,error,*999)
+
+    IF(ASSOCIATED(meshNodes)) THEN
+      numberOfNodes=meshNodes%numberOfNodes
+    ELSE
+      CALL FlagError("Mesh nodes is not associated.",err,error,*999)
+    ENDIF
+    
+    CALL Exits("MeshTopologyNodesNumberOfNodesGet")
+    RETURN
+999 CALL Errors("MeshTopologyNodesNumberOfNodesGet",err,error)    
+    CALL Exits("MeshTopologyNodesNumberOfNodesGet")
+    RETURN 1
+   
+  END SUBROUTINE MeshTopologyNodesNumberOfNodesGet
   
   !
   !================================================================================================================================

@@ -4999,6 +4999,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshNodes_NumberOfVersionsGetObj
   END INTERFACE CMISSMeshNodes_NumberOfVersionsGet
 
+  !>Returns the number of nodes in a mesh.
+  INTERFACE CMISSMeshNodes_NumberOfNodesGet
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfNodesGetNumber
+    MODULE PROCEDURE CMISSMeshNodes_NumberOfNodesGetObj
+  END INTERFACE CMISSMeshNodes_NumberOfNodesGet
+
   !>Returns the domain for a given element in a decomposition of a mesh.
   INTERFACE CMISSDecomposition_NodeDomainGet
     MODULE PROCEDURE CMISSDecomposition_NodeDomainGetNumber
@@ -5076,6 +5082,8 @@ MODULE OPENCMISS
   PUBLIC CMISSMeshNodes_NumberOfDerivativesGet,CMISSMeshNodes_DerivativesGet
 
   PUBLIC CMISSMeshNodes_NumberOfVersionsGet
+
+  PUBLIC CMISSMeshNodes_NumberOfNodesGet
 
   PUBLIC CMISSMesh_ElementsGet
 
@@ -6945,45 +6953,45 @@ MODULE OPENCMISS
 
 ! Uncomment if you have PETSC 3.5, otherwise this gives problems for the Python interface
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-! PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
-!
-! PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
-!
-! PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
-!
-! PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonRestartSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
-!
-! PUBLIC CMISSSolver_QuasiNewtonTypeSet
+ PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
+
+ PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
+
+ PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
+
+ PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
+
+ PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
+
+ PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
+
+ PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
+
+ PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
+
+ PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
+
+ PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
+
+ PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
+
+ PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
+
+ PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
+
+ PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
+
+ PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
+
+ PUBLIC CMISSSolver_QuasiNewtonRestartSet
+
+ PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
+
+ PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
+
+ PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
+
+ PUBLIC CMISSSolver_QuasiNewtonTypeSet
 #endif
 
   PUBLIC CMISSSolver_NonlinearTypeSet
@@ -45211,6 +45219,81 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the number of nodes at a node in a mesh identified by an user number. 
+  SUBROUTINE CMISSMeshNodes_NumberOfNodesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,numberOfNodes,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the mesh to get the number of dervatives for.
+    INTEGER(INTG), INTENT(IN) :: meshUserNumber !<The user number of the mesh to get the number of nodes for.
+    INTEGER(INTG), INTENT(IN) :: meshComponentNumber !<The mesh component number to get the number of nodes for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<On return, the number of nodes in the mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(MeshNodesType), POINTER :: meshNodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSMeshNodes_NumberOfNodesGetNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(mesh)
+    NULLIFY(meshNodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL MESH_USER_NUMBER_FIND(meshUserNumber,region,mesh,err,error,*999)
+      IF(ASSOCIATED(mesh)) THEN
+        CALL MeshTopologyNodesGet(mesh,meshComponentNumber,meshNodes,err,error,*999)
+        CALL MeshTopologyNodesNumberOfNodesGet(meshNodes,numberOfNodes,err,error,*999)
+      ELSE
+        localError="A mesh with an user number of "//TRIM(NumberToVString(meshUserNumber,"*",err,error))// &
+          & " does not exist on the region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVString(regionUserNumber,"*",err,error))// &
+        & " does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSMeshNodes_NumberOfNodesGetNumber")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfNodesGetNumber",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfNodesGetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfNodesGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of derivatives for a node in a mesh identified by an object.
+  SUBROUTINE CMISSMeshNodes_NumberOfNodesGetObj(meshNodes,numberOfNodes,err)
+
+    !Argument variables
+    TYPE(CMISSMeshNodesType), INTENT(IN) :: meshNodes!<The mesh nodes to get the number of derivatives at a node for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfNodes!<On return, the number of nodes in a mesh.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL Enters("CMISSMeshNodes_NumberOfNodesGetObj",err,error,*999)
+
+    CALL MeshTopologyNodesNumberOfNodesGet(meshNodes%meshNodes,numberOfNodes,err,error,*999)
+
+    CALL Exits("CMISSMeshNodes_NumberOfNodesGetObj")
+    RETURN
+999 CALL Errors("CMISSMeshNodes_NumberOfNodesGetObj",err,error)
+    CALL Exits("CMISSMeshNodes_NumberOfNodesGetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSMeshNodes_NumberOfNodesGetObj
+
+  !
+  !================================================================================================================================
+  !
   !>Returns the number of derivatives at a node in a mesh identified by an user number. 
   SUBROUTINE CMISSMeshNodes_NumberOfDerivativesGetNumber(regionUserNumber,meshUserNumber,meshComponentNumber,userNodeNumber, &
     & numberOfDerivatives,err)
