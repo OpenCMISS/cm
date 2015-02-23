@@ -62,7 +62,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PRIVATE
 
-#include "include/petscversion.h"
+#include "petscversion.h"
   
   !Module parameters
 
