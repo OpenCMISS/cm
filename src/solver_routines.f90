@@ -72,7 +72,7 @@ MODULE SOLVER_ROUTINES
 
   PRIVATE
 
-#include "include/petscversion.h"
+#include "petscversion.h"
  
   !Module parameters
 
@@ -19614,7 +19614,7 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
   USE TYPES
 
   IMPLICIT NONE
-  
+
   !Argument variables
   TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS !<The PETSc TS type
   INTEGER(INTG), INTENT(INOUT) :: STEPS !<The iteration number
@@ -19636,15 +19636,15 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
       LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
         & " does not correspond to a differntial-algebraic equations solver."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-    ENDIF      
+    ENDIF
   ELSE
     CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
   ENDIF
-  
+
   RETURN
 999 CALL WRITE_ERROR(ERR,ERROR,*998)
 998 CALL FLAG_WARNING("Error monitoring differential-algebraic equations solve.",ERR,ERROR,*997)
-997 RETURN    
+997 RETURN
 END SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC
 
 !
@@ -19663,7 +19663,7 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
   USE TYPES
 
   IMPLICIT NONE
-  
+
   !Argument variables
   TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
   INTEGER(INTG), INTENT(INOUT) :: ITS !<The iteration number
@@ -19684,14 +19684,14 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
       LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
         & " does not correspond to a nonlinear solver."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-    ENDIF      
+    ENDIF
   ELSE
     CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
   ENDIF
-  
+
   RETURN
 999 CALL WRITE_ERROR(ERR,ERROR,*998)
 998 CALL FLAG_WARNING("Error monitoring nonlinear solve.",ERR,ERROR,*997)
-997 RETURN    
+997 RETURN
 END SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC
 
