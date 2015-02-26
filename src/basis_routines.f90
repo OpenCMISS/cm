@@ -1474,7 +1474,8 @@ CONTAINS
     INTEGER(INTG) :: maximumNumberOfNodes,numberOfDerivatives,xiIdx,xiIdx1,xiIdx2,xiIdx3,derivativeIdx,localNode,localLineNodeIdx, &
       & elementParameter,oldNumberOfDerivatives,position(4),maximumNodeExtent(3),collapsedXi(3),numberOfNodes,numberOfLocalLines, &
       & nodeCount,specialNodeCount,nodesInLine(4),numberOfLocalFaces,localFaceIdx,localNodeIdx,localNodeIdx1, &
-      & localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount,localLineParameter,localFaceParameter
+      & localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount,localLineParameter,localFaceParameter, &
+      & localCollapsedNode
     LOGICAL, ALLOCATABLE :: nodeAtCollapse(:)
     LOGICAL :: atCollapse,collapsedFace,firstCollapsedPosition,processNode
     
@@ -1593,7 +1594,7 @@ CONTAINS
         IF(ERR/=0) CALL FlagError("Could not allocate node position index inverse.",err,error,*999)
         basis%NODE_POSITION_INDEX_INV=0
 
-        !Determine the node position index and it's inverse
+        !Determine the node position index and its inverse
         position=1
         localNode=0
         firstCollapsedPosition=.TRUE.
@@ -1630,17 +1631,22 @@ CONTAINS
               CALL FlagError("Invalid number of xi directions.",err,error,*999)
             END SELECT
           ELSEIF (atCollapse.AND.(.NOT.firstCollapsedPosition)) THEN
-            !The second node in the collapsed xi is set to the same node number as the first node. 
-            basis%NODE_POSITION_INDEX(localNode,:)=position(1:basis%NUMBER_OF_XI)
+            !The second node in the collapsed xi is set to the same node number as the first node.
+            SELECT CASE(collapsedXi(1))
+            CASE(1)
+              localCollapsedNode=basis%NODE_POSITION_INDEX_INV(1,position(2),position(3),1)
+            CASE(2)
+              localCollapsedNode=basis%NODE_POSITION_INDEX_INV(position(1),1,position(3),1)
+            CASE(3)
+              localCollapsedNode=basis%NODE_POSITION_INDEX_INV(position(1),position(2),1,1)
+            END SELECT
             SELECT CASE(basis%NUMBER_OF_XI)
             CASE(1)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),1,1,1)=localNode
+              basis%NODE_POSITION_INDEX_INV(position(1),1,1,1)=localCollapsedNode
             CASE(2)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2),1,1)= &
-                & localNode
+              basis%NODE_POSITION_INDEX_INV(position(1),position(2),1,1)=localCollapsedNode
             CASE(3)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2), &
-                & basis%NODE_POSITION_INDEX(localNode,3),1)=localNode
+              basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)=localCollapsedNode
             END SELECT
           ENDIF
           position(1)=position(1)+1
