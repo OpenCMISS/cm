@@ -80,7 +80,7 @@ MODULE SOLVER_ROUTINES
   !> \brief The types of solver
   !> \see SOLVER_ROUTINES
   !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_NUMBER_OF_SOLVER_TYPES=9 !<Number of different solver types possible \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NUMBER_OF_SOLVER_TYPES=8 !<Number of different solver types possible \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TYPE=1 !<A linear solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_TYPE=2 !<A nonlinear solver  \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_TYPE=3 !<A dynamic solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
@@ -164,52 +164,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_NEWTON=1 !<Newton nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_BFGS_INVERSE=2 !<BFGS inverse nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_SQP=3 !<Sequential Quadratic Program nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_QUASI_NEWTON=4 !<Sequential Quasi-Newton nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
-  !>@}
-
-  !> \addtogroup SOLVER_ROUTINES_QuasiNewtonSolverTypes SOLVER_ROUTINES::QuasiNewtonSolverTypes
-  !> \brief The types of nonlinear Quasi-Newton solvers
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_LINESEARCH=1 !<Quasi-Newton line search nonlinear solver type \see SOLVER_ROUTINES_QuasiNewtonSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_TRUSTREGION=2 !<Quasi-Newton trust region nonlinear solver type \see SOLVER_ROUTINES_QuasiNewtonSolverTypes,SOLVER_ROUTINES
-  !>@}
-
-  !> \addtogroup SOLVER_ROUTINES_QuasiNewtonTypes SOLVER_ROUTINES::QuasiNewtonTypes
-  !> \brief The nonlinear Quasi-Newton types
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_LBFGS=1 !<LBFGS Quasi-Newton type \see SOLVER_ROUTINES_QuasiNewtonTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_GOODBROYDEN=2 !<"Good" Broyden Quasi-Newton type \see SOLVER_ROUTINES_QuasiNewtonTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_BADBROYDEN=3 !<"Bad" Broyden Quasi-Newton type \see SOLVER_ROUTINES_QuasiNewtonTypes,SOLVER_ROUTINES
-  !>@}
-
-  !> \addtogroup SOLVER_ROUTINES_QuasiNewtonLineSearchTypes SOLVER_ROUTINES::QuasiNewtonLineSearchTypes
-  !> \brief The types line search techniques for Quasi-Newton line search nonlinear solvers
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_LINESEARCH_BASIC=1 !<Simple damping line search. \see SOLVER_ROUTINES_QuasiNewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_LINESEARCH_L2=2 !<Secant line search over the L2 norm of the function  \see SOLVER_ROUTINES_QuasiNewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_LINESEARCH_CP=3 !<Critical point secant line search \see SOLVER_ROUTINES_QuasiNewtonLineSearchTypes,SOLVER_ROUTINES
-  !>@}
-
-  !> \addtogroup SOLVER_ROUTINES_QuasiNewtonRestartTypes SOLVER_ROUTINES::QuasiNewtonRestartTypes
-  !> \brief The nonlinear Quasi-Newton restart types
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_RESTART_NONE=1 !<Never restart \see SOLVER_ROUTINES_QuasiNewtonRestartTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_RESTART_POWELL=2 !<Restart based upon descent criteria \see SOLVER_ROUTINES_QuasiNewtonRestartTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_RESTART_PERIODIC=3 !<Restart after a fixed number of iterations \see SOLVER_ROUTINES_QuasiNewtonRestartTypes,SOLVER_ROUTINES
-  !>@}
-
-  !> \addtogroup SOLVER_ROUTINES_QuasiNewtonScaleTypes SOLVER_ROUTINES::QuasiNewtonScaleTypes
-  !> \brief The nonlinear Quasi-Newton scale types
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_SCALE_NONE=1 !<Don't scale the problem \see SOLVER_ROUTINES_QuasiNewtonScaleTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_SCALE_SHANNO=2 !<Use Shanno scaling \see SOLVER_ROUTINES_QuasiNewtonScaleTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_SCALE_LINESEARCH=3 !<Scale based upon line search lambda \see SOLVER_ROUTINES_QuasiNewtonScaleTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_QUASI_NEWTON_SCALE_JACOBIAN=4 !<Scale by inverting a previously computed Jacobian \see SOLVER_ROUTINES_QuasiNewtonScaleTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NewtonSolverTypes SOLVER_ROUTINES::NewtonSolverTypes
@@ -444,23 +398,9 @@ MODULE SOLVER_ROUTINES
     & SOLVER_ITERATIVE_SOR_PRECONDITIONER,SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER, &
     & SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER,SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER
 
-  PUBLIC SOLVER_NONLINEAR_NEWTON,SOLVER_NONLINEAR_BFGS_INVERSE,SOLVER_NONLINEAR_SQP,SOLVER_NONLINEAR_QUASI_NEWTON
+  PUBLIC SOLVER_NONLINEAR_NEWTON,SOLVER_NONLINEAR_BFGS_INVERSE,SOLVER_NONLINEAR_SQP
 
   PUBLIC SOLVER_NEWTON_LINESEARCH,SOLVER_NEWTON_TRUSTREGION
-
-  PUBLIC SOLVER_QUASI_NEWTON_LBFGS,SOLVER_QUASI_NEWTON_GOODBROYDEN, &
-    SOLVER_QUASI_NEWTON_BADBROYDEN
-
-  PUBLIC SOLVER_QUASI_NEWTON_LINESEARCH,SOLVER_QUASI_NEWTON_TRUSTREGION
-  
-  PUBLIC SOLVER_QUASI_NEWTON_LINESEARCH_BASIC,SOLVER_QUASI_NEWTON_LINESEARCH_L2, &
-    & SOLVER_QUASI_NEWTON_LINESEARCH_CP
-
-  PUBLIC SOLVER_QUASI_NEWTON_RESTART_NONE,SOLVER_QUASI_NEWTON_RESTART_POWELL, &
-    & SOLVER_QUASI_NEWTON_RESTART_PERIODIC
-
-  PUBLIC SOLVER_QUASI_NEWTON_SCALE_NONE,SOLVER_QUASI_NEWTON_SCALE_SHANNO, &
-    & SOLVER_QUASI_NEWTON_SCALE_LINESEARCH,SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
 
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC SOLVER_NEWTON_LINESEARCH_NONORMS,SOLVER_NEWTON_LINESEARCH_LINEAR,SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
@@ -615,50 +555,6 @@ MODULE SOLVER_ROUTINES
   PUBLIC Solver_GeometricTransformationRotationSet,Solver_GeometricTransformationTranslationSet
 
   PUBLIC SOLVER_MATRICES_DYNAMIC_ASSEMBLE,SOLVER_MATRICES_STATIC_ASSEMBLE
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-  PUBLIC SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET
-
-  PUBLIC Solver_QuasiNewtonLineSearchMonitorOutputSet
-
-  PUBLIC SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET
-  
-  PUBLIC SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET
-
-  PUBLIC SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET
-
-  PUBLIC Solver_QuasiNewtonConvergenceTestTypeSet
-
-  PUBLIC SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET
-  
-  PUBLIC SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_TYPE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_RESTART_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_RESTART_TYPE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_SCALE_TYPE_SET
-
-  PUBLIC SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET
-#endif
 
   PUBLIC SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET
 
@@ -8556,11 +8452,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: NEWTON_LINESEARCH_SOLVER
-    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: NEWTON_TRUSTREGION_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: QUASI_NEWTON_LINESEARCH_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: QUASI_NEWTON_TRUSTREGION_SOLVER
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
+    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER,SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -8580,17 +8473,16 @@ CONTAINS
                 IF(ASSOCIATED(NEWTON_SOLVER)) THEN
                   SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
                   CASE(SOLVER_NEWTON_LINESEARCH)
-                    NEWTON_LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
-                    IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
-                      LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER=NEWTON_LINESEARCH_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
+                    LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+                    IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+                      LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER=LINESEARCH_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
                     ELSE
                       CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   CASE(SOLVER_NEWTON_TRUSTREGION)
-                    NEWTON_TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
-                    IF(ASSOCIATED(NEWTON_TRUSTREGION_SOLVER)) THEN
-                      LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER= &
-                        & NEWTON_TRUSTREGION_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
+                    TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
+                    IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
+                      LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER=TRUSTREGION_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
                     ELSE
                       CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -8601,34 +8493,6 @@ CONTAINS
                   END SELECT
                 ELSE
                   CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSEIF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-                QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-                IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                  SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-                    QUASI_NEWTON_LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-                    IF(ASSOCIATED(QUASI_NEWTON_LINESEARCH_SOLVER)) THEN
-                      LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER= &
-                        & QUASI_NEWTON_LINESEARCH_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
-                    ELSE
-                      CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-                    QUASI_NEWTON_TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-                    IF(ASSOCIATED(QUASI_NEWTON_TRUSTREGION_SOLVER)) THEN
-                      LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER= &
-                        & QUASI_NEWTON_TRUSTREGION_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
-                    ELSE
-                      CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton solve type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                ELSE
-                  CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDIF
             ELSE
@@ -8817,13 +8681,8 @@ CONTAINS
                 SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
                 IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                   IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                      & ERR,ERROR,*999)
-#else
                     CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                       & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                     !Check that the solver supports the matrix sparsity type
                     SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                     CASE(SOLVER_FULL_MATRICES)
@@ -8854,17 +8713,12 @@ CONTAINS
                       !Set the PC factorisation package to SuperLU_DIST
                       CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
-
                     CASE(SOLVER_LAPACK_LIBRARY)
                       !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
-#if ( PETSC_VERSION_MINOR < 4 )
                       IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
                         CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
                           & ERR,ERROR,*999)
                       ENDIF
-#else
-                      CALL FLAG_ERROR("LAPACK not available in this version of PETSc.",ERR,ERROR,*999)
-#endif
                     CASE(SOLVER_PASTIX_LIBRARY)
 #if ( PETSC_VERSION_MINOR >= 1 )
                       !Set the PC factorisation package to PaStiX
@@ -9567,20 +9421,11 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -9604,20 +9449,11 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
+                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -9649,20 +9485,11 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -9686,20 +9513,11 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -10052,11 +9870,8 @@ CONTAINS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: NEWTON_LINESEARCH_SOLVER
-    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: NEWTON_TRUSTREGION_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: QUASI_NEWTON_LINESEARCH_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: QUASI_NEWTON_TRUSTREGION_SOLVER
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
+    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER,SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
@@ -10115,64 +9930,36 @@ CONTAINS
               IF(ASSOCIATED(LINKING_SOLVER)) THEN
                 NONLINEAR_SOLVER=>LINKING_SOLVER%NONLINEAR_SOLVER
                 IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-                  IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
-                    NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
-                    IF(ASSOCIATED(NEWTON_SOLVER)) THEN
-                      SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
-                      CASE(SOLVER_NEWTON_LINESEARCH)
-                        NEWTON_LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
-                        IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(NEWTON_LINESEARCH_SOLVER%SNES,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      CASE(SOLVER_NEWTON_TRUSTREGION)
-                        NEWTON_TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
-                        IF(ASSOCIATED(NEWTON_TRUSTREGION_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(NEWTON_TRUSTREGION_SOLVER%SNES,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      CASE DEFAULT
-                        LOCAL_ERROR="The Newton solve type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    ELSE
-                      CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSEIF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-                    QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-                    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                      SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-                      CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-                        QUASI_NEWTON_LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-                        IF(ASSOCIATED(QUASI_NEWTON_LINESEARCH_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(QUASI_NEWTON_LINESEARCH_SOLVER%SNES,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-                        QUASI_NEWTON_TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-                        IF(ASSOCIATED(QUASI_NEWTON_TRUSTREGION_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(QUASI_NEWTON_TRUSTREGION_SOLVER%SNES,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      CASE DEFAULT
-                        LOCAL_ERROR="The Quasi-Newton solve type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    ELSE
-                      CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-                    ENDIF
+                  NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+                  IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+                    SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
+                    CASE(SOLVER_NEWTON_LINESEARCH)
+                      LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+                      IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+                        CALL PETSC_SNESGETKSP(LINESEARCH_SOLVER%SNES,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CASE(SOLVER_NEWTON_TRUSTREGION)
+                      TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
+                      IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
+                        CALL PETSC_SNESGETKSP(TRUSTREGION_SOLVER%SNES,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CASE DEFAULT
+                      LOCAL_ERROR="The Newton solve type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("Linking solver nonlinear solver is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver linking solve is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Solver linke solve is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
@@ -10238,13 +10025,8 @@ CONTAINS
               SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
               IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                 IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                  CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                    & ERR,ERROR,*999)
-#else
                   CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                     & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                 ELSE
                   CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -14361,2796 +14143,7 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the maximum absolute tolerance for a nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonAbsoluteToleranceSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the absolute tolerance for
-    REAL(DP), INTENT(IN) :: ABSOLUTE_TOLERANCE !<The absolute tolerance to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(ABSOLUTE_TOLERANCE>ZERO_TOLERANCE) THEN
-                  QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE=ABSOLUTE_TOLERANCE
-                ELSE
-                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NUMBER_TO_VSTRING(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
-                    & " is invalid. The absolute tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Enables/disables output monitoring for a nonlinear Quasi-Newton line search solver.
-  SUBROUTINE Solver_QuasiNewtonLineSearchMonitorOutputSet(solver,linesearchMonitorOutputFlag,err,error,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the absolute tolerance for
-    LOGICAL, INTENT(IN) :: linesearchMonitorOutputFlag !<Flag to determine whether to enable/disable linsearch monitor output.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: linesearchSolver
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
-    
-    CALL ENTERS("Solver_QuasiNewtonLineSearchMonitorOutputSet",err,error,*999)
-
-    IF(ASSOCIATED(solver)) THEN
-      IF(solver%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
-      ELSE
-        IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          nonlinearSolver=>solver%NONLINEAR_SOLVER
-          IF(ASSOCIATED(nonlinearSolver)) THEN
-            IF(nonlinearSolver%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>nonlinearSolver%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE==SOLVER_QUASI_NEWTON_LINESEARCH) THEN
-                  linesearchSolver=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-                  IF(ASSOCIATED(linesearchSolver)) THEN
-                    linesearchSolver%linesearchMonitorOutput=linesearchMonitorOutputFlag
-                  ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton linesearch solver is not associated.",err,error,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a linesearch solver.",err,error,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",err,error,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",err,error,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",err,error,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
-    ENDIF
-    
-    CALL EXITS("Solver_QuasiNewtonLineSearchMonitorOutputSet")
-    RETURN
-999 CALL ERRORS("Solver_QuasiNewtonLineSearchMonitorOutputSet",err,error)    
-    CALL EXITS("Solver_QuasiNewtonLineSearchMonitorOutputSet")
-    RETURN 1
-   
-  END SUBROUTINE Solver_QuasiNewtonLineSearchMonitorOutputSet
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finishes the process of creating a Quasi-Newton solver 
-  SUBROUTINE SOLVER_QUASI_NEWTON_CREATE_FINISH(QUASI_NEWTON_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver to finish the creation of.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_CREATE_FINISH",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-      CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-        CALL SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH(QUASI_NEWTON_SOLVER% &
-          & LINESEARCH_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-        CALL SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH(QUASI_NEWTON_SOLVER% &
-          & TRUSTREGION_SOLVER,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_CREATE_FINISH")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_CREATE_FINISH
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Finalise a Quasi-Newton solver and deallocate all memory
-  RECURSIVE SUBROUTINE SOLVER_QUASI_NEWTON_FINALISE(QUASI_NEWTON_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the Quasi-Newton solver to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      CALL SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,ERR,ERROR,*999)
-      CALL SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
-      CALL SOLVER_FINALISE(QUASI_NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-      DEALLOCATE(QUASI_NEWTON_SOLVER)
-    ENDIF
-         
-    CALL EXITS("SOLVER_QUASI_NEWTON_FINALISE")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_FINALISE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_FINALISE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialise a Quasi-Newton solver for a nonlinear solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer the solver to initialise the Quasi-Newton solver for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
- 
-    CALL ENTERS("SOLVER_QUASI_NEWTON_INITIALISE",ERR,ERROR,*998)
-
-    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-      IF(ASSOCIATED(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER)) THEN
-        CALL FLAG_ERROR("Quasi-Newton solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
-      ELSE        
-        SOLVER=>NONLINEAR_SOLVER%SOLVER
-        IF(ASSOCIATED(SOLVER)) THEN
-          !Allocate and initialise a Quasi-Newton solver
-          ALLOCATE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Quasi-Newton solver.",ERR,ERROR,*999)
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER=>NONLINEAR_SOLVER
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS=0
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS=0
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=50
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS=1000
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE=1.0E-10_DP
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE=1.0E-05_DP
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE=1.0E-05_DP
-          NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER)
-          NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER)
-          NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER)
-          NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest)
-          ALLOCATE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate convergence test object.",ERR,ERROR,*999)
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest%energyFirstIter = 0.0_DP
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest%normalisedEnergy = 0.0_DP
-          !Default to a Quasi-Newton linesearch solver
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH
-          CALL SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-          !Default to a Quasi-Newton Good Broyden variant
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE=SOLVER_QUASI_NEWTON_GOODBROYDEN
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%RESTART_TYPE=SOLVER_QUASI_NEWTON_RESTART_PERIODIC
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%RESTART=10
-          NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
-          !Create the linked linear solver
-          ALLOCATE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Quasi-Newton solver linear solver.",ERR,ERROR,*999)
-          NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER%SOLVERS)
-          CALL SOLVER_INITIALISE_PTR(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-          CALL SOLVER_LINEAR_INITIALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-          CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*998)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*998)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_INITIALISE")
-    RETURN
-999 CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_QUASI_NEWTON_INITIALISE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_INITIALISE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_INITIALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the type of Jacobian calculation type for a Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonJacobianCalculationSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JACOBIAN_CALCULATION_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the Jacobian calculation type
-    INTEGER(INTG), INTENT(IN) :: JACOBIAN_CALCULATION_TYPE !<The type of Jacobian calculation type to set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(JACOBIAN_CALCULATION_TYPE/=QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE) THEN
-                  SELECT CASE(JACOBIAN_CALCULATION_TYPE)
-                  CASE(SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED)
-                    QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED
-                  CASE(SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED)
-                    QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED
-                  CASE(SOLVER_NEWTON_JACOBIAN_FD_CALCULATED)
-                    QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Jacobian calculation type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The Solver nonlinear solver is not associated",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the type of library to use for a Quasi-Newton solver.
-  SUBROUTINE SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the Quasi-Newton solver to get the library type for.
-    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the Quasi-Newton solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-      CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-        LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-        IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-          SOLVER_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_LIBRARY
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-        TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-        IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-          SOLVER_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_LIBRARY
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE DEFAULT
-        LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the type of library to use for a Quasi-Newton solver.
-  SUBROUTINE SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET(QUASI_NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the Quasi-Newton solver to get the library type for.
-    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the Quasi-Newton solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-      CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-        LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-        IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-          SELECT CASE(SOLVER_LIBRARY_TYPE)
-          CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(SOLVER_PETSC_LIBRARY)
-            LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-            LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
-          CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a Quasi-Newton linesearch solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-        TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-        IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-          SELECT CASE(SOLVER_LIBRARY_TYPE)
-          CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(SOLVER_PETSC_LIBRARY)
-            TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-            TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
-          CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a Quasi-Newton trustregion solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE DEFAULT
-        LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the linear solver associated with a Quasi-Newton solver \see OPENCMISS::CMISSSolverQuasiNewtonLinearSolverGetSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Quasi-Newton solver to get the linear solver for
-    TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<On exit, a pointer the linear solver linked to the Quasi-Newton solver. Must not be associated on entry
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
-      ELSE
-        NULLIFY(LINEAR_SOLVER)
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                LINEAR_SOLVER=>QUASI_NEWTON_SOLVER%LINEAR_SOLVER
-                IF(.NOT.ASSOCIATED(LINEAR_SOLVER)) &
-                  & CALL FLAG_ERROR("Quasi-Newton solver linear solver is not associated.",ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET
-
-  !
-  !================================================================================================================================
-  !
   
-  !>Returns the CellML solver associated with a Quasi-Newton solver  \see OPENCMISS::CMISSSolverQuasiNewtonCellMLSolverGetSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Quasi-Newton solver to get the linear solver for
-    TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER !<On exit, a pointer the linear solver linked to the Quasi-Newton solver. Must not be associated on entry
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(ASSOCIATED(CELLML_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
-      ELSE
-        NULLIFY(CELLML_SOLVER)
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                CELLML_SOLVER=>QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
-                IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
-                  & CALL FLAG_ERROR("Quasi-Newton solver CellML solver is not associated.",ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                CELLML_SOLVER=>QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
-                IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
-                  & CALL FLAG_ERROR("Quasi-Newton solver CellML solver is not associated.",ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Dynamic nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The Dynamic nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Sets/changes the convergence test for a Quasi-Newton nonlinear solver \see OPENCMISS::CMISSSolverQuasiNewtonConvergenceTestSet
-  SUBROUTINE Solver_QuasiNewtonConvergenceTestTypeSet(solver,convergenceTestType,err,error,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer the solver to set the convergence test for
-    INTEGER(INTG), INTENT(IN) :: convergenceTestType !<The convergence test type to set
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: quasiNewtonSolver 
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
-    TYPE(VARYING_STRING) :: localError
-    
-    CALL ENTERS("Solver_QuasiNewtonConvergenceTestTypeSet",err,error,*999)
-
-    IF(ASSOCIATED(solver)) THEN
-      IF(solver%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
-      ELSE
-        IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          nonlinearSolver=>solver%NONLINEAR_SOLVER
-          IF(ASSOCIATED(nonlinearSolver)) THEN
-            IF(nonlinearSolver%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              quasiNewtonSolver=>nonlinearSolver%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(quasiNewtonSolver)) THEN
-                SELECT CASE(convergenceTestType)
-                CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
-                  quasiNewtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT
-                CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
-                  quasiNewtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM
-                CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-                  quasiNewtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
-                CASE DEFAULT
-                  localError="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(convergenceTestType, &
-                    & "*",err,error))//" is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("Solver_QuasiNewtonConvergenceTestTypeSet")
-    RETURN
-999 CALL ERRORS("Solver_QuasiNewtonConvergenceTestTypeSet",ERR,ERROR)    
-    CALL EXITS("Solver_QuasiNewtonConvergenceTestTypeSet")
-    RETURN 1
-   
-  END SUBROUTINE Solver_QuasiNewtonConvergenceTestTypeSet
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Finishes the process of creating nonlinear Quasi-Newton line search solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH(LINESEARCH_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer the nonlinear Quasi-Newton line search solver to finish the creation of
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC
-    EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
-    EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
-    EXTERNAL :: ProblemSolver_ConvergenceTestPetsc
-    EXTERNAL :: Problem_SolverNonlinearMonitorPETSC
-    INTEGER(INTG) :: equations_matrix_idx,equations_set_idx,interface_condition_idx,interface_matrix_idx
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN_MATRIX
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,LAGRANGE_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: LINEAR_VARIABLE,INTERFACE_VARIABLE,LAGRANGE_VARIABLE
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER,SOLVER
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_JACOBIAN
-    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
-    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
-    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING
-    TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES
-    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: INTERFACE_MATRIX
-
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-  
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-      QUASI_NEWTON_SOLVER=>LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER
-      IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-        NONLINEAR_SOLVER=>QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER
-        IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-          SOLVER=>NONLINEAR_SOLVER%SOLVER
-          IF(ASSOCIATED(SOLVER)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SELECT CASE(LINESEARCH_SOLVER%SOLVER_LIBRARY)
-              CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(SOLVER_PETSC_LIBRARY)
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                  !Loop over the equations set in the solver equations
-                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                          EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                          IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                            LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                            IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                              !If there are any linear matrices create temporary vector for matrix-vector products
-                              EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                                IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-                                  DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                    EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                                    IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                                      IF(.NOT.ASSOCIATED(EQUATIONS_MATRIX%TEMP_VECTOR)) THEN
-                                        LINEAR_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)%VARIABLE
-                                        IF(ASSOCIATED(LINEAR_VARIABLE)) THEN
-                                          CALL DISTRIBUTED_VECTOR_CREATE_START(LINEAR_VARIABLE%DOMAIN_MAPPING, &
-                                            & EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(EQUATIONS_MATRIX%TEMP_VECTOR, &
-                                            & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDDO !equations_matrix_idx
-                                ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      LOCAL_ERROR="Equations is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !equations_set_idx
-                  !Loop over the interface conditions
-                  DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
-                    INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
-                    IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
-                      LAGRANGE_FIELD=>INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD
-                      IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
-                        INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
-                        IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
-                          INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
-                          IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
-                            INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
-                            IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
-                              LAGRANGE_VARIABLE=>INTERFACE_MAPPING%LAGRANGE_VARIABLE
-                              IF(ASSOCIATED(LAGRANGE_VARIABLE)) THEN
-                                !Create temporary vector for matrix-vector products
-                                DO interface_matrix_idx=1,INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
-                                  INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(interface_matrix_idx)%PTR
-                                  IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
-                                    IF(.NOT.ASSOCIATED(INTERFACE_MATRIX%TEMP_VECTOR)) THEN
-                                      INTERFACE_VARIABLE=>INTERFACE_MAPPING% &
-                                        & INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx)%VARIABLE
-                                      IF(ASSOCIATED(INTERFACE_VARIABLE)) THEN
-                                        !Set up the temporary interface distributed vector to be used with interface matrices
-                                        CALL DISTRIBUTED_VECTOR_CREATE_START(INTERFACE_VARIABLE%DOMAIN_MAPPING, &
-                                          & INTERFACE_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
-                                        CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(INTERFACE_MATRIX%TEMP_VECTOR, &
-                                          & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-                                        CALL DISTRIBUTED_VECTOR_CREATE_FINISH(INTERFACE_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
-                                        !Set up the temporary interface distributed vector to be used with transposed interface matrices
-                                        CALL DISTRIBUTED_VECTOR_CREATE_START(LAGRANGE_VARIABLE%DOMAIN_MAPPING, &
-                                          & INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR,ERR,ERROR,*999)
-                                        CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR, &
-                                          & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-                                        CALL DISTRIBUTED_VECTOR_CREATE_FINISH(INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR, &
-                                          & ERR,ERROR,*999)
-                                      ELSE
-                                        CALL FLAG_ERROR("Interface mapping variable is not associated.",ERR,ERROR,*999)
-                                      ENDIF
-                                    ENDIF
-                                  ELSE
-                                    CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
-                                  ENDIF
-                                ENDDO !interface_matrix_idx
-                              ELSE
-                                CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("interface condition mapping is not associated.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          LOCAL_ERROR="Interface eqauations is not associated for interface condition index "// &
-                            & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        LOCAL_ERROR="Interface condition Lagrange field is not associated for interface condition "// &
-                          & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      LOCAL_ERROR="Interface condition is not associated for interface condition index "// &
-                        & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !interface_idx
-                  !Create the PETSc SNES solver
-                  CALL PETSC_SNESCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
-                  !Set the nonlinear solver type to be a Quasi-Newton line search solver
-                  CALL PETSC_SNESSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNESQN,ERR,ERROR,*999)
-                  !Set the nonlinear Quasi-Newton type
-                  SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_LBFGS)
-                    CALL PETSC_SNESQNSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_LBFGS,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_GOODBROYDEN)
-                    CALL PETSC_SNESQNSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_BROYDEN,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_BADBROYDEN)
-                    CALL PETSC_SNESQNSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_BADBROYDEN,ERR,ERROR,*999)
-                  CASE DEFAULT
-                      LOCAL_ERROR="The specified nonlinear Quasi-Newton type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  !Set the nonlinear Quasi-Newton restart type
-                  SELECT CASE(QUASI_NEWTON_SOLVER%RESTART_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_RESTART_NONE)
-                    CALL PETSC_SNESQNSETRESTARTTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_RESTART_NONE,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_RESTART_POWELL)
-                    CALL PETSC_SNESQNSETRESTARTTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_RESTART_POWELL,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_RESTART_PERIODIC)
-                    CALL PETSC_SNESQNSETRESTARTTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_RESTART_PERIODIC,ERR,ERROR,*999)
-                  CASE DEFAULT
-                      LOCAL_ERROR="The specified nonlinear Quasi-Newton restart type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%RESTART_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  !Set the nonlinear Quasi-Newton scale type
-                  SELECT CASE(QUASI_NEWTON_SOLVER%SCALE_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_NONE)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_SCALE_NONE,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_SHANNO)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_SCALE_SHANNO,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_LINESEARCH)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_SCALE_LINESEARCH,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_JACOBIAN)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%SNES,PETSC_SNES_QN_SCALE_JACOBIAN,ERR,ERROR,*999)
-                  CASE DEFAULT
-                      LOCAL_ERROR="The specified nonlinear Quasi-Newton scale type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%SCALE_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-
-                  !Set the Quasi-Newton restart
-                  ! To be implemented, also in PETSc!
-
-                  !Create the solver matrices and vectors
-                  LINEAR_SOLVER=>QUASI_NEWTON_SOLVER%LINEAR_SOLVER
-                  IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-                    NULLIFY(SOLVER_MATRICES)
-                    CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                    CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-                    SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                    CASE(SOLVER_SPARSE_MATRICES)
-                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
-                        & ERR,ERROR,*999)
-                    CASE(SOLVER_FULL_MATRICES)
-                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
-                        & ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                    CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-                    !Link linear solver
-                    LINEAR_SOLVER%SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                    !Finish the creation of the linear solver
-                    CALL SOLVER_LINEAR_CREATE_FINISH(LINEAR_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-                    !Associate linear solver's KSP to nonlinear solver's SNES
-                    SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
-                    CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
-                      CALL PETSC_SNESSETKSP(linesearch_solver%snes,linear_solver%linear_solver%direct_solver%ksp,ERR,ERROR,*999)
-                    CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
-                      CALL PETSC_SNESSETKSP(linesearch_solver%snes,linear_solver%linear_solver%iterative_solver%ksp,ERR,ERROR,*999)
-                    END SELECT
-
-                    !Set the nonlinear function
-                    RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
-                    IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
-                      IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
-                        !Pass the linesearch solver object rather than the temporary solver
-                        CALL PETSC_SNESSETFUNCTION(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
-                          & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
-                          & ERR,ERROR,*999)
-                        SELECT CASE(LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%convergenceTestType)
-                        CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
-                          !Default convergence test, do nothing
-                        CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM,SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-                          CALL PETSC_SNESSETCONVERGENCETEST(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
-                            & LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
-                        CASE DEFAULT
-                          LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
-                            & QUASI_NEWTON_SOLVER%convergenceTestType,"*",err,error))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT
-                      ELSE
-                        CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  
-                    !Set the Jacobian
-                    IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
-                      SOLVER_JACOBIAN=>SOLVER_MATRICES%MATRICES(1)%PTR
-                      IF(ASSOCIATED(SOLVER_JACOBIAN)) THEN
-                        JACOBIAN_MATRIX=>SOLVER_JACOBIAN%MATRIX
-                        IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
-                          IF(ASSOCIATED(JACOBIAN_MATRIX%PETSC)) THEN
-                            SELECT CASE(QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE)
-                            CASE(SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED)
-                              CALL FLAG_ERROR("Cannot have no Jacobian calculation for a PETSc nonlinear linesearch solver.", &
-                                & ERR,ERROR,*999)
-                            CASE(SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED)
-                              SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
-                              !Pass the linesearch solver object rather than the temporary solver
-                              CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC, &
-                                & LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
-                            CASE(SOLVER_NEWTON_JACOBIAN_FD_CALCULATED)
-                              SOLVER_JACOBIAN%UPDATE_MATRIX=.FALSE. !Petsc will fill in the Jacobian values
-                              CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
-                              SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                              CASE(SOLVER_SPARSE_MATRICES)
-                                CALL PETSC_MATCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER%JACOBIAN_COLORING, &
-                                  & ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGSETTYPE(LINESEARCH_SOLVER%JACOBIAN_COLORING,PETSC_MATCOLORING_SL, &
-                                  & ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGAPPLY(LINESEARCH_SOLVER%JACOBIAN_COLORING,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-                                !Pass the linesearch solver object rather than the temporary solver
-                                CALL PETSC_MATFDCOLORINGSETFUNCTION(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
-                                  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER% &
-                                  & SOLVER,ERR,ERROR,*999)
-                                CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATFDCOLORINGSETUP(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-                                CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-                              CASE(SOLVER_FULL_MATRICES)
-                                !Do nothing
-                              CASE DEFAULT
-                                LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              END SELECT
-                              CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC,LINESEARCH_SOLVER% &
-                                & QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
-                            CASE DEFAULT
-                              LOCAL_ERROR="The Jacobian calculation type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
-                                & " is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            END SELECT
-                          ELSE
-                            CALL FLAG_ERROR("Jacobian matrix PETSc is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Solver Jacobian matrix is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("The solver Jacobian is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      LOCAL_ERROR="Invalid number of solver matrices. The number of solver matrices is "// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//" and it should be 1."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                    IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                      !Set the monitor
-                      !Pass the linesearch solver object rather than the temporary solver
-                      CALL PETSC_SNESMONITORSET(LINESEARCH_SOLVER%SNES,Problem_SolverNonlinearMonitorPETSC, &
-                        & LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
-                    ENDIF
-                    CALL Petsc_SnesGetLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
-                    !Set the line search type and order where applicable
-                    SELECT CASE(linesearch_solver%linesearch_type)
-                    CASE(SOLVER_QUASI_NEWTON_LINESEARCH_BASIC)
-                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BASIC,err,error,*999)
-                    CASE(SOLVER_QUASI_NEWTON_LINESEARCH_L2)
-                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_L2,err,error,*999)
-                    CASE(SOLVER_QUASI_NEWTON_LINESEARCH_CP)
-                      CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_CP,err,error,*999)
-                    CASE DEFAULT
-                      local_error="The nonlinear Quasi-Newton line search type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
-                      CALL FlagError(local_error,err,error,*999)
-                    END SELECT
-                    ! Set step tolerances, leave iterative line search options as defaults
-                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
-                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
-                      & PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL, &
-                      & PETSC_DEFAULT_INTEGER,err,error,*999)
-                    IF(linesearch_solver%linesearchMonitorOutput) THEN
-                      CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_TRUE,err,error,*999)
-                    ELSE
-                      CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_FALSE,err,error,*999)
-                    ENDIF
-                    !Set the tolerances for the SNES solver
-                    CALL PETSC_SNESSETTOLERANCES(LINESEARCH_SOLVER%SNES,QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
-                      & QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE,QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE, &
-                      & QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS, &
-                      & QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS,ERR,ERROR,*999)
-
-                    !Set any further SNES options from the command line options
-                    CALL PETSC_SNESSETFROMOPTIONS(LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("Quasi-Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The solver library type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Linesearch solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Line search solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finalise a nonlinear Quasi-Newton line search solver and deallocate all memory
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE(LINESEARCH_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer the nonlinear Quasi-Newton line search solver to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-  
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-      CALL PETSC_MATCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-#endif
-      CALL PETSC_ISCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-      CALL PETSC_MATFDCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-      CALL Petsc_SnesLineSearchFinalise(LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
-      CALL PETSC_SNESFINALISE(LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
-      DEALLOCATE(LINESEARCH_SOLVER)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialise a nonlinear Quasi-Newton line search solver for a Quasi-Newton solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE(QUASI_NEWTON_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the nonlinear Quasi-Newton solver to initialise the Quasi-Newton line search solver for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
-  
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE",ERR,ERROR,*998)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      IF(ASSOCIATED(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER)) THEN
-        CALL FLAG_ERROR("Quasi-Newton line search solver is already associated for this Quasi-Newton solver.",ERR,ERROR,*998)
-      ELSE
-        !Allocate and initialise the Quasi-Newton linesearch solver
-        ALLOCATE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Quasi-Newton line search solver.",ERR,ERROR,*999)
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER=>QUASI_NEWTON_SOLVER
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH_CP
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=1.0E8_DP
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=CONVERGENCE_TOLERANCE
-        CALL PETSC_MATCOLORINGINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-        CALL PETSC_ISCOLORINGINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-        CALL PETSC_MATFDCOLORINGINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-        CALL PETSC_SNESINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
-        CALL Petsc_SnesLineSearchInitialise(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
-        QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%linesearchMonitorOutput=.false.
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE")
-    RETURN
-999 CALL SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the line search maximum step for a nonlinear Quasi-Newton linesearch solver. \see OPENCMISS::CMISSSolverQuasiNewtonLineSearchMaxStepSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,LINESEARCH_MAXSTEP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the line search maximum step for
-    REAL(DP), INTENT(IN) :: LINESEARCH_MAXSTEP !<The line search maximum step to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE==SOLVER_QUASI_NEWTON_LINESEARCH) THEN
-                  LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-                  IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-                    IF(LINESEARCH_MAXSTEP>ZERO_TOLERANCE) THEN
-                      LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=LINESEARCH_MAXSTEP
-                    ELSE
-                      LOCAL_ERROR="The specified line search maximum step of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_MAXSTEP,"*",ERR,ERROR))// &
-                        & " is invalid. The line search maximum step must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !Solves a nonlinear Quasi-Newton line search solver 
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE(LINESEARCH_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the nonlinear Quasi-Newton line search solver to solve
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    !EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
-    INTEGER(INTG) :: CONVERGED_REASON,NUMBER_ITERATIONS
-    REAL(DP) :: FUNCTION_NORM
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS_VECTOR,SOLVER_VECTOR
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(PETSC_VEC_TYPE) :: FUNCTION_VECTOR
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-      QUASI_NEWTON_SOLVER=>LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER
-      IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-        NONLINEAR_SOLVER=>QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER
-        IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-          SOLVER=>NONLINEAR_SOLVER%SOLVER
-          IF(ASSOCIATED(SOLVER)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-              IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-                IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
-                  RHS_VECTOR=>SOLVER_MATRICES%RHS_VECTOR
-                  IF(ASSOCIATED(RHS_VECTOR)) THEN
-                    SOLVER_VECTOR=>SOLVER_MATRICES%MATRICES(1)%PTR%SOLVER_VECTOR
-                    IF(ASSOCIATED(SOLVER_VECTOR)) THEN
-                      SELECT CASE(LINESEARCH_SOLVER%SOLVER_LIBRARY)
-                      CASE(SOLVER_CMISS_LIBRARY)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(SOLVER_PETSC_LIBRARY)
-                        SELECT CASE(QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE)
-                        CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
-                          !Zero the solution vector
-                          CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_VECTOR,0.0_DP,ERR,ERROR,*999)
-                        CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
-                          !Make sure the solver vector contains the current dependent field values
-                          CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
-                        CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
-                          !Do nothing
-                        CASE DEFAULT
-                          LOCAL_ERROR="The Quasi-Newton solver solution initialise type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
-                            & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT
-                        !Solve the nonlinear equations
-                        CALL PETSC_SNESSOLVE(LINESEARCH_SOLVER%SNES,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
-                          & ERR,ERROR,*999)
-                        !Check for convergence
-                        CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
-                        SELECT CASE(CONVERGED_REASON)
-                        CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged function count.", &
-                            & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
-                            & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
-                            & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_MAX_IT)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
-                            & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
-                            & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
-                            & ERR,ERROR,*999)
-                        END SELECT
-                         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
-                          !Output solution characteristics
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Quasi-Newton linesearch solver parameters:",ERR,ERROR,*999)
-                          CALL PETSC_SNESGETITERATIONNUMBER(LINESEARCH_SOLVER%SNES,NUMBER_ITERATIONS,ERR,ERROR,*999)
-                          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final number of iterations = ",NUMBER_ITERATIONS, &
-                            & ERR,ERROR,*999)
-                          !CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
-                          !  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
-                          !  & ERR,ERROR,*999)
-                          CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
-                            & ERR,ERROR,*999)
-                          CALL PETSC_VECNORM(FUNCTION_VECTOR,PETSC_NORM_2,FUNCTION_NORM,ERR,ERROR,*999)
-                          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final function norm = ",FUNCTION_NORM, &
-                            & ERR,ERROR,*999)
-                          SELECT CASE(CONVERGED_REASON)
-                          CASE(PETSC_SNES_CONVERGED_FNORM_ABS)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm absolute.", &
-                              & ERR,ERROR,*999)
-                          CASE(PETSC_SNES_CONVERGED_FNORM_RELATIVE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm relative.", &
-                              & ERR,ERROR,*999)
-                          CASE(PETSC_SNES_CONVERGED_ITS)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged its.",ERR,ERROR,*999)
-                          CASE(PETSC_SNES_CONVERGED_ITERATING)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged iterating.",ERR,ERROR,*999)
-                          END SELECT
-                        ENDIF
-                      CASE DEFAULT
-                        LOCAL_ERROR="The Quasi-Newton line search solver library type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Solver RHS vector is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  LOCAL_ERROR="The number of solver matrices of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
-                    & " is invalid. There should only be one solver matrix for a Quasi-Newton linesearch solver."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Linesearch solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the line search step tolerance for a nonlinear Quasi-Newton line search solver. \see OPENCMISS::CMISSSolverQuasiNewtonLineSearchStepTolSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,LINESEARCH_STEPTOL,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the line search step tolerance for
-    REAL(DP), INTENT(IN) :: LINESEARCH_STEPTOL !<The line search step tolerance to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE==SOLVER_QUASI_NEWTON_LINESEARCH) THEN
-                  LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-                  IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-                    IF(LINESEARCH_STEPTOL>ZERO_TOLERANCE) THEN
-                      LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=LINESEARCH_STEPTOL
-                    ELSE
-                      LOCAL_ERROR="The specified line search step tolerance of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_STEPTOL,"*",ERR,ERROR))// &
-                        & " is invalid. The line search step tolerance must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The nonlinear Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the line search type for a nonlinear Quasi-Newton linesearch solver \see OPENCMISS::CMISSSolverQuasiNewtonLineSearchTypeSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LINESEARCH_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the line search type for
-    INTEGER(INTG), INTENT(IN) :: LINESEARCH_TYPE !<The line search type to set \see SOLVER_ROUTINES_QuasiNewtonLineSearchTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE==SOLVER_QUASI_NEWTON_LINESEARCH) THEN
-                  LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-                  IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-                    SELECT CASE(LINESEARCH_TYPE)
-                    CASE(SOLVER_QUASI_NEWTON_LINESEARCH_BASIC)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH_BASIC
-                    CASE(SOLVER_QUASI_NEWTON_LINESEARCH_L2)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH_L2
-                    CASE(SOLVER_QUASI_NEWTON_LINESEARCH_CP)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH_CP
-                    CASE DEFAULT
-                      LOCAL_ERROR="The specified line search type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the type of library to use for a Quasi-Newton solver matrices.
-  SUBROUTINE SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the Quasi-Newton solver to get the library type for.
-    INTEGER(INTG), INTENT(OUT) :: MATRICES_LIBRARY_TYPE !<On exit, the type of library used for the Quasi-Newton solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    CALL ENTERS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-      CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-        LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-        IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-          MATRICES_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-        TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-        IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-          MATRICES_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE DEFAULT
-        LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the maximum number of function evaluations for a nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonMaximumFunctionEvaluationsSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the maximum function evaluations for
-    INTEGER(INTG), INTENT(IN) :: MAXIMUM_FUNCTION_EVALUATIONS !<The maximum function evaluations to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(MAXIMUM_FUNCTION_EVALUATIONS>0) THEN
-                  QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS=MAXIMUM_FUNCTION_EVALUATIONS
-                ELSE
-                  LOCAL_ERROR="The specified maximum number of function evaluations of "// &
-                    & TRIM(NUMBER_TO_VSTRING(MAXIMUM_FUNCTION_EVALUATIONS,"*",ERR,ERROR))// &
-                    & " is invalid. The maximum number of function evaluations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the maximum number of iterations for a nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonMaximumIterationsSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the maximum iterations for
-    INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum iterations to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(MAXIMUM_ITERATIONS>0) THEN
-                  QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
-                ELSE
-                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
-                    & " is invalid. The maximum number of iterations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear sovler Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_MAXIMUM_ITEATIONS_SET")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the relative tolerance for a nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonRelativeToleranceSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the relative tolerance for
-    REAL(DP), INTENT(IN) :: RELATIVE_TOLERANCE !<The relative tolerance to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(RELATIVE_TOLERANCE>ZERO_TOLERANCE) THEN
-                  QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE=RELATIVE_TOLERANCE
-                ELSE
-                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NUMBER_TO_VSTRING(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
-                    & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the solution initialisation for a nonlinear Quasi-Newton solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the solution tolerance for
-    INTEGER(INTG), INTENT(IN) :: SOLUTION_INITIALISE_TYPE !<The solution initialise type to set \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_NONLINAR_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                SELECT CASE(SOLUTION_INITIALISE_TYPE)
-                CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
-                  QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_ZERO
-                CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
-                  QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
-                CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
-                  QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_NO_CHANGE
-                CASE DEFAULT
-                  LOCAL_ERROR="The specified solution initialise type  of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF            
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the solution tolerance for a nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverNewtonSolutionToleranceSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SOLUTION_TOLERANCE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the solution tolerance for
-    REAL(DP), INTENT(IN) :: SOLUTION_TOLERANCE !<The solution tolerance to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(SOLUTION_TOLERANCE>ZERO_TOLERANCE) THEN
-                  QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE=SOLUTION_TOLERANCE
-                ELSE
-                  LOCAL_ERROR="The specified solution tolerance of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_TOLERANCE,"*",ERR,ERROR))// &
-                    & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF            
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !Solves a nonlinear Quasi-Newton solver 
-  SUBROUTINE SOLVER_QUASI_NEWTON_SOLVE(QUASI_NEWTON_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the nonlinear Quasi-Newton solver to solve
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_SOLVE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-      CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-        CALL SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-        CALL SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLVE")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_SOLVE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLVE")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_SOLVE
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Finishes the process of creating nonlinear Quasi-Newton trust region solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH(TRUSTREGION_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer the nonlinear Quasi-Newton trust region solver to finish the creation of
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
-    INTEGER(INTG) :: equations_matrix_idx,equations_set_idx
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: LINEAR_VARIABLE
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-  
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-      QUASI_NEWTON_SOLVER=>TRUSTREGION_SOLVER%QUASI_NEWTON_SOLVER
-      IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-        NONLINEAR_SOLVER=>QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER
-        IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-          SOLVER=>NONLINEAR_SOLVER%SOLVER
-          IF(ASSOCIATED(SOLVER)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SELECT CASE(TRUSTREGION_SOLVER%SOLVER_LIBRARY)
-              CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(SOLVER_PETSC_LIBRARY)
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                  !Loop over the equations set in the solver equations
-                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                          EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                          IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                            LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                            IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                              !If there are any linear matrices create temporary vector for matrix-vector products
-                              EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                                IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-                                  DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                    EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                                    IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                                      IF(.NOT.ASSOCIATED(EQUATIONS_MATRIX%TEMP_VECTOR)) THEN
-                                        LINEAR_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)%VARIABLE
-                                        IF(ASSOCIATED(LINEAR_VARIABLE)) THEN
-                                          CALL DISTRIBUTED_VECTOR_CREATE_START(LINEAR_VARIABLE%DOMAIN_MAPPING, &
-                                            & EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(EQUATIONS_MATRIX%TEMP_VECTOR, &
-                                            & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDDO !equations_matrix_idx
-                                ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      LOCAL_ERROR="Equations is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !equations_set_idx
-                  
-                  !Create the solver matrices and vectors
-                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-!!TODO: set up the matrix structure if using an analytic Jacobian
-                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-                  !Create the PETSc SNES solver
-                  CALL PETSC_SNESCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
-                  !Set the nonlinear solver type to be a Quasi-Newton trust region solver
-                  CALL PETSC_SNESSETTYPE(TRUSTREGION_SOLVER%SNES,PETSC_SNESTR,ERR,ERROR,*999)
-                  !Set the nonlinear function
-                  RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
-                  IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
-                    IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
-                      CALL PETSC_SNESSETFUNCTION(TRUSTREGION_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
-                        & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
-                      CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                  !Set the Jacobian if necessary
-                  !Set the trust region delta ???
-                  
-                  !Set the trust region tolerance
-                  CALL PETSC_SNESSETTRUSTREGIONTOLERANCE(TRUSTREGION_SOLVER%SNES,TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE, &
-                    & ERR,ERROR,*999)
-                  !Set the tolerances for the SNES solver
-                  CALL PETSC_SNESSETTOLERANCES(TRUSTREGION_SOLVER%SNES,QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
-                    & QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE,QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE, &
-                    & QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS,QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS, &
-                    & ERR,ERROR,*999)
-                  !Set any further SNES options from the command line options
-                  CALL PETSC_SNESSETFROMOPTIONS(TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The solver library type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Trust region Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Trust region solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the trust region delta0 for a nonlinear Quasi-Newton trust region solver solver. \see OPENCMISS::CMISSSolverQuasiNewtonTrustRegionDelta0Set
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,TRUSTREGION_DELTA0,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the trust region delta0 for
-    REAL(DP), INTENT(IN) :: TRUSTREGION_DELTA0 !<The trust region delta0 to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE==SOLVER_QUASI_NEWTON_TRUSTREGION) THEN
-                  TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-                  IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-                    IF(TRUSTREGION_DELTA0>ZERO_TOLERANCE) THEN
-                      TRUSTREGION_SOLVER%TRUSTREGION_DELTA0=TRUSTREGION_DELTA0
-                    ELSE
-                      LOCAL_ERROR="The specified trust region delta0 of "// &
-                        & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_DELTA0,"*",ERR,ERROR))// &
-                        & " is invalid. The trust region delta0 must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver trust region solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a trust region solver.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET
-        
-  !
-  !================================================================================================================================
-  !
-  
-  !>Finalise a nonlinear Quasi-Newton trust region solver and deallocate all memory
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE(TRUSTREGION_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer the non linear trust region solver to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-  
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN      
-      CALL PETSC_SNESFINALISE(TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
-      DEALLOCATE(TRUSTREGION_SOLVER)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialise a Quaso-Newton trust region solver for a nonlinear solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE(QUASI_NEWTON_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the Quasi-Newton solver to initialise the trust region solver for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
-  
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE",ERR,ERROR,*998)
-
-    IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-      IF(ASSOCIATED(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER)) THEN
-        CALL FLAG_ERROR("Trust region solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
-      ELSE
-        ALLOCATE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Quasi-Newton solver trust region solver.",ERR,ERROR,*999)
-        QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%QUASI_NEWTON_SOLVER=>QUASI_NEWTON_SOLVER
-        QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-        QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
-!!TODO: set this properly
-        QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%TRUSTREGION_DELTA0=0.01_DP
-        CALL PETSC_SNESINITIALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE")
-    RETURN
-999 CALL SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE",ERR,ERROR)
-    CALL EXITS("SOLVER_NEWWTON_TRUSTREGION_INITIALISE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !Solves a nonlinear Quasi-Newton trust region solver 
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE(TRUSTREGION_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the nonlinear Quasi-Newton trust region solver to solve
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-      QUASI_NEWTON_SOLVER=>TRUSTREGION_SOLVER%QUASI_NEWTON_SOLVER
-      IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN        
-        NONLINEAR_SOLVER=>QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER
-        IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-          SOLVER=>NONLINEAR_SOLVER%SOLVER
-          IF(ASSOCIATED(SOLVER)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-              IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-                SELECT CASE(TRUSTREGION_SOLVER%SOLVER_LIBRARY)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The nonlinear Quasi-Newton trust region solver library type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Trust region solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Trust region solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-        
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE")
-    RETURN 1
-    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the trust region tolerance for a nonlinear Quasi-Newton trust region solver. \see OPENCMISS::CMISSSolverQuasiNewtonTrustRegionToleranceSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,TRUSTREGION_TOLERANCE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the trust region tolerance for
-    REAL(DP), INTENT(IN) :: TRUSTREGION_TOLERANCE !<The trust region tolerance to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE==SOLVER_QUASI_NEWTON_TRUSTREGION) THEN
-                  TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
-                  IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-                    IF(TRUSTREGION_TOLERANCE>ZERO_TOLERANCE) THEN
-                      TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE=TRUSTREGION_TOLERANCE
-                    ELSE
-                      LOCAL_ERROR="The specified trust region tolerance of "// &
-                        & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_TOLERANCE,"*",ERR,ERROR))// &
-                        & " is invalid. The trust region tolerance must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver trust region solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a trust region solver.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the restart of nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonRestartSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_RESTART_SET(SOLVER,RESTART,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the nonlinear Quasi-Newton solver type
-    INTEGER(INTG), INTENT(IN) :: RESTART !<Sets the number of stored updates and the restart period for periodic restart type 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_RESTART_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                QUASI_NEWTON_SOLVER%RESTART=RESTART
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_RESTART_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_RESTART_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_RESTART_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_RESTART_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the restart type of nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonRestartTypeSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_RESTART_TYPE_SET(SOLVER,QUASI_NEWTON_RESTART_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the nonlinear Quasi-Newton solver type
-    INTEGER(INTG), INTENT(IN) :: QUASI_NEWTON_RESTART_TYPE !<The restart type of nonlinear Quasi-Newton to set \see SOLVER_ROUTINES_QuasiNewtonRestartTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_RESTART_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_RESTART_TYPE/=QUASI_NEWTON_SOLVER%RESTART_TYPE) THEN
-                  !Intialise the new type
-                  SELECT CASE(QUASI_NEWTON_RESTART_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_RESTART_NONE)
-                    QUASI_NEWTON_SOLVER%RESTART_TYPE=SOLVER_QUASI_NEWTON_RESTART_NONE
-                  CASE(SOLVER_QUASI_NEWTON_RESTART_POWELL)
-                    QUASI_NEWTON_SOLVER%RESTART_TYPE=SOLVER_QUASI_NEWTON_RESTART_POWELL
-                  CASE(SOLVER_QUASI_NEWTON_RESTART_PERIODIC)
-                    QUASI_NEWTON_SOLVER%RESTART_TYPE=SOLVER_QUASI_NEWTON_RESTART_PERIODIC
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton restart type of "//TRIM(NUMBER_TO_VSTRING( &
-                      & QUASI_NEWTON_RESTART_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_RESTART_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_RESTART_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_RESTART_TYPE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_RESTART_TYPE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the scale type of nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonScaleTypeSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_SCALE_TYPE_SET(SOLVER,QUASI_NEWTON_SCALE_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the nonlinear Quasi-Newton solver type
-    INTEGER(INTG), INTENT(IN) :: QUASI_NEWTON_SCALE_TYPE !<The scale type of nonlinear Quasi-Newton to set \see SOLVER_ROUTINES_QuasiNewtonScaleTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_SCALE_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SCALE_TYPE/=QUASI_NEWTON_SOLVER%SCALE_TYPE) THEN
-                  !Intialise the new type
-                  SELECT CASE(QUASI_NEWTON_SCALE_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_NONE)
-                    QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_NONE
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_SHANNO)
-                    QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_SHANNO
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_LINESEARCH)
-                    QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_LINESEARCH
-                  CASE(SOLVER_QUASI_NEWTON_SCALE_JACOBIAN)
-                    QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton scale type of "//TRIM(NUMBER_TO_VSTRING( &
-                      & QUASI_NEWTON_SCALE_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_SCALE_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_SCALE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_SCALE_TYPE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_SCALE_TYPE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the type of nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonTypeSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_TYPE_SET(SOLVER,QUASI_NEWTON_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the nonlinear Quasi-Newton solver type
-    INTEGER(INTG), INTENT(IN) :: QUASI_NEWTON_TYPE !<The type of nonlinear Quasi-Newton to set \see SOLVER_ROUTINES_QuasiNewtonTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_TYPE/=QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE) THEN
-                  !Intialise the new type
-                  SELECT CASE(QUASI_NEWTON_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_LBFGS)
-                    QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE=SOLVER_QUASI_NEWTON_LBFGS
-                  CASE(SOLVER_QUASI_NEWTON_GOODBROYDEN)
-                    QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE=SOLVER_QUASI_NEWTON_GOODBROYDEN
-                  CASE(SOLVER_QUASI_NEWTON_BADBROYDEN)
-                    QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE=SOLVER_QUASI_NEWTON_BADBROYDEN
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton type of "//TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_TYPE_SET")
-    RETURN
-999 CALL ERRORS("SOLVER_QUASI_NEWTON_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_TYPE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TYPE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the solve type of nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonSolveTypeSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET(SOLVER,QUASI_NEWTON_SOLVE_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the nonlinear Quasi-Newton solver type
-    INTEGER(INTG), INTENT(IN) :: QUASI_NEWTON_SOLVE_TYPE !<The type of nonlinear solver to set \see SOLVER_ROUTINES_QuasiNewtonSolverTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET",ERR,ERROR,*998)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
-      ELSE
-        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
-              QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-              IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-                IF(QUASI_NEWTON_SOLVE_TYPE/=QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE) THEN
-                  !Intialise the new solver type
-                  SELECT CASE(QUASI_NEWTON_SOLVE_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-                    CALL SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE(QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-                    CALL SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE(QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton solver type of " &
-                      & //TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  !Finalise the old solver type
-                  SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
-                  CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-                    CALL SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,ERR,ERROR,*999)
-                  CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-                    CALL SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton solver type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE=QUASI_NEWTON_SOLVE_TYPE
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*998)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*998)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*998)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
-    ENDIF
-    
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET")
-    RETURN
-999 SELECT CASE(QUASI_NEWTON_SOLVE_TYPE)
-    CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-      CALL SOLVER_QUASI_NEWTON_LINESEARCH_FINALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-    CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-      CALL SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-    END SELECT
-998 CALL ERRORS("SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET
-#endif
-
   !
   !================================================================================================================================
   !
@@ -18154,21 +15147,11 @@ CONTAINS
                               CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
                               SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                               CASE(SOLVER_SPARSE_MATRICES)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                CALL PETSC_MATCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER%JACOBIAN_COLORING, &
-                                  & ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGSETTYPE(LINESEARCH_SOLVER%JACOBIAN_COLORING,PETSC_MATCOLORING_SL, &
-                                  & ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGAPPLY(LINESEARCH_SOLVER%JACOBIAN_COLORING,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-#else
                                 CALL PETSC_MATGETCOLORING(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,LINESEARCH_SOLVER% &
                                   & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-#endif
                                 CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
                                   & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+                                CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
 #if ( PETSC_VERSION_MAJOR == 3 )
                                 !Pass the linesearch solver object rather than the temporary solver
                                 CALL PETSC_MATFDCOLORINGSETFUNCTION(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
@@ -18180,11 +15163,6 @@ CONTAINS
                                   & SOLVER,ERR,ERROR,*999)
 #endif
                                 CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                CALL PETSC_MATFDCOLORINGSETUP(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-#endif
-                                CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
                               CASE(SOLVER_FULL_MATRICES)
                                 !Do nothing
                               CASE DEFAULT
@@ -18242,11 +15220,7 @@ CONTAINS
                       & LINESEARCH_SOLVER%LINESEARCH_MAXSTEP,LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE, &
                       & ERR,ERROR,*999)
 #else
-#if ( PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR == 3 )
                     CALL Petsc_SnesGetSnesLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
-#else
-                    CALL Petsc_SnesGetLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
-#endif
                     !Set the line search type and order where applicable
                     SELECT CASE(linesearch_solver%linesearch_type)
                     CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
@@ -18276,17 +15250,10 @@ CONTAINS
                         & err,error,*999)
                     END SELECT
                     ! Set step tolerances, leave iterative line search options as defaults
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
-                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
-                      & PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL, &
-                      & PETSC_DEFAULT_INTEGER,err,error,*999)
-#else
                     CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
                       & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
                       & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION, &
                       & PETSC_DEFAULT_INTEGER,err,error,*999)
-#endif
 #endif
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
                     IF(linesearch_solver%linesearchMonitorOutput) THEN
@@ -18353,9 +15320,6 @@ CONTAINS
     CALL ENTERS("SOLVER_NEWTON_LINESEARCH_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-      CALL PETSC_MATCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-#endif
       CALL PETSC_ISCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
       CALL PETSC_MATFDCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
       CALL Petsc_SnesLineSearchFinalise(LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
@@ -18402,9 +15366,6 @@ CONTAINS
         NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_ALPHA=0.0001_DP
         NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=1.0E8_DP
         NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=CONVERGENCE_TOLERANCE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-        CALL PETSC_MATCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
-#endif
         CALL PETSC_ISCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
         CALL PETSC_MATFDCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
         CALL PETSC_SNESINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
@@ -18508,13 +15469,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    !EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
     INTEGER(INTG) :: CONVERGED_REASON,NUMBER_ITERATIONS
     REAL(DP) :: FUNCTION_NORM
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS_VECTOR,SOLVER_VECTOR
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(PETSC_VEC_TYPE) :: FUNCTION_VECTOR
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -18589,16 +15548,7 @@ CONTAINS
                           CALL PETSC_SNESGETITERATIONNUMBER(LINESEARCH_SOLVER%SNES,NUMBER_ITERATIONS,ERR,ERROR,*999)
                           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final number of iterations = ",NUMBER_ITERATIONS, &
                             & ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                          !CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
-                          !  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
-                          !  & ERR,ERROR,*999)
-                          CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
-                            & ERR,ERROR,*999)
-                          CALL PETSC_VECNORM(FUNCTION_VECTOR,PETSC_NORM_2,FUNCTION_NORM,ERR,ERROR,*999)
-#else
                           CALL PETSC_SNESGETFUNCTIONNORM(LINESEARCH_SOLVER%SNES,FUNCTION_NORM,ERR,ERROR,*999)
-#endif
                           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final function norm = ",FUNCTION_NORM, &
                             & ERR,ERROR,*999)
                           SELECT CASE(CONVERGED_REASON)
@@ -18765,7 +15715,7 @@ CONTAINS
             IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
               NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
               IF(ASSOCIATED(NEWTON_SOLVER)) THEN
-                IF(NEWTON_SOLVER%NEWTON_SOLVE_TYPE==SOLVER_NEWTON_LINESEARCH) THEN
+                IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NEWTON_LINESEARCH) THEN
                   LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
                   IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
@@ -19783,11 +16733,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-        
-  !
-  !================================================================================================================================
-  !
-
   !>Finishes the process of creating a nonlinear solver 
   SUBROUTINE SOLVER_NONLINEAR_CREATE_FINISH(NONLINEAR_SOLVER,ERR,ERROR,*)
 
@@ -19808,10 +16753,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        CALL SOLVER_QUASI_NEWTON_CREATE_FINISH(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -19841,14 +16782,12 @@ CONTAINS
     !Local variables
     TYPE(NONLINEAR_SOLVER_TYPE),POINTER :: NONLINEAR_SOLVER
     TYPE(NEWTON_SOLVER_TYPE),POINTER :: NEWTON_SOLVER
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: NEWTON_LINESEARCH_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE),POINTER :: QUASI_NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: QUASI_NEWTON_LINESEARCH_SOLVER
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: LINESEARCH_SOLVER
     INTEGER(INTG) :: CONVERGED_REASON
 
     CALL ENTERS("SOLVER_NONLINEAR_DIVERGENCE_EXIT",ERR,ERROR,*999)
 
-    NULLIFY(NONLINEAR_SOLVER,NEWTON_SOLVER,NEWTON_LINESEARCH_SOLVER,QUASI_NEWTON_SOLVER,QUASI_NEWTON_LINESEARCH_SOLVER)
+    NULLIFY(NONLINEAR_SOLVER,NEWTON_SOLVER,LINESEARCH_SOLVER)
 
     NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
     IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
@@ -19858,9 +16797,9 @@ CONTAINS
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
           SELECT CASE (NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
           CASE(SOLVER_NEWTON_LINESEARCH)
-            NEWTON_LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
-            IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
-              CALL PETSC_SNESGETCONVERGEDREASON(NEWTON_LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
+            LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+            IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+              CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
                 SELECT CASE(CONVERGED_REASON)
                 CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
                   CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
@@ -19894,40 +16833,6 @@ CONTAINS
         !Not yet implemented. Don't kick up a fuss, just exit
       CASE(SOLVER_NONLINEAR_SQP)
         !Not yet implemented. Don't kick up a fuss, just exit
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-        IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-          QUASI_NEWTON_LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-          IF(ASSOCIATED(QUASI_NEWTON_LINESEARCH_SOLVER)) THEN
-            CALL PETSC_SNESGETCONVERGEDREASON(QUASI_NEWTON_LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
-            SELECT CASE(CONVERGED_REASON)
-            CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
-                & ERR,ERROR,*999)
-            CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
-                & ERR,ERROR,*999)
-            CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
-                & ERR,ERROR,*999)
-            CASE(PETSC_SNES_DIVERGED_MAX_IT)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
-                & ERR,ERROR,*999)
-            CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
-                & ERR,ERROR,*999)
-            CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
-                & ERR,ERROR,*999)
-            END SELECT
-          ELSE
-              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-#endif
       END SELECT
     ELSE
       CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
@@ -19952,27 +16857,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_NONLINEAR_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
-      CASE(SOLVER_NONLINEAR_NEWTON)
-        CALL SOLVER_NEWTON_FINALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
-      CASE DEFAULT
-        LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      CALL SOLVER_NEWTON_FINALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
       DEALLOCATE(NONLINEAR_SOLVER)
     ENDIF
          
@@ -20041,7 +16930,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_NONLINEAR_LIBRARY_TYPE_GET",ERR,ERROR,*999)
@@ -20059,16 +16947,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-        IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-          CALL SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER, &
-            & SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20100,7 +16978,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("SOLVER_NONLINEAR_LIBRARY_TYPE_SET",ERR,ERROR,*999)
@@ -20118,16 +16995,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-        IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-          CALL SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET(QUASI_NEWTON_SOLVER, &
-            & SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20159,7 +17026,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_NONLINEAR_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
@@ -20177,16 +17043,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
-        IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-          CALL SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER, &
-            & MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20221,10 +17077,8 @@ CONTAINS
     REAL(DP) :: xnorm !<The norm of the current solution 
     REAL(DP) :: fnorm !<The norm of the current function 
     REAL(DP) :: ynorm !<The norm of the current update
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: newtonLinesearchSolver
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: linesearchSolver
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: newtonSolver
-    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: quasiNewtonlinesearchSolver
-    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER
     TYPE(VARYING_STRING) :: localError
     
     CALL ENTERS("SOLVER_NONLINEAR_MONITOR",err,error,*999)
@@ -20235,39 +17089,44 @@ CONTAINS
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Nonlinear solve monitor: ",err,error,*999)
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",err,ERROR,*999)
       CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Iteration number = ",its,err,error,*999)
+      newtonSolver=>nonlinearSolver%NEWTON_SOLVER
+      IF(ASSOCIATED(newtonSolver)) THEN
+        SELECT CASE(newtonSolver%convergenceTestType)
+          CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
+            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
+          CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
+            SELECT CASE(newtonSolver%NEWTON_SOLVE_TYPE)
+            CASE(SOLVER_NEWTON_LINESEARCH)
+              linesearchSolver=>newtonSolver%LINESEARCH_SOLVER
+              IF(ASSOCIATED(linesearchSolver)) THEN
+                CALL petsc_SnesLineSearchGetNorms(linesearchSolver%sneslinesearch,xnorm,fnorm,ynorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Norm    = ",xnorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Update Norm    = ",ynorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",fnorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Normalised Energy Norm    = ", &
+                  & newtonSolver%convergenceTest%normalisedEnergy,err,error,*999)
+              ELSE
+                CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",err,error,*999)
+              ENDIF
+            CASE(SOLVER_NEWTON_TRUSTREGION)
+              CALL FLAG_ERROR("The Newton Trust region solver is not implemented.",err,error,*999)
+            CASE DEFAULT
+              localError="The Newton solve type of "// &
+                & TRIM(NUMBER_TO_VSTRING(newtonSolver%NEWTON_SOLVE_TYPE,"*",err,error))//"is invalid."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT
+          CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
+            CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
+              &  "convergence test type is not implemented.",err,error,*999)
+          END SELECT
+      ELSE
+        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
+      ENDIF
 
       SELECT CASE(nonlinearSolver%NONLINEAR_SOLVE_TYPE)
       CASE(SOLVER_NONLINEAR_NEWTON)
         newtonSolver=>nonlinearSolver%NEWTON_SOLVER
         IF(ASSOCIATED(newtonSolver)) THEN
-          SELECT CASE(newtonSolver%convergenceTestType)
-            CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
-            CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
-              SELECT CASE(newtonSolver%NEWTON_SOLVE_TYPE)
-              CASE(SOLVER_NEWTON_LINESEARCH)
-                newtonLinesearchSolver=>newtonSolver%LINESEARCH_SOLVER
-                IF(ASSOCIATED(newtonLinesearchSolver)) THEN
-                  CALL petsc_SnesLineSearchGetNorms(newtonLinesearchSolver%sneslinesearch,xnorm,fnorm,ynorm,err,error,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Norm    = ",xnorm,err,error,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Update Norm    = ",ynorm,err,error,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",fnorm,err,error,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Normalised Energy Norm    = ", &
-                    & newtonSolver%convergenceTest%normalisedEnergy,err,error,*999)
-                ELSE
-                  CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",err,error,*999)
-                ENDIF
-              CASE(SOLVER_NEWTON_TRUSTREGION)
-                CALL FLAG_ERROR("The Newton Trust region solver is not implemented.",err,error,*999)
-              CASE DEFAULT
-                localError="The Newton solve type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(newtonSolver%NEWTON_SOLVE_TYPE,"*",err,error))//"is invalid."
-                CALL FLAG_ERROR(localError,err,error,*999)
-              END SELECT
-            CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-              CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
-                &  "convergence test type is not implemented.",err,error,*999)
-            END SELECT
           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Newton solver information: ",err,error,*999)          
           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of function evaluations = ",newtonSolver% &
             & TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS,err,error,*999)
@@ -20280,39 +17139,6 @@ CONTAINS
         !Do nothing
       CASE(SOLVER_NONLINEAR_SQP)
         !Do nothing
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-      CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-        QUASI_NEWTON_SOLVER=>nonlinearSolver%QUASI_NEWTON_SOLVER
-        IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-          SELECT CASE(QUASI_NEWTON_SOLVER%convergenceTestType)
-            CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
-            CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
-              quasiNewtonLinesearchSolver=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
-              IF(ASSOCIATED(quasiNewtonLinesearchSolver)) THEN
-                CALL petsc_SnesLineSearchGetNorms(quasiNewtonLinesearchSolver%sneslinesearch, &
-                  & xnorm,fnorm,ynorm,err,error,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Norm    = ",xnorm,err,error,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Update Norm    = ",ynorm,err,error,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",fnorm,err,error,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Normalised Energy Norm    = ", &
-                  & QUASI_NEWTON_SOLVER%convergenceTest%normalisedEnergy,err,error,*999)
-              ELSE
-                CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",err,error,*999)
-              ENDIF
-            CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-              CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
-                &  "convergence test type is not implemented.",err,error,*999)
-            END SELECT
-          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Quasi-Newton solver information: ",err,error,*999)          
-          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of function evaluations = ",QUASI_NEWTON_SOLVER% &
-            & TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS,err,error,*999)
-          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of Jacobian evaluations = ",QUASI_NEWTON_SOLVER% &
-            & TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS,err,error,*999)            
-        ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
-        ENDIF
-#endif
       CASE DEFAULT
         localError="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(nonlinearSolver%NONLINEAR_SOLVE_TYPE,"*",err,error))// &
@@ -20360,10 +17186,6 @@ CONTAINS
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_SQP)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-        CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-          CALL SOLVER_QUASI_NEWTON_SOLVE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
         CASE DEFAULT
           LOCAL_ERROR="The nonlinear solver type of "// &
             & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -20439,11 +17261,23 @@ CONTAINS
       IF(SOLVER%SOLVER_FINISHED) THEN
         CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
-        CALL SOLVER_LINKED_SOLVER_REMOVE(SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
           IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
             IF(NONLINEAR_SOLVE_TYPE/=NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE) THEN
+              !Intialise the new solver type
+              SELECT CASE(NONLINEAR_SOLVE_TYPE)
+              CASE(SOLVER_NONLINEAR_NEWTON)
+                CALL SOLVER_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(SOLVER_NONLINEAR_SQP)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The specified nonlinear solver type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
               !Finalise the old solver type
               SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
               CASE(SOLVER_NONLINEAR_NEWTON)
@@ -20452,35 +17286,12 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                
               CASE(SOLVER_NONLINEAR_SQP)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-              CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-                CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
               CASE DEFAULT
                 LOCAL_ERROR="The nonlinear solver type of "// &
                   & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE=NONLINEAR_SOLVE_TYPE
-              !Intialise the new solver type
-              SELECT CASE(NONLINEAR_SOLVE_TYPE)
-              CASE(SOLVER_NONLINEAR_NEWTON)
-                NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER)
-                CALL SOLVER_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
-              CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(SOLVER_NONLINEAR_SQP)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-              CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-                NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER)
-                CALL SOLVER_QUASI_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
-#endif
-              CASE DEFAULT
-                LOCAL_ERROR="The specified nonlinear solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
             ENDIF
           ELSE
             CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
@@ -20502,10 +17313,6 @@ CONTAINS
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)                
     CASE(SOLVER_NONLINEAR_SQP)
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)      
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
-    CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
-      CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-#endif
     END SELECT
 998 CALL ERRORS("SOLVER_NONLINEAR_TYPE_SET",ERR,ERROR)
     CALL EXITS("SOLVER_NONLINEAR_TYPE_SET")
