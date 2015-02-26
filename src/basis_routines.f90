@@ -2217,7 +2217,7 @@ CONTAINS
                     ELSE
                       localNodeIdx=basis%NODE_POSITION_INDEX_INV(localNodeIdx2,localNodeIdx3,localNodeIdx1,1)
                     ENDIF
-                    IF(localNodeIdx/=0) THEN
+                    IF(ALL(basis%NODE_NUMBERS_IN_LOCAL_FACE(1:localNodeCount,localFaceIdx)/=localNodeIdx)) THEN
                       !The node hasn't been collapsed
                       localNodeCount=localNodeCount+1
                       basis%NODE_NUMBERS_IN_LOCAL_FACE(localNodeCount,localFaceIdx)=localNodeIdx
@@ -2245,7 +2245,6 @@ CONTAINS
               ENDIF
             ENDDO !xiIdx1
           ENDDO !directionIdx
-          
         CASE DEFAULT
           CALL FlagError("Invalid number of xi directions.",err,error,*999)
         END SELECT
