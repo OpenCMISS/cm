@@ -1629,19 +1629,6 @@ CONTAINS
             CASE DEFAULT
               CALL FlagError("Invalid number of xi directions.",err,error,*999)
             END SELECT
-          ELSEIF (atCollapse.AND.(.NOT.firstCollapsedPosition)) THEN
-            !The second node in the collapsed xi is set to the same node number as the first node. 
-            basis%NODE_POSITION_INDEX(localNode,:)=position(1:basis%NUMBER_OF_XI)
-            SELECT CASE(basis%NUMBER_OF_XI)
-            CASE(1)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),1,1,1)=localNode
-            CASE(2)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2),1,1)= &
-                & localNode
-            CASE(3)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2), &
-                & basis%NODE_POSITION_INDEX(localNode,3),1)=localNode
-            END SELECT
           ENDIF
           position(1)=position(1)+1
           DO xiIdx=1,basis%NUMBER_OF_XI
