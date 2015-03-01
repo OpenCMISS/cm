@@ -1472,9 +1472,10 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     INTEGER(INTG) :: maximumNumberOfNodes,numberOfDerivatives,xiIdx,xiIdx1,xiIdx2,xiIdx3,derivativeIdx,localNode,localLineNodeIdx, &
-      & elementParameter,oldNumberOfDerivatives,position(4),maximumNodeExtent(3),collapsedXi(3),numberOfNodes,numberOfLocalLines, &
-      & nodeCount,specialNodeCount,nodesInLine(4),numberOfLocalFaces,localFaceIdx,localNodeIdx,localNodeIdx1, &
-      & localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount,localLineParameter,localFaceParameter
+      & elementParameter,oldNumberOfDerivatives,position(4),collapsedPosition(3),maximumNodeExtent(3),collapsedXi(3), &
+      & numberOfNodes,numberOfLocalLines,nodeCount,specialNodeCount,nodesInLine(4),numberOfLocalFaces,localFaceIdx, &
+      & localNodeIdx,localNodeIdx1,localNodeIdx2,localNodeIdx3,directionIdx,localFaceDerivative,localNodeCount, &
+      & localLineParameter,localFaceParameter
     LOGICAL, ALLOCATABLE :: nodeAtCollapse(:)
     LOGICAL :: atCollapse,collapsedFace,firstCollapsedPosition,processNode
     
@@ -1593,8 +1594,9 @@ CONTAINS
         IF(ERR/=0) CALL FlagError("Could not allocate node position index inverse.",err,error,*999)
         basis%NODE_POSITION_INDEX_INV=0
 
-        !Determine the node position index and it's inverse
+        !Determine the node position index and its inverse
         position=1
+        collapsedPosition=1
         localNode=0
         firstCollapsedPosition=.TRUE.
         DO localNodeIdx1=1,numberOfNodes
@@ -1605,30 +1607,18 @@ CONTAINS
                 & basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI1.AND.position(xiIdx)==basis%NUMBER_OF_NODES_XIC(xiIdx)) &
                 & atCollapse=.TRUE.
             ENDDO !xiIdx
-            IF(basis%NUMBER_OF_COLLAPSED_XI==1) THEN
-              firstCollapsedPosition=position(collapsedXi(1))==1
-            ELSE
-              firstCollapsedPosition=(position(collapsedXi(1))==1).AND.(position(collapsedXi(2))==1)
-            ENDIF
+            firstCollapsedPosition=ALL(position(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))==1)
           ENDIF
-          processNode=(atCollapse.AND.firstCollapsedPosition).OR.(.NOT.atCollapse)
-          IF(processNode) THEN
+          IF((atCollapse.AND.firstCollapsedPosition).OR.(.NOT.atCollapse)) THEN
             localNode=localNode+1
             basis%NODE_POSITION_INDEX(localNode,:)=position(1:basis%NUMBER_OF_XI)
-            !!Should the inverse of the node position index be adjusted so that the collapsed positions point to the collapsed localNode?
-            !!At the moment this is not the case and they are just set to zero.
-            SELECT CASE(basis%NUMBER_OF_XI)
-            CASE(1)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),1,1,1)=localNode
-            CASE(2)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2),1,1)= &
-                & localNode
-            CASE(3)
-              basis%NODE_POSITION_INDEX_INV(basis%NODE_POSITION_INDEX(localNode,1),basis%NODE_POSITION_INDEX(localNode,2), &
-                & basis%NODE_POSITION_INDEX(localNode,3),1)=localNode
-            CASE DEFAULT
-              CALL FlagError("Invalid number of xi directions.",err,error,*999)
-            END SELECT
+            basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)=localNode
+          ELSEIF (atCollapse.AND.(.NOT.firstCollapsedPosition)) THEN
+            !The second node in the collapsed xi is set to the same node number as the first node.
+            collapsedPosition=position(1:basis%NUMBER_OF_XI)
+            collapsedPosition(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))=1
+            basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)= &
+              & basis%NODE_POSITION_INDEX_INV(collapsedPosition(1),collapsedPosition(2),collapsedPosition(3),1)
           ENDIF
           position(1)=position(1)+1
           DO xiIdx=1,basis%NUMBER_OF_XI
@@ -2198,7 +2188,7 @@ CONTAINS
                     ELSE
                       localNodeIdx=basis%NODE_POSITION_INDEX_INV(localNodeIdx2,localNodeIdx3,localNodeIdx1,1)
                     ENDIF
-                    IF(localNodeIdx/=0) THEN
+                    IF(ALL(basis%NODE_NUMBERS_IN_LOCAL_FACE(1:localNodeCount,localFaceIdx)/=localNodeIdx)) THEN
                       !The node hasn't been collapsed
                       localNodeCount=localNodeCount+1
                       basis%NODE_NUMBERS_IN_LOCAL_FACE(localNodeCount,localFaceIdx)=localNodeIdx
@@ -2226,7 +2216,6 @@ CONTAINS
               ENDIF
             ENDDO !xiIdx1
           ENDDO !directionIdx
-          
         CASE DEFAULT
           CALL FlagError("Invalid number of xi directions.",err,error,*999)
         END SELECT
