@@ -623,6 +623,14 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE KSPSetInitialGuessNonzero
     
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+    SUBROUTINE KSPSetOperators(ksp,amat,pmat,ierr)
+      KSP ksp
+      Mat amat
+      Mat pmat
+      PetscInt ierr
+    END SUBROUTINE KSPSetOperators
+#else    
     SUBROUTINE KSPSetOperators(ksp,Amat,Pmat,flag,ierr)
       KSP ksp
       Mat Amat
@@ -630,6 +638,15 @@ MODULE CMISS_PETSC
       MatStructure flag
       PetscInt ierr
     END SUBROUTINE KSPSetOperators
+#endif    
+    
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+    SUBROUTINE KSPSetReusePreconditioner(ksp,flag,ierr)
+      KSP ksp
+      PetscBool flag
+      PetscInt ierr
+    END SUBROUTINE KSPSetReusePreconditioner
+#endif    
     
     SUBROUTINE KSPSetTolerances(ksp,rtol,atol,dtol,maxits,ierr)
       KSP ksp
@@ -1619,7 +1636,7 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE, &
     & PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
 
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR >= 5 )
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   PUBLIC PETSC_DEFAULT_INTEGER,PETSC_DEFAULT_REAL
 #else
   PUBLIC PETSC_DEFAULT_INTEGER,PETSC_DEFAULT_DOUBLE_PRECISION
@@ -1679,7 +1696,11 @@ MODULE CMISS_PETSC
     & PETSC_KSPGETRESIDUALNORM,PETSC_KSPGMRESSETRESTART,PETSC_KSPFINALISE,PETSC_KSPINITIALISE,PETSC_KSPSETFROMOPTIONS, &
     & PETSC_KSPSETINITIALGUESSNONZERO,PETSC_KSPSETOPERATORS,PETSC_KSPSETTYPE,PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES, &
     & PETSC_KSPSOLVE
-
+  
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+  PUBLIC PETSc_KspSetReusePreconditioner
+#endif
+  
 #if ( PETSC_VERSION_MAJOR < 3 )
   PUBLIC MAT_COLUMN_ORIENTED,MAT_COLUMNS_SORTED,MAT_ROWS_SORTED,MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY, &
     & MAT_NO_NEW_NONZERO_LOCATIONS
@@ -2650,6 +2671,37 @@ CONTAINS
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+  !>Buffer routine to the PETSc KSPSetOperators routine
+  SUBROUTINE PETSC_KSPSetOperators(ksp_,amat,pmat,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: ksp_ !<The Ksp to set the operators for
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: amat !<The matrix associated with the linear system
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: pmat !<The matrix to be used in constructing the preconditioner
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL Enters("PETSC_KSPSetOperators",err,error,*999)
+
+    CALL KSPSetOperators(ksp_%ksp_,amat%mat,pmat%mat,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FlagError("PETSc error in KSPSetFromOperators.",err,error,*999)
+    ENDIF
+    
+    CALL Exits("PETSC_KSPSetOperators")
+    RETURN
+999 CALL Errors("PETSC_KSPSetOperators",err,error)
+    CALL Exits("PETSC_KSPSetOperators")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSetOperators
+  
+#else
+  
   !>Buffer routine to the PETSc KSPSetOperators routine
   SUBROUTINE PETSC_KSPSETOPERATORS(KSP_,AMAT,PMAT,FLAG,ERR,ERROR,*)
 
@@ -2678,7 +2730,45 @@ CONTAINS
     CALL EXITS("PETSC_KSPSETOPERATORS")
     RETURN 1
   END SUBROUTINE PETSC_KSPSETOPERATORS
+#endif
+  
+  !
+  !================================================================================================================================
+  !
+
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+  !>Buffer routine to the PETSc KSPSetReusePreconditioner routine
+  SUBROUTINE PETSc_KSPSetReusePreconditioner(KSP_,flag,err,error,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the options for
+    LOGICAL, INTENT(IN) :: flag
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL Enters("",err,error,*999)
+
+    IF(flag) THEN
+      CALL KSPSetReusePreconditioner(KSP_%KSP_,PETSC_TRUE,err)
+    ELSE
+      CALL KSPSetReusePreconditioner(KSP_%KSP_,PETSC_FALSE,err)
+    ENDIF
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in KSPSetReusePreconditioner.",err,error,*999)
+    ENDIF
     
+    CALL Exits("")
+    RETURN
+999 CALL Errors("",err,error)
+    CALL Exits("")
+    RETURN 1
+  END SUBROUTINE PETSc_KSPSetReusePreconditioner
+#endif
+  
   !
   !================================================================================================================================
   !
