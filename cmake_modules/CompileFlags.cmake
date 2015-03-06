@@ -1,10 +1,3 @@
-#IF(${MPI} STREQUAL mpich2)
-#  SET(MPIFC mpif90)
-#  SET(MPICC mpicc)
-#ELSE(${MPI} STREQUAL mpich2)
-#  SET(MPIFC mpiifort)
-#  SET(MPICC mpiicc)
-#ENDIF(${MPI} STREQUAL mpich2)
 SET(FC gfortran) #TODO
 SET(CC gcc) #TODO
 SET(AR ar)
