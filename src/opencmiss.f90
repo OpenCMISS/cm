@@ -6953,45 +6953,45 @@ MODULE OPENCMISS
 
 ! Uncomment if you have PETSC 3.5, otherwise this gives problems for the Python interface
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
- PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
-
- PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
-
- PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
-
- PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
-
- PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
-
- PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
-
- PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
-
- PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
-
- PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
-
- PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
-
- PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
-
- PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
-
- PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
-
- PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
-
- PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
-
- PUBLIC CMISSSolver_QuasiNewtonRestartSet
-
- PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
-
- PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
-
- PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
-
- PUBLIC CMISSSolver_QuasiNewtonTypeSet
+! PUBLIC CMISSSolver_QuasiNewtonAbsoluteToleranceSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchMonitorOutputSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonJacobianCalculationTypeSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonLinearSolverGet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonCellMLSolverGet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonConvergenceTestTypeSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchMaxStepSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchStepTolSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonLineSearchTypeSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonMaximumIterationsSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonRelativeToleranceSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonSolutionToleranceSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonTrustRegionDelta0Set
+! 
+! PUBLIC CMISSSolver_QuasiNewtonTrustRegionToleranceSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonRestartSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonRestartTypeSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonScaleTypeSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonSolveTypeSet
+! 
+! PUBLIC CMISSSolver_QuasiNewtonTypeSet
 #endif
 
   PUBLIC CMISSSolver_NonlinearTypeSet
