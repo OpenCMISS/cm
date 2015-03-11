@@ -4181,7 +4181,7 @@ CONTAINS
         !add active contraction stress values
         !the active stress is stored inside the independent field that has been set up in the user program.
         !for generality we could set up 3 components in independent field for 3 different active stress components
-        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        !!!! Be aware for modified DZDNU, check if this the right way to do it?
         CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
