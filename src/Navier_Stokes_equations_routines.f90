@@ -11804,6 +11804,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error
     !Local Variables
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: iterativeLoop
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
     TYPE(FIELD_TYPE), POINTER :: dependentField,independentField,materialsField
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
@@ -11815,17 +11816,14 @@ CONTAINS
     INTEGER(INTG) :: nodeNumber,nodeIdx,derivativeIdx,versionIdx,componentIdx,i
     INTEGER(INTG) :: solver1dNavierStokesNumber,solverNumber
     INTEGER(INTG) :: branchNumber,numberOfBranches,numberOfComputationalNodes,numberOfVersions
-    INTEGER(INTG) :: MPI_IERROR,timestep,iteration,dofNumber,outputIteration
-    REAL(DP) :: couplingTolerance,l2ErrorW(30),wPrevious(2,4),wCurrent(10),wNavierStokes(2,4),wCharacteristic(2,4),wError(2,4)
-    REAL(DP) :: l2ErrorQ(30),qCharacteristic(4),qNavierStokes(4),meanW,wErrorFlat(10),wNext(2,4)
+    INTEGER(INTG) :: MPI_IERROR,timestep,iteration,outputIteration
+    REAL(DP) :: couplingTolerance,l2ErrorW(30),wPrevious(2,4),wNavierStokes(2,4),wCharacteristic(2,4),wError(2,4)
+    REAL(DP) :: l2ErrorQ(100),qCharacteristic(4),qNavierStokes(4),wNext(2,4)
     REAL(DP) :: totalErrorWPrevious,startTime,stopTime,currentTime,timeIncrement
-    REAL(DP) :: l2ErrorA(30),aCharacteristic(4),aNavierStokes(4),totalErrorW,totalErrorQ,totalErrorA
-    REAL(DP) :: momentum(4),mass(4),wValues(3,2),wErrorPrevious(2,4),wErrorPreviousFlat(10),l2ErrorWPrevious(30)
-    REAL(DP) :: massFluxError(30),momentumFluxError(30),totalErrorMass,totalErrorMomentum,massNext(4),momentumNext(4)
-    REAL(DP) :: massError(4),momentumError(4),massBranchError
-    REAL(DP) :: aValues(2),qValues(2),momentumPrevious(4),massPrevious(4),FU(2),FU_previous(2),F(2),Fprev(2)
-    REAL(DP) :: rho,alpha,normalWave,A0_PARAM,E_PARAM,H0_PARAM,beta,aNew,initialisationTime,penaltyCoeff
-    LOGICAL :: branchConverged(30),branchConverged2(30),localConverged,MPI_LOGICAL,boundaryNode,exists,fluxDiverged
+    REAL(DP) :: l2ErrorA(100),aCharacteristic(4),aNavierStokes(4),totalErrorW,totalErrorQ,totalErrorA
+    REAL(DP) :: totalErrorMass,totalErrorMomentum
+    REAL(DP) :: rho,alpha,normalWave,A0_PARAM,E_PARAM,H_PARAM,beta,aNew,penaltyCoeff
+    LOGICAL :: branchConverged(100),localConverged,MPI_LOGICAL,boundaryNode,fluxDiverged
     LOGICAL, ALLOCATABLE :: globalConverged(:)
     CHARACTER(70) :: inputFile,tempString
 
