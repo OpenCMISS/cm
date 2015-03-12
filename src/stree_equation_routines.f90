@@ -436,7 +436,7 @@ CONTAINS
           SELECT CASE(equationsSet%SUBTYPE)
           CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
             materialsFieldNumberOfVariables=2
-            materialsFieldNumberOfComponents=1
+            materialsFieldNumberOfComponents=27
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Specify start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -746,7 +746,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: navierstokesSolver
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: nodeNumber,variableIdx,BOUNDARY_CONDITION_CHECK_VARIABLE,nodeIdx,componentIdx,derivativeIdx,versionIdx
-    INTEGER(INTG) :: dependentDof,dependentVariableType,userNodeNumber
+    INTEGER(INTG) :: dependentDof,dependentVariableType,userNodeNumber,m
     REAL(DP) :: currentTime,timeIncrement,flow
 
     CALL ENTERS("Stree_PRE_SOLVE",err,error,*999)
@@ -833,13 +833,14 @@ CONTAINS
                             & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
                           BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES(dependentDof)
                           IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FixedStree) THEN  
-                            ! Update dependent field value1
+                            ! Update dependent field value
                             IF(ASSOCIATED(materialsField)) THEN
                               CALL FIELD_PARAMETER_SET_GET_NODE(navierstokesDependentField,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,1,flow,ERR,ERROR,*999)
+                              m=int(currentTime)-800*(int(currentTime)/800)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(materialsField,FIELD_V_VARIABLE_TYPE, &
-                                & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,int(currentTime)+1,1,flow,err,error,*999)
-                            endif
+                                & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,m+1,1,flow,err,error,*999)
+                            ENDIF
                           ENDIF
                         ENDDO !versionIdx
                       ENDDO !derivativeIdx

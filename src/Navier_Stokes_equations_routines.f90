@@ -11140,12 +11140,12 @@ CONTAINS
     INTEGER(INTG) :: branchNumber,numberOfBranches,numberOfComputationalNodes,numberOfVersions
     INTEGER(INTG) :: MPI_IERROR,timestep,iteration,outputIteration
     REAL(DP) :: couplingTolerance,l2ErrorW(30),wPrevious(2,4),wNavierStokes(2,4),wCharacteristic(2,4),wError(2,4)
-    REAL(DP) :: l2ErrorQ(30),qCharacteristic(4),qNavierStokes(4),wNext(2,4)
+    REAL(DP) :: l2ErrorQ(100),qCharacteristic(4),qNavierStokes(4),wNext(2,4)
     REAL(DP) :: totalErrorWPrevious,startTime,stopTime,currentTime,timeIncrement
-    REAL(DP) :: l2ErrorA(30),aCharacteristic(4),aNavierStokes(4),totalErrorW,totalErrorQ,totalErrorA
+    REAL(DP) :: l2ErrorA(100),aCharacteristic(4),aNavierStokes(4),totalErrorW,totalErrorQ,totalErrorA
     REAL(DP) :: totalErrorMass,totalErrorMomentum
     REAL(DP) :: rho,alpha,normalWave,A0_PARAM,E_PARAM,H_PARAM,beta,aNew,penaltyCoeff
-    LOGICAL :: branchConverged(30),localConverged,MPI_LOGICAL,boundaryNode,fluxDiverged
+    LOGICAL :: branchConverged(100),localConverged,MPI_LOGICAL,boundaryNode,fluxDiverged
     LOGICAL, ALLOCATABLE :: globalConverged(:)
 
     CALL ENTERS("NavierStokes_CoupleCharacteristics",ERR,ERROR,*999)
