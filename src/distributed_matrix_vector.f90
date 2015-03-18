@@ -887,6 +887,7 @@ CONTAINS
     !Local Variables
     REAL(DP), POINTER :: petscData(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(C_PTR) :: TEMP_ME
 
     CALL ENTERS("DISTRIBUTED_MATRIX_DATA_GET_DP",ERR,ERROR,*999)
 
@@ -914,7 +915,8 @@ CONTAINS
               ! Using C_F_POINTER(C_LOC(... is a bit ugly but transfer doesn't work with pointers
               SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
               CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                CALL C_F_POINTER(C_LOC(petscData(1,1)),DATA,[DISTRIBUTED_MATRIX%PETSC%M*DISTRIBUTED_MATRIX%PETSC%N])
+                TEMP_ME = C_LOC(petscData(1,1))
+                CALL C_F_POINTER(TEMP_ME,DATA,[DISTRIBUTED_MATRIX%PETSC%M*DISTRIBUTED_MATRIX%PETSC%N])
               CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
                 CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
               CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
@@ -925,7 +927,8 @@ CONTAINS
                 !PETSc returns an m * n matrix rather than number non-zeros by 1, so the returned
                 !2D array actually contains junk data outside of the actual matrix.
                 !This is a bug in PETSc but we can get the correct 1D data here
-                CALL C_F_POINTER(C_LOC(petscData(1,1)),DATA,[DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS])
+                TEMP_ME = C_LOC(petscData(1,1))
+                CALL C_F_POINTER(TEMP_ME,DATA,[DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS])
               CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
                 CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
               CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -1119,6 +1122,7 @@ CONTAINS
     !Local Variables
     REAL(DP), POINTER :: petscData(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(C_PTR) :: TEMP_ME
     
     CALL ENTERS("DISTRIBUTED_MATRIX_DATA_RESTORE_DP",ERR,ERROR,*999)
 
@@ -1133,7 +1137,8 @@ CONTAINS
               SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
               CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
                 !Convert 1D array to 2D
-                CALL C_F_POINTER(C_LOC(DATA(1)),petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
+                TEMP_ME = C_LOC(DATA(1))
+                CALL C_F_POINTER(TEMP_ME,petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
               CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
                 CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
               CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
@@ -1143,7 +1148,8 @@ CONTAINS
               CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                 !PETSc expects an m * n 2D matrix rather than a 1D array with length equal to number of non-zeros
                 !This is a bug in PETSc so we have to give it a 2D matrix with junk at the end
-                CALL C_F_POINTER(C_LOC(DATA(1)),petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
+                TEMP_ME = C_LOC(DATA(1))
+                CALL C_F_POINTER(TEMP_ME,petscData,[DISTRIBUTED_MATRIX%PETSC%M,DISTRIBUTED_MATRIX%PETSC%N])
               CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
                 CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
               CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
