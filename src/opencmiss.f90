@@ -102,7 +102,7 @@ MODULE OPENCMISS
 
   PRIVATE
 
-#include "include/petscversion.h"
+#include "petscversion.h"
   
   !Module parameters
 
