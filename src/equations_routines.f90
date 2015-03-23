@@ -118,6 +118,8 @@ MODULE EQUATIONS_ROUTINES
 
   PUBLIC EQUATIONS_SET_EQUATIONS_GET
 
+  PUBLIC Equations_DerivedVariableGet
+
   PUBLIC Equations_NumberOfLinearMatricesGet
 
   PUBLIC Equations_NumberOfJacobianMatricesGet
@@ -939,6 +941,77 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE EQUATIONS_SET_EQUATIONS_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the field variable for the derived variable type
+  SUBROUTINE Equations_DerivedVariableGet(equations,derivedType,fieldVariable,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER, INTENT(IN) :: equations !<A pointer to the equations to get the field variable for.
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived value type to get the field variable for. \see EQUATIONS_SET_CONSTANTS_DerivedTypes.
+    TYPE(FIELD_VARIABLE_TYPE), POINTER, INTENT(INOUT) :: fieldVariable !<On return, the field variable for the derived variable type.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(FIELD_TYPE), POINTER :: derivedField
+    INTEGER(INTG) :: fieldVariableType
+
+    CALL ENTERS("Equations_DerivedVariableGet",err,error,*999)
+
+    NULLIFY(derivedField)
+
+    !Check pointers
+    IF(ASSOCIATED(equations)) THEN
+      equationsSet=>equations%equations_set
+      IF(ASSOCIATED(equationsSet)) THEN
+        IF(.NOT.equationsSet%EQUATIONS_SET_FINISHED) THEN
+          CALL FLAG_ERROR("Equations set has not been finished.",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      END IF
+      IF(ASSOCIATED(fieldVariable)) THEN
+        CALL FLAG_ERROR("Derived field variable is already associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations are not associated.",err,error,*999)
+    END IF
+
+    IF(ASSOCIATED(equationsSet%derived)) THEN
+      IF(equationsSet%derived%derivedFinished) THEN
+        IF(ASSOCIATED(equationsSet%derived%derivedField)) THEN
+          IF(derivedType>0.AND.derivedType<=EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES) THEN
+            fieldVariableType=equationsSet%derived%variableTypes(derivedType)
+            IF(fieldVariableType/=0) THEN
+              CALL FIELD_VARIABLE_GET(equationsSet%derived%derivedField,fieldVariableType,fieldVariable,err,error,*999)
+            ELSE
+              CALL FLAG_ERROR("The field variable type for the derived variable type of "// &
+                & TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))//" has not been set.",err,error,*999)
+            END IF
+          ELSE
+            CALL FLAG_ERROR("The derived variable type of "//TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))// &
+              & " is invalid. It should be between 1 and "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES,"*", &
+              & err,error))//" inclusive.",err,error,*999)
+          END IF
+        ELSE
+          CALL FLAG_ERROR("Equations set derived field is not associated",err,error,*999)
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations set derived information is not finished",err,error,*999)
+      END IF
+    END IF
+
+    CALL EXITS("Equations_DerivedVariableGet")
+    RETURN
+999 CALL ERRORS("Equations_DerivedVariableGet",err,error)
+    CALL EXITS("Equations_DerivedVariableGet")
+    RETURN 1
+  END SUBROUTINE Equations_DerivedVariableGet
 
   !
   !================================================================================================================================

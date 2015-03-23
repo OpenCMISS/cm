@@ -134,6 +134,8 @@ MODULE MESH_ROUTINES
   PUBLIC DECOMPOSITION_CALCULATE_LINES_SET,DECOMPOSITION_CALCULATE_FACES_SET
 
   PUBLIC DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS
+
+  PUBLIC DomainTopology_ElementBasisGet
   
   PUBLIC MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS,MESH_TOPOLOGY_NODE_CHECK_EXISTS
   
@@ -1550,7 +1552,62 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS
-  
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the basis for an element in the domain identified by its local number
+  SUBROUTINE DomainTopology_ElementBasisGet(domainTopology,userElementNumber, &
+      & basis,err,error,*)
+
+    !Argument variables
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: domainTopology !<A pointer to the domain topology to get the element basis for
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The element user number to get the basis for
+    TYPE(BASIS_TYPE), POINTER, INTENT(OUT) :: basis !<On return, a pointer to the basis for the element.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: decompositionTopology
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: domainElements
+    LOGICAL :: userElementExists,ghostElement
+    INTEGER(INTG) :: localElementNumber
+
+    CALL Enters("DomainTopology_ElementBasisGet",err,error,*999)
+
+    NULLIFY(basis)
+
+    IF(ASSOCIATED(domainTopology)) THEN
+      domainElements=>domainTopology%elements
+      IF(ASSOCIATED(domainElements)) THEN
+        decompositionTopology=>domainTopology%domain%decomposition%topology
+        IF(ASSOCIATED(decompositionTopology)) THEN
+          CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(decompositionTopology,userElementNumber, &
+            & userElementExists,localElementNumber,ghostElement,err,error,*999)
+          IF(.NOT.userElementExists) THEN
+            CALL FlagError("The specified user element number of "// &
+              & TRIM(NumberToVstring(userElementNumber,"*",err,error))// &
+              & " does not exist in the domain decomposition.",err,error,*999)
+          END IF
+          basis=>domainElements%elements(localElementNumber)%basis
+        ELSE
+          CALL FlagError("Decomposition topology is not associated.",err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("Domain topology elements is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("Domain topology is not associated.",err,error,*999)
+    END IF
+
+    CALL Exits("DomainTopology_ElementBasisGet")
+    RETURN
+    999 CALL Errors("DomainTopology_ElementBasisGet",err,error)
+    CALL Exits("DomainTopology_ElementBasisGet")
+    RETURN 1
+
+    END SUBROUTINE DomainTopology_ElementBasisGet
+
   !
   !================================================================================================================================
   !
