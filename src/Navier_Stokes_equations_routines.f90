@@ -394,7 +394,7 @@ CONTAINS
               EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 2
               elementBasedComponents = 8  ! 4 SUPG parameters, 3 boundary normal components, 1 boundaryID
               nodeBasedComponents = 1  ! boundary flux
-              constantBasedComponents = 3  ! maxCFL, boundaryStabilisationTerm, timeIncrement
+              constantBasedComponents = 6  ! maxCFL, boundaryStabilisationTerm, timeIncrement, DEBUG:A,B,C
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 !Create the auto created equations set field field for SUPG element metrics
@@ -431,7 +431,7 @@ CONTAINS
                 !Default the Element Metrics parameter values 0.0
                 elementBasedComponents = 8  ! 4 SUPG parameters, 3 boundary normal components, 1 boundaryID
                 nodeBasedComponents = 1  ! boundary flux
-                constantBasedComponents = 3  ! maxCFL, boundaryStabilisationTerm, timeIncrement
+                constantBasedComponents = 6  ! maxCFL, boundaryStabilisationTerm, timeIncrement, DEBUG:A,B,C
                 DO componentIdx=1,elementBasedComponents+nodeBasedComponents
                   CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx,0.0_DP,ERR,ERROR,*999)
@@ -513,7 +513,7 @@ CONTAINS
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               elementBasedComponents = 8  ! 4 SUPG parameters, 3 boundary normal components, 1 boundaryID
               nodeBasedComponents = 1  ! boundary flux
-              constantBasedComponents = 3  ! maxCFL, boundaryStabilisationTerm, timeIncrement
+              constantBasedComponents = 6  ! maxCFL, boundaryStabilisationTerm, timeIncrement, DEBUG:A,B,C
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
@@ -3913,11 +3913,11 @@ CONTAINS
     INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: nodeIdx,xiIdx,coordIdx,derivativeIdx,componentIdx,versionIdx,elementVersionNumber
     INTEGER(INTG) :: numberOfVersions,nodeNumber,local_ny,numberOfElementNodes,numberOfParameters,firstNode,lastNode
+    INTEGER(INTG) :: incompressibilityIdx
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,mass,penaltyCoeff
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,Q_PRE,A_PRE,area,pressure
     REAL(DP) :: QUpwind,AUpwind,momentumPrevious,massPrevious,FU,F,massFluxExternal
     REAL(DP) :: normal,normalWave,pExternal
-    REAL(DP) :: tau_SUPS,tau_PSPG,tau_LSIC,wSUPG,wPSPG,wLSIC
     REAL(DP) :: TAU_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H0_PARAM,A0_DERIV,E_DERIV,H0_DERIV,alpha,beta
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:),materialsParameters1(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
@@ -4067,19 +4067,6 @@ CONTAINS
             IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
             IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
             IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
-            IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-              EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
-              IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
-                EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
-                IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                  ! Do nothing
-                ELSE
-                  CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
-              ENDIF
-            END IF
           CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             DECOMPOSITION => DEPENDENT_FIELD%DECOMPOSITION
             MESH_COMPONENT_NUMBER = DECOMPOSITION%MESH_COMPONENT_NUMBER
@@ -4098,19 +4085,6 @@ CONTAINS
             IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
             IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
             IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
-            IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-              EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
-              IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
-                EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
-                IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-                  ! Do nothing
-                ELSE
-                  CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
-              ENDIF
-            END IF
           CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
             INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
             INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
@@ -4189,7 +4163,7 @@ CONTAINS
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               !Loop over field components
 
-              ! Get interpolated velocity and velocity gradient values for nonlinear and SUPG/PSPG/LSIC terms
+              ! Get interpolated velocity and velocity gradient values for nonlinear term
               U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
               U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
@@ -4252,14 +4226,6 @@ CONTAINS
                         PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                         PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                        ! Calculate SUPG/PSPG/LSIC terms if necessary
-                        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
-                           CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,U_VALUE,mh,nh,ms,ns,ng, &
-                            & wSUPG,wPSPG,wLSIC,ERR,ERROR,*999)
-                        ENDIF
-
                         !Laplace only matrix
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !LAPLACE TYPE 
@@ -4275,12 +4241,6 @@ CONTAINS
                             ENDDO !x 
                             !Calculate MATRIX  
                             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
-                            
-                            !SUPG/PSPG
-                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                               & (wSUPG + wPSPG)*(SUM*JGW)
-                            ENDIF
                           END IF
                         END IF
                         !General matrix
@@ -4299,12 +4259,6 @@ CONTAINS
                               !Calculate MATRIX
                               STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) &
                                & +SUM*JGW
-
-                              !SUPG/PSPG
-                              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                                 & (wSUPG + wPSPG)*(SUM*JGW)
-                              ENDIF
                            END IF
                           END IF
                         END IF
@@ -4340,12 +4294,6 @@ CONTAINS
                             ENDDO !ni
                             !Calculate MATRIX
                             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
-
-                            !LSIC
-                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                               & (wLSIC)*(SUM*JGW)
-                            ENDIF
                           END IF
                         END IF
                         !Damping matrix
@@ -4361,12 +4309,6 @@ CONTAINS
                               SUM=PHIMS*PHINS*RHO_PARAM
                               !Calculate MATRIX
                               DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
-
-                              !SUPG/PSPG
-                              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                                DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                                 & (wSUPG + wPSPG)*(SUM*JGW)
-                              ENDIF
                             END IF
                           END IF
                         END IF
@@ -4527,7 +4469,6 @@ CONTAINS
               !Calculate nonlinear vector
               IF(UPDATE_NONLINEAR_RESIDUAL) THEN
                 mhs=0
-
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -4549,14 +4490,6 @@ CONTAINS
                     !note mh value derivative 
                     SUM=0.0_DP
 
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
-                      ! Calculate SUPG/PSPG/LSIC terms if necessary
-                      CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,U_VALUE,mh,0,ms,0,ng, &
-                       & wSUPG,wPSPG,wLSIC,ERR,ERROR,*999)
-                    ENDIF
-
                     DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                       SUM=SUM+RHO_PARAM*(PHIMS)*( & 
                         & (U_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
@@ -4565,14 +4498,18 @@ CONTAINS
                     ENDDO !ni
                     NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
 
-                    !SUPG/PSPG
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+ &
-                       & (wSUPG + wPSPG)*(SUM*JGW)
-                    ENDIF
                   ENDDO !ms
                 ENDDO !mh
               ENDIF
+            ENDIF
+
+            !------------------------------------------------------------------
+            ! R e s i d u a l - b a s e d    S t a b i l i s a t i o n
+            !------------------------------------------------------------------
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+              CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ng,MU_PARAM,RHO_PARAM,.FALSE.,ERR,ERROR,*999)
             ENDIF
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4871,7 +4808,7 @@ CONTAINS
                 DO mhs=mhs_min+1,mhs_max
                   DO nhs=1,nhs_min
                     !Transpose pressure type entries for mass equation  
-                    STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(nhs,mhs)
+                    STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=-STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(nhs,mhs)
                   END DO
                 END DO
               ENDIF
@@ -4937,7 +4874,6 @@ CONTAINS
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,Q_DERIV,A_VALUE,A_DERIV,Q_BIF,A_BIF
     REAL(DP) :: momentum1,momentum2,mass,penaltyCoeff
-    REAL(DP) :: wSUPG,wPSPG,wLSIC
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H0_PARAM,H0_DERIV,alpha,beta
     REAL(DP) :: startTime,stopTime,currentTime,timeIncrement
     REAL(DP), POINTER :: dependentParameters(:)
@@ -5227,90 +5163,83 @@ CONTAINS
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                           SUM=0.0_DP
-                          IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
-                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+!                           IF( EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+!                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE .OR. &
+!                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
 
-                            CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,U_VALUE,mh,nh,ms,ns,ng, &
-                             & wSUPG,wPSPG,wLSIC,ERR,ERROR,*999)
+!                            !Add SUPG weighting terms
+!                            IF(UPDATE_JACOBIAN_MATRIX) THEN
+!                              !Calculate J1 only
+!                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+!                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS)*RHO_PARAM)
+!                              ENDDO 
+!                               !Calculate MATRIX  
+! !                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+! !                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                               JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+!                                & +SUM*JGW
+!                               !Calculate J2 only
+!                               IF(nh==mh) THEN 
+!                                 SUM=0.0_DP
+!                                 !Calculate SUM 
+!                                 DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+!                                   DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+!                                     SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS)
+!                                   ENDDO !mi
+!                                 ENDDO !x
+!                                 ! DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+!                                 !   DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+!                                 !     SUM=SUM+RHO_PARAM*(U_VALUE(mh))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS)
+!                                 !   ENDDO !mi
+!                                 ! ENDDO !x
+!                                 !Calculate MATRIX
+! !                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+! !                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+!                                  & +SUM*JGW
+!                               END IF
+!                             END IF
 
-                           !Add SUPG weighting terms
-                           IF(UPDATE_JACOBIAN_MATRIX) THEN
-                             !Calculate J1 only
-                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS)*RHO_PARAM)
-                             ENDDO 
-                              !Calculate MATRIX  
-!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                               & +SUM*JGW
-
-                              !SUPG/PSPG
-                              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) + &
-                                 & (wSUPG + wPSPG)*(SUM*JGW)
-                              ENDIF
-
-                              !Calculate J2 only
-                              IF(nh==mh) THEN 
-                                SUM=0.0_DP
-                                !Calculate SUM 
-                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                    SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS)
-                                  ENDDO !mi
-                                ENDDO !x
-                                !Calculate MATRIX
-!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                                 & +SUM*JGW
-
-                                !SUPG/PSPG
-                                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) + &
-                                   & (wSUPG + wPSPG)*(SUM*JGW)
-                                ENDIF
-!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) = JACOBIAN_MATRIX%ELEMENT_JACOBIAN% &
-!                                 & MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
-                            END IF
-
-                          ELSE
+!                           ELSE
                           !Normal Galerkin weighting
-                            IF(UPDATE_JACOBIAN_MATRIX) THEN
-                              !Calculate J1 only
-                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
-                              ENDDO 
-                              !Calculate MATRIX  
+                          IF(UPDATE_JACOBIAN_MATRIX) THEN
+                            !Calculate J1 only
+                            DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                              SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
+                            ENDDO 
+                            !Calculate MATRIX  
 !                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
 !                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                               & +SUM*JGW
-                              !Calculate J2 only
-                              IF(nh==mh) THEN 
-                                SUM=0.0_DP
-                                !Calculate SUM 
-                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                    SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
-                                  ENDDO !mi
-                                ENDDO !x
-                                !Calculate MATRIX
+                            JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                             & +SUM*JGW
+                            !Calculate J2 only
+                            IF(nh==mh) THEN 
+                              SUM=0.0_DP
+                              !Calculate SUM 
+                              DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                  SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
+                                ENDDO !mi
+                              ENDDO !x
+                              !Calculate MATRIX
 !                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
 !                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-                                 & +SUM*JGW
-                              END IF
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
                             END IF
-                          END IF !if SUPG
+                          END IF
+!                          END IF !if SUPG
                         ENDDO !ns    
                       ENDDO !nh
                     ENDIF
                   ENDDO !ms
                 ENDDO !mh
+                ! Stabilisation terms
+                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE) THEN
+                  CALL NavierStokes_SUPGCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ng,MU_PARAM,RHO_PARAM,.TRUE.,ERR,ERROR,*999)
+                ENDIF
               END IF
 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -6362,7 +6291,7 @@ CONTAINS
                                               ALLOCATE(qSpline(numberOfSourceTimesteps))
                                               nodeData = 0.0_DP                                            
                                               ! Read in time and dependent value
-                                              DO timeIdx=1,timeData(1)
+                                              DO timeIdx=1,numberOfSourceTimesteps
                                                 READ(10,*) (nodeData(timeIdx,component_idx), component_idx=1,2)
                                               ENDDO
                                               CLOSE(UNIT=10)
@@ -10503,29 +10432,22 @@ CONTAINS
   !
 
   !>Update SUPG parameters for Navier-Stokes equation
-  SUBROUTINE NavierStokes_SUPGCalculate(equationsSet,elementNumber,velocityGauss,mh,nh,ms,ns,gaussIndex, &
-   & wSUPG,wPSPG,wLSIC,err,error,*)
+  SUBROUTINE NavierStokes_SUPGCalculate(equationsSet,elementNumber,gaussNumber,mu,rho,jacobianFlag,err,error,*)
 
     !Argument variables                               
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to perform the finite element calculations on
     INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number
-    INTEGER(INTG), INTENT(IN) :: mh !<The row spatial component
-    INTEGER(INTG), INTENT(IN) :: nh !<The column spatial component
-    INTEGER(INTG), INTENT(IN) :: ms !<The row basis parameter number
-    INTEGER(INTG), INTENT(IN) :: ns !<The column basis parameter number
-    INTEGER(INTG), INTENT(IN) :: gaussIndex !<The gauss point number
+    INTEGER(INTG), INTENT(IN) :: gaussNumber !<The gauss point number
+    REAL(DP), INTENT(IN) :: mu !<The dynamic viscosity
+    REAL(DP), INTENT(IN) :: rho !<The fluid density
+    LOGICAL, INTENT(IN) ::  jacobianFlag !<Flag indicating whether this was called from the jacobian or residual evaluation routine
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    REAL(DP), INTENT(IN) :: velocityGauss(:) !<The interpolated velocity at this gauss point
-    REAL(DP), INTENT(OUT):: wSUPG !<The SUPG weighting term
-    REAL(DP), INTENT(OUT):: wPSPG !<The PSPG weighting term
-    REAL(DP), INTENT(OUT):: wLSIC !<The LSIC weighting term
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
     !Local Variables                        
-    REAL(DP), POINTER :: geometricParameters(:)
     TYPE(DOMAIN_TYPE), POINTER :: domain
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
-    TYPE(BASIS_TYPE), POINTER :: basisVelocity,basisPressure,geometricBasis
+    TYPE(BASIS_TYPE), POINTER :: basisVelocity,basisPressure
     TYPE(EQUATIONS_TYPE), POINTER :: equations
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
@@ -10533,30 +10455,42 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: quadratureVelocity,quadraturePressure
     TYPE(FIELD_TYPE), POINTER :: dependentField,geometricField
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: dampingMatrix
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: jacobianMatrix
 
-    INTEGER(INTG) :: gaussIdx,parameterIdx
     INTEGER(INTG) :: fieldVariableType,meshComponent1,meshComponent2
-    INTEGER(INTG) :: numberOfDimensions
-    INTEGER(INTG) :: numberOfLines,elementLineIdx,lineNumber
-    INTEGER(INTG) :: i,j
-    REAL(DP) :: dPhims_dXi_space1,dPhims_dXi_space2,dPhins_dXi_space1,dPhins_dXi_space2
-    REAL(DP) :: mu,rho,lengthScale,cellReynoldsNumber
-    REAL(DP) :: sumLengths,velocity(3),sumVelocity(3),velocityScale,avgVelocity(3),DXI_DX(3,3)
-    REAL(DP) :: magnitudeVelocity,maxVelocity,lineLength
-    REAL(DP) :: uDotGu,doubleDotG,tauSUPS,traceG,nuLSIC,timeIncrement,C1
+    INTEGER(INTG) :: numberOfDimensions,dimensionIdx,dimensionIdx2,mh,nj,ni
+    INTEGER(INTG) :: numberOfLines,elementLineIdx,lineNumber,numberOfElementNodes
+    INTEGER(INTG) :: i,j,k,l,m,nodeNumber,component,mhs,nhs,ms,ns,incompressibilityIdx,nh,pressureIndex
+    INTEGER(INTG) :: numberOfElementParameters(4)
+    REAL(DP) :: PHIMS,PHINS
+    REAL(DP) :: DPHINS2_DXI(3,3)
+    REAL(DP) :: lengthScale,cellReynoldsNumber
+    REAL(DP) :: dPhi_dX_Velocity(27,3),dPhi_dX_Pressure(27,3)
+    REAL(DP) :: jacobianMomentumVelocity(3),jacobianMomentumPressure(3),jacobianContinuityVelocity
+    REAL(DP) :: jacobianMomentum(3),jacobianContinuity,jacobianMomentumStrong(4,4)
+    REAL(DP) :: sumLengths,sumVelocity(3),velocityScale,avgVelocity(3),DXI_DX(3,3)
+    REAL(DP) :: velocity(3),velocityPrevious(3),velocityDeriv(3,3),velocity2Deriv(3,3,3),pressure,pressureDeriv(3)
+    REAL(DP) :: magnitudeVelocity,maxVelocity,lineLength,JGW,SUM,wSUPG,wPSPG,wLSIC,dPSPG,dLSIC,dSUPG
+    REAL(DP) :: uDotGu,doubleDotG,tauSUPS,traceG,nuLSIC,timeIncrement,C1,A,B,C,dTauSUPS(3),dNuLSIC(3)
+    REAL(DP) :: residualMomentum(3),residualContinuity,denominator,numerator(3)
+    REAL(DP) :: transient_ResM(3),pressure_ResM(3),convective_ResM(3),viscous_ResM(3),viscous_ResM2(3)
+    REAL(DP) :: wBAZ1,wBAZ2,tensorProduct(3,3),momentumTerm,incompressibleTerm,wBAZ1_1,wBAZ1_2,wBAZ2_2,wBAZ2_1
     TYPE(VARYING_STRING) :: localError
+    LOGICAL :: linearElement
 
     CALL ENTERS("NavierStokes_SUPGCalculate",err,error,*999)
 
     ! Nullify all local pointers
-    NULLIFY(geometricParameters)
     NULLIFY(domain)
     NULLIFY(domainNodes)
     NULLIFY(basisVelocity)
     NULLIFY(basisPressure)
-    NULLIFY(geometricBasis)
     NULLIFY(equations)
     NULLIFY(equationsMapping)
     NULLIFY(nonlinearMapping)
@@ -10567,7 +10501,11 @@ CONTAINS
     NULLIFY(dependentField)
     NULLIFY(geometricField)
     NULLIFY(fieldVariable)
-    NULLIFY(geometricVariable)
+    NULLIFY(equationsMatrices)
+    NULLIFY(nonlinearMatrices)
+    NULLIFY(dynamicMatrices)
+    NULLIFY(dampingMatrix)
+    NULLIFY(jacobianMatrix)
 
     IF(ASSOCIATED(equationsSet))THEN
       SELECT CASE(equationsSet%SUBTYPE)
@@ -10578,103 +10516,477 @@ CONTAINS
         IF(ASSOCIATED(equations)) THEN
           !Set general and specific pointers
           equationsMapping=>equations%EQUATIONS_MAPPING
+          equationsMatrices=>equations%EQUATIONS_MATRICES
+          dynamicMatrices=>equationsMatrices%DYNAMIC_MATRICES
+          dampingMatrix=>dynamicMatrices%MATRICES(2)%PTR
           nonlinearMapping=>equationsMapping%NONLINEAR_MAPPING
+          nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+          jacobianMatrix=>nonlinearMatrices%JACOBIANS(1)%PTR
           fieldVariable=>nonlinearMapping%RESIDUAL_VARIABLES(1)%PTR
           fieldVariableType=fieldVariable%VARIABLE_TYPE
+          geometricField=>equations%INTERPOLATION%GEOMETRIC_FIELD
+          numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
           equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
           meshComponent1=fieldVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          meshComponent2=fieldVariable%COMPONENTS(2)%MESH_COMPONENT_NUMBER
+          meshComponent2=fieldVariable%COMPONENTS(fieldVariable%NUMBER_OF_COMPONENTS)%MESH_COMPONENT_NUMBER
           dependentField=>equations%INTERPOLATION%DEPENDENT_FIELD
           basisVelocity=>dependentField%DECOMPOSITION%DOMAIN(meshComponent1)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
           basisPressure=>dependentField%DECOMPOSITION%DOMAIN(meshComponent2)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
+
+          IF (basisVelocity%INTERPOLATION_ORDER(1)==1) THEN
+            linearElement = .TRUE.
+          ELSE
+            ! higher order element type- can calculate 2nd order terms
+            linearElement = .FALSE.
+          ENDIF
+
           quadratureVelocity=>basisVelocity%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           quadraturePressure=>basisPressure%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           IF(ASSOCIATED(equationsEquationsSetField)) THEN
             equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
             IF(ASSOCIATED(equationsSetField)) THEN
 
-              !--------------------------------------------------
-              ! S t a b i l i z a t i o n    P a r a m e t e r s 
-              !--------------------------------------------------
-              ! SUPG: Streamline upwind/Petrov-Galerkin
-              ! PSPG: Pressure stabilising Petrov-Galerkin
-              ! LSIC: Least-squares incompressibility constraint
+              ! Get previous timestep values
+              velocityPrevious=0.0_DP
+              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_PREVIOUS_VALUES_SET_TYPE,elementNumber,equations% &
+               & INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussNumber,EQUATIONS%INTERPOLATION% &
+               & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              DO i=1,numberOfDimensions
+                velocityPrevious(i)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,NO_PART_DERIV)
+              ENDDO
+              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,EQUATIONS%INTERPOLATION% &
+               & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)              
+              IF (linearElement) THEN
+                ! Get 1st order derivatives for current timestep value
+                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussNumber,EQUATIONS%INTERPOLATION% &
+                 & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              ELSE
+                ! Get 2nd order derivatives for current timestep value
+                CALL FIELD_INTERPOLATE_GAUSS(SECOND_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussNumber,EQUATIONS%INTERPOLATION%&
+                 & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                ! CALL FIELD_INTERPOLATE_GAUSS(SECOND_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussNumber,EQUATIONS%INTERPOLATION%&
+                !  & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              ENDIF
+
+              velocity=0.0_DP
+              velocityDeriv=0.0_DP
+              velocity2Deriv=0.0_DP
+              pressure=0.0_DP
+              pressureDeriv=0.0_DP
+              DO i=1,numberOfDimensions
+                velocity(i)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,NO_PART_DERIV)
+                velocityDeriv(i,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,PART_DERIV_S1)
+                velocityDeriv(i,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,PART_DERIV_S2)
+                ! geomDeriv(i,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,PART_DERIV_S1)
+                ! geomDeriv(i,2)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,PART_DERIV_S2)
+                IF (.NOT. linearElement) THEN
+                  velocity2Deriv(i,1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                   & VALUES(i,PART_DERIV_S1_S1)
+                  velocity2Deriv(i,1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                   & VALUES(i,PART_DERIV_S1_S2)
+                  velocity2Deriv(i,2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                   & VALUES(i,PART_DERIV_S1_S2)
+                  velocity2Deriv(i,2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                   & VALUES(i,PART_DERIV_S2_S2)
+                  ! geom2Deriv(i,1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(fieldVariableType)%PTR% &
+                  !  & VALUES(i,PART_DERIV_S1_S1)
+                  ! geom2Deriv(i,1,2)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(fieldVariableType)%PTR% &
+                  !  & VALUES(i,PART_DERIV_S1_S2)
+                  ! geom2Deriv(i,2,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(fieldVariableType)%PTR% &
+                  !  & VALUES(i,PART_DERIV_S1_S2)
+                  ! geom2Deriv(i,2,2)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(fieldVariableType)%PTR% &
+                  !  & VALUES(i,PART_DERIV_S2_S2)
+                ENDIF
+                IF (numberOfDimensions > 2) THEN
+                  ! TODO generalise geom2Deriv for 3D
+                  velocityDeriv(i,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,PART_DERIV_S3)
+                  IF (.NOT. linearElement) THEN                  
+                    velocity2Deriv(i,1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                     & VALUES(i,PART_DERIV_S1_S3)
+                    velocity2Deriv(i,2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                     & VALUES(i,PART_DERIV_S2_S3)
+                    velocity2Deriv(i,3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                     & VALUES(i,PART_DERIV_S1_S3)
+                    velocity2Deriv(i,3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                     & VALUES(i,PART_DERIV_S2_S3)
+                    velocity2Deriv(i,3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR% &
+                     & VALUES(i,PART_DERIV_S3_S3)
+                  ENDIF
+                ENDIF
+              ENDDO
+              pressureIndex = numberOfDimensions + 1
+              pressure=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(pressureIndex,NO_PART_DERIV)
+              pressureDeriv(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)% &
+               & PTR%VALUES(pressureIndex,PART_DERIV_S1)
+              pressureDeriv(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)% &
+               & PTR%VALUES(pressureIndex,PART_DERIV_S2)
+              IF (numberOfDimensions > 2) THEN
+                pressureDeriv(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)% &
+                 & PTR%VALUES(pressureIndex,PART_DERIV_S3)
+              ENDIF
+              DXI_DX=0.0_DP
+              DO i=1,numberOfDimensions
+                DO j=1,numberOfDimensions
+                  DXI_DX(j,i)=equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                    & DXI_DX(j,i)
+                ENDDO
+              ENDDO
+              ! Get time step size and calc time derivative
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 3,timeIncrement,err,error,*999)
+              !DEBUG
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 4,A,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 5,B,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 6,C,err,error,*999)
+              ! Get number of element parameters for each dependent component
+              numberOfElementParameters=0.0_DP
+              DO i=1,numberOfDimensions
+                numberOfElementParameters(i)=basisVelocity%NUMBER_OF_ELEMENT_PARAMETERS              
+              ENDDO
+              numberOfElementParameters(numberOfDimensions+1)=basisPressure%NUMBER_OF_ELEMENT_PARAMETERS              
+              ! Calculate dPhi/dX
+              dPhi_dX_Velocity=0.0_DP
+              dPhi_dX_Pressure=0.0_DP
+              DO ms=1,numberOfElementParameters(1)
+                DO nj=1,numberOfDimensions
+                  dPhi_dX_Velocity(ms,nj)=0.0_DP
+                  DO ni=1,numberOfDimensions
+                    dPhi_dX_Velocity(ms,nj)=dPhi_dX_Velocity(ms,nj) + &
+                     & quadratureVelocity%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),gaussNumber)* &
+                     & DXI_DX(ni,nj)
+                  ENDDO
+                ENDDO
+              ENDDO
+              DO ms=1,numberOfElementParameters(numberOfDimensions+1)
+                DO nj=1,numberOfDimensions
+                  dPhi_dX_Pressure(ms,nj)=0.0_DP
+                  DO ni=1,numberOfDimensions
+                    dPhi_dX_Pressure(ms,nj)=dPhi_dX_Pressure(ms,nj) + &
+                     & quadraturePressure%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),gaussNumber)* &
+                     & DXI_DX(ni,nj)
+                  ENDDO
+                ENDDO
+              ENDDO
+
+              !----------------------------------------------------------------------------------
+              ! C a l c u l a t e   d i s c r e t e   r e s i d u a l s 
+              !----------------------------------------------------------------------------------
+              SUM = 0.0_DP
+              residualMomentum = 0.0_DP
+              residualContinuity = 0.0_DP
+              transient_ResM = 0.0_DP
+              pressure_ResM = 0.0_DP
+              convective_ResM = 0.0_DP
+              viscous_ResM = 0.0_DP
+              ! Calculate momentum residual
+              DO i=1,numberOfDimensions    
+                SUM = 0.0_DP
+                ! velocity time derivative              
+                SUM = rho*(velocity(i)-velocityPrevious(i))/timeIncrement
+                DO j=1,numberOfDimensions
+                  ! pressure gradient
+                  SUM = SUM + pressureDeriv(j)*DXI_DX(j,i)
+                  DO k=1,numberOfDimensions
+                    !Convective term
+                    SUM = SUM +rho*((velocity(j))*(velocityDeriv(i,k)*DXI_DX(k,j)))
+                    IF (.NOT. linearElement) THEN
+                      DO l=1,numberOfDimensions
+                        ! viscous stress: only if quadratic or higher basis defined
+                        SUM = SUM - mu*(velocity2Deriv(i,k,l)*DXI_DX(k,j)*DXI_DX(l,j))
+                        ! gradient transpose of viscous stress
+                        SUM = SUM - mu*(velocity2Deriv(j,k,l)*DXI_DX(k,i)*DXI_DX(l,j))                        
+                      ENDDO
+                    ENDIF
+                  ENDDO
+                ENDDO
+                residualMomentum(i) = SUM
+              ENDDO
+              ! Calculate continuity residual
+              SUM = 0.0_DP
+              DO i=1,numberOfDimensions
+                DO j=1,numberOfDimensions
+                  SUM= SUM + velocityDeriv(i,j)*DXI_DX(j,i)
+                ENDDO
+              ENDDO
+              residualContinuity = SUM
+
+              !----------------------------------------------------------
+              ! S t a b i l i z a t i o n    C o n s t a n t s    (Taus)
+              !----------------------------------------------------------
               pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-              !CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)                  
               uDotGu = 0.0_DP
               DO i=1,numberOfDimensions
                 DO j=1,numberOfDimensions
-                  uDotGu = uDotGu + velocityGauss(i)*pointMetrics%GU(i,j)*velocityGauss(j)
+                  uDotGu = uDotGu + velocity(i)*pointMetrics%GU(i,j)*velocity(j)
                 ENDDO
               ENDDO
               doubleDotG = 0.0_DP
               DO i=1,numberOfDimensions
                 DO j=1,numberOfDimensions
                   doubleDotG = doubleDotG + pointMetrics%GU(i,j)*pointMetrics%GU(i,j)
-                  DXI_DX(j,i)=equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-                    & DXI_DX(j,i)
                 ENDDO
               ENDDO
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & 3,timeIncrement,err,error,*999)
-              !TODO: fix C1!
-              C1=36.0_DP
-              mu=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              rho=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+              IF (linearElement) THEN
+                C1=3.0_DP
+              ELSE
+                IF (numberOfDimensions==2 .AND. basisVelocity%NUMBER_OF_ELEMENT_PARAMETERS==9 &
+                  & .AND. basisVelocity%INTERPOLATION_ORDER(1)==2) THEN
+                  C1=24.0_DP
+                !TODO: Expand C1 for multiple element types
+                ELSE
+                  CALL FLAG_ERROR("Element inverse estimate undefined on element " &
+                   & //TRIM(NUMBER_TO_VSTRING(elementNumber,"*",err,error)),err,error,*999)                              
+                ENDIF
+              ENDIF
               ! Calculate tauSUPS (used for both PSPG and SUPG weights)
-              tauSUPS = ((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + C1*((mu/rho)**2.0_DP)*doubleDotG)**(-0.5_DP)
+              tauSUPS = ((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(-0.5_DP)
+
+              ! Calculate derivative of tauSUPS wrt U for Jacobian terms
+              dTauSUPS = 0.0_DP
+              ! denominator after performing chain rule:
+              denominator = 2.0_DP*((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(1.5_DP)
+              ! numerator: d/du(uDotGu)
+              numerator = 0.0_DP
+              DO i=1,numberOfDimensions
+                DO j=1,numberOfDimensions
+                  DO k=1,numberOfDimensions
+                    IF (j==i .AND. k==i) THEN
+                      numerator(i) = numerator(i) + 2.0_DP*velocity(i)*pointMetrics%GU(j,k)
+                    ELSE IF (j==i) THEN
+                      numerator(i) = numerator(i) + velocity(k)*pointMetrics%GU(j,k)
+                    ELSE IF (k==i) THEN
+                      numerator(i) = numerator(i) + velocity(j)*pointMetrics%GU(j,k)
+                    ENDIF
+                  ENDDO
+                ENDDO
+              ENDDO
+              dTauSUPS = -numerator/denominator
+
               ! Calculate nu_LSIC (Least-squares incompressibility constraint)
               traceG = 0.0_DP
               DO i=1,numberOfDimensions
                 traceG = traceG + pointMetrics%GU(i,i)
               ENDDO
-              nuLSIC = 1.0_DP/(tauSUPS*traceG)
+              nuLSIC = 1.0_DP/(tauSUPS*traceG)            
+              ! Calculate derivative of nuLSIC wrt U for Jacobian terms
+              dNuLSIC = numerator/(2.0_DP*traceG)*tauSUPS
 
-              ! Calculate weights for 
-              wSUPG=0.0_DP
-              wPSPG=0.0_DP 
-              wLSIC=0.0_DP 
-              DO i=1,numberOfDimensions
-                dPhims_dXi_space1=quadratureVelocity%GAUSS_BASIS_FNS(ms, &
-                 & PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(i),gaussIndex)
-                dPhims_dXi_space2=quadraturePressure%GAUSS_BASIS_FNS(ms, &
-                 & PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(i),gaussIndex)
-                ! ns > 0 for matrix contributions, only rows in nonlinear vector (i.e. convective term)
-                IF (ns > 0) THEN
-                    dPhins_dXi_space1=quadratureVelocity%GAUSS_BASIS_FNS(ns, &
-                     & PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(i),gaussIndex)
-                    dPhins_dXi_space2=quadraturePressure%GAUSS_BASIS_FNS(ns, &
-                     & PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(i),gaussIndex)
-                    ! Calculate SUPG weighting term
-                    wSUPG=wSUPG + (velocityGauss(1)*dPhims_dXi_space1*DXI_DX(i,1) + &
-                                 & velocityGauss(2)*dPhims_dXi_space1*DXI_DX(i,2) + &
-                                 & velocityGauss(3)*dPhims_dXi_space1*DXI_DX(i,3) + &
-                                 & velocityGauss(1)*dPhins_dXi_space1*DXI_DX(i,1) + &
-                                 & velocityGauss(2)*dPhins_dXi_space1*DXI_DX(i,2) + &
-                                 & velocityGauss(3)*dPhins_dXi_space1*DXI_DX(i,3))*tauSUPS/2.0_DP
-                    ! Calculate LSIC weighting term
-                    wLSIC=wLSIC+(dPhims_dXi_space1*DXI_DX(i,mh) + &
-                               & dPhins_dXi_space1*DXI_DX(i,nh))*nuLSIC*rho/2.0_DP
-                    ! Calculate PSPG weighting term
-                    wPSPG=wPSPG+(dPhins_dXi_space2*DXI_DX(i,nh) + &
-                               & dPhims_dXi_space2*DXI_DX(i,mh))*tauSUPS/(2.0_DP*rho)
-                ELSE
-                    ! Calculate SUPG weighting term
-                    wSUPG=wSUPG+((velocityGauss(1)*dPhims_dXi_space1*DXI_DX(i,1))+ &
-                               & (velocityGauss(2)*dPhims_dXi_space1*DXI_DX(i,2))+ &
-                               & (velocityGauss(3)*dPhims_dXi_space1*DXI_DX(i,3)))*tauSUPS
-                    ! Calculate PSPG weighting term (no LSIC for convective term)
-                    wPSPG=wPSPG+(dPhims_dXi_space2*DXI_DX(i,mh))*tauSUPS/rho
-                ENDIF
-              END DO !ni
+              !-------------------------------------------------------------------------------------
+              ! A d d   S t a b i l i z a t i o n    w e i g h t s   t o     m a t r i c e s
+              !-------------------------------------------------------------------------------------
+              mhs = 0
+              jacobianMomentumPressure = 0.0_DP
+              jacobianMomentumVelocity = 0.0_DP
+              jacobianMomentum = 0.0_DP
+              jacobianContinuityVelocity = 0.0_DP
+              jacobianContinuity = 0.0_DP
+
+              DO mh=1,numberOfDimensions+1
+                DO ms=1,numberOfElementParameters(mh)
+                  mhs = mhs + 1
+                  IF (mh <= numberOfDimensions) THEN
+                    PHIMS=quadratureVelocity%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,gaussNumber)
+                    JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+                      & quadratureVelocity%GAUSS_WEIGHTS(gaussNumber)
+                  ELSE
+                    PHIMS=quadraturePressure%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,gaussNumber)
+                    JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+                      & quadraturePressure%GAUSS_WEIGHTS(gaussNumber)
+                  ENDIF
+
+                  ! J A C O B I A N 
+                  IF (jacobianFlag) THEN
+                    nhs = 0
+                    DO nh=1,numberOfDimensions+1
+                      DO ns=1,numberOfElementParameters(nh)
+                        nhs=nhs+1
+                        ! Note that we still need to assemble the vector momentum jacobian for PSPG in the continuity row
+                        IF (nh <= numberOfDimensions) THEN
+                          PHINS=quadratureVelocity%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,gaussNumber)
+                        ELSE
+                          PHINS=quadraturePressure%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,gaussNumber)
+                        ENDIF
+                        ! Calculate discrete jacobians
+                        jacobianMomentum = 0.0_DP
+                        IF (nh == numberOfDimensions+1) THEN
+                          ! d(Momentum(mh))/d(Pressure)
+                          DO i=1,numberOfDimensions
+                            jacobianMomentumPressure(i) = dPhi_dX_Pressure(ns,i)
+                          ENDDO
+                          jacobianMomentum=jacobianMomentumPressure
+                          jacobianContinuity=0.0_DP
+                        ELSE
+                          DPHINS2_DXI=0.0_DP
+                          ! TODO: set this up for 3D
+                          IF (.NOT. linearElement) THEN
+                            DPHINS2_DXI(1,1)=quadratureVelocity%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,gaussNumber)
+                            DPHINS2_DXI(1,2)=quadratureVelocity%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S2,gaussNumber)
+                            DPHINS2_DXI(2,1)=quadratureVelocity%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S2,gaussNumber)
+                            DPHINS2_DXI(2,2)=quadratureVelocity%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S2,gaussNumber)
+                          ENDIF
+                          ! d(Momentum)/d(Velocity(nh))
+                          jacobianMomentumVelocity = 0.0_DP
+                          DO i=1,numberOfDimensions 
+                            SUM = 0.0_DP
+                            !Note: Convective term split using product rule
+                            !Convective term 1: applies to all velocity components
+                            DO j=1,numberOfDimensions
+                              SUM = SUM + rho*PHINS*velocityDeriv(i,j)*DXI_DX(j,nh)
+                            ENDDO
+                            IF (i==nh) THEN
+                              !Transient
+                              SUM = SUM + rho*PHINS/timeIncrement
+                              !Convective 2: nh component only
+                              DO j=1,numberOfDimensions
+                                SUM = SUM + rho*velocity(j)*dPhi_dX_Velocity(ns,j)
+                              ENDDO
+                              IF (.NOT. linearElement) THEN
+                                !Viscous laplacian term
+                                DO j=1,numberOfDimensions
+                                  DO k=1,numberOfDimensions
+                                    DO l=1,numberOfDimensions
+                                      SUM=SUM-mu*DPHINS2_DXI(k,l)*DXI_DX(k,j)*DXI_DX(l,j)
+                                      IF (j==i) THEN
+                                        SUM=SUM-mu*DPHINS2_DXI(k,l)*DXI_DX(k,j)*DXI_DX(l,j)
+                                      ENDIF
+                                    ENDDO 
+                                  ENDDO 
+                                ENDDO 
+                              ENDIF
+                            ELSE
+                              IF (.NOT. linearElement) THEN
+                                !Viscous gradient transpose term
+                                DO j=1,numberOfDimensions                              
+                                  DO k=1,numberOfDimensions
+                                    SUM=SUM-mu*DPHINS2_DXI(j,k)*DXI_DX(k,i)*DXI_DX(j,nh)
+                                  ENDDO
+                                ENDDO
+                              ENDIF
+                            ENDIF
+                            jacobianMomentumVelocity(i)=SUM
+                          ENDDO
+                          jacobianMomentum=jacobianMomentumVelocity
+                          ! Continuity/velocity
+                          jacobianContinuityVelocity= dPhi_dX_Velocity(ns,nh)
+                          jacobianContinuity=jacobianContinuityVelocity
+                        ENDIF
+
+                        ! Apply RBVM factors
+
+                        ! PSPG: Pressure stabilising Petrov-Galerkin
+                        IF (mh == numberOfDimensions+1) THEN
+                          dPSPG = 0.0_DP
+                          wPSPG = 0.0_DP
+                          DO i=1,numberOfDimensions
+                            dPSPG = dPSPG + dPhi_dX_Pressure(ms,i)*jacobianMomentum(i)
+                          ENDDO
+                          ! tau and dPhi.residual terms split using product rule
+                          SUM = tauSUPS*dPSPG/rho
+
+                          ! DO i=1,numberOfDimensions
+                          !   wPSPG = wPSPG + dPhi_dX_Pressure(ms,i)*residualMomentum(i)
+                          ! ENDDO
+                          ! IF (nh <= numberOfDimensions) THEN
+                          !   !(d(tau)/d(U(nh)))*wPSPG (will be 0 for pressure column)
+                          !   SUM = SUM + dTauSUPS(nh)*wPSPG/rho
+                          ! ENDIF
+
+                          SUM = A*SUM*JGW
+                          jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM
+
+                        ! SUPG: Streamline upwind/Petrov-Galerkin
+                        ! LSIC: Least-squares incompressibility constraint
+                        ELSE
+                          wSUPG=0.0_DP
+                          wLSIC=0.0_DP
+                          SUM=0.0_DP
+
+                          ! product rule of residual and SUPG terms
+                          IF (nh <= numberOfDimensions) THEN
+                            wSUPG= wSUPG + PHINS*dPhi_dX_Velocity(ms,nh)*residualMomentum(mh)                            
+                          ENDIF
+                          DO i=1,numberOfDimensions
+                            SUM = SUM + velocity(i)*dPhi_dX_Velocity(ms,i)
+                          ENDDO
+                          wSUPG = wSUPG + SUM*jacobianMomentum(mh)
+                          wSUPG = wSUPG*tauSUPS
+!                          wLSIC = nuLSIC*rho*dPhi_dX_Velocity(ms,mh)*jacobianContinuity                        
+                          SUM=0.0_DP
+                          DO i=1,numberOfDimensions
+                            SUM = SUM + dPhi_dX_Velocity(ms,i)
+                          ENDDO
+                          !wLSIC = nuLSIC*rho*SUM*jacobianContinuity                        
+                          wLSIC = nuLSIC*rho*dPhi_dX_Velocity(ms,mh)*jacobianContinuity                        
+
+                          IF (elementNumber > 383) THEN
+                            ! DEBUG: checkpoint for 20x20 grid
+                            SUM = 0.0_DP
+                          ENDIF
+
+!                          momentumTerm = (B*(wSUPG + wLSIC) + C*(wBAZ1 + wBAZ2))*JGW
+                          momentumTerm = (B*wSUPG + C*wLSIC)*JGW
+                          jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
+                           & momentumTerm
+
+                        ENDIF
+                      ENDDO
+                    ENDDO                    
+
+                  ! R E S I D U A L
+                  ELSE
+                    ! PSPG: Pressure stabilising Petrov-Galerkin
+                    IF (mh == numberOfDimensions+1) THEN
+                      wPSPG = 0.0_DP
+                      DO i=1,numberOfDimensions
+                        wPSPG = wPSPG + dPhi_dX_Pressure(ms,i)*residualMomentum(i)
+                      ENDDO
+                      wPSPG = A*wPSPG*(tauSUPS/rho)*JGW
+                      nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs)= &
+                       & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs) + wPSPG
+
+                    ! SUPG: Streamline upwind/Petrov-Galerkin
+                    ! LSIC: Least-squares incompressibility constraint
+                    ELSE
+                      wSUPG=0.0_DP
+                      wLSIC=0.0_DP
+                      SUM=0.0_DP
+                      DO i=1,numberOfDimensions
+                        SUM = SUM + velocity(i)*dPhi_dX_Velocity(ms,i)
+                      ENDDO
+                      wSUPG = wSUPG + tauSUPS*SUM*residualMomentum(mh)
+                      SUM=0.0_DP
+                      DO i=1,numberOfDimensions
+                        SUM = SUM + dPhi_dX_Velocity(ms,i)
+                      ENDDO
+                      !wLSIC = nuLSIC*rho*SUM*residualContinuity                        
+                      wLSIC = nuLSIC*rho*dPhi_dX_Velocity(ms,mh)*residualContinuity                        
+
+                      IF (elementNumber > 383) THEN
+                        ! DEBUG: checkpoint for 20x20 grid
+                        SUM = 0.0_DP
+                      ENDIF
+
+!                      momentumTerm = (B*(wSUPG + wLSIC) + C*(wBAZ1 + wBAZ2))*JGW
+                      momentumTerm = (B*wSUPG + C*wLSIC)*JGW
+                      nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs)= &
+                       & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs) + momentumTerm
+
+                    ENDIF
+                  ENDIF ! jacobian/residual
+                END DO !ms
+              END DO !mh
 
               ! -----------------------------------------
               ! E l e m e n t    S c a l e s
               ! -----------------------------------------
               !Calculate element scales (e.g., cell Reynolds #) if this is the first gauss point for this element
-              IF(gaussIndex==10000) THEN
+              IF(gaussNumber==1) THEN
                 lengthScale=0.0_DP
                 CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                  & elementNumber,1,lengthScale,err,error,*999)                
@@ -10682,20 +10994,12 @@ CONTAINS
                 IF(lengthScale<=ZERO_TOLERANCE) THEN
                   lengthScale=0.0_DP
                   lineLength=0.0_DP
-                  geometricField=>equations%INTERPOLATION%GEOMETRIC_FIELD
-                  ! geometricBasis=>geometricField%DECOMPOSITION%DOMAIN(geometricField%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                  !   & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
-                  ! CALL FIELD_VARIABLE_GET(geometricField,FIELD_U_VARIABLE_TYPE,geometricVariable,err,error,*999)
-                  ! !Get the geometric distributed vector
-                  ! CALL FIELD_PARAMETER_SET_DATA_GET(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  !   & geometricParameters,err,error,*999)
-                  numberOfDimensions=fieldVariable%NUMBER_OF_COMPONENTS - 1
-
                   !Loop over element lines to get longest line
                   numberOfLines=SIZE(geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES)
                   sumLengths = 0.0_DP
                   DO elementLineIdx=1,numberOfLines
-                    lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES(elementLineIdx)
+                    lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)% &
+                     & ELEMENT_LINES(elementLineIdx)
                     lineLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
                     IF (lineLength < -ZERO_TOLERANCE) THEN
                        CALL FLAG_WARNING("Negative line length detected",err,error,*999)
@@ -10716,46 +11020,28 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                     & elementNumber,4,0.0_DP,err,error,*999)
 
-                  !Restore the geometric distributed vector
-                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(geometricField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & geometricParameters,err,error,*999)
                 ENDIF !lengthScale not already calculated
 
                 maxVelocity=0.0_DP
                 velocity=0.0_DP
-                !Calculate element-based velocity metrics
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
-                  & DEPENDENT_INTERP_PARAMETERS(fieldVariableType)%PTR,err,error,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
-                  & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
-                  & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
                 sumVelocity = 0.0_DP
-                DO gaussIdx=1,quadratureVelocity%NUMBER_OF_GAUSS
-                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx,equations%INTERPOLATION% &
-                    & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
-                  velocity(1)=equations%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                  velocity(2)=equations%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                  IF(fieldVariable%NUMBER_OF_COMPONENTS==4) THEN
-                    velocity(3)=equations%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% & 
-                     & VALUES(3,NO_PART_DERIV)
-                  ELSE
-                    velocity(3)=0.0_DP
-                  END IF
+                numberOfElementNodes=SIZE(geometricField%decomposition%domain(1)%ptr%topology% &
+                 & elements%elements(elementNumber)%element_nodes)
+                velocity=0.0_DP
+                DO nodeNumber=1,numberOfElementNodes
+                  DO component=1,numberOfDimensions
+                    CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                     & 1,1,nodeNumber,component,velocity(component),err,error,*999)         
+                  ENDDO
                   sumVelocity = sumVelocity + velocity
                   magnitudeVelocity=L2NORM(velocity)
                   maxVelocity=MAX(magnitudeVelocity,maxVelocity) !maximum velocity magnitude over all gauss points
-                END DO !gaussIdx
+                ENDDO
                 avgVelocity = 0.0_DP
                 velocityScale = 0.0_DP
-                avgVelocity = sumVelocity/quadratureVelocity%NUMBER_OF_GAUSS
+                avgVelocity = sumVelocity/numberOfElementNodes
                 velocityScale = L2NORM(avgVelocity)
 
-                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,1,equations%INTERPOLATION% &
-                  & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
-                !Materials parameters
-                mu=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                rho=equations%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
                 !store umax for later metric calculation (e.g. courant #)
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                  & elementNumber,2,velocityScale,err,error,*999)
