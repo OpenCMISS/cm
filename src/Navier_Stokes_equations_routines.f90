@@ -4490,12 +4490,22 @@ CONTAINS
                     !note mh value derivative 
                     SUM=0.0_DP
 
+                    ! Convective form
                     DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                       SUM=SUM+RHO_PARAM*(PHIMS)*( & 
                         & (U_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
                         & (U_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
                         & (U_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
                     ENDDO !ni
+
+                    ! ! Additional terms for Conservative form
+                    ! DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                    !   SUM=SUM+RHO_PARAM*(PHIMS)*( & 
+                    !     & (U_VALUE(mh))*(U_DERIV(1,ni)*DXI_DX(ni,1))+ &
+                    !     & (U_VALUE(mh))*(U_DERIV(2,ni)*DXI_DX(ni,2))+ &
+                    !     & (U_VALUE(mh))*(U_DERIV(3,ni)*DXI_DX(ni,3)))
+                    ! ENDDO !ni
+
                     NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
 
                   ENDDO !ms
@@ -5208,8 +5218,6 @@ CONTAINS
                               SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
                             ENDDO 
                             !Calculate MATRIX  
-!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
                              & +SUM*JGW
                             !Calculate J2 only
@@ -5222,13 +5230,26 @@ CONTAINS
                                 ENDDO !mi
                               ENDDO !x
                               !Calculate MATRIX
-!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                               JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
                                & +SUM*JGW
                             END IF
+
+                            ! !Additional conservative terms
+                            ! SUM=0.0_DP
+                            ! IF(nh==mh) THEN 
+                            !   DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                            !     DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                            !       SUM=SUM+(PHINS*U_DERIV(x,ni)*DXI_DX(ni,x)*PHIMS*RHO_PARAM)
+                            !     ENDDO 
+                            !   ENDDO
+                            ! ENDIF
+                            ! DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                            !   SUM=SUM+RHO_PARAM*U_VALUE(mh)*DPHINS_DXI(ni)*DXI_DX(ni,nh)*PHIMS
+                            ! ENDDO
+                            ! !CALCULATE MATRIX  
+                            ! JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                            !  & +SUM*JGW
                           END IF
-!                          END IF !if SUPG
                         ENDDO !ns    
                       ENDDO !nh
                     ENDIF
@@ -10463,7 +10484,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: dampingMatrix
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: jacobianMatrix
 
-    INTEGER(INTG) :: fieldVariableType,meshComponent1,meshComponent2
+    INTEGER(INTG) :: fieldVariableType,meshComponent1,meshComponent2,meshComponent
     INTEGER(INTG) :: numberOfDimensions,dimensionIdx,dimensionIdx2,mh,nj,ni
     INTEGER(INTG) :: numberOfLines,elementLineIdx,lineNumber,numberOfElementNodes
     INTEGER(INTG) :: i,j,k,l,m,nodeNumber,component,mhs,nhs,ms,ns,incompressibilityIdx,nh,pressureIndex
@@ -10471,7 +10492,7 @@ CONTAINS
     REAL(DP) :: PHIMS,PHINS
     REAL(DP) :: DPHINS2_DXI(3,3)
     REAL(DP) :: lengthScale,cellReynoldsNumber
-    REAL(DP) :: dPhi_dX_Velocity(27,3),dPhi_dX_Pressure(27,3)
+    REAL(DP) :: dPhi_dX_Velocity(27,3),dPhi_dX_Pressure(27,3),G(3,3)
     REAL(DP) :: jacobianMomentumVelocity(3),jacobianMomentumPressure(3),jacobianContinuityVelocity
     REAL(DP) :: jacobianMomentum(3),jacobianContinuity,jacobianMomentumStrong(4,4)
     REAL(DP) :: sumLengths,sumVelocity(3),velocityScale,avgVelocity(3),DXI_DX(3,3)
@@ -10700,7 +10721,7 @@ CONTAINS
                         ! viscous stress: only if quadratic or higher basis defined
                         SUM = SUM - mu*(velocity2Deriv(i,k,l)*DXI_DX(k,j)*DXI_DX(l,j))
                         ! gradient transpose of viscous stress
-                        SUM = SUM - mu*(velocity2Deriv(j,k,l)*DXI_DX(k,i)*DXI_DX(l,j))                        
+                        ! SUM = SUM - mu*(velocity2Deriv(j,k,l)*DXI_DX(k,i)*DXI_DX(l,j))                        
                       ENDDO
                     ENDIF
                   ENDDO
@@ -10720,6 +10741,15 @@ CONTAINS
               ! S t a b i l i z a t i o n    C o n s t a n t s    (Taus)
               !----------------------------------------------------------
               pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
+              G = 0.0_DP
+              DO i=1,numberOfDimensions
+                DO j=1,numberOfDimensions
+                  DO k=1,numberOfDimensions                   
+                    G(i,j) = G(i,j) + pointMetrics%DXI_DX(k,i)*pointMetrics%DXI_DX(k,j)
+                  ENDDO
+                ENDDO
+              ENDDO
+                  
               uDotGu = 0.0_DP
               DO i=1,numberOfDimensions
                 DO j=1,numberOfDimensions
@@ -10747,26 +10777,26 @@ CONTAINS
               ! Calculate tauSUPS (used for both PSPG and SUPG weights)
               tauSUPS = ((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(-0.5_DP)
 
-              ! Calculate derivative of tauSUPS wrt U for Jacobian terms
-              dTauSUPS = 0.0_DP
-              ! denominator after performing chain rule:
-              denominator = 2.0_DP*((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(1.5_DP)
-              ! numerator: d/du(uDotGu)
-              numerator = 0.0_DP
-              DO i=1,numberOfDimensions
-                DO j=1,numberOfDimensions
-                  DO k=1,numberOfDimensions
-                    IF (j==i .AND. k==i) THEN
-                      numerator(i) = numerator(i) + 2.0_DP*velocity(i)*pointMetrics%GU(j,k)
-                    ELSE IF (j==i) THEN
-                      numerator(i) = numerator(i) + velocity(k)*pointMetrics%GU(j,k)
-                    ELSE IF (k==i) THEN
-                      numerator(i) = numerator(i) + velocity(j)*pointMetrics%GU(j,k)
-                    ENDIF
-                  ENDDO
-                ENDDO
-              ENDDO
-              dTauSUPS = -numerator/denominator
+              ! ! Calculate derivative of tauSUPS wrt U for Jacobian terms
+              ! dTauSUPS = 0.0_DP
+              ! ! denominator after performing chain rule:
+              ! denominator = 2.0_DP*((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(1.5_DP)
+              ! ! numerator: d/du(uDotGu)
+              ! numerator = 0.0_DP
+              ! DO i=1,numberOfDimensions
+              !   DO j=1,numberOfDimensions
+              !     DO k=1,numberOfDimensions
+              !       IF (j==i .AND. k==i) THEN
+              !         numerator(i) = numerator(i) + 2.0_DP*velocity(i)*pointMetrics%GU(j,k)
+              !       ELSE IF (j==i) THEN
+              !         numerator(i) = numerator(i) + velocity(k)*pointMetrics%GU(j,k)
+              !       ELSE IF (k==i) THEN
+              !         numerator(i) = numerator(i) + velocity(j)*pointMetrics%GU(j,k)
+              !       ENDIF
+              !     ENDDO
+              !   ENDDO
+              ! ENDDO
+              ! dTauSUPS = -numerator/denominator
 
               ! Calculate nu_LSIC (Least-squares incompressibility constraint)
               traceG = 0.0_DP
@@ -10775,7 +10805,7 @@ CONTAINS
               ENDDO
               nuLSIC = 1.0_DP/(tauSUPS*traceG)            
               ! Calculate derivative of nuLSIC wrt U for Jacobian terms
-              dNuLSIC = numerator/(2.0_DP*traceG)*tauSUPS
+              !dNuLSIC = numerator/(2.0_DP*traceG)*tauSUPS
 
               !-------------------------------------------------------------------------------------
               ! A d d   S t a b i l i z a t i o n    w e i g h t s   t o     m a t r i c e s
@@ -10852,22 +10882,22 @@ CONTAINS
                                   DO k=1,numberOfDimensions
                                     DO l=1,numberOfDimensions
                                       SUM=SUM-mu*DPHINS2_DXI(k,l)*DXI_DX(k,j)*DXI_DX(l,j)
-                                      IF (j==i) THEN
-                                        SUM=SUM-mu*DPHINS2_DXI(k,l)*DXI_DX(k,j)*DXI_DX(l,j)
-                                      ENDIF
+                                      ! IF (j==i) THEN
+                                      !   SUM=SUM-mu*DPHINS2_DXI(k,l)*DXI_DX(k,j)*DXI_DX(l,j)
+                                      ! ENDIF
                                     ENDDO 
                                   ENDDO 
                                 ENDDO 
                               ENDIF
                             ELSE
-                              IF (.NOT. linearElement) THEN
-                                !Viscous gradient transpose term
-                                DO j=1,numberOfDimensions                              
-                                  DO k=1,numberOfDimensions
-                                    SUM=SUM-mu*DPHINS2_DXI(j,k)*DXI_DX(k,i)*DXI_DX(j,nh)
-                                  ENDDO
-                                ENDDO
-                              ENDIF
+                              ! IF (.NOT. linearElement) THEN
+                              !   !Viscous gradient transpose term
+                              !   DO j=1,numberOfDimensions                              
+                              !     DO k=1,numberOfDimensions
+                              !       SUM=SUM-mu*DPHINS2_DXI(j,k)*DXI_DX(k,i)*DXI_DX(j,nh)
+                              !     ENDDO
+                              !   ENDDO
+                              ! ENDIF
                             ENDIF
                             jacobianMomentumVelocity(i)=SUM
                           ENDDO
@@ -10905,9 +10935,11 @@ CONTAINS
                         ELSE
                           wSUPG=0.0_DP
                           wLSIC=0.0_DP
+                          wBAZ1=0.0_DP
+                          wBAZ2=0.0_DP
                           SUM=0.0_DP
 
-                          ! product rule of residual and SUPG terms
+                          ! CB VECTOR FORMULATION
                           IF (nh <= numberOfDimensions) THEN
                             wSUPG= wSUPG + PHINS*dPhi_dX_Velocity(ms,nh)*residualMomentum(mh)                            
                           ENDIF
@@ -10924,13 +10956,18 @@ CONTAINS
                           !wLSIC = nuLSIC*rho*SUM*jacobianContinuity                        
                           wLSIC = nuLSIC*rho*dPhi_dX_Velocity(ms,mh)*jacobianContinuity                        
 
+                          IF (ABS(wBAZ1 + wBAZ2) > 0.5_DP*(ABS(wSUPG + wLSIC))) THEN
+                            ! DEBUG: checkpoint for when BAZ terms dominate
+                            SUM = 0.0_DP
+                          ENDIF
+
                           IF (elementNumber > 383) THEN
                             ! DEBUG: checkpoint for 20x20 grid
                             SUM = 0.0_DP
                           ENDIF
 
-!                          momentumTerm = (B*(wSUPG + wLSIC) + C*(wBAZ1 + wBAZ2))*JGW
-                          momentumTerm = (B*wSUPG + C*wLSIC)*JGW
+                          momentumTerm = (B*(wSUPG + wLSIC) + C*(wBAZ1 + wBAZ2))*JGW
+!                          momentumTerm = (B*wSUPG + C*wLSIC)*JGW
                           jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
                            & momentumTerm
 
@@ -10956,24 +10993,77 @@ CONTAINS
                       wSUPG=0.0_DP
                       wLSIC=0.0_DP
                       SUM=0.0_DP
+
+                      SUM=0.0_DP
+                      ! CARTESIAN BASIS VECTOR
+                      ! DO i=1,numberOfDimensions
+                      !   SUM = SUM + dPhi_dX_Velocity(ms,i)*residualMomentum(i)
+                      ! ENDDO
+                      ! wSUPG = wSUPG + tauSUPS*SUM*velocity(mh)
+
+                      SUM=0.0_DP
                       DO i=1,numberOfDimensions
                         SUM = SUM + velocity(i)*dPhi_dX_Velocity(ms,i)
                       ENDDO
                       wSUPG = wSUPG + tauSUPS*SUM*residualMomentum(mh)
-                      SUM=0.0_DP
-                      DO i=1,numberOfDimensions
-                        SUM = SUM + dPhi_dX_Velocity(ms,i)
-                      ENDDO
-                      !wLSIC = nuLSIC*rho*SUM*residualContinuity                        
+
                       wLSIC = nuLSIC*rho*dPhi_dX_Velocity(ms,mh)*residualContinuity                        
+
+                      ! Additional terms (see Bazilevs 2013 textbook & Akkerman 2008)
+                      wBAZ1 = 0.0_DP
+                      DO i=1,numberOfDimensions                        
+                        SUM = 0.0_DP
+                        ! dUi/dX(mh)
+                        DO j=1,numberOfDimensions                        
+                          SUM= SUM + velocityDeriv(i,j)*DXI_DX(j,mh)
+                          !SUM= SUM + velocityDeriv(mh,j)*DXI_DX(j,i)
+                        ENDDO
+                        ! rm.dU/dX
+                        wBAZ1= wBAZ1 + residualMomentum(i)*SUM
+                      ENDDO
+                      wBAZ1=-tauSUPS*PHIMS*wBAZ1
+
+                      ! ! Additional terms (see Bazilevs 2007)
+                      ! wBAZ1 = 0.0_DP
+                      ! SUM = 0.0_DP
+                      ! DO i=1,numberOfDimensions                        
+                      !   SUM= SUM + velocity(mh)*dPhi_dX_Velocity(ms,i)*residualMomentum(i)
+                      ! ENDDO
+                      ! wBAZ1=tauSUPS*SUM*wBAZ1
+
+                      tensorProduct = 0.0_DP
+                      ! Tensor product
+                      DO i=1,numberOfDimensions
+                        DO j=1,numberOfDimensions                    
+                          tensorProduct(i,j)=tauSUPS*tauSUPS*residualMomentum(i)*residualMomentum(j)
+                        ENDDO
+                      ENDDO
+                      wBAZ2 = 0.0_DP
+                      !Double-dot
+                      DO i=1,numberOfDimensions
+                        wBAZ2 = wBAZ2 + dPhi_dX_Velocity(ms,i)*tensorProduct(mh,i)
+                        !wBAZ2 = wBAZ2 + dPhi_dX_Velocity(ms,i)*tensorProduct(i,mh)
+                      ENDDO
+                      SUM = -wBAZ2/rho
+
+                      wBAZ2 = 0.0_DP
+                      DO i=1,numberOfDimensions
+                        wBAZ2 = wBAZ2 + dPhi_dX_Velocity(ms,i)*residualMomentum(i)*residualMomentum(mh)
+                      ENDDO
+                      wBAZ2 = -wBAZ2*(tauSUPS*tauSUPS)/rho
+
+                      IF (ABS(wBAZ1 + wBAZ2) > 0.5_DP*(ABS(wSUPG + wLSIC))) THEN
+                        ! DEBUG: checkpoint for when BAZ terms dominate
+                        SUM = 0.0_DP
+                      ENDIF
 
                       IF (elementNumber > 383) THEN
                         ! DEBUG: checkpoint for 20x20 grid
                         SUM = 0.0_DP
                       ENDIF
 
-!                      momentumTerm = (B*(wSUPG + wLSIC) + C*(wBAZ1 + wBAZ2))*JGW
-                      momentumTerm = (B*wSUPG + C*wLSIC)*JGW
+                      momentumTerm = (B*(wSUPG + wLSIC) + C*(wBAZ1 + wBAZ2))*JGW
+!                      momentumTerm = (B*wSUPG + C*wLSIC)*JGW
                       nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                        & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs) + momentumTerm
 
