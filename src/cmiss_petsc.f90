@@ -3676,7 +3676,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-    TYPE(MatColoring) :: COLORING
+    MatColoring :: COLORING
 #endif
 
     CALL ENTERS("PETSC_MATGETCOLORING",ERR,ERROR,*999)
