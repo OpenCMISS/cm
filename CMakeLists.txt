@@ -12,6 +12,9 @@ SET(IRON_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 INCLUDE(${IRON_MODULES}/MacroDefinitions.cmake)
 INCLUDE(${IRON_MODULES}/CompileFlags.cmake)
 
+# See http://cmake.3232098.n2.nabble.com/How-to-install-Fortran-module-files-td7584399.html
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_modules)
+
 # External components
 # MPI
 find_package(MPI REQUIRED)
@@ -59,9 +62,10 @@ if (PYTHONINTERP_FOUND)
     set(OPENCMISS_H ${CMAKE_CURRENT_BINARY_DIR}/opencmiss.h)
     set(OPENCMISS_C_F90 ${CMAKE_CURRENT_BINARY_DIR}/opencmiss_c.f90)
     set_source_files_properties(${OPENCMISS_C_F90} PROPERTIES GENERATED TRUE)
-    add_custom_target(bindings 
+    add_custom_command(OUTPUT ${OPENCMISS_H} ${OPENCMISS_C_F90}
         COMMAND ${PYTHON_EXECUTABLE} generate_bindings ${CMAKE_CURRENT_SOURCE_DIR} C ${OPENCMISS_H} ${OPENCMISS_C_F90}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bindings)
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bindings
+        COMMENT "Generating Iron C-bindings")
     set(HAVE_BINDINGS TRUE)
 else()
     message(WARNING "No Python interpreter found. Unable to generate C bindings for Iron.")
@@ -117,11 +121,6 @@ ELSE()
   endif()
   target_include_directories(iron PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
   target_link_libraries(iron ${LINK_LIBS})
-  
-  if (HAVE_BINDINGS)
-      add_dependencies(iron bindings)
-  endif()
-  
 ENDIF()
 
 # Install steps
@@ -134,8 +133,10 @@ include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake COMPATIBILITY AnyNewerVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake DESTINATION ${PACKAGE_CONFIG_DIR})      
 
-FILE(GLOB OPENCMISS_MODS ${CMAKE_BINARY_DIR}/*.mod)
-INSTALL(FILES ${OPENCMISS_MODS} DESTINATION include)
+# Install fortran modules
+INSTALL(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
+     DESTINATION include
+)
 
 if (HAVE_BINDINGS)
     INSTALL(FILES ${OPENCMISS_H} DESTINATION include)
