@@ -1,5 +1,7 @@
 IF(${OPERATING_SYSTEM} MATCHES linux)# Linux
     SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_linux.f90)
+ELSEIF(${OPERATING_SYSTEM} MATCHES darwin)
+    SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_linux.f90)
 ELSEIF(${OPERATING_SYSTEM} MATCHES aix)#AIX
     SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_aix.f90)
 ELSE(${OPERATING_SYSTEM} MATCHES linux)# windows

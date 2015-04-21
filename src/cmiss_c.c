@@ -59,7 +59,7 @@ void CMISSSetFatalHandler(void);
 void CMISSInitFatalHandler(void);
 
 /* Internal functions */
-
+/*
 static void CMISSFatalHandler(int sig,
 #  if defined (sun)
                          siginfo_t *sip,
@@ -68,7 +68,7 @@ static void CMISSFatalHandler(int sig,
 			 int code,
 			 struct sigcontext *sc);
 #  endif
-
+*/
 /* Static variables */
 
 /* static sigjmp_buf jump_buffer; */ 
