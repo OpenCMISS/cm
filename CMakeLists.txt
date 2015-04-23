@@ -135,8 +135,8 @@ ENDIF()
 # Install steps
 INSTALL(TARGETS iron
       EXPORT iron-config
-      DESTINATION lib/opencmiss
-      INCLUDES DESTINATION include/opencmiss/iron)
+      DESTINATION lib/opencmiss)
+#      INCLUDES DESTINATION include/opencmiss/iron)
 #INSTALL(FILES ${HEADER_SOURCE_INC} DESTINATION include)
 install(EXPORT iron-config DESTINATION ${PACKAGE_CONFIG_DIR})
 include(CMakePackageConfigHelpers)
