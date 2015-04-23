@@ -1682,7 +1682,6 @@ CONTAINS
     INTEGER(INTG) :: j,ne,ne1,nep1,ni,nic,nn,nn1,nn2,nn3,np,np1,DUMMY_ERR,FACE_XI(2),FACE_XIC(3),NODE_POSITION_INDEX(4)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
     INTEGER(INTG) :: candidate_idx,face_node_idx,node_idx,surrounding_el_idx,candidate_el,idx
-    !INTEGER(INTG) :: SURROUNDING_ELEMENTS(300) !Fixed size array... should be large enough
     INTEGER(INTG) :: NUMBER_SURROUNDING,NUMBER_OF_NODES_XIC(4), count, i
     INTEGER(INTG), ALLOCATABLE :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
     LOGICAL :: XI_COLLAPSED,FACE_COLLAPSED(-3:3),SUBSET
@@ -1860,7 +1859,6 @@ CONTAINS
                                 IF(candidate_el/=ne) THEN
                                   candidate_idx=candidate_idx+1
                                   CALL LIST_ITEM_ADD(SURROUNDING_ELEMENTS,candidate_el,ERR,ERROR,*999)
-                                  !SURROUNDING_ELEMENTS(candidate_idx)=candidate_el
                                 ENDIF
                               ENDDO
                             ENDDO !face_node_idx
