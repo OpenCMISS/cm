@@ -2778,9 +2778,9 @@ CONTAINS
       PIOLA_TENSOR = PIOLA_TENSOR + 2.0_DP*p*Jznu*AZU   ! is Jznu required here, or is it omitted everywhere else?
 
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) THEN
-        !Sander Arens: add active contraction stress values
         !the active stress is stored inside the independent field that has been set up in the user program.
-        !for generality we could set up 3 components in independent field for 3 different active stress components
+        !for better generality we could set up 3 components in independent field for 3 different active stress components,
+        !but only one component is implemented so far for fibre active tension.
         CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
         DO i=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           dof_idx=FIELD_VARIABLE%COMPONENTS(i)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
