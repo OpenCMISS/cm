@@ -1861,7 +1861,8 @@ CONTAINS
                                 ENDIF
                               ENDDO
                             ENDDO !face_node_idx
-                            CALL LIST_DETACH_AND_DESTROY(surroundingElementsList,numberSurroundingElements,surroundingElements,ERR,ERROR,*999)
+                            CALL LIST_DETACH_AND_DESTROY(surroundingElementsList,numberSurroundingElements,surroundingElements, &
+                              & ERR,ERROR,*999)
                             DO idx=1,candidate_idx
                               ne1=surroundingElements(idx)
                               IF(COUNT(surroundingElements(1:numberSurroundingElements)==ne1)>=BASIS%NUMBER_OF_XI) THEN
