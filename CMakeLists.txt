@@ -4,18 +4,21 @@ cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 project(Iron VERSION 0.4.0 LANGUAGES C Fortran)
 
 option(WITH_CELLML "Build iron with CellML support" ON)
-option(WITH_FIELDML "Build iron with FieldML support" ON)
-#option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
+option(WITH_FIELDML "Build iron with FieldML support" OFF)
+option(WITH_HYPRE "Build iron with HYPRE integration" ON)
+option(WITH_SUNDIALS "Build iron with SUNDIALS integration" ON)
+option(WITH_MUMPS "Build iron with MUMPS integration" ON)
+option(WITH_SCALAPACK "Build iron with SCALAPACK integration" ON)
+option(WITH_PETSC "Build iron with PETSC integration" ON)
+option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
 set(PACKAGE_CONFIG_DIR "cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
 
 # Config
 # See http://cmake.3232098.n2.nabble.com/How-to-install-Fortran-module-files-td7584399.html
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_modules)
 SET(CMAKE_NO_SYSTEM_FROM_IMPORTED TRUE)
-SET(IRON_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
-LIST(APPEND CMAKE_MODULE_PATH
-    ${IRON_MODULES}
-)
+# Have cmake find our own scripts
+LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 INCLUDE(MacroDefinitions)
 INCLUDE(CompileFlags)
@@ -24,125 +27,107 @@ INCLUDE(CompileFlags)
 # MPI
 find_package(MPI REQUIRED)
 
+# Collect libraries to configure for/link against
 SET(LINK_LIBS )
-# CellML
-message(STATUS "===${WITH_CELLML}===")
-message(STATUS "===${WITH_FIELDML}===")
 if (WITH_CELLML)
     find_package(LIBCELLML CONFIG REQUIRED)
     find_package(CELLML-API CONFIG REQUIRED)
+    message(STATUS "Building with CELLML (${LIBCELLML_DIR})")
     LIST(APPEND LINK_LIBS cellml cellml_model_definition)
 endif()
-# FieldML
 if (WITH_FIELDML)
+    message(STATUS "Building with FIELDML (${FIELDML_DIR})")
     find_package(FIELDML REQUIRED)
     LIST(APPEND LINK_LIBS fieldml_api fieldml_io_api)
 endif()
-
-# Other Dependencies
+# This include file is in the main "manage" directory.
+# We can include this here as iron is an integrated part of the overall build system.
 include(Variables)
 SET(DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK) #BLACS
 foreach(DEP ${DEPS})
-    # Look for config-aware implementations first
-    find_package(${DEP} CONFIG QUIET)
-    if (NOT ${DEP}_FOUND)
-        message(STATUS "===${DEP}===")
-        FIND_PACKAGE(${DEP} REQUIRED)
-        INCLUDE_DIRECTORIES(${${DEP}_INCLUDES})
-    else()
-        message(STATUS "===CONFIG=${DEP}=${${DEP}_FOUND}= ===${${DEP}_TARGETS}===")
-        LIST(APPEND LINK_LIBS ${${DEP}_TARGETS})
+    if (WITH_${DEP})
+        # Look for config-aware implementations first
+        find_package(${DEP} CONFIG QUIET)
+        if (NOT ${DEP}_FOUND)
+            #message(STATUS "=== Looking for ${DEP} - (wrapper) module mode ===")
+            find_package(${DEP} REQUIRED)
+            # This is probably not a complete list of variables that might be set by module-mode package finds :-(
+            INCLUDE_DIRECTORIES(${${DEP}_INCLUDES} ${${DEP}_INCLUDE_DIRS} ${${DEP}_INCLUDE_DIRECTORY})
+            message(STATUS "Building with ${DEP} (${${DEP}_LIBRARIES}})")
+        else()
+            message(STATUS "Building with ${DEP} (${${DEP}_DIR})")
+            #message(STATUS "${DEP} targets===CONFIG=${DEP}=${${DEP}_FOUND}= ===${${DEP}_TARGETS}===")
+            LIST(APPEND LINK_LIBS ${${DEP}_TARGETS})
+        endif()
     endif()
 endforeach()
-message("Iron link libaries: ${LINK_LIBS}")
-set(_expected_target)
-set(_found_target)
-set(_missing_target)
-foreach(_link_lib ${LINK_LIBS})
-    list(APPEND _expected_target ${_link_lib})
-    if(TARGET ${_link_lib})
-list(APPEND _found_target ${_link_lib})
-else()
-list(APPEND _missing_target ${_link_lib})
-endif()
-endforeach()
-message(STATUS "==${_found_target}=")
-message(STATUS "==${_missing_target}=")
-unset(_expected_target)
+#message("Iron link libaries: ${LINK_LIBS}")
+#set(_expected_target)
+#set(_found_target)
+#set(_missing_target)
+#foreach(_link_lib ${LINK_LIBS})
+#    list(APPEND _expected_target ${_link_lib})
+#    if(TARGET ${_link_lib})
+#list(APPEND _found_target ${_link_lib})
+#else()
+#list(APPEND _missing_target ${_link_lib})
+#endif()
+#endforeach()
+#message(STATUS "==${_found_target}=")
+#message(STATUS "==${_missing_target}=")
+#unset(_expected_target)
 #unset(_found_target)
-unset(_missing_target)
+#unset(_missing_target)
 
 # Config
-SET(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+#SET(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 #SET(HEADER_INC_NAME opencmiss.h)
 #SET(HEADER_SOURCE_INC ${SOURCE_DIR}/${HEADER_INC_NAME})
 SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 
-# Remove some source files from compilation
-FILE(GLOB IRON_SOURCES ${SOURCE_DIR}/*.*)
-INCLUDE(Entries)
-FOREACH(infileName ${EXCLUDED_ROUTINES})
-    FILE(GLOB infileName ${infileName}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
-    IF (infileName) # if file was found
-        LIST(REMOVE_ITEM IRON_SOURCES ${infileName})
-    ENDIF (infileName)
-ENDFOREACH(infileName)
-
-# how portable is dumpversion?
-execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -dumpversion OUTPUT_VARIABLE Fortran_COMPILER_VERSION)
-string(STRIP ${Fortran_COMPILER_VERSION} Fortran_COMPILER_VERSION)
-
-# Libraries / targets
+# Populates the IRON_XX_SRC variables
+include(Sources)
 IF(WIN32)
-  # Need separate C/Fortran code due to Project natures in VS
-  FILE(GLOB OPENCMISS_FORTRAN_SRCS ${SOURCE_DIR}/*.f90)
-  FILE(GLOB OPENCMISS_C_SRCS ${SOURCE_DIR}/*.c)
-  FILE(GLOB OPENCMISS_C_HEADER ${SOURCE_DIR}/*.h)
-  LIST(APPEND OPENCMISS_C_SRCS ${OPENCMISS_C_HEADER})
-
-  INCLUDE(Entries)
-  FOREACH(infileName ${EXCLUDED_ROUTINES})
-    LIST(REMOVE_ITEM OPENCMISS_FORTRAN_SRCS ${infileName})
-    LIST(REMOVE_ITEM OPENCMISS_C_SRCS ${infileName})
-  ENDFOREACH(infileName)
-
-  # ? maybe use object target an then combine to one target..
-  ADD_LIBRARY(iron_Fortran ${OPENCMISS_FORTRAN_SRCS})
-  target_include_directories(iron_Fortran PUBLIC ${MPI_Fortran_INCLUDE_PATH})
-  if (WITH_CELLML)
-      target_compile_definitions(iron_Fortran PUBLIC USECELLML)
-  endif()
-  ADD_LIBRARY(iron_C ${OPENCMISS_C_SRCS})
-  if (WITH_CELLML)
-      target_compile_definitions(iron_C PUBLIC USECELLML)
-  endif()
-  target_include_directories(iron_C PUBLIC ${MPI_C_INCLUDE_PATH})
-
+    # Need separate C/Fortran code due to Project natures in VS
+    add_library(iron_Fortran ${IRON_Fortran_SRC})
+    add_library(iron_C ${IRON_C_SRC})
+    set(IRON_TARGETS iron_Fortran iron_C) 
+    # Add joining library to have the "iron" target in each case 
+    add_library(iron <$TARGET_OBJECTS:iron_Fortran> <$TARGET_OBJECTS:iron_C>)
 ELSE()
-
-  ADD_LIBRARY(iron ${IRON_SOURCES})
-  if (WITH_CELLML)
-      target_compile_definitions(iron PUBLIC USECELLML)
-  endif()
-  if (WITH_FIELDML)
-      target_compile_definitions(iron PUBLIC USEFIELDML)
-  endif()
-  target_include_directories(iron PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
-  target_include_directories(iron INTERFACE $<INSTALL_INTERFACE:fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron>)
-  target_link_libraries(iron PRIVATE ${_found_target}) # ${LINK_LIBS})
+    add_library(iron ${IRON_SRC})
+    set(IRON_TARGETS iron)
 ENDIF()
+# Set the same stuff for either the separate targets (windows) or one target (else)
+foreach(irontarget ${IRON_TARGETS})
+    target_include_directories(${irontarget} PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
+    if (WITH_CELLML)
+        target_compile_definitions(${irontarget} PUBLIC USECELLML)
+    endif()
+    if (WITH_FIELDML)
+        target_compile_definitions(${irontarget} PUBLIC USEFIELDML)
+    endif()
+    target_link_libraries(${irontarget} PRIVATE ${LINK_LIBS}) # ${LINK_LIBS})
+endforeach()
+#target_include_directories(iron INTERFACE $<INSTALL_INTERFACE:fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron>)
+#target_include_directories(iron PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
 
 # Install steps
 INSTALL(TARGETS iron
       EXPORT iron-config
-      DESTINATION lib/opencmiss)
-#      INCLUDES DESTINATION include/opencmiss/iron)
+      DESTINATION lib
+      INCLUDES DESTINATION include/iron)
 #INSTALL(FILES ${HEADER_SOURCE_INC} DESTINATION include)
+
 install(EXPORT iron-config DESTINATION ${PACKAGE_CONFIG_DIR})
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake COMPATIBILITY AnyNewerVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake DESTINATION ${PACKAGE_CONFIG_DIR})
 
+# Install fortran modules
 FILE(GLOB OPENCMISS_MODS ${CMAKE_Fortran_MODULE_DIRECTORY}/*.mod)
-INSTALL(FILES ${OPENCMISS_MODS} DESTINATION fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron)
 
+# how portable is dumpversion? NOT portable - and we have a toolchain architecture path segment
+#execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -dumpversion OUTPUT_VARIABLE Fortran_COMPILER_VERSION)
+#string(STRIP ${Fortran_COMPILER_VERSION} Fortran_COMPILER_VERSION)
+INSTALL(FILES ${OPENCMISS_MODS} DESTINATION include/iron) #fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron
