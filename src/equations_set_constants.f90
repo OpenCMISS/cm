@@ -357,7 +357,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   !>@}
 
  
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes EQUATIONS_SET_CONSTANTS::TimeDepedenceTypes
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDependenceTypes EQUATIONS_SET_CONSTANTS::TimeDependenceTypes
   !> \brief The equations time dependence type parameters
   !> \see EQUATIONS_SET_CONSTANTS,OPENCMISS_EquationsTimeDependenceTypes
   !>@{
@@ -493,6 +493,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateConstant=16 !< A fourier decomposed flow waveform for boundary conditions
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile=17 !< Spline integration of dependent values specified in a file
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen=18 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart=19 !< A fourier decomposed flow waveform for boundary conditions
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DarcyAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DarcyAnalyticFunctionTypes
   !> \brief The analytic function types for a Darcy equation

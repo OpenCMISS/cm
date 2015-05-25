@@ -4678,7 +4678,7 @@ CONTAINS
                             
                                       ! Check whether boundary node    
                                       IF(domainNodes%NODES(npg)%BOUNDARY_NODE)THEN
-                                        CALL LinkedList_Add(list(columns(columnIdx)),local_ny)
+                                        CALL LinkedList_Add(list(columns(columnIdx)),local_ny,ERR,ERROR,*999)
                                       ENDIF
                                     
                                     ENDDO !columnIdx
@@ -4873,7 +4873,7 @@ CONTAINS
                             
                                       ! Check whether boundary node    
                                       IF(domainNodes%NODES(npg)%BOUNDARY_NODE)THEN
-                                        CALL LinkedList_Add(list(columns(columnIdx)),localDofIdx)
+                                        CALL LinkedList_Add(list(columns(columnIdx)),localDofIdx,err,error,*999)
                                       ENDIF
                                     
                                     ENDDO !columnIdx

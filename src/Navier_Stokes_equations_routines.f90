@@ -4936,6 +4936,7 @@ CONTAINS
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
               alpha=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+              G0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(8,NO_PART_DERIV)
               A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               A0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -5004,14 +5005,20 @@ CONTAINS
                         END IF
 
                         !!!-- S T I F F N E S S  M A T R I X --!!!
-                        IF(UPDATE_STIFFNESS_MATRIX) THEN
-                          !Mass Equation, dQ/dX
-                          IF(mh==2 .AND. nh==1) THEN 
-                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS      !Flow derivative
+                        IF (UPDATE_STIFFNESS_MATRIX) THEN
+                          !Momentum Equation, gravitational force
+                          IF (mh==1 .AND. nh==2) THEN 
+                            SUM=PHINS*PHIMS*G0_PARAM
                             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
                               & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
-                          END IF
-                        END IF
+                          ENDIF
+                          !Mass Equation, dQ/dX, flow derivative
+                          IF (mh==2 .AND. nh==1) THEN 
+                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
+                              & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
+                          ENDIF
+                        ENDIF
 
                       ENDDO !ns    
                     ENDDO !nh
@@ -5051,9 +5058,15 @@ CONTAINS
               lastNode=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(numberOfElementNodes)
               !Get material constants
               CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2, &
-               & RHO_PARAM,err,error,*999)
+                & RHO_PARAM,err,error,*999)
               CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
-               & pExternal,err,error,*999)
+                & pExternal,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,5, &
+                & Lref,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
+                & Tref,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,7, &
+                & Mref,err,error,*999)
 
               !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
               !Loop over the element nodes and versions
@@ -5072,10 +5085,10 @@ CONTAINS
                 CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
                  & derivativeIdx,nodeNumber,2,E_PARAM,err,error,*999) 
                 CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
-                 & derivativeIdx,nodeNumber,3,H0_PARAM,err,error,*999) 
-                beta=(4.0_DP*(SQRT(PI))*E_PARAM*H0_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
-                !Pressure equation
-                pressure=pExternal+beta*(SQRT(area) - SQRT(A0_PARAM))
+                  & derivativeIdx,nodeNumber,3,H_PARAM,err,error,*999) 
+                beta = (4.0_DP*(SQRT(PI))*E_PARAM*H_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
+                !Pressure equation in mmHg
+                pressure=(pExternal+beta*(SQRT(area)-SQRT(A0_PARAM)))/(Mref/(Lref*Tref**2.0))*0.0075_DP
                 !Update the dependent field
                 IF(ELEMENT_NUMBER<=DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &

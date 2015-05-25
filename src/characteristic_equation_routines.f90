@@ -596,7 +596,7 @@ CONTAINS
           SELECT CASE(equationsSet%SUBTYPE)
           CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
             materialsFieldNumberOfVariables=2 ! U type-7 constant / V type-3 variable
-            materialsFieldNumberOfComponents1=7
+            materialsFieldNumberOfComponents1=8
             materialsFieldNumberOfComponents2=3
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Specify start action
