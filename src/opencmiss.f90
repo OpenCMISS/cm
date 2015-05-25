@@ -2024,15 +2024,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NONLINEAR = EQUATIONS_NONLINEAR !<The equations are non-linear. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NONLINEAR_BCS = EQUATIONS_NONLINEAR_BCS !<The equations have non-linear boundary conditions. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
   !>@}
-  !> \addtogroup OPENCMISS_EquationsTimeDepedenceTypes OPENCMISS::Equations::TimeDepedenceTypes
+  !> \addtogroup OPENCMISS_EquationsTimeDependenceTypes OPENCMISS::Equations::TimeDependenceTypes
   !> \brief The equations time dependence types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_STATIC = EQUATIONS_STATIC !<The equations are static and have no time dependence. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_QUASISTATIC = EQUATIONS_QUASISTATIC !<The equations are quasi-static. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_FIRST_ORDER_DYNAMIC = EQUATIONS_FIRST_ORDER_DYNAMIC !<The equations are first order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SECOND_ORDER_DYNAMIC = EQUATIONS_SECOND_ORDER_DYNAMIC !<The equations are a second order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIME_STEPPING = EQUATIONS_TIME_STEPPING !<The equations are for time stepping. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_STATIC = EQUATIONS_STATIC !<The equations are static and have no time dependence. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_QUASISTATIC = EQUATIONS_QUASISTATIC !<The equations are quasi-static. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_FIRST_ORDER_DYNAMIC = EQUATIONS_FIRST_ORDER_DYNAMIC !<The equations are first order dynamic. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SECOND_ORDER_DYNAMIC = EQUATIONS_SECOND_ORDER_DYNAMIC !<The equations are a second order dynamic. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIME_STEPPING = EQUATIONS_TIME_STEPPING !<The equations are for time stepping. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
   !>@}
   !>@}
 

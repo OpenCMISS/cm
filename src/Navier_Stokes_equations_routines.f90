@@ -480,10 +480,9 @@ CONTAINS
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
-                  & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,& 
-                  & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
+                  & ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
                 DO componentIdx = 1, EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
@@ -519,10 +518,9 @@ CONTAINS
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
-                  & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,& 
-                  & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
+                  & ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
                 ! Element-based fields (lengthScale, velocityScale, cellReynolds#, courant#, boundaryNormal(3), boundaryID)
@@ -1522,6 +1520,7 @@ CONTAINS
                             NUMBER_OF_ANALYTIC_COMPONENTS=4
                           CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
                              & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart, &
                              & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
                             !Check that this is a 1D equations set
                             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1dTransient_NAVIER_STOKES_SUBTYPE .OR. &
@@ -1757,6 +1756,7 @@ CONTAINS
                       SELECT CASE(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
                          & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart, &
                          & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
                         !Default the analytic parameter period values to 0
                         CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -1897,7 +1897,7 @@ CONTAINS
             & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
             ! 1 variables for the 1D Navier-Stokes materials
             MATERIAL_FIELD_NUMBER_OF_VARIABLES=2
-            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=7
+            MATERIAL_FIELD_NUMBER_OF_COMPONENTS1=8
             MATERIAL_FIELD_NUMBER_OF_COMPONENTS2=3
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Specify start action
@@ -2530,7 +2530,7 @@ CONTAINS
               CASE(SOLVER_DAE_TYPE)
                 ! DAE solver-set time
                 CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,currentTime,timeIncrement,ERR,ERROR,*999)
-                CALL SOLVER_DAE_TIMES_SET(SOLVER,currentTime,currentTime + timeIncrement,ERR,ERROR,*999)
+                CALL SOLVER_DAE_TIMES_SET(SOLVER,currentTime,currentTime+timeIncrement,ERR,ERROR,*999)
                 CALL SOLVER_DAE_TIME_STEP_SET(SOLVER,timeIncrement/1000.0_DP,ERR,ERROR,*999)
 
               ! --- S T R E E    S o l v e r ---
@@ -4269,8 +4269,8 @@ CONTAINS
     INTEGER(INTG) :: nodeIdx,xiIdx,coordIdx,derivativeIdx,versionIdx,elementVersionNumber,componentIdx
     INTEGER(INTG) :: numberOfVersions,nodeNumber,numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,mass,QUpwind,AUpwind,pExternal
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,area,pressure,normalWave,normal
-    REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H_PARAM,A0_DERIV,E_DERIV,H_DERIV,alpha,beta
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,A_VALUE,Q_DERIV,A_DERIV,area,pressure,normalWave,normal,Lref,Tref,Mref
+    REAL(DP) :: TAU_SUPG,W_SUPG,U_SUPG(3),MU_PARAM,RHO_PARAM,A0_PARAM,E_PARAM,H_PARAM,A0_DERIV,E_DERIV,H_DERIV,alpha,beta,G0_PARAM
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:),materialsParameters1(:)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4941,6 +4941,7 @@ CONTAINS
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
               alpha=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+              G0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(8,NO_PART_DERIV)
               A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               A0_DERIV=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -5010,6 +5011,12 @@ CONTAINS
 
                         !!!-- S T I F F N E S S  M A T R I X --!!!
                         IF (UPDATE_STIFFNESS_MATRIX) THEN
+                          !Momentum Equation, gravitational force
+                          IF (mh==1 .AND. nh==2) THEN 
+                            SUM=PHINS*PHIMS*G0_PARAM
+                            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
+                              & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
+                          ENDIF
                           !Mass Equation, dQ/dX, flow derivative
                           IF (mh==2 .AND. nh==1) THEN 
                             SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
@@ -5058,6 +5065,12 @@ CONTAINS
                 & RHO_PARAM,err,error,*999)
               CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4, &
                 & pExternal,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,5, &
+                & Lref,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
+                & Tref,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,7, &
+                & Mref,err,error,*999)
 
               !!!-- P R E S S U R E    C A L C U L A T I O N --!!!
               !Loop over the element nodes and versions
@@ -5081,8 +5094,8 @@ CONTAINS
                 CALL Field_ParameterSetGetLocalNode(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,versionIdx, &
                   & derivativeIdx,nodeNumber,3,H_PARAM,err,error,*999) 
                 beta = (4.0_DP*(SQRT(PI))*E_PARAM*H_PARAM)/(3.0_DP*A0_PARAM)  !(kg/m2/s2)
-                !Pressure equation
-                pressure=pExternal+beta*(SQRT(area)-SQRT(A0_PARAM))
+                !Pressure equation in mmHg
+                pressure=(pExternal+beta*(SQRT(area)-SQRT(A0_PARAM)))/(Mref/(Lref*Tref**2.0))*0.0075_DP
                 !Update the dependent field
                 IF (ELEMENT_NUMBER<=DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -6163,7 +6176,7 @@ CONTAINS
     INTEGER(INTG) :: EquationsSetIndex,SolidNodeNumber,FluidNodeNumber
     INTEGER(INTG), ALLOCATABLE :: InletNodes(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3),timeData,QP,QPP,componentValues(3)
-    REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM,X(3),FluidGFValue,SolidDFValue,NewLaplaceBoundaryValue
+    REAL(DP) :: T_COORDINATES(20,3),MU_PARAM,RHO_PARAM,X(3),FluidGFValue,SolidDFValue,NewLaplaceBoundaryValue,Lref,Tref,Mref
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:), GEOMETRIC_PARAMETERS(:), BOUNDARY_VALUES(:)
     REAL(DP), POINTER :: TANGENTS(:,:),NORMAL(:),TIME,ANALYTIC_PARAMETERS(:),MATERIALS_PARAMETERS(:)
     REAL(DP), POINTER :: independentParameters(:),dependentParameters(:) 
@@ -6852,6 +6865,72 @@ CONTAINS
                                                     & FIELD_VALUES_SET_TYPE,dependentDof,VALUE,ERR,ERROR,*999)
                                                 ENDIF
                                               ENDIF ! check if import data file exists
+                                            ENDDO !versionIdx
+                                          ENDDO !derivativeIdx
+                                        ENDDO !nodeIdx
+                                      ELSE
+                                        CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                ENDIF
+                              ENDDO !componentIdx
+                            ELSE
+                              CALL FLAG_ERROR("Dependent field variable is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ENDIF
+                        ENDDO !variableIdx
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart)
+                        ! Using heart lumped parameter model for input
+                        EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
+                        BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                        MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                        CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,5, &
+                          & Lref,err,error,*999)
+                        CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,6, &
+                          & Tref,err,error,*999)
+                        CALL FIELD_PARAMETER_SET_GET_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,7, &
+                          & Mref,err,error,*999)
+                        DO variableIdx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                          dependentVariableType=DEPENDENT_FIELD%VARIABLES(variableIdx)%VARIABLE_TYPE
+                          NULLIFY(dependentFieldVariable)
+                          CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,dependentVariableType,dependentFieldVariable,ERR,ERROR,*999)
+                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,dependentFieldVariable, &
+                            & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                          IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                            IF(ASSOCIATED(dependentFieldVariable)) THEN
+                              DO componentIdx=1,dependentFieldVariable%NUMBER_OF_COMPONENTS
+                                IF(dependentFieldVariable%COMPONENTS(componentIdx)%INTERPOLATION_TYPE== &
+                                 & FIELD_NODE_BASED_INTERPOLATION) THEN
+                                  domain=>dependentFieldVariable%COMPONENTS(componentIdx)%DOMAIN
+                                  IF(ASSOCIATED(domain)) THEN
+                                    IF(ASSOCIATED(domain%TOPOLOGY)) THEN
+                                      DOMAIN_NODES=>domain%TOPOLOGY%NODES
+                                      IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                        !Loop over the local nodes excluding the ghosts.
+                                        DO nodeIdx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                          userNodeNumber=DOMAIN_NODES%NODES(nodeIdx)%USER_NUMBER
+                                          DO derivativeIdx=1,DOMAIN_NODES%NODES(nodeIdx)%NUMBER_OF_DERIVATIVES
+                                            DO versionIdx=1,DOMAIN_NODES%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%numberOfVersions
+                                                dependentDof = dependentFieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP% &
+                                                 & NODE_PARAM2DOF_MAP%NODES(nodeIdx)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
+                                                BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                                  & CONDITION_TYPES(dependentDof)
+                                                IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                                  CALL Field_ParameterSetGetLocalNode(DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                                                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,userNodeNumber,1,VALUE, &
+                                                    & ERR,ERROR,*999)
+                                                  ! Convert Q from ml/s to non-dimensionalised form.
+                                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
+                                                    & FIELD_VALUES_SET_TYPE,dependentDof,((Lref**3.0)/Tref)*VALUE,ERR,ERROR,*999)
+                                                ENDIF
                                             ENDDO !versionIdx
                                           ENDDO !derivativeIdx
                                         ENDDO !nodeIdx

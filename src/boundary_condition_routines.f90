@@ -359,7 +359,7 @@ CONTAINS
                                             LAST=1
                                             DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                                               DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array,ERR,ERROR,*999)
                                                 DO row_idx=1,size(column_array)
                                                   CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
                                                   COUNT=COUNT+1
@@ -370,7 +370,7 @@ CONTAINS
                                             CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                               & ERR,ERROR,*999)
                                             DO col_idx =1,NUMBER_OF_ROWS
-                                              CALL LINKEDLIST_DESTROY(list(col_idx))
+                                              CALL LINKEDLIST_DESTROY(list(col_idx),ERR,ERROR,*999)
                                             ENDDO
                                           ELSE
                                             LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
@@ -439,7 +439,7 @@ CONTAINS
                                             DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                                               !Dirichlet columns
                                               DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array,ERR,ERROR,*999)
                                               !The row indices
                                               DO row_idx=1,size(column_array)
                                                 CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
@@ -451,7 +451,7 @@ CONTAINS
                                             CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                               & ERR,ERROR,*999)
                                             DO col_idx =1,NUMBER_OF_ROWS
-                                              CALL LINKEDLIST_DESTROY(list(col_idx))
+                                              CALL LINKEDLIST_DESTROY(list(col_idx),ERR,ERROR,*999)
                                             ENDDO
                                           ELSE
                                             LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."

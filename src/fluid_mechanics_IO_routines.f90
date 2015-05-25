@@ -4254,11 +4254,11 @@ CONTAINS
         ENDDO
       CASE(Plate2D,Plate3D)
         IF(MaterialSpecification==Plate2D) THEN
-          OPEN (unit=1, file='./Plate2DinletBC.txt', &
+          OPEN (unit=1, file='./Input/2D/BC/Plate2DinletBC.txt', &
             & status='old', action='read')
           ComponentNumber=2
         ELSE
-          OPEN (unit=1, file='./Plate3DinletBC.txt', &
+          OPEN (unit=1, file='./Input/3D/BC/Plate3DinletBC.txt', &
             & status='old', action='read')
           ComponentNumber=3
         ENDIF
