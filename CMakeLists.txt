@@ -100,7 +100,9 @@ ELSE()
 ENDIF()
 # Set the same stuff for either the separate targets (windows) or one target (else)
 foreach(irontarget ${IRON_TARGETS})
-    target_include_directories(${irontarget} PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
+    target_include_directories(${irontarget} 
+        PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
+        PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
     if (WITH_CELLML)
         target_compile_definitions(${irontarget} PUBLIC USECELLML)
     endif()
@@ -109,8 +111,6 @@ foreach(irontarget ${IRON_TARGETS})
     endif()
     target_link_libraries(${irontarget} PRIVATE ${LINK_LIBS}) # ${LINK_LIBS})
 endforeach()
-#target_include_directories(iron INTERFACE $<INSTALL_INTERFACE:fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron>)
-#target_include_directories(iron PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
 
 # Install steps
 INSTALL(TARGETS iron

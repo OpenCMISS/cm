@@ -51,9 +51,15 @@ MODULE CMISS_CELLML
   
 #ifdef USECELLML
   USE CELLML_MODEL_DEFINITION
-  USE CMISS_FORTRAN_C
 #endif
   
+  ! Moved this usage declaration outside the preprocessor definition,
+  ! as this file is included only if CELLML integration is selected.
+  ! This fixes problems with the CMAKE FORTRAN parser. Its not detecting
+  ! the file (=module) dependency correctly and hence breaks the build
+  ! on some platforms.
+  USE CMISS_FORTRAN_C
+
   USE FIELD_ROUTINES
   USE ISO_VARYING_STRING
   USE INPUT_OUTPUT

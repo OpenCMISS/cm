@@ -24,8 +24,8 @@ set(IRON_Fortran_SRC
     Burgers_equation_routines.f90
     characteristic_equation_routines.f90
     classical_field_routines.f90
-    cmiss_cellml.f90
     cmiss_fortran_c.f90
+    cmiss_cellml.f90
     cmiss_mpi.f90
     cmiss_parmetis.f90
     cmiss_petsc_types.f90
