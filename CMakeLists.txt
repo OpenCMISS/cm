@@ -31,13 +31,13 @@ find_package(MPI REQUIRED)
 SET(LINK_LIBS )
 if (WITH_CELLML)
     find_package(LIBCELLML CONFIG REQUIRED)
-    find_package(CELLML-API CONFIG REQUIRED)
+    find_package(CELLML CONFIG REQUIRED)
     message(STATUS "Building with CELLML (${LIBCELLML_DIR})")
     LIST(APPEND LINK_LIBS cellml cellml_model_definition)
 endif()
 if (WITH_FIELDML)
     message(STATUS "Building with FIELDML (${FIELDML_DIR})")
-    find_package(FIELDML REQUIRED)
+    find_package(FIELDML-API REQUIRED)
     LIST(APPEND LINK_LIBS fieldml_api fieldml_io_api)
 endif()
 # This include file is in the main "manage" directory.
@@ -124,10 +124,9 @@ include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake COMPATIBILITY AnyNewerVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake DESTINATION ${PACKAGE_CONFIG_DIR})
 
-# Install fortran modules
-FILE(GLOB OPENCMISS_MODS ${CMAKE_Fortran_MODULE_DIRECTORY}/*.mod)
-
 # how portable is dumpversion? NOT portable - and we have a toolchain architecture path segment
 #execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -dumpversion OUTPUT_VARIABLE Fortran_COMPILER_VERSION)
 #string(STRIP ${Fortran_COMPILER_VERSION} Fortran_COMPILER_VERSION)
-INSTALL(FILES ${OPENCMISS_MODS} DESTINATION include/iron) #fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron
+INSTALL(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
+    DESTINATION include/iron
+    PATTERN *.mod) #fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron
