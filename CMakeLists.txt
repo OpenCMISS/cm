@@ -11,6 +11,7 @@ option(WITH_MUMPS "Build iron with MUMPS integration" ON)
 option(WITH_SCALAPACK "Build iron with SCALAPACK integration" ON)
 option(WITH_PETSC "Build iron with PETSC integration" ON)
 option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
+option(WITH_C_BINDINGS "Build iron C bindings" ON)
 set(PACKAGE_CONFIG_DIR "cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
 
 # Config
@@ -20,8 +21,8 @@ SET(CMAKE_NO_SYSTEM_FROM_IMPORTED TRUE)
 # Have cmake find our own scripts
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-INCLUDE(MacroDefinitions)
-INCLUDE(CompileFlags)
+include(MacroDefinitions)
+include(CompileFlags)
 
 # External components
 # MPI
@@ -39,6 +40,10 @@ if (WITH_FIELDML)
     message(STATUS "Building with FIELDML (${FIELDML_DIR})")
     find_package(FIELDML-API REQUIRED)
     LIST(APPEND LINK_LIBS fieldml_api fieldml_io_api)
+endif()
+if (WITH_C_BINDINGS)
+    message(STATUS "Configuring to create C bindings")
+    include(IronCBindings)
 endif()
 # This include file is in the main "manage" directory.
 # We can include this here as iron is an integrated part of the overall build system.
@@ -130,3 +135,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake DESTINATION 
 INSTALL(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
     DESTINATION include/iron
     PATTERN *.mod) #fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron
+
+if (HAVE_C_BINDINGS)
+    add_dependencies(iron cbindings)
+    INSTALL(FILES ${OPENCMISS_H} DESTINATION include)
+endif()
