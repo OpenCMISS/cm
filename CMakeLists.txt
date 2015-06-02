@@ -92,15 +92,17 @@ SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 
 # Populates the IRON_XX_SRC variables
 include(Sources)
-IF(WIN32)
+IF(WIN32 AND NOT MINGW)
     # Need separate C/Fortran code due to Project natures in VS
-    add_library(iron_Fortran ${IRON_Fortran_SRC})
-    add_library(iron_C ${IRON_C_SRC})
+    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC})
+    add_library(iron_C OBJECT ${IRON_C_SRC})
+    target_compile_options(iron_Fortran PRIVATE -cpp)
     set(IRON_TARGETS iron_Fortran iron_C) 
     # Add joining library to have the "iron" target in each case 
-    add_library(iron <$TARGET_OBJECTS:iron_Fortran> <$TARGET_OBJECTS:iron_C>)
+    add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C>)
 ELSE()
     add_library(iron ${IRON_SRC})
+    target_compile_options(iron PRIVATE -cpp)
     set(IRON_TARGETS iron)
 ENDIF()
 # Set the same stuff for either the separate targets (windows) or one target (else)
@@ -114,8 +116,14 @@ foreach(irontarget ${IRON_TARGETS})
     if (WITH_FIELDML)
         target_compile_definitions(${irontarget} PUBLIC USEFIELDML)
     endif()
-    target_link_libraries(${irontarget} PRIVATE ${LINK_LIBS}) # ${LINK_LIBS})
 endforeach()
+target_link_libraries(iron PRIVATE ${LINK_LIBS}) # ${LINK_LIBS})
+# On windows we (thus far) have only pre-compiled mpi implementations available (MPICH2 and MSMPI)
+# Hence, if using mingw's gfortran compiler, the created .mod files are incompatible
+# and we need to include mpif.h as fallback.
+if (MINGW)
+    target_compile_definitions(iron PRIVATE NOMPIMOD)
+endif()
 
 # Install steps
 INSTALL(TARGETS iron
@@ -138,5 +146,5 @@ INSTALL(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
 
 if (HAVE_C_BINDINGS)
     add_dependencies(iron cbindings)
-    INSTALL(FILES ${OPENCMISS_H} DESTINATION include)
+    INSTALL(FILES ${OPENCMISS_H} DESTINATION include/iron)
 endif()

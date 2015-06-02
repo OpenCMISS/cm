@@ -120,7 +120,7 @@ ELSEIF(${OPERATING_SYSTEM} MATCHES darwin)
 ELSEIF(${OPERATING_SYSTEM} MATCHES aix)
     list(APPEND IRON_Fortran_SRC machine_constants_aix.f90)
 ELSE(${OPERATING_SYSTEM} MATCHES linux)
-    list(APPEND IRON_Fortran_SRC machine_constants_windows.f90)
+    list(APPEND IRON_Fortran_SRC machine_constants_win32.f90)
 ENDIF()
 # Add optional files for interop
 if (WITH_FIELDML)
@@ -141,5 +141,13 @@ foreach(varname ${FIXPATH_VARS})
     endforeach()
     set(${varname} ${_TMP})
 endforeach()
+
+# Any files added hereafter must already have complete paths!
+
+# Add generated c interface code
+if (HAVE_C_BINDINGS)
+    list(APPEND IRON_Fortran_SRC ${OPENCMISS_C_F90})
+endif()
+
 # Set combined sources variable
 set(IRON_SRC ${IRON_C_SRC} ${IRON_Fortran_SRC})

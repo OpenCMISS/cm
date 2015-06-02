@@ -71,6 +71,17 @@ static void CMISSFatalHandler(int sig,
 */
 /* Static variables */
 
+#ifdef __MINGW32__
+struct sigaction {
+	int dummy;
+	/*__sighandler_t sa_handler;
+	unsigned long sa_flags;
+	__sigrestore_t sa_restorer;
+	sigset_t sa_mask;*/		/* mask last for extensibility */
+};
+#define sigaction(a,b,c) a
+#endif
+
 /* static sigjmp_buf jump_buffer; */ 
 static struct sigaction fatal_sigaction;
 static struct sigaction old_SIGBUS_action;
@@ -128,7 +139,7 @@ void CMISSResetFatalHandler()
 
 void CMISSSetFatalHandler(void)
 {
-#if defined (unix) || defined (_AIX)
+#if (defined (unix) || defined (_AIX)) && !defined(__MINGW32__)
 #if defined (SIGBUS)
   if( 0 != sigaction(SIGBUS,&fatal_sigaction,NULL) )
     {
@@ -170,14 +181,18 @@ void CMISSSetFatalHandler(void)
 #endif /* defined (unix) || defined (_AIX) */
 }
 
-static void CMISSFatalHandler(int sig,
-#  if defined (sun)
-                         siginfo_t *sip,
+static void CMISSFatalHandler(int sig
+#if defined (sun)
+                         ,siginfo_t *sip,
                          ucontext_t *uap)
-#  else
-			 int code,
+#else
+#ifndef __MINGW32__
+			 ,int code,
 			 struct sigcontext *sc)
-#  endif
+#else
+		)
+#endif
+#endif
 {
 
 #if defined(_AIX)
@@ -226,7 +241,11 @@ static void CMISSFatalHandler(int sig,
 #endif /* defined (SIGTRAP) */
     default:
       {
-	fprintf(stderr,">>FATAL ERROR: Unknown signal %d occurred.\n",code);
+	fprintf(stderr,">>FATAL ERROR: Unknown signal %d occurred.\n"
+#ifndef __MINGW32__
+			,code
+#endif
+	);
       } break;
     }
 #endif
@@ -243,14 +262,20 @@ static void CMISSFatalHandler(int sig,
   exit(sig);
 }
 
+#ifdef __MINGW32__
+#define SA_NODEFER 0x40000000u
+#endif
+
 void CMISSInitFatalHandler(void)
 {
+#ifndef __MINGW32__
   fatal_sigaction.sa_flags = SA_NODEFER;
   fatal_sigaction.sa_handler = (void (*)(int))CMISSFatalHandler;
   if( 0 != sigemptyset(&fatal_sigaction.sa_mask) )
     {
       fprintf(stderr,">>WARNING: sigemptyset failed in CMISSInitFatalHandler.\n");
     }
+#endif
 
 #if defined (SIGBUS)
   sigaction(SIGBUS,NULL,&old_SIGBUS_action);

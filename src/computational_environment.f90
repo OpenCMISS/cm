@@ -50,12 +50,17 @@ MODULE COMP_ENVIRONMENT
   USE CMISS_PETSC
   USE CONSTANTS
   USE KINDS
+#ifndef NOMPIMOD
   USE MPI
+#endif
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
  
   IMPLICIT NONE
- 
+
+#ifdef NOMPIMOD
+#include "mpif.h"
+#endif
 
   !Module parameters
 

@@ -47,13 +47,19 @@ MODULE CMISS_MPI
   USE BASE_ROUTINES
   USE CONSTANTS
   USE KINDS
+#ifndef NOMPIMOD
   USE MPI
+#endif
   USE ISO_VARYING_STRING
   USE STRINGS
 
   IMPLICIT NONE
 
   PRIVATE
+
+#ifdef NOMPIMOD
+#include "mpif.h"
+#endif
 
   !Module parameters
 

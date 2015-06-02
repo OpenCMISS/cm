@@ -60,15 +60,19 @@ MODULE FIELD_IO_ROUTINES
   USE STRINGS
   USE TYPES
   USE CONSTANTS
+#ifndef NOMPIMOD
   USE MPI
+#endif
   USE CMISS_MPI
   USE INPUT_OUTPUT
   USE DISTRIBUTED_MATRIX_VECTOR
 
   IMPLICIT NONE
 
+#ifdef NOMPIMOD
+#include "mpif.h"
+#endif
 #include "FieldExportConstants.h"
-
 
   PRIVATE
 

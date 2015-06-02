@@ -53,7 +53,9 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_C_BINDING
   USE KINDS
   USE MATRIX_VECTOR
+#ifndef NOMPIMOD
   USE MPI
+#endif
   USE STRINGS
   USE TYPES
   USE LINKEDLIST_ROUTINES
@@ -62,6 +64,9 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PRIVATE
 
+#ifdef NOMPIMOD
+#include "mpif.h"
+#endif
 #include "petscversion.h"
   
   !Module parameters
