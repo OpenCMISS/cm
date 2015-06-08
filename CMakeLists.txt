@@ -47,47 +47,16 @@ if (WITH_C_BINDINGS)
 endif()
 # This include file is in the main "manage" directory.
 # We can include this here as iron is an integrated part of the overall build system.
-include(Variables)
-SET(DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK) #BLACS
-foreach(DEP ${DEPS})
+SET(IRON_UPSTREAM_DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK)
+foreach(DEP ${IRON_UPSTREAM_DEPS})
     if (WITH_${DEP})
-        # Look for config-aware implementations first
-        find_package(${DEP} CONFIG QUIET)
-        if (NOT ${DEP}_FOUND)
-            #message(STATUS "=== Looking for ${DEP} - (wrapper) module mode ===")
-            find_package(${DEP} REQUIRED)
-            # This is probably not a complete list of variables that might be set by module-mode package finds :-(
-            INCLUDE_DIRECTORIES(${${DEP}_INCLUDES} ${${DEP}_INCLUDE_DIRS} ${${DEP}_INCLUDE_DIRECTORY})
-            message(STATUS "Building with ${DEP} (${${DEP}_LIBRARIES}})")
-        else()
-            message(STATUS "Building with ${DEP} (${${DEP}_DIR})")
-            #message(STATUS "${DEP} targets===CONFIG=${DEP}=${${DEP}_FOUND}= ===${${DEP}_TARGETS}===")
-            LIST(APPEND LINK_LIBS ${${DEP}_TARGETS})
-        endif()
+        message(STATUS "Building with ${DEP} (${${DEP}_DIR})")
+        find_package(${DEP} REQUIRED)
+        string(TOLOWER ${DEP} targetname)
+        LIST(APPEND LINK_LIBS ${targetname})
     endif()
 endforeach()
-#message("Iron link libaries: ${LINK_LIBS}")
-#set(_expected_target)
-#set(_found_target)
-#set(_missing_target)
-#foreach(_link_lib ${LINK_LIBS})
-#    list(APPEND _expected_target ${_link_lib})
-#    if(TARGET ${_link_lib})
-#list(APPEND _found_target ${_link_lib})
-#else()
-#list(APPEND _missing_target ${_link_lib})
-#endif()
-#endforeach()
-#message(STATUS "==${_found_target}=")
-#message(STATUS "==${_missing_target}=")
-#unset(_expected_target)
-#unset(_found_target)
-#unset(_missing_target)
 
-# Config
-#SET(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-#SET(HEADER_INC_NAME opencmiss.h)
-#SET(HEADER_SOURCE_INC ${SOURCE_DIR}/${HEADER_INC_NAME})
 SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 
 # Populates the IRON_XX_SRC variables
@@ -117,7 +86,7 @@ foreach(irontarget ${IRON_TARGETS})
         target_compile_definitions(${irontarget} PUBLIC USEFIELDML)
     endif()
 endforeach()
-target_link_libraries(iron PRIVATE ${LINK_LIBS}) # ${LINK_LIBS})
+target_link_libraries(iron PRIVATE ${LINK_LIBS})
 # On windows we (thus far) have only pre-compiled mpi implementations available (MPICH2 and MSMPI)
 # Hence, if using mingw's gfortran compiler, the created .mod files are incompatible
 # and we need to include mpif.h as fallback.
@@ -130,12 +99,31 @@ INSTALL(TARGETS iron
       EXPORT iron-config
       DESTINATION lib
       INCLUDES DESTINATION include/iron)
-#INSTALL(FILES ${HEADER_SOURCE_INC} DESTINATION include)
 
 install(EXPORT iron-config DESTINATION ${PACKAGE_CONFIG_DIR})
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake COMPATIBILITY AnyNewerVersion)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake DESTINATION ${PACKAGE_CONFIG_DIR})
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake 
+    "include(CMakeFindDependencyMacro)\r\n"
+    "set(_OLD_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
+)
+foreach(IRON_DEP ${IRON_UPSTREAM_DEPS})
+    if (WITH_${IRON_DEP})
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "find_dependency(${IRON_DEP} ${${IRON_DEP}_VERSION})\r\n")
+    endif()
+endforeach()
+if (WITH_CELLML)
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "find_dependency(CELLML)\r\n")
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "find_dependency(LIBCELLML)\r\n")
+endif()
+if (WITH_FIELDML)
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "find_dependency(FIELDML-API ${FIELDML-API}_VERSION)\r\n")
+endif()
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "set(_IMPORT_PREFIX \${_OLD_IMPORT_PREFIX})")
+install(FILES 
+    ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake
+    DESTINATION ${PACKAGE_CONFIG_DIR})  
 
 # how portable is dumpversion? NOT portable - and we have a toolchain architecture path segment
 #execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -dumpversion OUTPUT_VARIABLE Fortran_COMPILER_VERSION)
