@@ -1,5 +1,3 @@
-# License
-
 cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 project(Iron VERSION 0.4.0 LANGUAGES C Fortran)
 
@@ -21,9 +19,6 @@ SET(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_modules)
 SET(CMAKE_NO_SYSTEM_FROM_IMPORTED TRUE)
 # Have cmake find our own scripts
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-include(MacroDefinitions)
-#include(CompileFlags)
 
 # External components
 # MPI
@@ -140,12 +135,9 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake
     DESTINATION ${PACKAGE_CONFIG_DIR})  
 
-# how portable is dumpversion? NOT portable - and we have a toolchain architecture path segment
-#execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -dumpversion OUTPUT_VARIABLE Fortran_COMPILER_VERSION)
-#string(STRIP ${Fortran_COMPILER_VERSION} Fortran_COMPILER_VERSION)
 INSTALL(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
     DESTINATION include/iron
-    PATTERN *.mod) #fortran/${Fortran_COMPILER_VERSION}/opencmiss/iron
+    PATTERN *.mod)
 
 if (HAVE_C_BINDINGS)
     add_dependencies(iron cbindings)
