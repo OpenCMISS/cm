@@ -122,9 +122,10 @@ ELSEIF(${OPERATING_SYSTEM} MATCHES aix)
 ELSE(${OPERATING_SYSTEM} MATCHES linux)
     list(APPEND IRON_Fortran_SRC machine_constants_win32.f90)
 ENDIF()
-# Add optional files for interop
+# 
+set(IRON_FIELDML_SRC)
 if (WITH_FIELDML)
-    list(APPEND IRON_Fortran_SRC
+    set(IRON_FIELDML_SRC
         fieldml_input_routines.f90
         fieldml_output_routines.f90
         fieldml_types.f90
@@ -133,7 +134,7 @@ if (WITH_FIELDML)
 endif()
 
 # Fix paths to files
-set(FIXPATH_VARS IRON_C_SRC IRON_Fortran_SRC)
+set(FIXPATH_VARS IRON_C_SRC IRON_Fortran_SRC IRON_FIELDML_SRC)
 foreach(varname ${FIXPATH_VARS})
     set(_TMP )
     foreach(filename ${${varname}})

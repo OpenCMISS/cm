@@ -33,9 +33,8 @@ if (WITH_CELLML)
     LIST(APPEND LINK_LIBS cellml cellml_model_definition)
 endif()
 if (WITH_FIELDML)
-    message(STATUS "Building with FIELDML (${FIELDML_DIR})")
+    message(STATUS "Building with FIELDML (${FIELDML-API_DIR})")
     find_package(FIELDML-API REQUIRED)
-    LIST(APPEND LINK_LIBS fieldml_api fieldml_io_api)
 endif()
 if (WITH_C_BINDINGS)
     message(STATUS "Configuring to create C bindings")
@@ -66,8 +65,6 @@ foreach(DEP ${IRON_UPSTREAM_DEPS})
         LIST(APPEND LINK_LIBS ${targetname})
     endif()
 endforeach()
-
-SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 
 # Populates the IRON_XX_SRC variables
 include(Sources)
@@ -102,6 +99,20 @@ target_link_libraries(iron PRIVATE ${LINK_LIBS})
 # and we need to include mpif.h as fallback.
 if (MINGW)
     target_compile_definitions(iron PRIVATE NOMPIMOD)
+endif()
+
+# Fieldml extra library - some source of iron include the module files,
+# but the cmake dependency parser doesnt get the USE declarations if wrapped in preprocessor #ifdefs
+# hence the build breaks if those files are compiled before the fieldml-module files.
+if (WITH_FIELDML)
+    add_library(iron-fieldml ${IRON_FIELDML_SRC})
+    target_link_libraries(iron-fieldml fieldml-api)
+    target_compile_definitions(iron-fieldml PUBLIC USEFIELDML)
+    install(TARGETS iron-fieldml EXPORT iron-config DESTINATION lib)
+    
+    # Let the iron lib know what's going on
+    add_dependencies(iron iron-fieldml)
+    target_link_libraries(iron PUBLIC iron-fieldml)
 endif()
 
 # Install steps
