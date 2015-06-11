@@ -140,6 +140,5 @@ INSTALL(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
     PATTERN *.mod)
 
 if (HAVE_C_BINDINGS)
-    add_dependencies(iron cbindings)
     INSTALL(FILES ${OPENCMISS_H} DESTINATION include/iron)
 endif()
