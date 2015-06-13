@@ -296,7 +296,7 @@ MODULE ISO_VARYING_STRING
   public :: adjustl
   public :: adjustr
   public :: char
-  public :: c_char
+  public :: cchar
   public :: iachar
   public :: ichar
   public :: index
