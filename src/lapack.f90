@@ -61,6 +61,27 @@ MODULE LAPACK
       REAL(DP), INTENT(INOUT) :: B(LDB,*)
       INTEGER(INTG), INTENT(OUT) :: INFO
     END SUBROUTINE DGESV
+
+    ! DGESVD - compute the singular value decomposition (SVD) of a
+    !  real M-by-N matrix A, optionally computing the left and/or
+    !  right singular vectors
+    SUBROUTINE DGESVD( JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, INFO )
+      USE KINDS
+      CHARACTER(1) :: JOBU ! Specifies options for computing all or part of the matrix U (options: A,S,O,N)
+      CHARACTER(1) :: JOBVT ! Specifies options for computing all or part of the matrix V**T (options: A,S,O,N)
+      INTEGER(INTG), INTENT(IN) :: M ! Number of rows in A
+      INTEGER(INTG), INTENT(IN) :: N ! Number of columns in A
+      REAL(DP), INTENT(INOUT) :: A(LDA,*) ! The matrix to perform the SVD on
+      INTEGER(INTG), INTENT(IN) :: LDA ! Leading dimension of A
+      REAL(DP), INTENT(OUT) :: S(MIN(M,N)) ! Singular values of A, sorted S(i) >= S(i+1)
+      REAL(DP), INTENT(OUT) :: U(LDU,*) ! If JOBU = 'A', U contains the M-by-M orthogonal matrix U
+      INTEGER(INTG), INTENT(IN) :: LDU ! Leading dimension of U
+      REAL(DP), INTENT(OUT) :: VT(LDVT,N) ! If JOBVT = 'A', VT contains the N-by-N orthogonal matrix V**T
+      INTEGER(INTG), INTENT(IN) :: LDVT ! The leading dimension of the array VT
+      REAL(DP), INTENT(INOUT) :: WORK(*) ! On exit, if INFO = 0, WORK(1) returns the optimal LWORK
+      INTEGER(INTG), INTENT(IN) :: LWORK ! The dimension of the array WORK
+      INTEGER(INTG), INTENT(OUT) :: INFO ! 0 if successful exit; < 0 if INFO = -i (the i-th argument had an illegal value); > 0 if DBDSQR did not converge
+    END SUBROUTINE DGESVD
     
   END INTERFACE
 
