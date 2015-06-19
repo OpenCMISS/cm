@@ -95,9 +95,6 @@ MODULE FINITE_ELASTICITY_ROUTINES
   INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX=8 !<c2 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: TENSOR_TO_VOIGT(3,3)=RESHAPE([1,4,5,4,2,6,5,6,3],[3,3]) !Converts from rank 2 symmetric tensor indices to Voigt index.
-  INTEGER(INTG), PARAMETER :: VOIGT_TO_TENSOR(2,6)=RESHAPE([1,1,2,2,3,3,2,1,3,1,3,2],[2,6]) !Converts from Voigt index to rank 2 symmetric tensor.
-
   !Module types
 
   !Module variables
@@ -117,7 +114,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_POST_SOLVE,FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA, &
     & FINITE_ELASTICITY_PRE_SOLVE,FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP,FiniteElasticity_ControlLoadIncrementLoopPostLoop, &
     & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS, &
-    & FiniteElasticityGaussDeformationGradientTensor,FINITE_ELASTICITY_LOAD_INCREMENT_APPLY, &
+    & FiniteElasticityDeformationGradient,FINITE_ELASTICITY_LOAD_INCREMENT_APPLY, &
     & FINITE_ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE,FINITE_ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
 
   PUBLIC FiniteElasticityEquationsSet_DerivedVariableCalculate, &
@@ -977,10 +974,8 @@ CONTAINS
               ENDDO !ns
             ENDDO !nh
 
-            CALL CoordinateMaterialSystemCalculate(GEOMETRIC_INTERP_POINT_METRICS,FIBRE_INTERP_POINT, &
-              & DNUDXI,DXIDNU,ERR,ERROR,*999)
-            !dZ/dNu = dZ/dXi * dXi/dNu  (deformation gradient tensor, F)
-            CALL MATRIX_PRODUCT(DEPENDENT_INTERP_POINT_METRICS%DX_DXI,DXIDNU,DZDNU,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERP_POINT_METRICS, &
+              & GEOMETRIC_INTERP_POINT_METRICS,FIBRE_INTERP_POINT,DZDNU,ERR,ERROR,*999)
 
             CALL FINITE_ELASTICITY_GAUSS_ELASTICITY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERP_POINT, &
               & MATERIALS_INTERP_POINT,ELASTICITY_TENSOR,STRESS_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,ng,ERR,ERROR,*999)
@@ -988,7 +983,7 @@ CONTAINS
             ! Convert from Voigt form to tensor form.
             DO nh=1,NUMBER_OF_DIMENSIONS
               DO mh=1,NUMBER_OF_DIMENSIONS
-                CAUCHY_TENSOR(mh,nh)=STRESS_TENSOR(TENSOR_TO_VOIGT(mh,nh))
+                CAUCHY_TENSOR(mh,nh)=STRESS_TENSOR(TENSOR_TO_VOIGT3(mh,nh))
               ENDDO
             ENDDO
            
@@ -996,7 +991,7 @@ CONTAINS
             !Loop over element columns belonging to geometric dependent variables
             nhs=0
             DO nh=1,NUMBER_OF_DIMENSIONS
-              JGW_SUB_MAT=JGW*(ELASTICITY_TENSOR(TENSOR_TO_VOIGT(:,nh),TENSOR_TO_VOIGT(:,nh))+CAUCHY_TENSOR)
+              JGW_SUB_MAT=JGW*(ELASTICITY_TENSOR(TENSOR_TO_VOIGT3(:,nh),TENSOR_TO_VOIGT3(:,nh))+CAUCHY_TENSOR)
               DO ns=1,NUMBER_OF_ELEMENT_PARAMETERS(nh)
                 TEMPVEC=MATMUL(JGW_SUB_MAT,DPHIDZ(:,ns,nh))
                 nhs=nhs+1
@@ -1016,7 +1011,7 @@ CONTAINS
               nh=OFF_DIAG_DEP_VAR1(oh)
               mh=OFF_DIAG_DEP_VAR2(oh)
               nhs=ELEMENT_BASE_DOF_INDEX(nh)
-              JGW_SUB_MAT=JGW*ELASTICITY_TENSOR(TENSOR_TO_VOIGT(:,mh),TENSOR_TO_VOIGT(:,nh))
+              JGW_SUB_MAT=JGW*ELASTICITY_TENSOR(TENSOR_TO_VOIGT3(:,mh),TENSOR_TO_VOIGT3(:,nh))
               DO ns=1,NUMBER_OF_ELEMENT_PARAMETERS(nh)
                 !Loop over element rows belonging to geometric dependent variables
                 TEMPVEC=MATMUL(JGW_SUB_MAT,DPHIDZ(:,ns,nh))
@@ -1182,19 +1177,19 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: i,j
-    INTEGER(INTG), PARAMETER :: idx1(6)=[1,2,3,1,1,2],idx2(6)=[1,2,3,2,3,3]
     REAL(DP) :: t(6,6) 
 
     CALL ENTERS("FINITE_ELASTICITY_PUSH_ELASTICITY_TENSOR",ERR,ERROR,*999)
 
     DO j=1,3
       DO i=1,6
-        t(i,j)=DZDNU(idx1(i),idx1(j))*DZDNU(idx2(i),idx2(j))
+        t(i,j)=DZDNU(VOIGT_TO_TENSOR3(1,i),VOIGT_TO_TENSOR3(1,j))*DZDNU(VOIGT_TO_TENSOR3(2,i),VOIGT_TO_TENSOR3(2,j))
       ENDDO
     END DO
     DO j=4,6
       DO i=1,6
-        t(i,j)=DZDNU(idx1(i),idx1(j))*DZDNU(idx2(i),idx2(j))+DZDNU(idx1(i),idx2(j))*DZDNU(idx2(i),idx1(j))
+        t(i,j)=DZDNU(VOIGT_TO_TENSOR3(1,i),VOIGT_TO_TENSOR3(1,j))*DZDNU(VOIGT_TO_TENSOR3(2,i),VOIGT_TO_TENSOR3(2,j))+ &
+          & DZDNU(VOIGT_TO_TENSOR3(1,i),VOIGT_TO_TENSOR3(2,j))*DZDNU(VOIGT_TO_TENSOR3(2,i),VOIGT_TO_TENSOR3(1,j))
       ENDDO
     END DO
 
@@ -1222,19 +1217,19 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: i,j
-    INTEGER(INTG), PARAMETER :: idx1(6)=[1,2,3,1,1,2],idx2(6)=[1,2,3,2,3,3]
     REAL(DP) :: t(6,6) 
 
     CALL ENTERS("FINITE_ELASTICITY_PUSH_STRESS_TENSOR",ERR,ERROR,*999)
 
     DO j=1,3
       DO i=1,6
-        t(i,j)=DZDNU(idx1(i),idx1(j))*DZDNU(idx2(i),idx2(j))
+        t(i,j)=DZDNU(VOIGT_TO_TENSOR3(1,i),VOIGT_TO_TENSOR3(1,j))*DZDNU(VOIGT_TO_TENSOR3(2,i),VOIGT_TO_TENSOR3(2,j))
       ENDDO
     END DO
     DO j=4,6
       DO i=1,6
-        t(i,j)=DZDNU(idx1(i),idx1(j))*DZDNU(idx2(i),idx2(j))+DZDNU(idx1(i),idx2(j))*DZDNU(idx2(i),idx1(j))
+        t(i,j)=DZDNU(VOIGT_TO_TENSOR3(1,i),VOIGT_TO_TENSOR3(1,j))*DZDNU(VOIGT_TO_TENSOR3(2,i),VOIGT_TO_TENSOR3(2,j))+ &
+          & DZDNU(VOIGT_TO_TENSOR3(1,i),VOIGT_TO_TENSOR3(2,j))*DZDNU(VOIGT_TO_TENSOR3(2,i),VOIGT_TO_TENSOR3(1,j))
       ENDDO
     END DO
 
@@ -1512,22 +1507,20 @@ CONTAINS
               ENDDO !ns
             ENDDO !nh
             
-            CALL CoordinateMaterialSystemCalculate(GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT, &
-              & DNUDXI,DXIDNU,ERR,ERROR,*999)
-            !dZ/dNu = dZ/dXi * dXi/dNu  (deformation gradient tensor, F)
-            CALL MATRIX_PRODUCT(DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI,DXIDNU,DZDNU,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
 
             Jznu=DEPENDENT_INTERPOLATED_POINT_METRICS%JACOBIAN/GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
             JGW=DEPENDENT_INTERPOLATED_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
 
-           !Calculate the Cauchy stress tensor at the gauss point.
+           !Calculate the Cauchy stress tensor (in Voigt form) at the gauss point.
            CALL FINITE_ELASTICITY_GAUSS_STRESS_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
              & MATERIALS_INTERPOLATED_POINT,STRESS_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
             
             ! Convert from Voigt form to tensor form and multiply with Jacobian and Gauss weight.
             DO nh=1,NUMBER_OF_DIMENSIONS
               DO mh=1,NUMBER_OF_DIMENSIONS
-                JGW_CAUCHY_TENSOR(mh,nh)=JGW*STRESS_TENSOR(TENSOR_TO_VOIGT(mh,nh))
+                JGW_CAUCHY_TENSOR(mh,nh)=JGW*STRESS_TENSOR(TENSOR_TO_VOIGT3(mh,nh))
               ENDDO
             ENDDO
 
@@ -1669,9 +1662,11 @@ CONTAINS
             ENDIF
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
 
+            Jxxi=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
+        
             IF(DIAGNOSTICS1) THEN
               CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ELEMENT_NUMBER,ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  gauss_idx = ",gauss_idx,ERR,ERROR,*999)
@@ -1795,8 +1790,10 @@ CONTAINS
             ENDIF
             
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
+
+            Jxxi=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
 
             CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999)
@@ -2013,8 +2010,10 @@ CONTAINS
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
+
+            Jxxi=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
 
             !Calculate Sigma=1/Jznu.FTF', the Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
@@ -2121,8 +2120,10 @@ CONTAINS
             ENDIF
 
             !Calculate F=dZ/dNU at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
+
+            Jxxi=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
 
             !Calculate Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
@@ -2605,8 +2606,10 @@ CONTAINS
             END IF
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
+
+            Jxxi=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
 
             IF(DIAGNOSTICS1) THEN
               CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ne,ERR,ERROR,*999)
@@ -2720,8 +2723,10 @@ CONTAINS
               & FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticityDeformationGradient(DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
+
+            Jxxi=GEOMETRIC_INTERPOLATED_POINT_METRICS%JACOBIAN
 
             IF(DIAGNOSTICS1) THEN
               CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ne,ERR,ERROR,*999)
@@ -2833,7 +2838,6 @@ CONTAINS
     INTEGER(INTG) :: numberOfDimensions,numberOfXi
     INTEGER(INTG) :: localElementNumber,i
     REAL(DP) :: dZdNu(3,3),dZdNuT(3,3),AZL(3,3),E(3,3)
-    REAL(DP) :: JXXi
 
     CALL Enters("FiniteElasticity_StrainInterpolateXi",err,error,*999)
 
@@ -2925,9 +2929,9 @@ CONTAINS
     !Calculate F=dZ/dNU, the deformation gradient tensor at the xi location
     numberOfDimensions=equationsSet%region%coordinate_system%number_of_dimensions
     numberOfXi=elementBasis%number_of_xi
-    CALL FiniteElasticityGaussDeformationGradientTensor(dependentInterpolatedPointMetrics, &
+    CALL FiniteElasticityDeformationGradient(dependentInterpolatedPointMetrics, &
       & geometricInterpolatedPointMetrics,fibreInterpolatedPoint, &
-      & dZdNu,JXXi,err,error,*999)
+      & dZdNu,err,error,*999)
 
     !Calculate E
     CALL MATRIX_TRANSPOSE(dZdNu,dZdNuT,err,error,*999)
@@ -3327,25 +3331,23 @@ CONTAINS
   !
 
   !>Evaluates the deformation gradient tensor at a given Gauss point
-  SUBROUTINE FiniteElasticityGaussDeformationGradientTensor(dependentInterpPointMetrics,geometricInterpPointMetrics,&
-    & fibreInterpolatedPoint,dZdNu,JXXi,err,error,*)
+  SUBROUTINE FiniteElasticityDeformationGradient(dependentInterpPointMetrics,geometricInterpPointMetrics,&
+    & fibreInterpolatedPoint,dZdNu,err,error,*)
 
     !Argument variables
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: dependentInterpPointMetrics,geometricInterpPointMetrics
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: fibreInterpolatedPoint
     REAL(DP), INTENT(OUT) :: dZdNu(3,3) !<dZdNu(coordinateIdx,coordianteIdx). On return, the deformation gradient tensor
-    REAL(DP), INTENT(OUT) :: JXXi       !<On return, The Jacobian of the transformation from Xi to X
     INTEGER(INTG), INTENT(OUT) :: err   !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     INTEGER(INTG) :: numberOfXDimensions,numberOfXiDimensions,numberOfZDimensions
-    REAL(DP) :: dNuDXi(3,3),dXidNu(3,3),dZdNuTemp(3,3)
+    REAL(DP) :: dNuDXi(3,3),dXidNu(3,3)
 
-    CALL Enters("FiniteElasticityGaussDeformationGradientTensor",err,error,*999)
+    CALL Enters("FiniteElasticityDeformationGradient",err,error,*999)
 
     IF(ASSOCIATED(dependentInterpPointMetrics)) THEN
       IF(ASSOCIATED(geometricInterpPointMetrics)) THEN
-        
         numberOfXDimensions=geometricInterpPointMetrics%NUMBER_OF_X_DIMENSIONS
         numberOfXiDimensions=geometricInterpPointMetrics%NUMBER_OF_XI_DIMENSIONS
         numberOfZDimensions=dependentInterpPointMetrics%NUMBER_OF_X_DIMENSIONS
@@ -3355,17 +3357,12 @@ CONTAINS
           & dXidNu(1:numberOfXiDimensions,1:numberOfXDimensions),err,error,*999)
         !dZ/dNu = dZ/dXi * dXi/dNu  (deformation gradient tensor, F)
         CALL MatrixProduct(dependentInterpPointMetrics%DX_DXI(1:numberOfZDimensions,1:numberOfXiDimensions), &
-          & dXiDNu(1:numberOfXiDimensions,1:numberOfXDimensions),dZdNuTemp(1:numberOfZDimensions,1:numberOfXDimensions), &
+          & dXiDNu(1:numberOfXiDimensions,1:numberOfXDimensions),dZdNu(1:numberOfZDimensions,1:numberOfXDimensions), &
           & err,error,*999)
 
-        JXXi=geometricInterpPointMetrics%JACOBIAN
-
         IF(numberOfZDimensions == 2) THEN
-          dZdNu(1,:) = [dZdNuTemp(1,1),dZdNuTemp(1,2),0.0_DP]
-          dZdNu(2,:) = [dZdNuTemp(2,1),dZdNuTemp(2,2),0.0_DP]
-          dZdNu(3,:) = [0.0_DP,0.0_DP,1.0_DP]
-        ELSE
-          dZdNu(1:numberOfZDimensions,1:numberOfXDimensions) = dZdNuTemp(1:numberOfZDimensions,1:numberOfXDimensions)
+          dZdNu(:,3) = [0.0_DP,0.0_DP,1.0_DP]
+          dZdNu(3,1:2) = 0.0_DP
         ENDIF
 
         IF(DIAGNOSTICS1) THEN
@@ -3376,7 +3373,6 @@ CONTAINS
           CALL WriteStringMatrix(DIAGNOSTIC_OUTPUT_TYPE,1,1,numberOfXDimensions,1,1,numberOfXDimensions, &
             & numberOfXDimensions,numberOfXDimensions,dZdNu,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
             & '("  dZdNu','(",I1,",:)',' :",3(X,E13.6))','(15X,3(X,E13.6))',err,error,*999)
-          CALL WriteStringValue(DIAGNOSTIC_OUTPUT_TYPE,"  Determinant JXXi = ",JXXi,err,error,*999)
         ENDIF
         
       ELSE
@@ -3386,12 +3382,12 @@ CONTAINS
       CALL FlagError("Dependent interpolated point metrics is not associated.",err,error,*999)
     ENDIF
     
-    CALL Exits("FiniteElasticityGaussDeformationGradientTensor")
+    CALL Exits("FiniteElasticityDeformationGradient")
     RETURN
-999 CALL Errors("FiniteElasticityGaussDeformationGradientTensor",err,error)
-    CALL Exits("FiniteElasticityGaussDeformationGradientTensor")
+999 CALL Errors("FiniteElasticityDeformationGradient",err,error)
+    CALL Exits("FiniteElasticityDeformationGradient")
     RETURN 1
-  END SUBROUTINE FiniteElasticityGaussDeformationGradientTensor
+  END SUBROUTINE FiniteElasticityDeformationGradient
 
   !
   !================================================================================================================================
