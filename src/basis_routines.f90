@@ -1546,14 +1546,13 @@ CONTAINS
             DO xiIdx=1,basis%NUMBER_OF_XI
               IF(basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI0.AND.position(xiIdx)==1.OR. &
                 & basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI1.AND.position(xiIdx)==basis%NUMBER_OF_NODES_XIC(xiIdx)) &
-                & atCollapse=.TRUE.
+                & THEN
+                atCollapse=.TRUE.
+                firstCollapsedPosition=ALL(position(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))==1)
+                EXIT
+              ENDIF
             ENDDO !xiIdx
             IF(atCollapse) THEN
-              IF(basis%NUMBER_OF_COLLAPSED_XI==1) THEN
-                firstCollapsedPosition=position(collapsedXi(1))==1
-              ELSE
-                firstCollapsedPosition=(position(collapsedXi(1))==1).AND.(position(collapsedXi(2))==1)
-              ENDIF
               IF(firstCollapsedPosition) THEN
                 basis%NUMBER_OF_NODES=basis%NUMBER_OF_NODES+1
                 nodeAtCollapse(basis%NUMBER_OF_NODES)=.TRUE.
@@ -1605,20 +1604,29 @@ CONTAINS
             DO xiIdx=1,basis%NUMBER_OF_XI
               IF(basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI0.AND.position(xiIdx)==1.OR. &
                 & basis%COLLAPSED_XI(xiIdx)==BASIS_COLLAPSED_AT_XI1.AND.position(xiIdx)==basis%NUMBER_OF_NODES_XIC(xiIdx)) &
-                & atCollapse=.TRUE.
+                & THEN 
+                atCollapse=.TRUE.
+                firstCollapsedPosition=ALL(position(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))==1)
+                EXIT
+              ENDIF
             ENDDO !xiIdx
-            firstCollapsedPosition=ALL(position(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))==1)
           ENDIF
-          IF((atCollapse.AND.firstCollapsedPosition).OR.(.NOT.atCollapse)) THEN
+          IF(atCollapse) THEN
+            IF(firstCollapsedPosition) THEN
+              localNode=localNode+1
+              basis%NODE_POSITION_INDEX(localNode,1:basis%NUMBER_OF_XI)=position(1:basis%NUMBER_OF_XI)
+              basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)=localNode
+            ELSE
+              !The second node in the collapsed xi is set to the same node number as the first node in that xi direction.
+              collapsedPosition(1:basis%NUMBER_OF_XI)=position(1:basis%NUMBER_OF_XI)
+              collapsedPosition(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))=1
+              basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)= &
+                & basis%NODE_POSITION_INDEX_INV(collapsedPosition(1),collapsedPosition(2),collapsedPosition(3),1)
+            ENDIF
+          ELSE
             localNode=localNode+1
-            basis%NODE_POSITION_INDEX(localNode,:)=position(1:basis%NUMBER_OF_XI)
+            basis%NODE_POSITION_INDEX(localNode,1:basis%NUMBER_OF_XI)=position(1:basis%NUMBER_OF_XI)
             basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)=localNode
-          ELSEIF (atCollapse.AND.(.NOT.firstCollapsedPosition)) THEN
-            !The second node in the collapsed xi is set to the same node number as the first node.
-            collapsedPosition=position(1:basis%NUMBER_OF_XI)
-            collapsedPosition(collapsedXi(1:basis%NUMBER_OF_COLLAPSED_XI))=1
-            basis%NODE_POSITION_INDEX_INV(position(1),position(2),position(3),1)= &
-              & basis%NODE_POSITION_INDEX_INV(collapsedPosition(1),collapsedPosition(2),collapsedPosition(3),1)
           ENDIF
           position(1)=position(1)+1
           DO xiIdx=1,basis%NUMBER_OF_XI
