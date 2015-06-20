@@ -3633,7 +3633,8 @@ CONTAINS
                     CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_NONLINEAR,ERR,ERROR,*999)
                     CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
                     CALL PETSC_TSSUNDIALSSETTYPE(TS,PETSC_SUNDIALS_BDF,ERR,ERROR,*999)
-
+                    CALL PETSC_TSSUNDIALSSETTOLERANCE(TS,0.0000001_DP, &
+                      & 0.0000001_DP,ERR,ERROR,*999)
                     !set the initial solution to the current state
                     CALL PETSC_VECSETVALUES(PETSC_CURRENT_STATES,(NUMBER_STATES), &
                       & ARRAY_INDICES,STATES_TEMP, &
