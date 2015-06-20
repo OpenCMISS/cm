@@ -621,16 +621,12 @@ CONTAINS
     REAL(DP) :: TEMPTERM1,TEMPTERM2,VALUE
     REAL(DP), PARAMETER :: ONETHIRD=1.0_DP/3.0_DP,TWOTHIRDS=2.0_DP/3.0_DP
     REAL(DP) :: I1,I2,I3            !Invariants, if needed
-    REAL(DP), PARAMETER :: DEV_PROJ(6,6)=RESHAPE([TWOTHIRDS,-ONETHIRD,-ONETHIRD,0.0_DP,0.0_DP,0.0_DP, &
-                                                  -ONETHIRD,TWOTHIRDS,-ONETHIRD,0.0_DP,0.0_DP,0.0_DP, &
-                                                  -ONETHIRD,-ONETHIRD,TWOTHIRDS,0.0_DP,0.0_DP,0.0_DP, &
-                                                  0.0_DP,0.0_DP,0.0_DP,1.0_DP,0.0_DP,0.0_DP, &
-                                                  0.0_DP,0.0_DP,0.0_DP,0.0_DP,1.0_DP,0.0_DP, &
-                                                  0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,1.0_DP],[6,6])
+    REAL(DP), PARAMETER :: DEV_PROJ_11(3,3)= &
+      & RESHAPE([TWOTHIRDS,-ONETHIRD,-ONETHIRD,-ONETHIRD,TWOTHIRDS,-ONETHIRD,-ONETHIRD,-ONETHIRD,TWOTHIRDS],[3,3]) !The upper diagonal block of the deviatoric projection tensor. The lower diagonal block is the unit matrix and the off-diagonal blocks are 0
     REAL(DP), PARAMETER :: TWOTHIRDS_UNITY(6) = [TWOTHIRDS,TWOTHIRDS,TWOTHIRDS,0.0_DP,0.0_DP,0.0_DP] !Rank 2 unit tensor times 2/3 in Voigt form.
     REAL(DP), PARAMETER :: UNITY_DIAGONAL(6)=[1.0_DP,1.0_DP,1.0_DP,0.5_DP,0.5_DP,0.5_DP] !Diagonal of rank 4 unit tensor in Voigt form.
     REAL(DP), POINTER :: C(:) !Parameters for constitutive laws
-    REAL(DP) :: MOD_DZDNU(3,3),MOD_DZDNUT(3,3),AZL(3,3),AZU(3,3)
+    REAL(DP) :: MOD_DZDNU(3,3),MOD_DZDNUT(3,3),AZL(3,3),AZU(3,3),TEMP(3,3)
     REAL(DP) :: TRACE,TWOTHIRDS_TRACE
     REAL(DP) :: B(6),E(6),DQ_DE(6)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -673,9 +669,8 @@ CONTAINS
       STRESS_TENSOR(6)=TEMPTERM1*AZL(3,2)
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE) THEN
         !add active contraction stress values
-        !the active stress is stored inside the independent field that has been set up in the user program.
-        !for generality we could set up 3 components in independent field for 3 different active stress components
-        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        !Be aware for modified DZDNU, should active contraction be added here? Normally should be okay as modified DZDNU and DZDNU
+        !converge during the Newton iteration.
         CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
         DO i=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           dof_idx=FIELD_VARIABLE%COMPONENTS(i)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
@@ -712,7 +707,13 @@ CONTAINS
       DO i=1,6
         ELASTICITY_TENSOR(i,i)=ELASTICITY_TENSOR(i,i)+TWOTHIRDS_TRACE*UNITY_DIAGONAL(i)
       ENDDO
-      ELASTICITY_TENSOR=MATMUL(DEV_PROJ,MATMUL(ELASTICITY_TENSOR,DEV_PROJ))
+      !The following is equivalent to ELASTICITY_TENSOR=MATMUL(DEV_PROJ,MATMUL(ELASTICITY_TENSOR,DEV_PROJ)) but takes in acount the
+      !block structure of DEV_PROJ
+      ELASTICITY_TENSOR(1:3,1:3)=MATMUL(DEV_PROJ_11,MATMUL(ELASTICITY_TENSOR(1:3,1:3),DEV_PROJ_11))
+      TEMP=MATMUL(DEV_PROJ_11,ELASTICITY_TENSOR(1:3,4:6))
+      ELASTICITY_TENSOR(1:3,4:6)=TEMP
+      ELASTICITY_TENSOR(4:6,1:3)=TRANSPOSE(TEMP)
+
       DO j=1,6
         DO i=1,6
           ELASTICITY_TENSOR(i,j)=ELASTICITY_TENSOR(i,j)- &
@@ -741,13 +742,12 @@ CONTAINS
       E=[0.5_DP*(AZL(1,1)-1.0_DP),0.5_DP*(AZL(2,2)-1.0_DP),0.5_DP*(AZL(3,3)-1.0_DP),AZL(2,1),AZL(3,1),AZL(3,2)] !(Modified) strain tensor in Voigt form.
       DQ_DE=B*E
       TEMPTERM1=0.5_DP*C(1)*EXP(0.5_DP*DOT_PRODUCT(E,DQ_DE))
-      ! Calculate isochoric fictitious 2nd Piola tensor (in Voigt form)
+      !Calculate isochoric fictitious 2nd Piola tensor (in Voigt form)
       STRESS_TENSOR=TEMPTERM1*DQ_DE
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) THEN
         !add active contraction stress values
-        !the active stress is stored inside the independent field that has been set up in the user program.
-        !for generality we could set up 3 components in independent field for 3 different active stress components
-        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        !Be aware for modified DZDNU, should active contraction be added here? Normally should be okay as modified DZDNU and DZDNU
+        !converge during the Newton iteration.
         CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
         DO i=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           dof_idx=FIELD_VARIABLE%COMPONENTS(i)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
@@ -758,8 +758,7 @@ CONTAINS
         ENDDO
       ENDIF
 
-      ! Calculate isochoric fictitious material elasticity tensor (in Voigt form), without the factor Jznu**(-4.0_DP/3.0_DP), as
-      ! this will be compensated for in the push-forward with the modified deformation gradient.
+      ! Calculate isochoric fictitious material elasticity tensor (in Voigt form).
       ! First calculate lower part of 6X6 matrix
       DO j=1,6
         DO i=j,6
@@ -788,13 +787,20 @@ CONTAINS
       DO i=1,6
         ELASTICITY_TENSOR(i,i)=ELASTICITY_TENSOR(i,i)+TWOTHIRDS_TRACE*UNITY_DIAGONAL(i)
       ENDDO
-      ELASTICITY_TENSOR=MATMUL(DEV_PROJ,MATMUL(ELASTICITY_TENSOR,DEV_PROJ))
+      !The following is equivalent to ELASTICITY_TENSOR=MATMUL(DEV_PROJ,MATMUL(ELASTICITY_TENSOR,DEV_PROJ)) but takes in acount the
+      !block structure of DEV_PROJ
+      ELASTICITY_TENSOR(1:3,1:3)=MATMUL(DEV_PROJ_11,MATMUL(ELASTICITY_TENSOR(1:3,1:3),DEV_PROJ_11))
+      TEMP=MATMUL(DEV_PROJ_11,ELASTICITY_TENSOR(1:3,4:6))
+      ELASTICITY_TENSOR(1:3,4:6)=TEMP
+      ELASTICITY_TENSOR(4:6,1:3)=TRANSPOSE(TEMP)
+
       DO j=1,6
         DO i=1,6
           ELASTICITY_TENSOR(i,j)=ELASTICITY_TENSOR(i,j)- &
             & (TWOTHIRDS_UNITY(i)*STRESS_TENSOR(j)+TWOTHIRDS_UNITY(j)*STRESS_TENSOR(i))
         ENDDO
       ENDDO
+
       !Add volumetric parts.
       STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)+P
       ELASTICITY_TENSOR(1,1)=ELASTICITY_TENSOR(1,1)-P
@@ -4146,9 +4152,8 @@ CONTAINS
 
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_ACTIVECONTRACTION_SUBTYPE) THEN
         !add active contraction stress values
-        !the active stress is stored inside the independent field that has been set up in the user program.
-        !for generality we could set up 3 components in independent field for 3 different active stress components
-        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        !Be aware for modified DZDNU, should active contraction be added here? Normally should be okay as modified DZDNU and DZDNU
+        !converge during the Newton iteration.
         CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
@@ -4164,6 +4169,7 @@ CONTAINS
       !Calculate isochoric Cauchy tensor (the deviatoric part) and add the volumetric part (the hydrostatic pressure).
       ONETHIRD_TRACE=SUM(STRESS_TENSOR(1:3))/3.0_DP
       STRESS_TENSOR(1:3)=STRESS_TENSOR(1:3)-ONETHIRD_TRACE+P
+
     CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE,EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE)
       PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
       P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,NO_PART_DERIV)
@@ -4175,9 +4181,8 @@ CONTAINS
       STRESS_TENSOR=TEMPTERM1*DQ_DE
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE) THEN
         !add active contraction stress values
-        !the active stress is stored inside the independent field that has been set up in the user program.
-        !for generality we could set up 3 components in independent field for 3 different active stress components
-        !!!!! Be aware for modified DZDNU, check if this the right way to do it?
+        !Be aware for modified DZDNU, should active contraction be added here? Normally should be okay as modified DZDNU and DZDNU
+        !converge during the Newton iteration.
         CALL FIELD_VARIABLE_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           dof_idx=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP% &
