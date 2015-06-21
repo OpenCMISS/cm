@@ -2437,8 +2437,8 @@ CONTAINS
             FACE_BASIS_DONE=.FALSE.
             NULLIFY(NEW_SUB_BASIS)
             DO ni2=1,ni-1
-              FACE_XI2(1)=OTHER_XI_DIRECTIONS3(ni2,2,1)
-              FACE_XI2(2)=OTHER_XI_DIRECTIONS3(ni2,3,1)
+!              FACE_XI2(1)=OTHER_XI_DIRECTIONS3(ni2,2,1)
+!              FACE_XI2(2)=OTHER_XI_DIRECTIONS3(ni2,3,1)
 
 !!TODO FIX THIS
               !Going to disable the test below, as it results in error in collapsed elements and doesn't save much time

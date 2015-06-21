@@ -986,14 +986,14 @@ CONTAINS
             CALL FINITE_ELASTICITY_GAUSS_ELASTICITY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERP_POINT, &
               & MATERIALS_INTERP_POINT,ELASTICITY_TENSOR,STRESS_TENSOR,DZDNU,Jznu,ELEMENT_NUMBER,ng,ERR,ERROR,*999)
 
-            ! Convert from Voigt form to tensor form.
+            !Convert from Voigt form to tensor form.
             DO nh=1,NUMBER_OF_DIMENSIONS
               DO mh=1,NUMBER_OF_DIMENSIONS
                 CAUCHY_TENSOR(mh,nh)=STRESS_TENSOR(TENSOR_TO_VOIGT3(mh,nh))
               ENDDO
             ENDDO
            
-            !First: loop over mh=nh
+            !1) loop over mh=nh
             !Loop over element columns belonging to geometric dependent variables
             nhs=0
             DO nh=1,NUMBER_OF_DIMENSIONS
@@ -1011,7 +1011,7 @@ CONTAINS
               ENDDO !ns
             ENDDO !nh
          
-            !Second: loop over mh>nh
+            !2) loop over mh>nh
             !Loop over element columns belonging to geometric dependent variables
             DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
               nh=OFF_DIAG_DEP_VAR1(oh)
@@ -1031,7 +1031,7 @@ CONTAINS
               ENDDO !ns
             ENDDO
 
-            !Third: loop over all nh and pressure component
+            !3) loop over all nh and pressure component
             nhs=0
             IF(FIELD_VARIABLE%COMPONENTS(PRESSURE_COMPONENT)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
               !Loop over element rows belonging to geometric dependent variables
@@ -1067,15 +1067,15 @@ CONTAINS
 
           !If symmetric pressure Jacobian uncomment this.
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
-!          IF(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT.AND. &
-!            & TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
-!            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-!          ENDIF
+          IF(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT.AND. &
+            & TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
+            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+          ENDIF
 
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            ! Following function is necessary, otherwise wrong face scale factors from function call to surface pressure residual are
-            ! used.
+            !Following call is necessary, otherwise wrong face scale factors from function call to surface pressure jacobian are
+            !used.
             CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER, &
               & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999) 
             nhs=0          
@@ -1147,12 +1147,12 @@ CONTAINS
             ENDDO !mhs
           ENDDO !nhs
 
-          !If unsymmetric pressure Jacobian uncomment this.
+!         !If unsymmetric pressure Jacobian uncomment this.
 !         !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
-          IF(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT.AND. &
-            & TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
-            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-          ENDIF
+!         IF(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BOUNDARY_ELEMENT.AND. &
+!           & TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
+!           CALL FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+!          ENDIF
         ENDIF
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
@@ -3002,8 +3002,8 @@ CONTAINS
     INTEGER(INTG) :: SUM_ELEMENT_PARAMETERS,TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS
     INTEGER(INTG) :: ELEMENT_BASE_DOF_INDEX(3),NUMBER_OF_FACE_PARAMETERS(3)
     INTEGER(INTG), PARAMETER :: OFF_DIAG_COMP(3)=[0,1,3],OFF_DIAG_DEP_VAR1(3)=[1,1,2],OFF_DIAG_DEP_VAR2(3)=[2,3,3]
-    REAL(DP) :: PRESSURE_GAUSS,JGW_PRESSURE,JGW_PRESSURE_W(2)
-    REAL(DP) :: TEMPVEC1(4),TEMPVEC2(4)
+    REAL(DP) :: PRESSURE_GAUSS,JGW_PRESSURE
+    REAL(DP) :: JGW_PRESSURE_W(2),TEMPVEC1(2),TEMPVEC2(2)
     LOGICAL :: NONZERO_PRESSURE
 
     CALL ENTERS("FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE",ERR,ERROR,*999)
@@ -3043,7 +3043,7 @@ CONTAINS
 
       !Check if it's a boundary face
       IF(FACE%BOUNDARY_FACE) THEN 
-        NORMAL_COMPONENT=ABS(FACE%XI_DIRECTION)  ! This can be a negative number
+        NORMAL_COMPONENT=ABS(FACE%XI_DIRECTION)
 
         PRESSURE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DELUDELN_TYPE)%PTR
         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_PRESSURE_VALUES_SET_TYPE,FACE_NUMBER, &
@@ -3091,75 +3091,28 @@ CONTAINS
               & DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
 
             PRESSURE_GAUSS=PRESSURE_INTERP_POINT%VALUES(NORMAL_COMPONENT,NO_PART_DERIV)    !Surface pressure at this gauss point
-            SELECT CASE(FACE%XI_DIRECTION)
-            !Xi direction +-2 is different sign because normal is calculated from g_1 x g_3.
-            CASE(-3,-1,2)
-              PRESSURE_GAUSS=-PRESSURE_GAUSS
-            END SELECT
+            IF(FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS
 
             JGW_PRESSURE=DEPENDENT_INTERP_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)*PRESSURE_GAUSS
 
-            !\todo Find a way to correctly multiply with the scale factors if we have an unsymmetric Jacobian.
             !Loop over element columns belonging to geometric dependent variables
             DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
               nh=OFF_DIAG_DEP_VAR1(oh)
               mh=OFF_DIAG_DEP_VAR2(oh)
-              JGW_PRESSURE_W(1)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,nh)- &
-                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-              JGW_PRESSURE_W(2)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,nh)- &
-                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
+              JGW_PRESSURE_W(1:2)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1:2,nh)- &
+                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1:2,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
               DO ns=1,NUMBER_OF_FACE_PARAMETERS(nh)
                 !Loop over element rows belonging to geometric dependent variables
                 nhs=ELEMENT_BASE_DOF_INDEX(nh)+ &
                   & BASES(nh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ns,naf)
-                TEMPVEC1(1)=JGW_PRESSURE_W(1)*QUADRATURE_SCHEMES(nh)%PTR% &
-                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1),ng)
-                TEMPVEC1(2)=JGW_PRESSURE_W(2)*QUADRATURE_SCHEMES(nh)%PTR% &
-                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2),ng)
-                !TEMPVEC1(3)=-JGW_PRESSURE_W(1)*QUADRATURE_SCHEMES(nh)%PTR%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                !TEMPVEC1(4)=-JGW_PRESSURE_W(2)*QUADRATURE_SCHEMES(nh)%PTR%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                TEMPVEC1(1:2)=JGW_PRESSURE_W(1:2)*QUADRATURE_SCHEMES(nh)%PTR% &
+                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:2),ng)
                 DO ms=1,NUMBER_OF_FACE_PARAMETERS(mh)
                   mhs=ELEMENT_BASE_DOF_INDEX(mh)+ &
                     & BASES(mh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ms,naf)
-                  TEMPVEC2(1)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                  TEMPVEC2(2)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                 ! TEMPVEC2(3)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1),ng)
-                 ! TEMPVEC2(4)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2),ng)
+                  TEMPVEC2=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                   JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
-                    DOT_PRODUCT(TEMPVEC1(1:2),TEMPVEC2(1:2))* &
-                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ms,mh)* &
-                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,nh)
-                ENDDO !ms    
-              ENDDO !ns
-            ENDDO !oh
-            DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
-              nh=OFF_DIAG_DEP_VAR2(oh)
-              mh=OFF_DIAG_DEP_VAR1(oh)
-              JGW_PRESSURE_W(1)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,nh)- &
-                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-              JGW_PRESSURE_W(2)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,nh)- &
-                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(2,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
-              DO ns=1,NUMBER_OF_FACE_PARAMETERS(nh)
-                !Loop over element rows belonging to geometric dependent variables
-                nhs=ELEMENT_BASE_DOF_INDEX(nh)+ &
-                  & BASES(nh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ns,naf)
-                TEMPVEC1(1)=JGW_PRESSURE_W(1)*QUADRATURE_SCHEMES(nh)%PTR% &
-                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1),ng)
-                TEMPVEC1(2)=JGW_PRESSURE_W(2)*QUADRATURE_SCHEMES(nh)%PTR% &
-                  & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2),ng)
-              !  TEMPVEC1(3)=-JGW_PRESSURE_W(1)*QUADRATURE_SCHEMES(nh)%PTR%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-              !  TEMPVEC1(4)=-JGW_PRESSURE_W(2)*QUADRATURE_SCHEMES(nh)%PTR%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                DO ms=1,NUMBER_OF_FACE_PARAMETERS(mh)
-                  mhs=ELEMENT_BASE_DOF_INDEX(mh)+ &
-                    & BASES(mh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ms,naf)
-                  TEMPVEC2(1)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                  TEMPVEC2(2)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-               !   TEMPVEC2(3)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1),ng)
-               !   TEMPVEC2(4)=QUADRATURE_SCHEMES(mh)%PTR%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(2),ng)
-                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
-                    DOT_PRODUCT(TEMPVEC1(1:2),TEMPVEC2(1:2))* &
-                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ms,mh)* &
-                    & DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(ns,nh)
+                    DOT_PRODUCT(TEMPVEC1,TEMPVEC2)
                 ENDDO !ms    
               ENDDO !ns
             ENDDO !oh
@@ -3250,7 +3203,6 @@ CONTAINS
       !Check if it's a boundary face
       IF(DECOMP_FACE%BOUNDARY_FACE) THEN !!temporary until MESH_FACE (or equivalent) is available (decomp face includes ghost faces?)
         normal_component_idx=ABS(DECOMP_FACE%XI_DIRECTION)  ! if xi=0, this can be a negative number
-        !\todo: will FACE_COMPONENTS be a problem with sector elements? Check this.
         !Get pressure interpolation objects (DELUDELN pressure_values_set_type)
         FACE_PRESSURE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DUDN_TYPE)%PTR
         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_PRESSURE_VALUES_SET_TYPE,face_number, &
@@ -3285,11 +3237,7 @@ CONTAINS
               & FACE_PRESSURE_INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
             PRESSURE_GAUSS=FACE_PRESSURE_INTERPOLATED_POINT%VALUES(normal_component_idx,NO_PART_DERIV)    !Surface pressure at this gauss point
             
-            SELECT CASE(DECOMP_FACE%XI_DIRECTION)
-            !Xi direction +-2 is different sign because normal is calculated from g_1 x g_3.
-            CASE(-3,-1,2)
-              PRESSURE_GAUSS=-PRESSURE_GAUSS
-            END SELECT
+            IF(DECOMP_FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS
 
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
               & FACE_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
@@ -3307,7 +3255,7 @@ CONTAINS
               COMPONENT_FACE_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)%BASIS
               COMPONENT_FACE_QUADRATURE_SCHEME=>COMPONENT_FACE_BASIS% &
                 & QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              JGW_PRESSURE_NORMAL_COMPONENT=JGW_PRESSURE*FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI(component_idx,3)
+              JGW_PRESSURE_NORMAL_COMPONENT=JGW_PRESSURE*FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DXI_DX(3,component_idx)
               DO face_parameter_idx=1,COMPONENT_FACE_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 parameter_idx=COMPONENT_BASIS%ELEMENT_PARAMETERS_IN_LOCAL_FACE(face_parameter_idx,element_face_idx)
                 element_dof_idx=element_base_dof_idx+parameter_idx

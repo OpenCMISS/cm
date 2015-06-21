@@ -270,7 +270,8 @@ MODULE CONSTANTS
   !>
   INTEGER(INTG) :: OTHER_XI_DIRECTIONS2(2) = [ 2,1 ] !<OTHER_XI_DIRECTIONS2(ni) gives the other xi direction for direction ni for a two dimensional element
   !>
-  INTEGER(INTG) :: OTHER_XI_DIRECTIONS3(3,3,2) = RESHAPE([ 1,2,3,2,1,1,3,3,2,0,3,2,3,0,1,2,1,0 ],[3,3,2]) !<OTHER_XI_DIRECTIONS3(ni,nii,type) gives the other xi directions for direction ni for a three dimensional element. When type=1 then the nii index gives the other two xi directions (for nii=2,3) and when type=2 then ni and nii are used to give the third xi direction.
+  INTEGER(INTG) :: OTHER_XI_DIRECTIONS3(3,3,2) = RESHAPE([ 1,2,3,2,3,1,3,1,2,0,3,-2,-3,0,1,2,-1,0 ],[3,3,2])
+  !<OTHER_XI_DIRECTIONS3(ni,nii,type) gives the other xi directions for direction ni for a three dimensional element. When type=1 then the nii index gives the other two xi directions (for nii=2,3) and when type=2 then ni and nii are used to give the third xi direction with the correct orientation.
 
   INTEGER(INTG) :: OTHER_XI_DIRECTIONS4(4,3) = RESHAPE([ 2,3,4,1,3,4,1,2,4,1,2,3 ],[4,3]) !<OTHER_XI_DIRECTIONS4(nic,nii) gives the other xi coordinates for coordinate nic for a simplex element.
  
