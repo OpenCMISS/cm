@@ -758,6 +758,8 @@ CONTAINS
         ENDDO
       ENDIF
 
+      !\todo blas has routines specifically for symmetric matrices, so it would be worth to check if these could give some speedup.
+
       ! Calculate isochoric fictitious material elasticity tensor (in Voigt form).
       ! First calculate lower part of 6X6 matrix
       DO j=1,6
@@ -2967,8 +2969,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !Evaluates the Jacobian surface traction (pressure) term of the equilibrium equation. See Rumpel & Schweizerhof for equations. For
-  !most physical situations this jacobian should be symmetrical.
+  !Evaluates the Jacobian surface traction (pressure) term of the equilibrium equation. Here it is assumed that pressure is constant
+  !(if not: the jacobian has to be extended to include this) and that along the boundary of the boundary faces (the boundary line)
+  !minimal one direction perpendicular to that boundary line is fixed, or that we have no boundary line at all (a closed body). In
+  !these cases the jacobian is symmetrical. See Rumpel & Schweizerhof, "Hydrostatic fluid loading in non-linear finite element
+  !analysis".
   SUBROUTINE FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -3002,8 +3007,8 @@ CONTAINS
     INTEGER(INTG) :: SUM_ELEMENT_PARAMETERS,TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS
     INTEGER(INTG) :: ELEMENT_BASE_DOF_INDEX(3),NUMBER_OF_FACE_PARAMETERS(3)
     INTEGER(INTG), PARAMETER :: OFF_DIAG_COMP(3)=[0,1,3],OFF_DIAG_DEP_VAR1(3)=[1,1,2],OFF_DIAG_DEP_VAR2(3)=[2,3,3]
-    REAL(DP) :: PRESSURE_GAUSS,JGW_PRESSURE
-    REAL(DP) :: JGW_PRESSURE_W(2),TEMPVEC1(2),TEMPVEC2(2)
+    REAL(DP) :: PRESSURE_GAUSS,GW_PRESSURE
+    REAL(DP) :: NORMAL(3),GW_PRESSURE_W(2),TEMPVEC1(2),TEMPVEC2(2)
     LOGICAL :: NONZERO_PRESSURE
 
     CALL ENTERS("FINITE_ELASTICITY_SURFACE_PRESSURE_JACOBIAN_EVALUATE",ERR,ERROR,*999)
@@ -3093,19 +3098,21 @@ CONTAINS
             PRESSURE_GAUSS=PRESSURE_INTERP_POINT%VALUES(NORMAL_COMPONENT,NO_PART_DERIV)    !Surface pressure at this gauss point
             IF(FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS
 
-            JGW_PRESSURE=DEPENDENT_INTERP_POINT_METRICS%JACOBIAN*DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)*PRESSURE_GAUSS
+            CALL CROSS_PRODUCT(DEPENDENT_INTERP_POINT_METRICS%DX_DXI(:,1), &
+              & DEPENDENT_INTERP_POINT_METRICS%DX_DXI(:,2),NORMAL,ERR,ERROR,*999)
+            GW_PRESSURE=DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)*PRESSURE_GAUSS
 
             !Loop over element columns belonging to geometric dependent variables
             DO oh=1,OFF_DIAG_COMP(NUMBER_OF_DIMENSIONS)
               nh=OFF_DIAG_DEP_VAR1(oh)
               mh=OFF_DIAG_DEP_VAR2(oh)
-              JGW_PRESSURE_W(1:2)=(DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1:2,nh)- &
-                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1:2,mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(3,nh))*JGW_PRESSURE
+              GW_PRESSURE_W(1:2)=(NORMAL(mh)*DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1:2,nh)- &
+                & DEPENDENT_INTERP_POINT_METRICS%DXI_DX(1:2,mh)*NORMAL(nh))*GW_PRESSURE
               DO ns=1,NUMBER_OF_FACE_PARAMETERS(nh)
                 !Loop over element rows belonging to geometric dependent variables
                 nhs=ELEMENT_BASE_DOF_INDEX(nh)+ &
                   & BASES(nh)%PTR%ELEMENT_PARAMETERS_IN_LOCAL_FACE(ns,naf)
-                TEMPVEC1(1:2)=JGW_PRESSURE_W(1:2)*QUADRATURE_SCHEMES(nh)%PTR% &
+                TEMPVEC1(1:2)=GW_PRESSURE_W(1:2)*QUADRATURE_SCHEMES(nh)%PTR% &
                   & GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:2),ng)
                 DO ms=1,NUMBER_OF_FACE_PARAMETERS(mh)
                   mhs=ELEMENT_BASE_DOF_INDEX(mh)+ &
@@ -3161,7 +3168,8 @@ CONTAINS
     INTEGER(INTG) :: element_face_idx,face_number,normal_component_idx,gauss_idx
     INTEGER(INTG) :: component_idx,element_base_dof_idx,element_dof_idx,parameter_idx,face_parameter_idx
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_LOCAL_FACES
-    REAL(DP) :: PRESSURE_GAUSS,JGW_PRESSURE,JGW_PRESSURE_NORMAL_COMPONENT
+    REAL(DP) :: PRESSURE_GAUSS,GW_PRESSURE,GW_PRESSURE_NORMAL_COMPONENT
+    REAL(DP) :: NORMAL(3)
     LOGICAL :: NONZERO_PRESSURE
 
     CALL ENTERS("FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE",ERR,ERROR,*999)
@@ -3243,9 +3251,10 @@ CONTAINS
               & FACE_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE, &
               & FACE_DEPENDENT_INTERPOLATED_POINT_METRICS,ERR,ERROR,*999)
-            
-            JGW_PRESSURE=FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%JACOBIAN* &
-              & FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)*PRESSURE_GAUSS
+           
+            CALL CROSS_PRODUCT(FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI(:,1), &
+              & FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI(:,2),NORMAL,ERR,ERROR,*999)
+            GW_PRESSURE=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)*PRESSURE_GAUSS
             element_base_dof_idx=0
             !Loop over 3 components
             DO component_idx=1,NUMBER_OF_DIMENSIONS
@@ -3255,13 +3264,13 @@ CONTAINS
               COMPONENT_FACE_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)%BASIS
               COMPONENT_FACE_QUADRATURE_SCHEME=>COMPONENT_FACE_BASIS% &
                 & QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-              JGW_PRESSURE_NORMAL_COMPONENT=JGW_PRESSURE*FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DXI_DX(3,component_idx)
+              GW_PRESSURE_NORMAL_COMPONENT=GW_PRESSURE*NORMAL(component_idx)
               DO face_parameter_idx=1,COMPONENT_FACE_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 parameter_idx=COMPONENT_BASIS%ELEMENT_PARAMETERS_IN_LOCAL_FACE(face_parameter_idx,element_face_idx)
                 element_dof_idx=element_base_dof_idx+parameter_idx
                 NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
                   & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ & ! sign: double -'s. p(appl) always opposite to normal'
-                  & JGW_PRESSURE_NORMAL_COMPONENT* &
+                  & GW_PRESSURE_NORMAL_COMPONENT* &
                   & COMPONENT_FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx,NO_PART_DERIV,gauss_idx)
               ENDDO !face_parameter_idx
               !Update element_base_dof_idx

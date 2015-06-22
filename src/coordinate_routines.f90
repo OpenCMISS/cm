@@ -657,7 +657,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mi,ni,nu
-    REAL(DP) :: DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
+    REAL(DP) :: DET_GL,DET_DX_DXI,DX_DXI2(3),DX_DXI3(3),DXI3_DX(3),FF,G1,G3,LENGTH,MU,R,RC,RCRC,RR,SCALE
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -911,26 +911,28 @@ CONTAINS
                 !Surface in space
                 IF(METRICS%NUMBER_OF_X_DIMENSIONS==3) THEN
                   !Surface in 3D space.
-                  !Calculate the covariant normal vector.
-                  CALL NORM_CROSS_PRODUCT(METRICS%DX_DXI(:,1),METRICS%DX_DXI(:,2),METRICS%DXI_DX(3,:),ERR,ERROR,*999)
-                  !Calculate the contravariant normal vector.
+                  !Calculate the covariant normal vector. The normalization is arbitrary as we don't know g_3, but we do
+                  !need to be consistent such that <g_M,g^N>=delta_M^N
+                  CALL CROSS_PRODUCT(METRICS%DX_DXI(1:3,1),METRICS%DX_DXI(1:3,2),DXI3_DX,ERR,ERROR,*999)
+                  DXI3_DX=DXI3_DX/DET_GL
+                  !Calculate the contravariant normal vector by raising the index.
                   SELECT CASE(COORDINATE_SYSTEM%TYPE)
                   CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-                    METRICS%DX_DXI(:,3)=METRICS%DXI_DX(3,:)
+                    DX_DXI3=DXI3_DX
                   CASE(COORDINATE_CYLINDRICAL_POLAR_TYPE)
                     R=INTERPOLATED_POINT%VALUES(1,1)
                     RR=R*R
-                    METRICS%DX_DXI(1,3)=METRICS%DXI_DX(3,1)
-                    METRICS%DX_DXI(2,3)=METRICS%DXI_DX(3,2)/RR
-                    METRICS%DX_DXI(3,3)=METRICS%DXI_DX(3,3)
+                    DX_DXI3(1)=DXI3_DX(1)
+                    DX_DXI3(2)=DXI3_DX(2)/RR
+                    DX_DXI3(3)=DXI3_DX(3)
                   CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
                     R=INTERPOLATED_POINT%VALUES(1,1)
                     RR=R*R
                     RC=R*COS(INTERPOLATED_POINT%VALUES(3,1))
                     RCRC=RC*RC          
-                    METRICS%DX_DXI(1,3)=METRICS%DXI_DX(3,1)
-                    METRICS%DX_DXI(2,3)=METRICS%DXI_DX(3,2)/RCRC
-                    METRICS%DX_DXI(3,3)=METRICS%DXI_DX(3,3)/RR
+                    DX_DXI3(1)=DXI3_DX(1)
+                    DX_DXI3(2)=DXI3_DX(2)/RCRC
+                    DX_DXI3(3)=DXI3_DX(3)/RR
                   CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
                     IF(ABS(INTERPOLATED_POINT%VALUES(2,1))<ZERO_TOLERANCE) THEN
                       CALL FLAG_WARNING("Mu is zero.",ERR,ERROR,*999)
@@ -940,9 +942,9 @@ CONTAINS
                       MU=INTERPOLATED_POINT%VALUES(2,1)
                       G1=FF*(SINH(R)*SINH(R)+SIN(MU)*SIN(MU))
                       G3=FF*SINH(R)*SINH(R)*SIN(MU)*SIN(MU)
-                      METRICS%DX_DXI(1,3)=METRICS%DXI_DX(3,1)/G1
-                      METRICS%DX_DXI(2,3)=METRICS%DXI_DX(3,2)/G1
-                      METRICS%DX_DXI(3,3)=METRICS%DXI_DX(3,3)/G3
+                      DX_DXI3(1)=DXI3_DX(1)/G1
+                      DX_DXI3(2)=DXI3_DX(2)/G1
+                      DX_DXI3(3)=DXI3_DX(3)/G3
                     ENDIF
                   CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -951,11 +953,9 @@ CONTAINS
                       & " is invalid."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
-                    ! Calculate the other two covariant vectors
-                    CALL CROSS_PRODUCT(METRICS%DX_DXI(:,2),METRICS%DX_DXI(:,3),METRICS%DXI_DX(1,:),ERR,ERROR,*999)
-                    CALL CROSS_PRODUCT(METRICS%DX_DXI(:,3),METRICS%DX_DXI(:,1),METRICS%DXI_DX(2,:),ERR,ERROR,*999)
-                    ! Normalise them, so that g_M.g^N=kroneckerdelta(M,N)
-                    METRICS%DXI_DX(1:2,:)=METRICS%DXI_DX(1:2,:)/METRICS%JACOBIAN
+                  !Calculate the other two covariant vectors
+                  CALL CROSS_PRODUCT(METRICS%DX_DXI(1:3,2),DX_DXI3,METRICS%DXI_DX(1,1:3),ERR,ERROR,*999)
+                  CALL CROSS_PRODUCT(DX_DXI3,METRICS%DX_DXI(1:3,1),METRICS%DXI_DX(2,1:3),ERR,ERROR,*999)
                 ELSE
                   CALL FLAG_ERROR("Invalid embedding of a surface in space.",ERR,ERROR,*999)
                 ENDIF
