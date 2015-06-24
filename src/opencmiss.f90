@@ -2242,6 +2242,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE !<Compressible version for finite elasticity equations set with active contraction subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE = &
+    & EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE !< Transverse isotropic Guccione constitutive law with active contraction subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE= &
@@ -2472,6 +2474,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFEM_SOLUTION_METHOD = EQUATIONS_SET_GFEM_SOLUTION_METHOD !<Grid-based Finite Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD = EQUATIONS_SET_GFD_SOLUTION_METHOD !<Grid-based Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD = EQUATIONS_SET_GFV_SOLUTION_METHOD !<Grid-based Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  !>@}
+
+  !> \addtogroup OPENCMISS_EquationsSetDerivedTypes OPENCMISS::EquationsSet::OutputTypes
+  !> \brief Field values to output
+  !> \see OPENCMISS::EquationsSet,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DERIVED_STRAIN = EQUATIONS_SET_DERIVED_STRAIN !<Strain tensor field output. \see OPENCMISS_EquationsSetDerivedTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DERIVED_STRESS = EQUATIONS_SET_DERIVED_STRESS !<Stress tensor field output. \see OPENCMISS_EquationsSetDerivedTypes,OPENCMISS
   !>@}
 
   !> \addtogroup OPENCMISS_EquationsSetDynamicMatrixTypes OPENCMISS::EquationsSet::DynamicMatrixTypes
@@ -2716,6 +2726,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_INCOMPRESS_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE, &
     & CMISS_EQUATIONS_SET_INCOMPRESS_ELAST_MULTI_COMP_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_GUCCIONE_ACTIVECONTRACTION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE, &
     & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE,&
@@ -2799,6 +2810,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_FV_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD, &
     & CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD
 
+  PUBLIC CMISS_EQUATIONS_SET_DERIVED_STRAIN,CMISS_EQUATIONS_SET_DERIVED_STRESS
   PUBLIC CMISS_EQUATIONS_MATRIX_STIFFNESS,CMISS_EQUATIONS_MATRIX_DAMPING,CMISS_EQUATIONS_MATRIX_MASS
 
   PUBLIC CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2, &
@@ -2952,6 +2964,25 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_DependentDestroyObj
   END INTERFACE !CMISSEquationsSet_DependentDestroy
 
+  !>Finish the creation of derived variables for an equations set. \see OPENCMISS::CMISSEquationsSet_DerivedCreateStart
+  INTERFACE CMISSEquationsSet_DerivedCreateFinish
+    MODULE PROCEDURE CMISSEquationsSet_DerivedCreateFinishNumber
+    MODULE PROCEDURE CMISSEquationsSet_DerivedCreateFinishObj
+  END INTERFACE !CMISSEquationsSet_DerivedCreateFinish
+
+  !>Start the creation of derived variables for an equations set. These are used to store any intermediate
+  !>calculated values, for example stress and strain fields in an elasticity problem. \see OPENCMISS::CMISSEquationsSet_DerivedCreateFinish
+  INTERFACE CMISSEquationsSet_DerivedCreateStart
+    MODULE PROCEDURE CMISSEquationsSet_DerivedCreateStartNumber
+    MODULE PROCEDURE CMISSEquationsSet_DerivedCreateStartObj
+  END INTERFACE !CMISSEquationsSet_DerivedCreateStart
+
+  !>Destroy the derived variables for an equations set.
+  INTERFACE CMISSEquationsSet_DerivedDestroy
+    MODULE PROCEDURE CMISSEquationsSet_DerivedDestroyNumber
+    MODULE PROCEDURE CMISSEquationsSet_DerivedDestroyObj
+  END INTERFACE !CMISSEquationsSet_DerivedDestroy
+
   !>Finish the creation of equations for an equations set. \see OPENCMISS::CMISSEquationsSet_EquationsCreateStart
   INTERFACE CMISSEquationsSet_EquationsCreateFinish
     MODULE PROCEDURE CMISSEquationsSet_EquationsCreateFinishNumber
@@ -3042,11 +3073,29 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSet_SpecificationGetObj
   END INTERFACE !CMISSEquationsSet_SpecificationGet
 
-   !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set.
+  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set.
   INTERFACE CMISSEquationsSet_SpecificationSet
     MODULE PROCEDURE CMISSEquationsSet_SpecificationSetNumber
     MODULE PROCEDURE CMISSEquationsSet_SpecificationSetObj
   END INTERFACE !CMISSEquationsSet_SpecificationSet
+
+  !>Calculates an output field for the equations set.
+  INTERFACE CMISSEquationsSet_DerivedVariableCalculate
+    MODULE PROCEDURE CMISSEquationsSet_DerivedVariableCalculateNumber
+    MODULE PROCEDURE CMISSEquationsSet_DerivedVariableCalculateObj
+  END INTERFACE !CMISSEquationsSet_DerivedVariableCalculate
+
+  !>Set the derived field variable type to be used by a derived variable
+  INTERFACE CMISSEquationsSet_DerivedVariableSet
+    MODULE PROCEDURE CMISSEquationsSet_DerivedVariableSetNumber
+    MODULE PROCEDURE CMISSEquationsSet_DerivedVariableSetObj
+  END INTERFACE !CMISSEquationsSet_DerivedVariableSet
+
+  !>Calculate the strain tensor at a given element xi location.
+  INTERFACE CMISSEquationsSet_StrainInterpolateXi
+    MODULE PROCEDURE CMISSEquationsSet_StrainInterpolateXiNumber
+    MODULE PROCEDURE CMISSEquationsSet_StrainInterpolateXiObj
+  END INTERFACE CMISSEquationsSet_StrainInterpolateXi
 
   !>Gets the equations set analytic user parameter
   INTERFACE CMISSEquationsSet_AnalyticUserParamGet
@@ -3076,6 +3125,12 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSet_DependentDestroy
 
+  PUBLIC CMISSEquationsSet_DerivedCreateFinish,CMISSEquationsSet_DerivedCreateStart
+
+  PUBLIC CMISSEquationsSet_DerivedDestroy
+
+  PUBLIC CMISSEquationsSet_DerivedVariableCalculate,CMISSEquationsSet_DerivedVariableSet
+
   PUBLIC CMISSEquationsSet_EquationsCreateFinish,CMISSEquationsSet_EquationsCreateStart
 
   PUBLIC CMISSEquationsSet_EquationsDestroy
@@ -3095,6 +3150,8 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSet_SourceDestroy
 
   PUBLIC CMISSEquationsSet_SpecificationGet,CMISSEquationsSet_SpecificationSet
+
+  PUBLIC CMISSEquationsSet_StrainInterpolateXi
 
   PUBLIC CMISSEquationsSet_AnalyticUserParamSet,CMISSEquationsSet_AnalyticUserParamGet
 
@@ -22820,6 +22877,356 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of derived variables for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSet_DerivedCreateFinishNumber(regionUserNumber,equationsSetUserNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set to finish the creation of derived variables for.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to finish the creation of derived variables for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSEquationsSet_DerivedCreateFinishNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(equationsSet)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL EquationsSet_DerivedCreateFinish(equationsSet,err,error,*999)
+      ELSE
+        localError="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSEquationsSet_DerivedCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedCreateFinishNumber",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DerivedCreateFinishNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of derived variables for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSet_DerivedCreateFinishObj(equationsSet,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: equationsSet !<The equations set to finish the creation of derived variables for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSEquationsSet_DerivedCreateFinishObj",err,error,*999)
+
+    CALL EquationsSet_DerivedCreateFinish(equationsSet%EQUATIONS_SET,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DerivedCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedCreateFinishObj",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DerivedCreateFinishObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of derived variables for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSet_DerivedCreateStartNumber(regionUserNumber,equationsSetUserNumber,derivedFieldUserNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set to start the creation of derived variables for.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to start the creation of derived variables for.
+    INTEGER(INTG), INTENT(IN) :: derivedFieldUserNumber !<The user number of the derived field.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(FIELD_TYPE), POINTER :: derivedField
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSEquationsSet_DerivedCreateStartNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(equationsSet)
+    NULLIFY(derivedField)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL FIELD_USER_NUMBER_FIND(derivedFieldUserNumber,region,derivedField,err,error,*999)
+        CALL EquationsSet_DerivedCreateStart(equationsSet,derivedFieldUserNumber,derivedField,err,error,*999)
+      ELSE
+        localError="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSEquationsSet_DerivedCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedCreateStartNumber",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DerivedCreateStartNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of derived variables for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSet_DerivedCreateStartObj(equationsSet,derivedFieldUserNumber,derivedField,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: equationsSet !<The equations set to start the creation of derived variables on.
+    INTEGER(INTG), INTENT(IN) :: derivedFieldUserNumber !<The user number of the derived field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: derivedField !<If associated on entry, the user created derived field which has the same user number as the specified derived field user number. If not associated on entry, on return, the created derived field for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSEquationsSet_DerivedCreateStartObj",err,error,*999)
+
+    CALL EquationsSet_DerivedCreateStart(equationsSet%EQUATIONS_SET,derivedFieldUserNumber,derivedField%FIELD, &
+      & err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DerivedCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedCreateStartObj",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DerivedCreateStartObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the derived variables for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSet_DerivedDestroyNumber(regionUserNumber,equationsSetUserNumber,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set to destroy the derived variables for.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to destroy the derived variables for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSEquationsSet_DerivedDestroyNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(equationsSet)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL EquationsSet_DerivedDestroy(equationsSet,err,error,*999)
+      ELSE
+        localError="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSEquationsSet_DerivedDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedDestroyNumber",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DerivedDestroyNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the derived variables for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSet_DerivedDestroyObj(equationsSet,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: equationsSet !<The equations set to destroy the derived variables for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSEquationsSet_DerivedDestroyObj",err,error,*999)
+
+    CALL EquationsSet_DerivedDestroy(equationsSet%EQUATIONS_SET,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DerivedDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedDestroyObj",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedDestroyObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_DerivedDestroyObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates a derived field value for the equations set and stores the result in the derived field previously set up
+  SUBROUTINE CMISSEquationsSet_DerivedVariableCalculateNumber(regionUserNumber,equationsSetUserNumber,derivedType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to calculate the output for.
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived variable type to calculate. \see OPENCMISS_EquationsSetDerivedTypes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSEquationsSet_DerivedVariableCalculateNumber",err,error,*999)
+
+    NULLIFY(equationsSet)
+    NULLIFY(region)
+
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL EquationsSet_DerivedVariableCalculate(equationsSet,derivedType,err,error,*999)
+      ELSE
+        localError="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*", &
+          & err,error))//" does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedVariableCalculateNumber",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+  END SUBROUTINE CMISSEquationsSet_DerivedVariableCalculateNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates a derived field value for the equations set and stores the result in the derived field previously set up
+  SUBROUTINE CMISSEquationsSet_DerivedVariableCalculateObj(equationsSet,derivedType,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to calculate the output for.
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived field type to calculate. \see OPENCMISS_EquationsSetDerivedTypes.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL ENTERS("CMISSEquationsSet_DerivedVariableCalculateObj",err,error,*999)
+
+    CALL EquationsSet_DerivedVariableCalculate(equationsSet%EQUATIONS_SET,derivedType,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedVariableCalculateObj",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+  END SUBROUTINE CMISSEquationsSet_DerivedVariableCalculateObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field variable type of the derived field to be used to store a derived variable
+  SUBROUTINE CMISSEquationsSet_DerivedVariableSetNumber(regionUserNumber,equationsSetUserNumber,derivedType,fieldVariableType,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to calculate the output for.
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived variable type to calculate. \see OPENCMISS_EquationsSetDerivedTypes.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to store the calculated values in.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSEquationsSet_DerivedVariableSetNumber",err,error,*999)
+
+    NULLIFY(equationsSet)
+    NULLIFY(region)
+
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL EquationsSet_DerivedVariableSet(equationsSet,derivedType,fieldVariableType,err,error,*999)
+      ELSE
+        localError="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(equationsSetUserNumber,"*", &
+          & err,error))//" does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSEquationsSet_DerivedVariableSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedVariableSetNumber",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedVariableSetNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+  END SUBROUTINE CMISSEquationsSet_DerivedVariableSetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the field variable type of the derived field to be used to store a derived variable
+  SUBROUTINE CMISSEquationsSet_DerivedVariableSetObj(equationsSet,derivedType,fieldVariableType,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<The equations set to calculate the output for.
+    INTEGER(INTG), INTENT(IN) :: derivedType !<The derived field type to calculate. \see OPENCMISS_EquationsSetDerivedTypes.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to store the calculated values in.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL ENTERS("CMISSEquationsSet_DerivedVariableSetObj",err,error,*999)
+
+    CALL EquationsSet_DerivedVariableSet(equationsSet%EQUATIONS_SET,derivedType,fieldVariableType,err,error,*999)
+
+    CALL EXITS("CMISSEquationsSet_DerivedVariableSetObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSet_DerivedVariableSetObj",err,error)
+    CALL EXITS("CMISSEquationsSet_DerivedVariableSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+  END SUBROUTINE CMISSEquationsSet_DerivedVariableSetObj
+
+  !
+  !================================================================================================================================
+  !
+
   !>Get a Jacobian matrix from the equations
   SUBROUTINE CMISSEquations_JacobianMatrixGet(equations,residualIndex,variableType,matrix,err)
 
@@ -25253,6 +25660,83 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSEquationsSet_SpecificationSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location, for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSet_StrainInterpolateXiNumber(regionUserNumber,equationsSetUserNumber,userElementNumber,xi,values,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the equations set.
+    INTEGER(INTG), INTENT(IN) :: equationsSetUserNumber !<The user number of the equations set to calculate the strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSEquationsSet_StrainInterpolateXiNumber",err,error,*999)
+
+    NULLIFY(equationsSet)
+    NULLIFY(region)
+
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(equationsSetUserNumber,region,equationsSet,err,error,*999)
+      IF(ASSOCIATED(equationsSet)) THEN
+        CALL EquationsSet_StrainInterpolateXi(equationsSet,userElementNumber,xi, &
+          & values,err,error,*999)
+      ELSE
+        localError="An equations set with a user number of "//TRIM(NumberToVstring(equationsSetUserNumber,"*", &
+          & err,error))//" does not exist on region number "//TRIM(NumberToVstring(regionUserNumber,"*",err,error))//"."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NumberToVstring(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiNumber")
+    RETURN
+999 CALL Errors("CMISSEquationsSet_StrainInterpolateXiNumber",err,error)
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiNumber")
+    CALL CmissHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_StrainInterpolateXiNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculate the strain tensor at a given element xi location, for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSet_StrainInterpolateXiObj(equationsSet,userElementNumber,xi,values,err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: equationsSet !<A pointer to the equations set to interpolate strain for.
+    INTEGER(INTG), INTENT(IN) :: userElementNumber !<The user element number of the field to interpolate.
+    REAL(DP), INTENT(IN) :: xi(:) !<The element xi to interpolate the field at.
+    REAL(DP), INTENT(OUT) :: values(6) !<The interpolated strain tensor values.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL Enters("CMISSEquationsSet_StrainInterpolateXiObj",err,error,*999)
+
+    CALL EquationsSet_StrainInterpolateXi(equationsSet%equations_set,userElementNumber,xi, &
+      & values,err,error,*999)
+
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiObj")
+    RETURN
+999 CALL Errors("CMISSEquationsSet_StrainInterpolateXiObj",err,error)
+    CALL Exits("CMISSEquationsSet_StrainInterpolateXiObj")
+    CALL CmissHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSet_StrainInterpolateXiObj
 
 !!==================================================================================================================================
 !!

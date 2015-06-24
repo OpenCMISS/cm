@@ -743,8 +743,10 @@ MODULE FIELD_ROUTINES
   PUBLIC FIELD_VARIABLE_GET
 
   PUBLIC FIELD_VARIABLE_LABEL_GET,FIELD_VARIABLE_LABEL_SET,FIELD_VARIABLE_LABEL_SET_AND_LOCK
-  
-  PUBLIC FIELD_VARIABLE_TYPES_CHECK,FIELD_VARIABLE_TYPES_GET,FIELD_VARIABLE_TYPES_SET,FIELD_VARIABLE_TYPES_SET_AND_LOCK
+
+  PUBLIC FIELD_VARIABLE_TYPES_CHECK,FIELD_VARIABLE_TYPE_CHECK,FIELD_VARIABLE_TYPES_GET
+
+  PUBLIC FIELD_VARIABLE_TYPES_SET,FIELD_VARIABLE_TYPES_SET_AND_LOCK
 
   PUBLIC MESH_EMBEDDING_PUSH_DATA, MESH_EMBEDDING_PULL_GAUSS_POINT_DATA, FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD
    
@@ -29963,6 +29965,54 @@ CONTAINS
     CALL EXITS("FIELD_VARIABLE_TYPES_CHECK")
     RETURN 1
   END SUBROUTINE FIELD_VARIABLE_TYPES_CHECK
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Checks the field contains the given field variable type.
+  SUBROUTINE FIELD_VARIABLE_TYPE_CHECK(FIELD,VARIABLE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to check the variable type for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to check for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: variable_idx
+    LOGICAL :: VARIABLE_FOUND
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_VARIABLE_TYPE_CHECK",ERR,ERROR,*999)
+
+    VARIABLE_FOUND=.FALSE.
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
+          IF(FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE==VARIABLE_TYPE) THEN
+            VARIABLE_FOUND=.TRUE.
+            CYCLE
+          END IF
+        ENDDO !variable_idx
+        IF(.NOT.VARIABLE_FOUND) THEN
+          CALL FLAG_ERROR("Field does not have a variable type of "// &
+            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//".",ERR,ERROR,*999)
+        END IF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_VARIABLE_TYPE_CHECK")
+    RETURN
+999 CALL ERRORS("FIELD_VARIABLE_TYPE_CHECK",ERR,ERROR)
+    CALL EXITS("FIELD_VARIABLE_TYPE_CHECK")
+    RETURN 1
+  END SUBROUTINE FIELD_VARIABLE_TYPE_CHECK
 
   !
   !================================================================================================================================
