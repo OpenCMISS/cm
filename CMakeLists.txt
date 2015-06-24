@@ -126,7 +126,7 @@ include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake COMPATIBILITY AnyNewerVersion)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake 
     "include(CMakeFindDependencyMacro)\r\n"
-    "set(_OLD_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
+    	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
 )
 foreach(IRON_DEP ${IRON_UPSTREAM_DEPS})
     if (WITH_${IRON_DEP})
@@ -140,7 +140,7 @@ endif()
 if (WITH_FIELDML)
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "find_dependency(FIELDML-API ${FIELDML-API}_VERSION)\r\n")
 endif()
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "set(_IMPORT_PREFIX \${_OLD_IMPORT_PREFIX})")
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
 install(FILES 
     ${CMAKE_CURRENT_BINARY_DIR}/iron-config-version.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/iron-config-dependencies.cmake
