@@ -13256,7 +13256,7 @@ CONTAINS
                                 & INTERPOLATION_TYPE,"*",ERR,ERROR))//"."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-                           ELSE
+                          ELSE
                             CALL FLAG_ERROR("The from field variable component domain is not associated with the "// &
                               & "to field variable component domain.",ERR,ERROR,*999)
                           ENDIF

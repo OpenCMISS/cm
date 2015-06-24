@@ -26,7 +26,7 @@
 !> Auckland, the University of Oxford and King's College, London.
 !> All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Thomas Klotz
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -732,7 +732,6 @@ CONTAINS
     CALL EXITS("BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_PRE_LOOP")
     RETURN 1
   END SUBROUTINE BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_PRE_LOOP
-
 
   !
   !================================================================================================================================
@@ -2060,29 +2059,29 @@ CONTAINS
 
 
 
-!!tomo new
-!                      !smooth of the velocity field
+!tomo new
+                      !smooth of the velocity field
 
-!                      !arithmetic mean of all rel_velo values within one FE element
-!!                      VELOCITY=0.0_DP
-!!                      DO n1=1,nodes_in_Xi_1
-!!                        node_idx_2=node_idx_2+1
-!!                        dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
-!!                          & DERIVATIVES(1)%VERSIONS(1)
-!!                        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-!!                          & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
-!!                        VELOCITY=VELOCITY+VALUE
-!!                      ENDDO
-!!                      VELOCITY=VELOCITY/nodes_in_Xi_1
+                      !arithmetic mean of all rel_velo values within one FE element
+!                      VELOCITY=0.0_DP
+!                      DO n1=1,nodes_in_Xi_1
+!                        node_idx_2=node_idx_2+1
+!                        dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
+!                          & DERIVATIVES(1)%VERSIONS(1)
+!                        CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                          & FIELD_VALUES_SET_TYPE,dof_idx,VALUE,ERR,ERROR,*999)
+!                        VELOCITY=VELOCITY+VALUE
+!                      ENDDO
+!                      VELOCITY=VELOCITY/nodes_in_Xi_1
 
-!!                      node_idx_2=node_idx_2-nodes_in_Xi_1
-!!                      DO n1=1,nodes_in_Xi_1
-!!                        node_idx_2=node_idx_2+1
-!!                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
-!!                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
-!!                      ENDDO
+!                      node_idx_2=node_idx_2-nodes_in_Xi_1
+!                      DO n1=1,nodes_in_Xi_1
+!                        node_idx_2=node_idx_2+1
+!                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
+!                          & FIELD_VALUES_SET_TYPE,1,1,node_idx_2,3,VELOCITY,ERR,ERROR,*999)
+!                      ENDDO
 
-!!--------------------------------------------------------------------------
+!--------------------------------------------------------------------------
 
 !                      !moving average
 !                      offset=3
@@ -2091,6 +2090,7 @@ CONTAINS
 !                      VELOCITY=0.0_DP
 
 !                      node_idx_2=node_idx_2+1
+!                      
 !                      dof_idx=FIELD_VAR_IND_M_2%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx_2)% &
 !                        & DERIVATIVES(1)%VERSIONS(1)
 !                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U2_VARIABLE_TYPE, &
@@ -2557,11 +2557,14 @@ CONTAINS
     INTEGER(INTG) :: node_idx,element_idx,gauss_idx,ne
     INTEGER(INTG) :: nearestGP,inElement,dof_idx
     INTEGER(INTG) :: NUMBER_OF_GAUSS_POINTS
-    REAL(DP) :: ACTIVE_STRESS,TITIN_STRESS
+    REAL(DP) :: ACTIVE_STRESS
+    REAL(DP) :: TITIN_STRESS_UNBOUND,TITIN_STRESS_BOUND,TITIN_STRESS_CROSS_FIBRE_UNBOUND,TITIN_STRESS_CROSS_FIBRE_BOUND
     INTEGER(INTG), PARAMETER :: MAX_NUMBER_OF_GAUSS_POINTS=64
     INTEGER(INTG) :: NUMBER_OF_NODES(MAX_NUMBER_OF_GAUSS_POINTS)
     REAL(DP):: ACTIVE_STRESS_VALUES(MAX_NUMBER_OF_GAUSS_POINTS)
-    REAL(DP):: TITIN_STRESS_VALUES(MAX_NUMBER_OF_GAUSS_POINTS)
+    REAL(DP):: TITIN_STRESS_VALUES_UNBOUND(MAX_NUMBER_OF_GAUSS_POINTS),TITIN_STRESS_VALUES_BOUND(MAX_NUMBER_OF_GAUSS_POINTS)
+    REAL(DP):: TITIN_STRESS_VALUES_CROSS_FIBRE_UNBOUND(MAX_NUMBER_OF_GAUSS_POINTS)
+    REAL(DP):: TITIN_STRESS_VALUES_CROSS_FIBRE_BOUND(MAX_NUMBER_OF_GAUSS_POINTS)
 
     NULLIFY(CONTROL_LOOP_PARENT)
     NULLIFY(CONTROL_LOOP_MONODOMAIN)
@@ -2654,7 +2657,10 @@ CONTAINS
                 & "NUMBER_OF_GAUSS_POINTS is greater than MAX_NUMBER_OF_GAUSS_POINTS.",ERR,ERROR,*999)
               NUMBER_OF_NODES=0
               ACTIVE_STRESS_VALUES=0.0_DP
-              TITIN_STRESS_VALUES=0.0_DP
+              TITIN_STRESS_VALUES_UNBOUND=0.0_DP
+              TITIN_STRESS_VALUES_BOUND=0.0_DP
+              TITIN_STRESS_VALUES_CROSS_FIBRE_UNBOUND=0.0_DP
+              TITIN_STRESS_VALUES_CROSS_FIBRE_BOUND=0.0_DP
               
               !loop over the bioelectrics nodes
               DO node_idx=1,NODES_MAPPING%NUMBER_OF_LOCAL
@@ -2678,21 +2684,39 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                     & dof_idx,ACTIVE_STRESS,ERR,ERROR,*999)
                   
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
-                    !component 2 of variable U contains the titin stress
-                    dof_idx=FIELD_VARIABLE_U%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
-                      & VERSIONS(1)
-                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
-                      & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS,ERR,ERROR,*999)
-                  ENDIF
-
                   !count the number of bioelectrics nodes that are closest to each finite elasticity Gauss point
                   NUMBER_OF_NODES(nearestGP)=NUMBER_OF_NODES(nearestGP)+1
                   !add up the active stress value
                   ACTIVE_STRESS_VALUES(nearestGP)=ACTIVE_STRESS_VALUES(nearestGP)+ACTIVE_STRESS
 
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
-                    TITIN_STRESS_VALUES(nearestGP)=TITIN_STRESS_VALUES(nearestGP)+TITIN_STRESS
+                    !component 2 of variable U contains the titin stress unbound
+                    dof_idx=FIELD_VARIABLE_U%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
+                      & VERSIONS(1)
+                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_UNBOUND,ERR,ERROR,*999)
+                    !component 3 of variable U contains the titin stress bound
+                    dof_idx=FIELD_VARIABLE_U%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
+                      & VERSIONS(1)
+                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_BOUND,ERR,ERROR,*999)
+                    !component 4 of variable U contains the titin XF-stress (cross-fibre directions) unbound
+                    dof_idx=FIELD_VARIABLE_U%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
+                      & VERSIONS(1)
+                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_CROSS_FIBRE_UNBOUND,ERR,ERROR,*999)
+                    !component 5 of variable U contains the titin XF-stress (cross-fibre directions) bound
+                    dof_idx=FIELD_VARIABLE_U%COMPONENTS(5)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
+                      & VERSIONS(1)
+                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_CROSS_FIBRE_BOUND,ERR,ERROR,*999)
+
+                    TITIN_STRESS_VALUES_UNBOUND(nearestGP)=TITIN_STRESS_VALUES_UNBOUND(nearestGP)+TITIN_STRESS_UNBOUND
+                    TITIN_STRESS_VALUES_BOUND(nearestGP)=TITIN_STRESS_VALUES_BOUND(nearestGP)+TITIN_STRESS_BOUND
+                    TITIN_STRESS_VALUES_CROSS_FIBRE_UNBOUND(nearestGP)=TITIN_STRESS_VALUES_CROSS_FIBRE_UNBOUND(nearestGP) + &
+                      & TITIN_STRESS_CROSS_FIBRE_UNBOUND
+                    TITIN_STRESS_VALUES_CROSS_FIBRE_BOUND(nearestGP)=TITIN_STRESS_VALUES_CROSS_FIBRE_BOUND(nearestGP) + &
+                      & TITIN_STRESS_CROSS_FIBRE_BOUND
                   ENDIF
 
                 ENDIF
@@ -2703,10 +2727,17 @@ CONTAINS
                 !make sure we don't divide by zero
                 IF(NUMBER_OF_NODES(gauss_idx)<=0) THEN
                   ACTIVE_STRESS=0.0_DP
-                  TITIN_STRESS=0.0_DP
+                  TITIN_STRESS_UNBOUND=0.0_DP
+                  TITIN_STRESS_BOUND=0.0_DP
+                  TITIN_STRESS_CROSS_FIBRE_UNBOUND=0.0_DP
+                  TITIN_STRESS_CROSS_FIBRE_BOUND=0.0_DP
                 ELSE
                   ACTIVE_STRESS=ACTIVE_STRESS_VALUES(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
-                  TITIN_STRESS=TITIN_STRESS_VALUES(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
+                  TITIN_STRESS_UNBOUND=TITIN_STRESS_VALUES_UNBOUND(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
+                  TITIN_STRESS_BOUND=TITIN_STRESS_VALUES_BOUND(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
+                  TITIN_STRESS_CROSS_FIBRE_UNBOUND=TITIN_STRESS_VALUES_CROSS_FIBRE_UNBOUND(gauss_idx)/NUMBER_OF_NODES(gauss_idx)
+                  TITIN_STRESS_CROSS_FIBRE_BOUND=TITIN_STRESS_VALUES_CROSS_FIBRE_BOUND(gauss_idx)/ &
+                    & NUMBER_OF_NODES(gauss_idx)
                 ENDIF
 
                 dof_idx=FIELD_VARIABLE_FE%COMPONENTS(1)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_idx,ne)
@@ -2716,7 +2747,16 @@ CONTAINS
                 IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                   dof_idx=FIELD_VARIABLE_FE%COMPONENTS(2)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_idx,ne)
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS,ERR,ERROR,*999)
+                    & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_UNBOUND,ERR,ERROR,*999)
+                  dof_idx=FIELD_VARIABLE_FE%COMPONENTS(3)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_idx,ne)
+                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_BOUND,ERR,ERROR,*999)
+                  dof_idx=FIELD_VARIABLE_FE%COMPONENTS(4)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_idx,ne)
+                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_CROSS_FIBRE_UNBOUND,ERR,ERROR,*999)
+                  dof_idx=FIELD_VARIABLE_FE%COMPONENTS(5)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_idx,ne)
+                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_CROSS_FIBRE_BOUND,ERR,ERROR,*999)
                 ENDIF
 
               ENDDO !gauss_idx
@@ -2753,7 +2793,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Computes residual force enhancement based on the titin model of C Rode et al. (2009). Force depression is not yet implemented.
+  !>Computes force enhancement based on the titin model of C Rode et al. (2009). Force depression is not yet implemented.
   !>Titin-induced force enhancement and force depression: A 'sticky-spring' mechanism in muscle contractions? C Rode, T Siebert, R Blickhan - Journal of theoretical biology, 2009.
   SUBROUTINE BIOELECTRIC_FINITE_ELASTICITY_COMPUTE_TITIN(CONTROL_LOOP,ERR,ERROR,*)
 
@@ -2776,18 +2816,21 @@ CONTAINS
     INTEGER(INTG) :: node_idx,dof_idx
     REAL(DP), PARAMETER :: LENGTH_ACTIN=1.04_DP,LENGTH_MBAND=0.0625_DP,LENGTH_MYOSIN=0.7375_DP
     REAL(DP), PARAMETER :: LENGTH_ZERO=0.635_DP,LENGTH_ZDISC=0.05_DP
-    REAL(DP) :: F0,FORCE,FORCE_F0
-    REAL(DP) :: ELONG,ELONG_NEW
-    REAL(DP) :: ELONG_DIST_IG,ELONG_PEVK
-    REAL(DP) :: LENGTH_INIT_TITIN,LENGTH_DIST_IG_F0,LENGTH_DIST_IG
+    REAL(DP) :: F0,FORCE,TITIN_BOUND,TITIN_XF_BOUND,TITIN_UNBOUND,TITIN_XF_UNBOUND
+    REAL(DP) :: ELONGATION,ELONGATION_NEW
+    REAL(DP) :: ELONGATION_DIST_IG,ELONGATION_PEVK
+    REAL(DP) :: LENGTH_TITIN,LENGTH_INIT_TITIN,LENGTH_DIST_IG_F0,LENGTH_DIST_IG
     REAL(DP) :: STIFFNESS_PEVK
-    REAL(DP) :: SARCO_LENGTH_INIT,SARCO_LENGTH
-    !REAL(DP), PARAMETER, DIMENSION(4) :: c = [0.000000000635201_DP, 3.626712895523322_DP, 0.000027562837093_DP, 43.372873938671383_DP] 
+    REAL(DP) :: SARCO_LENGTH_AT_ACTIVATION,SARCO_LENGTH
+    REAL(DP) :: ACTIN_MYOSIN_DISTANCE,d10
+    REAL(DP) :: SLOPE,STIFFNESS_DIST,FORCE_DISTAL_IG,DELTA_F,DIFF_QUOT
     REAL(DP), PARAMETER, DIMENSION(5) :: COEFF_MATRIX=[5.0239_DP,-0.6717_DP,-2.5841_DP,-5.0128_DP,-5.0239_DP]
     REAL(DP), DIMENSION(250) :: LENGTHS_DIST_IG,FORCES_DIST_IG
     REAL(DP), PARAMETER :: DX=0.001_DP
-    REAL(DP), PARAMETER :: FORCE_INCREMENT=1.e-7_DP!1.e-4_DP
-    INTEGER(INTG) :: INDEX_REF,INDEX_PSEUDO,INDEX_I!,INDEX_IP1
+    REAL(DP), PARAMETER :: FORCE_INCREMENT=1.e-5_DP,TOL=1.e-5_DP
+    INTEGER(INTG) :: INDEX_REF,INDEX_PSEUDO,INDEX_I
+    INTEGER(INTG), PARAMETER :: DIM_DATA=250
+    INTEGER(INTG) :: SWITCH_MODEL
     
     NULLIFY(CONTROL_LOOP_ROOT)
     NULLIFY(CONTROL_LOOP_PARENT)
@@ -2896,75 +2939,209 @@ CONTAINS
 
                   CALL FIELD_VARIABLE_GET(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE,FIELD_VAR_IND_M,ERR,ERROR,*999)
 
-                  !the second component of the U1 variable contains the initial half sarcomere length
-                  dof_idx=FIELD_VAR_IND_M%COMPONENTS(2)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-                  CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,dof_idx,SARCO_LENGTH_INIT,ERR,ERROR,*999)
-                    
-                  ! Initialization
-                  INDEX_REF=1
-                  FORCE=0.0_DP                  
-                  LENGTH_INIT_TITIN=SARCO_LENGTH_INIT-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
-                  !function to approximate the relation between the initial titin length and the initial passive force F0
-                  F0=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
-                    & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
-                  !function to approximate the relation between the initial sarcomere length and the stiffness of the PEVK region.
-                  STIFFNESS_PEVK=1000.0_DP*(0.1880_DP*SARCO_LENGTH_INIT**4-0.8694_DP*SARCO_LENGTH_INIT**3+1.5084_DP* &
-                    & SARCO_LENGTH_INIT**2-1.1577_DP*SARCO_LENGTH_INIT+0.3345_DP)
-
-                  INDEX_PSEUDO=CEILING(F0/DX)
-!                  INDEX_IP1=INDEX_REF+INDEX_PSEUDO
-                  INDEX_I=INDEX_REF+INDEX_PSEUDO-1
-                  LENGTH_DIST_IG_F0=LENGTHS_DIST_IG(INDEX_I)-(LENGTHS_DIST_IG(INDEX_I+1)-LENGTHS_DIST_IG(INDEX_I))* &
-                    & (FORCES_DIST_IG(INDEX_I)-F0)/(FORCES_DIST_IG(INDEX_I+1)-FORCES_DIST_IG(INDEX_I))
-
                   NODES_MAPPING=>INDEPENDENT_FIELD_MONODOMAIN%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD_MONODOMAIN%DECOMPOSITION% &
                     & MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%NODES
 
-                  OPEN(UNIT=1,FILE='TITINFORCE.dat')
+                  ! Initialization
+                  INDEX_REF=1
+
                   DO node_idx=1,NODES_MAPPING%NUMBER_OF_LOCAL
+                  
+                    !the fourth component of the U1 variable contains the half sarcomere length at activation
+                    dof_idx=FIELD_VAR_IND_M%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
+                      & VERSIONS(1)
+                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,dof_idx,SARCO_LENGTH_AT_ACTIVATION,ERR,ERROR,*999)
+
                     !the first component of the U1 variable contains the actual half sarcomere length
                     dof_idx=FIELD_VAR_IND_M%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
                       & VERSIONS(1)
                     CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(INDEPENDENT_FIELD_MONODOMAIN,FIELD_U1_VARIABLE_TYPE, &
                       & FIELD_VALUES_SET_TYPE,dof_idx,SARCO_LENGTH,ERR,ERROR,*999)
                     
-                    ELONG=SARCO_LENGTH-SARCO_LENGTH_INIT
-                    IF(ELONG.LT.0) THEN
+                    ELONGATION=SARCO_LENGTH-SARCO_LENGTH_AT_ACTIVATION
+                    
+                    IF(ELONGATION.LT.0) THEN
+                      LENGTH_TITIN=SARCO_LENGTH-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
+                      !function to approximate the relation between the initial titin length and the initial passive force F0	
+                      TITIN_UNBOUND=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
+                        & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5) 
                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
-                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,2,0.0_DP,ERR,ERROR,*999)
-                    ELSE
-                      ELONG_NEW=-1.0_DP
-                      DO WHILE (ELONG_NEW.LT.ELONG)
-                        FORCE=FORCE+FORCE_INCREMENT
-                        FORCE_F0=FORCE+F0
-                        ELONG_PEVK=FORCE/STIFFNESS_PEVK  
-                        IF (FORCE_F0.LE.0.0_DP) THEN
-                          LENGTH_DIST_IG=-35.63_DP+39.58889_DP*(FORCE_F0+0.9_DP)
-                        ELSE IF (FORCE_F0.GE.0.24_DP) THEN
-                          LENGTH_DIST_IG=0.1411_DP+0.196576763485477_DP*(FORCE_F0-0.2495_DP)
-                        ELSE
-                          INDEX_PSEUDO=CEILING(FORCE_F0/DX)
-!                          INDEX_IP1=INDEX_REF+INDEX_PSEUDO
-                          INDEX_I=INDEX_REF+INDEX_PSEUDO-1
-                          LENGTH_DIST_IG=LENGTHS_DIST_IG(INDEX_I)-(LENGTHS_DIST_IG(INDEX_I+1)-LENGTHS_DIST_IG( &
-                            & INDEX_I))*(FORCES_DIST_IG(INDEX_I)-FORCE_F0)/(FORCES_DIST_IG(INDEX_I+1)-FORCES_DIST_IG(INDEX_I))
-                        END IF
-                        ELONG_DIST_IG=LENGTH_DIST_IG-LENGTH_DIST_IG_F0
-                        
-                        ELONG_NEW=ELONG_PEVK+ELONG_DIST_IG
-                        IF(FORCE.GT.1.0_DP) THEN
-                          EXIT
-                        ENDIF
-                      ENDDO
-  
-                      WRITE(1,*) ELONG,FORCE  
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,2,TITIN_UNBOUND,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,3,TITIN_UNBOUND,ERR,ERROR,*999)
 
+                      ! calculate x-fibre titin stress (trigonometry):                      
+                      ! fitting function to calculate the filament-lattice parameter d10 in nanometer (from Elliot 1963 -mammalian muscle)
+                      d10=-13.39_DP*SARCO_LENGTH+58.37_DP
+                      ! calculate the distance between actin and myosin filament in micro meter (geometrical relationship)
+                      ACTIN_MYOSIN_DISTANCE=0.001_DP*(2.0_DP/3.0_DP*d10)  
+                      ! calculate x-fibre stress with tangens-function (unbound titin)
+                      TITIN_XF_UNBOUND=0.5_DP*TITIN_UNBOUND*ACTIN_MYOSIN_DISTANCE/LENGTH_TITIN
                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
-                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,2,FORCE,ERR,ERROR,*999)
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,4,TITIN_XF_UNBOUND,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,5,TITIN_XF_UNBOUND,ERR,ERROR,*999)
+
+                    ELSE  ! Force enhancement  
+
+                      ! Calculate Titin-Force for unbound titin filaments
+                      LENGTH_TITIN=SARCO_LENGTH-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
+                      !function to approximate the relation between the initial titin length and the initial passive force F0	
+                      TITIN_UNBOUND=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
+                        & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
+
+                      ! Calculate Titin-Force for bound titin filaments
+                      ! Switch between different force-enhancent models/implementations 
+                      ! 1=linear approximation 2=square approximation 3=simple iterative solution of Rode's model
+                      ! 4=Newton's-method to solve Rode's model
+                      SWITCH_MODEL=4
+                      !linear approximation
+                      IF(SWITCH_MODEL.EQ.1) THEN
+                        LENGTH_INIT_TITIN=SARCO_LENGTH_AT_ACTIVATION-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
+                        !function to approximate the relation between the initial titin length and the initial passive force F0	
+                        F0=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
+                          & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
+                        !function to approximate the relation between the initial sarcomere length and the stiffness of the PEVK region.
+                        STIFFNESS_PEVK=1000.0_DP*(0.1880_DP*SARCO_LENGTH_AT_ACTIVATION**4-0.8694_DP*SARCO_LENGTH_AT_ACTIVATION**3+ &
+                          & 1.5084_DP*SARCO_LENGTH_AT_ACTIVATION**2-1.1577_DP*SARCO_LENGTH_AT_ACTIVATION+0.3345_DP)
+                        IF(ELONGATION.LT.0.02) THEN ! 0.02 -> offset value 
+                          FORCE=0.0_DP
+                        ELSE 
+                          FORCE=(ELONGATION-0.02_DP)*STIFFNESS_PEVK
+                        ENDIF
+                        TITIN_BOUND=F0+FORCE
+
+                      !square approximation
+                      ELSEIF(SWITCH_MODEL.EQ.2) THEN
+                        LENGTH_INIT_TITIN=SARCO_LENGTH_AT_ACTIVATION-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
+                        !function to approximate the relation between the initial titin length and the initial passive force F0	
+                        F0=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
+                          & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
+                        FORCE=2.0_DP*ELONGATION**2
+                        TITIN_BOUND=F0+FORCE
+
+                      !Rode's model -> Ekin's implementation
+                      ELSEIF(SWITCH_MODEL.EQ.3) THEN
+                        LENGTH_INIT_TITIN=SARCO_LENGTH_AT_ACTIVATION-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
+                        !function to approximate the relation between the initial titin length and the initial passive force F0	
+                        F0=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
+                          & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
+                        !function to approximate the relation between the initial sarcomere length and the stiffness of the PEVK region.
+                        STIFFNESS_PEVK=1000.0_DP*(0.1880_DP*SARCO_LENGTH_AT_ACTIVATION**4-0.8694_DP*SARCO_LENGTH_AT_ACTIVATION**3+ &
+                          & 1.5084_DP*SARCO_LENGTH_AT_ACTIVATION**2-1.1577_DP*SARCO_LENGTH_AT_ACTIVATION+0.3345_DP)
+                      
+                        IF(F0.LE.0) THEN
+                          LENGTH_DIST_IG_F0=-35.63_DP+39.58889_DP*(F0+0.9_DP)
+                        ELSEIF(F0.GE.0.24_DP) THEN
+                          LENGTH_DIST_IG_F0=0.1411_DP+0.196576763485477_DP*(F0-0.2495_DP)
+                        ELSE                    
+                          INDEX_PSEUDO=CEILING(F0/DX)
+                          INDEX_I=INDEX_REF+INDEX_PSEUDO-1
+                          LENGTH_DIST_IG_F0=LENGTHS_DIST_IG(INDEX_I)-(LENGTHS_DIST_IG(INDEX_I+1)-LENGTHS_DIST_IG(INDEX_I))* &
+                            & (FORCES_DIST_IG(INDEX_I)-F0)/(FORCES_DIST_IG(INDEX_I+1)-FORCES_DIST_IG(INDEX_I))
+                        ENDIF          
+	               
+                        ELONGATION_NEW=-1.0_DP
+                        FORCE=0.0_DP                  
+                        DO WHILE (ELONGATION_NEW.LT.ELONGATION)
+                          FORCE=FORCE+FORCE_INCREMENT
+                          TITIN_BOUND=FORCE+F0
+                          ELONGATION_PEVK=FORCE/STIFFNESS_PEVK  
+                          IF (TITIN_BOUND.LE.0.0_DP) THEN
+                            LENGTH_DIST_IG=-35.63_DP+39.58889_DP*(TITIN_BOUND+0.9_DP)
+                          ELSE IF (TITIN_BOUND.GE.0.24_DP) THEN
+                            LENGTH_DIST_IG=0.1411_DP+0.196576763485477_DP*(TITIN_BOUND-0.2495_DP)
+                          ELSE                  
+                            INDEX_PSEUDO=CEILING(TITIN_BOUND/DX)
+                            INDEX_I=INDEX_REF+INDEX_PSEUDO-1
+                            LENGTH_DIST_IG=LENGTHS_DIST_IG(INDEX_I)-(LENGTHS_DIST_IG(INDEX_I+1)-LENGTHS_DIST_IG( &
+                              & INDEX_I))*(FORCES_DIST_IG(INDEX_I)-TITIN_BOUND)/(FORCES_DIST_IG(INDEX_I+1)-FORCES_DIST_IG(INDEX_I))
+                          END IF
+                          ELONGATION_DIST_IG=LENGTH_DIST_IG-LENGTH_DIST_IG_F0                  
+                          ELONGATION_NEW=ELONGATION_PEVK+ELONGATION_DIST_IG
+                        ENDDO
+
+                      !Rode's titin model -> solve with Newton's method
+                      ELSEIF(SWITCH_MODEL.EQ.4) THEN
+                        LENGTH_INIT_TITIN=SARCO_LENGTH_AT_ACTIVATION-LENGTH_MYOSIN-LENGTH_MBAND-LENGTH_ZDISC
+                        !function to approximate the relation between the initial titin length and the initial passive force F0	
+                        F0=COEFF_MATRIX(1)*EXP(LENGTH_INIT_TITIN)+COEFF_MATRIX(2)*LENGTH_INIT_TITIN**3+COEFF_MATRIX(3)* &
+                          & LENGTH_INIT_TITIN**2+COEFF_MATRIX(4)*LENGTH_INIT_TITIN+COEFF_MATRIX(5)
+                        !function to approximate the relation between the initial sarcomere length and the stiffness of the PEVK region.
+                        STIFFNESS_PEVK=1000.0_DP*(0.1880_DP*SARCO_LENGTH_AT_ACTIVATION**4-0.8694_DP*SARCO_LENGTH_AT_ACTIVATION**3+ &
+                          & 1.5084_DP*SARCO_LENGTH_AT_ACTIVATION**2-1.1577_DP*SARCO_LENGTH_AT_ACTIVATION+0.3345_DP)
+
+                        !calculate LENGTH_DIST_IG_F0 with linear inter- or extrapolation
+                        INDEX_I=2
+                        SLOPE=0.0_DP
+                        LENGTH_DIST_IG_F0=0.0_DP
+                        IF(F0.GE.FORCES_DIST_IG(DIM_DATA)) THEN
+                          INDEX_I=DIM_DATA
+                        ELSE
+                          DO WHILE (F0.GT.FORCES_DIST_IG(INDEX_I))
+                            INDEX_I=INDEX_I+1
+                          ENDDO
+                        ENDIF
+                        SLOPE=(FORCES_DIST_IG(INDEX_I)-FORCES_DIST_IG(INDEX_I-1))/ &
+                          & (LENGTHS_DIST_IG(INDEX_I)-LENGTHS_DIST_IG(INDEX_I-1))
+                        LENGTH_DIST_IG_F0=LENGTHS_DIST_IG(INDEX_I-1)+SLOPE*(F0-FORCES_DIST_IG(INDEX_I-1))
+
+                        !initialize Newton-method to calculate the titin force
+                        INDEX_I=2                
+                        STIFFNESS_DIST=1.0_DP   
+                        FORCE_DISTAL_IG=F0      
+                        FORCE=0.0_DP                  ! delta P
+                        TITIN_BOUND=0.0_DP            ! total titin force (= P_PEVK)
+                        DELTA_F=10.0_DP               ! start value for iteration
+                        DIFF_QUOT=1.0_DP              ! numerical derivative              
+                        ELONGATION_PEVK=ELONGATION/2.0_DP                               
+                        LENGTH_DIST_IG=LENGTH_DIST_IG_F0+ELONGATION-ELONGATION_PEVK     
+
+                        DO WHILE(ABS(DELTA_F).GT.TOL) !Newton-method (solve FORCE_DISTAL_IG-FORCE_0=0)
+
+                          IF(LENGTH_DIST_IG.GE.LENGTHS_DIST_IG(DIM_DATA)) THEN  !Extrapolation if LENGTHS_DIST_IG(end)>LENGTH_DIST_IG
+                            INDEX_I=DIM_DATA
+                          ELSE 
+                            DO WHILE(LENGTH_DIST_IG.GT.LENGTHS_DIST_IG(INDEX_I))
+                              INDEX_I=INDEX_I+1
+                            ENDDO
+                          ENDIF
+                          STIFFNESS_DIST=(FORCES_DIST_IG(INDEX_I)-FORCES_DIST_IG(INDEX_I-1))/ &
+                            & (LENGTHS_DIST_IG(INDEX_I)-LENGTHS_DIST_IG(INDEX_I-1))
+                          FORCE_DISTAL_IG=FORCES_DIST_IG(INDEX_I-1)+STIFFNESS_DIST* &
+                            & (LENGTH_DIST_IG-LENGTHS_DIST_IG(INDEX_I-1))                
+
+                          FORCE=STIFFNESS_PEVK*ELONGATION_PEVK
+                          TITIN_BOUND=FORCE+F0
+
+                          DELTA_F=TITIN_BOUND-FORCE_DISTAL_IG !new iteration for FORCE_DISTAL_IG-TITIN_BOUND
+                          DIFF_QUOT=STIFFNESS_PEVK+STIFFNESS_DIST                 
+                          ELONGATION_PEVK=ELONGATION_PEVK-DELTA_F/DIFF_QUOT                 
+                          LENGTH_DIST_IG=LENGTH_DIST_IG_F0+ELONGATION-ELONGATION_PEVK       
+                        ENDDO
+                      ENDIF ! switch model
+
+                      ! calculate x-fibre titin stress                       
+                      ! fitting function to calculate the filament-lattice parameter d10 in nanometer (from Elliot 1963 -mammalian muscle)
+                      d10=-13.39_DP*SARCO_LENGTH+58.37_DP
+                      ! calculate the distance between actin and myosin filament in micro meter (geometrical relationship)
+                      ACTIN_MYOSIN_DISTANCE=0.001_DP*(2.0_DP/3.0_DP*d10) 
+                      ! calculate x-fibre stress with tangent (unbound titin)
+                      TITIN_XF_UNBOUND=0.5_DP*TITIN_UNBOUND*ACTIN_MYOSIN_DISTANCE/LENGTH_TITIN 
+                      ! calculate x-fibre stress with tangent (for bound titin filaments)
+                      TITIN_XF_BOUND=0.5_DP*TITIN_BOUND*ACTIN_MYOSIN_DISTANCE/LENGTH_DIST_IG  
+                      
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,2,TITIN_UNBOUND,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,3,TITIN_BOUND,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,4,TITIN_XF_UNBOUND,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(INDEPENDENT_FIELD_MONODOMAIN, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,node_idx,5,TITIN_XF_BOUND,ERR,ERROR,*999)
                     ENDIF ! Check if elongation is positive or not
                   ENDDO ! Over the nodes
-                  CLOSE(1)
 
                   !now the ghost elements -- get the relevant info from the other computational nodes
                   CALL FIELD_PARAMETER_SET_UPDATE_START(INDEPENDENT_FIELD_MONODOMAIN, & 
@@ -3005,3 +3182,4 @@ CONTAINS
   !
 
 END MODULE BIOELECTRIC_FINITE_ELASTICITY_ROUTINES
+
