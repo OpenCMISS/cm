@@ -42,7 +42,7 @@ if (WITH_C_BINDINGS)
 endif()
 # This include file is in the main "manage" directory.
 # We can include this here as iron is an integrated part of the overall build system.
-SET(IRON_UPSTREAM_DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK)
+SET(IRON_UPSTREAM_DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK PARMETIS)
 foreach(DEP ${IRON_UPSTREAM_DEPS})
     if (WITH_${DEP})
         message(STATUS "Looking for ${DEP}..")
